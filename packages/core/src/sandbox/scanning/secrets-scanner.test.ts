@@ -40,7 +40,7 @@ describe('SecretsScanner', () => {
   describe('GCP credentials', () => {
     it('detects GCP API key', async () => {
       // GCP API keys are AIza + 35 alphanumeric chars = 39 total
-      const findings = await scanner.scan(makeArtifact('apiKey: "AIzaSyDaGmWKa4JsXZ-HjGw7ISLn_3namBGew9c"'));
+      const findings = await scanner.scan(makeArtifact('apiKey: "AIzaSy00000000000000000000000000000test"'));
       expect(findings.some((f) => f.evidence?.includes('GCP_KEY'))).toBe(true);
     });
   });

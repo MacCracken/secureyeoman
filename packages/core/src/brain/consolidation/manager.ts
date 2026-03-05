@@ -335,7 +335,9 @@ export class ConsolidationManager {
     if (this.schedulerTimer) return;
 
     // Load persisted flagged IDs on start
-    void this.loadFlaggedIds().catch(() => {});
+    void this.loadFlaggedIds().catch((e: unknown) => {
+      this.logger.warn('Failed to load flagged IDs', { error: String(e) });
+    });
 
     // Check every 60 seconds for cron match
     this.schedulerTimer = setInterval(

@@ -18,6 +18,8 @@ const mockStorage = {
   getUnextractedConversations: vi.fn(),
   upsertEntity: vi.fn(),
   upsertKeyPhrase: vi.fn(),
+  upsertEntityBatch: vi.fn(),
+  upsertKeyPhraseBatch: vi.fn(),
 } as any;
 
 const mockAiClient = {
@@ -104,13 +106,13 @@ describe('EntityExtractor', () => {
           keyPhrases: [{ phrase: 'tell me about', frequency: 1 }],
         }),
       });
-      mockStorage.upsertEntity.mockResolvedValue(undefined);
-      mockStorage.upsertKeyPhrase.mockResolvedValue(undefined);
+      mockStorage.upsertEntityBatch.mockResolvedValue(undefined);
+      mockStorage.upsertKeyPhraseBatch.mockResolvedValue(undefined);
 
       const count = await extractor.extractNew();
       expect(count).toBe(1);
-      expect(mockStorage.upsertEntity).toHaveBeenCalledTimes(1);
-      expect(mockStorage.upsertKeyPhrase).toHaveBeenCalledTimes(1);
+      expect(mockStorage.upsertEntityBatch).toHaveBeenCalledTimes(1);
+      expect(mockStorage.upsertKeyPhraseBatch).toHaveBeenCalledTimes(1);
     });
 
     it('skips conversations with no messages', async () => {
@@ -137,12 +139,12 @@ describe('EntityExtractor', () => {
           keyPhrases: [{ phrase: 'hello', frequency: 1 }],
         }),
       });
-      mockStorage.upsertEntity.mockResolvedValue(undefined);
+      mockStorage.upsertEntityBatch.mockResolvedValue(undefined);
 
       const count = await extractor.extractNew();
       expect(count).toBe(1);
-      expect(mockStorage.upsertEntity).toHaveBeenCalledTimes(1);
-      expect(mockStorage.upsertKeyPhrase).not.toHaveBeenCalled();
+      expect(mockStorage.upsertEntityBatch).toHaveBeenCalledTimes(1);
+      expect(mockStorage.upsertKeyPhraseBatch).not.toHaveBeenCalled();
     });
 
     it('continues on failure', async () => {

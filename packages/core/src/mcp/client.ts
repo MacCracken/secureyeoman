@@ -13,6 +13,8 @@ import { McpStorage } from './storage.js';
 import type { McpCredentialManager } from './credential-manager.js';
 import { SignJWT } from 'jose';
 import { randomUUID } from 'node:crypto';
+import { getTracer } from '../telemetry/otel.js';
+import { SpanStatusCode } from '@opentelemetry/api';
 
 export interface McpClientManagerDeps {
   logger: SecureLogger;
@@ -136,44 +138,67 @@ export class McpClientManager {
     toolName: string,
     args: Record<string, unknown>
   ): Promise<unknown> {
-    const server = await this.storage.getServer(serverId);
-    if (!server?.enabled) {
-      throw new Error(`MCP server ${serverId} not found or disabled`);
-    }
-    if (!server.url) {
-      throw new Error(`MCP server '${server.name}' has no URL configured`);
-    }
+    const tracer = getTracer('secureyeoman.mcp');
 
-    if (!this.tokenSecret) {
-      throw new Error('McpClientManager: tokenSecret not configured — cannot call MCP tools');
-    }
+    return tracer.startActiveSpan(`mcp.tool ${toolName}`, async (span) => {
+      span.setAttribute('mcp.tool_name', toolName);
+      span.setAttribute('mcp.server_id', serverId);
+      const startTime = Date.now();
 
-    // Inject credentials into server env if credential manager is available
-    if (this.credentialManager) {
-      await this.credentialManager.injectCredentials(serverId, server.env);
-    }
+      try {
+        const server = await this.storage.getServer(serverId);
+        if (!server?.enabled) {
+          throw new Error(`MCP server ${serverId} not found or disabled`);
+        }
+        if (!server.url) {
+          throw new Error(`MCP server '${server.name}' has no URL configured`);
+        }
+        span.setAttribute('mcp.server_name', server.name);
 
-    const token = await mintCallthruToken(this.tokenSecret);
-    const endpoint = `${server.url}/api/v1/internal/tool-call`;
+        if (!this.tokenSecret) {
+          throw new Error('McpClientManager: tokenSecret not configured — cannot call MCP tools');
+        }
 
-    this.logger.info('Calling MCP tool via internal callthrough', { serverId, toolName, endpoint });
+        // Inject credentials into server env if credential manager is available
+        if (this.credentialManager) {
+          await this.credentialManager.injectCredentials(serverId, server.env);
+        }
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ name: toolName, arguments: args }),
-      signal: AbortSignal.timeout(60_000),
+        const token = await mintCallthruToken(this.tokenSecret);
+        const endpoint = `${server.url}/api/v1/internal/tool-call`;
+
+        this.logger.info('Calling MCP tool via internal callthrough', { serverId, toolName, endpoint });
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ name: toolName, arguments: args }),
+          signal: AbortSignal.timeout(60_000),
+        });
+
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          throw new Error(`MCP tool call failed (${res.status}): ${body}`);
+        }
+
+        const result = await res.json();
+        const elapsed = Date.now() - startTime;
+        span.setAttribute('mcp.latency_ms', elapsed);
+        span.setStatus({ code: SpanStatusCode.OK });
+        span.end();
+        return result;
+      } catch (error) {
+        const elapsed = Date.now() - startTime;
+        span.setAttribute('mcp.latency_ms', elapsed);
+        span.setStatus({ code: SpanStatusCode.ERROR, message: error instanceof Error ? error.message : 'Unknown' });
+        span.recordException(error instanceof Error ? error : new Error(String(error)));
+        span.end();
+        throw error;
+      }
     });
-
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new Error(`MCP tool call failed (${res.status}): ${body}`);
-    }
-
-    return res.json();
   }
 
   async refreshAll(): Promise<void> {

@@ -2,7 +2,7 @@
 
 Most AI assistants work for the platform that hosts them. SecureYeoman works for you — self-hosted, enterprise-hardened, and answerable only to you. Your data doesn't have to train their models. Your conversations and data don't have to be their product.
 
-**v2026.3.4** | AGPL-3.0 License | 271 MCP Tools | 39 CLI Commands
+**v2026.3.5** | AGPL-3.0 License | 271 MCP Tools | 39 CLI Commands
 
 ---
 

@@ -86,7 +86,9 @@ export class AIModule extends BaseModule {
       const MS_PER_DAY = 24 * 60 * 60 * 1000;
       const usageStorage = this.usageStorage;
       this.usagePruneTimer = setInterval(() => {
-        void usageStorage.prune().catch(() => {});
+        void usageStorage.prune().catch((e: unknown) => {
+          this.logger.debug('Usage storage prune failed', { error: String(e) });
+        });
       }, MS_PER_DAY);
       this.usagePruneTimer.unref();
 
@@ -109,9 +111,8 @@ export class AIModule extends BaseModule {
 
       // Cost budget checker
       if (this.providerAccountStorage) {
-        this.costBudgetChecker = new CostBudgetChecker(
-          this.providerAccountStorage,
-          () => this.deps.getAlertManager()
+        this.costBudgetChecker = new CostBudgetChecker(this.providerAccountStorage, () =>
+          this.deps.getAlertManager()
         );
       }
 
@@ -224,9 +225,19 @@ export class AIModule extends BaseModule {
 
   applyModelSwitch(provider: string, model: string): void {
     const validProviders = [
-      'anthropic', 'openai', 'gemini', 'ollama', 'opencode',
-      'lmstudio', 'localai', 'deepseek', 'mistral',
-      'grok', 'letta', 'groq', 'openrouter',
+      'anthropic',
+      'openai',
+      'gemini',
+      'ollama',
+      'opencode',
+      'lmstudio',
+      'localai',
+      'deepseek',
+      'mistral',
+      'grok',
+      'letta',
+      'groq',
+      'openrouter',
     ];
     if (!validProviders.includes(provider)) {
       throw new Error(
@@ -379,11 +390,25 @@ export class AIModule extends BaseModule {
   // Getters
   // ------------------------------------------------------------------
 
-  getAIClient(): AIClient | null { return this.aiClient; }
-  getUsageStorage(): UsageStorage | null { return this.usageStorage; }
-  getCostOptimizer(): CostOptimizer | null { return this.costOptimizer; }
-  getProviderAccountManager(): ProviderAccountManager | null { return this.providerAccountManager; }
-  getProviderHealthTracker(): ProviderHealthTracker { return this.providerHealthTracker; }
-  getCostBudgetChecker(): CostBudgetChecker | null { return this.costBudgetChecker; }
-  getSystemPreferences(): SystemPreferencesStorage | null { return this.systemPreferences; }
+  getAIClient(): AIClient | null {
+    return this.aiClient;
+  }
+  getUsageStorage(): UsageStorage | null {
+    return this.usageStorage;
+  }
+  getCostOptimizer(): CostOptimizer | null {
+    return this.costOptimizer;
+  }
+  getProviderAccountManager(): ProviderAccountManager | null {
+    return this.providerAccountManager;
+  }
+  getProviderHealthTracker(): ProviderHealthTracker {
+    return this.providerHealthTracker;
+  }
+  getCostBudgetChecker(): CostBudgetChecker | null {
+    return this.costBudgetChecker;
+  }
+  getSystemPreferences(): SystemPreferencesStorage | null {
+    return this.systemPreferences;
+  }
 }

@@ -34,18 +34,24 @@ export class SentimentAnalyzer {
     const unanalyzed = await this.storage.getUnanalyzedMessages(BATCH_SIZE);
     if (unanalyzed.length === 0) return 0;
 
-    let analyzed = 0;
+    const classified: {
+      conversationId: string;
+      messageId: string;
+      personalityId: string | null;
+      sentiment: 'positive' | 'neutral' | 'negative';
+      score: number;
+    }[] = [];
+
     for (const msg of unanalyzed) {
       try {
         const result = await this.classifyMessage(msg.content);
-        await this.storage.insertSentiment({
+        classified.push({
           conversationId: msg.conversation_id,
           messageId: msg.id,
           personalityId: msg.personality_id,
           sentiment: result.sentiment,
           score: result.score,
         });
-        analyzed++;
       } catch (err) {
         this.logger.warn('SentimentAnalyzer: failed to classify message', {
           messageId: msg.id,
@@ -54,10 +60,11 @@ export class SentimentAnalyzer {
       }
     }
 
-    if (analyzed > 0) {
-      this.logger.info('SentimentAnalyzer: analyzed messages', { analyzed });
+    if (classified.length > 0) {
+      await this.storage.insertSentimentBatch(classified);
+      this.logger.info('SentimentAnalyzer: analyzed messages', { analyzed: classified.length });
     }
-    return analyzed;
+    return classified.length;
   }
 
   async classifyMessage(

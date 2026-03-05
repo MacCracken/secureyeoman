@@ -16,6 +16,7 @@ const mockLogger = {
 const mockStorage = {
   getUnanalyzedMessages: vi.fn(),
   insertSentiment: vi.fn(),
+  insertSentimentBatch: vi.fn(),
 } as any;
 
 const mockAiClient = {
@@ -104,11 +105,17 @@ describe('SentimentAnalyzer', () => {
       mockAiClient.chat
         .mockResolvedValueOnce({ content: '{"sentiment":"positive","score":0.8}' })
         .mockResolvedValueOnce({ content: '{"sentiment":"neutral","score":0.5}' });
-      mockStorage.insertSentiment.mockResolvedValue(undefined);
+      mockStorage.insertSentimentBatch.mockResolvedValue(undefined);
 
       const count = await analyzer.analyzeNewMessages();
       expect(count).toBe(2);
-      expect(mockStorage.insertSentiment).toHaveBeenCalledTimes(2);
+      expect(mockStorage.insertSentimentBatch).toHaveBeenCalledTimes(1);
+      expect(mockStorage.insertSentimentBatch).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ messageId: 'm1', sentiment: 'positive' }),
+          expect.objectContaining({ messageId: 'm2', sentiment: 'neutral' }),
+        ])
+      );
     });
 
     it('continues processing when one message fails', async () => {
@@ -119,7 +126,7 @@ describe('SentimentAnalyzer', () => {
       mockAiClient.chat
         .mockRejectedValueOnce(new Error('API error'))
         .mockResolvedValueOnce({ content: '{"sentiment":"neutral","score":0.5}' });
-      mockStorage.insertSentiment.mockResolvedValue(undefined);
+      mockStorage.insertSentimentBatch.mockResolvedValue(undefined);
 
       const count = await analyzer.analyzeNewMessages();
       expect(count).toBe(1);

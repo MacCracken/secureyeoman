@@ -217,7 +217,9 @@ export class PlatformModule implements AppModule {
         deps.soulManager.setStrategyStorage(deps.strategyStorage);
       }
     }
-    this.logger.debug('Dashboard, Workspace, Experiment, Marketplace, Strategy, ConversationStorage initialized (parallel seeds)');
+    this.logger.debug(
+      'Dashboard, Workspace, Experiment, Marketplace, Strategy, ConversationStorage initialized (parallel seeds)'
+    );
 
     // Branching manager
     if (deps.pool) {
@@ -283,7 +285,9 @@ export class PlatformModule implements AppModule {
             name: `Scheduled ${new Date().toISOString()}`,
             assessmentTypes: ['security', 'autonomy', 'governance', 'infrastructure', 'external'],
             windowDays: 7,
-          }).catch(() => {});
+          }).catch((e: unknown) => {
+            this.logger.warn('Scheduled risk assessment failed', { error: String(e) });
+          });
         }, MS_PER_DAY);
         this.riskScheduleTimer.unref();
       } catch (error) {
@@ -494,25 +498,67 @@ export class PlatformModule implements AppModule {
   // Getters
   // ------------------------------------------------------------------
 
-  getNotificationManager(): NotificationManager | null { return this.notificationManager; }
-  getUserNotificationPrefsStorage(): UserNotificationPrefsStorage | null { return this.userNotificationPrefsStorage; }
-  getRiskAssessmentStorage(): RiskAssessmentStorage | null { return this.riskAssessmentStorage; }
-  getRiskAssessmentManager(): RiskAssessmentManager | null { return this.riskAssessmentManager; }
-  getDepartmentRiskStorage(): DepartmentRiskStorage | null { return this.departmentRiskStorage; }
-  getDepartmentRiskManager(): DepartmentRiskManager | null { return this.departmentRiskManager; }
-  getMcpStorage(): McpStorage | null { return this.mcpStorage; }
-  getMcpClientManager(): McpClientManager | null { return this.mcpClientManager; }
-  getMcpServer(): McpServer | null { return this.mcpServer; }
-  getDashboardManager(): DashboardManager | null { return this.dashboardManager; }
-  getWorkspaceManager(): WorkspaceManager | null { return this.workspaceManager; }
-  getExperimentManager(): ExperimentManager | null { return this.experimentManager; }
-  getMarketplaceManager(): MarketplaceManager | null { return this.marketplaceManager; }
-  getConversationStorage(): ConversationStorage | null { return this.chatConversationStorage; }
-  getBranchingManager(): BranchingManager | null { return this.branchingManager; }
-  getBackupManager(): BackupManager | null { return this.backupManager; }
-  getTenantManager(): TenantManager | null { return this.tenantManager; }
-  getFederationManager(): FederationManager | null { return this.federationManager; }
-  getAlertManager(): AlertManager | null { return this.alertManager; }
-  getAlertStorage(): AlertStorage | null { return this.alertStorage; }
-  getDynamicToolManager(): DynamicToolManager | null { return this.dynamicToolManager; }
+  getNotificationManager(): NotificationManager | null {
+    return this.notificationManager;
+  }
+  getUserNotificationPrefsStorage(): UserNotificationPrefsStorage | null {
+    return this.userNotificationPrefsStorage;
+  }
+  getRiskAssessmentStorage(): RiskAssessmentStorage | null {
+    return this.riskAssessmentStorage;
+  }
+  getRiskAssessmentManager(): RiskAssessmentManager | null {
+    return this.riskAssessmentManager;
+  }
+  getDepartmentRiskStorage(): DepartmentRiskStorage | null {
+    return this.departmentRiskStorage;
+  }
+  getDepartmentRiskManager(): DepartmentRiskManager | null {
+    return this.departmentRiskManager;
+  }
+  getMcpStorage(): McpStorage | null {
+    return this.mcpStorage;
+  }
+  getMcpClientManager(): McpClientManager | null {
+    return this.mcpClientManager;
+  }
+  getMcpServer(): McpServer | null {
+    return this.mcpServer;
+  }
+  getDashboardManager(): DashboardManager | null {
+    return this.dashboardManager;
+  }
+  getWorkspaceManager(): WorkspaceManager | null {
+    return this.workspaceManager;
+  }
+  getExperimentManager(): ExperimentManager | null {
+    return this.experimentManager;
+  }
+  getMarketplaceManager(): MarketplaceManager | null {
+    return this.marketplaceManager;
+  }
+  getConversationStorage(): ConversationStorage | null {
+    return this.chatConversationStorage;
+  }
+  getBranchingManager(): BranchingManager | null {
+    return this.branchingManager;
+  }
+  getBackupManager(): BackupManager | null {
+    return this.backupManager;
+  }
+  getTenantManager(): TenantManager | null {
+    return this.tenantManager;
+  }
+  getFederationManager(): FederationManager | null {
+    return this.federationManager;
+  }
+  getAlertManager(): AlertManager | null {
+    return this.alertManager;
+  }
+  getAlertStorage(): AlertStorage | null {
+    return this.alertStorage;
+  }
+  getDynamicToolManager(): DynamicToolManager | null {
+    return this.dynamicToolManager;
+  }
 }

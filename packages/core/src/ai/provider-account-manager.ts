@@ -202,7 +202,11 @@ export class ProviderAccountManager {
     if (result.models) info.models = result.models;
     if (result.error) info.error = result.error;
 
-    await this.storage.updateValidation(id, status, Object.keys(info).length > 0 ? info : undefined);
+    await this.storage.updateValidation(
+      id,
+      status,
+      Object.keys(info).length > 0 ? info : undefined
+    );
 
     if (!result.valid) {
       this.alertOnInvalid(account, result.error);
@@ -211,7 +215,9 @@ export class ProviderAccountManager {
     return this.storage.getAccount(id);
   }
 
-  async validateAllAccounts(tenantId?: string): Promise<{ total: number; valid: number; invalid: number }> {
+  async validateAllAccounts(
+    tenantId?: string
+  ): Promise<{ total: number; valid: number; invalid: number }> {
     const accounts = await this.storage.listAccounts(undefined, tenantId);
     let valid = 0;
     let invalid = 0;
@@ -292,7 +298,9 @@ export class ProviderAccountManager {
         },
       },
     };
-    alertManager.evaluate(snapshot as never).catch(() => {});
+    alertManager.evaluate(snapshot as never).catch(() => {
+      /* fire-and-forget alert evaluation; non-critical */
+    });
   }
 
   private async audit(event: string, metadata: Record<string, unknown>): Promise<void> {

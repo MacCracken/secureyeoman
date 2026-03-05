@@ -173,10 +173,9 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 *As SecureYeoman moves into production deployments, operators need distributed tracing, metrics export, and correlation tooling beyond what the built-in audit log provides.*
 
+**Completed (2026-03-05)**: Histogram metrics (p50/p95/p99 ring buffer + Prometheus summary), AI completion OTel spans, MCP tool call OTel spans.
+
 **Remaining / Future improvements (demand-gated)**:
-- [ ] **Histogram metrics** — Replace avg-latency gauge with proper p50/p95/p99 histograms per route using OpenMetrics format.
-- [ ] **AI completion spans** — Instrument every `aiClient.chat()` call with a child span including model, input/output token counts.
-- [ ] **MCP tool call spans** — Wrap each MCP tool invocation in a span for end-to-end tracing through agent → tool → external API.
 - [ ] **Personality activity heatmap** — Per-personality request rate in Grafana.
 
 ---
@@ -290,7 +289,7 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ## Related Documentation
 
-- [Architecture Overview](../adr/000-secureyeoman-architecture-overview.md)
+- [System Architecture](../adr/001-system-architecture.md)
 - [API Reference](../api/)
 - [Security Model](../security/security-model.md)
 - [Configuration Reference](../configuration.md)

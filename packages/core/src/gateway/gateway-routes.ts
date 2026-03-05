@@ -124,7 +124,9 @@ export function registerGatewayRoutes(app: FastifyInstance, opts: GatewayRoutesO
               status_code: statusCode,
               error_message: null,
             })
-            .catch(() => {});
+            .catch(() => {
+              /* fire-and-forget usage recording; non-critical */
+            });
         }
       }
     }
@@ -184,11 +186,7 @@ export function registerGatewayRoutes(app: FastifyInstance, opts: GatewayRoutesO
 
         return reply.send({ summary });
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );

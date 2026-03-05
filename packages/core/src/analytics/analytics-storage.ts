@@ -101,6 +101,33 @@ export class AnalyticsStorage {
     );
   }
 
+  async insertSentimentBatch(
+    rows: {
+      conversationId: string;
+      messageId: string;
+      personalityId: string | null;
+      sentiment: 'positive' | 'neutral' | 'negative';
+      score: number;
+    }[]
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    const values: unknown[] = [];
+    const placeholders: string[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i]!;
+      const off = i * 5;
+      placeholders.push(`($${off + 1}, $${off + 2}, $${off + 3}, $${off + 4}, $${off + 5})`);
+      values.push(r.conversationId, r.messageId, r.personalityId, r.sentiment, r.score);
+    }
+    await this.pool.query(
+      `INSERT INTO analytics.turn_sentiments
+         (conversation_id, message_id, personality_id, sentiment, score)
+       VALUES ${placeholders.join(', ')}
+       ON CONFLICT (message_id) DO NOTHING`,
+      values
+    );
+  }
+
   async getSentimentsByConversation(conversationId: string): Promise<TurnSentimentRow[]> {
     const { rows } = await this.pool.query<TurnSentimentRow>(
       `SELECT * FROM analytics.turn_sentiments
@@ -240,6 +267,33 @@ export class AnalyticsStorage {
     );
   }
 
+  async upsertEntityBatch(
+    rows: {
+      conversationId: string;
+      personalityId: string | null;
+      entityType: string;
+      entityValue: string;
+      mentionCount: number;
+    }[]
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    const values: unknown[] = [];
+    const placeholders: string[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i]!;
+      const off = i * 5;
+      placeholders.push(`($${off + 1}, $${off + 2}, $${off + 3}, $${off + 4}, $${off + 5})`);
+      values.push(r.conversationId, r.personalityId, r.entityType, r.entityValue, r.mentionCount);
+    }
+    await this.pool.query(
+      `INSERT INTO analytics.conversation_entities
+         (conversation_id, personality_id, entity_type, entity_value, mention_count)
+       VALUES ${placeholders.join(', ')}
+       ON CONFLICT DO NOTHING`,
+      values
+    );
+  }
+
   async getEntitiesByConversation(conversationId: string): Promise<ConversationEntityRow[]> {
     const { rows } = await this.pool.query<ConversationEntityRow>(
       `SELECT * FROM analytics.conversation_entities
@@ -335,6 +389,34 @@ export class AnalyticsStorage {
        ON CONFLICT (personality_id, phrase, window_start)
        DO UPDATE SET frequency = EXCLUDED.frequency, updated_at = NOW()`,
       [row.personalityId, row.phrase, row.frequency, row.windowStart, row.windowEnd]
+    );
+  }
+
+  async upsertKeyPhraseBatch(
+    rows: {
+      personalityId: string;
+      phrase: string;
+      frequency: number;
+      windowStart: string;
+      windowEnd: string;
+    }[]
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    const values: unknown[] = [];
+    const placeholders: string[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i]!;
+      const off = i * 5;
+      placeholders.push(`($${off + 1}, $${off + 2}, $${off + 3}, $${off + 4}, $${off + 5}, NOW())`);
+      values.push(r.personalityId, r.phrase, r.frequency, r.windowStart, r.windowEnd);
+    }
+    await this.pool.query(
+      `INSERT INTO analytics.key_phrases
+         (personality_id, phrase, frequency, window_start, window_end, updated_at)
+       VALUES ${placeholders.join(', ')}
+       ON CONFLICT (personality_id, phrase, window_start)
+       DO UPDATE SET frequency = EXCLUDED.frequency, updated_at = NOW()`,
+      values
     );
   }
 

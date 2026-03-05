@@ -107,7 +107,9 @@ function auditLog(
       scope: buildScope(resource),
       result: { success, action, error },
     })
-    .catch(() => {});
+    .catch(() => {
+      /* fire-and-forget audit; caller logged the primary action */
+    });
 }
 
 /** Fire-and-forget training bridge record */
@@ -119,7 +121,9 @@ function bridgeRecord(
   actionValue: string
 ): void {
   if (!bridge) return;
-  bridge.recordAction({ sessionId, actionType, actionTarget, actionValue }).catch(() => {});
+  bridge.recordAction({ sessionId, actionType, actionTarget, actionValue }).catch(() => {
+    /* fire-and-forget training bridge; non-critical */
+  });
 }
 
 export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesOpts): void {

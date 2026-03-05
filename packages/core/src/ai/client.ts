@@ -49,6 +49,8 @@ import type { RetryConfig } from './retry-manager.js';
 import type { SoulManager } from '../soul/manager.js';
 import type { ProviderHealthTracker } from './provider-health.js';
 import type { TeeAttestationVerifier } from '../security/tee-attestation.js';
+import { getTracer } from '../telemetry/otel.js';
+import { SpanStatusCode } from '@opentelemetry/api';
 
 export interface AIClientConfig {
   model: ModelConfig;
@@ -101,7 +103,9 @@ export class AIClient {
   private readonly retryConfig?: Partial<RetryConfig>;
   private readonly responseCache: ResponseCache | null;
   private soulManager: SoulManager | null;
-  private readonly providerAccountManager: import('./provider-account-manager.js').ProviderAccountManager | null;
+  private readonly providerAccountManager:
+    | import('./provider-account-manager.js').ProviderAccountManager
+    | null;
   private readonly healthTracker: ProviderHealthTracker | null;
   private readonly teeVerifier: TeeAttestationVerifier | null;
   private resolvedAccountId: string | null = null;
@@ -493,7 +497,8 @@ export class AIClient {
       fallbacks: [],
       responseCache: this.primaryModelConfig.responseCache,
       localFirst: this.primaryModelConfig.localFirst,
-      confidentialCompute: fbConfig.confidentialCompute ?? this.primaryModelConfig.confidentialCompute,
+      confidentialCompute:
+        fbConfig.confidentialCompute ?? this.primaryModelConfig.confidentialCompute,
     };
 
     const provider = this.createProvider({ model: fullModelConfig, retryConfig: this.retryConfig });
@@ -508,7 +513,7 @@ export class AIClient {
   }
 
   /**
-   * Execute a non-streaming chat call against a specific provider, with audit and usage tracking.
+   * Execute a non-streaming chat call against a specific provider, with audit, usage tracking, and OTel span.
    */
   private async doChatWithProvider(
     provider: AIProvider,
@@ -517,53 +522,80 @@ export class AIClient {
     context?: Record<string, unknown>
   ): Promise<AIResponse> {
     this.verifyTeeCompliance(providerName);
-    const startTime = Date.now();
+    const tracer = getTracer('secureyeoman.ai');
+    const model = request.model ?? 'default';
 
-    await this.auditRecord('ai_request', {
-      provider: providerName,
-      model: request.model ?? 'default',
-      messageCount: request.messages.length,
-      hasTools: !!request.tools?.length,
-      stream: false,
-      ...(context ?? {}),
-    });
+    return tracer.startActiveSpan(`ai.chat ${providerName}/${model}`, async (span) => {
+      span.setAttribute('ai.provider', providerName);
+      span.setAttribute('ai.model', model);
+      span.setAttribute('ai.stream', false);
+      span.setAttribute('ai.message_count', request.messages.length);
+      if (request.tools?.length) span.setAttribute('ai.tool_count', request.tools.length);
 
-    try {
-      const response = await provider.chat(request);
-      const elapsed = Date.now() - startTime;
+      const startTime = Date.now();
 
-      this.healthTracker?.recordRequest(providerName, true, elapsed);
-      await this.trackUsage(response, elapsed);
-
-      await this.auditRecord('ai_response', {
-        provider: response.provider,
-        model: response.model,
-        stopReason: response.stopReason,
-        inputTokens: response.usage.inputTokens,
-        outputTokens: response.usage.outputTokens,
-        cachedTokens: response.usage.cachedTokens,
-        latencyMs: elapsed,
-      });
-
-      return response;
-    } catch (error) {
-      const elapsed = Date.now() - startTime;
-      this.healthTracker?.recordRequest(providerName, false, elapsed);
-      this.usageTracker.recordError(providerName, request.model ?? 'default');
-      this.usageTracker.recordLatency(elapsed);
-
-      await this.auditRecord('ai_error', {
+      await this.auditRecord('ai_request', {
         provider: providerName,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        latencyMs: elapsed,
+        model,
+        messageCount: request.messages.length,
+        hasTools: !!request.tools?.length,
+        stream: false,
+        ...(context ?? {}),
       });
 
-      throw error;
-    }
+      try {
+        const response = await provider.chat(request);
+        const elapsed = Date.now() - startTime;
+
+        span.setAttribute('ai.latency_ms', elapsed);
+        span.setAttribute('ai.input_tokens', response.usage.inputTokens);
+        span.setAttribute('ai.output_tokens', response.usage.outputTokens);
+        span.setAttribute('ai.total_tokens', response.usage.totalTokens);
+        span.setAttribute('ai.stop_reason', response.stopReason ?? 'unknown');
+        span.setStatus({ code: SpanStatusCode.OK });
+
+        this.healthTracker?.recordRequest(providerName, true, elapsed);
+        await this.trackUsage(response, elapsed);
+
+        await this.auditRecord('ai_response', {
+          provider: response.provider,
+          model: response.model,
+          stopReason: response.stopReason,
+          inputTokens: response.usage.inputTokens,
+          outputTokens: response.usage.outputTokens,
+          cachedTokens: response.usage.cachedTokens,
+          latencyMs: elapsed,
+        });
+
+        span.end();
+        return response;
+      } catch (error) {
+        const elapsed = Date.now() - startTime;
+        span.setAttribute('ai.latency_ms', elapsed);
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: error instanceof Error ? error.message : 'Unknown',
+        });
+        span.recordException(error instanceof Error ? error : new Error(String(error)));
+
+        this.healthTracker?.recordRequest(providerName, false, elapsed);
+        this.usageTracker.recordError(providerName, model);
+        this.usageTracker.recordLatency(elapsed);
+
+        await this.auditRecord('ai_error', {
+          provider: providerName,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          latencyMs: elapsed,
+        });
+
+        span.end();
+        throw error;
+      }
+    });
   }
 
   /**
-   * Execute a streaming chat call against a specific provider, with audit and usage tracking.
+   * Execute a streaming chat call against a specific provider, with audit, usage tracking, and OTel span.
    */
   private async *doChatStreamWithProvider(
     provider: AIProvider,
@@ -572,11 +604,23 @@ export class AIClient {
     context?: Record<string, unknown>
   ): AsyncGenerator<AIStreamChunk, void, unknown> {
     this.verifyTeeCompliance(providerName);
+    const tracer = getTracer('secureyeoman.ai');
+    const model = request.model ?? 'default';
+    const span = tracer.startSpan(`ai.chat.stream ${providerName}/${model}`, {
+      attributes: {
+        'ai.provider': providerName,
+        'ai.model': model,
+        'ai.stream': true,
+        'ai.message_count': request.messages.length,
+      },
+    });
+    if (request.tools?.length) span.setAttribute('ai.tool_count', request.tools.length);
+
     const startTime = Date.now();
 
     await this.auditRecord('ai_stream_request', {
       provider: providerName,
-      model: request.model ?? 'default',
+      model,
       messageCount: request.messages.length,
       hasTools: !!request.tools?.length,
       stream: true,
@@ -590,6 +634,12 @@ export class AIClient {
         // Track usage from the final 'done' or 'usage' chunks
         if (chunk.type === 'done' && chunk.usage) {
           const elapsed = Date.now() - startTime;
+          span.setAttribute('ai.latency_ms', elapsed);
+          span.setAttribute('ai.input_tokens', chunk.usage.inputTokens);
+          span.setAttribute('ai.output_tokens', chunk.usage.outputTokens);
+          span.setAttribute('ai.total_tokens', chunk.usage.totalTokens);
+          span.setStatus({ code: SpanStatusCode.OK });
+
           const costUsd = this.costCalculator.calculate(
             providerName,
             request.model ?? provider.name,
@@ -602,7 +652,7 @@ export class AIClient {
 
           this.usageTracker.record({
             provider: providerName,
-            model: request.model ?? 'default',
+            model,
             usage: chunk.usage,
             costUsd,
             timestamp: Date.now(),
@@ -619,13 +669,23 @@ export class AIClient {
           });
         }
       }
+      span.end();
     } catch (error) {
-      this.usageTracker.recordError(providerName, request.model ?? 'default');
+      const elapsed = Date.now() - startTime;
+      span.setAttribute('ai.latency_ms', elapsed);
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: error instanceof Error ? error.message : 'Unknown',
+      });
+      span.recordException(error instanceof Error ? error : new Error(String(error)));
+      span.end();
+
+      this.usageTracker.recordError(providerName, model);
 
       await this.auditRecord('ai_stream_error', {
         provider: providerName,
         error: error instanceof Error ? error.message : 'Unknown error',
-        latencyMs: Date.now() - startTime,
+        latencyMs: elapsed,
       });
 
       throw error;
@@ -733,7 +793,9 @@ export class AIClient {
           costUsd,
           requestId: response.id,
         })
-        .catch(() => {});
+        .catch((e: unknown) => {
+          this.logger?.debug('Provider account cost recording failed', { error: String(e) });
+        });
     }
   }
 

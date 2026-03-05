@@ -75,7 +75,9 @@ export class AthiManager {
               },
             },
           };
-          alertMgr.evaluate(snapshot as any).catch(() => {});
+          alertMgr.evaluate(snapshot as any).catch((e: unknown) => {
+            this.logger.debug('ATHI alert evaluation failed', { error: String(e) });
+          });
         }
       } catch {
         // non-fatal
@@ -151,10 +153,7 @@ export class AthiManager {
 
   async generateExecutiveSummary(orgId?: string): Promise<AthiExecutiveSummary> {
     const now = Date.now();
-    if (
-      this._summaryCache &&
-      now - this._summaryCacheAt < AthiManager.SUMMARY_CACHE_TTL_MS
-    ) {
+    if (this._summaryCache && now - this._summaryCacheAt < AthiManager.SUMMARY_CACHE_TTL_MS) {
       return this._summaryCache;
     }
 
@@ -169,9 +168,7 @@ export class AthiManager {
     const totalScenarios = Object.values(byStatus).reduce((a, b) => a + b, 0);
     const avgScore =
       topRisks.length > 0
-        ? Number(
-            (topRisks.reduce((sum, s) => sum + s.riskScore, 0) / topRisks.length).toFixed(1)
-          )
+        ? Number((topRisks.reduce((sum, s) => sum + s.riskScore, 0) / topRisks.length).toFixed(1))
         : 0;
 
     const summary: AthiExecutiveSummary = {

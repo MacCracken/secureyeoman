@@ -170,10 +170,19 @@ export class BrainManager {
 
     // Salience classification (fire-and-forget, best-effort)
     if (this.salienceEnabled) {
-      void this.deps.salienceClassifier!.classify(content).then((scores) => {
-        // Store composite salience as metadata for future retrieval boosting
-        void this.storage.setMeta(`salience:${memory.id}`, JSON.stringify(scores)).catch(() => {});
-      }).catch(() => {});
+      void this.deps
+        .salienceClassifier!.classify(content)
+        .then((scores) => {
+          // Store composite salience as metadata for future retrieval boosting
+          void this.storage
+            .setMeta(`salience:${memory.id}`, JSON.stringify(scores))
+            .catch((e: unknown) => {
+              this.deps.logger.debug('Salience meta write failed', { error: String(e) });
+            });
+        })
+        .catch((e: unknown) => {
+          this.deps.logger.debug('Salience classification failed', { error: String(e) });
+        });
     }
 
     return memory;
@@ -186,12 +195,16 @@ export class BrainManager {
 
     // Feed context retriever with the query for trajectory tracking
     if (this.contextRetrievalEnabled && query.search) {
-      void this.deps.contextRetriever!.addMessage(query.search).catch(() => {});
+      void this.deps.contextRetriever!.addMessage(query.search).catch((e: unknown) => {
+        this.deps.logger.debug('Context retriever addMessage failed', { error: String(e) });
+      });
     }
 
     // Record query in working memory for predictive pre-fetch
     if (this.workingMemoryEnabled && query.search) {
-      void this.deps.workingMemoryBuffer!.recordQuery(query.search).catch(() => {});
+      void this.deps.workingMemoryBuffer!.recordQuery(query.search).catch((e: unknown) => {
+        this.deps.logger.debug('Working memory recordQuery failed', { error: String(e) });
+      });
     }
 
     // Resolve personality scope once — used by both vector and text paths.
@@ -235,9 +248,7 @@ export class BrainManager {
               merged.set(r.id, (merged.get(r.id) ?? 0) + 1 / (60 + i + 1));
             });
             const sortedIds = [...merged.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
-            const resultMap = new Map(
-              [...fusedResults, ...rawResults].map((r) => [r.id, r])
-            );
+            const resultMap = new Map([...fusedResults, ...rawResults].map((r) => [r.id, r]));
             vectorResults = sortedIds.slice(0, limit).map((id) => {
               const orig = resultMap.get(id);
               return { id, score: orig?.score ?? 0, metadata: orig?.metadata };
@@ -337,7 +348,9 @@ export class BrainManager {
         ranked.map((m) => ({ id: m.id, content: m.content, score: m.importance }))
       );
       // Fire predictive pre-fetch in background
-      void this.deps.workingMemoryBuffer!.predictAndPrefetch().catch(() => {});
+      void this.deps.workingMemoryBuffer!.predictAndPrefetch().catch((e: unknown) => {
+        this.deps.logger.debug('Working memory prefetch failed', { error: String(e) });
+      });
     }
 
     return ranked;
@@ -353,7 +366,9 @@ export class BrainManager {
     }
     // Remove salience metadata (best-effort)
     if (this.salienceEnabled) {
-      void this.storage.deleteMeta(`salience:${id}`).catch(() => {});
+      void this.storage.deleteMeta(`salience:${id}`).catch((e: unknown) => {
+        this.deps.logger.debug('Salience meta delete failed', { error: String(e) });
+      });
     }
     if (this.vectorEnabled) {
       try {
@@ -455,7 +470,9 @@ export class BrainManager {
         await this.deps.vectorMemoryManager!.removeKnowledge(id);
         await this.deps.vectorMemoryManager!.indexKnowledge(entry);
       } catch (err) {
-        this.deps.logger.warn('Failed to re-index updated knowledge in vector store', { error: String(err) });
+        this.deps.logger.warn('Failed to re-index updated knowledge in vector store', {
+          error: String(err),
+        });
       }
     }
     return entry;
@@ -714,7 +731,9 @@ export class BrainManager {
   async incrementSkillUsage(skillId: string): Promise<void> {
     await this.storage.incrementUsage(skillId);
     if (this.cognitiveEnabled) {
-      void this.deps.cognitiveStorage!.recordSkillAccess(skillId).catch(() => {});
+      void this.deps.cognitiveStorage!.recordSkillAccess(skillId).catch((e: unknown) => {
+        this.deps.logger.debug('Cognitive skill access recording failed', { error: String(e) });
+      });
     }
   }
 
@@ -920,9 +939,7 @@ export class BrainManager {
   // ── Cognitive Memory ──────────────────────────────────────
 
   private get cognitiveEnabled(): boolean {
-    return (
-      this.deps.cognitiveStorage != null && (this.config.cognitiveMemory?.enabled ?? false)
-    );
+    return this.deps.cognitiveStorage != null && (this.config.cognitiveMemory?.enabled ?? false);
   }
 
   /**

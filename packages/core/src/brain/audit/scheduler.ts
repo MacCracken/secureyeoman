@@ -56,16 +56,17 @@ export class MemoryAuditScheduler {
     }
 
     // Load persisted schedules
-    void this.loadSchedules().catch(() => {});
+    void this.loadSchedules().catch((e: unknown) => {
+      this.logger.warn('Failed to load audit schedules', { error: String(e) });
+    });
 
-    this.schedulerTimer = setInterval(
-      () => {
-        this.checkSchedules();
-      },
-      60 * 1000
-    );
+    this.schedulerTimer = setInterval(() => {
+      this.checkSchedules();
+    }, 60 * 1000);
 
-    this.logger.info('Memory audit scheduler started', { schedules: JSON.stringify(this.schedules) });
+    this.logger.info('Memory audit scheduler started', {
+      schedules: JSON.stringify(this.schedules),
+    });
   }
 
   stop(): void {

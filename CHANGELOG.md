@@ -40,6 +40,30 @@ Applied 24 fixes across 11 files:
 - **DoS Prevention**: Webhook/CI/CD fetch timeouts (`AbortSignal`), response body truncation, subworkflow depth limit (10).
 - **Bug**: `utils/id.ts` was returning v4 UUIDs instead of v7 — re-exported from `crypto.ts`.
 
+### Codebase Sweep: Binary Size, Performance & Observability
+
+**Binary size reduction:**
+- Lazy dynamic `import()` for all 31 integration adapters (`integration-module.ts`) — modules only loaded when platform is first used, eliminating ~2 MB of unused adapter code from startup.
+- `better-sqlite3` externalized from Bun binary build (`--external "better-sqlite3"`) — removes 27 MB native addon.
+- `pino-pretty` moved from dependencies to optionalDependencies.
+- Removed unused npm packages: `@open-policy-agent/opa`, `undici`, `uuid`, `@types/uuid`.
+- Bun binary detection (`import.meta.url.includes('/$bunfs/')`) in `crypto-pool.ts` and `logger.ts` to skip worker thread spawning that crashes in compiled binaries.
+
+**Performance:**
+- **Batch analytics inserts** (`analytics-storage.ts`): New `insertSentimentBatch()`, `upsertEntityBatch()`, `upsertKeyPhraseBatch()` methods using multi-row `VALUES` with `ON CONFLICT`. `SentimentAnalyzer` and `EntityExtractor` updated to collect results and issue single batch writes instead of N+1 per-row inserts.
+- **RRF merge optimization** (`brain/manager.ts`): Replaced O(n²) `.find()` loop in Reciprocal Rank Fusion with O(n) `Map`-based lookup.
+- **Brain query hard limit** (`brain/storage.ts`): `queryMemories()` and knowledge queries capped at `MAX_QUERY_LIMIT = 1_000` (was uncapped 10,000 default).
+- **FTS indexes** (migration `009_brain_fts_indexes.sql`): GIN `to_tsvector('english', content)` indexes on `brain.memories` and `brain.knowledge`.
+
+**Security hardening:**
+- **SSO redirect URI whitelist** (`gateway/sso-routes.ts`): Redirect URI validated against dashboard origin — open-redirect blocked.
+- **Webhook fetch timeout** (`outbound-webhook-dispatcher.ts`): `AbortSignal.timeout(10_000)` on all outbound webhook POSTs.
+- **OAuth state cleanup** (`gateway/oauth-routes.ts`): Periodic sweep of expired OAuth states + LRU eviction cap (1,000 entries).
+
+**Observability — silent `.catch()` hardening:**
+- Added `debug`/`warn` logging to 20 silent `.catch(() => {})` handlers across 13 production files (brain/manager, federation-manager, ai-module, platform-module, ai/client, sra-manager, athi-manager, audit/scheduler, consolidation/manager, outbound-webhook-dispatcher).
+- Clarifying comments added to intentionally silent catches (desktop-routes audit, gateway usage recording, usage-tracker error path).
+
 ### Sandbox Enhancements
 
 - **GVisor Sandbox** (`sandbox/gvisor-sandbox.ts`): gVisor (`runsc`) based sandbox execution with hardware-level isolation via userspace syscall interception. OCI runtime container creation, configurable memory/CPU limits, filesystem restrictions, network policy. Linux-only with auto-fallback to NoopSandbox when `runsc` is unavailable.
@@ -55,6 +79,14 @@ Applied 24 fixes across 11 files:
 - **AIClient integration** (`ai/client.ts`): Optional `teeVerifier` dependency. `verifyTeeCompliance()` called before every `doChatWithProvider()` and `doChatStreamWithProvider()`. Model-level `confidentialCompute` overrides security-level config. Non-compliant providers throw `ProviderUnavailableError`, triggering fallback chain.
 - **ModelRouter TEE filtering** (`ai/model-router.ts`): `confidentialCompute` option added to `RouterOptions`. When `'required'`, filters out non-TEE-compliant providers before tier selection. Optional `teeVerifier` constructor parameter.
 - **Tests**: 26 TEE attestation tests (verify with all config combos, caching, TTL, provider queries, failure actions). All 129 related tests passing.
+
+### Observability & Telemetry Enhancements
+
+- **Latency histogram ring buffer** (`ai/usage-tracker.ts`): `LatencyRingBuffer` backed by `Float64Array` (capacity 1,000) replaces the single avg-latency gauge. Computes p50/p95/p99 percentiles on demand via sort-based selection. `UsageStats` gains `apiLatencyPercentiles` field. Zero allocation in steady state.
+- **Prometheus summary metric** (`gateway/prometheus.ts`): New `friday_api_latency_ms` summary with `quantile="0.5"`, `0.95`, `0.99` labels in OpenMetrics format. Replaces the single average gauge.
+- **AI completion OTel spans** (`ai/client.ts`): Every `doChatWithProvider()` and `doChatStreamWithProvider()` call wrapped in an OpenTelemetry span (`ai.chat <provider>/<model>`). Attributes: `ai.provider`, `ai.model`, `ai.stream`, `ai.message_count`, `ai.tool_count`, `ai.latency_ms`, `ai.input_tokens`, `ai.output_tokens`, `ai.total_tokens`, `ai.stop_reason`. Stream variant uses manual `startSpan()` for async generator compatibility.
+- **MCP tool call OTel spans** (`mcp/client.ts`): `callTool()` wrapped in `mcp.tool <toolName>` span. Attributes: `mcp.tool_name`, `mcp.server_id`, `mcp.server_name`, `mcp.latency_ms`. Error status set on failure.
+- **Shared metrics schema** (`shared/types/metrics.ts`): `apiLatencyP50Ms`, `apiLatencyP95Ms`, `apiLatencyP99Ms` fields added to `ResourceMetrics` (default 0, backward-compatible).
 
 ### Security Gap Fixes
 

@@ -105,7 +105,9 @@ export class FederationManager {
     });
 
     // Fire-and-forget health check
-    void this.checkHealth(peer.id).catch(() => {});
+    void this.checkHealth(peer.id).catch((e: unknown) => {
+      this.logger.debug('Initial peer health check failed', { peerId: peer.id, error: String(e) });
+    });
 
     return peer;
   }
@@ -358,7 +360,9 @@ export class FederationManager {
           knowledgeCount: knowledgeEntries.length,
         },
       })
-      .catch(() => {});
+      .catch((e: unknown) => {
+        this.logger.debug('Federation sync log failed', { error: String(e) });
+      });
 
     return created;
   }

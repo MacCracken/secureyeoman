@@ -504,9 +504,9 @@ describe('sanitizeForLogging — JWT and DB connection string redaction', () => 
   });
 
   it('redacts MongoDB connection strings', () => {
-    const connStr = 'mongodb+srv://user:pass@cluster0.abc.mongodb.net/db';
+    const connStr = 'mongodb+srv://testuser:testpw@localhost:27017/testdb';
     const result = sanitizeForLogging(connStr);
-    expect(result).toBe('mongodb+srv://[REDACTED]@cluster0.abc.mongodb.net/db');
-    expect(result).not.toContain('user:pass');
+    expect(result).toBe('mongodb+srv://[REDACTED]@localhost:27017/testdb');
+    expect(result).not.toContain('testuser:testpw');
   });
 });

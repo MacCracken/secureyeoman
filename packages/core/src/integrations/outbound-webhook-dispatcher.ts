@@ -126,7 +126,9 @@ export class OutboundWebhookDispatcher {
         lastStatus = response.status;
 
         if (response.ok) {
-          await this.storage.recordSuccess(wh.id, lastStatus).catch(() => {});
+          await this.storage.recordSuccess(wh.id, lastStatus).catch((e: unknown) => {
+            this.logger.debug('Webhook success recording failed', { error: String(e) });
+          });
           this.logger.debug(
             `OutboundWebhookDispatcher: delivered ${payload.event} to ${wh.url} (${lastStatus})`
           );
@@ -147,7 +149,9 @@ export class OutboundWebhookDispatcher {
     }
 
     // All retries exhausted
-    await this.storage.recordFailure(wh.id, lastStatus).catch(() => {});
+    await this.storage.recordFailure(wh.id, lastStatus).catch((e: unknown) => {
+      this.logger.debug('Webhook failure recording failed', { error: String(e) });
+    });
     this.logger.error(
       `OutboundWebhookDispatcher: all retries exhausted for ${wh.url} (event ${payload.event})`
     );

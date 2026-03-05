@@ -65,6 +65,11 @@ export const ResourceMetricsSchema = z.object({
   apiCallsTotal: z.number().int().nonnegative(),
   apiErrorsTotal: z.number().int().nonnegative(),
   apiLatencyAvgMs: z.number().nonnegative(),
+
+  // API latency percentiles (from in-memory ring buffer)
+  apiLatencyP50Ms: z.number().nonnegative().default(0),
+  apiLatencyP95Ms: z.number().nonnegative().default(0),
+  apiLatencyP99Ms: z.number().nonnegative().default(0),
 });
 
 export type ResourceMetrics = z.infer<typeof ResourceMetricsSchema>;

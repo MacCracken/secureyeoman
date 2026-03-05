@@ -846,6 +846,9 @@ export class SecureYeoman {
           aiStats && aiStats.apiCallCount > 0
             ? aiStats.apiLatencyTotalMs / aiStats.apiCallCount
             : 0,
+        apiLatencyP50Ms: aiStats?.apiLatencyPercentiles?.p50 ?? 0,
+        apiLatencyP95Ms: aiStats?.apiLatencyPercentiles?.p95 ?? 0,
+        apiLatencyP99Ms: aiStats?.apiLatencyPercentiles?.p99 ?? 0,
       },
       security: {
         authAttemptsTotal: authStats.authAttemptsTotal,

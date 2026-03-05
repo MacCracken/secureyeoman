@@ -32,6 +32,13 @@ export interface UsageRecord {
   latencyMs?: number;
 }
 
+export interface LatencyPercentiles {
+  p50: number;
+  p95: number;
+  p99: number;
+  count: number;
+}
+
 export interface UsageStats {
   inputTokensToday: number;
   outputTokensToday: number;
@@ -44,6 +51,8 @@ export interface UsageStats {
   apiLatencyTotalMs: number;
   /** Number of calls for which latency was measured (denominator for avg). */
   apiCallCount: number;
+  /** Latency percentiles computed from the in-memory ring buffer. */
+  apiLatencyPercentiles: LatencyPercentiles;
   byProvider: Record<string, ProviderStats>;
 }
 
@@ -60,6 +69,34 @@ function dayKey(ts: number): string {
   return new Date(ts).toISOString().slice(0, 10);
 }
 
+/**
+ * Fixed-size ring buffer for computing latency percentiles without unbounded memory.
+ * Stores the most recent N latency samples and computes p50/p95/p99 on demand.
+ */
+class LatencyRingBuffer {
+  private readonly buf: Float64Array;
+  private pos = 0;
+  private count = 0;
+
+  constructor(capacity = 1000) {
+    this.buf = new Float64Array(capacity);
+  }
+
+  push(ms: number): void {
+    this.buf[this.pos] = ms;
+    this.pos = (this.pos + 1) % this.buf.length;
+    if (this.count < this.buf.length) this.count++;
+  }
+
+  percentiles(): LatencyPercentiles {
+    if (this.count === 0) return { p50: 0, p95: 0, p99: 0, count: 0 };
+    const slice = Array.from(this.buf.subarray(0, this.count));
+    slice.sort((a, b) => a - b);
+    const p = (q: number) => slice[Math.min(Math.floor(q * slice.length), slice.length - 1)]!;
+    return { p50: p(0.5), p95: p(0.95), p99: p(0.99), count: this.count };
+  }
+}
+
 export class UsageTracker {
   /** In-memory records for today only — kept bounded by day-rollover trimming. */
   private readonly todayRecords: UsageRecord[] = [];
@@ -71,6 +108,9 @@ export class UsageTracker {
   private apiErrorsTotal = 0;
   private apiLatencyTotalMs = 0;
   private latencyCallCount = 0;
+
+  /** Ring buffer for recent latency samples — used for percentile computation. */
+  private readonly latencyRing = new LatencyRingBuffer(1000);
 
   // Pre-aggregated stats seeded from DB on init() and kept up-to-date via record()
   private monthCostUsd = 0;
@@ -160,6 +200,7 @@ export class UsageTracker {
     if (record.latencyMs !== undefined) {
       this.apiLatencyTotalMs += record.latencyMs;
       this.latencyCallCount++;
+      this.latencyRing.push(record.latencyMs);
     }
     if (this.storage) {
       // Fire-and-forget — never block the AI call on DB I/O
@@ -177,6 +218,7 @@ export class UsageTracker {
   recordLatency(ms: number): void {
     this.apiLatencyTotalMs += ms;
     this.latencyCallCount++;
+    this.latencyRing.push(ms);
   }
 
   /**
@@ -187,7 +229,9 @@ export class UsageTracker {
     this.apiErrorsTotal++;
     this.apiCallsTotal++;
     if (this.storage) {
-      void this.storage.insertError(provider, model, Date.now()).catch(() => {});
+      void this.storage.insertError(provider, model, Date.now()).catch(() => {
+        // Swallow: we're already in an error-recording path; logging here would be noise
+      });
     }
   }
 
@@ -265,6 +309,7 @@ export class UsageTracker {
       apiErrorsTotal: this.apiErrorsTotal,
       apiLatencyTotalMs: this.apiLatencyTotalMs,
       apiCallCount: this.latencyCallCount,
+      apiLatencyPercentiles: this.latencyRing.percentiles(),
       byProvider: this.providerStats,
     };
   }

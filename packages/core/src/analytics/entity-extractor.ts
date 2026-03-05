@@ -50,26 +50,26 @@ export class EntityExtractor {
         const result = await this.extractFromMessages(messages);
         const now = new Date().toISOString();
 
-        for (const entity of result.entities) {
-          await this.storage.upsertEntity({
+        await this.storage.upsertEntityBatch(
+          result.entities.map((entity) => ({
             conversationId: conv.id,
             personalityId: conv.personality_id,
             entityType: entity.type,
             entityValue: entity.value,
             mentionCount: entity.mentionCount,
-          });
-        }
+          }))
+        );
 
         if (conv.personality_id) {
-          for (const kp of result.keyPhrases) {
-            await this.storage.upsertKeyPhrase({
-              personalityId: conv.personality_id,
+          await this.storage.upsertKeyPhraseBatch(
+            result.keyPhrases.map((kp) => ({
+              personalityId: conv.personality_id!,
               phrase: kp.phrase,
               frequency: kp.frequency,
               windowStart: now,
               windowEnd: now,
-            });
-          }
+            }))
+          );
         }
 
         extracted++;

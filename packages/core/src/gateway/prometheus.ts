@@ -79,6 +79,12 @@ export function formatPrometheusMetrics(metrics: Partial<MetricsSnapshot>): stri
     lines.push('# HELP friday_api_latency_avg_ms Average API latency in ms');
     lines.push('# TYPE friday_api_latency_avg_ms gauge');
     lines.push(`friday_api_latency_avg_ms ${r.apiLatencyAvgMs.toFixed(2)}`);
+
+    lines.push('# HELP friday_api_latency_ms API latency percentiles in milliseconds');
+    lines.push('# TYPE friday_api_latency_ms summary');
+    lines.push(`friday_api_latency_ms{quantile="0.5"} ${(r.apiLatencyP50Ms ?? 0).toFixed(2)}`);
+    lines.push(`friday_api_latency_ms{quantile="0.95"} ${(r.apiLatencyP95Ms ?? 0).toFixed(2)}`);
+    lines.push(`friday_api_latency_ms{quantile="0.99"} ${(r.apiLatencyP99Ms ?? 0).toFixed(2)}`);
   }
 
   // ── Security Metrics ─────────────────────────────────────
