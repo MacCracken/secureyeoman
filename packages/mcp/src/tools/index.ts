@@ -43,6 +43,7 @@ import { registerNorthflankTools } from './northflank-tools.js';
 import { registerSraTools } from './sra-tools.js';
 import { registerExcalidrawTools } from './excalidraw-tools.js';
 import { registerPdfTools } from './pdf-tools.js';
+import { registerChartTools } from './chart-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -100,4 +101,6 @@ export async function registerAllTools(
   registerExcalidrawTools(server, config, middleware);
   // PDF analysis tools (Phase 122-A)
   registerPdfTools(server, client, config, middleware);
+  // Financial charting tools (Phase 125)
+  registerChartTools(server, config, middleware);
 }

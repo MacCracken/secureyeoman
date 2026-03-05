@@ -930,5 +930,47 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'trading_journal_log',
       description: 'Log a completed trade to the trading journal with P&L calculation',
     },
+
+    // Financial charting tools (Phase 125)
+    {
+      name: 'chart_candlestick',
+      description:
+        'Generate OHLCV candlestick chart SVG with optional volume bars and moving averages',
+    },
+    {
+      name: 'chart_line',
+      description:
+        'Generate multi-series line chart SVG for price trends and time series',
+    },
+    {
+      name: 'chart_bar',
+      description:
+        'Generate grouped or stacked bar chart SVG for comparisons and allocations',
+    },
+    {
+      name: 'chart_pie',
+      description:
+        'Generate pie or donut chart SVG for portfolio allocation and distributions',
+    },
+    {
+      name: 'chart_scatter',
+      description:
+        'Generate scatter plot SVG for risk vs return and correlation analysis',
+    },
+    {
+      name: 'chart_waterfall',
+      description:
+        'Generate waterfall chart SVG for P&L breakdown and synergy bridges',
+    },
+    {
+      name: 'chart_heatmap',
+      description:
+        'Generate correlation matrix heatmap SVG for asset correlations',
+    },
+    {
+      name: 'chart_sparkline',
+      description:
+        'Generate compact inline sparkline SVG for quick trend indicators',
+    },
   ];
 }

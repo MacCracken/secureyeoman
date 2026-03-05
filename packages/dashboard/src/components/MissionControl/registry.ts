@@ -10,7 +10,8 @@ export type MissionCardId =
   | 'audit-stream'
   | 'system-topology'
   | 'cost-breakdown'
-  | 'agent-world';
+  | 'agent-world'
+  | 'financial-charts';
 
 export interface CardDef {
   id: MissionCardId;
@@ -119,5 +120,13 @@ export const CARD_REGISTRY: readonly CardDef[] = [
     defaultVisible: false,
     minColSpan: 12,
     defaultColSpan: 12,
+  },
+  {
+    id: 'financial-charts',
+    label: 'Financial Charts',
+    description: 'Candlestick and portfolio allocation charts',
+    defaultVisible: false,
+    minColSpan: 6,
+    defaultColSpan: 6,
   },
 ];

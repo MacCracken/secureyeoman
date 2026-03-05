@@ -67,4 +67,18 @@ export const veteranFinancialManagerSkill: Partial<MarketplaceSkill> = {
     'Bear/bull case analysis with explicit risk/reward ratio, position sizing guidance, and contrarian insight',
   routing: 'fuzzy',
   autonomyLevel: 'L1',
+  mcpToolsAllowed: [
+    'chart_candlestick',
+    'chart_line',
+    'chart_bar',
+    'chart_pie',
+    'chart_scatter',
+    'chart_waterfall',
+    'chart_heatmap',
+    'chart_sparkline',
+    'market_quote',
+    'market_historical',
+    'market_search',
+    'trading_journal_log',
+  ],
 };

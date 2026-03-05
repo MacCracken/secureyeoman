@@ -107,6 +107,8 @@ export const McpFeaturesSchema = z
     exposePdfAdvanced: z.boolean().default(false),
     /** Cognitive memory tools (memory_activation_stats, memory_associations). Requires global exposeCognitiveMemory. */
     exposeCognitiveMemory: z.boolean().default(false),
+    /** Financial charting tools (chart_*). Requires global exposeCharting. */
+    exposeCharting: z.boolean().default(false),
   })
   .default({});
 

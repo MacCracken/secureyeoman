@@ -18,7 +18,9 @@ for pkg in \
   "$ROOT/packages/core/package.json" \
   "$ROOT/packages/shared/package.json" \
   "$ROOT/packages/dashboard/package.json" \
-  "$ROOT/packages/mcp/package.json"
+  "$ROOT/packages/mcp/package.json" \
+  "$ROOT/packages/desktop/package.json" \
+  "$ROOT/packages/mobile/package.json"
 do
   if [ -f "$pkg" ]; then
     node -e "
@@ -31,16 +33,7 @@ do
   fi
 done
 
-# 3. Bun binary fallback constant in version.ts
-VERSION_TS="$ROOT/packages/core/src/version.ts"
-if [ -f "$VERSION_TS" ]; then
-  node -e "
-    const fs = require('fs');
-    let content = fs.readFileSync('$VERSION_TS', 'utf-8');
-    content = content.replace(/const BAKED_VERSION = '[^']*';/, \"const BAKED_VERSION = '$NEW_VERSION';\");
-    fs.writeFileSync('$VERSION_TS', content);
-  "
-  echo "  updated packages/core/src/version.ts"
-fi
+# 3. version.ts reads from VERSION file and package.json at runtime/compile-time,
+#    no hardcoded constant to update.
 
 echo "All packages set to $NEW_VERSION"

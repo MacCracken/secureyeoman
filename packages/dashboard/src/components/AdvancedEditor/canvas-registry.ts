@@ -10,13 +10,14 @@ export type CanvasWidgetType =
   | 'cicd-monitor'
   | 'chat'
   | 'mission-card'
-  | 'excalidraw';
+  | 'excalidraw'
+  | 'trading-dashboard';
 
 export interface CanvasWidgetDef {
   type: CanvasWidgetType;
   label: string;
   description: string;
-  category: 'development' | 'ai-agents' | 'monitoring' | 'pipelines';
+  category: 'development' | 'ai-agents' | 'monitoring' | 'pipelines' | 'finance';
   defaultWidth: number;
   defaultHeight: number;
   singleton?: boolean;
@@ -119,6 +120,14 @@ export const CANVAS_WIDGET_REGISTRY: readonly CanvasWidgetDef[] = [
     defaultWidth: 640,
     defaultHeight: 480,
   },
+  {
+    type: 'trading-dashboard',
+    label: 'Trading Dashboard',
+    category: 'finance',
+    description: 'Candlestick chart with OHLC summary and symbol lookup',
+    defaultWidth: 640,
+    defaultHeight: 480,
+  },
 ];
 
 export const CATEGORY_LABELS: Record<CanvasWidgetDef['category'], string> = {
@@ -126,4 +135,5 @@ export const CATEGORY_LABELS: Record<CanvasWidgetDef['category'], string> = {
   'ai-agents': 'AI & Agents',
   monitoring: 'Monitoring',
   pipelines: 'Pipelines',
+  finance: 'Finance',
 };

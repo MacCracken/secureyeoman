@@ -75,6 +75,11 @@ vi.mock('./skills/index.js', () => ({
     author: 'YEOMAN',
     version: '2026.3.4',
   },
+  financialChartingSkill: {
+    name: 'Financial Charting',
+    author: 'YEOMAN',
+    version: '2026.3.4',
+  },
 }));
 
 // ─── Test Data ────────────────────────────────────────────────
@@ -418,7 +423,7 @@ describe('MarketplaceStorage', () => {
       const insertCalls = mockQuery.mock.calls.filter(
         (c: any[]) => typeof c[0] === 'string' && c[0].includes('INSERT INTO marketplace.skills')
       );
-      expect(insertCalls).toHaveLength(23);
+      expect(insertCalls).toHaveLength(24);
     });
 
     it('uses batch SELECT for existing builtins check', async () => {

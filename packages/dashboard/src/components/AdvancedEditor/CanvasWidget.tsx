@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   PenTool,
+  CandlestickChart as CandlestickIcon,
   X,
   Minus,
   Maximize2,
@@ -30,6 +31,7 @@ import { CicdMonitorWidget } from './widgets/CicdMonitorWidget';
 import { MissionCardNode } from './widgets/MissionCardNode';
 import { ChatWidget } from './widgets/ChatWidget';
 import { ExcalidrawWidget } from './widgets/ExcalidrawWidget';
+import { TradingDashboardWidget } from '../finance/TradingDashboardWidget';
 
 export interface CanvasWidgetConfig {
   worktreeId?: string;
@@ -70,6 +72,7 @@ const WIDGET_ICONS: Record<CanvasWidgetType, React.ReactNode> = {
   'mission-card': <LayoutDashboard className="w-3.5 h-3.5" />,
   chat: <MessageSquare className="w-3.5 h-3.5" />,
   excalidraw: <PenTool className="w-3.5 h-3.5" />,
+  'trading-dashboard': <CandlestickIcon className="w-3.5 h-3.5" />,
 };
 
 function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: string }) {
@@ -129,6 +132,13 @@ function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: strin
           onConfigChange={(cfg) =>
             onConfigChange?.({ ...config, ...cfg })
           }
+        />
+      );
+    case 'trading-dashboard':
+      return (
+        <TradingDashboardWidget
+          nodeId={nodeId}
+          onConfigChange={(cfg) => onConfigChange?.({ ...config, ...cfg })}
         />
       );
     default:

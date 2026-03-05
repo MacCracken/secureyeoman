@@ -30,6 +30,7 @@ import {
   excalidrawDiagramSkill,
   pdfAnalysisSkill,
   cognitiveMemoryAnalystSkill,
+  financialChartingSkill,
 } from './skills/index.js';
 
 export class MarketplaceStorage extends PgBaseStorage {
@@ -377,6 +378,7 @@ export class MarketplaceStorage extends PgBaseStorage {
       excalidrawDiagramSkill,
       pdfAnalysisSkill,
       cognitiveMemoryAnalystSkill,
+      financialChartingSkill,
     ];
 
     // Batch-fetch all existing builtins in one query instead of N individual SELECTs

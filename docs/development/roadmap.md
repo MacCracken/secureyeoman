@@ -50,8 +50,6 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| 120 | Community Skills Expansion | P2 — skill library breadth | ✅ Complete |
-| 125 | Strategic Trading Skills | P2 — trading analysis | ✅ Complete |
 | 126 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
@@ -292,4 +290,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-04 — Removed completed bugs/improvements: Security View fixes (Reports & Logs consolidation, System tab reorder, ATHI/Sandbox → Risk sub-tabs) and Organization page. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-04 — Removed completed phases: 120 (Community Skills Expansion), 125 (Strategic Trading Skills), 125-C (Advanced Financial Charting), 111 (Departmental Risk Register), God Object Decomposition (Phase 1+2), Security View fixes, Organization page, OAuth credential setup, Personality view bug fixes, 122-A/B (PDF Analysis), 124 (Cognitive Memory), 117 (Excalidraw Diagramming). See [Changelog](../../CHANGELOG.md) for full history.*

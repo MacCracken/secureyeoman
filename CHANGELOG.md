@@ -6,6 +6,19 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.4] — 2026-03-04
 
+### Phase 125-C: Advanced Financial Charting
+
+- **SVG Chart Engine** (`packages/mcp/src/tools/chart-scene.ts`): Pure-function SVG rendering with no DOM dependencies. 8 chart types: candlestick (OHLCV + SMA overlays + volume), line (multi-series, numeric/categorical X), bar (grouped/stacked, horizontal), pie/donut, scatter (trend line, axis labels), waterfall (P&L bridge with connectors), heatmap (correlation matrix), sparkline (compact inline). Includes `linearScale()`, `bandScale()`, `escapeXml()`, `hexToRgba()`, `niceTicks()` utilities.
+- **8 MCP charting tools** (`chart-tools.ts`): `chart_candlestick`, `chart_line`, `chart_bar`, `chart_pie`, `chart_scatter`, `chart_waterfall`, `chart_heatmap`, `chart_sparkline`. All gated by `exposeCharting` feature flag. Each returns `{ svg, data: {...metadata} }` as JSON.
+- **Feature flags**: `exposeCharting` added to `McpFeaturesSchema` (per-personality, default false) and `McpServiceConfigSchema` (global, default true).
+- **Marketplace skills**: New `Financial Charting` skill (24th builtin) with all 8 chart tools. `VeteranFinancialManager` updated with `mcpToolsAllowed` (12 tools: 8 chart + 4 trading).
+- **Workflow template**: `financial-analysis-pipeline` (6 steps: fetch → analyze → chart-price → chart-allocation → report → save). New `chartGenerationStep()` builder helper.
+- **5 Dashboard components** (`packages/dashboard/src/components/finance/`): `CandlestickChart.tsx` (Recharts ComposedChart + custom candle shapes + SMA lines + volume), `PortfolioAllocationChart.tsx` (PieChart donut), `RiskReturnScatter.tsx` (ScatterChart with bubble sizing), `WaterfallChart.tsx` (stacked BarChart), `TradingDashboardWidget.tsx` (canvas widget combining charts + symbol input + OHLC summary).
+- **Mission Control card**: `FinancialChartsCard.tsx` with candlestick/allocation toggle view. Added `'financial-charts'` to `MissionCardId` and `CARD_REGISTRY`.
+- **Canvas widget**: `'trading-dashboard'` type added to `CanvasWidgetType`, `CANVAS_WIDGET_REGISTRY` (finance category), `CanvasWidget.tsx` switch, with `CandlestickChart` icon.
+- **Manifest**: 8 chart tool entries added to `manifest.ts`.
+- **Tests**: 55 new tests (44 chart-scene + 11 chart-tools). All passing.
+
 ### Phase 125 Completion: Strategic Trading Skills
 
 - **6 new advanced trading skills** (Phase 125-B) in `secureyeoman-community-repo/skills/trading/`: Wyckoff Method Analyst (accumulation/distribution schematics, composite operator), Elliott Wave Analyst (impulse/corrective patterns, Fibonacci relationships, alternate counts), Market Microstructure Analyst (order book, tape reading, dark pools, iceberg orders), Quantitative Strategy Backtester (walk-forward, Monte Carlo, overfitting detection, Sharpe/Sortino/Calmar), Sector Rotation Strategist (business cycle phases, relative strength, inter-market analysis), Cryptocurrency DeFi Strategist (yield farming, impermanent loss, AMM mechanics, protocol risk).

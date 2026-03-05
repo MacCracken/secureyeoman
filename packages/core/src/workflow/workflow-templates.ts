@@ -76,6 +76,19 @@ function documentAnalysisStep(
   } as unknown as WorkflowStep;
 }
 
+function chartGenerationStep(
+  base: StepBase,
+  chartType: string,
+  dataTemplate: string,
+  chartConfig?: Record<string, unknown>
+): WorkflowStep {
+  return {
+    type: 'chart_generation',
+    config: { chartType, dataTemplate, ...(chartConfig ? { chartConfig } : {}) },
+    ...base,
+  } as unknown as WorkflowStep;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
@@ -1547,6 +1560,95 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
       { source: 'position-size', target: 'risk-metrics' },
       { source: 'position-size', target: 'format-sizing' },
       { source: 'risk-metrics', target: 'format-sizing' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── Financial Analysis Pipeline (Phase 125) ──────────────────────────────
+  {
+    name: 'financial-analysis-pipeline',
+    description:
+      'Fetch market data, perform financial analysis, and generate visualizations (candlestick chart, allocation pie, risk/return scatter).',
+    steps: [
+      agentStep(
+        {
+          id: 'fetch-data',
+          name: 'Fetch Market Data',
+          description: 'Retrieve OHLCV data and current quote for the target symbol',
+          dependsOn: [],
+          onError: 'fail',
+        },
+        'researcher',
+        'Fetch OHLCV data and current quote for {{input.symbol}} using market_historical and market_quote tools'
+      ),
+      agentStep(
+        {
+          id: 'analyze',
+          name: 'Financial Analysis',
+          description: 'Analyse the market data with bear/bull case and technical structure',
+          dependsOn: ['fetch-data'],
+          onError: 'fail',
+        },
+        'analyst',
+        'Analyse the market data for {{input.symbol}}:\n\n{{steps.fetch-data.output}}'
+      ),
+      chartGenerationStep(
+        {
+          id: 'chart-price',
+          name: 'Generate Price Chart',
+          description: 'Create OHLCV candlestick chart with volume and moving averages',
+          dependsOn: ['fetch-data'],
+          onError: 'continue',
+        },
+        'candlestick',
+        '{{steps.fetch-data.output}}',
+        { showVolume: true, movingAverages: [{ period: 20 }, { period: 50 }] }
+      ),
+      chartGenerationStep(
+        {
+          id: 'chart-allocation',
+          name: 'Generate Allocation Chart',
+          description: 'Create portfolio allocation donut chart',
+          dependsOn: ['analyze'],
+          onError: 'continue',
+        },
+        'pie',
+        '{{steps.analyze.output}}'
+      ),
+      transformStep(
+        {
+          id: 'report',
+          name: 'Compile Report',
+          description: 'Combine analysis and charts into a final report',
+          dependsOn: ['analyze', 'chart-price', 'chart-allocation'],
+          onError: 'continue',
+        },
+        '# Financial Analysis: {{input.symbol}}\n\n{{steps.analyze.output}}\n\n## Price Chart\n{{steps.chart-price.output}}\n\n## Allocation\n{{steps.chart-allocation.output}}'
+      ),
+      resourceStep(
+        {
+          id: 'save',
+          name: 'Save to Memory',
+          description: 'Persist the final report to the knowledge base',
+          dependsOn: ['report'],
+          onError: 'continue',
+        },
+        'memory',
+        '{{steps.report.output}}'
+      ),
+    ],
+    edges: [
+      { source: 'fetch-data', target: 'analyze' },
+      { source: 'fetch-data', target: 'chart-price' },
+      { source: 'analyze', target: 'chart-allocation' },
+      { source: 'analyze', target: 'report' },
+      { source: 'chart-price', target: 'report' },
+      { source: 'chart-allocation', target: 'report' },
+      { source: 'report', target: 'save' },
     ],
     triggers: [{ type: 'manual', config: {} }],
     isEnabled: true,

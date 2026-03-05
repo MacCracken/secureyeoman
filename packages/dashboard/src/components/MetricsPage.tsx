@@ -98,6 +98,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CARD_REGISTRY, type MissionCardId } from './MissionControl/registry';
+import { FinancialChartsCard } from './finance/FinancialChartsCard';
 import { loadLayout, saveLayout, defaultLayout, type CardLayout } from './MissionControl/layout';
 
 // Lazy-load ReactFlow graph — keeps it out of the initial MetricsPage chunk
@@ -1122,6 +1123,10 @@ const CostBreakdownSection = memo(function CostBreakdownSection({
   );
 });
 
+const FinancialChartsSection = memo(function FinancialChartsSection(_props: SectionCommonProps) {
+  return <FinancialChartsCard />;
+});
+
 // ── SortableCardWrapper ───────────────────────────────────────────────
 
 interface SortableCardWrapperProps {
@@ -1239,6 +1244,8 @@ const MissionCardContent = memo(function MissionCardContent({
       return <SystemTopologySection {...sectionProps} />;
     case 'cost-breakdown':
       return <CostBreakdownSection {...sectionProps} />;
+    case 'financial-charts':
+      return <FinancialChartsSection {...sectionProps} />;
   }
 });
 
