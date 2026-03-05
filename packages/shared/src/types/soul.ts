@@ -693,6 +693,64 @@ export const CognitiveMemoryConfigSchema = z
 
 export type CognitiveMemoryConfig = z.infer<typeof CognitiveMemoryConfigSchema>;
 
+// ─── Context-Dependent Retrieval Config (Phase 125-A) ──────
+
+export const ContextRetrievalConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    /** Weight for query embedding vs context (0 = pure context, 1 = pure query). */
+    queryWeight: z.number().min(0).max(1).default(0.7),
+    /** Max conversation messages in the context window. */
+    contextWindowSize: z.number().int().min(1).max(20).default(5),
+    /** Minimum messages before context fusion activates. */
+    minContextMessages: z.number().int().min(1).max(10).default(2),
+  })
+  .default({});
+
+export type ContextRetrievalConfig = z.infer<typeof ContextRetrievalConfigSchema>;
+
+// ─── Working Memory / Predictive Pre-Fetch Config (Phase 125-B) ──
+
+export const WorkingMemoryConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    /** Max items in the working memory buffer (Miller's 7+-2). */
+    capacity: z.number().int().min(3).max(15).default(7),
+    /** Items to pre-fetch per prediction cycle. */
+    prefetchLimit: z.number().int().min(1).max(20).default(5),
+    /** Minimum similarity for pre-fetched items. */
+    prefetchThreshold: z.number().min(0).max(1).default(0.3),
+    /** Recency weight decay for trajectory (newer = heavier). */
+    recencyDecay: z.number().min(0).max(1).default(0.8),
+    /** Min queries before trajectory prediction activates. */
+    minQueriesForPrediction: z.number().int().min(1).max(10).default(2),
+  })
+  .default({});
+
+export type WorkingMemoryConfig = z.infer<typeof WorkingMemoryConfigSchema>;
+
+// ─── Salience Classification Config (Phase 125-C) ──────────
+
+export const SalienceConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    /** Weight for urgency dimension. */
+    urgencyWeight: z.number().min(0).max(1).default(0.30),
+    /** Weight for error dimension. */
+    errorWeight: z.number().min(0).max(1).default(0.25),
+    /** Weight for frustration dimension. */
+    frustrationWeight: z.number().min(0).max(1).default(0.15),
+    /** Weight for success dimension. */
+    successWeight: z.number().min(0).max(1).default(0.15),
+    /** Weight for curiosity dimension. */
+    curiosityWeight: z.number().min(0).max(1).default(0.15),
+    /** Blend factor for salience in composite score [0–1]. */
+    compositeBlendWeight: z.number().min(0).max(1).default(0.1),
+  })
+  .default({});
+
+export type SalienceConfig = z.infer<typeof SalienceConfigSchema>;
+
 export const BrainConfigSchema = z
   .object({
     enabled: z.boolean().default(true),
@@ -707,6 +765,9 @@ export const BrainConfigSchema = z
     consolidation: ConsolidationConfigSchema,
     audit: MemoryAuditPolicySchema,
     cognitiveMemory: CognitiveMemoryConfigSchema,
+    contextRetrieval: ContextRetrievalConfigSchema,
+    workingMemory: WorkingMemoryConfigSchema,
+    salience: SalienceConfigSchema,
   })
   .default({});
 

@@ -6,6 +6,18 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.4] — 2026-03-04
 
+### Phase 125-D: Cognitive ML Memory Enhancements
+
+- **Context-Dependent Retrieval** (`context-retrieval.ts`): Embedding fusion implementing Tulving's encoding specificity principle. Fuses query embedding with conversation context centroid via `searchVec = λ·queryEmb + (1−λ)·contextEmb`. Rolling context window of recent message embeddings. `ContextRetriever` class with `addMessage()`, `getSearchVector()`, `getContextCentroid()`. Helper functions: `fuseEmbeddings()` (L2-normalized interpolation), `computeCentroid()`. Configurable `queryWeight` (default 0.7), `contextWindowSize` (5), `minContextMessages` (2).
+- **Working Memory Buffer** (`working-memory.ts`): Baddeley-inspired capacity-limited scratchpad (default 7 items, Miller's law). `WorkingMemoryBuffer` tracks active cognitive context with eviction by lowest score. Predictive pre-fetch via recency-weighted trajectory centroid: exponential decay weights recent query embeddings heavier, searches vector store for likely-needed items, caches them for instant access. Configurable `capacity`, `prefetchLimit`, `prefetchThreshold`, `recencyDecay`.
+- **Salience Classification** (`salience.ts`): Damasio's somatic marker hypothesis. `SalienceClassifier` computes emotion/urgency scores by cosine similarity against pre-computed anchor embeddings across 5 dimensions: urgency (0.30), error (0.25), frustration (0.15), success (0.15), curiosity (0.15). Lazy anchor initialization, `classifyFromEmbedding()` for pre-computed vectors. Fire-and-forget classification on `remember()`, cached in `brain.meta`.
+- **VectorMemoryManager**: New `searchMemoriesByVector()` and `searchKnowledgeByVector()` methods for context-fused retrieval with pre-computed vectors.
+- **BrainManager integration**: `recall()` uses context-fused RRF when enabled; feeds working memory buffer and triggers pre-fetch after retrieval; `remember()` runs async salience classification. New public API: `feedContext()`, `clearContext()`, `getWorkingMemoryItems()`, `getWorkingMemoryStats()`, `classifySalience()`, `getMemorySalience()`.
+- **Config**: `ContextRetrievalConfigSchema`, `WorkingMemoryConfigSchema`, `SalienceConfigSchema` added to `BrainConfigSchema`. All opt-in (default disabled).
+- **Future scaffolds**: `ReconsolidationManager` (LLM memory evolution — types + interface), `SchemaClusteringManager` (k-means embedding clustering + LLM labeling — algorithm implemented, pipeline pending), `RetrievalOptimizer` (Thompson Sampling bandit for scoring weights — arm selection/update implemented, integration pending). `kMeans()` and `sampleBeta()` are fully implemented pure functions.
+- **Tests**: 52 new tests across 5 files (context-retrieval 15, working-memory 14, salience 8, schema-clustering 6, retrieval-optimizer 9). All passing.
+- **Docs**: ADR 199, guide `cognitive-ml-memory.md`.
+
 ### Phase 125-C: Advanced Financial Charting
 
 - **SVG Chart Engine** (`packages/mcp/src/tools/chart-scene.ts`): Pure-function SVG rendering with no DOM dependencies. 8 chart types: candlestick (OHLCV + SMA overlays + volume), line (multi-series, numeric/categorical X), bar (grouped/stacked, horizontal), pie/donut, scatter (trend line, axis labels), waterfall (P&L bridge with connectors), heatmap (correlation matrix), sparkline (compact inline). Includes `linearScale()`, `bandScale()`, `escapeXml()`, `hexToRgba()`, `niceTicks()` utilities.

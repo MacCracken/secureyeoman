@@ -5,7 +5,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 13,659](https://img.shields.io/badge/Tests-13%2C659-brightgreen.svg)]()
+[![Tests: 14,229](https://img.shields.io/badge/Tests-14%2C229-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -55,7 +55,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 
 - **Self-hosted, not SaaS** — single binary, Docker, or Kubernetes. Your data stays on your machines.
 - **Governed by design** — RBAC, audit trails, cryptographic integrity, sandboxed execution, organizational intent policies.
-- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 200+ tool MCP server.
+- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 271-tool MCP server.
 - **Full ML lifecycle** — distillation, LoRA fine-tuning, LLM-as-Judge evaluation, conversation analytics, A/B experiments, and model versioning.
 
 ---
@@ -81,7 +81,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 
 | Capability | Details |
 |---|---|
-| Providers | 14 — Anthropic, OpenAI, Gemini, Groq, OpenRouter, Ollama, LM Studio, LocalAI, DeepSeek, Mistral, Grok, Letta, OpenCode Zen, and more |
+| Providers | 13 — Anthropic, OpenAI, Gemini, Groq, OpenRouter, Ollama, LM Studio, LocalAI, DeepSeek, Mistral, Grok, Letta, OpenCode Zen |
 | Multi-account | Multiple API keys per provider, per-account cost tracking, key validation, personality-level routing |
 | Provider Health | Per-provider error rate / p95 latency tracking, automatic ranking, health endpoint |
 | Cost Budgets | Per-personality daily/monthly USD limits, 80% warning alerts, 100% hard block |
@@ -96,7 +96,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 | Sub-agents | Delegation, Agent Swarms (sequential / parallel / dynamic, 5 templates) |
 | Council of AIs | Multi-round group deliberation engine, facilitator-driven consensus, 2 bundled templates |
 | Teams | Dynamic auto-manager with coordinator LLM, 3 built-in teams, `crew` CLI with YAML import/export |
-| Workflows | DAG orchestration with 14 step types, `triggerMode: 'any'` OR-trigger, `outputSchemaMode: 'strict'`, visual ReactFlow builder |
+| Workflows | DAG orchestration with 19 step types, `triggerMode: 'any'` OR-trigger, `outputSchemaMode: 'strict'`, visual ReactFlow builder |
 | A2A Protocol | Cross-instance agent delegation with W3C trace propagation |
 | Federation | Encrypted peer sync, federated knowledge search, personality bundle export/import |
 
@@ -118,7 +118,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 
 | Capability | Details |
 |---|---|
-| Stack | React + Vite + Tailwind, 19-theme system |
+| Stack | React + Vite + Tailwind, 31-theme system |
 | Chat | Rich Markdown, Mermaid diagrams, KaTeX math, conversation branching |
 | Collaboration | Real-time CRDT editing (Yjs), group chat, presence indicators |
 | Mission Control | Drag-and-drop card layout (12 cards, S/M/L resize) |
@@ -129,13 +129,14 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 
 | Capability | Details |
 |---|---|
-| MCP server | 200+ tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
-| Platforms | 36 — Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Google Chat, Gmail, Google Calendar, Email (IMAP/SMTP), Jira, Notion, AWS, Azure DevOps, Linear, Airtable, DingTalk, LINE, QQ, Twitter/X, Spotify, Stripe, YouTube, Zapier, Figma, Todoist, iMessage, CLI, Generic Webhook, and more |
-| CI/CD | 21 tools — GitHub Actions, Jenkins, GitLab CI, Northflank; `ci_trigger`/`ci_wait` workflow steps; webhook ingest |
-| Security toolkits | Kali (pentest), Network (37 tools: discovery, scanning, SSH, NetBox, NVD/CVE), Docker (14 tools) |
+| MCP server | 271 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
+| Platforms | 32 — Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Google Chat, Gmail, Google Calendar, Email (IMAP/SMTP), Jira, Notion, AWS, Azure DevOps, Linear, Airtable, DingTalk, LINE, QQ, Twitter/X, Spotify, Stripe, YouTube, Zapier, Figma, Todoist, iMessage, CLI, Generic Webhook |
+| CI/CD | 21 tools — GitHub Actions (6), Jenkins (5), GitLab CI (5), Northflank (5); `ci_trigger`/`ci_wait` workflow steps; webhook ingest |
+| Security toolkits | Kali (15 pentest tools), Network (38 tools: discovery, scanning, SSH, NetBox, NVD/CVE, PCAP), Docker (14 tools) |
 | Knowledge Base | Document ingestion (PDF, HTML, Markdown, URL, GitHub Wiki), RAG / Notebook / Hybrid modes, Source Guide |
+| Cognitive Memory | ACT-R activation, Hebbian associative learning, context-dependent retrieval (embedding fusion), working memory buffer (predictive pre-fetch), salience classification (emotion/urgency tagging) |
 | Memory Audits | Scheduled compression, reorganization, coherence checking, archive with reversibility |
-| Skills & Marketplace | 19 builtin skills, skill trust tiers, community repo sync, workflow + swarm + council template export/import |
+| Skills & Marketplace | 24 builtin + 87 community skills (13 categories), skill trust tiers, 7 workflow + 2 swarm + 2 council templates, 7 security templates, 3 personalities, 3 themes |
 
 ### Enterprise & Operations
 
@@ -286,12 +287,12 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | Topic | Link |
 |-------|------|
 | Architecture | [Architecture Overview](docs/development/architecture.md) |
-| ADRs | [163 Architecture Decision Records](docs/adr/) |
+| ADRs | [166 Architecture Decision Records](docs/adr/) |
 | Roadmap | [Development Roadmap](docs/development/roadmap.md) |
 | Contributing | [Contributing Guide](CONTRIBUTING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
 
-See [`docs/guides/`](docs/guides/) for all 63 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
+See [`docs/guides/`](docs/guides/) for all 64 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
 
 ---
 

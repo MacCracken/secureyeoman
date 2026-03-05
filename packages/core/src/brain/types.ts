@@ -100,6 +100,9 @@ export interface SkillFilter {
 import type { VectorMemoryManager } from './vector/manager.js';
 import type { ConsolidationManager } from './consolidation/manager.js';
 import type { CognitiveMemoryStorage } from './cognitive-memory-store.js';
+import type { ContextRetriever } from './context-retrieval.js';
+import type { WorkingMemoryBuffer } from './working-memory.js';
+import type { SalienceClassifier } from './salience.js';
 
 export interface BrainManagerDeps {
   auditChain: AuditChain;
@@ -108,6 +111,9 @@ export interface BrainManagerDeps {
   vectorMemoryManager?: VectorMemoryManager;
   consolidationManager?: ConsolidationManager;
   cognitiveStorage?: CognitiveMemoryStorage;
+  contextRetriever?: ContextRetriever;
+  workingMemoryBuffer?: WorkingMemoryBuffer;
+  salienceClassifier?: SalienceClassifier;
 }
 
 // ── Cognitive Memory Types ──────────────────────────────────

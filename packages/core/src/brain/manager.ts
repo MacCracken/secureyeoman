@@ -21,6 +21,7 @@ import type {
 import type { AuditQueryOptions, AuditQueryResult } from '../logging/sqlite-storage.js';
 import type { Skill, SkillCreate, SkillUpdate, Tool, BrainConfig } from '@secureyeoman/shared';
 import type { VectorResult } from './vector/types.js';
+import type { SalienceScores } from './salience.js';
 import { applySkillTrustFilter } from '../soul/skill-trust.js';
 import { chunk as chunkContent } from './chunker.js';
 import { uuidv7 } from '../utils/crypto.js';
@@ -64,6 +65,18 @@ export class BrainManager {
 
   private get vectorEnabled(): boolean {
     return this.deps.vectorMemoryManager != null && (this.config.vector?.enabled ?? false);
+  }
+
+  private get contextRetrievalEnabled(): boolean {
+    return this.deps.contextRetriever != null && (this.config.contextRetrieval?.enabled ?? false);
+  }
+
+  private get workingMemoryEnabled(): boolean {
+    return this.deps.workingMemoryBuffer != null && (this.config.workingMemory?.enabled ?? false);
+  }
+
+  private get salienceEnabled(): boolean {
+    return this.deps.salienceClassifier != null && (this.config.salience?.enabled ?? false);
   }
 
   // ── Memory Operations ──────────────────────────────────────
@@ -154,12 +167,30 @@ export class BrainManager {
       }
     }
 
+    // Salience classification (fire-and-forget, best-effort)
+    if (this.salienceEnabled) {
+      void this.deps.salienceClassifier!.classify(content).then((scores) => {
+        // Store composite salience as metadata for future retrieval boosting
+        void this.storage.setMeta(`salience:${memory.id}`, JSON.stringify(scores)).catch(() => {});
+      }).catch(() => {});
+    }
+
     return memory;
   }
 
   async recall(query: MemoryQuery): Promise<Memory[]> {
     if (!this.config.enabled) {
       return [];
+    }
+
+    // Feed context retriever with the query for trajectory tracking
+    if (this.contextRetrievalEnabled && query.search) {
+      void this.deps.contextRetriever!.addMessage(query.search).catch(() => {});
+    }
+
+    // Record query in working memory for predictive pre-fetch
+    if (this.workingMemoryEnabled && query.search) {
+      void this.deps.workingMemoryBuffer!.recordQuery(query.search).catch(() => {});
     }
 
     // Resolve personality scope once — used by both vector and text paths.
@@ -176,13 +207,54 @@ export class BrainManager {
         const limit = query.limit ?? 10;
         const threshold = this.config.vector.similarityThreshold;
 
-        // Vector search — scoped: only returns memories for this personality or global ones
-        const vectorResults = await this.deps.vectorMemoryManager!.searchMemories(
-          query.search,
-          limit,
-          threshold,
-          resolvedPersonalityId // undefined = omnipresent, string = scoped
-        );
+        // Context-dependent retrieval: use fused embedding when context is available
+        let vectorResults: VectorResult[];
+        if (this.contextRetrievalEnabled) {
+          try {
+            const searchVector = await this.deps.contextRetriever!.getSearchVector(query.search);
+            vectorResults = await this.deps.vectorMemoryManager!.searchMemories(
+              query.search,
+              limit,
+              threshold,
+              resolvedPersonalityId
+            );
+            // Re-search with fused vector for better context-aware results
+            const fusedResults = await this.deps.vectorMemoryManager!.searchMemoriesByVector(
+              searchVector,
+              limit,
+              threshold,
+              resolvedPersonalityId
+            ).catch(() => null);
+            if (fusedResults) {
+              // Merge: RRF between raw vector results and context-fused results
+              const merged = new Map<string, number>();
+              vectorResults.forEach((r, i) => merged.set(r.id, 1 / (60 + i + 1)));
+              fusedResults.forEach((r, i) => {
+                merged.set(r.id, (merged.get(r.id) ?? 0) + 1 / (60 + i + 1));
+              });
+              const sortedIds = [...merged.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+              vectorResults = sortedIds.slice(0, limit).map((id) => {
+                const orig = vectorResults.find((r) => r.id === id) ?? fusedResults!.find((r) => r.id === id);
+                return { id, score: orig?.score ?? 0, metadata: orig?.metadata };
+              });
+            }
+          } catch {
+            vectorResults = await this.deps.vectorMemoryManager!.searchMemories(
+              query.search,
+              limit,
+              threshold,
+              resolvedPersonalityId
+            );
+          }
+        } else {
+          // Standard vector search — scoped
+          vectorResults = await this.deps.vectorMemoryManager!.searchMemories(
+            query.search,
+            limit,
+            threshold,
+            resolvedPersonalityId // undefined = omnipresent, string = scoped
+          );
+        }
 
         // FTS search — supplementary path, scoped via SQL personality filter
         const ftsRrfScores = new Map<string, number>();
@@ -254,6 +326,15 @@ export class BrainManager {
     // Apply cognitive ranking + fire-and-forget recording
     const ranked = this.applyCognitiveRanking(memories, Date.now());
     this.recordRetrieval(ranked.map((m) => m.id));
+
+    // Feed working memory buffer with retrieved items
+    if (this.workingMemoryEnabled && ranked.length > 0) {
+      this.deps.workingMemoryBuffer!.addItems(
+        ranked.map((m) => ({ id: m.id, content: m.content, score: m.importance }))
+      );
+      // Fire predictive pre-fetch in background
+      void this.deps.workingMemoryBuffer!.predictAndPrefetch().catch(() => {});
+    }
 
     return ranked;
   }
@@ -903,6 +984,70 @@ export class BrainManager {
     });
     scored.sort((a, b) => b.activation - a.activation);
     return scored.map((s) => s.skill);
+  }
+
+  // ── Context-Dependent Retrieval (Phase 125-A) ──────────────
+
+  /**
+   * Feed a conversation message into the context retriever for trajectory tracking.
+   * Call this for each user/assistant message to build context awareness.
+   */
+  async feedContext(message: string): Promise<void> {
+    if (!this.contextRetrievalEnabled) return;
+    await this.deps.contextRetriever!.addMessage(message);
+  }
+
+  /** Clear the context retrieval window (e.g. on conversation reset). */
+  clearContext(): void {
+    if (this.deps.contextRetriever) {
+      this.deps.contextRetriever.clear();
+    }
+    if (this.deps.workingMemoryBuffer) {
+      this.deps.workingMemoryBuffer.clear();
+    }
+  }
+
+  // ── Working Memory (Phase 125-B) ─────────────────────────
+
+  /** Get items currently in the working memory buffer. */
+  getWorkingMemoryItems(): Array<{ id: string; content: string; score: number; source: string }> {
+    if (!this.workingMemoryEnabled) return [];
+    return this.deps.workingMemoryBuffer!.getItems();
+  }
+
+  /** Get working memory stats. */
+  getWorkingMemoryStats(): { size: number; prefetchSize: number; trajectorySize: number } {
+    if (!this.deps.workingMemoryBuffer) {
+      return { size: 0, prefetchSize: 0, trajectorySize: 0 };
+    }
+    return {
+      size: this.deps.workingMemoryBuffer.size,
+      prefetchSize: this.deps.workingMemoryBuffer.prefetchSize,
+      trajectorySize: this.deps.workingMemoryBuffer.trajectorySize,
+    };
+  }
+
+  // ── Salience Classification (Phase 125-C) ────────────────
+
+  /**
+   * Classify the salience/emotion of a text. Returns dimension scores.
+   */
+  async classifySalience(text: string): Promise<SalienceScores | null> {
+    if (!this.salienceEnabled) return null;
+    return this.deps.salienceClassifier!.classify(text);
+  }
+
+  /**
+   * Get cached salience scores for a memory (if previously classified).
+   */
+  async getMemorySalience(memoryId: string): Promise<SalienceScores | null> {
+    try {
+      const raw = await this.storage.getMeta(`salience:${memoryId}`);
+      if (!raw) return null;
+      return JSON.parse(raw) as SalienceScores;
+    } catch {
+      return null;
+    }
   }
 
   // ── Config ─────────────────────────────────────────────────

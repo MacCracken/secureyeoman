@@ -226,6 +226,7 @@ export class AIModule extends BaseModule {
     const validProviders = [
       'anthropic', 'openai', 'gemini', 'ollama', 'opencode',
       'lmstudio', 'localai', 'deepseek', 'mistral',
+      'grok', 'letta', 'groq', 'openrouter',
     ];
     if (!validProviders.includes(provider)) {
       throw new Error(

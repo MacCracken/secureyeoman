@@ -972,5 +972,75 @@ export function getToolManifest(): ToolManifestEntry[] {
       description:
         'Generate compact inline sparkline SVG for quick trend indicators',
     },
+
+    // Security tools — Kali Linux toolkit (Phase 58)
+    { name: 'sec_nmap', description: 'Run an nmap port/service scan against an authorized target' },
+    {
+      name: 'sec_gobuster',
+      description: 'Run gobuster directory/DNS brute-force against an authorized target',
+    },
+    {
+      name: 'sec_ffuf',
+      description: 'Run ffuf web fuzzer against an authorized target',
+    },
+    {
+      name: 'sec_sqlmap',
+      description: 'Run sqlmap SQL injection scanner against an authorized target',
+    },
+    {
+      name: 'sec_nikto',
+      description: 'Run nikto web vulnerability scanner against an authorized target',
+    },
+    {
+      name: 'sec_nuclei',
+      description: 'Run nuclei template-based vulnerability scanner against an authorized target',
+    },
+    { name: 'sec_whatweb', description: 'Fingerprint web technologies on an authorized target' },
+    {
+      name: 'sec_wpscan',
+      description: 'Run WPScan WordPress vulnerability scanner against an authorized target',
+    },
+    {
+      name: 'sec_hashcat',
+      description: 'Attempt offline hash cracking with hashcat (no live brute-force)',
+    },
+    {
+      name: 'sec_john',
+      description: 'Attempt offline hash cracking with John the Ripper (no live brute-force)',
+    },
+    {
+      name: 'sec_theharvester',
+      description: 'Gather OSINT (emails, subdomains, IPs) for a domain using theHarvester',
+    },
+    { name: 'sec_dig', description: 'DNS lookup using dig' },
+    { name: 'sec_whois', description: 'WHOIS lookup for a domain or IP' },
+    { name: 'sec_shodan', description: 'Look up a host on Shodan (requires SHODAN_API_KEY)' },
+    {
+      name: 'sec_hydra',
+      description: 'Run hydra brute-force attack against an authorized target (requires allowBruteForce)',
+    },
+
+    // GitHub Actions tools (Phase 90)
+    { name: 'gha_list_workflows', description: 'List all GitHub Actions workflows in a repository' },
+    {
+      name: 'gha_dispatch_workflow',
+      description: 'Trigger a workflow dispatch event for a GitHub Actions workflow',
+    },
+    {
+      name: 'gha_list_runs',
+      description: 'List workflow runs for a GitHub repository, optionally filtered by branch and status',
+    },
+    {
+      name: 'gha_get_run',
+      description: 'Get details and status of a specific GitHub Actions workflow run',
+    },
+    {
+      name: 'gha_cancel_run',
+      description: 'Cancel a running or queued GitHub Actions workflow run',
+    },
+    {
+      name: 'gha_get_run_logs',
+      description: 'Get the download URL for logs of a completed GitHub Actions workflow run',
+    },
   ];
 }

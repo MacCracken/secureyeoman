@@ -49,3 +49,34 @@ export {
   MemoryReorganizer,
   KnowledgeGraphCoherenceChecker,
 } from './audit/index.js';
+
+// Cognitive Memory (Phase 124)
+export { CognitiveMemoryStorage } from './cognitive-memory-store.js';
+export { CognitiveMemoryManager } from './cognitive-memory-manager.js';
+
+// Context-Dependent Retrieval (Phase 125-A)
+export {
+  ContextRetriever,
+  fuseEmbeddings,
+  computeCentroid,
+  type ContextRetrievalConfig,
+} from './context-retrieval.js';
+
+// Working Memory / Predictive Pre-Fetch (Phase 125-B)
+export {
+  WorkingMemoryBuffer,
+  type WorkingMemoryConfig,
+  type WorkingMemoryItem,
+} from './working-memory.js';
+
+// Salience Classification (Phase 125-C)
+export {
+  SalienceClassifier,
+  type SalienceScores,
+  type SalienceWeights,
+} from './salience.js';
+
+// Future Scaffolds (Phase 125 — Pending)
+export { ReconsolidationManager, type ReconsolidationConfig } from './reconsolidation.js';
+export { SchemaClusteringManager, type SchemaClusteringConfig, kMeans } from './schema-clustering.js';
+export { RetrievalOptimizer, type RetrievalOptimizerConfig } from './retrieval-optimizer.js';

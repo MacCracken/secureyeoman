@@ -100,6 +100,56 @@ export class VectorMemoryManager {
       }));
   }
 
+  /**
+   * Search memories using a pre-computed vector (for context-fused retrieval).
+   */
+  async searchMemoriesByVector(
+    vector: number[],
+    limit: number,
+    threshold?: number,
+    personalityId?: string | null
+  ): Promise<VectorResult[]> {
+    const results = await this.store.search(vector, limit * 2, threshold);
+
+    return results
+      .filter((r) => r.id.startsWith('memory:'))
+      .filter((r) => {
+        if (personalityId === undefined) return true;
+        const storedPid = r.metadata?.personalityId ?? null;
+        return storedPid === null || storedPid === personalityId;
+      })
+      .slice(0, limit)
+      .map((r) => ({
+        ...r,
+        id: r.id.replace('memory:', ''),
+      }));
+  }
+
+  /**
+   * Search knowledge using a pre-computed vector (for context-fused retrieval).
+   */
+  async searchKnowledgeByVector(
+    vector: number[],
+    limit: number,
+    threshold?: number,
+    personalityId?: string | null
+  ): Promise<VectorResult[]> {
+    const results = await this.store.search(vector, limit * 2, threshold);
+
+    return results
+      .filter((r) => r.id.startsWith('knowledge:'))
+      .filter((r) => {
+        if (personalityId === undefined) return true;
+        const storedPid = r.metadata?.personalityId ?? null;
+        return storedPid === null || storedPid === personalityId;
+      })
+      .slice(0, limit)
+      .map((r) => ({
+        ...r,
+        id: r.id.replace('knowledge:', ''),
+      }));
+  }
+
   async removeMemory(id: string): Promise<void> {
     await this.store.delete(`memory:${id}`);
   }
