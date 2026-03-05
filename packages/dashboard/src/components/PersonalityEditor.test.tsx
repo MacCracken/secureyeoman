@@ -296,6 +296,70 @@ describe('PersonalityEditor', () => {
       await screen.findByText(/No skills are associated with this personality yet\./)
     ).toBeInTheDocument();
     expect(screen.getByText('Skills Marketplace')).toBeInTheDocument();
+  });
+
+  it('Brain section shows Community link when allowCommunityGitFetch is enabled', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    mockFetchSkills.mockResolvedValue({
+      skills: [{ ...DEFAULT_SKILL, personalityId: 'other-id' }],
+    });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: false,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: false,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: true,
+      allowTwingate: false,
+      allowOrgIntent: false,
+      allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
+      allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
+    });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    const skillsHeader = await screen.findByText('Skills');
+    await user.click(skillsHeader);
+
+    expect(screen.getByText('Skills Marketplace')).toBeInTheDocument();
     expect(screen.getByText('Community')).toBeInTheDocument();
   });
 

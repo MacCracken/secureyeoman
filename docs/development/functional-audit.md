@@ -17,7 +17,7 @@
 | **RAM** | ~1 GB | ~1.5 GB baseline (2 GB min; 8 GB for browser skills) | 4 GB recommended | **10–20 MB** (v0.1.2) | Not published |
 | **Startup** | ~30 s | ~6 s | > 30 s | **< 1 s** | Not published |
 | **Security** | ✅ RBAC · encryption · audit chain · sandboxing · SecretsManager/Vault · TLS lifecycle · ResponseGuard · OPA/CEL governance | ⚠️ CVE-2026-25253 RCE (CVSS 8.8) + CVE-2026-25157, CVE-2026-24763 + 6 more; 1,184+ malicious ClawHub skills (ClawHavoc); Cline supply chain; Gartner: "unacceptable enterprise risk" | Basic (Docker isolation) | Experimental; network security issues (self-disclosed) | ✅ TEE · WASM sandbox · AES-256-GCM · credential vault |
-| **MCP** | ✅ Full server + client (200+ tools) | Limited client integration | ✅ Client + server | ✅ (v0.2.0) | ✅ As tool implementation path |
+| **MCP** | ✅ Full server + client (250+ tools) | Limited client integration | ✅ Client + server | ✅ (v0.2.0) | ✅ As tool implementation path |
 | **Enterprise-ready** | ✅ RBAC · SSO/OIDC/SAML · multi-tenancy · K8s · Prometheus | ❌ | ❌ | ❌ | ❌ |
 
 ---
@@ -95,8 +95,8 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 |---------|:---:|:---:|:---:|:---:|:---:|
 | Language | TypeScript | TypeScript | Python | Go | **Rust** |
 | Database | PostgreSQL + SQLite | File-based (Markdown) | File-based | File-based | PostgreSQL + libSQL |
-| AI providers | 11+ | Multiple | Multiple | 9+ | 5 (NEAR AI, Tinfoil TEE, OpenAI, Anthropic, Ollama) |
-| MCP server + client | ✅ 200+ tools | Limited | ✅ | ✅ (v0.2.0 client) | ✅ |
+| AI providers | 13 | Multiple | Multiple | 9+ | 5 (NEAR AI, Tinfoil TEE, OpenAI, Anthropic, Ollama) |
+| MCP server + client | ✅ 250+ tools | Limited | ✅ | ✅ (v0.2.0 client) | ✅ |
 | RAM footprint | ~1 GB | ~1.5 GB (8 GB for browser skills; peaks 6 GB under load) | 4 GB recommended | **10–20 MB** | Not published |
 | Startup time | ~30 s | ~6 s | > 30 s | **< 1 s** | Not published |
 | Enterprise-ready | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -113,7 +113,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | TLS lifecycle | ✅ Auto-generate dev certs; expiry monitoring; cert status API | ❌ | ❌ | ❌ | ❌ |
 | Audit chain | ✅ HMAC-SHA256 cryptographic chain | ❌ | ❌ | ❌ | Local DB log (not cryptographic) |
 | Correlation IDs | ✅ UUIDv7 via AsyncLocalStorage; `X-Correlation-ID` header; auto-enriched in audit entries | ❌ | ❌ | ❌ | ❌ |
-| Credential redaction | ✅ ToolOutputScanner — 18 patterns; `[REDACTED:<type>]` on every LLM response | ❌ | ❌ | ❌ | ✅ LeakDetector at tool output + LLM response |
+| Credential redaction | ✅ ToolOutputScanner — 20 patterns; `[REDACTED:<type>]` on every LLM response | ❌ | ❌ | ❌ | ✅ LeakDetector at tool output + LLM response |
 | Output safety scanner | ✅ ResponseGuard — 6 injection patterns; block/warn/disabled modes | ❌ | ❌ | ❌ | ❌ |
 | Governance / OPA | ✅ OPA sidecar; CEL policy evaluator; hard boundaries + soft policies; output compliance | ❌ | ❌ | ❌ | ❌ |
 | LLM-as-Judge | ✅ Secondary LLM review for high-autonomy tool calls | ❌ | ❌ | ❌ | ❌ |
@@ -146,23 +146,23 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 
 | Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |---------|:---:|:---:|:---:|:---:|:---:|
-| MCP tool count | ✅ **200+** | Limited | External via MCP | ✅ MCP client (v0.2.0) | Via MCP path |
+| MCP tool count | ✅ **250+** | Limited | External via MCP | ✅ MCP client (v0.2.0) | Via MCP path |
 | Browser automation | ✅ Playwright | ✅ Built-in | ✅ browser-use (Playwright) | ❌ | ❌ |
 | Shell execution | ✅ Sandboxed; cd navigation fixed | ✅ | ✅ | ✅ Restricted | ✅ Sandboxed |
 | Code execution | ✅ Python / Node.js / shell, sandboxed | ✅ | ✅ | ❌ | ✅ Docker (3 isolation policies) |
-| Network security toolkit | ✅ 37 tools — device discovery · port scan · SSH · NetBox · NVD/CVE · PCAP | ❌ | ❌ | ❌ | ❌ |
+| Network security toolkit | ✅ 38 tools — device discovery · port scan · SSH · NetBox · NVD/CVE · PCAP | ❌ | ❌ | ❌ | ❌ |
 | Twingate zero-trust proxy | ✅ 13 tools — GraphQL tenant mgmt + private MCP proxy | ❌ | ❌ | ❌ | ❌ |
 | Kali security toolkit | ✅ `sec_*` tools (nmap, nuclei, sqlmap, gobuster, hydra, etc.) | ❌ | ❌ | ❌ | ❌ |
-| DAG workflow orchestration | ✅ 14 step types; ReactFlow visual builder; `allowWorkflows` gate | ❌ | ❌ | ❌ | ❌ |
+| DAG workflow orchestration | ✅ 19 step types; ReactFlow visual builder; `allowWorkflows` gate | ❌ | ❌ | ❌ | ❌ |
 | Agent swarms | ✅ Sequential / parallel / dynamic | ❌ | ✅ | ❌ | ❌ |
 | Sub-agent spawn | ✅ Budget + depth controls | ✅ Workspaces | ✅ Hierarchical | ✅ | ❌ |
-| A2A protocol | ✅ E2E encryption; mDNS/DNS-SD peer discovery | ❌ | ✅ | ❌ | ❌ |
+| A2A protocol | ✅ mDNS/DNS-SD peer discovery; manual `.well-known` discovery | ❌ | ✅ | ❌ | ❌ |
 | Dynamic tool creation | ✅ Policy-gated | ❌ | ✅ | ❌ | ❌ |
 | Cron / scheduling | ✅ | ❌ | ✅ (redesigned scheduler in v0.9.8) | ✅ | ✅ Routines |
 | Self-repairing tasks | ✅ `TaskLoop` — stuck detection + recovery prompt | ❌ | ❌ | ❌ | ✅ Stuck detection + re-analysis |
 | LLM response cache | ✅ Hash-keyed; configurable TTL; off by default | ❌ | ❌ | ❌ | ✅ Hash-keyed |
 | Skill routing | ✅ `useWhen` / `doNotUseWhen` / `successCriteria` / `routing` / `linkedWorkflowId` | ❌ | ❌ | ❌ | ❌ |
-| Custom skills | ✅ 38 hook points; portable `.skill.json` import/export | ✅ ~3,286 ClawHub (post-cleanup) | ✅ Dynamic (`SKILL.md` standard) | ✅ | ✅ SKILL.md + ClawHub registry |
+| Custom skills | ✅ 39 hook points; portable `.skill.json` import/export | ✅ ~3,286 ClawHub (post-cleanup) | ✅ Dynamic (`SKILL.md` standard) | ✅ | ✅ SKILL.md + ClawHub registry |
 | WASM sandbox | ✅ Policy flag (off by default) | ❌ | ❌ | ❌ | ✅ First-class (wasmtime + fuel metering) |
 | Backup & DR | ✅ `pg_dump`/`pg_restore`; 6 REST endpoints; dashboard Backup tab | ❌ | ❌ | ❌ | ❌ |
 | Audit log export | ✅ JSONL / CSV / syslog RFC 5424; streamed; no buffering | ❌ | ❌ | ❌ | ❌ |
@@ -186,7 +186,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | **OAuth2 (Google)** | ✅ Auto token refresh | ❌ | ❌ | ❌ | ❌ |
 | **Webhook** | ✅ | ✅ | ❌ | ❌ | ✅ Triggers |
 | **Per-user notification prefs** | ✅ Quiet hours, min level, fan-out dispatch | ❌ | ❌ | ❌ | ❌ |
-| **Total platforms** | **36** | **23+** | CLI / Web | **11+** | **4 stable** |
+| **Total platforms** | **32** | **23+** | CLI / Web | **11+** | **4 stable** |
 
 ### 6 · Dashboard & UX
 
@@ -196,11 +196,11 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | Terminal UI (TUI) | ✅ `secureyeoman tui` — full-screen, Ctrl+R/L/↑↓ | ❌ | ❌ | ❌ | ✅ Ratatui (approval overlays) |
 | Rich chat rendering | ✅ Markdown · Prism · Mermaid · KaTeX · GitHub alerts | ✅ | ❌ | ❌ | Basic |
 | IDE integration | ✅ Monaco editor (Standard + Advanced Editor modes) | ❌ | ❌ | ❌ | ❌ |
-| Workflow visual builder | ✅ ReactFlow DAG, 14 step types | ❌ | ❌ | ❌ | ❌ |
+| Workflow visual builder | ✅ ReactFlow DAG, 19 step types | ❌ | ❌ | ❌ | ❌ |
 | WebGL graph | ✅ Sigma.js + Graphology | ❌ | ❌ | ❌ | ❌ |
 | Voice (STT / TTS) | ✅ Push-to-talk; per-personality voice; streaming binary TTS; Whisper model selector | ✅ | ✅ | ❌ | ❌ |
 | Image generation | ✅ DALL-E | ✅ | ❌ | ❌ | ❌ |
-| Multi-theme system | ✅ 18 named themes; CSS variable overrides; floating theme picker | ❌ | ❌ | ❌ | ❌ |
+| Multi-theme system | ✅ 31 named themes; CSS variable overrides; floating theme picker | ❌ | ❌ | ❌ | ❌ |
 | Mission Control | ✅ Multi-panel command-center: KPI bar, topology, live feeds, resource monitoring, audit stream | ❌ | ❌ | ❌ | ❌ |
 | Accessibility | ✅ jsx-a11y; focus-visible ring; 44px touch targets; axe-core smoke tests | ❌ | ❌ | ❌ | ❌ |
 | Global navigate/create | ✅ Shortcut dialog — Chat / Skill / Workflow / Personality / Task | ❌ | ❌ | ❌ | ❌ |
@@ -220,7 +220,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | Single binary | ✅ ~80 MB | ❌ | ❌ | ✅ 10–20 MB | ✅ Rust static |
 | Docker | ✅ ~80 MB | ✅ | ✅ | ❌ | ✅ |
 | Dual DB backend | ✅ PostgreSQL + SQLite | ❌ | ❌ | ❌ | ✅ PostgreSQL + libSQL |
-| CLI | ✅ 35 commands; completions; `--json`; 5-step init wizard | ✅ | ✅ | ✅ | ✅ REPL |
+| CLI | ✅ 39 commands; completions; `--json`; 5-step init wizard | ✅ | ✅ | ✅ | ✅ REPL |
 | Lite binary (edge/IoT) | ✅ SQLite tier | ❌ | ❌ | ✅ (standard binary is 10–20 MB) | ✅ libSQL backend |
 | Air-gap / offline | ✅ Full self-hosted | ✅ | ✅ | ✅ | ❌ Requires NEAR AI Cloud |
 | Backup & DR | ✅ Automated `pg_dump`/`pg_restore`; download + restore API | ❌ | ❌ | ❌ | ❌ |
@@ -230,10 +230,10 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 
 | | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |--|--|--|--|--|--|
-| Test count | **13,097** | Limited (community-driven) | Minimal | Minimal | Not published (Rust type safety provides baseline) |
+| Test count | **14,177+** | Limited (community-driven) | Minimal | Minimal | Not published (Rust type safety provides baseline) |
 | Line coverage | **≥ 87%** | Not tracked | Not tracked | Not tracked | Not tracked |
-| Test files | **397+** | Unknown | Unknown | Unknown | Unknown |
-| ADR records | **153** | Unknown | Unknown | Unknown | Unknown |
+| Test files | **671+** | Unknown | Unknown | Unknown | Unknown |
+| ADR records | **166** | Unknown | Unknown | Unknown | Unknown |
 | CI/CD | ✅ lint · typecheck · test · build · security audit · docker-push · helm-lint | ✅ | Basic | Minimal | ✅ Cargo CI |
 | Security test suite | ✅ Dedicated security + chaos suites; vitest-axe a11y smoke tests | ❌ Multiple CVEs 2026 | ❌ | ❌ | ✅ Memory-safe by language; WASM sandbox tests |
 | Storybook | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -249,7 +249,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | 1 | **RBAC + SSO/OIDC + SAML 2.0** | Admin / Operator / Auditor / Viewer; Okta, Azure AD, Auth0; SP-initiated SAML with group→role mapping |
 | 2 | **SecretsManager + Vault/OpenBao** | env / keyring / file / vault / auto backends; process.env mirroring |
 | 3 | **TLS lifecycle management** | Auto-generate dev certs; expiry monitoring; `GET /api/v1/security/tls` |
-| 4 | **ToolOutputScanner** | 18-pattern credential redaction on every LLM response (ADR 092) |
+| 4 | **ToolOutputScanner** | 20-pattern credential redaction on every LLM response (ADR 092) |
 | 5 | **ResponseGuard** | Output-side injection scanner — 6 pattern types (instruction injection, cross-turn influence, self-escalation, role confusion, base64/hex exfiltration); block/warn/disabled modes (ADR 137) |
 | 6 | **OPA + CEL governance** | OPA sidecar for hard boundary evaluation; CEL policy evaluator; output compliance via `IntentManager`; LLM-as-Judge for high-autonomy calls (ADR 128) |
 | 7 | **Hybrid FTS + RRF** | tsvector GIN + pgvector merged via Reciprocal Rank Fusion (ADR 095) |
@@ -257,10 +257,10 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | 9 | **Per-personality memory scoping** | `personalityId` scoped recall; omnipresent mind toggle; personality-scoped vector search (ADR 133) |
 | 10 | **Proactive context compaction** | Summarises older turns at 80% window fill (ADR 097) |
 | 11 | **Self-repairing `TaskLoop`** | Timeout + repeated-call detection; `buildRecoveryPrompt()` (ADR 098) |
-| 12 | **Network Security Toolkit** | 37 MCP tools — device discovery, port scanning, SSH, NetBox, NVD/CVE, PCAP |
+| 12 | **Network Security Toolkit** | 38 MCP tools — device discovery, port scanning, SSH, NetBox, NVD/CVE, PCAP |
 | 13 | **Twingate zero-trust MCP proxy** | 13 tools — GraphQL tenant management + private MCP server proxy |
 | 14 | **Kali Security Toolkit** | `sec_*` MCP tools + `secureyeoman security` CLI (nmap, nuclei, sqlmap, gobuster, hydra) |
-| 15 | **DAG Workflow Orchestration** | 14 step types; Mustache data-flow; ReactFlow visual builder; `allowWorkflows` gate |
+| 15 | **DAG Workflow Orchestration** | 19 step types; Mustache data-flow; ReactFlow visual builder; `allowWorkflows` gate |
 | 16 | **Agnostic QA Bridge** | 10 `agnostic_*` MCP tools + A2A delegation (ADR 090) |
 | 17 | **Skill routing quality** | `useWhen` / `doNotUseWhen` / `successCriteria` / `linkedWorkflowId` per skill |
 | 18 | **Outbound Credential Proxy** | `CredentialProxy` injects `Authorization` headers; HTTPS CONNECT allowlist (ADR 099) |
@@ -273,11 +273,11 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | 25 | **Per-user notification preferences** | Quiet hours (UTC, overnight wrap), min level, fan-out across integrations; retention cleanup job |
 | 26 | **Kubernetes production readiness** | Helm, HPA, PDBs, NetworkPolicies, ExternalSecret CRD |
 | 27 | **mTLS** | Mutual TLS for service-to-service communication |
-| 28 | **DAG visual builder** | ReactFlow editor — only framework in this category with this feature |
+| 28 | **DAG visual builder** | ReactFlow editor with 19 step types — only framework in this category with this feature |
 | 29 | **Admin Security Policy UI** | Per-feature toggles: `allowWorkflows`, `allowSubAgents`, `allowA2A`, `sandboxWasm`, `sandboxGvisor`, `allowCodeEditor`, `allowAdvancedEditor`, and more |
-| 30 | **Multi-Theme System** | 18 named themes (dark, light, enterprise variants); CSS variable overrides; floating theme picker; Appearance tab in Settings |
+| 30 | **Multi-Theme System** | 31 named themes (dark, light, enterprise variants); CSS variable overrides; floating theme picker; Appearance tab in Settings |
 | 31 | **Flexible network deployment** | `gateway.host` + `gateway.tls` switch local / LAN / public; `/health` returns `networkMode` |
-| 32 | **36 messaging integrations** | vs ~2–3 for nearest competitor; real external dispatch with fan-out, quiet hours, and per-user prefs |
+| 32 | **32 messaging integrations** | vs ~2–3 for nearest competitor; real external dispatch with fan-out, quiet hours, and per-user prefs |
 | 33 | **Accessibility compliance** | eslint-plugin-jsx-a11y at warn level; focus-visible ring; 44px touch targets; axe-core smoke tests |
 
 ---
@@ -377,7 +377,7 @@ ZeroClaw is a Rust implementation targeting the performance and edge market: tin
 | **RAM** | ~50 MB (estimated) | ~1 GB |
 | **RBAC / SSO** | ❌ | ✅ Full enterprise auth stack |
 | **Dashboard** | ❌ CLI only | ✅ React SPA |
-| **MCP tools** | Minimal set | 200+ tools |
+| **MCP tools** | Minimal set | 250+ tools |
 | **Database** | File-based | PostgreSQL + SQLite |
 | **Air-gap** | ✅ | ✅ |
 | **Multi-agent** | ❌ | ✅ Swarms, Teams, DAG, A2A |
@@ -400,7 +400,7 @@ NanoBot is a deliberately small (~3,000 line) Python codebase designed to be ful
 | **RBAC / SSO** | ❌ | ✅ |
 | **Audit trail** | Print-based logging | HMAC-SHA256 cryptographic chain |
 | **Enterprise auth** | ❌ | Okta / Azure AD / Auth0 / SAML 2.0 |
-| **MCP** | Basic client | 200+ server tools |
+| **MCP** | Basic client | 250+ server tools |
 | **Skill marketplace** | ❌ | Community marketplace with Trust Tiers |
 | **Multi-agent** | ❌ | Swarms, Teams, DAG, A2A, Federation |
 | **Target user** | Researchers, educators | Enterprise security / ops teams |
@@ -425,7 +425,7 @@ Devin is Cognition Labs' autonomous AI software engineer. Devin 2.0 launched in 
 | **RBAC / SSO** | Teams workspace roles | Full 4-level RBAC + SSO/OIDC/SAML |
 | **IDE integration** | ✅ Windsurf (acquired) + VS Code | ✅ Monaco editor (Standard + Advanced) |
 | **Multi-agent** | Single-agent workflows | ✅ Swarms, Teams, DAG, A2A |
-| **MCP** | Limited | ✅ 200+ tools |
+| **MCP** | Limited | ✅ 250+ tools |
 | **Audit** | Activity log | HMAC-SHA256 cryptographic chain |
 
 **SecureYeoman positioning vs Devin**: Different target markets — Devin is a coding-specific autonomous agent; SecureYeoman is a general-purpose platform. Overlap occurs when DevSecOps teams evaluate both for CI/CD automation. SecureYeoman's code execution is sandboxed and policy-gated; Devin's is cloud-hosted. The $20/mo price point makes Devin extremely accessible but creates cloud dependency. The Windsurf acquisition suggests Cognition is building toward a platform play.
@@ -446,7 +446,7 @@ OpenHands (formerly OpenDevin) is an open-source autonomous AI software engineer
 | **Sandboxing** | Docker-based isolation | Landlock / seccomp / WASM / gVisor |
 | **RBAC / SSO** | Basic workspace auth | Full 4-level RBAC + SSO/OIDC/SAML |
 | **Multi-agent** | Task delegation | ✅ Swarms, Teams, DAG, A2A |
-| **MCP** | Limited integration | ✅ 200+ tools |
+| **MCP** | Limited integration | ✅ 250+ tools |
 | **Audit** | Structured logs | HMAC-SHA256 cryptographic chain |
 | **Enterprise features** | Minimal | Full stack (multi-tenancy, Vault, K8s Helm, backup & DR) |
 | **Open source** | ✅ MIT | ✅ AGPL-3.0 + Commercial |
@@ -488,7 +488,7 @@ OpenAI Frontier launched **February 5, 2026** as OpenAI's enterprise-focused aut
 | **Multi-tenancy** | ✅ RLS | ❌ | Per-account | Per-workspace | ❌ | Enterprise tier | ❌ | ❌ |
 | **Vault / SecretsManager** | ✅ env/keyring/Vault/OpenBao | Cloud vault | OAuth tokens | ❌ | ❌ | Enterprise vault | ❌ | ❌ |
 | **Multi-agent (swarms/teams)** | ✅ | ❌ | ❌ | Single-agent | Task delegation | Agent orchestration | ❌ | ❌ |
-| **200+ MCP tools** | ✅ | Limited | Limited | Limited | Limited | Limited | Minimal | Basic |
+| **250+ MCP tools** | ✅ | Limited | Limited | Limited | Limited | Limited | Minimal | Basic |
 | **Kubernetes / Helm** | ✅ | ❌ | N/A | N/A | ✅ | N/A | ❌ | ❌ |
 | **Open source** | ✅ AGPL-3.0 + Commercial | ✅ MIT fork | ❌ Proprietary (Meta) | ❌ Proprietary | ✅ MIT | ❌ Proprietary | ✅ | ✅ |
 | **Binary size** | ~80 MB | Unknown | N/A | N/A | N/A | N/A | ~12 MB | N/A |
@@ -507,10 +507,10 @@ OpenAI Frontier launched **February 5, 2026** as OpenAI's enterprise-focused aut
 | **Managed SaaS** | Not positioned | Self-hosted only by design; OpenAI Frontier targets enterprise SaaS; Manus AI (acquired by Meta) shifts to Meta's platform; Ironclaw offers cloud-hosted TEE |
 | **Research / education** | Not positioned | NanoBot serves this segment; SecureYeoman is overkill for single-researcher use |
 
-**Key differentiator**: SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that combines full RBAC/SSO/SAML, multi-tenancy, cryptographic audit chain, Vault/OpenBao secrets management, zero-trust network access (Twingate), a network security toolkit (37 MCP tools + Kali), ResponseGuard + OPA/CEL governance, vector memory with hybrid FTS+RRF and per-personality scoping, DAG workflow orchestration with a visual builder, AI training pipeline (distillation + LoRA + LLM-as-Judge), ML lifecycle platform (A/B testing, experiment registry, conversation branching), backup & DR, audit log export, correlation ID observability, and Kubernetes production readiness — all in a single ~80 MB binary deployable fully air-gapped, with 13,097 tests across core, dashboard, and MCP packages.
+**Key differentiator**: SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that combines full RBAC/SSO/SAML, multi-tenancy, cryptographic audit chain, Vault/OpenBao secrets management, zero-trust network access (Twingate), a network security toolkit (38 MCP tools + Kali), ResponseGuard + OPA/CEL governance, vector memory with hybrid FTS+RRF and per-personality scoping, DAG workflow orchestration with a visual builder (19 step types), AI training pipeline (distillation + LoRA + LLM-as-Judge), ML lifecycle platform (A/B testing, experiment registry, conversation branching), backup & DR, audit log export, correlation ID observability, and Kubernetes production readiness — all in a single ~80 MB binary deployable fully air-gapped, with 14,177+ tests across core, dashboard, and MCP packages.
 
 **The sovereignty argument**: Every new competitor — TrustClaw, Manus AI (now Meta), OpenAI Frontier, Devin — that claims "security" or "enterprise-ready" while routing data through its own cloud reinforces SecureYeoman's core position. The answer to "but Manus AI is easier to set up" is `curl -fsSL https://secureyeoman.ai/install | bash && secureyeoman init`. The answer to "but OpenAI Frontier has enterprise brand" is model-provider lock-in, data sovereignty, and the fact that SecureYeoman supports 12 providers including fully local models. The answer to "but TrustClaw is more secure" is the cryptographic audit chain, OPA governance, and the fact that SecureYeoman's Outbound Credential Proxy means neither TrustClaw nor any other third party ever sees your key material.
 
 ---
 
-*Updated: 2026-03-04 — SecureYeoman: 13,659 tests, 163 ADRs, 200+ MCP tools, 35 CLI commands, AGPL-3.0 + Commercial; v2026.3.3 adds Adaptive Learning Pipeline (Phase 92), Marketplace Shareables (Phase 89), Dual Licensing, Editor Unification, Soul Improvements, Teams (dynamic auto-manager, Phase 83), Workflow OR-trigger, strict schema enforcement, `crew` CLI, Knowledge Base & RAG (Phase 82), Code Audit Hardening (Phase 103), Job Completion Notifications (Phase 104), Security Prompt Templates (Phase 107-B), Departmental Risk Register (Phase 111). OpenClaw: ~234K stars (1.36M npm/week), latest v2026.3.1; creator joined OpenAI (Feb 14); 135,000+ exposed instances; ClawHub 13,729 skills; ClawHavoc 1,184+ malicious; Cline supply chain attack; foundation transition. Agent Zero: v0.9.8.2, ~15.7K stars; default model now claude-sonnet-4-6. PicoClaw: v0.2.0 (Feb 28), ~21.7K stars; MCP merged; WhatsApp added; multi-agent routing (experimental). Ironclaw: v0.13.1 (Mar 2), ~4K stars; web_fetch tool; Jobs tab; PostgreSQL TLS; Signal attachments. Manus AI: acquired by Meta (~$2B); $100M ARR in 8 months. Devin 2.0: $20/mo (down from $500); acquired Windsurf. OpenHands: v1.4.0, K8s-native, strongest OSS code agent. OpenAI Frontier: enterprise agent platform (Feb 5, 2026). TrustClaw: OpenClaw fork; cloud sandbox + vault. ZeroClaw: Rust edge agent, ~12 MB. NanoBot: minimal Python research agent.*
+*Updated: 2026-03-04 — SecureYeoman: 14,177+ tests, 166 ADRs, 250+ MCP tools, 39 CLI commands, AGPL-3.0 + Commercial; v2026.3.3 adds Adaptive Learning Pipeline (Phase 92), Marketplace Shareables (Phase 89), Dual Licensing, Editor Unification, Soul Improvements, Teams (dynamic auto-manager, Phase 83), Workflow OR-trigger, strict schema enforcement, `crew` CLI, Knowledge Base & RAG (Phase 82), Code Audit Hardening (Phase 103), Job Completion Notifications (Phase 104), Security Prompt Templates (Phase 107-B), Departmental Risk Register (Phase 111). OpenClaw: ~234K stars (1.36M npm/week), latest v2026.3.1; creator joined OpenAI (Feb 14); 135,000+ exposed instances; ClawHub 13,729 skills; ClawHavoc 1,184+ malicious; Cline supply chain attack; foundation transition. Agent Zero: v0.9.8.2, ~15.7K stars; default model now claude-sonnet-4-6. PicoClaw: v0.2.0 (Feb 28), ~21.7K stars; MCP merged; WhatsApp added; multi-agent routing (experimental). Ironclaw: v0.13.1 (Mar 2), ~4K stars; web_fetch tool; Jobs tab; PostgreSQL TLS; Signal attachments. Manus AI: acquired by Meta (~$2B); $100M ARR in 8 months. Devin 2.0: $20/mo (down from $500); acquired Windsurf. OpenHands: v1.4.0, K8s-native, strongest OSS code agent. OpenAI Frontier: enterprise agent platform (Feb 5, 2026). TrustClaw: OpenClaw fork; cloud sandbox + vault. ZeroClaw: Rust edge agent, ~12 MB. NanoBot: minimal Python research agent.*
