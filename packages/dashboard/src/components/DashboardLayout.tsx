@@ -54,6 +54,9 @@ const WorkflowRunDetail = lazy(() =>
   import('../pages/WorkflowRunDetail').then((m) => ({ default: m.WorkflowRunDetail }))
 );
 const IntentPage = lazy(() => import('./IntentEditor').then((m) => ({ default: m.IntentEditor })));
+const OrganizationPage = lazy(() =>
+  import('./OrganizationPage').then((m) => ({ default: m.OrganizationPage }))
+);
 const AdvancedEditorPage = lazy(() =>
   import('./AdvancedEditor/AdvancedEditorPage').then((m) => ({ default: m.AdvancedEditorPage }))
 );
@@ -236,12 +239,22 @@ export function DashboardLayout() {
                   <Route path="/proactive" element={<ProactivePage />} />
                   <Route path="/multimodal" element={<Navigate to="/agents" replace />} />
                   <Route path="/costs" element={<Navigate to="/metrics" replace />} />
-                  <Route path="/intent" element={<IntentPage />} />
+                  <Route path="/organization" element={<OrganizationPage />} />
+                  <Route
+                    path="/intent"
+                    element={<Navigate to="/organization?tab=intent" replace />}
+                  />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/security-settings" element={<SettingsPage />} />
                   <Route path="/api-keys" element={<SettingsPage />} />
-                  <Route path="/users" element={<SettingsPage />} />
-                  <Route path="/workspaces" element={<SettingsPage />} />
+                  <Route
+                    path="/users"
+                    element={<Navigate to="/organization?tab=users" replace />}
+                  />
+                  <Route
+                    path="/workspaces"
+                    element={<Navigate to="/organization?tab=workspaces" replace />}
+                  />
                   <Route path="/roles" element={<SettingsPage />} />
                   <Route path="/souls" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/metrics" replace />} />

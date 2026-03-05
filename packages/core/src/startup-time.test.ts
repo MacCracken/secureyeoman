@@ -21,7 +21,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { initPool, closePool, resetPool, getPool } from './storage/pg-pool.js';
+import { initPool, getPool } from './storage/pg-pool.js';
 import { runMigrations } from './storage/migrations/runner.js';
 import { MIGRATION_MANIFEST } from './storage/migrations/manifest.js';
 
@@ -158,8 +158,8 @@ describe('Startup time — process-level (migration fast-path)', () => {
   });
 
   afterAll(async () => {
-    await closePool();
-    resetPool();
+    // Do NOT closePool/resetPool — with isolate: false the pool is shared
+    // across all DB test files and must stay alive.
   });
 
   it(

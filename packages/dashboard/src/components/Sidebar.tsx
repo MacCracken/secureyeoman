@@ -25,7 +25,7 @@ import {
   Info,
   X,
   MessagesSquare,
-  Target,
+  Building2,
   Layers,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -191,7 +191,7 @@ export function Sidebar({
         disabled: noModelsAvailable,
       });
     if (orgIntentAllowed)
-      top.push({ to: '/intent', label: 'Intent', icon: <Target className="w-5 h-5" /> });
+      top.push({ to: '/organization', label: 'Organization', icon: <Building2 className="w-5 h-5" /> });
     if (proactiveEnabled)
       top.push({ to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" /> });
     if (hasAgents)

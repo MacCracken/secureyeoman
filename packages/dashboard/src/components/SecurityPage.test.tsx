@@ -21,6 +21,11 @@ vi.mock('../api/client', () => ({
   fetchReports: vi.fn(),
   generateReport: vi.fn(),
   downloadReport: vi.fn(),
+  exportAuditLog: vi.fn(),
+  fetchDepartments: vi.fn(),
+  fetchDepartmentReport: vi.fn(),
+  fetchExecutiveReport: vi.fn(),
+  fetchRegisterReport: vi.fn(),
   fetchHealth: vi.fn(),
   fetchMetrics: vi.fn(),
   fetchAuditStats: vi.fn(),
@@ -66,6 +71,7 @@ const mockFetchAutonomyOverview = vi.mocked(api.fetchAutonomyOverview);
 const mockFetchAuditRuns = vi.mocked(api.fetchAuditRuns);
 const mockFetchWorkflows = vi.mocked(api.fetchWorkflows);
 const mockFetchWorkflowRuns = vi.mocked(api.fetchWorkflowRuns);
+const mockFetchDepartments = vi.mocked(api.fetchDepartments);
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -145,6 +151,7 @@ beforeEach(() => {
   mockFetchWorkflowRuns.mockResolvedValue({ runs: [], total: 0 });
   mockFetchReports.mockResolvedValue({ reports: [], total: 0 });
   mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 20, offset: 0 });
+  mockFetchDepartments.mockResolvedValue({ items: [], total: 0 } as any);
   vi.mocked(api.fetchMcpConfig).mockResolvedValue({
     exposeGit: false,
     exposeFilesystem: false,
@@ -222,6 +229,45 @@ beforeEach(() => {
 });
 
 // ── Tests ────────────────────────────────────────────────────────────
+
+describe('SecurityPage — tab structure', () => {
+  it('renders 9 tab buttons (8 visible + ML hidden by default)', () => {
+    renderWithRoute('/security');
+    expect(screen.getByText('Overview')).toBeInTheDocument();
+    expect(screen.getByText('System')).toBeInTheDocument();
+    expect(screen.getByText('Automations')).toBeInTheDocument();
+    expect(screen.getByText('Autonomy')).toBeInTheDocument();
+    expect(screen.getByText('Reports & Logs')).toBeInTheDocument();
+    expect(screen.getByText('Risk')).toBeInTheDocument();
+    expect(screen.getByText('Scope')).toBeInTheDocument();
+    expect(screen.getByText('Capture')).toBeInTheDocument();
+    // ML hidden when policy disables it
+    expect(screen.queryByText('ML')).not.toBeInTheDocument();
+    // Removed tabs should not exist
+    expect(screen.queryByText('Audit Log')).not.toBeInTheDocument();
+    expect(screen.queryByText('ATHI')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sandbox')).not.toBeInTheDocument();
+  });
+
+  it('System tab is the second tab (right after Overview)', () => {
+    renderWithRoute('/security');
+    const buttons = screen.getAllByRole('button');
+    const tabLabels = buttons.map((b) => b.textContent?.trim()).filter(Boolean);
+    const overviewIdx = tabLabels.indexOf('Overview');
+    const systemIdx = tabLabels.indexOf('System');
+    expect(systemIdx).toBe(overviewIdx + 1);
+  });
+
+  it('maps ?tab=audit to Reports & Logs tab', async () => {
+    renderWithRoute('/security?tab=audit');
+    expect(await screen.findByText('Generate Report')).toBeInTheDocument();
+  });
+
+  it('maps ?tab=reports to Reports & Logs tab', async () => {
+    renderWithRoute('/security?tab=reports');
+    expect(await screen.findByText('Generate Report')).toBeInTheDocument();
+  });
+});
 
 describe('SecurityPage — System Details tab', () => {
   it('renders the System Details tab button', () => {

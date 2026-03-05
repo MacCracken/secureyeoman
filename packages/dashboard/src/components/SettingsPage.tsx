@@ -4,9 +4,7 @@ import {
   Settings,
   Shield,
   Key,
-  UserCircle,
   Users,
-  Building2,
   Bell,
   AlertTriangle,
   Palette,
@@ -35,8 +33,6 @@ import { LogRetentionSettings } from './LogRetentionSettings';
 import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySettings';
 import { ApiKeysSettings } from './ApiKeysSettings';
 import { ProviderKeysSettings } from './ProviderKeysSettings';
-import { UsersSettings } from './UsersSettings';
-import { WorkspacesSettings } from './WorkspacesSettings';
 import { NotificationPrefsPanel } from './NotificationPrefsPanel';
 import { CostDashboard } from './telemetry/CostDashboard';
 import { useTheme, THEMES } from '../hooks/useTheme';
@@ -49,8 +45,6 @@ type TabType =
   | 'appearance'
   | 'security'
   | 'keys'
-  | 'workspaces'
-  | 'users'
   | 'roles'
   | 'souls'
   | 'notifications'
@@ -59,8 +53,6 @@ type TabType =
 function getTabFromPath(path: string): TabType {
   if (path.includes('/security-settings')) return 'security';
   if (path.includes('/api-keys')) return 'keys';
-  if (path === '/users') return 'users';
-  if (path === '/workspaces') return 'workspaces';
   if (path === '/roles') return 'roles';
   if (path === '/souls') return 'souls';
   return 'general';
@@ -136,32 +128,6 @@ export function SettingsPage() {
         </button>
         <button
           onClick={() => {
-            setActiveTab('workspaces');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'workspaces'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Building2 className="w-4 h-4" />
-          Workspaces
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('users');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'users'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <UserCircle className="w-4 h-4" />
-          Users
-        </button>
-        <button
-          onClick={() => {
             setActiveTab('roles');
           }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -225,8 +191,6 @@ export function SettingsPage() {
           <SecretsPanel />
         </div>
       )}
-      {activeTab === 'workspaces' && <WorkspacesSettings />}
-      {activeTab === 'users' && <UsersSettings />}
       {activeTab === 'roles' && <RolesSettings />}
       {activeTab === 'souls' && <SoulSystemTab />}
       {activeTab === 'notifications' && (

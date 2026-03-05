@@ -12,8 +12,6 @@ import {
   Crosshair,
   Loader2,
   Camera,
-  Target,
-  ScanSearch,
 } from 'lucide-react';
 import {
   fetchSecurityEvents,
@@ -29,9 +27,6 @@ import type { SecurityEvent } from '../types';
 
 const SecurityOverviewTab = lazy(() =>
   import('./security/SecurityOverviewTab').then((m) => ({ default: m.SecurityOverviewTab }))
-);
-const AuditLogTab = lazy(() =>
-  import('./security/SecurityAuditTab').then((m) => ({ default: m.AuditLogTab }))
 );
 const AutomationsSecurityTab = lazy(() =>
   import('./security/SecurityAutomationsTab').then((m) => ({ default: m.AutomationsSecurityTab }))
@@ -49,28 +44,19 @@ const NodeDetailsTab = lazy(() =>
   import('./security/SecurityNodesTab').then((m) => ({ default: m.NodeDetailsTab }))
 );
 const CaptureTab = lazy(() => import('./capture/CaptureTab'));
-const ATHITab = lazy(() =>
-  import('./security/SecurityATHITab').then((m) => ({ default: m.ATHITab }))
-);
-const SandboxTab = lazy(() =>
-  import('./security/SecuritySandboxTab').then((m) => ({ default: m.SandboxTab }))
-);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type TabType =
   | 'overview'
-  | 'audit'
-  | 'automations'
-  | 'ml'
-  | 'reports'
   | 'nodes'
+  | 'automations'
   | 'autonomy'
+  | 'ml'
+  | 'reports-logs'
   | 'risk'
   | 'scope'
-  | 'capture'
-  | 'athi'
-  | 'sandbox';
+  | 'capture';
 
 // ─── Shared localStorage helpers ─────────────────────────────────────────────
 
@@ -121,15 +107,15 @@ export function SecurityPage() {
     const path = location.pathname;
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
-    if (tabParam === 'audit') return 'audit';
+    if (tabParam === 'audit' || tabParam === 'reports' || tabParam === 'reports-logs' || path.includes('/reports'))
+      return 'reports-logs';
     if (tabParam === 'automations') return 'automations';
     if (tabParam === 'ml') return 'ml';
-    if (tabParam === 'reports' || path.includes('/reports')) return 'reports';
     if (tabParam === 'nodes') return 'nodes';
     if (tabParam === 'autonomy') return 'autonomy';
     if (tabParam === 'risk') return 'risk';
     if (tabParam === 'scope') return 'scope';
-    if (tabParam === 'athi') return 'athi';
+    if (tabParam === 'capture') return 'capture';
     return 'overview';
   };
 
@@ -232,9 +218,7 @@ export function SecurityPage() {
 
       <div className="flex gap-1 border-b border-border overflow-x-auto">
         <button
-          onClick={() => {
-            setActiveTab('overview');
-          }}
+          onClick={() => setActiveTab('overview')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'overview'
               ? 'border-primary text-primary'
@@ -245,22 +229,18 @@ export function SecurityPage() {
           Overview
         </button>
         <button
-          onClick={() => {
-            setActiveTab('audit');
-          }}
+          onClick={() => setActiveTab('nodes')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'audit'
+            activeTab === 'nodes'
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          <FileText className="w-4 h-4" />
-          Audit Log
+          <Server className="w-4 h-4" />
+          System
         </button>
         <button
-          onClick={() => {
-            setActiveTab('automations');
-          }}
+          onClick={() => setActiveTab('automations')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'automations'
               ? 'border-primary text-primary'
@@ -271,9 +251,7 @@ export function SecurityPage() {
           Automations
         </button>
         <button
-          onClick={() => {
-            setActiveTab('autonomy');
-          }}
+          onClick={() => setActiveTab('autonomy')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'autonomy'
               ? 'border-primary text-primary'
@@ -285,9 +263,7 @@ export function SecurityPage() {
         </button>
         {mlEnabled && (
           <button
-            onClick={() => {
-              setActiveTab('ml');
-            }}
+            onClick={() => setActiveTab('ml')}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'ml'
                 ? 'border-primary text-primary'
@@ -300,22 +276,18 @@ export function SecurityPage() {
           </button>
         )}
         <button
-          onClick={() => {
-            setActiveTab('reports');
-          }}
+          onClick={() => setActiveTab('reports-logs')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'reports'
+            activeTab === 'reports-logs'
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           <FileText className="w-4 h-4" />
-          Reports
+          Reports &amp; Logs
         </button>
         <button
-          onClick={() => {
-            setActiveTab('risk');
-          }}
+          onClick={() => setActiveTab('risk')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'risk'
               ? 'border-primary text-primary'
@@ -326,9 +298,7 @@ export function SecurityPage() {
           Risk
         </button>
         <button
-          onClick={() => {
-            setActiveTab('scope');
-          }}
+          onClick={() => setActiveTab('scope')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'scope'
               ? 'border-primary text-primary'
@@ -339,35 +309,7 @@ export function SecurityPage() {
           Scope
         </button>
         <button
-          onClick={() => {
-            setActiveTab('nodes');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'nodes'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Server className="w-4 h-4" />
-          System
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('athi');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'athi'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Target className="w-4 h-4" />
-          ATHI
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('capture');
-          }}
+          onClick={() => setActiveTab('capture')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'capture'
               ? 'border-primary text-primary'
@@ -376,19 +318,6 @@ export function SecurityPage() {
         >
           <Camera className="w-4 h-4" />
           Capture
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('sandbox');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'sandbox'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <ScanSearch className="w-4 h-4" />
-          Sandbox
         </button>
       </div>
 
@@ -403,38 +332,8 @@ export function SecurityPage() {
             onVerify={handleVerifyChain}
             onAcknowledge={acknowledgeEvent}
             onAcknowledgeAll={acknowledgeAll}
-            onViewAuditLog={() => {
-              setActiveTab('audit');
-            }}
+            onViewAuditLog={() => setActiveTab('reports-logs')}
           />
-        </Suspense>
-      )}
-
-      {activeTab === 'audit' && (
-        <Suspense fallback={<TabSkeleton />}>
-          <AuditLogTab
-            reviewed={auditReviewed}
-            onMarkReviewed={markAuditReviewed}
-            onMarkAllReviewed={markAllAuditReviewed}
-          />
-        </Suspense>
-      )}
-
-      {activeTab === 'automations' && (
-        <Suspense fallback={<TabSkeleton />}>
-          <AutomationsSecurityTab allowWorkflows={policy?.allowWorkflows ?? false} />
-        </Suspense>
-      )}
-
-      {activeTab === 'ml' && (
-        <Suspense fallback={<TabSkeleton />}>
-          <MLSecurityTab />
-        </Suspense>
-      )}
-
-      {activeTab === 'reports' && (
-        <Suspense fallback={<TabSkeleton />}>
-          <ReportsTab />
         </Suspense>
       )}
 
@@ -444,9 +343,31 @@ export function SecurityPage() {
         </Suspense>
       )}
 
+      {activeTab === 'automations' && (
+        <Suspense fallback={<TabSkeleton />}>
+          <AutomationsSecurityTab allowWorkflows={policy?.allowWorkflows ?? false} />
+        </Suspense>
+      )}
+
       {activeTab === 'autonomy' && (
         <Suspense fallback={<TabSkeleton />}>
           <AutonomyTab />
+        </Suspense>
+      )}
+
+      {activeTab === 'ml' && (
+        <Suspense fallback={<TabSkeleton />}>
+          <MLSecurityTab />
+        </Suspense>
+      )}
+
+      {activeTab === 'reports-logs' && (
+        <Suspense fallback={<TabSkeleton />}>
+          <ReportsTab
+            reviewed={auditReviewed}
+            onMarkReviewed={markAuditReviewed}
+            onMarkAllReviewed={markAllAuditReviewed}
+          />
         </Suspense>
       )}
 
@@ -454,21 +375,9 @@ export function SecurityPage() {
 
       {activeTab === 'scope' && <ScopeManifestTab />}
 
-      {activeTab === 'athi' && (
-        <Suspense fallback={<TabSkeleton />}>
-          <ATHITab />
-        </Suspense>
-      )}
-
       {activeTab === 'capture' && (
         <Suspense fallback={<TabSkeleton />}>
           <CaptureTab />
-        </Suspense>
-      )}
-
-      {activeTab === 'sandbox' && (
-        <Suspense fallback={<TabSkeleton />}>
-          <SandboxTab />
         </Suspense>
       )}
     </div>

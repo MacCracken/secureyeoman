@@ -60,20 +60,6 @@
 
 ---
 
-## Bugs / Improvements
-
-### Security View
-
-- [ ] Reports and Audit Logs are the same, report; lets consolidate generated reports and logs on the same page bring the style of reports list to thetop of the Audit Logs page.  Lets allow fix the buttons to be like Reports with Generate and type select and user has to download the report.
-- [ ] Security > System tab should be after Overview tab
-- [ ] Security > Risk should also include Security > ATHI
-- [ ] Security > Risk should also include Security > Sandbox
-
-### Organization
-
-- [ ] Create new Organizational tab for Intents, Risks (per department), other organization items (workpace, users)
-
-
 ---
 
 ## Phase 109: Editor Improvements (Auto-Claude Style)
@@ -424,4 +410,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-04 — Removed completed phases: Phase 111 (Departmental Risk Register), God Object decomposition (Phase 1 & 2), and backlog items (Fastify JSON Schema validation, Worker thread pool, error response unification, process.env centralization). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-04 — Removed completed bugs/improvements: Security View fixes (Reports & Logs consolidation, System tab reorder, ATHI/Sandbox → Risk sub-tabs) and Organization page. See [Changelog](../../CHANGELOG.md) for full history.*

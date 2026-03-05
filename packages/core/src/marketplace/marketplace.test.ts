@@ -95,7 +95,7 @@ describe('MarketplaceStorage', () => {
   it('should seed builtin skills', async () => {
     await storage.seedBuiltinSkills();
     const { skills, total } = await storage.search();
-    expect(total).toBe(10);
+    expect(total).toBe(23);
     const summarizeSkill = skills.find((s) => s.name === 'Summarize Text');
     expect(summarizeSkill).toBeDefined();
     expect(summarizeSkill!.author).toBe('YEOMAN');
@@ -173,8 +173,9 @@ describe('MarketplaceStorage', () => {
   it('should be idempotent when seeding builtin skills', async () => {
     await storage.seedBuiltinSkills();
     await storage.seedBuiltinSkills();
-    const { skills } = await storage.search('Summarize');
-    expect(skills).toHaveLength(1);
+    const { skills } = await storage.search('Summarize Text');
+    const exact = skills.filter((s) => s.name === 'Summarize Text');
+    expect(exact).toHaveLength(1);
   });
 
   it('should update routing quality fields on re-seed of existing skills', async () => {
@@ -223,7 +224,7 @@ describe('MarketplaceManager', () => {
   it('should seed builtin skills via manager', async () => {
     await manager.seedBuiltinSkills();
     const { skills, total } = await manager.search();
-    expect(total).toBe(10);
+    expect(total).toBe(23);
     const summarizeSkill = skills.find((s) => s.name === 'Summarize Text');
     expect(summarizeSkill).toBeDefined();
   });

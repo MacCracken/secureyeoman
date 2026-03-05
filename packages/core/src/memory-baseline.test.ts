@@ -22,7 +22,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { initPool, closePool, resetPool } from './storage/pg-pool.js';
+import { initPool } from './storage/pg-pool.js';
 import { runMigrations } from './storage/migrations/runner.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -138,8 +138,8 @@ describe('Memory baseline — cold-start RSS (migration fast-path)', () => {
   });
 
   afterAll(async () => {
-    await closePool();
-    resetPool();
+    // Do NOT closePool/resetPool — with isolate: false the pool is shared
+    // across all DB test files and must stay alive.
   });
 
   it(

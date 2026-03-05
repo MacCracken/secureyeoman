@@ -200,59 +200,11 @@ describe('SettingsPage', () => {
     expect(screen.getByDisplayValue('4096')).toBeInTheDocument();
   });
 
-  it('renders a Users tab', async () => {
+  it('does not render Users or Workspaces tabs (moved to Organization)', async () => {
     renderComponent();
-    expect(await screen.findByRole('button', { name: /Users/ })).toBeInTheDocument();
-  });
-
-  it('Users tab appears before Roles tab in the tab bar', async () => {
-    renderComponent();
-    await screen.findByRole('button', { name: /Users/ });
-    const tabs = screen.getAllByRole('button', {
-      name: /General|Security|Keys|Users|Roles|Logs/,
-    });
-    const labels = tabs.map((t) => t.textContent?.trim());
-    const usersIdx = labels.findIndex((l) => l?.includes('Users'));
-    const rolesIdx = labels.findIndex((l) => l?.includes('Roles'));
-    expect(usersIdx).toBeGreaterThanOrEqual(0);
-    expect(rolesIdx).toBeGreaterThanOrEqual(0);
-    expect(usersIdx).toBeLessThan(rolesIdx);
-  });
-
-  it('switches to Users tab and shows user management content', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    await user.click(await screen.findByRole('button', { name: /Users/ }));
-    expect(await screen.findByText('Add User')).toBeInTheDocument();
-  });
-
-  it('shows empty user list on Users tab when no users exist', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    await user.click(await screen.findByRole('button', { name: /Users/ }));
-    expect(await screen.findByText('No users found.')).toBeInTheDocument();
-  });
-
-  it('shows users when the Users tab is active', async () => {
-    const user = userEvent.setup();
-    mockFetchUsers.mockResolvedValue({
-      users: [
-        {
-          id: 'u1',
-          email: 'test@example.com',
-          displayName: 'Test User',
-          isAdmin: false,
-          createdAt: Date.now(),
-        },
-      ],
-    });
-    renderComponent();
-
-    await user.click(await screen.findByRole('button', { name: /Users/ }));
-    expect(await screen.findByText('Test User')).toBeInTheDocument();
-    expect(screen.getByText('test@example.com')).toBeInTheDocument();
+    await screen.findByText('Administration');
+    expect(screen.queryByRole('button', { name: /Users/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Workspaces/ })).not.toBeInTheDocument();
   });
 
   it('renders the Appearance tab button', async () => {

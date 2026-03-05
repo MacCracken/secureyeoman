@@ -6,6 +6,19 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.4] — 2026-03-04
 
+### Security View Fixes & Organization Page
+
+- **Reports & Logs consolidation** (`SecurityReportsTab.tsx`): Merged "Audit Log" and "Reports" tabs into a single "Reports & Logs" tab. Report type dropdown with 5 types: Audit Report (json/html/csv), Audit Log Export (jsonl/csv/syslog), Department Scorecard (json/html/md/csv), Executive Summary (json/html/md), Register Report (json/csv). Dynamic format selector, department picker for scoped reports, and embedded AuditLogTab below the reports section.
+- **Security tab reorder** (`SecurityPage.tsx`): Reduced from 12 tabs to 9. Removed standalone Audit Log, Reports, ATHI, and Sandbox tabs. Added combined "Reports & Logs". Moved System tab to second position (after Overview). New tab order: Overview, System, Automations, Autonomy, ML*, Reports & Logs, Risk, Scope, Capture. Legacy `?tab=audit` and `?tab=reports` URLs redirect to `reports-logs`.
+- **ATHI → Risk sub-tab** (`RiskAssessmentTab.tsx`): ATHI Threats moved from a top-level Security tab to a sub-tab under Risk. Lazy-loaded with Target icon.
+- **Sandbox → Risk sub-tab** (`RiskAssessmentTab.tsx`): Sandbox Scanning moved from a top-level Security tab to a sub-tab under Risk. Lazy-loaded with ScanSearch icon.
+- **DepartmentalRiskTab extraction** (`DepartmentalRiskTab.tsx`): Extracted the 300+ line `DepartmentsSection` from `RiskAssessmentTab.tsx` into a standalone reusable component. Used by both Security > Risk > Departments and the new Organization page.
+- **Organization page** (`OrganizationPage.tsx`): New `/organization` route with 4 tabs: Intent (IntentEditor), Risk (DepartmentalRiskTab), Workspaces (WorkspacesSettings), Users (UsersSettings). Query param deep linking (`?tab=intent|risk|workspaces|users`).
+- **Route redirects** (`DashboardLayout.tsx`): `/intent` → `/organization?tab=intent`, `/workspaces` → `/organization?tab=workspaces`, `/users` → `/organization?tab=users`.
+- **Sidebar** (`Sidebar.tsx`): Intent nav item replaced with "Organization" using Building2 icon, pointing to `/organization`.
+- **Settings cleanup** (`SettingsPage.tsx`): Removed Workspaces and Users tabs (moved to Organization). 8 remaining tabs: General, Appearance, Security, Secrets, Roles, Souls, Notifications, Backup.
+- **Tests**: Updated `SecurityPage.test.tsx` (44 tests — new tab structure assertions, removed ATHI/Sandbox/Audit Log tests), `SettingsPage.test.tsx` (17 tests — verifies Users/Workspaces tabs absent), new `OrganizationPage.test.tsx` (6 tests — render, tab switching, query param deep linking). 67 total dashboard tests passing. TypeScript + Vite build clean.
+
 ### Administration Tab Reorganization
 
 - **Souls tab** (`SettingsPage.tsx`): Extracted Soul System, Reasoning Strategies, and Active Souls from General tab into a new dedicated "Souls" administration tab. Route `/souls` added to `DashboardLayout.tsx`.
