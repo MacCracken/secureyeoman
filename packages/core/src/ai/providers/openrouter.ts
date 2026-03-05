@@ -134,35 +134,40 @@ export class OpenRouterProvider extends BaseProvider {
       let currentToolId = '';
       let currentToolName = '';
 
-      for await (const chunk of stream as AsyncIterable<OpenAI.ChatCompletionChunk>) {
-        const delta = chunk.choices[0]?.delta;
+      try {
+        for await (const chunk of stream as AsyncIterable<OpenAI.ChatCompletionChunk>) {
+          const delta = chunk.choices[0]?.delta;
 
-        if (delta?.content) {
-          yield { type: 'content_delta', content: delta.content };
-        }
+          if (delta?.content) {
+            yield { type: 'content_delta', content: delta.content };
+          }
 
-        if (delta?.tool_calls?.length) {
-          for (const tc of delta.tool_calls) {
-            if (tc.id) currentToolId = tc.id;
-            if (tc.function?.name) currentToolName = tc.function.name;
+          if (delta?.tool_calls?.length) {
+            for (const tc of delta.tool_calls) {
+              if (tc.id) currentToolId = tc.id;
+              if (tc.function?.name) currentToolName = tc.function.name;
+              yield {
+                type: 'tool_call_delta',
+                toolCall: { id: currentToolId, name: currentToolName },
+              };
+            }
+          }
+
+          if (chunk.usage) {
+            const usage = this.mapChunkUsage(chunk.usage);
+            yield { type: 'usage', usage };
+          }
+
+          if (chunk.choices[0]?.finish_reason) {
             yield {
-              type: 'tool_call_delta',
-              toolCall: { id: currentToolId, name: currentToolName },
+              type: 'done',
+              stopReason: this.mapStopReason(chunk.choices[0].finish_reason),
             };
           }
         }
-
-        if (chunk.usage) {
-          const usage = this.mapChunkUsage(chunk.usage);
-          yield { type: 'usage', usage };
-        }
-
-        if (chunk.choices[0]?.finish_reason) {
-          yield {
-            type: 'done',
-            stopReason: this.mapStopReason(chunk.choices[0].finish_reason),
-          };
-        }
+      } finally {
+        // Cleanup: abort the OpenAI SDK stream if the consumer stopped iterating early
+        stream.controller?.abort();
       }
     } catch (error) {
       throw this.mapError(error);

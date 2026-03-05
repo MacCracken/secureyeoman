@@ -128,65 +128,70 @@ export class AnthropicProvider extends BaseProvider {
       let currentToolArgs = '';
       let inThinkingBlock = false;
 
-      for await (const event of stream) {
-        if (event.type === 'content_block_start') {
-          const block = event.content_block as unknown as Record<string, unknown>;
-          if (block.type === 'tool_use') {
-            currentToolId = block.id as string;
-            currentToolName = block.name as string;
-            currentToolArgs = '';
+      try {
+        for await (const event of stream) {
+          if (event.type === 'content_block_start') {
+            const block = event.content_block as unknown as Record<string, unknown>;
+            if (block.type === 'tool_use') {
+              currentToolId = block.id as string;
+              currentToolName = block.name as string;
+              currentToolArgs = '';
+              inThinkingBlock = false;
+            } else if (block.type === 'thinking') {
+              inThinkingBlock = true;
+            } else {
+              inThinkingBlock = false;
+            }
+          } else if (event.type === 'content_block_delta') {
+            const delta = event.delta as unknown as Record<string, unknown>;
+            if (delta.type === 'thinking_delta') {
+              yield { type: 'thinking_delta', thinking: (delta.thinking as string) ?? '' };
+            } else if (delta.type === 'text_delta') {
+              inThinkingBlock = false;
+              yield { type: 'content_delta', content: (delta.text as string) ?? '' };
+            } else if (delta.type === 'input_json_delta') {
+              currentToolArgs += (delta.partial_json as string) ?? '';
+              yield {
+                type: 'tool_call_delta',
+                toolCall: { id: currentToolId, name: currentToolName },
+              };
+            }
+          } else if (event.type === 'content_block_stop') {
             inThinkingBlock = false;
-          } else if (block.type === 'thinking') {
-            inThinkingBlock = true;
-          } else {
-            inThinkingBlock = false;
-          }
-        } else if (event.type === 'content_block_delta') {
-          const delta = event.delta as unknown as Record<string, unknown>;
-          if (delta.type === 'thinking_delta') {
-            yield { type: 'thinking_delta', thinking: (delta.thinking as string) ?? '' };
-          } else if (delta.type === 'text_delta') {
-            inThinkingBlock = false;
-            yield { type: 'content_delta', content: (delta.text as string) ?? '' };
-          } else if (delta.type === 'input_json_delta') {
-            currentToolArgs += (delta.partial_json as string) ?? '';
+          } else if (event.type === 'message_delta') {
+            const finalMessage = await stream.finalMessage();
+            const usage = this.mapUsage(finalMessage.usage);
+
+            // Extract complete tool calls and thinking blocks from the final message
+            const doneToolCalls: ToolCall[] = [];
+            const doneThinkingBlocks: ThinkingBlock[] = [];
+            for (const rawFinalBlock of finalMessage.content) {
+              const fb = rawFinalBlock as unknown as Record<string, unknown>;
+              if (fb.type === 'tool_use') {
+                doneToolCalls.push({
+                  id: fb.id as string,
+                  name: fb.name as string,
+                  arguments: fb.input as Record<string, unknown>,
+                });
+              } else if (fb.type === 'thinking') {
+                const thinking = fb.thinking as string;
+                const signature = (fb.signature as string | undefined) ?? '';
+                doneThinkingBlocks.push({ thinking, signature });
+              }
+            }
+
             yield {
-              type: 'tool_call_delta',
-              toolCall: { id: currentToolId, name: currentToolName },
+              type: 'done',
+              stopReason: this.mapStopReason(finalMessage.stop_reason),
+              usage,
+              ...(doneToolCalls.length > 0 ? { toolCalls: doneToolCalls } : {}),
+              ...(doneThinkingBlocks.length > 0 ? { thinkingBlocks: doneThinkingBlocks } : {}),
             };
           }
-        } else if (event.type === 'content_block_stop') {
-          inThinkingBlock = false;
-        } else if (event.type === 'message_delta') {
-          const finalMessage = await stream.finalMessage();
-          const usage = this.mapUsage(finalMessage.usage);
-
-          // Extract complete tool calls and thinking blocks from the final message
-          const doneToolCalls: ToolCall[] = [];
-          const doneThinkingBlocks: ThinkingBlock[] = [];
-          for (const rawFinalBlock of finalMessage.content) {
-            const fb = rawFinalBlock as unknown as Record<string, unknown>;
-            if (fb.type === 'tool_use') {
-              doneToolCalls.push({
-                id: fb.id as string,
-                name: fb.name as string,
-                arguments: fb.input as Record<string, unknown>,
-              });
-            } else if (fb.type === 'thinking') {
-              const thinking = fb.thinking as string;
-              const signature = (fb.signature as string | undefined) ?? '';
-              doneThinkingBlocks.push({ thinking, signature });
-            }
-          }
-
-          yield {
-            type: 'done',
-            stopReason: this.mapStopReason(finalMessage.stop_reason),
-            usage,
-            ...(doneToolCalls.length > 0 ? { toolCalls: doneToolCalls } : {}),
-            ...(doneThinkingBlocks.length > 0 ? { thinkingBlocks: doneThinkingBlocks } : {}),
-          };
         }
+      } finally {
+        // Cleanup: abort the Anthropic SDK stream if the consumer stopped iterating early
+        if (typeof stream.abort === 'function') stream.abort();
       }
       void inThinkingBlock; // suppress unused warning
     } catch (error) {

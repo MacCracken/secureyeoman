@@ -118,8 +118,6 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 #### Security Gaps
 - [ ] **ROUTE_PERMISSIONS auto-generation** — Auto-generate from route registration metadata instead of maintaining 100+ hardcoded entries. Ensure all dynamically registered routes have explicit permission mapping. Reference: `gateway/auth-middleware.ts`.
-- [ ] **Delegation promise cleanup** — `activeDelegations` Map entries not cleaned up after timeout; can block all new delegations when hitting `maxConcurrent`. Reference: `agents/manager.ts:345-351`.
-- [ ] **Async generator stream cleanup** — AI provider `chatStream()` generators may not clean up if consumer stops iterating early. Add try/finally. Reference: `ai/providers/anthropic.ts:105-195`.
 
 #### Database
 - [ ] **Composite indexes for usage storage** — Add `(provider, recorded_at DESC)` and `(personality_id, recorded_at DESC)` indexes to prevent full table scans on dashboard/reporting queries. Reference: `ai/usage-storage.ts:100-104`.
@@ -324,4 +322,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-05 — Added Security Hardening backlog (13 deferred items from codebase audit). Removed completed phases: 120 (Community Skills Expansion), 125 (Strategic Trading Skills), 125-C (Advanced Financial Charting), 111 (Departmental Risk Register), God Object Decomposition (Phase 1+2), Security View fixes, Organization page, OAuth credential setup, Personality view bug fixes, 122-A/B (PDF Analysis), 124 (Cognitive Memory), 117 (Excalidraw Diagramming). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-05 — Fixed 2 security gaps: delegation promise cleanup (hard timeout), async generator stream cleanup (11 providers). Added sandbox enhancements + codebase audit to changelog. See [Changelog](../../CHANGELOG.md) for full history.*

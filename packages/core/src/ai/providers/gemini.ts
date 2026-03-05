@@ -96,27 +96,31 @@ export class GeminiProvider extends BaseProvider {
         ...(system ? { systemInstruction: { role: 'user', parts: [{ text: system }] } } : {}),
       });
 
-      for await (const chunk of result.stream) {
-        const text = chunk.text();
-        if (text) {
-          yield { type: 'content_delta', content: text };
-        }
+      try {
+        for await (const chunk of result.stream) {
+          const text = chunk.text();
+          if (text) {
+            yield { type: 'content_delta', content: text };
+          }
 
-        // Check for function calls in streamed chunks
-        const parts = chunk.candidates?.[0]?.content?.parts;
-        if (parts) {
-          for (const part of parts) {
-            if ('functionCall' in part && part.functionCall) {
-              yield {
-                type: 'tool_call_delta',
-                toolCall: {
-                  id: `gemini-${Date.now()}`,
-                  name: part.functionCall.name,
-                },
-              };
+          // Check for function calls in streamed chunks
+          const parts = chunk.candidates?.[0]?.content?.parts;
+          if (parts) {
+            for (const part of parts) {
+              if ('functionCall' in part && part.functionCall) {
+                yield {
+                  type: 'tool_call_delta',
+                  toolCall: {
+                    id: `gemini-${Date.now()}`,
+                    name: part.functionCall.name,
+                  },
+                };
+              }
             }
           }
         }
+      } finally {
+        // Cleanup: Gemini SDK async iterator protocol handles stream closure
       }
 
       // Get final aggregated response for usage

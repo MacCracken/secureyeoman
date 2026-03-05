@@ -4,6 +4,36 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.5] — 2026-03-05
+
+### Codebase Optimization Audit
+
+Applied 24 fixes across 11 files:
+- **Security**: RBAC cache invalidation on `loadFromStorage`, LRU eviction, UUID client IDs, citation cap, byte-length input check, log sanitizer (JWT + DB connection string patterns), Gemini API key redaction in errors.
+- **Reliability**: WebSocket heartbeat try-catch, channel subscription cap, transaction double-release guard, binary agent stdout 10 MB cap, local embedding queue bound (100).
+- **Performance**: Logger level guard (skip sanitization for trace/debug), workflow parallel step batching (max 20).
+- **DoS Prevention**: Webhook/CI/CD fetch timeouts (`AbortSignal`), response body truncation, subworkflow depth limit (10).
+- **Bug**: `utils/id.ts` was returning v4 UUIDs instead of v7 — re-exported from `crypto.ts`.
+
+### Sandbox Enhancements
+
+- **GVisor Sandbox** (`sandbox/gvisor-sandbox.ts`): gVisor (`runsc`) based sandbox execution with hardware-level isolation via userspace syscall interception. OCI runtime container creation, configurable memory/CPU limits, filesystem restrictions, network policy. Linux-only with auto-fallback to NoopSandbox when `runsc` is unavailable.
+- **WASM Sandbox** (`sandbox/wasm-sandbox.ts`): WebAssembly/WASI based sandbox using Node.js `vm` module. Memory-isolated execution, restricted filesystem via preopened directories, blocked network by default, resource tracking. Cross-platform (Linux/macOS/Windows).
+- **SandboxManager**: Added `gvisor` and `wasm` to technology selector (`'auto' | 'seccomp' | 'landlock' | 'gvisor' | 'wasm' | 'none'`). Auto-detection prefers gvisor on Linux when available, falls back through seccomp → wasm → noop.
+- **Tests**: 287 gvisor-sandbox tests, 218 wasm-sandbox tests. All passing.
+
+### Security Gap Fixes
+
+- **Delegation promise cleanup** (`agents/manager.ts`): Added hard timeout (`timeout + 10s grace`) via `Promise.race` in `delegate()`. If `aiClient.chat()` hangs beyond the soft abort window, the hard timeout fires, aborts the controller, and cleans up the `activeDelegations` map entry. Prevents stuck delegations from permanently blocking `maxConcurrent` slots. Returns structured timeout result instead of leaving the promise pending.
+- **Async generator stream cleanup** (11 AI providers): Added `try/finally` blocks inside `chatStream()` methods to ensure SDK stream objects are cleaned up when consumers stop iterating early. Anthropic: `stream.abort()`. OpenAI-compatible providers (openai, groq, deepseek, mistral, grok, openrouter, localai, lmstudio, opencode): `stream.controller?.abort()`. Gemini: async iterator protocol (no explicit abort). Ollama and Letta already had proper cleanup via `reader.releaseLock()`.
+
+### Bug Fixes
+
+- **DB test fix**: Added missing `maxContentLength: 4096` to `defaultConfig()` in `brain.test.ts`. Without it, the oversized-content rejection tests silently passed the guard (`content.length > undefined` is always false), causing 2 spurious failures.
+- **Test DB refresh**: Stale test database state (accumulated from prior schema/code changes) caused random flaky failures across all DB test files. Resolved by dropping and recreating `secureyeoman_test`. All 882 DB tests now pass (41 files).
+
+---
+
 ## [2026.3.4] — 2026-03-04
 
 ### Phase 125-D: Cognitive ML Memory Enhancements

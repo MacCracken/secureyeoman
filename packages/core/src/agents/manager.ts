@@ -189,10 +189,11 @@ export class SubAgentManager {
       parentContext?.delegationId
     );
 
+    const startedAt = Date.now();
     this.activeDelegations.set(delegationId, {
       abortController,
       promise,
-      startedAt: Date.now(),
+      startedAt,
       profileName: profile.name,
       task: params.task,
       depth,
@@ -201,10 +202,47 @@ export class SubAgentManager {
       initiatedByPersonalityId: params.initiatedByPersonalityId,
     });
 
+    // Hard timeout: if the soft abort (inside executeDelegation) doesn't resolve
+    // the promise within a grace period, force cleanup so activeDelegations
+    // doesn't permanently block new delegations.
+    const HARD_TIMEOUT_GRACE_MS = 10_000;
+    const hardTimeoutMs = timeoutMs + HARD_TIMEOUT_GRACE_MS;
+    let hardTimeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
     try {
-      const result = await promise;
+      const result = await Promise.race([
+        promise,
+        new Promise<never>((_, reject) => {
+          hardTimeoutHandle = setTimeout(() => {
+            abortController.abort();
+            reject(new Error(`Delegation hard timeout after ${hardTimeoutMs}ms`));
+          }, hardTimeoutMs);
+          hardTimeoutHandle.unref();
+        }),
+      ]);
       return result;
+    } catch (err) {
+      // Hard timeout triggered — return a timeout result instead of throwing,
+      // so the caller gets a structured response like a normal timeout.
+      const errorMsg = err instanceof Error ? err.message : 'Hard timeout';
+      await this.storage.updateDelegation(delegationId, {
+        status: 'timeout',
+        error: errorMsg,
+        completedAt: Date.now(),
+      }).catch(() => { /* best-effort — may already be updated by executeDelegation */ });
+
+      return {
+        delegationId,
+        profile: profile.name,
+        status: 'timeout',
+        result: null,
+        error: errorMsg,
+        tokenUsage: { prompt: 0, completion: 0, total: 0 },
+        durationMs: Date.now() - startedAt,
+        subDelegations: [],
+      };
     } finally {
+      if (hardTimeoutHandle) clearTimeout(hardTimeoutHandle);
       this.activeDelegations.delete(delegationId);
     }
   }

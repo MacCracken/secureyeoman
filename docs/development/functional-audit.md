@@ -230,9 +230,9 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 
 | | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |--|--|--|--|--|--|
-| Test count | **14,177+** | Limited (community-driven) | Minimal | Minimal | Not published (Rust type safety provides baseline) |
+| Test count | **15,059** | Limited (community-driven) | Minimal | Minimal | Not published (Rust type safety provides baseline) |
 | Line coverage | **≥ 87%** | Not tracked | Not tracked | Not tracked | Not tracked |
-| Test files | **842** | Unknown | Unknown | Unknown | Unknown |
+| Test files | **883** | Unknown | Unknown | Unknown | Unknown |
 | ADR records | **166** | Unknown | Unknown | Unknown | Unknown |
 | CI/CD | ✅ lint · typecheck · test · build · security audit · docker-push · helm-lint | ✅ | Basic | Minimal | ✅ Cargo CI |
 | Security test suite | ✅ Dedicated security + chaos suites; vitest-axe a11y smoke tests | ❌ Multiple CVEs 2026 | ❌ | ❌ | ✅ Memory-safe by language; WASM sandbox tests |
