@@ -10,10 +10,16 @@ import { createSoulConfig } from '../test/mocks';
 
 // ── Mock hooks ───────────────────────────────────────────────────
 
-vi.mock('../hooks/useTheme', () => ({
-  useTheme: () => ({ theme: 'dark', isDark: true, setTheme: vi.fn(), toggle: vi.fn() }),
-  THEMES: [],
-}));
+vi.mock('../hooks/useTheme', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../hooks/useTheme')>();
+  return {
+    ...actual,
+    useTheme: () => ({ theme: 'dark', isDark: true, setTheme: vi.fn(), toggle: vi.fn() }),
+    THEMES: [],
+    loadCustomThemes: () => [],
+    loadSchedule: () => actual.DEFAULT_SCHEDULE,
+  };
+});
 
 // ── Mock API client ──────────────────────────────────────────────
 // Must include every export that SettingsPage and its child tabs

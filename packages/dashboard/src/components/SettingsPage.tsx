@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Settings,
@@ -17,6 +17,12 @@ import {
   Plus,
   BadgeCheck,
   Sparkles,
+  Upload,
+  Clock,
+  X,
+  Copy,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -35,7 +41,24 @@ import { ApiKeysSettings } from './ApiKeysSettings';
 import { ProviderKeysSettings } from './ProviderKeysSettings';
 import { NotificationPrefsPanel } from './NotificationPrefsPanel';
 import { CostDashboard } from './telemetry/CostDashboard';
-import { useTheme, THEMES } from '../hooks/useTheme';
+import {
+  useTheme,
+  THEMES,
+  THEME_CSS_VARS,
+  loadCustomThemes,
+  addCustomTheme,
+  removeCustomTheme,
+  exportCustomTheme,
+  validateCustomTheme,
+  isValidHsl,
+  loadSchedule,
+  saveSchedule,
+  DEFAULT_SCHEDULE,
+  type CustomTheme,
+  type ThemeCssVar,
+  type ThemeSchedule,
+  type ThemeId,
+} from '../hooks/useTheme';
 import { AuditChainTab } from './AuditChainTab';
 import { SoulSystemTab } from './SoulSystemTab';
 import { RateLimitingTab } from './RateLimitingTab';
@@ -208,6 +231,20 @@ export function SettingsPage() {
 
 function AppearanceTab() {
   const { theme, setTheme } = useTheme();
+  const [customThemes, setCustomThemes] = useState<CustomTheme[]>(loadCustomThemes);
+  const [showEditor, setShowEditor] = useState(false);
+  const [editorColors, setEditorColors] = useState<Record<ThemeCssVar, string>>(() => {
+    const defaults: Record<string, string> = {};
+    for (const v of THEME_CSS_VARS) defaults[v] = '0 0% 50%';
+    return defaults as Record<ThemeCssVar, string>;
+  });
+  const [editorName, setEditorName] = useState('My Theme');
+  const [editorIsDark, setEditorIsDark] = useState(true);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [schedule, setSchedule] = useState<ThemeSchedule>(loadSchedule);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const refreshCustomThemes = () => setCustomThemes(loadCustomThemes());
 
   const darkThemes = THEMES.filter((t) => t.isDark && !t.enterprise);
   const darkEnterprise = THEMES.filter((t) => t.isDark && t.enterprise);
@@ -218,28 +255,69 @@ function AppearanceTab() {
   const ThemeCard = ({ t }: { t: (typeof THEMES)[0] }) => (
     <button
       key={t.id}
-      onClick={() => {
-        setTheme(t.id);
-      }}
+      onClick={() => setTheme(t.id)}
       className={`relative flex flex-col rounded-lg border-2 overflow-hidden transition-all duration-150 ${
         theme === t.id
           ? 'border-primary shadow-md shadow-primary/20'
           : 'border-border hover:border-muted-foreground/50'
       }`}
     >
-      {/* Swatch strip */}
       <div className="h-12 flex">
         {t.preview.map((color, i) => (
           <div key={i} className="flex-1" style={{ backgroundColor: color }} />
         ))}
       </div>
-      {/* Label */}
       <div className="flex items-center gap-1.5 px-2 py-1.5 bg-card text-left">
         <span className="text-xs font-medium truncate flex-1">{t.name}</span>
         {theme === t.id && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
       </div>
     </button>
   );
+
+  const CustomThemeCard = ({ t }: { t: CustomTheme }) => {
+    const themeId: ThemeId = `custom:${t.id}`;
+    return (
+      <div
+        className={`relative flex flex-col rounded-lg border-2 overflow-hidden transition-all duration-150 ${
+          theme === themeId
+            ? 'border-primary shadow-md shadow-primary/20'
+            : 'border-border hover:border-muted-foreground/50'
+        }`}
+      >
+        <button onClick={() => setTheme(themeId)} className="flex-1">
+          <div className="h-12 flex">
+            <div className="flex-1" style={{ backgroundColor: `hsl(${t.colors.background})` }} />
+            <div className="flex-1" style={{ backgroundColor: `hsl(${t.colors.foreground})` }} />
+            <div className="flex-1" style={{ backgroundColor: `hsl(${t.colors.primary})` }} />
+          </div>
+        </button>
+        <div className="flex items-center gap-1 px-2 py-1.5 bg-card text-left">
+          <span className="text-xs font-medium truncate flex-1">{t.name}</span>
+          <button
+            onClick={() => {
+              const json = JSON.stringify(exportCustomTheme(t), null, 2);
+              navigator.clipboard.writeText(json);
+            }}
+            className="p-0.5 hover:text-primary"
+            title="Copy JSON"
+          >
+            <Copy className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => {
+              removeCustomTheme(t.id);
+              refreshCustomThemes();
+              if (theme === themeId) setTheme('dark');
+            }}
+            className="p-0.5 hover:text-destructive"
+            title="Delete"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const Section = ({ label, themes }: { label: string; themes: typeof THEMES }) => (
     <div className="space-y-2">
@@ -252,16 +330,281 @@ function AppearanceTab() {
     </div>
   );
 
+  // ── Upload handler ──
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result as string);
+        const result = validateCustomTheme(parsed);
+        if (!result.valid) {
+          setUploadError(result.error);
+          return;
+        }
+        const added = addCustomTheme(result.theme);
+        refreshCustomThemes();
+        setTheme(`custom:${added.id}` as ThemeId);
+      } catch {
+        setUploadError('Invalid JSON file');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // ── Save editor theme ──
+
+  const saveEditorTheme = () => {
+    const result = validateCustomTheme({ name: editorName, isDark: editorIsDark, colors: editorColors });
+    if (!result.valid) {
+      setUploadError(result.error);
+      return;
+    }
+    const added = addCustomTheme(result.theme);
+    refreshCustomThemes();
+    setTheme(`custom:${added.id}` as ThemeId);
+    setShowEditor(false);
+  };
+
+  // ── Schedule handler ──
+
+  const updateSchedule = (updates: Partial<ThemeSchedule>) => {
+    const next = { ...schedule, ...updates };
+    setSchedule(next);
+    saveSchedule(next);
+  };
+
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-lg font-semibold">Appearance</h2>
         <p className="text-sm text-muted-foreground mt-0.5">Choose a theme for the dashboard</p>
       </div>
+
       <Section label="System" themes={systemTheme} />
       <Section label="Dark" themes={darkThemes} />
       <Section label="Light" themes={lightThemes} />
       <Section label="Enterprise" themes={[...darkEnterprise, ...lightEnterprise]} />
+
+      {/* ── Custom Themes ── */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium text-muted-foreground">Custom</h3>
+          <button
+            onClick={() => setShowEditor(!showEditor)}
+            className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20"
+          >
+            <Plus className="w-3 h-3 inline mr-1" />
+            Create
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20"
+          >
+            <Upload className="w-3 h-3 inline mr-1" />
+            Import
+          </button>
+          <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleUpload} />
+        </div>
+        {uploadError && (
+          <p className="text-xs text-destructive">{uploadError}</p>
+        )}
+        {customThemes.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {customThemes.map((t) => (
+              <CustomThemeCard key={t.id} t={t} />
+            ))}
+          </div>
+        )}
+        {customThemes.length === 0 && !showEditor && (
+          <p className="text-xs text-muted-foreground">No custom themes yet. Create or import one.</p>
+        )}
+      </div>
+
+      {/* ── Theme Editor ── */}
+      {showEditor && (
+        <div className="border border-border rounded-lg p-4 space-y-4 bg-card">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Theme Editor</h3>
+            <button onClick={() => setShowEditor(false)} className="text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex gap-4 items-center">
+            <input
+              value={editorName}
+              onChange={(e) => setEditorName(e.target.value)}
+              className="text-sm px-2 py-1 rounded border border-input bg-background flex-1"
+              placeholder="Theme name"
+              maxLength={64}
+            />
+            <label className="flex items-center gap-1.5 text-xs">
+              <input
+                type="checkbox"
+                checked={editorIsDark}
+                onChange={(e) => setEditorIsDark(e.target.checked)}
+                className="rounded"
+              />
+              Dark theme
+            </label>
+          </div>
+          {/* Live preview strip */}
+          <div className="h-8 rounded flex overflow-hidden border border-border">
+            <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.background})` }} />
+            <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.foreground})` }} />
+            <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.primary})` }} />
+            <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.accent})` }} />
+            <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.secondary})` }} />
+            <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.destructive})` }} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {THEME_CSS_VARS.map((v) => (
+              <div key={v} className="space-y-1">
+                <label className="text-[10px] text-muted-foreground block">{v}</label>
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className="w-6 h-6 rounded border border-border flex-shrink-0"
+                    style={{ backgroundColor: isValidHsl(editorColors[v]) ? `hsl(${editorColors[v]})` : '#888' }}
+                  />
+                  <input
+                    value={editorColors[v]}
+                    onChange={(e) =>
+                      setEditorColors((prev) => ({ ...prev, [v]: e.target.value }))
+                    }
+                    className={`text-xs px-1.5 py-1 rounded border bg-background flex-1 font-mono ${
+                      isValidHsl(editorColors[v]) ? 'border-input' : 'border-destructive'
+                    }`}
+                    placeholder="H S% L%"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => {
+                const json = JSON.stringify({ name: editorName, isDark: editorIsDark, colors: editorColors }, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${editorName.toLowerCase().replace(/\s+/g, '-')}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted"
+            >
+              Export JSON
+            </button>
+            <button
+              onClick={saveEditorTheme}
+              className="text-xs px-3 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Save & Apply
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Theme Scheduling ── */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-muted-foreground">Auto-Switch Schedule</h3>
+        </div>
+        <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={schedule.enabled}
+              onChange={(e) => updateSchedule({ enabled: e.target.checked })}
+              className="rounded"
+            />
+            Enable scheduled theme switching
+          </label>
+          {schedule.enabled && (
+            <>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={schedule.useOsSchedule}
+                  onChange={(e) => updateSchedule({ useOsSchedule: e.target.checked })}
+                  className="rounded"
+                />
+                Use OS light/dark schedule
+              </label>
+              {!schedule.useOsSchedule && (
+                <div className="flex gap-4 text-sm">
+                  <label className="flex items-center gap-1.5">
+                    <Sun className="w-3.5 h-3.5 text-warning" />
+                    Light at
+                    <input
+                      type="number"
+                      min={0}
+                      max={23}
+                      value={schedule.lightHour}
+                      onChange={(e) => updateSchedule({ lightHour: parseInt(e.target.value) || 0 })}
+                      className="w-14 px-1.5 py-0.5 rounded border border-input bg-background text-center"
+                    />
+                    :00
+                  </label>
+                  <label className="flex items-center gap-1.5">
+                    <Moon className="w-3.5 h-3.5 text-info" />
+                    Dark at
+                    <input
+                      type="number"
+                      min={0}
+                      max={23}
+                      value={schedule.darkHour}
+                      onChange={(e) => updateSchedule({ darkHour: parseInt(e.target.value) || 0 })}
+                      className="w-14 px-1.5 py-0.5 rounded border border-input bg-background text-center"
+                    />
+                    :00
+                  </label>
+                </div>
+              )}
+              <div className="flex gap-4 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <Sun className="w-3.5 h-3.5" />
+                  Light theme:
+                  <select
+                    value={schedule.lightTheme}
+                    onChange={(e) => updateSchedule({ lightTheme: e.target.value as ThemeId })}
+                    className="px-1.5 py-0.5 rounded border border-input bg-background text-xs"
+                  >
+                    {THEMES.filter((t) => !t.isDark && t.id !== 'system').map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                    {customThemes.filter((t) => !t.isDark).map((t) => (
+                      <option key={t.id} value={`custom:${t.id}`}>{t.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <Moon className="w-3.5 h-3.5" />
+                  Dark theme:
+                  <select
+                    value={schedule.darkTheme}
+                    onChange={(e) => updateSchedule({ darkTheme: e.target.value as ThemeId })}
+                    className="px-1.5 py-0.5 rounded border border-input bg-background text-xs"
+                  >
+                    {THEMES.filter((t) => t.isDark).map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                    {customThemes.filter((t) => t.isDark).map((t) => (
+                      <option key={t.id} value={`custom:${t.id}`}>{t.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -129,6 +129,13 @@ const INJECTION_PATTERNS: {
   },
 ];
 
+// Pre-compiled combined regex for fast-path rejection.
+// If this doesn't match, none of the individual patterns will either — skip the loop entirely.
+const INJECTION_FAST_PATH = new RegExp(
+  INJECTION_PATTERNS.map((p) => `(?:${p.pattern.source})`).join('|'),
+  'gi'
+);
+
 // Characters that should be normalized or removed
 const DANGEROUS_UNICODE: RegExp[] = [
   /[\u200B-\u200D\uFEFF]/g, // Zero-width characters
@@ -316,6 +323,12 @@ export class InputValidator {
     let blockReason: string | undefined;
     let scoreAccum = 0;
     const SEVERITY_WEIGHT: Record<string, number> = { high: 0.6, medium: 0.35, low: 0.15 };
+
+    // Fast path: single combined regex test. If no match, skip all 15 individual patterns.
+    INJECTION_FAST_PATH.lastIndex = 0;
+    if (!INJECTION_FAST_PATH.test(input)) {
+      return { sanitized, warnings, blocked, blockReason, injectionScore: 0 };
+    }
 
     for (const { name, pattern, severity, block } of INJECTION_PATTERNS) {
       const matches = input.match(pattern);

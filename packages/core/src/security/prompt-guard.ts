@@ -127,6 +127,19 @@ const GUARD_PATTERNS: {
   },
 ];
 
+// Pre-compiled combined regex for fast-path rejection of clean messages.
+// Non-system patterns (scanSystem=false excluded from system-message scanning).
+const GUARD_FAST_PATH_ALL = new RegExp(
+  GUARD_PATTERNS.map((p) => `(?:${p.pattern.source})`).join('|'),
+  'gim'
+);
+const GUARD_FAST_PATH_SYSTEM = new RegExp(
+  GUARD_PATTERNS.filter((p) => p.scanSystem)
+    .map((p) => `(?:${p.pattern.source})`)
+    .join('|'),
+  'gim'
+);
+
 // ─── PromptGuard class ────────────────────────────────────────────────────────
 
 export class PromptGuard {
@@ -176,6 +189,11 @@ export class PromptGuard {
 
       scannedCharCount += content.length;
       const isSystemMessage = role === 'system';
+
+      // Fast path: single combined regex test. If no match, skip all individual patterns.
+      const fastPath = isSystemMessage ? GUARD_FAST_PATH_SYSTEM : GUARD_FAST_PATH_ALL;
+      fastPath.lastIndex = 0;
+      if (!fastPath.test(content)) continue;
 
       for (const { name, pattern, severity, scanSystem } of GUARD_PATTERNS) {
         if (isSystemMessage && !scanSystem) continue;

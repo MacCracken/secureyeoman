@@ -6,6 +6,15 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.5] — 2026-03-05
 
+### Theme Editor & Custom Themes
+
+- **Theme editor** (`SettingsPage.tsx`, `useTheme.ts`): Visual theme editor in Appearance settings with live-preview color pickers for all 22 CSS variables (background, foreground, primary, secondary, muted, accent, destructive, border, ring, success, warning, info, and their foreground variants). Real-time swatch preview strip. Export theme as JSON file; import to apply.
+- **Custom theme support**: `CustomTheme` type with `id`, `name`, `isDark`, and 22-variable color map. Stored in `localStorage` under `custom_themes` (max 20). Custom themes appear in a "Custom" section below built-in themes. Copy JSON to clipboard, delete, or switch with one click. Dynamic CSS injection via `<style>` elements for `html[data-theme="custom:<id>"]` selectors.
+- **Theme upload**: Import a JSON theme file via file picker. Full validation: checks name (1–64 chars), isDark boolean, all 22 color variables present with valid HSL format (`H S% L%`). Error messages displayed inline.
+- **Theme scheduling**: Auto-switch between light and dark themes based on time of day or OS `prefers-color-scheme`. Configurable light/dark hours (0–23), per-schedule theme selection (built-in or custom). Checks every 60 seconds. Persisted in `localStorage` under `theme_schedule`.
+- **Theme type extension**: `ThemeId` union now includes `custom:${string}` for dynamic custom theme IDs. `DARK_THEMES` set and `applyTheme()` handle custom themes via `loadCustomThemes()` lookup.
+- **Tests**: 34 new tests — HSL validation (6), custom theme validation (8), custom theme CRUD (8), theme scheduling (9), CSS vars registry (3). All 48 theme tests passing.
+
 ### Codebase Optimization Audit
 
 Applied 24 fixes across 11 files:
@@ -36,11 +45,27 @@ Applied 24 fixes across 11 files:
 - **Delegation promise cleanup** (`agents/manager.ts`): Added hard timeout (`timeout + 10s grace`) via `Promise.race` in `delegate()`. If `aiClient.chat()` hangs beyond the soft abort window, the hard timeout fires, aborts the controller, and cleans up the `activeDelegations` map entry. Prevents stuck delegations from permanently blocking `maxConcurrent` slots. Returns structured timeout result instead of leaving the promise pending.
 - **Async generator stream cleanup** (11 AI providers): Added `try/finally` blocks inside `chatStream()` methods to ensure SDK stream objects are cleaned up when consumers stop iterating early. Anthropic: `stream.abort()`. OpenAI-compatible providers (openai, groq, deepseek, mistral, grok, openrouter, localai, lmstudio, opencode): `stream.controller?.abort()`. Gemini: async iterator protocol (no explicit abort). Ollama and Letta already had proper cleanup via `reader.releaseLock()`.
 
+### Performance Backlog
+
+- **Config schema splitting** (`shared/types/config.ts`): Split monolithic `ConfigSchema` (27 top-level fields) into 6 domain-specific sub-schemas: `InfraConfigSchema` (version, core, storage, licensing), `SecurityDomainConfigSchema` (security, gateway), `AIDomainConfigSchema` (model, delegation), `PersonalityDomainConfigSchema` (soul, spirit, brain, body, comms, heartbeat), `OpsDomainConfigSchema` (logging, metrics, notifications, intent), `ExtensionsDomainConfigSchema` (mcp, conversation, externalBrain, extensions, execution, a2a, proactive, multimodal). `ConfigSchema` composed via `.merge()`. Exported `CONFIG_DOMAIN_SCHEMAS` map for targeted domain-only validation.
+- **InputValidator regex consolidation** (`security/input-validator.ts`): Pre-compiled single combined regex (`INJECTION_FAST_PATH`) from all 15 injection patterns via alternation. `detectInjection()` tests combined regex first — if no match, skips all 15 individual pattern tests. Clean input (the common case) now runs 1 regex instead of 15.
+- **PromptGuard pattern precompilation** (`security/prompt-guard.ts`): Pre-compiled two combined regexes: `GUARD_FAST_PATH_ALL` (all 8 patterns) and `GUARD_FAST_PATH_SYSTEM` (4 scanSystem patterns). Per-message scan tests combined regex first — clean messages skip all individual pattern tests.
+- **Embedding batch backpressure** (`brain/vector/manager.ts`): Adaptive delay in `reindexAll()` between embedding API batches. Starts at 0ms delay, backs off exponentially (500ms → 1s → 2s → ... → 10s max) on 429/rate-limit errors with automatic retry. Halves delay on success. Prevents bulk reindexing from triggering provider rate limits.
+
 ### Auth & Crypto Hardening
 
 - **Scrypt password hashing** (`utils/crypto.ts`, `security/auth.ts`): Replaced SHA256 admin password hashing with `node:crypto.scrypt` (zero new dependencies, FIPS-compliant). New `hashPassword()` / `verifyPassword()` async functions. Password stored as `scrypt:<base64-salt>:<base64-hash>`. Legacy SHA256 hex (64-char) hashes auto-upgrade to scrypt on successful login — zero-downtime migration. `resetPassword()` now stores scrypt hashes. `isLegacySha256()` detector for format discrimination.
 - **Atomic token revocation** (`security/auth-storage.ts`, `security/auth.ts`): Eliminated refresh token race condition. `AuthStorage.revokeToken()` now uses `INSERT ... ON CONFLICT DO NOTHING RETURNING jti` and returns `boolean` (true = revoked by this call, false = already revoked). `AuthService.refresh()` replaced two-step `isTokenRevoked()` + `revokeToken()` with single atomic `revokeToken()` call. Two concurrent refresh attempts on the same token now guarantee exactly one succeeds.
 - **Tests**: 4 new tests — scrypt auto-upgrade, scrypt-native login, scrypt rejection, concurrent refresh race. All 33 auth tests passing.
+
+### ROUTE_PERMISSIONS Auto-Generation
+
+- **Convention-based route permission resolver** (`gateway/route-permissions.ts`): Replaces 537 hardcoded entries in `auth-middleware.ts` with a two-layer system:
+  - **Convention**: URL prefix → RBAC resource (52-entry prefix map), HTTP method → action (GET=read, POST/PUT/PATCH/DELETE=write). Covers 494 routes automatically.
+  - **Overrides**: 43 explicit `permit()` calls for non-standard routes (POST→execute, POST→read, cross-resource mappings, desktop capture actions).
+- `auth-middleware.ts` reduced from 1,449 → 226 lines. Uses `resolvePermission(path, method)` instead of static map lookup.
+- Adding a new standard route requires zero permission boilerplate — convention handles it. Non-standard routes call `permit()` in `route-permissions.ts`.
+- 22 new unit tests for resolver, prefix mapping, overrides, and domain coverage. All 56 existing auth-middleware DB tests pass unchanged.
 
 ### Bug Fixes
 

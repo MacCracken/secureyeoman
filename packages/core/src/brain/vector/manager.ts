@@ -161,6 +161,33 @@ export class VectorMemoryManager {
   async reindexAll(memories: Memory[], knowledge: KnowledgeEntry[]): Promise<{ indexed: number }> {
     let indexed = 0;
 
+    // Adaptive backpressure: start with no delay, increase on 429, decrease on success.
+    let delayMs = 0;
+    const MIN_DELAY_MS = 0;
+    const MAX_DELAY_MS = 10_000;
+    const BACKOFF_FACTOR = 2;
+    const INITIAL_BACKOFF_MS = 500;
+
+    const embedWithBackpressure = async (batch: string[]): Promise<number[][]> => {
+      if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
+      try {
+        const vectors = await this.embedding.embed(batch);
+        // Success — reduce delay (halve it)
+        delayMs = Math.max(MIN_DELAY_MS, Math.floor(delayMs / 2));
+        return vectors;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes('429') || msg.toLowerCase().includes('rate limit')) {
+          // Rate limited — back off
+          delayMs = Math.min(MAX_DELAY_MS, Math.max(INITIAL_BACKOFF_MS, delayMs * BACKOFF_FACTOR));
+          // Retry once after delay
+          await new Promise((r) => setTimeout(r, delayMs));
+          return this.embedding.embed(batch);
+        }
+        throw err;
+      }
+    };
+
     // Batch embed memories
     if (memories.length > 0) {
       const texts = memories.map((m) => m.content);
@@ -168,7 +195,7 @@ export class VectorMemoryManager {
 
       for (let i = 0; i < texts.length; i += batchSize) {
         const batch = texts.slice(i, i + batchSize);
-        const vectors = await this.embedding.embed(batch);
+        const vectors = await embedWithBackpressure(batch);
         const items = vectors.map((vector, idx) => ({
           id: `memory:${memories[i + idx]!.id}`,
           vector,
@@ -191,7 +218,7 @@ export class VectorMemoryManager {
 
       for (let i = 0; i < texts.length; i += batchSize) {
         const batch = texts.slice(i, i + batchSize);
-        const vectors = await this.embedding.embed(batch);
+        const vectors = await embedWithBackpressure(batch);
         const items = vectors.map((vector, idx) => ({
           id: `knowledge:${knowledge[i + idx]!.id}`,
           vector,

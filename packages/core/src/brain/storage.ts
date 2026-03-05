@@ -361,10 +361,10 @@ export class BrainStorage extends PgBaseStorage {
     const sortDir = query.sortDirection === 'asc' ? 'ASC' : 'DESC';
     sql += ` ORDER BY importance ${sortDir}, updated_at ${sortDir}`;
 
-    if (query.limit) {
-      sql += ` LIMIT $${idx++}`;
-      params.push(query.limit);
-    }
+    const DEFAULT_QUERY_LIMIT = 10_000;
+    const effectiveLimit = query.limit ?? DEFAULT_QUERY_LIMIT;
+    sql += ` LIMIT $${idx++}`;
+    params.push(effectiveLimit);
 
     if (query.offset) {
       sql += ` OFFSET $${idx++}`;

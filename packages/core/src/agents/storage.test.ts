@@ -404,6 +404,33 @@ describe('SubAgentStorage', () => {
     });
   });
 
+  describe('pruneDelegations', () => {
+    it('deletes messages then delegations older than retention period', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 5 })   // delete messages
+        .mockResolvedValueOnce({ rows: [], rowCount: 3 });   // delete delegations
+      const pruned = await storage.pruneDelegations(90);
+      expect(pruned).toBe(3);
+      expect(mockQuery).toHaveBeenCalledTimes(2);
+      const msgSql = mockQuery.mock.calls[0][0] as string;
+      expect(msgSql).toContain('DELETE FROM agents.delegation_messages');
+      const delSql = mockQuery.mock.calls[1][0] as string;
+      expect(delSql).toContain('DELETE FROM agents.delegations');
+    });
+
+    it('uses default 90-day retention', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await storage.pruneDelegations();
+      const params = mockQuery.mock.calls[0][1] as number[];
+      const cutoff = params[0];
+      // Cutoff should be ~90 days ago (within 1 second tolerance)
+      const expected = Date.now() - 90 * 86_400_000;
+      expect(Math.abs(cutoff - expected)).toBeLessThan(1000);
+    });
+  });
+
   describe('close', () => {
     it('is a no-op', () => {
       expect(() => storage.close()).not.toThrow();

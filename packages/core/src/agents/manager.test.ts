@@ -36,6 +36,7 @@ const mockStorage = {
   getDelegationTree: vi.fn().mockResolvedValue([]),
   storeDelegationMessage: vi.fn(),
   getDelegationMessages: vi.fn().mockResolvedValue([]),
+  pruneDelegations: vi.fn().mockResolvedValue(0),
   close: vi.fn(),
 };
 

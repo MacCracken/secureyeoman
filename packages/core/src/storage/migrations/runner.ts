@@ -61,7 +61,13 @@ export async function runMigrations(): Promise<void> {
           continue;
         }
 
-        await client.query(sql);
+        // 5-minute timeout per migration to prevent stuck migrations from blocking other pods
+        await client.query('SET statement_timeout = 300000');
+        try {
+          await client.query(sql);
+        } finally {
+          await client.query('SET statement_timeout = 0');
+        }
 
         await client.query('INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)', [
           id,

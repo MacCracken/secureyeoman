@@ -706,38 +706,90 @@ export const NotificationsConfigSchema = z
 
 export type NotificationsConfig = z.infer<typeof NotificationsConfigSchema>;
 
-// Complete configuration schema
-export const ConfigSchema = z.object({
+// ── Domain-specific config groups ─────────────────────────────────────
+// Allows targeted validation of a single domain without parsing all 27 fields.
+
+/** Infrastructure: version, core, storage, licensing */
+export const InfraConfigSchema = z.object({
   version: z.string().default('1.0'),
   core: CoreConfigSchema.default({}),
+  storage: StorageBackendConfigSchema,
+  licensing: LicensingConfigSchema,
+});
+export type InfraConfig = z.infer<typeof InfraConfigSchema>;
+
+/** Security domain: security, gateway (auth lives here) */
+export const SecurityDomainConfigSchema = z.object({
   security: SecurityConfigSchema.default({}),
-  logging: LoggingConfigSchema.default({}),
-  metrics: MetricsConfigSchema.default({}),
   gateway: GatewayConfigSchema.default({}),
+});
+export type SecurityDomainConfig = z.infer<typeof SecurityDomainConfigSchema>;
+
+/** AI/Model domain: model config + delegation */
+export const AIDomainConfigSchema = z.object({
   model: ModelConfigSchema.default({}),
+  delegation: DelegationConfigSchema,
+});
+export type AIDomainConfig = z.infer<typeof AIDomainConfigSchema>;
+
+/** Personality domain: soul, spirit, brain, body, comms, heartbeat */
+export const PersonalityDomainConfigSchema = z.object({
   soul: SoulConfigSchema,
   spirit: SpiritConfigSchema,
   brain: BrainConfigSchema,
   body: BodyConfigSchema,
   comms: CommsConfigSchema,
   heartbeat: HeartbeatConfigSchema,
-  externalBrain: ExternalBrainConfigSchema,
+});
+export type PersonalityDomainConfig = z.infer<typeof PersonalityDomainConfigSchema>;
+
+/** Operations domain: logging, metrics, notifications, intent */
+export const OpsDomainConfigSchema = z.object({
+  logging: LoggingConfigSchema.default({}),
+  metrics: MetricsConfigSchema.default({}),
+  notifications: NotificationsConfigSchema,
+  intent: IntentFileConfigSchema,
+});
+export type OpsDomainConfig = z.infer<typeof OpsDomainConfigSchema>;
+
+/** Extensions domain: mcp, extensions, execution, a2a, proactive, multimodal, conversation, externalBrain */
+export const ExtensionsDomainConfigSchema = z.object({
   mcp: McpConfigSchema,
   conversation: ConversationConfigSchema,
-  delegation: DelegationConfigSchema,
+  externalBrain: ExternalBrainConfigSchema,
   extensions: ExtensionConfigSchema,
   execution: ExecutionConfigSchema,
   a2a: A2AConfigSchema,
   proactive: ProactiveConfigSchema,
   multimodal: MultimodalConfigSchema,
-  storage: StorageBackendConfigSchema,
-  intent: IntentFileConfigSchema,
-  notifications: NotificationsConfigSchema,
-  licensing: LicensingConfigSchema,
 });
+export type ExtensionsDomainConfig = z.infer<typeof ExtensionsDomainConfigSchema>;
+
+// Complete configuration schema (composed from domain groups)
+export const ConfigSchema = InfraConfigSchema
+  .merge(SecurityDomainConfigSchema)
+  .merge(AIDomainConfigSchema)
+  .merge(PersonalityDomainConfigSchema)
+  .merge(OpsDomainConfigSchema)
+  .merge(ExtensionsDomainConfigSchema);
 
 export type Config = z.infer<typeof ConfigSchema>;
 
 // Partial config for merging (all fields optional)
 export const PartialConfigSchema = ConfigSchema.deepPartial();
 export type PartialConfig = z.infer<typeof PartialConfigSchema>;
+
+/**
+ * Validate a single config domain without parsing the full schema.
+ * Useful for hot-reload or targeted validation of a specific section.
+ */
+export const CONFIG_DOMAIN_SCHEMAS = {
+  infra: InfraConfigSchema,
+  security: SecurityDomainConfigSchema,
+  ai: AIDomainConfigSchema,
+  personality: PersonalityDomainConfigSchema,
+  ops: OpsDomainConfigSchema,
+  extensions: ExtensionsDomainConfigSchema,
+} as const;
+
+export type ConfigDomain = keyof typeof CONFIG_DOMAIN_SCHEMAS;

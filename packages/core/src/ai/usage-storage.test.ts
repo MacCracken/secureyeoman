@@ -56,6 +56,13 @@ describe('UsageStorage', () => {
       expect(calls.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS usage_resets'))).toBe(
         true
       );
+      // Composite indexes for dashboard queries
+      expect(
+        calls.some((sql) => sql.includes('usage_records_provider_recorded_idx'))
+      ).toBe(true);
+      expect(
+        calls.some((sql) => sql.includes('usage_records_personality_recorded_idx'))
+      ).toBe(true);
       // prune() is called at end of init
       expect(calls.some((sql) => sql.includes('DELETE FROM usage_records'))).toBe(true);
     });

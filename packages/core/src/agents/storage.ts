@@ -530,6 +530,31 @@ export class SubAgentStorage extends PgBaseStorage {
     return rows.map(messageFromRow);
   }
 
+  // ── Pruning ─────────────────────────────────────────────────────
+
+  /**
+   * Delete completed/failed/cancelled delegations (and their messages) older than
+   * the given retention period. Returns the number of pruned delegation records.
+   */
+  async pruneDelegations(retentionDays: number = 90): Promise<number> {
+    const cutoff = Date.now() - retentionDays * 86_400_000;
+    // Delete messages first (FK child), then delegations
+    await this.execute(
+      `DELETE FROM agents.delegation_messages WHERE delegation_id IN (
+         SELECT id FROM agents.delegations
+         WHERE status IN ('completed', 'failed', 'cancelled')
+           AND created_at < to_timestamp($1 / 1000.0)
+       )`,
+      [cutoff]
+    );
+    return this.execute(
+      `DELETE FROM agents.delegations
+       WHERE status IN ('completed', 'failed', 'cancelled')
+         AND created_at < to_timestamp($1 / 1000.0)`,
+      [cutoff]
+    );
+  }
+
   // ── Persisted config ─────────────────────────────────────────────
 
   async getStoredEnabled(): Promise<boolean | null> {

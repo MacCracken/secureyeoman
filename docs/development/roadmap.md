@@ -133,16 +133,6 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ### Security Hardening (from 2026-03-05 Audit)
 
-#### Auth & Crypto
-- [x] **Admin password scrypt migration** — ~~SHA256~~ → `node:crypto.scrypt` (zero new deps). Auto-upgrades legacy SHA256 hex on login. Format: `scrypt:<base64-salt>:<base64-hash>`. Done 2026-03-05.
-- [x] **Token revocation race condition** — Atomic `INSERT ... RETURNING` in `revokeToken()` returns boolean. `refresh()` uses single call instead of check-then-revoke. Done 2026-03-05.
-
-#### Performance
-- [ ] **Config schema splitting** — Split `ConfigSchema` into domain-specific sub-schemas for targeted Zod validation. Currently validates all 27 top-level fields on every parse. Reference: `shared/types/config.ts:685-718`.
-- [ ] **InputValidator regex consolidation** — Combine 15 individual injection regex patterns into a single alternation pattern for fewer regex passes per input. Reference: `security/input-validator.ts:22-130`.
-- [ ] **PromptGuard pattern precompilation** — Combine 12 guard patterns into single precompiled regex. Reference: `security/prompt-guard.ts:51-128`.
-- [ ] **Embedding batch backpressure** — Add adaptive delay between embedding API batches to prevent 429 rate limits during `reindexAll()`. Reference: `brain/vector/manager.ts:165-214`.
-
 #### Security Gaps
 - [ ] **ROUTE_PERMISSIONS auto-generation** — Auto-generate from route registration metadata instead of maintaining 100+ hardcoded entries. Ensure all dynamically registered routes have explicit permission mapping. Reference: `gateway/auth-middleware.ts`.
 
@@ -294,16 +284,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 - [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across devices via the existing REST API. Offline-first with conflict resolution on reconnect.
 - [ ] **Auto-update** — In-app update flow: Tauri updater for desktop (delta bundles via `tauri-plugin-updater`), App Store / Play Store release channels for mobile.
 - [ ] **Desktop system tray enhancements** — Quick-access menu: active personality selector, last conversation shortcut, toggle notifications. Global keyboard shortcut to focus the window.
-
----
-
-### Theme Editor & Custom Themes
-
-*Demand-Gated — extends the 10/10/10 theme system (ADR 175) with user-created themes.*
-
-- [ ] **Theme editor** — Visual theme editor in Appearance settings: live-preview color pickers for all CSS variables (background, foreground, primary, secondary, muted, accent, destructive, border, ring, success, warning, info). Export as JSON; import to apply.
-- [ ] **Theme upload** — Users upload a JSON theme file via the dashboard. Stored per-user in `settings.custom_themes`. Custom themes appear in a "Custom" section below the built-in themes.
-- [ ] **Theme scheduling** — Auto-switch between a light and dark theme based on time of day or OS schedule. Configurable transition time.
 
 ---
 

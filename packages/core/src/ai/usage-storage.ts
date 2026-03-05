@@ -102,6 +102,13 @@ export class UsageStorage extends PgBaseStorage {
     await this.execute(
       `CREATE INDEX IF NOT EXISTS usage_records_personality_idx ON usage_records (personality_id)`
     );
+    // Composite indexes for dashboard/reporting queries that filter by provider or personality + time range
+    await this.execute(
+      `CREATE INDEX IF NOT EXISTS usage_records_provider_recorded_idx ON usage_records (provider, recorded_at DESC)`
+    );
+    await this.execute(
+      `CREATE INDEX IF NOT EXISTS usage_records_personality_recorded_idx ON usage_records (personality_id, recorded_at DESC)`
+    );
 
     await this.execute(`
       CREATE TABLE IF NOT EXISTS usage_error_records (

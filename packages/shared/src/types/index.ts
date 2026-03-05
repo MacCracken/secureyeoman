@@ -483,6 +483,20 @@ export {
   type LLMJudgeConfig,
   LicensingConfigSchema,
   type LicensingConfig,
+  InfraConfigSchema,
+  SecurityDomainConfigSchema,
+  AIDomainConfigSchema,
+  PersonalityDomainConfigSchema,
+  OpsDomainConfigSchema,
+  ExtensionsDomainConfigSchema,
+  CONFIG_DOMAIN_SCHEMAS,
+  type InfraConfig,
+  type SecurityDomainConfig,
+  type AIDomainConfig,
+  type PersonalityDomainConfig,
+  type OpsDomainConfig,
+  type ExtensionsDomainConfig,
+  type ConfigDomain,
 } from './config.js';
 
 // Proactive types
