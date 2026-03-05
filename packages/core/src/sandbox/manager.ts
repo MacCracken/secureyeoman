@@ -12,6 +12,8 @@ import type { Sandbox, SandboxCapabilities } from './types.js';
 import { NoopSandbox } from './noop-sandbox.js';
 import { LinuxSandbox } from './linux-sandbox.js';
 import { DarwinSandbox } from './darwin-sandbox.js';
+import { GVisorSandbox } from './gvisor-sandbox.js';
+import { WasmSandbox } from './wasm-sandbox.js';
 import {
   CredentialProxy,
   type CredentialProxyHandle,
@@ -20,7 +22,7 @@ import {
 
 export interface SandboxManagerConfig {
   enabled: boolean;
-  technology: 'auto' | 'seccomp' | 'landlock' | 'none';
+  technology: 'auto' | 'seccomp' | 'landlock' | 'gvisor' | 'wasm' | 'none';
   allowedReadPaths: string[];
   allowedWritePaths: string[];
   maxMemoryMb: number;
@@ -143,6 +145,24 @@ export class SandboxManager {
         return this.sandbox;
       }
       this.sandbox = new LinuxSandbox({ enforceLandlock: true });
+      return this.sandbox;
+    }
+
+    if (this.config.technology === 'gvisor') {
+      const gvisor = new GVisorSandbox();
+      if (gvisor.isAvailable()) {
+        this.getLogger().info('Using gVisor (runsc) sandbox');
+        this.sandbox = gvisor;
+        return this.sandbox;
+      }
+      this.getLogger().warn('gVisor requested but runsc not available, falling back to NoopSandbox');
+      this.sandbox = new NoopSandbox();
+      return this.sandbox;
+    }
+
+    if (this.config.technology === 'wasm') {
+      this.getLogger().info('Using WASM sandbox (isolated VM context)');
+      this.sandbox = new WasmSandbox();
       return this.sandbox;
     }
 
