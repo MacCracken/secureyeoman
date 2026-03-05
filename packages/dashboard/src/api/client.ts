@@ -1290,6 +1290,12 @@ export async function refreshOAuthToken(id: string): Promise<void> {
   await request(`/auth/oauth/tokens/${id}/refresh`, { method: 'POST' });
 }
 
+export async function reloadOAuthConfig(): Promise<{
+  providers: { id: string; name: string }[];
+}> {
+  return request('/auth/oauth/reload', { method: 'POST' });
+}
+
 // ─── Auth Roles ───────────────────────────────────────────────────
 
 export interface RoleInfo {

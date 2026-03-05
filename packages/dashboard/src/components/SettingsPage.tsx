@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Plus,
   BadgeCheck,
+  Sparkles,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -51,6 +52,7 @@ type TabType =
   | 'workspaces'
   | 'users'
   | 'roles'
+  | 'souls'
   | 'notifications'
   | 'backup';
 
@@ -60,6 +62,7 @@ function getTabFromPath(path: string): TabType {
   if (path === '/users') return 'users';
   if (path === '/workspaces') return 'workspaces';
   if (path === '/roles') return 'roles';
+  if (path === '/souls') return 'souls';
   return 'general';
 }
 
@@ -172,6 +175,19 @@ export function SettingsPage() {
         </button>
         <button
           onClick={() => {
+            setActiveTab('souls');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'souls'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          Souls
+        </button>
+        <button
+          onClick={() => {
             setActiveTab('notifications');
           }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -212,7 +228,13 @@ export function SettingsPage() {
       {activeTab === 'workspaces' && <WorkspacesSettings />}
       {activeTab === 'users' && <UsersSettings />}
       {activeTab === 'roles' && <RolesSettings />}
-      {activeTab === 'notifications' && <NotificationPrefsPanel />}
+      {activeTab === 'souls' && <SoulSystemTab />}
+      {activeTab === 'notifications' && (
+        <div className="space-y-6">
+          <NotificationSettings />
+          <NotificationPrefsPanel />
+        </div>
+      )}
       {activeTab === 'backup' && <BackupTab />}
     </div>
   );
@@ -629,8 +651,6 @@ function GeneralTab() {
     <div className="space-y-6">
       <LicenseCard />
       <AuditChainTab />
-      <NotificationSettings />
-      <SoulSystemTab />
       <RateLimitingTab />
       <LogRetentionSettings />
     </div>

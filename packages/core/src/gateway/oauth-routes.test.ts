@@ -31,6 +31,7 @@ function makeMockOAuthService(overrides: Partial<OAuthService> = {}): OAuthServi
       .fn()
       .mockResolvedValue({ id: 'goog-1', email: 'user@example.com', name: 'Test User' }),
     generateOAuthConnectionToken: vi.fn().mockReturnValue('conn-token-123'),
+    reload: vi.fn().mockReturnValue(['google']),
     ...overrides,
   } as unknown as OAuthService;
 }
@@ -474,6 +475,35 @@ describe('POST /api/v1/auth/oauth/claim — success and token paths', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json().success).toBe(true);
     expect(res.json().config.platform).toBe('gmail');
+  });
+});
+
+describe('POST /api/v1/auth/oauth/reload', () => {
+  it('returns updated provider list after reload', async () => {
+    const reloadMock = vi.fn().mockReturnValue(['google', 'github']);
+    const app = buildApp({ reload: reloadMock } as unknown as Partial<OAuthService>);
+    const res = await app.inject({ method: 'POST', url: '/api/v1/auth/oauth/reload' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().providers).toHaveLength(2);
+    expect(res.json().providers[0].id).toBe('google');
+    expect(res.json().providers[1].id).toBe('github');
+    expect(reloadMock).toHaveBeenCalled();
+  });
+});
+
+describe('OAuthService.reload()', () => {
+  it('picks up new env vars on reload', () => {
+    const svc = new OAuthService({});
+    expect(svc.isProviderConfigured('google')).toBe(false);
+
+    process.env.GOOGLE_OAUTH_CLIENT_ID = 'new-id';
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'new-secret';
+    const providers = svc.reload();
+    expect(providers).toContain('google');
+    expect(svc.isProviderConfigured('google')).toBe(true);
+
+    delete process.env.GOOGLE_OAUTH_CLIENT_ID;
+    delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
   });
 });
 

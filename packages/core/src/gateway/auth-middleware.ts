@@ -692,6 +692,7 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/auth/assignments/:userId': { DELETE: { resource: 'auth', action: 'write' } },
   // OAuth management
   '/api/v1/auth/oauth/disconnect': { POST: { resource: 'auth', action: 'write' } },
+  '/api/v1/auth/oauth/reload': { POST: { resource: 'secrets', action: 'write' } },
   '/api/v1/auth/oauth/tokens': { GET: { resource: 'auth', action: 'read' } },
   '/api/v1/auth/oauth/tokens/:id': { DELETE: { resource: 'auth', action: 'write' } },
   // Connected-account API proxy routes (Gmail, Twitter, GitHub)

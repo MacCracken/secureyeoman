@@ -386,6 +386,13 @@ export class OAuthService {
     throw new Error(`Unsupported provider: ${providerId}`);
   }
 
+  /** Re-read credentials from process.env (e.g. after SecretsManager.set() updates them). */
+  reload(): string[] {
+    this.config = {};
+    this.loadFromEnv();
+    return this.getConfiguredProviders();
+  }
+
   generateOAuthConnectionToken(provider: string, userId: string): string {
     const payload = `${provider}:${userId}:${Date.now()}`;
     return sha256(payload);
@@ -610,6 +617,18 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
     const configuredProviders = oauthService.getConfiguredProviders();
     return {
       providers: configuredProviders.map((id) => ({
+        id,
+        name: OAUTH_PROVIDERS[id]?.name ?? id,
+      })),
+    };
+  });
+
+  // Reload OAuth provider config from process.env (call after updating secrets)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  app.post('/api/v1/auth/oauth/reload', async (request: FastifyRequest) => {
+    const providers = oauthService.reload();
+    return {
+      providers: providers.map((id) => ({
         id,
         name: OAUTH_PROVIDERS[id]?.name ?? id,
       })),

@@ -80,6 +80,8 @@ import {
   fetchOAuthTokens,
   revokeOAuthToken,
   refreshOAuthToken,
+  reloadOAuthConfig,
+  setSecret,
   createApiKey,
   fetchApiKeys,
   revokeApiKey,
@@ -4232,6 +4234,122 @@ const OAUTH_PROVIDER_META: Record<
 
 const AVAILABLE_OAUTH_PROVIDERS = ['google', 'github'];
 
+/** Known OAuth provider env var names for credential setup */
+const OAUTH_CREDENTIAL_KEYS: Record<string, { clientIdKey: string; clientSecretKey: string; label: string; note?: string }> = {
+  google: {
+    clientIdKey: 'GOOGLE_OAUTH_CLIENT_ID',
+    clientSecretKey: 'GOOGLE_OAUTH_CLIENT_SECRET',
+    label: 'Google',
+    note: 'Also used by Gmail, Google Calendar, and Google Drive integrations.',
+  },
+  github: {
+    clientIdKey: 'GITHUB_OAUTH_CLIENT_ID',
+    clientSecretKey: 'GITHUB_OAUTH_CLIENT_SECRET',
+    label: 'GitHub',
+  },
+};
+
+function OAuthCredentialSetup({ configuredIds, onReload }: { configuredIds: Set<string>; onReload: () => void }) {
+  const [forms, setForms] = useState<Record<string, { clientId: string; clientSecret: string }>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+
+  const unconfigured = Object.entries(OAUTH_CREDENTIAL_KEYS).filter(
+    ([id]) => !configuredIds.has(id)
+  );
+
+  if (unconfigured.length === 0) return null;
+
+  const handleSave = async (providerId: string) => {
+    const creds = OAUTH_CREDENTIAL_KEYS[providerId];
+    const form = forms[providerId];
+    if (!creds || !form?.clientId.trim() || !form?.clientSecret.trim()) return;
+
+    setSaving(providerId);
+    setError(null);
+    try {
+      await setSecret(creds.clientIdKey, form.clientId.trim());
+      await setSecret(creds.clientSecretKey, form.clientSecret.trim());
+      await reloadOAuthConfig();
+      setSaved(providerId);
+      setForms((prev) => ({ ...prev, [providerId]: { clientId: '', clientSecret: '' } }));
+      onReload();
+      setTimeout(() => setSaved(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save credentials');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-foreground">OAuth Provider Setup</h3>
+      <p className="text-xs text-muted-foreground">
+        Enter OAuth client credentials for providers not yet configured. Credentials are stored
+        securely in Security &gt; Secrets.
+      </p>
+      {error && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {unconfigured.map(([id, creds]) => {
+          const form = forms[id] ?? { clientId: '', clientSecret: '' };
+          const meta = OAUTH_PROVIDER_META[id];
+          return (
+            <div key={id} className="card p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                {meta && <div className="p-1.5 rounded-lg bg-muted/30">{meta.icon}</div>}
+                <h4 className="font-medium text-sm">{creds.label}</h4>
+                {saved === id && (
+                  <span className="text-xs text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> Saved
+                  </span>
+                )}
+              </div>
+              {creds.note && (
+                <p className="text-xs text-muted-foreground">{creds.note}</p>
+              )}
+              <input
+                type="text"
+                placeholder="Client ID"
+                value={form.clientId}
+                onChange={(e) =>
+                  setForms((prev) => ({
+                    ...prev,
+                    [id]: { ...form, clientId: e.target.value },
+                  }))
+                }
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <input
+                type="password"
+                placeholder="Client Secret"
+                value={form.clientSecret}
+                onChange={(e) =>
+                  setForms((prev) => ({
+                    ...prev,
+                    [id]: { ...form, clientSecret: e.target.value },
+                  }))
+                }
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <button
+                onClick={() => void handleSave(id)}
+                disabled={!form.clientId.trim() || !form.clientSecret.trim() || saving === id}
+                className="btn btn-ghost text-xs px-3 py-1.5 disabled:opacity-50"
+              >
+                {saving === id ? 'Saving…' : 'Save Credentials'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function OAuthTab({
   integrations: _integrations,
   onDelete: _onDelete,
@@ -4331,6 +4449,13 @@ function OAuthTab({
           Loading connected accounts…
         </div>
       )}
+
+      <OAuthCredentialSetup
+        configuredIds={configuredIds}
+        onReload={() => {
+          void queryClient.invalidateQueries({ queryKey: ['oauth-config'] });
+        }}
+      />
 
       {availableProviders.length > 0 && (
         <div className="space-y-3">

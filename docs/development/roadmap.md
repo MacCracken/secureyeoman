@@ -443,4 +443,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-04 — Removed completed backlog items: God Object decomposition (Phase 1 & 2), Fastify JSON Schema validation, Worker thread pool, error response unification, process.env centralization. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-04 — Removed completed phases: Phase 111 (Departmental Risk Register), God Object decomposition (Phase 1 & 2), and backlog items (Fastify JSON Schema validation, Worker thread pool, error response unification, process.env centralization). See [Changelog](../../CHANGELOG.md) for full history.*

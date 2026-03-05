@@ -177,23 +177,27 @@ describe('SettingsPage', () => {
     expect(screen.getByText('System configuration and preferences')).toBeInTheDocument();
   });
 
-  it('renders soul config section when config is loaded', async () => {
+  it('renders Rate Limiting and Audit Chain on General tab (not Soul System)', async () => {
     renderComponent();
 
+    expect(await screen.findByText('Rate Limiting')).toBeInTheDocument();
+    expect(screen.getByText('Audit Chain')).toBeInTheDocument();
+    expect(await screen.findByText('Valid')).toBeInTheDocument();
+    // Soul System is now on the Souls tab, not General
+    expect(screen.queryByText('Soul System')).not.toBeInTheDocument();
+  });
+
+  it('renders soul config section on Souls tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.click(await screen.findByRole('button', { name: /Souls/ }));
     expect(await screen.findByText('Soul System')).toBeInTheDocument();
     const enabledElements = screen.getAllByText('Enabled');
     expect(enabledElements.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('User Authored')).toBeInTheDocument();
     expect(screen.getByDisplayValue('50')).toBeInTheDocument();
     expect(screen.getByDisplayValue('4096')).toBeInTheDocument();
-  });
-
-  it('renders Rate Limiting and Audit Chain on General tab', async () => {
-    renderComponent();
-
-    expect(await screen.findByText('Rate Limiting')).toBeInTheDocument();
-    expect(screen.getByText('Audit Chain')).toBeInTheDocument();
-    expect(await screen.findByText('Valid')).toBeInTheDocument();
   });
 
   it('renders a Users tab', async () => {

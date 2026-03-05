@@ -243,6 +243,7 @@ export function DashboardLayout() {
                   <Route path="/users" element={<SettingsPage />} />
                   <Route path="/workspaces" element={<SettingsPage />} />
                   <Route path="/roles" element={<SettingsPage />} />
+                  <Route path="/souls" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/metrics" replace />} />
                 </Routes>
               </Suspense>

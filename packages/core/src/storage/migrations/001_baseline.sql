@@ -601,7 +601,7 @@ CREATE TABLE IF NOT EXISTS analytics.usage_anomalies (
 -- Name: entries_seq_seq; Type: SEQUENCE; Schema: audit; Owner: -
 --
 
-CREATE SEQUENCE audit.entries_seq_seq
+CREATE SEQUENCE IF NOT EXISTS audit.entries_seq_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1546,7 +1546,7 @@ CREATE TABLE IF NOT EXISTS public.usage_error_records (
 -- Name: usage_error_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.usage_error_records_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.usage_error_records_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1578,7 +1578,7 @@ CREATE TABLE IF NOT EXISTS public.usage_records (
 -- Name: usage_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.usage_records_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.usage_records_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1642,7 +1642,7 @@ CREATE TABLE IF NOT EXISTS rbac.user_role_assignments (
 -- Name: user_role_assignments_id_seq; Type: SEQUENCE; Schema: rbac; Owner: -
 --
 
-CREATE SEQUENCE rbac.user_role_assignments_id_seq
+CREATE SEQUENCE IF NOT EXISTS rbac.user_role_assignments_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
