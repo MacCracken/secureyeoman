@@ -16,7 +16,41 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Startup profiling instrumentation** — `initialize()` now records `performance.now()` timing marks for key steps (config, otel, security-early, db-pool+migrations, brain-module, training-module, analytics-module, gateway). Logs a startup timing table with top-5 slowest steps on completion.
 - **Config schemas**: `TrainingPipelineConfigSchema` (`training.enabled`) and `ConversationAnalyticsConfigSchema` (`analytics.enabled`) added to `OpsDomainConfigSchema` in shared config.
 - **Backward compatible**: Both `training.enabled` and `analytics.enabled` default to `true`, so existing deployments are unaffected.
-- 13,136 core unit tests + 820 MCP tests passing.
+- **Cold-start CLI mode** (`cli/lite-bootstrap.ts`): `liteBootstrap()` boots config + logger + DB pool with pool size 2 (vs 10) and `allowExitOnIdle`. Skips all domain modules, gateway, WebSocket, cron, integrations. `--local` flag added to `memory` (stats, memories, knowledge, activation) and `risk` (summary, departments, register) CLI commands for direct DB access without a running server.
+- **Connection pooling**: `PgPoolConfig.idleTimeoutMillis` now configurable (default 30s). Lite bootstrap uses pool size 2 with aggressive idle cleanup for CLI one-shot commands.
+- **Memory profiling**: `/health/deep` endpoint now includes `memory` object with RSS, heap used/total, external, arrayBuffers from `process.memoryUsage()`. `secureyeoman status --profile` CLI flag shows component health and memory stats.
+- 13,202 core unit tests + 820 MCP tests passing.
+
+### Compliance Audit Mode (Brainstorm #4a)
+
+- **Compliance report generator** (`reporting/compliance-report-generator.ts`): Cross-references audit chain events, DLP egress logs, and content classifications into unified compliance reports. Multi-format output: JSON, HTML (professional layout with summary cards and color-coded tables), CSV (flattened rows), Markdown.
+- **Report options**: Time range, userId filter, contentType filter, classificationLevel filter, toggles for audit/egress/classifications sections.
+- **Summary statistics**: Total events per source, blocked egress count, restricted content count, PII detection count.
+- **2 REST endpoints**: `POST /api/v1/reports/compliance` (generate), `GET /api/v1/reports/compliance/:id` (retrieve cached).
+- **18 tests** covering all formats, filters, summary computation, empty results.
+
+### Model Cost Optimizer Enhancement (Brainstorm #4b)
+
+- **Detailed cost analysis** (`ai/cost-optimizer.ts`): Extended with `analyzeDetailed()` — per-model stats (calls, tokens, cost, avg cost per call), workload breakdown (simple/moderate/complex by token thresholds), potential savings calculation, routing suggestions.
+- **Routing suggestions**: `getRoutingSuggestions()` identifies premium model misuse (high-cost models for low-token tasks), suggests cheaper alternatives with estimated savings per suggestion.
+- **Cost forecasting**: `forecast(days)` — linear projection from recent usage with trend detection (increasing/decreasing/stable) and confidence score.
+- **3 new REST endpoints**: `GET /model/cost-analysis`, `GET /model/routing-suggestions`, `GET /model/cost-forecast`.
+- **Dashboard**: `CostOptimizerWidget` — cost trend, top models by cost, routing suggestions with savings, forecast summary. Canvas type: `cost-optimizer`.
+- **32 tests** (24 core + 8 dashboard).
+
+### Webhook/Event Subscription System (Brainstorm #7 partial)
+
+- **Event types**: 14 lifecycle events — `conversation.started/ended`, `message.created`, `tool.called/completed/failed`, `memory.created/deleted`, `workflow.started/completed/failed`, `classification.created`, `dlp.blocked/warned`.
+- **Subscription store** (`events/event-subscription-store.ts`): PgBaseStorage for `events.subscriptions` and `events.deliveries` tables. CRUD for subscriptions, delivery tracking with retry state.
+- **Event dispatcher** (`events/event-dispatcher.ts`): Matches events to enabled subscriptions, delivers via HTTP POST with HMAC-SHA256 signing (X-Signature header), exponential backoff retry (configurable max retries + backoff), 10s timeout per delivery. Background retry processor on configurable interval.
+- **Migration `008_event_subscriptions.sql`**: `events` schema with subscriptions + deliveries tables and indexes.
+- **7 REST endpoints** under `/api/v1/events/`: subscription CRUD, delivery listing, test event sending.
+- **Route permissions**: Convention-based via `/api/v1/events` prefix → `events` resource.
+- **25 tests** (12 store + 13 dispatcher).
+
+- 13,203 core unit tests + 1,276 dashboard tests passing.
+
+---
 
 ## [2026.3.5e] — 2026-03-05
 

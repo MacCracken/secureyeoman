@@ -147,6 +147,18 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
+### Developer Ecosystem & Community Growth
+
+*From Brainstorm #7. Only way to close the skill gap (87 vs 13,729) at scale.*
+
+- [ ] **Skill SDK** — `npx create-secureyeoman-skill` scaffolding tool. Generates skill directory with schema, test harness, README template, and CI config.
+- [ ] **Skill testing framework** — Mock MCP context, simulate tool calls, assert outputs. `SkillTestRunner` class.
+- [ ] **Skill submission pipeline** — `secureyeoman skill publish` validates schema, runs tests, opens PR to community repo.
+- [ ] **API client libraries** — Python (`secureyeoman-py`) and Go (`secureyeoman-go`) SDKs from OpenAPI spec.
+- [ ] **Interactive tutorials** — Guided onboarding flows in dashboard: "Create your first skill," "Set up SSO," "Build a workflow."
+
+---
+
 ### LLM Lifecycle — Deferred
 
 - [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params). *(Deferred — revisit when fine-tuning has real-world usage.)*

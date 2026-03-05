@@ -33,6 +33,11 @@ export interface PgPoolConfig {
   sslRejectUnauthorized?: boolean;
   /** Optional PEM-encoded CA certificate for mutual TLS or private CAs. */
   sslCa?: string;
+  /**
+   * Idle timeout in milliseconds. Default: 30_000 (30s).
+   * Lite/CLI mode should use shorter values (e.g. 10_000).
+   */
+  idleTimeoutMillis?: number;
 }
 
 export function initPool(config: PgPoolConfig): pg.Pool {
@@ -63,7 +68,7 @@ export function initPool(config: PgPoolConfig): pg.Pool {
         }
       : false,
     max: config.poolSize,
-    idleTimeoutMillis: 30_000,
+    idleTimeoutMillis: config.idleTimeoutMillis ?? 30_000,
     connectionTimeoutMillis: 5_000,
     statement_timeout: 30_000,
     allowExitOnIdle: true,

@@ -36,6 +36,7 @@ Subcommands:
 
 Options:
   --url <url>       Server URL (default: http://127.0.0.1:3000)
+  --local           Direct DB access (no running server needed, read-only commands)
   --token <token>   Auth token
   --json            Output raw JSON
   -h, --help        Show this help
@@ -57,11 +58,27 @@ export const riskCommand: Command = {
     }
     argv = helpResult.rest;
 
+    const localResult = extractBoolFlag(argv, 'local');
+    argv = localResult.rest;
+    const isLocal = localResult.value;
+
     const { baseUrl, token, json: jsonOutput, rest } = extractCommonFlags(argv);
     argv = rest;
 
     const sub = argv[0];
     const args = argv.slice(1);
+
+    // ── Local (cold-start) mode for read-only subcommands ──────
+    if (isLocal) {
+      const LOCAL_COMMANDS = ['summary', 'departments', 'register'];
+      if (!sub || !LOCAL_COMMANDS.includes(sub)) {
+        ctx.stderr.write(
+          `--local mode only supports: ${LOCAL_COMMANDS.join(', ')}\n`
+        );
+        return 1;
+      }
+      return await runLocalRisk(ctx, sub, jsonOutput, args);
+    }
 
     try {
       switch (sub) {
@@ -532,4 +549,103 @@ async function runReport(
     ctx.stdout.write(content + '\n');
   }
   return 0;
+}
+
+// ── Local (cold-start) mode ─────────────────────────────────────────
+
+async function runLocalRisk(
+  ctx: CommandContext,
+  sub: string,
+  jsonOutput: boolean,
+  args: string[]
+): Promise<number> {
+  const { liteBootstrap } = await import('../lite-bootstrap.js');
+  const liteCtx = await liteBootstrap({ skipMigrations: true });
+
+  try {
+    const { DepartmentRiskStorage } = await import(
+      '../../risk-assessment/department-risk-storage.js'
+    );
+    const storage = new DepartmentRiskStorage();
+
+    if (sub === 'summary') {
+      const summary = await storage.getExecutiveSummary();
+      if (jsonOutput) {
+        ctx.stdout.write(JSON.stringify({ summary }, null, 2) + '\n');
+        return 0;
+      }
+      const c = colorContext(ctx.stdout);
+      ctx.stdout.write(`\n  ${c.bold('Executive Risk Summary (local)')}\n\n`);
+      ctx.stdout.write(`  ${c.dim('Departments:')}       ${summary.totalDepartments}\n`);
+      ctx.stdout.write(`  ${c.dim('Open risks:')}        ${summary.totalOpenRisks}\n`);
+      ctx.stdout.write(`  ${c.dim('Overdue risks:')}     ${summary.totalOverdueRisks}\n`);
+      ctx.stdout.write(`  ${c.dim('Critical risks:')}    ${summary.totalCriticalRisks}\n`);
+      ctx.stdout.write(`  ${c.dim('Appetite breaches:')} ${summary.appetiteBreaches}\n`);
+      ctx.stdout.write(`  ${c.dim('Average score:')}     ${summary.averageScore.toFixed(1)}\n`);
+      ctx.stdout.write('\n');
+      return 0;
+    }
+
+    if (sub === 'departments') {
+      const action = args[0] ?? 'list';
+      if (action === 'list') {
+        const items = await storage.listDepartments();
+        if (jsonOutput) {
+          ctx.stdout.write(JSON.stringify({ items }, null, 2) + '\n');
+          return 0;
+        }
+        const c = colorContext(ctx.stdout);
+        if (items.length === 0) {
+          ctx.stdout.write('  No departments found.\n');
+          return 0;
+        }
+        ctx.stdout.write(`\n  ${c.bold('Departments (local)')} (${items.length})\n\n`);
+        for (const d of items) {
+          ctx.stdout.write(
+            `  ${c.cyan(String(d.id).slice(0, 8))}  ${d.name}\n`
+          );
+        }
+        ctx.stdout.write('\n');
+        return 0;
+      }
+      ctx.stderr.write(`--local departments only supports 'list'\n`);
+      return 1;
+    }
+
+    if (sub === 'register') {
+      const action = args[0] ?? 'list';
+      if (action === 'list') {
+        const items = await storage.listRegisterEntries({});
+        if (jsonOutput) {
+          ctx.stdout.write(JSON.stringify({ items }, null, 2) + '\n');
+          return 0;
+        }
+        const c = colorContext(ctx.stdout);
+        if (items.length === 0) {
+          ctx.stdout.write('  No register entries found.\n');
+          return 0;
+        }
+        ctx.stdout.write(`\n  ${c.bold('Risk Register (local)')} (${items.length})\n\n`);
+        for (const e of items) {
+          const severityColor =
+            e.severity === 'critical' ? c.red : e.severity === 'high' ? c.yellow : c.dim;
+          ctx.stdout.write(
+            `  ${c.cyan(String(e.id).slice(0, 8))}  ${severityColor(`[${e.severity}]`)}  ${e.title}  ${c.dim(`(${e.status})`)}\n`
+          );
+        }
+        ctx.stdout.write('\n');
+        return 0;
+      }
+      ctx.stderr.write(`--local register only supports 'list'\n`);
+      return 1;
+    }
+
+    ctx.stderr.write(`Unknown local subcommand: ${sub}\n`);
+    return 1;
+  } catch (err) {
+    ctx.stderr.write(`Local mode error: ${err instanceof Error ? err.message : String(err)}\n`);
+    return 1;
+  } finally {
+    await liteCtx.cleanup();
+  }
 }

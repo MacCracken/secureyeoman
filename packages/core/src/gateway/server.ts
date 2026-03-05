@@ -1563,11 +1563,21 @@ export class GatewayServer {
       const allOk = Object.values(components).every((c) => c.ok);
       reply.code(allOk ? 200 : 207); // 207 Multi-Status if partial
 
+      // Memory profiling data
+      const mem = process.memoryUsage();
+
       return {
         status: allOk ? 'ok' : 'partial',
         version: VERSION,
         uptime: state.startedAt ? Date.now() - state.startedAt : 0,
         components,
+        memory: {
+          rss: mem.rss,
+          heapUsed: mem.heapUsed,
+          heapTotal: mem.heapTotal,
+          external: mem.external,
+          arrayBuffers: mem.arrayBuffers,
+        },
       };
     });
 

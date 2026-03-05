@@ -1,5 +1,8 @@
 /**
  * Memory Command — Manage vector memory and brain operations.
+ *
+ * Supports `--local` flag for cold-start direct DB access without a running server.
+ * Local mode is available for read-only subcommands: search, memories, knowledge, stats, activation.
  */
 
 import type { Command, CommandContext } from '../router.js';
@@ -39,6 +42,7 @@ Commands:
 
 Options:
   --url <url>       Server URL (default: http://127.0.0.1:3000)
+  --local           Direct DB access (no running server needed, read-only commands)
   --limit <n>       Limit results (default: 10)
   --json            Output raw JSON
   -h, --help        Show this help
@@ -46,6 +50,10 @@ Options:
       return 0;
     }
     argv = helpResult.rest;
+
+    const localResult = extractBoolFlag(argv, 'local');
+    argv = localResult.rest;
+    const isLocal = localResult.value;
 
     const { baseUrl, json, rest: argvAfterFlags } = extractCommonFlags(argv);
     argv = argvAfterFlags;
@@ -59,6 +67,19 @@ Options:
       if (!subcommand) {
         ctx.stderr.write(`Run 'secureyeoman memory --help' for usage.\n`);
         return 1;
+      }
+
+      // ── Local (cold-start) mode for read-only subcommands ──────
+      if (isLocal) {
+        const LOCAL_COMMANDS = ['stats', 'memories', 'knowledge', 'activation'];
+        if (!LOCAL_COMMANDS.includes(subcommand)) {
+          ctx.stderr.write(
+            `--local mode only supports: ${LOCAL_COMMANDS.join(', ')}\n` +
+              `Use without --local for: ${subcommand}\n`
+          );
+          return 1;
+        }
+        return await runLocalMemory(ctx, subcommand, json, limit);
       }
 
       if (subcommand === 'search' && argv[1]) {
@@ -389,3 +410,122 @@ Options:
     }
   },
 };
+
+// ── Local (cold-start) mode ─────────────────────────────────────────
+
+async function runLocalMemory(
+  ctx: CommandContext,
+  subcommand: string,
+  json: boolean,
+  limit: number
+): Promise<number> {
+  const { liteBootstrap } = await import('../lite-bootstrap.js');
+  const liteCtx = await liteBootstrap({ skipMigrations: true });
+
+  try {
+    const { BrainStorage } = await import('../../brain/storage.js');
+    const brainStorage = new BrainStorage();
+
+    if (subcommand === 'stats') {
+      const stats = await brainStorage.getStats();
+      if (json) {
+        ctx.stdout.write(JSON.stringify(stats, null, 2) + '\n');
+        return 0;
+      }
+      ctx.stdout.write('\nMemory Statistics (local):\n');
+      for (const [key, value] of Object.entries(stats)) {
+        ctx.stdout.write(`  ${key}: ${JSON.stringify(value)}\n`);
+      }
+      ctx.stdout.write('\n');
+      return 0;
+    }
+
+    if (subcommand === 'memories') {
+      const memories = await brainStorage.getMemories({ limit });
+      if (json) {
+        ctx.stdout.write(JSON.stringify(memories, null, 2) + '\n');
+        return 0;
+      }
+      if (memories.length === 0) {
+        ctx.stdout.write('No memories found.\n');
+        return 0;
+      }
+      ctx.stdout.write(
+        '\n' +
+          formatTable(
+            memories.slice(0, limit).map((m: any) => ({
+              id: String(m.id ?? '').substring(0, 12),
+              type: m.type ?? '',
+              importance: Number(m.importance ?? 0).toFixed(2),
+              content:
+                (m.content ?? '').substring(0, 40) +
+                ((m.content ?? '').length > 40 ? '...' : ''),
+            }))
+          ) +
+          '\n'
+      );
+      return 0;
+    }
+
+    if (subcommand === 'knowledge') {
+      const knowledge = await brainStorage.getKnowledge({ limit });
+      if (json) {
+        ctx.stdout.write(JSON.stringify(knowledge, null, 2) + '\n');
+        return 0;
+      }
+      if (knowledge.length === 0) {
+        ctx.stdout.write('No knowledge entries found.\n');
+        return 0;
+      }
+      ctx.stdout.write(
+        '\n' +
+          formatTable(
+            knowledge.slice(0, limit).map((k: any) => ({
+              id: String(k.id ?? '').substring(0, 12),
+              title: (k.title ?? '').substring(0, 30),
+              content:
+                (k.content ?? '').substring(0, 40) +
+                ((k.content ?? '').length > 40 ? '...' : ''),
+            }))
+          ) +
+          '\n'
+      );
+      return 0;
+    }
+
+    if (subcommand === 'activation') {
+      const { CognitiveMemoryStorage } = await import('../../brain/cognitive-memory-store.js');
+      const cogStore = new CognitiveMemoryStorage();
+      const stats = await cogStore.getActivationStats();
+      if (json) {
+        ctx.stdout.write(JSON.stringify(stats, null, 2) + '\n');
+        return 0;
+      }
+      ctx.stdout.write('\n=== Cognitive Memory Activation (local) ===\n\n');
+      ctx.stdout.write(
+        `Associations: ${stats.associationCount}  |  Avg Weight: ${stats.avgAssociationWeight.toFixed(3)}\n\n`
+      );
+      if (stats.topMemories.length > 0) {
+        ctx.stdout.write('Top Activated Memories:\n');
+        ctx.stdout.write(
+          formatTable(
+            stats.topMemories.map((m: any) => ({
+              ID: m.id,
+              Activation: Number(m.activation).toFixed(3),
+            })),
+            ['ID', 'Activation']
+          )
+        );
+      }
+      return 0;
+    }
+
+    ctx.stderr.write(`Unknown local subcommand: ${subcommand}\n`);
+    return 1;
+  } catch (err) {
+    ctx.stderr.write(`Local mode error: ${err instanceof Error ? err.message : String(err)}\n`);
+    return 1;
+  } finally {
+    await liteCtx.cleanup();
+  }
+}

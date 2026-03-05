@@ -8,13 +8,12 @@
 
 | # | Item | ROI | Effort | Status |
 |---|------|-----|--------|--------|
-| 1 | Startup & Resource Optimization | **CRITICAL** | MEDIUM | Open |
+| 1 | Startup & Resource Optimization | **CRITICAL** | MEDIUM | **Near-complete** — binary size audit remains |
 | 2 | Supply Chain Security & Compliance Artifacts | HIGH | LOW | Open |
 | 3 | OpenTelemetry & SIEM Integration | HIGH | MEDIUM | Open — OTel basic tracing exists |
-| 4 | Compliance Audit Mode + Model Cost Optimizer | HIGH | LOW–MEDIUM | Open — DLP egress data now available |
 | 5 | RAG Evaluation Metrics | HIGH | MEDIUM | Open — overlaps Phase 125-E |
 | 6 | Prompt Versioning & A/B Testing | MEDIUM | MEDIUM | Open — personality versioning (Phase 114) exists |
-| 7 | Developer Ecosystem & Community Growth | MEDIUM | HIGH | Open |
+| 7 | Developer Ecosystem & Community Growth | MEDIUM | HIGH | Open — moved to roadmap Future Features |
 | 8 | Extensible Guardrail Pipeline | MEDIUM | MEDIUM | Open — DLP + ContentGuardrail overlap |
 
 ### Completed (moved to Changelog)
@@ -22,6 +21,10 @@
 - ~~Data Loss Prevention~~ → Phase 136
 - ~~Multi-Region & HA~~ → Phase 137
 - ~~OpenAPI spec generation~~ → `scripts/generate-openapi.ts`
+- ~~Compliance Audit Mode~~ → [2026.3.5f] compliance report generator
+- ~~Model Cost Optimizer~~ → [2026.3.5f] enhanced cost-optimizer.ts
+- ~~Startup lazy loading~~ → [2026.3.5f] TrainingModule/AnalyticsModule conditional, 20 dynamic route imports
+- ~~Webhook/Event System~~ → [2026.3.5f] event subscription + dispatcher
 
 ---
 
@@ -29,14 +32,11 @@
 
 **ROI**: CRITICAL — The most visible competitive weakness. 30s startup and ~1GB RAM vs PicoClaw's <1s / 10-20MB. Every user's first impression. Blocks CLI adoption.
 
-**What's already done**: 31 integration adapters lazy-loaded (Optimization Audit 2). DelegationModule and BrainModule use dynamic imports. Optional managers (Extensions, Execution, A2A, Proactive, Multimodal, Browser) are config-gated with `await import()`. CLI router uses `registerLazy()`. ~~TrainingModule conditional~~ (done — `config.training.enabled`). ~~AnalyticsModule conditional~~ (done — `config.analytics.enabled`). ~~20 lazy gateway route imports~~ (done — all tryRegister routes use dynamic import). ~~Startup profiling~~ (done — `performance.now()` timing table in `initialize()`).
+**What's already done**: 31 integration adapters lazy-loaded (Optimization Audit 2). DelegationModule and BrainModule use dynamic imports. Optional managers (Extensions, Execution, A2A, Proactive, Multimodal, Browser) are config-gated with `await import()`. CLI router uses `registerLazy()`. ~~TrainingModule conditional~~ (done — `config.training.enabled`). ~~AnalyticsModule conditional~~ (done — `config.analytics.enabled`). ~~20 lazy gateway route imports~~ (done — all tryRegister routes use dynamic import). ~~Startup profiling~~ (done — `performance.now()` timing table in `initialize()`). ~~Cold-start CLI mode~~ (done — `liteBootstrap()` + `--local` flag on `memory` and `risk` commands). ~~Connection pooling optimization~~ (done — lite mode pool size 2, configurable `idleTimeoutMillis`). ~~Memory profiling~~ (done — `process.memoryUsage()` in `/health/deep`, `status --profile` CLI).
 
 **What remains** (ordered by impact):
 
-- **Cold-start CLI mode** — For one-shot CLI commands (`secureyeoman brain search`, `secureyeoman risk summary`), skip gateway, dashboard, WebSocket, integrations, and cron. Boot only storage + targeted module. Target: <3s.
-- **Connection pooling optimization** — Review pool size defaults (currently 10). Lazy-create pools per schema (brain, risk, training) instead of one eager pool. Close idle connections aggressively in Lite/SQLite mode.
 - **Binary size audit** — Identify bundled assets inflating the ~80MB binary. Tree-shake unused code paths. Consider splitting MCP tool manifest into a lazy-loaded module.
-- **Memory profiling** — Heap snapshot at steady state. Target: <600MB idle RSS with all modules, <300MB minimal config.
 
 ---
 
@@ -73,25 +73,7 @@ The ClawHavoc supply chain attack (1,184+ malicious skills, 135,000+ exposed ins
 
 ---
 
-## 4. Quick Wins from #8 (Promoted)
-
-Two ideas from the original #8 table are now higher priority given completed phases:
-
-### 4a. Compliance Audit Mode
-
-**ROI**: HIGH — LOW effort since DLP (Phase 136) and audit chain already exist.
-
-One-click compliance report: "Show me everything this agent did in the last 30 days that touched PII / financial data / external systems." Cross-references audit chain, DLP egress logs, and tool invocations. Export as PDF/CSV.
-
-*Overlap note*: DLP egress monitoring, audit chain export, and content classification are all in place. This is primarily a report aggregation + UI task.
-
-### 4b. Model Cost Optimizer
-
-**ROI**: HIGH — LOW effort since model router, usage tracking, and cost calculator exist.
-
-Analyze conversation history to recommend cheaper models for routine tasks. Auto-route simple queries to smaller models, complex ones to capable models. Extends existing model router with a cost-aware scoring layer.
-
-*Overlap note*: `cost-calculator.ts`, `model-router.ts`, `usage-storage.ts`, and `CostBudgetChecker` provide all the data. This adds the optimization logic.
+## ~~4. Quick Wins from #8~~ → Completed in [2026.3.5f]
 
 ---
 
@@ -132,7 +114,7 @@ Analyze conversation history to recommend cheaper models for routine tasks. Auto
 - **Skill testing framework** — Mock MCP context, simulate tool calls, assert outputs. `SkillTestRunner`.
 - **Skill submission pipeline** — `secureyeoman skill publish` with validation, tests, auto-PR.
 - **API client libraries** — Python (`secureyeoman-py`) and Go (`secureyeoman-go`) from OpenAPI spec.
-- **Webhook/event system** — Subscribe to lifecycle events (conversation.started, tool.called, etc.). HTTP delivery with retry.
+- ~~**Webhook/event system**~~ — Completed in [2026.3.5f].
 - **Interactive tutorials** — Guided onboarding in dashboard.
 
 ---

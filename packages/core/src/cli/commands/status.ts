@@ -28,12 +28,17 @@ Display a summary of a running SecureYeoman instance.
 
 Options:
       --url <url>    Server URL (default: http://127.0.0.1:3000)
+      --profile      Show memory/resource profiling data
       --json         Output raw JSON
   -h, --help         Show this help
 \n`);
       return 0;
     }
     argv = helpResult.rest;
+
+    const profileResult = extractBoolFlag(argv, 'profile');
+    argv = profileResult.rest;
+    const showProfile = profileResult.value;
 
     const { baseUrl, json: jsonOutput, rest: argvAfterFlags } = extractCommonFlags(argv);
     argv = argvAfterFlags;
@@ -103,6 +108,38 @@ Options:
       Policy:       ${policyLabel}
 \n`);
 
+      // Memory/resource profiling
+      if (showProfile) {
+        const metricsRes = await apiCall(baseUrl, '/health/deep').catch(() => null);
+        if (metricsRes?.ok) {
+          const deep = metricsRes.data as Record<string, unknown>;
+          const components = deep.components as Record<string, Record<string, unknown>> | undefined;
+
+          if (jsonOutput) {
+            ctx.stdout.write(JSON.stringify({ profile: deep }, null, 2) + '\n');
+          } else {
+            ctx.stdout.write(`    Resource Profile:\n`);
+            const mem = process.memoryUsage ? process.memoryUsage() : null;
+            if (components) {
+              for (const [name, check] of Object.entries(components)) {
+                const status = check.status === 'ok' ? c.green('ok') : c.yellow(String(check.status));
+                const details = check.message ? ` — ${check.message}` : '';
+                ctx.stdout.write(`      ${name.padEnd(24)} ${status}${details}\n`);
+              }
+            }
+            // Server-reported metrics
+            if (deep.memory) {
+              const m = deep.memory as Record<string, number>;
+              ctx.stdout.write(`\n      ${c.dim('RSS:')}        ${formatBytes(m.rss ?? 0)}\n`);
+              ctx.stdout.write(`      ${c.dim('Heap Used:')}  ${formatBytes(m.heapUsed ?? 0)}\n`);
+              ctx.stdout.write(`      ${c.dim('Heap Total:')} ${formatBytes(m.heapTotal ?? 0)}\n`);
+              ctx.stdout.write(`      ${c.dim('External:')}   ${formatBytes(m.external ?? 0)}\n`);
+            }
+            ctx.stdout.write('\n');
+          }
+        }
+      }
+
       return statusStr === 'OK' ? 0 : 1;
     } catch (err) {
       ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
@@ -110,3 +147,9 @@ Options:
     }
   },
 };
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
