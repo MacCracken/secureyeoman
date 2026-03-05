@@ -27,3 +27,4 @@ export { excalidrawDiagramSkill } from './excalidraw-diagram.js';
 export { pdfAnalysisSkill } from './pdf-analysis.js';
 export { cognitiveMemoryAnalystSkill } from './cognitive-memory-analyst.js';
 export { financialChartingSkill } from './financial-charting.js';
+export { confidentialComputingSkill } from './confidential-computing.js';

@@ -80,6 +80,11 @@ vi.mock('./skills/index.js', () => ({
     author: 'YEOMAN',
     version: '2026.3.5',
   },
+  confidentialComputingSkill: {
+    name: 'Confidential Computing',
+    author: 'YEOMAN',
+    version: '2026.3.5',
+  },
 }));
 
 // ─── Test Data ────────────────────────────────────────────────
@@ -423,7 +428,7 @@ describe('MarketplaceStorage', () => {
       const insertCalls = mockQuery.mock.calls.filter(
         (c: any[]) => typeof c[0] === 'string' && c[0].includes('INSERT INTO marketplace.skills')
       );
-      expect(insertCalls).toHaveLength(24);
+      expect(insertCalls).toHaveLength(25);
     });
 
     it('uses batch SELECT for existing builtins check', async () => {

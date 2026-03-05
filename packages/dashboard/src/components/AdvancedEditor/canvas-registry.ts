@@ -11,7 +11,8 @@ export type CanvasWidgetType =
   | 'chat'
   | 'mission-card'
   | 'excalidraw'
-  | 'trading-dashboard';
+  | 'trading-dashboard'
+  | 'tee-status';
 
 export interface CanvasWidgetDef {
   type: CanvasWidgetType;
@@ -127,6 +128,14 @@ export const CANVAS_WIDGET_REGISTRY: readonly CanvasWidgetDef[] = [
     description: 'Candlestick chart with OHLC summary and symbol lookup',
     defaultWidth: 640,
     defaultHeight: 480,
+  },
+  {
+    type: 'tee-status',
+    label: 'TEE Status',
+    category: 'monitoring',
+    description: 'Confidential Computing hardware detection and provider attestation status',
+    defaultWidth: 480,
+    defaultHeight: 400,
   },
 ];
 

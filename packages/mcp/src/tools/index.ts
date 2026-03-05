@@ -46,6 +46,7 @@ import { registerPdfTools } from './pdf-tools.js';
 import { registerChartTools } from './chart-tools.js';
 import { registerConstitutionalTools } from './constitutional-tools.js';
 import { registerResponsibleAiTools } from './responsible-ai-tools.js';
+import { registerTeeTools } from './tee-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -109,4 +110,6 @@ export async function registerAllTools(
   registerConstitutionalTools(server, client, config, middleware);
   // Responsible AI tools (Phase 130)
   registerResponsibleAiTools(server, client, middleware);
+  // TEE / Confidential Computing tools (Phase 129-D)
+  registerTeeTools(server, client, config, middleware);
 }

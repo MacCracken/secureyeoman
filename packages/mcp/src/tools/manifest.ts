@@ -1085,5 +1085,21 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'rai_model_card_markdown',
       description: 'Get a model card rendered as Markdown in Hugging Face Model Card format',
     },
+
+    // TEE / Confidential Computing tools (Phase 129-D)
+    {
+      name: 'tee_providers',
+      description:
+        'List TEE-capable providers, hardware detection status, and attestation cache stats',
+    },
+    {
+      name: 'tee_status',
+      description: 'Get attestation status and history for a specific TEE provider',
+    },
+    {
+      name: 'tee_verify',
+      description:
+        'Force re-verify TEE attestation for a provider (clears cache and runs fresh check)',
+    },
   ];
 }

@@ -192,6 +192,8 @@ export const McpServiceConfigSchema = z.object({
   exposeCharting: z.boolean().default(true),
   /** Enable Constitutional AI tools (constitutional_*). Off by default. */
   exposeConstitutional: z.boolean().default(false),
+  /** Enable TEE / Confidential Computing tools (tee_*). Off by default. */
+  exposeTee: z.boolean().default(false),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

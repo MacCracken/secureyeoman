@@ -916,6 +916,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeCognitiveMemory: false,
               exposeCharting: false,
               exposeConstitutional: false,
+              exposeTee: false,
             },
             proactiveConfig: {
               enabled: false,

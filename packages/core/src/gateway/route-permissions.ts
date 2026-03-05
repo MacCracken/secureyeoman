@@ -36,6 +36,7 @@ const PREFIX_RESOURCE_MAP: readonly [prefix: string, resource: string][] = [
   // Sub-domain resources (must precede their parent prefix)
   ['/api/v1/security/athi', 'security_athi'],
   ['/api/v1/security/sra', 'security_sra'],
+  ['/api/v1/security/tee', 'security'],
   ['/api/v1/security/events', 'security_events'],
   ['/api/v1/brain/logs', 'audit'],
 

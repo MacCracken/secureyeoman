@@ -111,6 +111,8 @@ export const McpFeaturesSchema = z
     exposeCharting: z.boolean().default(false),
     /** Constitutional AI tools (constitutional_*). Requires global exposeConstitutional. */
     exposeConstitutional: z.boolean().default(false),
+    /** TEE / Confidential Computing tools (tee_*). Requires global exposeTee. */
+    exposeTee: z.boolean().default(false),
   })
   .default({});
 

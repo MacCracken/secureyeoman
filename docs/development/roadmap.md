@@ -10,7 +10,6 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 125-E | Cognitive ML — Advanced Features | P2 — ML | Planned |
-| 129 | Confidential Computing — TEE Full Stack | P2 — security | Planned |
 | 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |

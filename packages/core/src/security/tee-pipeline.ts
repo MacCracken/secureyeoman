@@ -119,7 +119,7 @@ export class ConfidentialPipelineManager {
     }
 
     const now = Date.now();
-    const lastHash = request.attestationChain[request.attestationChain.length - 1].hash;
+    const lastHash = request.attestationChain[request.attestationChain.length - 1]!.hash;
 
     const completionLink: AttestationChainLink = {
       step: 'pipeline_complete',
@@ -205,7 +205,7 @@ export class ConfidentialPipelineManager {
     if (chain.length < 2) return false;
     // Verify timestamps are monotonically increasing
     for (let i = 1; i < chain.length; i++) {
-      if (chain[i].timestamp < chain[i - 1].timestamp) return false;
+      if (chain[i]!.timestamp < chain[i - 1]!.timestamp) return false;
     }
     // Verify attestation link has a result
     const attestationLink = chain.find((l) => l.step === 'provider_attestation');

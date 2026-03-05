@@ -308,6 +308,14 @@ router.registerLazy({
 });
 
 router.registerLazy({
+  name: 'tee',
+  aliases: ['confidential'],
+  description: 'Confidential Computing / TEE status and verification',
+  usage: 'secureyeoman tee <status|verify|hardware> [options]',
+  loader: () => import('./cli/commands/tee.js').then((m) => m.teeCommand),
+});
+
+router.registerLazy({
   name: 'provider',
   aliases: ['prov'],
   description: 'Manage multi-account AI provider keys and costs',

@@ -43,16 +43,16 @@ interface CborDecodeResult {
  */
 function decodeCbor(buf: Buffer, startOffset = 0): CborDecodeResult {
   let offset = startOffset;
-  const initial = buf[offset++];
+  const initial = buf[offset++]!;
   const majorType = initial >> 5;
-  let additionalInfo = initial & 0x1f;
+  const additionalInfo = initial & 0x1f;
 
   // Read length/value
   let length = 0;
   if (additionalInfo < 24) {
     length = additionalInfo;
   } else if (additionalInfo === 24) {
-    length = buf[offset++];
+    length = buf[offset++] ?? 0;
   } else if (additionalInfo === 25) {
     length = buf.readUInt16BE(offset);
     offset += 2;

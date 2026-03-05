@@ -90,7 +90,7 @@ export class AzureMaaAttestationProvider implements RemoteAttestationProvider {
         };
       }
 
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString()) as Record<string, unknown>;
+      const payload = JSON.parse(Buffer.from(parts[1]!, 'base64url').toString()) as Record<string, unknown>;
       const verified =
         payload['x-ms-attestation-type'] === 'sgx' &&
         payload['x-ms-policy-signer'] !== undefined;

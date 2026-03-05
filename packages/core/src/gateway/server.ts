@@ -87,6 +87,8 @@ import { registerProviderAccountRoutes } from '../ai/provider-account-routes.js'
 import { registerAthiRoutes } from '../security/athi-routes.js';
 import { registerSraRoutes } from '../security/sra-routes.js';
 import { registerConstitutionalRoutes } from '../security/constitutional-routes.js';
+import { registerTeeRoutes } from '../security/tee-routes.js';
+import { TeeAttestationVerifier } from '../security/tee-attestation.js';
 import { registerAuditExportRoutes } from '../logging/audit-export-routes.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { registerBackupRoutes } from '../backup/backup-routes.js';
@@ -1041,6 +1043,27 @@ export class GatewayServer {
       registerConstitutionalRoutes(this.app, this.secureYeoman);
     } catch (err) {
       this.getLogger().debug('Constitutional AI routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // TEE / Confidential Computing routes (Phase 129)
+    try {
+      const teeConfig = this.secureYeoman.getConfig().security?.tee;
+      const teeVerifier = new TeeAttestationVerifier(
+        {
+          enabled: teeConfig?.enabled ?? false,
+          providerLevel: teeConfig?.providerLevel ?? 'off',
+          attestationStrategy: teeConfig?.attestationStrategy ?? 'none',
+          attestationCacheTtlMs: teeConfig?.attestationCacheTtlMs ?? 3_600_000,
+          failureAction: teeConfig?.failureAction ?? 'block',
+        },
+        this.getLogger(),
+      );
+      registerTeeRoutes(this.app, { teeVerifier });
+      this.getLogger().info('TEE confidential computing routes registered');
+    } catch (err) {
+      this.getLogger().debug('TEE routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

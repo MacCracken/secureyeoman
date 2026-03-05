@@ -278,6 +278,7 @@ export class SoulManager {
             exposeCognitiveMemory: false,
             exposeCharting: false,
             exposeConstitutional: false,
+            exposeTee: false,
           },
           proactiveConfig: {
             enabled: false,

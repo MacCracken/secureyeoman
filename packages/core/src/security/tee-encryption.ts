@@ -82,11 +82,11 @@ export class TeeEncryptionManager {
     offset += IV_LEN;
     const authTag = sealed.subarray(offset, offset + AUTH_TAG_LEN);
     offset += AUTH_TAG_LEN;
-    const keySourceTag = sealed[offset];
+    const keySourceTag = sealed[offset]!;
     offset += 1;
     const ciphertext = sealed.subarray(offset);
 
-    const detectedSource = TAG_TO_SOURCE[keySourceTag];
+    const detectedSource = TAG_TO_SOURCE[keySourceTag as number];
     if (!detectedSource) {
       throw new Error(`Unknown key source tag: 0x${keySourceTag.toString(16)}`);
     }
