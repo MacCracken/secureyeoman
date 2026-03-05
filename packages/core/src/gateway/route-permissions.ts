@@ -86,6 +86,7 @@ const PREFIX_RESOURCE_MAP: readonly [prefix: string, resource: string][] = [
   ['/api/v1/extensions', 'extensions'],
   ['/api/v1/federation', 'federation'],
   ['/api/v1/training', 'training'],
+  ['/api/v1/eval', 'eval'],
   ['/api/v1/analytics', 'analytics'],
   ['/api/v1/license', 'license'],
   ['/api/v1/risk', 'risk'],

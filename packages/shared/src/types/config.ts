@@ -374,6 +374,47 @@ export const ConstitutionalConfigSchema = z
 
 export type ConstitutionalConfig = z.infer<typeof ConstitutionalConfigSchema>;
 
+// ─── Data Loss Prevention Config (Phase 136) ──────────────────────────
+export const DlpConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  classification: z.object({
+    enabled: z.boolean().default(true),
+    defaultLevel: z.enum(['public', 'internal', 'confidential', 'restricted']).default('internal'),
+    keywords: z.object({
+      restricted: z.array(z.string()).default(['top secret', 'classified', 'restricted', 'secret clearance']),
+      confidential: z.array(z.string()).default(['confidential', 'proprietary', 'trade secret', 'internal only']),
+    }).default({}),
+    piiAsConfidential: z.boolean().default(true),
+    autoClassifyOnIngest: z.boolean().default(true),
+  }).default({}),
+  scanning: z.object({
+    enabled: z.boolean().default(true),
+    defaultAction: z.enum(['block', 'warn', 'log']).default('warn'),
+    scanIntegrations: z.boolean().default(true),
+    scanWebhooks: z.boolean().default(true),
+    scanEmails: z.boolean().default(true),
+  }).default({}),
+  retention: z.object({
+    enabled: z.boolean().default(false),
+    purgeIntervalHours: z.number().int().positive().default(24),
+    defaults: z.object({
+      conversation: z.number().int().positive().default(365),
+      memory: z.number().int().positive().default(730),
+      document: z.number().int().positive().default(730),
+      knowledge: z.number().int().positive().default(1095),
+      audit_log: z.number().int().positive().default(2555),
+    }).default({}),
+  }).default({}),
+  watermarking: z.object({
+    enabled: z.boolean().default(false),
+    algorithm: z.enum(['unicode-steganography', 'whitespace', 'homoglyph']).default('unicode-steganography'),
+    includeTimestamp: z.boolean().default(true),
+    includeUserId: z.boolean().default(true),
+  }).default({}),
+}).default({});
+
+export type DlpConfig = z.infer<typeof DlpConfigSchema>;
+
 // Security configuration
 export const SecurityConfigSchema = z.object({
   rbac: RbacConfigSchema,
@@ -426,6 +467,8 @@ export const SecurityConfigSchema = z.object({
   allowAdvancedEditor: z.boolean().default(false),
   /** Allow training dataset export (conversations → JSONL/text for LLM fine-tuning). Off by default. */
   allowTrainingExport: z.boolean().default(false),
+  /** Allow agent evaluation harness (scenarios, suites, eval runs). Off by default. */
+  allowAgentEval: z.boolean().default(false),
   /** Allow agents to generate and register tools at runtime. Off by default. */
   allowDynamicTools: z.boolean().default(false),
   /** Require dynamically-created tools to run inside a sandbox. Defaults true; only applies when allowDynamicTools is true. */
@@ -479,6 +522,8 @@ export const SecurityConfigSchema = z.object({
     .default({}),
   /** Output-side content policy enforcement: PII redaction, topic restrictions, toxicity, block lists, grounding. */
   contentGuardrails: ContentGuardrailConfigSchema.default({}),
+  /** Data Loss Prevention: content classification, egress scanning, retention, watermarking. */
+  dlp: DlpConfigSchema,
   /** Sandbox artifact scanning & externalization gate policy (Phase 116). */
   sandboxArtifactScanning: ExternalizationPolicySchema.default({}),
   secretBackend: z.enum(['auto', 'keyring', 'env', 'file', 'vault']).default('auto'),
@@ -918,6 +963,11 @@ export const ContinualLearningConfigSchema = z
 
 export type ContinualLearningConfig = z.infer<typeof ContinualLearningConfigSchema>;
 
+// ── Agent Eval Config (Phase 135) ─────────────────────────────────────
+import { AgentEvalConfigSchema } from './agent-eval.js';
+export { AgentEvalConfigSchema };
+export type { AgentEvalConfig } from './agent-eval.js';
+
 // ── Domain-specific config groups ─────────────────────────────────────
 // Allows targeted validation of a single domain without parsing all 27 fields.
 
@@ -955,12 +1005,13 @@ export const PersonalityDomainConfigSchema = z.object({
 });
 export type PersonalityDomainConfig = z.infer<typeof PersonalityDomainConfigSchema>;
 
-/** Operations domain: logging, metrics, notifications, intent */
+/** Operations domain: logging, metrics, notifications, intent, agentEval */
 export const OpsDomainConfigSchema = z.object({
   logging: LoggingConfigSchema.default({}),
   metrics: MetricsConfigSchema.default({}),
   notifications: NotificationsConfigSchema,
   intent: IntentFileConfigSchema,
+  agentEval: AgentEvalConfigSchema,
 });
 export type OpsDomainConfig = z.infer<typeof OpsDomainConfigSchema>;
 

@@ -513,7 +513,29 @@ export {
   type BatchInferenceConfig,
   type InferenceOptimizationConfig,
   type ContinualLearningConfig,
+  AgentEvalConfigSchema,
+  type AgentEvalConfig,
 } from './config.js';
+
+// Agent Eval types
+export {
+  EvalScenarioSchema,
+  EvalSuiteSchema,
+  OutputAssertionSchema,
+  ExpectedToolCallSchema,
+  AssertionResultSchema,
+  ToolCallRecordSchema,
+  ScenarioRunResultSchema,
+  SuiteRunResultSchema,
+  type EvalScenario,
+  type EvalSuite,
+  type OutputAssertion,
+  type ExpectedToolCall,
+  type AssertionResult,
+  type ToolCallRecord,
+  type ScenarioRunResult,
+  type SuiteRunResult,
+} from './agent-eval.js';
 
 // Proactive types
 export {

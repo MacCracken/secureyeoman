@@ -9,6 +9,7 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
+| 135 | Agent Evaluation Harness | P1 — differentiation | **Done** |
 | 125-E | Cognitive ML — Advanced Features | P2 — ML | Planned |
 | 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
 | 136 | Data Loss Prevention (DLP) & Content Classification | P2 — security | Planned |

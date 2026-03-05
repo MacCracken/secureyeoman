@@ -113,6 +113,10 @@ export const McpFeaturesSchema = z
     exposeConstitutional: z.boolean().default(false),
     /** TEE / Confidential Computing tools (tee_*). Requires global exposeTee. */
     exposeTee: z.boolean().default(false),
+    /** Agent eval tools (eval_*). Requires global exposeEval. */
+    exposeEval: z.boolean().default(false),
+    /** DLP tools (dlp_*). Requires global exposeDlp. */
+    exposeDlp: z.boolean().default(false),
   })
   .default({});
 

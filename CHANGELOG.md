@@ -4,6 +4,27 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.5c] — 2026-03-05
+
+### Phase 135 — Agent Evaluation Harness
+
+- **Eval scenario schema**: Define test cases for agent behavior — input prompt, expected tool calls (ordered/unordered), forbidden tool calls, output assertions (exact, regex, semantic, contains, not_contains), token budget, timeout, personality/skill/model overrides.
+- **Eval suites**: Group scenarios into named collections with concurrency control and cost budget enforcement.
+- **Eval engine** (`agent-eval/eval-engine.ts`): Pure evaluation logic — assertion evaluation, tool call validation (with argument matching), timeout via AbortController, budget enforcement.
+- **Eval manager** (`agent-eval/eval-manager.ts`): Suite orchestration — sequential or concurrent execution, cost budget enforcement, run cancellation, result persistence, retention cleanup.
+- **Eval store** (`agent-eval/eval-store.ts`): PgBaseStorage for scenarios, suites, suite runs, and scenario runs with tenant isolation.
+- **Migration `005_agent_eval.sql`**: `eval` schema with 4 tables (`scenarios`, `suites`, `suite_runs`, `scenario_runs`) and 8 indexes.
+- **12 REST endpoints** under `/api/v1/eval/` — CRUD for scenarios and suites, execution (single scenario and full suite), run history.
+- **8 MCP tools**: `eval_list_scenarios`, `eval_create_scenario`, `eval_run_scenario`, `eval_list_suites`, `eval_create_suite`, `eval_run_suite`, `eval_list_runs`, `eval_get_run`.
+- **Feature gates**: `allowAgentEval` security policy flag, `exposeEval` in McpServiceConfig + McpFeatures.
+- **Config**: `AgentEvalConfigSchema` in OpsDomainConfig (`agentEval.enabled`, `defaultTimeoutMs`, `maxConcurrency`, `defaultMaxCostUsd`, `storeTraces`, `retentionDays`).
+- **Dashboard**: `AgentEvalWidget` — suite selector, run history table with pass/fail badges, per-scenario drill-down with assertion details and tool call errors.
+- **Route permissions**: Convention-based via `/api/v1/eval` prefix → `eval` resource.
+- **Tests**: 30+ tests across eval engine (assertions, tool validation, scenario execution, timeouts, budgets) and eval manager (CRUD, suite runs, cancellation). Dashboard widget tests.
+- **Docs**: ADR 206, guide `agent-eval-harness.md`.
+
+---
+
 ## [2026.3.5b] — 2026-03-05
 
 ### Pro Tier & License Rename

@@ -39,4 +39,6 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '002_advanced_training', sql: readSql('002_advanced_training.sql') },
   { id: '003_inference_optimization', sql: readSql('003_inference_optimization.sql') },
   { id: '004_continual_learning', sql: readSql('004_continual_learning.sql') },
+  { id: '005_agent_eval', sql: readSql('005_agent_eval.sql') },
+  { id: '006_dlp', sql: readSql('006_dlp.sql') },
 ];

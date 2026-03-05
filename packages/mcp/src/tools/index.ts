@@ -48,6 +48,7 @@ import { registerConstitutionalTools } from './constitutional-tools.js';
 import { registerResponsibleAiTools } from './responsible-ai-tools.js';
 import { registerTeeTools } from './tee-tools.js';
 import { registerTrainingTools } from './training-tools.js';
+import { registerEvalTools } from './eval-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -115,4 +116,6 @@ export async function registerAllTools(
   registerTeeTools(server, client, config, middleware);
   // Training, inference optimization, and continual learning tools (Phases 131-133)
   registerTrainingTools(server, client, middleware);
+  // Agent Eval Harness tools (Phase 135)
+  registerEvalTools(server, client, middleware);
 }

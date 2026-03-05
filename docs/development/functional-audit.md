@@ -280,6 +280,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | 32 | **32 messaging integrations** | vs ~2–3 for nearest competitor; real external dispatch with fan-out, quiet hours, and per-user prefs |
 | 33 | **Accessibility compliance** | eslint-plugin-jsx-a11y at warn level; focus-visible ring; 44px touch targets; axe-core smoke tests |
 | 34 | **Community Repository** | 87 community skills across 13 categories; 7 workflow templates; 2 swarm + 2 council templates; 7 security assessment templates; 3 personalities; 3 dashboard themes; schema-validated with 1,310 tests |
+| 35 | **Agent Evaluation Harness** | Structured agent behavior testing — eval scenarios with expected tool calls, forbidden tool calls, output assertions (exact/regex/semantic/contains), budget constraints, multi-turn support. Suites with concurrency and cost budget. 8 MCP tools, 12 REST endpoints, dashboard widget. No competitor offers this. |
 
 ---
 

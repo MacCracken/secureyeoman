@@ -194,6 +194,10 @@ export const McpServiceConfigSchema = z.object({
   exposeConstitutional: z.boolean().default(false),
   /** Enable TEE / Confidential Computing tools (tee_*). Off by default. */
   exposeTee: z.boolean().default(false),
+  /** Enable agent eval tools (eval_*). Off by default. */
+  exposeEval: z.boolean().default(false),
+  /** Enable DLP tools (dlp_*). Off by default. */
+  exposeDlp: z.boolean().default(false),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

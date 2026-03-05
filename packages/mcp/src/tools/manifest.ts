@@ -1687,5 +1687,50 @@ export function getToolManifest(): ToolManifestEntry[] {
         'Start an online LoRA adapter update from recent high-quality conversations',
       category: 'training',
     },
+
+    // Phase 135: Agent Eval Harness tools
+    {
+      name: 'eval_list_scenarios',
+      description: 'List eval scenarios with optional category filter',
+      category: 'eval',
+    },
+    {
+      name: 'eval_create_scenario',
+      description:
+        'Create an eval scenario — a test case for agent behavior with input, expected tool calls, and output assertions',
+      category: 'eval',
+    },
+    {
+      name: 'eval_run_scenario',
+      description: 'Run a single eval scenario and get the result',
+      category: 'eval',
+    },
+    {
+      name: 'eval_list_suites',
+      description: 'List eval suites',
+      category: 'eval',
+    },
+    {
+      name: 'eval_create_suite',
+      description:
+        'Create an eval suite — a collection of scenarios to run together',
+      category: 'eval',
+    },
+    {
+      name: 'eval_run_suite',
+      description:
+        'Execute an eval suite — runs all scenarios and returns aggregate pass/fail results',
+      category: 'eval',
+    },
+    {
+      name: 'eval_list_runs',
+      description: 'List historical eval suite runs with results',
+      category: 'eval',
+    },
+    {
+      name: 'eval_get_run',
+      description: 'Get detailed results of a specific eval suite run including per-scenario results',
+      category: 'eval',
+    },
   ];
 }
