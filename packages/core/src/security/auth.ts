@@ -6,7 +6,15 @@
  */
 
 import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
-import { sha256, secureCompare, generateSecureToken, uuidv7 } from '../utils/crypto.js';
+import {
+  sha256,
+  secureCompare,
+  generateSecureToken,
+  uuidv7,
+  hashPassword,
+  verifyPassword,
+  isLegacySha256,
+} from '../utils/crypto.js';
 import { TokenPayloadSchema, type Role } from '@secureyeoman/shared';
 import { generateTOTPSecret, verifyTOTP, generateRecoveryCodes, buildTOTPUri } from './totp.js';
 import type { AuthStorage, ApiKeyRow } from './auth-storage.js';
@@ -64,8 +72,9 @@ export interface AuthServiceConfig {
   tokenExpirySeconds: number;
   /** Refresh-token lifetime in seconds */
   refreshTokenExpirySeconds: number;
-  /** Pre-hashed admin password (sha256 hex) — we hash the incoming
-   *  password and compare using secureCompare */
+  /** Admin password hash. Accepts legacy SHA256 hex (64 chars) or
+   *  scrypt format `scrypt:<base64-salt>:<base64-hash>`. Legacy hashes
+   *  are auto-upgraded to scrypt on successful login. */
   adminPassword: string;
 }
 
@@ -153,12 +162,26 @@ export class AuthService {
       throw new AuthError('Too many login attempts. Try again later.', 429);
     }
 
-    // Constant-time password comparison
-    // adminPassword is already stored as a sha256 hex digest
-    const passwordHash = sha256(password);
-    const expectedHash = this.config.adminPassword;
+    // Password verification — supports both legacy SHA256 and scrypt
+    const storedHash = this.config.adminPassword;
+    let passwordValid = false;
 
-    if (!secureCompare(passwordHash, expectedHash)) {
+    if (isLegacySha256(storedHash)) {
+      // Legacy: constant-time compare against SHA256 hex digest
+      passwordValid = secureCompare(sha256(password), storedHash);
+
+      // Auto-upgrade to scrypt on successful login
+      if (passwordValid) {
+        const upgraded = await hashPassword(password);
+        (this.config as { adminPassword: string }).adminPassword = upgraded;
+        this.deps.logger.info('Admin password auto-upgraded from SHA256 to scrypt');
+      }
+    } else {
+      // Modern: scrypt verification
+      passwordValid = await verifyPassword(password, storedHash);
+    }
+
+    if (!passwordValid) {
       this.authFailuresTotal++;
       await this.audit('auth_failure', 'Invalid admin password', { ip });
       throw new AuthError('Invalid credentials', 401);
@@ -198,13 +221,13 @@ export class AuthService {
       throw new AuthError('Invalid token type', 401);
     }
 
+    // Atomic revoke-and-check: single INSERT ... ON CONFLICT DO NOTHING RETURNING
+    // eliminates the race where two concurrent refresh calls both pass isTokenRevoked()
     const jti = payload.jti!;
-    if (await this.deps.storage.isTokenRevoked(jti)) {
+    const revoked = await this.deps.storage.revokeToken(jti, payload.sub!, payload.exp!);
+    if (!revoked) {
       throw new AuthError('Refresh token has been revoked', 401);
     }
-
-    // Consume old refresh token (single-use rotation)
-    await this.deps.storage.revokeToken(jti, payload.sub!, payload.exp!);
 
     const role = payload.role as Role;
     const permissions = buildPermissionStrings(role, this.deps.rbac);
@@ -435,11 +458,17 @@ export class AuthService {
   // ── Password Reset ──────────────────────────────────────────────
 
   async resetPassword(currentPassword: string, newPassword: string): Promise<void> {
-    // Verify current password
-    const currentHash = sha256(currentPassword);
-    const expectedHash = this.config.adminPassword;
+    // Verify current password (supports both legacy SHA256 and scrypt)
+    const storedHash = this.config.adminPassword;
+    let currentValid = false;
 
-    if (!secureCompare(currentHash, expectedHash)) {
+    if (isLegacySha256(storedHash)) {
+      currentValid = secureCompare(sha256(currentPassword), storedHash);
+    } else {
+      currentValid = await verifyPassword(currentPassword, storedHash);
+    }
+
+    if (!currentValid) {
       await this.audit('auth_failure', 'Password reset failed: wrong current password', {
         userId: ADMIN_USER_ID,
       });
@@ -451,8 +480,8 @@ export class AuthService {
       throw new AuthError('New password must be at least 32 characters', 400);
     }
 
-    // Update the stored admin password (store as sha256 hex digest)
-    (this.config as { adminPassword: string }).adminPassword = sha256(newPassword);
+    // Store new password as scrypt hash
+    (this.config as { adminPassword: string }).adminPassword = await hashPassword(newPassword);
 
     // Rotate token secret and clear previous to invalidate all existing sessions
     const newSecret = generateSecureToken(32);

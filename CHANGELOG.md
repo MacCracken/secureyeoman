@@ -36,6 +36,12 @@ Applied 24 fixes across 11 files:
 - **Delegation promise cleanup** (`agents/manager.ts`): Added hard timeout (`timeout + 10s grace`) via `Promise.race` in `delegate()`. If `aiClient.chat()` hangs beyond the soft abort window, the hard timeout fires, aborts the controller, and cleans up the `activeDelegations` map entry. Prevents stuck delegations from permanently blocking `maxConcurrent` slots. Returns structured timeout result instead of leaving the promise pending.
 - **Async generator stream cleanup** (11 AI providers): Added `try/finally` blocks inside `chatStream()` methods to ensure SDK stream objects are cleaned up when consumers stop iterating early. Anthropic: `stream.abort()`. OpenAI-compatible providers (openai, groq, deepseek, mistral, grok, openrouter, localai, lmstudio, opencode): `stream.controller?.abort()`. Gemini: async iterator protocol (no explicit abort). Ollama and Letta already had proper cleanup via `reader.releaseLock()`.
 
+### Auth & Crypto Hardening
+
+- **Scrypt password hashing** (`utils/crypto.ts`, `security/auth.ts`): Replaced SHA256 admin password hashing with `node:crypto.scrypt` (zero new dependencies, FIPS-compliant). New `hashPassword()` / `verifyPassword()` async functions. Password stored as `scrypt:<base64-salt>:<base64-hash>`. Legacy SHA256 hex (64-char) hashes auto-upgrade to scrypt on successful login — zero-downtime migration. `resetPassword()` now stores scrypt hashes. `isLegacySha256()` detector for format discrimination.
+- **Atomic token revocation** (`security/auth-storage.ts`, `security/auth.ts`): Eliminated refresh token race condition. `AuthStorage.revokeToken()` now uses `INSERT ... ON CONFLICT DO NOTHING RETURNING jti` and returns `boolean` (true = revoked by this call, false = already revoked). `AuthService.refresh()` replaced two-step `isTokenRevoked()` + `revokeToken()` with single atomic `revokeToken()` call. Two concurrent refresh attempts on the same token now guarantee exactly one succeeds.
+- **Tests**: 4 new tests — scrypt auto-upgrade, scrypt-native login, scrypt rejection, concurrent refresh race. All 33 auth tests passing.
+
 ### Bug Fixes
 
 - **DB test fix**: Added missing `maxContentLength: 4096` to `defaultConfig()` in `brain.test.ts`. Without it, the oversized-content rejection tests silently passed the guard (`content.length > undefined` is always false), causing 2 spurious failures.

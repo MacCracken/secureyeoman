@@ -134,8 +134,8 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 ### Security Hardening (from 2026-03-05 Audit)
 
 #### Auth & Crypto
-- [ ] **Admin password bcrypt migration** — Replace SHA256 with bcrypt/Argon2 for admin password hashing. Requires: async hash in login flow, config format migration (store bcrypt hash instead of SHA256 hex), update integration test helpers. Reference: `security/auth.ts:158`.
-- [ ] **Token revocation race condition** — Add DB transaction or optimistic locking around `isTokenRevoked()` + `revokeToken()` to prevent in-flight replay within milliseconds of logout. Reference: `security/auth.ts:202-207`.
+- [x] **Admin password scrypt migration** — ~~SHA256~~ → `node:crypto.scrypt` (zero new deps). Auto-upgrades legacy SHA256 hex on login. Format: `scrypt:<base64-salt>:<base64-hash>`. Done 2026-03-05.
+- [x] **Token revocation race condition** — Atomic `INSERT ... RETURNING` in `revokeToken()` returns boolean. `refresh()` uses single call instead of check-then-revoke. Done 2026-03-05.
 
 #### Performance
 - [ ] **Config schema splitting** — Split `ConfigSchema` into domain-specific sub-schemas for targeted Zod validation. Currently validates all 27 top-level fields on every parse. Reference: `shared/types/config.ts:685-718`.

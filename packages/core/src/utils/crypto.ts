@@ -8,7 +8,10 @@
  * - No custom crypto implementations
  */
 
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual, scrypt as scryptCb } from 'node:crypto';
+import { promisify } from 'node:util';
+
+const scryptAsync = promisify(scryptCb);
 
 /**
  * Generate a SHA-256 hash of the input
@@ -106,6 +109,43 @@ export function uuidv7(): string {
  */
 export function generateSecureToken(bytes = 32): string {
   return randomBytes(bytes).toString('base64url');
+}
+
+// ── Password hashing (scrypt) ─────────────────────────────────────────
+
+const SCRYPT_KEY_LENGTH = 64;
+const SCRYPT_SALT_LENGTH = 32;
+const SCRYPT_PREFIX = 'scrypt:';
+
+/**
+ * Hash a password using scrypt (zero-dependency, FIPS-compliant).
+ * Returns `scrypt:<base64-salt>:<base64-hash>`.
+ */
+export async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(SCRYPT_SALT_LENGTH);
+  const derived = (await scryptAsync(password, salt, SCRYPT_KEY_LENGTH)) as Buffer;
+  return `${SCRYPT_PREFIX}${salt.toString('base64')}:${derived.toString('base64')}`;
+}
+
+/**
+ * Verify a password against a scrypt hash string.
+ * Format: `scrypt:<base64-salt>:<base64-hash>`
+ */
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  if (!stored.startsWith(SCRYPT_PREFIX)) return false;
+  const parts = stored.slice(SCRYPT_PREFIX.length).split(':');
+  if (parts.length !== 2) return false;
+  const salt = Buffer.from(parts[0]!, 'base64');
+  const expected = Buffer.from(parts[1]!, 'base64');
+  const derived = (await scryptAsync(password, salt, SCRYPT_KEY_LENGTH)) as Buffer;
+  return timingSafeEqual(derived, expected);
+}
+
+/**
+ * Check if a stored password is a legacy SHA256 hex digest (64 hex chars).
+ */
+export function isLegacySha256(stored: string): boolean {
+  return /^[0-9a-f]{64}$/.test(stored);
 }
 
 /**

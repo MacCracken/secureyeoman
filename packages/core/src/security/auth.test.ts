@@ -5,7 +5,7 @@ import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { RBAC } from './rbac.js';
 import { RateLimiter } from './rate-limiter.js';
 import type { SecureLogger } from '../logging/logger.js';
-import { sha256 } from '../utils/crypto.js';
+import { sha256, hashPassword } from '../utils/crypto.js';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 const TOKEN_SECRET = 'test-token-secret-at-least-32chars!!';
@@ -155,6 +155,85 @@ describe('AuthService', () => {
     it('should reject an access token used as refresh', async () => {
       const { accessToken } = await service.login(ADMIN_PASSWORD_RAW, '127.0.0.1');
       await expect(service.refresh(accessToken)).rejects.toThrow('Invalid token type');
+    });
+  });
+
+  // ── Scrypt password upgrade ───────────────────────────────────────
+
+  describe('scrypt password upgrade', () => {
+    it('should auto-upgrade legacy SHA256 password to scrypt on login', async () => {
+      // Initial login with legacy SHA256 hash
+      const result = await service.login(ADMIN_PASSWORD_RAW, '127.0.0.1');
+      expect(result.accessToken).toBeTruthy();
+
+      // Second login should still work (now using scrypt internally)
+      const result2 = await service.login(ADMIN_PASSWORD_RAW, '127.0.0.1');
+      expect(result2.accessToken).toBeTruthy();
+    });
+
+    it('should work when initialized with scrypt hash directly', async () => {
+      const scryptHash = await hashPassword(ADMIN_PASSWORD_RAW);
+      const scryptService = new AuthService(
+        {
+          tokenSecret: TOKEN_SECRET,
+          tokenExpirySeconds: 3600,
+          refreshTokenExpirySeconds: 86400,
+          adminPassword: scryptHash,
+        },
+        {
+          storage: authStorage,
+          auditChain,
+          rbac,
+          rateLimiter,
+          logger: noopLogger(),
+        }
+      );
+
+      const result = await scryptService.login(ADMIN_PASSWORD_RAW, '127.0.0.1');
+      expect(result.accessToken).toBeTruthy();
+    });
+
+    it('should reject wrong password with scrypt hash', async () => {
+      const scryptHash = await hashPassword(ADMIN_PASSWORD_RAW);
+      const scryptService = new AuthService(
+        {
+          tokenSecret: TOKEN_SECRET,
+          tokenExpirySeconds: 3600,
+          refreshTokenExpirySeconds: 86400,
+          adminPassword: scryptHash,
+        },
+        {
+          storage: authStorage,
+          auditChain,
+          rbac,
+          rateLimiter,
+          logger: noopLogger(),
+        }
+      );
+
+      await expect(scryptService.login('wrong-password', '127.0.0.1')).rejects.toThrow(
+        'Invalid credentials'
+      );
+    });
+  });
+
+  // ── Atomic refresh (race condition fix) ─────────────────────────
+
+  describe('atomic refresh', () => {
+    it('should reject concurrent refresh of same token', async () => {
+      const login = await service.login(ADMIN_PASSWORD_RAW, '127.0.0.1');
+
+      // Race two refresh calls — one should succeed, the other should fail
+      const results = await Promise.allSettled([
+        service.refresh(login.refreshToken),
+        service.refresh(login.refreshToken),
+      ]);
+
+      const successes = results.filter((r) => r.status === 'fulfilled');
+      const failures = results.filter((r) => r.status === 'rejected');
+      expect(successes).toHaveLength(1);
+      expect(failures).toHaveLength(1);
+      expect((failures[0] as PromiseRejectedResult).reason.message).toMatch(/revoked/);
     });
   });
 

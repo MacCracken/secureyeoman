@@ -44,13 +44,19 @@ export class AuthStorage extends PgBaseStorage {
 
   // ── Token revocation ───────────────────────────────────────────────
 
-  async revokeToken(jti: string, userId: string, expiresAt: number): Promise<void> {
-    await this.execute(
+  /**
+   * Atomically revoke a token. Returns true if this call performed the
+   * revocation, false if the token was already revoked.
+   */
+  async revokeToken(jti: string, userId: string, expiresAt: number): Promise<boolean> {
+    const row = await this.queryOne<{ jti: string }>(
       `INSERT INTO auth.revoked_tokens (jti, user_id, revoked_at, expires_at)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT(jti) DO NOTHING`,
+       ON CONFLICT(jti) DO NOTHING
+       RETURNING jti`,
       [jti, userId, Date.now(), expiresAt]
     );
+    return row !== null;
   }
 
   async isTokenRevoked(jti: string): Promise<boolean> {
