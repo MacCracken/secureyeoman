@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { AuthService } from '../security/auth.js';
+import { AuthService, AuthError } from '../security/auth.js';
 import { AuthStorage } from '../security/auth-storage.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { RBAC, initializeRBAC } from '../security/rbac.js';

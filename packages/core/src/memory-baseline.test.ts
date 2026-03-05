@@ -80,6 +80,9 @@ const childEnv: NodeJS.ProcessEnv = {
   SECUREYEOMAN_PORT: String(TEST_PORT),
   // Presence check only — no AI call during startup
   ANTHROPIC_API_KEY: process.env['ANTHROPIC_API_KEY'] ?? 'test-anthropic-api-key-placeholder',
+  // Disable TLS — the Docker .env may set a certPath that doesn't exist on the host
+  SECUREYEOMAN_TLS_CERT_PATH: '',
+  SECUREYEOMAN_TLS_KEY_PATH: '',
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

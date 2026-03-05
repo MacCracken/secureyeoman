@@ -6,6 +6,31 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.4] — 2026-03-04
 
+### Phase 125 Completion: Strategic Trading Skills
+
+- **6 new advanced trading skills** (Phase 125-B) in `secureyeoman-community-repo/skills/trading/`: Wyckoff Method Analyst (accumulation/distribution schematics, composite operator), Elliott Wave Analyst (impulse/corrective patterns, Fibonacci relationships, alternate counts), Market Microstructure Analyst (order book, tape reading, dark pools, iceberg orders), Quantitative Strategy Backtester (walk-forward, Monte Carlo, overfitting detection, Sharpe/Sortino/Calmar), Sector Rotation Strategist (business cycle phases, relative strength, inter-market analysis), Cryptocurrency DeFi Strategist (yield farming, impermanent loss, AMM mechanics, protocol risk).
+- **4 trading workflow templates** in `workflow-templates.ts`: `daily-trading-setup` (market structure → key levels → trade setups → format → save), `trade-analysis-journal` (parse trades → calculate stats → pattern analysis → report → save), `multi-timeframe-analysis` (HTF → MTF → LTF → confluence score → report), `risk-position-sizing` (validate params → position size calc → portfolio risk → report). 21 total built-in workflow templates.
+- **VeteranFinancialManagerSkill extended** (`veteran-financial-manager.ts`): Added ICT/Smart Money Concepts framework (BOS, CHOCH, FVG, Order Blocks, Liquidity Sweeps, Premium/Discount zones), Technical Analysis toolkit (Fibonacci, EMA/SMA, RSI/MACD, Bollinger Bands, Volume Profile, Wyckoff), multi-timeframe alignment, and inter-market analysis. New "Technical Structure" output section. Version bumped to 2026.3.4.
+- **3 market data MCP tools** (`trading-tools.ts`): `market_quote` (real-time price quotes), `market_historical` (daily OHLCV up to 100 days), `market_search` (ticker symbol search). Auto-detects provider from `ALPHAVANTAGE_API_KEY` or `FINNHUB_API_KEY` environment variable.
+- **1 trading journal MCP tool**: `trading_journal_log` — logs completed trades with automatic P&L calculation, win/loss classification, setup type tagging, and structured output.
+- **Manifest updated**: 9 trading tools added to `manifest.ts` (5 BullShift + 3 market data + 1 journal).
+- **Tests**: 1,310 community repo tests passing (was 1,220). 22 MCP trading tool tests passing. 6 workflow template tests passing. 74 role-skills tests passing.
+- **Total trading skills**: 19 community skills (13 original + 6 new) across ICT, price action, technical analysis, futures/options, and advanced strategies.
+
+### Phase 120: Community Skills Expansion
+
+- **14 new community skills** across 6 categories in `secureyeoman-community-repo/skills/`:
+  - **Finance** (3): M&A Analyst (valuation models, due diligence, accretion/dilution), Real Estate Investment Analyst (cap rates, IRR, REIT evaluation, market cycles), Insurance Analyst (coverage gaps, actuarial fundamentals, premium optimization)
+  - **Legal** (3): Contract Reviewer (risk identification, clause analysis, negotiation priorities), Compliance Analyst (GDPR, HIPAA, SOX, PCI-DSS, SOC 2 gap analysis), Intellectual Property Advisor (patents, trademarks, copyrights, open-source license compatibility)
+  - **Marketing** (3): SEO Specialist (keyword research, technical SEO, Core Web Vitals, link building), Content Strategist (editorial calendars, topic clustering, distribution, performance measurement), Social Media Analyst (platform strategy, engagement metrics, influencer evaluation, paid social)
+  - **Science & Data** (3): Data Scientist (ML model selection, feature engineering, A/B testing, data pipelines), Statistician (hypothesis testing, Bayesian analysis, survival analysis, experimental design), Research Methodology Advisor (study design, literature review, bias identification, peer review)
+  - **Education** (2): Curriculum Designer (Bloom's taxonomy, backward design, rubrics, differentiated instruction), Tutoring Specialist (Socratic questioning, scaffolding, spaced repetition, misconception remediation)
+  - **Healthcare** (2): Clinical Documentation Specialist (SOAP notes, ICD-10/CPT coding, CDI, audit compliance), HIPAA Compliance Advisor (Privacy/Security Rules, risk assessments, BAAs, breach notification)
+- **Schema update**: Added `trading`, `legal`, `marketing`, `education`, `healthcare` to valid category enum in `schema/skill.schema.json`
+- **4 new category directories**: `skills/legal/`, `skills/marketing/`, `skills/education/`, `skills/healthcare/`
+- **Tests**: 1,220 community repo tests passing (was 1,210). All 14 skills validated against schema (name, description, category, tags, instructions, triggerPatterns, useWhen, doNotUseWhen, successCriteria).
+- **Total community skills**: ~80 across 13 categories (development, productivity, security, utilities, design, finance, science, general, trading, legal, marketing, education, healthcare)
+
 ### Security View Fixes & Organization Page
 
 - **Reports & Logs consolidation** (`SecurityReportsTab.tsx`): Merged "Audit Log" and "Reports" tabs into a single "Reports & Logs" tab. Report type dropdown with 5 types: Audit Report (json/html/csv), Audit Log Export (jsonl/csv/syslog), Department Scorecard (json/html/md/csv), Executive Summary (json/html/md), Register Report (json/csv). Dynamic format selector, department picker for scoped reports, and embedded AuditLogTab below the reports section.

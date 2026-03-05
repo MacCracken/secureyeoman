@@ -47,6 +47,50 @@ async function bullshiftFetch(path: string, options: RequestInit = {}): Promise<
   return body;
 }
 
+// ── Market data helpers ────────────────────────────────────────────────────
+
+const MARKET_DATA_PROVIDERS: Record<string, { baseUrl: string; envKey: string }> = {
+  alphavantage: { baseUrl: 'https://www.alphavantage.co', envKey: 'ALPHAVANTAGE_API_KEY' },
+  finnhub: { baseUrl: 'https://finnhub.io/api/v1', envKey: 'FINNHUB_API_KEY' },
+};
+
+function getMarketDataProvider(): { name: string; baseUrl: string; apiKey: string } | null {
+  for (const [name, { baseUrl, envKey }] of Object.entries(MARKET_DATA_PROVIDERS)) {
+    const apiKey = process.env[envKey];
+    if (apiKey) return { name, baseUrl, apiKey };
+  }
+  return null;
+}
+
+async function marketDataFetch(path: string, params: Record<string, string> = {}): Promise<unknown> {
+  const provider = getMarketDataProvider();
+  if (!provider) {
+    throw new Error(
+      'No market data API key configured. Set one of: ALPHAVANTAGE_API_KEY, FINNHUB_API_KEY'
+    );
+  }
+
+  const url = new URL(path, provider.baseUrl);
+  if (provider.name === 'alphavantage') {
+    url.searchParams.set('apikey', provider.apiKey);
+  }
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (provider.name === 'finnhub') headers['X-Finnhub-Token'] = provider.apiKey;
+
+  const res = await fetch(url.toString(), { headers });
+  if (!res.ok) throw new Error(`Market data API error: HTTP ${res.status}`);
+
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    throw new Error(`Market data API returned non-JSON response (HTTP ${res.status})`);
+  }
+  return body;
+}
+
 export function registerTradingTools(server: McpServer, middleware: ToolMiddleware): void {
   // ── Health ────────────────────────────────────────────────────────────────
 
@@ -155,6 +199,194 @@ export function registerTradingTools(server: McpServer, middleware: ToolMiddlewa
         method: 'DELETE',
       });
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  // ── Market Data Tools ───────────────────────────────────────────────────
+
+  server.registerTool(
+    'market_quote',
+    {
+      description:
+        'Get a real-time or latest price quote for a stock, ETF, forex pair, or cryptocurrency. ' +
+        'Requires ALPHAVANTAGE_API_KEY or FINNHUB_API_KEY environment variable.',
+      inputSchema: {
+        symbol: z
+          .string()
+          .min(1)
+          .max(32)
+          .describe('Ticker symbol, e.g. "AAPL", "MSFT", "EUR/USD", "BTC"'),
+      },
+    },
+    wrapToolHandler('market_quote', middleware, async (args) => {
+      const provider = getMarketDataProvider();
+      if (!provider) {
+        throw new Error(
+          'No market data API key configured. Set ALPHAVANTAGE_API_KEY or FINNHUB_API_KEY.'
+        );
+      }
+
+      let result: unknown;
+      if (provider.name === 'alphavantage') {
+        result = await marketDataFetch('/query', {
+          function: 'GLOBAL_QUOTE',
+          symbol: args.symbol,
+        });
+      } else {
+        result = await marketDataFetch('/quote', { symbol: args.symbol.toUpperCase() });
+      }
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  server.registerTool(
+    'market_historical',
+    {
+      description:
+        'Get historical daily OHLCV (Open, High, Low, Close, Volume) price data for a symbol. ' +
+        'Returns up to 100 days of daily bars by default. ' +
+        'Requires ALPHAVANTAGE_API_KEY or FINNHUB_API_KEY environment variable.',
+      inputSchema: {
+        symbol: z.string().min(1).max(32).describe('Ticker symbol, e.g. "AAPL"'),
+        outputsize: z
+          .enum(['compact', 'full'])
+          .optional()
+          .describe('"compact" = last 100 data points (default), "full" = full history'),
+      },
+    },
+    wrapToolHandler('market_historical', middleware, async (args) => {
+      const provider = getMarketDataProvider();
+      if (!provider) {
+        throw new Error(
+          'No market data API key configured. Set ALPHAVANTAGE_API_KEY or FINNHUB_API_KEY.'
+        );
+      }
+
+      let result: unknown;
+      if (provider.name === 'alphavantage') {
+        result = await marketDataFetch('/query', {
+          function: 'TIME_SERIES_DAILY',
+          symbol: args.symbol,
+          outputsize: args.outputsize ?? 'compact',
+        });
+      } else {
+        // Finnhub candles endpoint
+        const now = Math.floor(Date.now() / 1000);
+        const from = now - 100 * 86400; // 100 days
+        result = await marketDataFetch('/stock/candle', {
+          symbol: args.symbol.toUpperCase(),
+          resolution: 'D',
+          from: String(from),
+          to: String(now),
+        });
+      }
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  server.registerTool(
+    'market_search',
+    {
+      description:
+        'Search for ticker symbols by company name or keyword. ' +
+        'Useful for finding the correct symbol before calling market_quote or market_historical.',
+      inputSchema: {
+        keywords: z.string().min(1).max(200).describe('Company name or search keywords'),
+      },
+    },
+    wrapToolHandler('market_search', middleware, async (args) => {
+      const provider = getMarketDataProvider();
+      if (!provider) {
+        throw new Error(
+          'No market data API key configured. Set ALPHAVANTAGE_API_KEY or FINNHUB_API_KEY.'
+        );
+      }
+
+      let result: unknown;
+      if (provider.name === 'alphavantage') {
+        result = await marketDataFetch('/query', {
+          function: 'SYMBOL_SEARCH',
+          keywords: args.keywords,
+        });
+      } else {
+        result = await marketDataFetch('/search', { q: args.keywords });
+      }
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  // ── Trading Journal ─────────────────────────────────────────────────────
+
+  server.registerTool(
+    'trading_journal_log',
+    {
+      description:
+        'Log a completed trade to the trading journal stored in the knowledge base. ' +
+        'Records instrument, direction, entry/exit prices, P&L, and optional notes for later analysis.',
+      inputSchema: {
+        instrument: z.string().min(1).max(32).describe('Ticker or instrument symbol'),
+        direction: z.enum(['long', 'short']).describe('Trade direction'),
+        entry_price: z.number().positive().describe('Entry price'),
+        exit_price: z.number().positive().describe('Exit price'),
+        quantity: z.number().positive().describe('Position size (shares/contracts/lots)'),
+        entry_date: z.string().describe('Entry date (ISO 8601 or YYYY-MM-DD)'),
+        exit_date: z.string().describe('Exit date (ISO 8601 or YYYY-MM-DD)'),
+        setup_type: z
+          .string()
+          .max(100)
+          .optional()
+          .describe('Trade setup type, e.g. "ICT OB", "Wyckoff Spring", "Breakout"'),
+        notes: z.string().max(2000).optional().describe('Trade notes, lessons learned, screenshots'),
+        tags: z
+          .array(z.string().max(50))
+          .max(10)
+          .optional()
+          .describe('Tags for categorization, e.g. ["winner", "ES", "scalp"]'),
+      },
+    },
+    wrapToolHandler('trading_journal_log', middleware, async (args) => {
+      const pnl =
+        args.direction === 'long'
+          ? (args.exit_price - args.entry_price) * args.quantity
+          : (args.entry_price - args.exit_price) * args.quantity;
+      const pnlPercent =
+        args.direction === 'long'
+          ? ((args.exit_price - args.entry_price) / args.entry_price) * 100
+          : ((args.entry_price - args.exit_price) / args.entry_price) * 100;
+
+      const entry = {
+        instrument: args.instrument,
+        direction: args.direction,
+        entry_price: args.entry_price,
+        exit_price: args.exit_price,
+        quantity: args.quantity,
+        entry_date: args.entry_date,
+        exit_date: args.exit_date,
+        pnl: Math.round(pnl * 100) / 100,
+        pnl_percent: Math.round(pnlPercent * 100) / 100,
+        result: pnl >= 0 ? 'win' : 'loss',
+        setup_type: args.setup_type ?? 'unspecified',
+        notes: args.notes ?? '',
+        tags: args.tags ?? [],
+        logged_at: new Date().toISOString(),
+      };
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                status: 'logged',
+                entry,
+                summary: `${entry.result.toUpperCase()}: ${entry.instrument} ${entry.direction} — P&L: $${entry.pnl} (${entry.pnl_percent}%)`,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
     })
   );
 }

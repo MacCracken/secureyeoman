@@ -894,5 +894,41 @@ export function getToolManifest(): ToolManifestEntry[] {
       description:
         'Read AcroForm fields from a PDF (text, checkbox, radio, dropdown, signature)',
     },
+
+    // Trading tools — BullShift integration
+    { name: 'bullshift_health', description: 'Check if the BullShift trading API server is running' },
+    {
+      name: 'bullshift_get_account',
+      description: 'Get trading account balance, buying power, and margin',
+    },
+    {
+      name: 'bullshift_get_positions',
+      description: 'List all open positions with entry price, current price, and P&L',
+    },
+    {
+      name: 'bullshift_submit_order',
+      description: 'Submit a market, limit, stop, or stop-limit trading order',
+    },
+    { name: 'bullshift_cancel_order', description: 'Cancel a pending trading order by ID' },
+
+    // Trading tools — Market data (Phase 125)
+    {
+      name: 'market_quote',
+      description: 'Get real-time price quote for a stock, ETF, forex pair, or crypto',
+    },
+    {
+      name: 'market_historical',
+      description: 'Get historical daily OHLCV price data for a symbol (up to 100 days)',
+    },
+    {
+      name: 'market_search',
+      description: 'Search for ticker symbols by company name or keyword',
+    },
+
+    // Trading tools — Journal (Phase 125)
+    {
+      name: 'trading_journal_log',
+      description: 'Log a completed trade to the trading journal with P&L calculation',
+    },
   ];
 }

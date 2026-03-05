@@ -50,29 +50,21 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| 109 | Editor Improvements | P3 — power user UX | 🔄 In Progress |
-| 120 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
-| 125 | Strategic Trading Skills | P2 — trading analysis | 🔄 Skills ✅ (13/13), workflows & integration remaining |
-| 126 | Community Skills Expansion | P2 — skill library breadth | Planned (finance, legal, marketing, science, education, healthcare) |
+| 120 | Community Skills Expansion | P2 — skill library breadth | ✅ Complete |
+| 125 | Strategic Trading Skills | P2 — trading analysis | ✅ Complete |
+| 126 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
+| 109 | Editor Improvements (IDE) | P3 — power user UX | Future / Demand-Gated |
 | Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
 
 ---
 
 ---
 
-## Phase 109: Editor Improvements (Auto-Claude Style)
-
-**Priority**: P3 — High value for power users. Demand-gated — implement incrementally based on user feedback.
-
-*Previously Phase 100. Renumbered for sequential ordering. Includes "settings page split" from Phase XX.*
-
-**Remaining IDE features** — Auto-Claude–style patterns (plan display, step-by-step approval, AI commit messages, context badges), multi-file editing (tabs, split panes), project explorer, integrated Git, command palette, inline AI completion (Copilot-style), multi-file search & replace, collaborative editing (Yjs CRDT), keybindings editor, layout persistence, responsive/mobile layout, training integration (export/annotation), and plugin/extension system.
-
 ---
 
-### 120: Canvas Workspace Improvements
+### 126: Canvas Workspace Improvements
 
 *Extends the Phase 100 canvas workspace (`/editor/advanced`) with power-user features. The 11-widget canvas is functional; these items address the gaps identified during QA.*
 
@@ -80,134 +72,6 @@
 - [ ] **Canvas keyboard shortcuts** — `Cmd/Ctrl+1..9` to focus widget by position order. `Cmd/Ctrl+W` to close focused widget. `Cmd/Ctrl+N` to open widget catalog. `Cmd/Ctrl+S` to force-save layout. `Escape` to exit fullscreen. Implemented via a `useCanvasShortcuts` hook attached to the canvas container.
 - [ ] **Multiple saved layouts & export** — Replace single `canvas:workspace` localStorage key with a named-layout system. `canvas:layouts` stores `{ [name]: CanvasLayout }`. Layout switcher dropdown in the canvas toolbar. Export layout as JSON; import from file. Presets: "Dev" (terminal + editor + git), "Ops" (CI/CD + pipeline + training live), "Chat" (chat + agent world + task kanban).
 - [ ] **Mission card embedding** — Extract the mission card renderer from `MissionControlPage` into a reusable `<MissionCardEmbed cardId={id} />` component. Wire it into `MissionCardNode` widget (currently a placeholder). Card shows objective, progress, and linked tasks.
-
----
-
-## Phase 125: Strategic Trading Skills
-
-**Priority**: P2 — High value for financial analysis and algorithmic trading capabilities. Extends the existing `VeteranFinancialManagerSkill` with specialized trading strategy implementations.
-
-> **Note**: Trading skills are distributed via the community skills repository (`secureyeoman-community-repo/skills/trading/`). Users can sync from the community repo to access these skills.
-
-### ICT (Inner Circle Trading) Strategy Skills ✅
-
-The ICT methodology, also known as "Smart Money Concepts" (SMC), focuses on following institutional trading footprints. These skills implement core ICT concepts for stock and futures trading.
-
-- [x] **ICT Smart Money Analyst** — Implements ICT's core market structure concepts: Break of Structure (BOS), Change of Character (CHOCH), and Market Structure Shifts (MSS). Identifies institutional order flow, liquidity pools, and fair value gaps. Analyzes premium/discount zones and order block formations. *(Community skill)*
-
-- [x] **ICT Silver Bullet Strategist** — Implements the ICT Silver Bullet time-based algorithmic trading model. Uses liquidity sweeps, fair value gaps, and specific kill zone timings (Asian, London, New York sessions) to identify high-probability short-term setups. *(Community skill)*
-
-- [x] **ICT Power of Three Analyst** — Implements the AMD (Accumulation, Manipulation, Distribution) framework. Identifies market phases and the "Power of Three" trade setups following institutional accumulation, manipulation of retail stops, and distribution phases. *(Community skill)*
-
-- [x] **Supply & Demand Analyst** — Implements ICT-style supply and demand zone identification. Maps institutional order blocks, identifies imbalance zones (FVG), and calculates probability-weighted entry/exit zones. *(Community skill)*
-
-### Price Action Trading Skills ✅
-
-- [x] **Price Action Strategist** — Implements pure price action trading including IBWT (Inverted Barrel Trust), pin bars, engulfing patterns, and internal/external bar structures. Focuses on reading market structure without indicators. *(Community skill)*
-
-- [x] **Volume Profile Analyst** — Implements Volume Profile analysis including Point of Control (POC), Value Area High/Low (VAH/VAL), Fair Value Area (FVA), and volume node identification. Tracks actual market participation rather than lagging indicators. *(Community skill)*
-
-- [x] **Naked Chart Analyst** — Implements "naked trading" methodology focusing on pure price structure, support/resistance, and trend line analysis without indicators. *(Community skill)*
-
-### Technical Analysis Skills ✅
-
-- [x] **Technical Analysis Specialist** — Implements comprehensive technical analysis: Fibonacci retracements/extensions, moving averages (EMA/SMA crossovers), Bollinger Bands, RSI/MACD divergence, Donchian channels, and chart pattern recognition (head & shoulders, triangles, flags). *(Community skill)*
-
-- [x] **Trend Following Strategist** — Implements trend-following methodologies for swing and position trading. Uses multi-timeframe analysis, trend confirmation indicators, and momentum-based entry signals. *(Community skill)*
-
-- [x] **Mean Reversion Specialist** — Implements mean reversion strategies identifying overbought/oversold conditions, Bollinger Band bounces, and range-bound market structures. *(Community skill)*
-
-### Futures & Options Trading Skills ✅
-
-- [x] **Futures Market Specialist** — Specialized skills for futures trading including ES, NQ, YM, CL, GC, SI, NG contracts. Includes contract specifications, tick values, margin requirements, and futures-specific strategies. *(Community skill)*
-
-- [x] **Options Flow Analyst** — Analyzes options market data including call/put ratios, unusual options activity, gamma exposure, and options order flow to predict underlying price movements. *(Community skill)*
-
-- [x] **Spread Trading Analyst** — Implements inter-market and intra-market spread trading strategies including calendar spreads, inter-commodity spreads, and pairs trading. *(Community skill)*
-
-### Advanced Trading Skills (Phase 125-B)
-
-- [ ] **Wyckoff Method Analyst** — Accumulation/distribution schematics, spring/upthrust identification, composite operator theory. Analyzes phases (markup, markdown, accumulation, distribution) and Wyckoff events (selling climax, automatic rally, secondary test). *(Community skill)*
-
-- [ ] **Elliott Wave Analyst** — Wave counting methodology for impulse and corrective patterns. Fibonacci wave relationships, degree labeling, wave validation rules, and alternate count tracking. *(Community skill)*
-
-- [ ] **Market Microstructure Analyst** — Order book dynamics, bid-ask spread analysis, dark pool activity, and tape reading. Identifies hidden liquidity, iceberg orders, and institutional footprint in Level 2 data. *(Community skill)*
-
-- [ ] **Quantitative Strategy Backtester** — Statistical validation of trading strategies. Walk-forward analysis, Monte Carlo simulation, overfitting detection, and out-of-sample testing. Calculates Sharpe, Sortino, Calmar ratios, and maximum drawdown metrics. *(Community skill)*
-
-- [ ] **Sector Rotation Strategist** — Business cycle phase identification and sector ETF rotation. Relative strength ranking across sectors, inter-market analysis (bonds, commodities, equities, USD), and seasonal patterns. *(Community skill)*
-
-- [ ] **Cryptocurrency DeFi Strategist** — Yield farming strategy analysis, liquidity provision optimization, impermanent loss calculation, and protocol risk assessment. Covers AMM mechanics, lending protocols, and cross-chain bridge risks. *(Community skill)*
-
-### Trading Workflows
-
-- [ ] **Daily Trading Setup Workflow** — Automated workflow for generating daily trading setups. Includes market structure analysis, key level identification, and trade setup scanning across multiple instruments.
-
-- [ ] **Trade Analysis & Journal Workflow** — Workflow for analyzing completed trades, calculating statistics (win rate, Sharpe ratio, max drawdown), and generating performance reports.
-
-- [ ] **Multi-Timeframe Analysis Workflow** — Workflow for conducting multi-timeframe analysis (HTF/MTF/LTF alignment) and generating trade recommendations based on confluence of signals.
-
-- [ ] **Risk & Position Sizing Calculator** — Workflow for calculating position sizes, risk/reward ratios, Kelly Criterion position sizing, and portfolio risk metrics.
-
-### Skills Integration
-
-- [ ] **Integrate with existing VeteranFinancialManagerSkill** — Extend the existing `veteranFinancialManagerSkill` to incorporate ICT and technical analysis concepts for deeper market analysis.
-
-- [ ] **Market data tools** — Add MCP tools for fetching real-time and historical market data to support trading strategy execution.
-
-- [ ] **Trading journal integration** — Connect with external trading journals and broker APIs for automated trade logging and performance tracking.
-
----
-
-## Phase 126: Community Skills Expansion
-
-**Priority**: P2 — Broadens the community skills library beyond trading into finance, legal, marketing, science, education, and healthcare. All skills distributed via the community repo.
-
-> **Note**: Community skills are distributed via `secureyeoman-community-repo/skills/<category>/`. Users sync from the community repo to access these skills.
-
-### Finance Skills
-
-- [ ] **M&A Analyst** — Mergers & acquisitions analysis including valuation models (DCF, comparable companies, precedent transactions), deal structuring, due diligence checklists, synergy quantification, and accretion/dilution analysis. *(Community skill)*
-
-- [ ] **Real Estate Investment Analyst** — Property investment analysis including cap rate calculations, cash-on-cash returns, rental yield analysis, REIT evaluation, mortgage comparison, and market cycle identification. *(Community skill)*
-
-- [ ] **Insurance Analyst** — Insurance policy comparison, coverage gap analysis, actuarial fundamentals, claims strategy, risk pool assessment, and premium optimization across life, property, liability, and health insurance. *(Community skill)*
-
-### Legal Skills
-
-- [ ] **Contract Reviewer** — Reviews contracts for risks, ambiguities, and unfavorable terms. Covers NDAs, SaaS agreements, employment contracts, licensing, and vendor agreements. Identifies missing clauses, liability exposure, and termination risks. *(Community skill)*
-
-- [ ] **Compliance Analyst** — Regulatory compliance analysis across GDPR, CCPA, SOX, HIPAA, PCI-DSS, and industry-specific frameworks. Gap analysis, control mapping, and remediation planning. *(Community skill)*
-
-- [ ] **Intellectual Property Advisor** — IP strategy covering patents, trademarks, copyrights, and trade secrets. Prior art research, patent claim analysis, licensing strategy, and open-source license compatibility. *(Community skill)*
-
-### Marketing Skills
-
-- [ ] **SEO Specialist** — Search engine optimization covering keyword research, on-page optimization, technical SEO (Core Web Vitals, schema markup, crawl budget), link building strategy, and SERP analysis. *(Community skill)*
-
-- [ ] **Content Strategist** — Content planning and strategy including editorial calendars, content audits, topic clustering, content gap analysis, distribution strategy, and performance measurement (engagement, conversion, retention). *(Community skill)*
-
-- [ ] **Social Media Analyst** — Social media strategy and analytics covering platform-specific optimization, audience analysis, engagement metrics, competitor benchmarking, ad campaign analysis, and influencer evaluation. *(Community skill)*
-
-### Science & Data Skills
-
-- [ ] **Data Scientist** — Statistical analysis, machine learning model selection, feature engineering, experiment design (A/B testing), and data pipeline architecture. Covers regression, classification, clustering, and time series analysis. *(Community skill)*
-
-- [ ] **Statistician** — Statistical methodology including hypothesis testing, confidence intervals, Bayesian analysis, survival analysis, multivariate methods, and experimental design. Emphasis on correct interpretation and common pitfalls. *(Community skill)*
-
-- [ ] **Research Methodology Advisor** — Scientific research design covering literature review strategy, study design (RCT, cohort, case-control), sample size calculation, bias identification, peer review preparation, and reproducibility best practices. *(Community skill)*
-
-### Education Skills
-
-- [ ] **Curriculum Designer** — Instructional design covering learning objectives (Bloom's taxonomy), course structure, assessment design, rubric creation, differentiated instruction, and competency-based progression. *(Community skill)*
-
-- [ ] **Tutoring Specialist** — Adaptive tutoring methodology covering Socratic questioning, scaffolded learning, misconception identification, worked examples, spaced repetition scheduling, and personalized learning paths. *(Community skill)*
-
-### Healthcare Skills
-
-- [ ] **Clinical Documentation Specialist** — Medical documentation standards including SOAP notes, ICD-10/CPT coding guidance, clinical decision support, medical terminology, and documentation compliance for audits. *(Community skill)*
-
-- [ ] **HIPAA Compliance Advisor** — HIPAA Privacy Rule and Security Rule compliance covering PHI handling, risk assessments, BAA requirements, breach notification procedures, minimum necessary standard, and workforce training requirements. *(Community skill)*
 
 ---
 
@@ -266,6 +130,24 @@ Items below represent the final steps required before public release. They depen
 ## Future Features — Demand-Gated
 
 Items below are planned but demand-gated or lower priority. Grouped by theme. Implementation order will be determined by adoption signals and user demand.
+
+---
+
+### Phase 109: Editor Improvements (Auto-Claude–Style IDE)
+
+*Previously Phase 100. The editor platform is mature with 80+ improvements shipped across multiple phases: unified editor with MultiTerminal (4 tabs, command history, worktree selector, shell hardening), inline chat with personality context, ReactFlow canvas workspace (11 widget types, layout persistence), model/strategy selectors with health indicators, memory toggle, Agent World panel, Excalidraw diagramming, CI/CD workflow integration, and comprehensive security policy gating. See Phases 60, 69, 78b, ADR 173, and Phase 117 in the Changelog. The items below are aspirational IDE features beyond the current scope — implement incrementally based on user feedback.*
+
+- [ ] **Auto-Claude–style patterns** — Plan display, step-by-step approval, AI commit messages, context badges.
+- [ ] **Multi-file editing** — Tabs, split panes.
+- [ ] **Project explorer** — File tree sidebar.
+- [ ] **Command palette** — `Cmd/Ctrl+K` fuzzy command search.
+- [ ] **Inline AI completion** — Copilot-style ghost text suggestions.
+- [ ] **Multi-file search & replace** — Cross-file search with preview and batch replace.
+- [ ] **Collaborative editing** — Yjs CRDT for real-time multi-user editing.
+- [ ] **Keybindings editor** — UI for customizing keyboard shortcuts.
+- [ ] **Responsive / mobile layout** — Adaptive layout for smaller screens.
+- [ ] **Training integration** — Export/annotation hooks from editor to training pipeline.
+- [ ] **Plugin / extension system** — Third-party editor extensions.
 
 ---
 

@@ -68,7 +68,7 @@ describe('trading-tools — registration', () => {
     expect(() => registerTradingTools(server, noopMiddleware())).not.toThrow();
   });
 
-  it('registers exactly the 5 expected tool names', () => {
+  it('registers exactly the 9 expected tool names', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     const registered: string[] = [];
     vi.spyOn(server, 'registerTool').mockImplementation((name: string) => {
@@ -84,6 +84,10 @@ describe('trading-tools — registration', () => {
       'bullshift_get_positions',
       'bullshift_submit_order',
       'bullshift_cancel_order',
+      'market_quote',
+      'market_historical',
+      'market_search',
+      'trading_journal_log',
     ]);
   });
 });

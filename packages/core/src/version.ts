@@ -36,6 +36,6 @@ function readVersion(): string {
 }
 
 // Updated by set-version.sh for Bun binary builds
-const BAKED_VERSION = '2026.2.23';
+const BAKED_VERSION = '2026.3.4';
 
 export const VERSION = readVersion();
