@@ -17,13 +17,14 @@ export type CanvasWidgetType =
   | 'hyperparam-search'
   | 'batch-inference'
   | 'continual-learning'
-  | 'dlp-overview';
+  | 'dlp-overview'
+  | 'cost-optimizer';
 
 export interface CanvasWidgetDef {
   type: CanvasWidgetType;
   label: string;
   description: string;
-  category: 'development' | 'ai-agents' | 'monitoring' | 'pipelines' | 'finance' | 'security';
+  category: 'development' | 'ai-agents' | 'monitoring' | 'pipelines' | 'finance' | 'security' | 'analytics';
   defaultWidth: number;
   defaultHeight: number;
   singleton?: boolean;
@@ -182,6 +183,14 @@ export const CANVAS_WIDGET_REGISTRY: readonly CanvasWidgetDef[] = [
     defaultWidth: 480,
     defaultHeight: 440,
   },
+  {
+    type: 'cost-optimizer',
+    label: 'Cost Optimizer',
+    category: 'analytics',
+    description: 'AI model cost analysis with routing suggestions, forecasts, and savings breakdown',
+    defaultWidth: 560,
+    defaultHeight: 480,
+  },
 ];
 
 export const CATEGORY_LABELS: Record<CanvasWidgetDef['category'], string> = {
@@ -191,4 +200,5 @@ export const CATEGORY_LABELS: Record<CanvasWidgetDef['category'], string> = {
   pipelines: 'Pipelines',
   finance: 'Finance',
   security: 'Security',
+  analytics: 'Analytics',
 };

@@ -29,15 +29,11 @@
 
 **ROI**: CRITICAL — The most visible competitive weakness. 30s startup and ~1GB RAM vs PicoClaw's <1s / 10-20MB. Every user's first impression. Blocks CLI adoption.
 
-**What's already done**: 31 integration adapters lazy-loaded (Optimization Audit 2). DelegationModule and BrainModule use dynamic imports. Optional managers (Extensions, Execution, A2A, Proactive, Multimodal, Browser) are config-gated with `await import()`. CLI router uses `registerLazy()`.
+**What's already done**: 31 integration adapters lazy-loaded (Optimization Audit 2). DelegationModule and BrainModule use dynamic imports. Optional managers (Extensions, Execution, A2A, Proactive, Multimodal, Browser) are config-gated with `await import()`. CLI router uses `registerLazy()`. ~~TrainingModule conditional~~ (done — `config.training.enabled`). ~~AnalyticsModule conditional~~ (done — `config.analytics.enabled`). ~~20 lazy gateway route imports~~ (done — all tryRegister routes use dynamic import). ~~Startup profiling~~ (done — `performance.now()` timing table in `initialize()`).
 
 **What remains** (ordered by impact):
 
-- **Make TrainingModule conditional** — 17 managers + 8 storage classes instantiated unconditionally. Gate on `config.training?.enabled` or a feature flag. Most users don't use the ML pipeline at all.
-- **Make AnalyticsModule conditional** — 5 managers instantiated unconditionally. Gate on `config.analytics?.enabled`.
-- **Lazy gateway route imports** — 69 static `registerXxxRoutes` imports at the top of `server.ts`. Only 1 uses dynamic `import()`. Convert the 20 tryRegister-wrapped optional routes to dynamic imports — they're already error-tolerant.
 - **Cold-start CLI mode** — For one-shot CLI commands (`secureyeoman brain search`, `secureyeoman risk summary`), skip gateway, dashboard, WebSocket, integrations, and cron. Boot only storage + targeted module. Target: <3s.
-- **Startup profiling** — Instrument `initialize()` with `performance.mark()`/`performance.measure()`. Identify top-5 slowest steps. Publish a startup timing table in docs.
 - **Connection pooling optimization** — Review pool size defaults (currently 10). Lazy-create pools per schema (brain, risk, training) instead of one eager pool. Close idle connections aggressively in Lite/SQLite mode.
 - **Binary size audit** — Identify bundled assets inflating the ~80MB binary. Tree-shake unused code paths. Consider splitting MCP tool manifest into a lazy-loaded module.
 - **Memory profiling** — Heap snapshot at steady state. Target: <600MB idle RSS with all modules, <300MB minimal config.

@@ -17,6 +17,12 @@ import {
   AuditReportGenerator,
   type AuditReportGeneratorDeps,
 } from '../reporting/audit-report.js';
+import {
+  ComplianceReportGenerator,
+  type ComplianceReportGeneratorDeps,
+} from '../reporting/compliance-report-generator.js';
+import type { EgressStore } from '../security/dlp/egress-store.js';
+import type { ClassificationStore } from '../security/dlp/classification-store.js';
 import { requireSecret } from '../config/loader.js';
 import { getPool } from '../storage/pg-pool.js';
 import type { AuditEntry } from '@secureyeoman/shared';
@@ -33,11 +39,18 @@ export interface AuditModuleDeps {
 /** Deps injected after other modules are ready, for report generator. */
 export type AuditModuleLateDeps = Pick<AuditReportGeneratorDeps, 'queryTasks' | 'queryHeartbeatTasks'>;
 
+/** Deps for compliance report generator (DLP stores from SecurityModule). */
+export interface ComplianceReportDeps {
+  egressStore: EgressStore;
+  classificationStore: ClassificationStore;
+}
+
 export class AuditModule extends BaseModule {
   private auditStorage: AuditChainStorage | null = null;
   private auditChain: AuditChain | null = null;
   private cryptoPool: CryptoPool | null = null;
   private reportGenerator: AuditReportGenerator | null = null;
+  private complianceReportGenerator: ComplianceReportGenerator | null = null;
 
   constructor(private readonly deps: AuditModuleDeps) {
     super();
@@ -71,12 +84,24 @@ export class AuditModule extends BaseModule {
     this.logger.debug('Audit report generator initialized');
   }
 
+  /** Initialize the compliance report generator (called after SecurityModule is wired). */
+  initComplianceReportGenerator(deps: ComplianceReportDeps): void {
+    this.complianceReportGenerator = new ComplianceReportGenerator({
+      queryAuditLog: (opts) => this.queryAuditLog(opts),
+      egressStore: deps.egressStore,
+      classificationStore: deps.classificationStore,
+      logger: this.logger.child({ component: 'ComplianceReportGenerator' }),
+    });
+    this.logger.debug('Compliance report generator initialized');
+  }
+
   async cleanup(): Promise<void> {
     if (this.cryptoPool) {
       await this.cryptoPool.close();
       this.cryptoPool = null;
     }
     this.reportGenerator = null;
+    this.complianceReportGenerator = null;
     // Close audit storage if it supports closing
     if (
       this.auditStorage &&
@@ -189,5 +214,9 @@ export class AuditModule extends BaseModule {
 
   getReportGenerator(): AuditReportGenerator | null {
     return this.reportGenerator;
+  }
+
+  getComplianceReportGenerator(): ComplianceReportGenerator | null {
+    return this.complianceReportGenerator;
   }
 }

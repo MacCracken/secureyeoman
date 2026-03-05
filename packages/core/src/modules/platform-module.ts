@@ -54,6 +54,8 @@ import type { AIClient } from '../ai/client.js';
 import type { TlsManager } from '../security/tls-manager.js';
 import type { SandboxManager } from '../sandbox/manager.js';
 import type { StrategyStorage } from '../soul/strategy-storage.js';
+import { EventSubscriptionStore } from '../events/event-subscription-store.js';
+import { EventDispatcher } from '../events/event-dispatcher.js';
 import type { Pool } from 'pg';
 
 // ------------------------------------------------------------------
@@ -91,6 +93,8 @@ export class PlatformModule implements AppModule {
   private userNotificationPrefsStorage: UserNotificationPrefsStorage | null = null;
   private riskAssessmentStorage: RiskAssessmentStorage | null = null;
   private departmentRiskStorage: DepartmentRiskStorage | null = null;
+  private eventSubscriptionStore: EventSubscriptionStore | null = null;
+  private eventDispatcher: EventDispatcher | null = null;
 
   // --- Phase 2: core ---
   private mcpStorage: McpStorage | null = null;
@@ -148,6 +152,15 @@ export class PlatformModule implements AppModule {
 
     this.departmentRiskStorage = new DepartmentRiskStorage();
     this.logger.debug('DepartmentRiskStorage initialized');
+
+    // Event subscriptions
+    this.eventSubscriptionStore = new EventSubscriptionStore();
+    this.eventDispatcher = new EventDispatcher({
+      store: this.eventSubscriptionStore,
+      logger: this.logger.child({ component: 'EventDispatcher' }),
+    });
+    this.eventDispatcher.start();
+    this.logger.debug('EventDispatcher initialized');
   }
 
   /** Phase 2: MCP, dashboard, workspace, experiment, marketplace, chat, branching, dynamic tool. */
@@ -486,6 +499,16 @@ export class PlatformModule implements AppModule {
       this.userNotificationPrefsStorage = null;
     }
 
+    // Event dispatcher
+    if (this.eventDispatcher) {
+      this.eventDispatcher.stop();
+      this.eventDispatcher = null;
+    }
+    if (this.eventSubscriptionStore) {
+      this.eventSubscriptionStore.close();
+      this.eventSubscriptionStore = null;
+    }
+
     // Dynamic tool
     if (this.dynamicToolStorage) {
       this.dynamicToolStorage.close();
@@ -560,5 +583,11 @@ export class PlatformModule implements AppModule {
   }
   getDynamicToolManager(): DynamicToolManager | null {
     return this.dynamicToolManager;
+  }
+  getEventSubscriptionStore(): EventSubscriptionStore | null {
+    return this.eventSubscriptionStore;
+  }
+  getEventDispatcher(): EventDispatcher | null {
+    return this.eventDispatcher;
   }
 }

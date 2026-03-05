@@ -4,6 +4,20 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.5f] — 2026-03-05
+
+### Startup & Resource Optimization (Brainstorm #1)
+
+- **TrainingModule conditional loading** — Gate 21 managers + storages on `config.training.enabled` (default: `true`). When `false`, skips dynamic import of the entire `TrainingModule` (distillation, fine-tuning, evaluation, data curation, LLM judge, responsible AI, checkpoint store, hyperparameter search, continual learning). Saves ~200ms cold start + ~50MB RSS for deployments that don't use ML pipelines.
+- **AnalyticsModule conditional loading** — Gate 5 managers on `config.analytics.enabled` (default: `true`). When `false`, skips dynamic import of sentiment analysis, summarization, entity extraction, engagement metrics, anomaly detection. Saves ~50ms cold start for non-analytics deployments.
+- **Dynamic imports for TrainingModule and AnalyticsModule** — Converted from static `import { ... }` to `await import(...)` in `secureyeoman.ts`. Module code is only loaded when the feature is enabled.
+- **20 route imports converted to dynamic** — All `tryRegister()`-wrapped route imports in `server.ts` now use `await import()` instead of top-level static imports. Affected routes: Comms, Report, Dashboard, Workspace, Experiment, Marketplace, Conversation, Branching, Agent, Swarm, ProfileSkills, Team, Council, UserNotificationPrefs, RiskAssessment, DepartmentRisk, ProviderAccount, ATHI, SRA, Constitutional.
+- **`tryRegister()` upgraded to async** — `GatewayServer.tryRegister()` now accepts async callbacks, enabling dynamic imports inside route registration blocks. `setupRoutes()` made async.
+- **Startup profiling instrumentation** — `initialize()` now records `performance.now()` timing marks for key steps (config, otel, security-early, db-pool+migrations, brain-module, training-module, analytics-module, gateway). Logs a startup timing table with top-5 slowest steps on completion.
+- **Config schemas**: `TrainingPipelineConfigSchema` (`training.enabled`) and `ConversationAnalyticsConfigSchema` (`analytics.enabled`) added to `OpsDomainConfigSchema` in shared config.
+- **Backward compatible**: Both `training.enabled` and `analytics.enabled` default to `true`, so existing deployments are unaffected.
+- 13,136 core unit tests + 820 MCP tests passing.
+
 ## [2026.3.5e] — 2026-03-05
 
 ### Phase 136 — Data Loss Prevention (DLP) & Content Classification

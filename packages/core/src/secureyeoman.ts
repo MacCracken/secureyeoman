@@ -239,12 +239,22 @@ export class SecureYeoman {
       throw new Error('SecureYeoman is already initialized');
     }
 
+    const startupTimings: Array<{ step: string; ms: number }> = [];
+    const mark = (step: string, startMs: number) => {
+      startupTimings.push({ step, ms: Math.round(performance.now() - startMs) });
+    };
+
     try {
+      let stepStart = performance.now();
+
       // Step 1: Load and validate configuration
       this.config = loadConfig(this.options.config);
+      mark('config', stepStart);
 
       // Step 1.5: Initialize OpenTelemetry tracing (before any I/O)
+      stepStart = performance.now();
       await initTracing({});
+      mark('otel', stepStart);
 
       // Step 2: Initialize logger first (needed for other components)
       this.logger = initializeLogger(this.config.logging);
@@ -268,13 +278,17 @@ export class SecureYeoman {
       }
 
       // Step 2.5–2.06: Initialize security early phase (keyring, secrets, TLS) via SecurityModule
+      stepStart = performance.now();
       this.securityMod = new SecurityModule();
       await this.securityMod.init({ config: this.config, logger: this.logger });
       await this.securityMod.initEarly();
+      mark('security-early', stepStart);
 
       // Step 2.1: Initialize PostgreSQL pool and run migrations
+      stepStart = performance.now();
       initPoolFromConfig(this.config.core.database);
       await runMigrations();
+      mark('db-pool+migrations', stepStart);
       this.logger.debug('PostgreSQL pool initialized and migrations applied');
 
       // Step 2.2: Load persisted security policy from DB (overrides YAML defaults)
@@ -337,6 +351,7 @@ export class SecureYeoman {
       await this.aiMod.init({ config: this.config, logger: this.logger });
 
       // Steps 5.7–5.7.2: BrainModule (brain storage, cognitive memory, document manager, memory audit, strategy)
+      stepStart = performance.now();
       {
         const { BrainModule } = await import('./modules/brain-module.js');
         this.brainMod = new BrainModule({
@@ -348,6 +363,7 @@ export class SecureYeoman {
         this.brainStorage = this.brainMod.getBrainStorage();
         this.brainManager = this.brainMod.getBrainManager();
       }
+      mark('brain-module', stepStart);
 
       // Step 5.7.0a: Load persisted license key from brain.meta if env var not set
       if (!getSecret(this.config.licensing.licenseKeyEnv)) {
@@ -466,6 +482,13 @@ export class SecureYeoman {
           ? () => this.bodyMod!.getHeartbeatManager()!.getStatus().tasks
           : undefined,
       });
+
+      // Step 6.9b: Initialize compliance report generator (cross-references audit + DLP)
+      const egressStore = this.securityMod?.getDlpManager()?.getEgressStore();
+      const classificationStore = this.securityMod?.getClassificationStore();
+      if (egressStore && classificationStore) {
+        this.auditMod!.initComplianceReportGenerator({ egressStore, classificationStore });
+      }
 
       // Steps 6.9–6.10b: PlatformModule core phase (MCP, dashboard, workspace, experiment, marketplace, chat, branching, dynamic tool)
       const pool = this.getPool();
@@ -604,7 +627,9 @@ export class SecureYeoman {
       });
 
       // Steps 6h–6j-3: TrainingModule (distillation, finetune, ML pipeline, LLM judge, lifecycle)
-      {
+      stepStart = performance.now();
+      if (this.config.training?.enabled !== false) {
+        const { TrainingModule } = await import('./modules/training-module.js');
         this.trainingMod = new TrainingModule({
           getAlertManager: () => this.platformMod?.getAlertManager() ?? null,
           aiClient: this.aiMod.getAIClient(),
@@ -614,11 +639,21 @@ export class SecureYeoman {
         });
         await this.trainingMod.init({ config: this.config, logger: this.logger! });
         this.logger.debug('TrainingModule initialized');
+      } else {
+        this.logger.info('TrainingModule skipped (training.enabled=false)');
       }
+      mark('training-module', stepStart);
 
       // Step 6m: Initialize Conversation Analytics (AnalyticsModule)
-      this.analyticsMod = new AnalyticsModule({ aiClient: this.aiMod.getAIClient() });
-      await this.analyticsMod.init({ config: this.config, logger: this.logger });
+      stepStart = performance.now();
+      if (this.config.analytics?.enabled !== false) {
+        const { AnalyticsModule } = await import('./modules/analytics-module.js');
+        this.analyticsMod = new AnalyticsModule({ aiClient: this.aiMod.getAIClient() });
+        await this.analyticsMod.init({ config: this.config, logger: this.logger });
+      } else {
+        this.logger.info('AnalyticsModule skipped (analytics.enabled=false)');
+      }
+      mark('analytics-module', stepStart);
 
       // Step 6b: Initialize Proactive Manager
       if (this.config.security.allowProactive || this.config.proactive?.enabled) {
@@ -713,9 +748,22 @@ export class SecureYeoman {
       this.startedAt = Date.now();
 
       // Step 8: Start gateway if enabled
+      stepStart = performance.now();
       if (this.options.enableGateway) {
         await this.startGateway();
       }
+      mark('gateway', stepStart);
+
+      // Log startup timing table
+      const totalMs = startupTimings.reduce((sum, t) => sum + t.ms, 0);
+      this.logger.info('Startup profiling complete', {
+        totalMs,
+        steps: startupTimings,
+        top5: startupTimings
+          .sort((a, b) => b.ms - a.ms)
+          .slice(0, 5)
+          .map((t) => `${t.step}: ${t.ms}ms`),
+      });
 
       this.logger.info('SecureYeoman initialized successfully', {
         environment: this.config.core.environment,
@@ -1048,6 +1096,10 @@ export class SecureYeoman {
   getReportGenerator(): AuditReportGenerator | null {
     this.ensureInitialized();
     return this.auditMod?.getReportGenerator() ?? null;
+  }
+  getComplianceReportGenerator() {
+    this.ensureInitialized();
+    return this.auditMod?.getComplianceReportGenerator() ?? null;
   }
 
   // ------------------------------------------------------------------
@@ -1407,6 +1459,14 @@ export class SecureYeoman {
   getDynamicToolManager(): DynamicToolManager | null {
     this.ensureInitialized();
     return this.platformMod?.getDynamicToolManager() ?? null;
+  }
+  getEventDispatcher(): import('./events/event-dispatcher.js').EventDispatcher | null {
+    this.ensureInitialized();
+    return this.platformMod?.getEventDispatcher() ?? null;
+  }
+  getEventSubscriptionStore(): import('./events/event-subscription-store.js').EventSubscriptionStore | null {
+    this.ensureInitialized();
+    return this.platformMod?.getEventSubscriptionStore() ?? null;
   }
 
   // ------------------------------------------------------------------

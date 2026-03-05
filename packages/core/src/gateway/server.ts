@@ -36,7 +36,7 @@ import { registerBrainRoutes } from '../brain/brain-routes.js';
 import { registerAuditRoutes } from '../brain/audit/audit-routes.js';
 import { registerDocumentRoutes } from '../brain/document-routes.js';
 import { registerSpiritRoutes } from '../spirit/spirit-routes.js';
-import { registerCommsRoutes } from '../comms/comms-routes.js';
+// registerCommsRoutes — dynamic import (startup optimization)
 import { registerIntegrationRoutes } from '../integrations/integration-routes.js';
 import { WebhookTransformStorage } from '../integrations/webhook-transform-storage.js';
 import { OutboundWebhookStorage } from '../integrations/outbound-webhook-storage.js';
@@ -50,21 +50,13 @@ import { Task, TaskType, TaskStatus } from '@secureyeoman/shared';
 import { registerMcpRoutes } from '../mcp/mcp-routes.js';
 import { McpCredentialManager } from '../mcp/credential-manager.js';
 import { requireSecret } from '../config/loader.js';
-import { registerReportRoutes } from '../reporting/report-routes.js';
-import { registerDashboardRoutes } from '../dashboard/dashboard-routes.js';
-import { registerWorkspaceRoutes } from '../workspace/workspace-routes.js';
+// registerReportRoutes, registerDashboardRoutes, registerWorkspaceRoutes — dynamic import (startup optimization)
 import { registerSsoRoutes } from './sso-routes.js';
-import { registerExperimentRoutes } from '../experiment/experiment-routes.js';
-import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js';
+// registerExperimentRoutes, registerMarketplaceRoutes — dynamic import (startup optimization)
 import { registerTerminalRoutes } from './terminal-routes.js';
 import { registerWorktreeRoutes } from './worktree-routes.js';
-import { registerConversationRoutes } from '../chat/conversation-routes.js';
-import { registerBranchingRoutes } from '../chat/branching-routes.js';
-import { registerAgentRoutes } from '../agents/agent-routes.js';
-import { registerSwarmRoutes } from '../agents/swarm-routes.js';
-import { registerProfileSkillsRoutes } from '../agents/profile-skills-routes.js';
-import { registerTeamRoutes } from '../agents/team-routes.js';
-import { registerCouncilRoutes } from '../agents/council-routes.js';
+// registerConversationRoutes, registerBranchingRoutes — dynamic import (startup optimization)
+// registerAgentRoutes, registerSwarmRoutes, registerProfileSkillsRoutes, registerTeamRoutes, registerCouncilRoutes — dynamic import (startup optimization)
 import { registerWorkflowRoutes } from '../workflow/workflow-routes.js';
 import { registerExtensionRoutes } from '../extensions/extension-routes.js';
 import { registerExecutionRoutes } from '../execution/execution-routes.js';
@@ -80,13 +72,9 @@ import { registerRoutingRulesRoutes } from '../integrations/routing-rules-routes
 import { registerIntentRoutes } from '../intent/routes.js';
 import { registerAutonomyRoutes } from '../security/autonomy-routes.js';
 import { registerNotificationRoutes } from '../notifications/notification-routes.js';
-import { registerUserNotificationPrefsRoutes } from '../notifications/user-notification-prefs-routes.js';
-import { registerRiskAssessmentRoutes } from '../risk-assessment/risk-assessment-routes.js';
-import { registerDepartmentRiskRoutes } from '../risk-assessment/department-risk-routes.js';
-import { registerProviderAccountRoutes } from '../ai/provider-account-routes.js';
-import { registerAthiRoutes } from '../security/athi-routes.js';
-import { registerSraRoutes } from '../security/sra-routes.js';
-import { registerConstitutionalRoutes } from '../security/constitutional-routes.js';
+// registerUserNotificationPrefsRoutes — dynamic import (startup optimization)
+// registerRiskAssessmentRoutes, registerDepartmentRiskRoutes, registerProviderAccountRoutes — dynamic import (startup optimization)
+// registerAthiRoutes, registerSraRoutes, registerConstitutionalRoutes — dynamic import (startup optimization)
 import { registerTeeRoutes } from '../security/tee-routes.js';
 import { registerDlpRoutes } from '../security/dlp/dlp-routes.js';
 import { TeeAttestationVerifier } from '../security/tee-attestation.js';
@@ -182,9 +170,9 @@ export class GatewayServer {
    * Register an optional route module. Swallows errors when the manager
    * is unavailable, logging at debug level instead of silently dropping.
    */
-  private tryRegister(name: string, fn: () => void): void {
+  private async tryRegister(name: string, fn: () => void | Promise<void>): Promise<void> {
     try {
-      fn();
+      await fn();
     } catch (err) {
       this.getLogger().debug(`${name} routes skipped`, {
         reason: err instanceof Error ? err.message : String(err),
@@ -237,7 +225,7 @@ export class GatewayServer {
    */
   private async init(): Promise<void> {
     await this.setupMiddleware();
-    this.setupRoutes();
+    await this.setupRoutes();
   }
 
   private getLogger(): SecureLogger {
@@ -417,7 +405,7 @@ export class GatewayServer {
     });
   }
 
-  private setupRoutes(): void {
+  private async setupRoutes(): Promise<void> {
     // Global error handler — catches body-parse failures, unhandled throws, etc.
     this.app.setErrorHandler((err, _request, reply) => {
       const statusCode = (err as any).statusCode ?? 500;
@@ -650,9 +638,12 @@ export class GatewayServer {
     }
 
     // Comms routes
-    this.tryRegister('Comms', () => {
+    await this.tryRegister('Comms', async () => {
       const agentComms = this.secureYeoman.getAgentComms();
-      if (agentComms) registerCommsRoutes(this.app, { agentComms });
+      if (agentComms) {
+        const { registerCommsRoutes } = await import('../comms/comms-routes.js');
+        registerCommsRoutes(this.app, { agentComms });
+      }
     });
 
     // Integration routes
@@ -743,35 +734,47 @@ export class GatewayServer {
     }
 
     // Report routes
-    this.tryRegister('Report', () => {
+    await this.tryRegister('Report', async () => {
       const reportGenerator = this.secureYeoman.getReportGenerator();
-      if (reportGenerator) registerReportRoutes(this.app, { reportGenerator });
+      if (reportGenerator) {
+        const complianceReportGenerator = this.secureYeoman.getComplianceReportGenerator() ?? undefined;
+        const { registerReportRoutes } = await import('../reporting/report-routes.js');
+        registerReportRoutes(this.app, { reportGenerator, complianceReportGenerator });
+      }
     });
 
     // Dashboard routes
-    this.tryRegister('Dashboard', () => {
+    await this.tryRegister('Dashboard', async () => {
       const dashboardManager = this.secureYeoman.getDashboardManager();
-      if (dashboardManager) registerDashboardRoutes(this.app, { dashboardManager });
+      if (dashboardManager) {
+        const { registerDashboardRoutes } = await import('../dashboard/dashboard-routes.js');
+        registerDashboardRoutes(this.app, { dashboardManager });
+      }
     });
 
     // Workspace routes
-    this.tryRegister('Workspace', () => {
+    await this.tryRegister('Workspace', async () => {
       const workspaceManager = this.secureYeoman.getWorkspaceManager();
       if (workspaceManager && this.authService) {
+        const { registerWorkspaceRoutes } = await import('../workspace/workspace-routes.js');
         registerWorkspaceRoutes(this.app, { workspaceManager, authService: this.authService });
       }
     });
 
     // Experiment routes
-    this.tryRegister('Experiment', () => {
+    await this.tryRegister('Experiment', async () => {
       const experimentManager = this.secureYeoman.getExperimentManager();
-      if (experimentManager) registerExperimentRoutes(this.app, { experimentManager });
+      if (experimentManager) {
+        const { registerExperimentRoutes } = await import('../experiment/experiment-routes.js');
+        registerExperimentRoutes(this.app, { experimentManager });
+      }
     });
 
     // Marketplace routes
-    this.tryRegister('Marketplace', () => {
+    await this.tryRegister('Marketplace', async () => {
       const marketplaceManager = this.secureYeoman.getMarketplaceManager();
       if (marketplaceManager) {
+        const { registerMarketplaceRoutes } = await import('../marketplace/marketplace-routes.js');
         registerMarketplaceRoutes(this.app, {
           marketplaceManager,
           getConfig: () => this.secureYeoman.getConfig(),
@@ -785,48 +788,67 @@ export class GatewayServer {
     registerWorktreeRoutes(this.app);
 
     // Conversation routes
-    this.tryRegister('Conversation', () => {
+    await this.tryRegister('Conversation', async () => {
       const conversationStorage = this.secureYeoman.getConversationStorage();
-      if (conversationStorage) registerConversationRoutes(this.app, { conversationStorage });
+      if (conversationStorage) {
+        const { registerConversationRoutes } = await import('../chat/conversation-routes.js');
+        registerConversationRoutes(this.app, { conversationStorage });
+      }
     });
 
     // Branching & replay routes (Phase 99)
-    this.tryRegister('Branching', () => {
+    await this.tryRegister('Branching', async () => {
       const branchingManager = this.secureYeoman.getBranchingManager();
-      if (branchingManager) registerBranchingRoutes(this.app, { branchingManager });
+      if (branchingManager) {
+        const { registerBranchingRoutes } = await import('../chat/branching-routes.js');
+        registerBranchingRoutes(this.app, { branchingManager });
+      }
     });
 
     // Agent delegation routes
-    this.tryRegister('Agent', () => {
+    await this.tryRegister('Agent', async () => {
       const subAgentManager = this.secureYeoman.getSubAgentManager();
-      if (subAgentManager) registerAgentRoutes(this.app, { subAgentManager });
+      if (subAgentManager) {
+        const { registerAgentRoutes } = await import('../agents/agent-routes.js');
+        registerAgentRoutes(this.app, { subAgentManager });
+      }
     });
 
     // Swarm routes
-    this.tryRegister('Swarm', () => {
+    await this.tryRegister('Swarm', async () => {
       const swarmManager = this.secureYeoman.getSwarmManager();
-      if (swarmManager) registerSwarmRoutes(this.app, { swarmManager });
+      if (swarmManager) {
+        const { registerSwarmRoutes } = await import('../agents/swarm-routes.js');
+        registerSwarmRoutes(this.app, { swarmManager });
+      }
     });
 
     // Profile skills routes (Phase 89)
-    this.tryRegister('ProfileSkills', () => {
+    await this.tryRegister('ProfileSkills', async () => {
       const swarmStorage = this.secureYeoman.getSwarmStorage();
       const subAgentStorage = this.secureYeoman.getSubAgentStorage();
       if (swarmStorage && subAgentStorage) {
+        const { registerProfileSkillsRoutes } = await import('../agents/profile-skills-routes.js');
         registerProfileSkillsRoutes(this.app, { swarmStorage, subAgentStorage });
       }
     });
 
     // Team routes
-    this.tryRegister('Team', () => {
+    await this.tryRegister('Team', async () => {
       const teamManager = this.secureYeoman.getTeamManager();
-      if (teamManager) registerTeamRoutes(this.app, { teamManager });
+      if (teamManager) {
+        const { registerTeamRoutes } = await import('../agents/team-routes.js');
+        registerTeamRoutes(this.app, { teamManager });
+      }
     });
 
     // Council routes
-    this.tryRegister('Council', () => {
+    await this.tryRegister('Council', async () => {
       const councilManager = this.secureYeoman.getCouncilManager();
-      if (councilManager) registerCouncilRoutes(this.app, { councilManager });
+      if (councilManager) {
+        const { registerCouncilRoutes } = await import('../agents/council-routes.js');
+        registerCouncilRoutes(this.app, { councilManager });
+      }
     });
 
     // Workflow routes
@@ -917,45 +939,62 @@ export class GatewayServer {
     }
 
     // User notification prefs routes (Phase 55)
-    this.tryRegister('UserNotificationPrefs', () => {
+    await this.tryRegister('UserNotificationPrefs', async () => {
       const userNotificationPrefsStorage = this.secureYeoman.getUserNotificationPrefsStorage();
       if (userNotificationPrefsStorage) {
+        const { registerUserNotificationPrefsRoutes } = await import('../notifications/user-notification-prefs-routes.js');
         registerUserNotificationPrefsRoutes(this.app, { userNotificationPrefsStorage });
       }
     });
 
     // Risk Assessment routes (Phase 53)
-    this.tryRegister('RiskAssessment', () => {
+    await this.tryRegister('RiskAssessment', async () => {
       const riskAssessmentManager = this.secureYeoman.getRiskAssessmentManager();
-      if (riskAssessmentManager) registerRiskAssessmentRoutes(this.app, { riskAssessmentManager });
+      if (riskAssessmentManager) {
+        const { registerRiskAssessmentRoutes } = await import('../risk-assessment/risk-assessment-routes.js');
+        registerRiskAssessmentRoutes(this.app, { riskAssessmentManager });
+      }
     });
 
     // Department Risk Register routes (Phase 111)
-    this.tryRegister('DepartmentRisk', () => {
+    await this.tryRegister('DepartmentRisk', async () => {
       const departmentRiskManager = this.secureYeoman.getDepartmentRiskManager();
-      if (departmentRiskManager) registerDepartmentRiskRoutes(this.app, { departmentRiskManager });
+      if (departmentRiskManager) {
+        const { registerDepartmentRiskRoutes } = await import('../risk-assessment/department-risk-routes.js');
+        registerDepartmentRiskRoutes(this.app, { departmentRiskManager });
+      }
     });
 
     // Provider Account routes (Phase 112)
-    this.tryRegister('ProviderAccount', () => {
+    await this.tryRegister('ProviderAccount', async () => {
       const providerAccountManager = this.secureYeoman.getProviderAccountManager();
-      if (providerAccountManager) registerProviderAccountRoutes(this.app, { providerAccountManager });
+      if (providerAccountManager) {
+        const { registerProviderAccountRoutes } = await import('../ai/provider-account-routes.js');
+        registerProviderAccountRoutes(this.app, { providerAccountManager });
+      }
     });
 
     // ATHI Threat Governance routes (Phase 107-F)
-    this.tryRegister('ATHI', () => {
+    await this.tryRegister('ATHI', async () => {
       const athiManager = this.secureYeoman.getAthiManager();
-      if (athiManager) registerAthiRoutes(this.app, { athiManager });
+      if (athiManager) {
+        const { registerAthiRoutes } = await import('../security/athi-routes.js');
+        registerAthiRoutes(this.app, { athiManager });
+      }
     });
 
     // SRA Security Reference Architecture routes (Phase 123)
-    this.tryRegister('SRA', () => {
+    await this.tryRegister('SRA', async () => {
       const sraManager = this.secureYeoman.getSraManager();
-      if (sraManager) registerSraRoutes(this.app, { sraManager });
+      if (sraManager) {
+        const { registerSraRoutes } = await import('../security/sra-routes.js');
+        registerSraRoutes(this.app, { sraManager });
+      }
     });
 
     // Constitutional AI routes
-    this.tryRegister('Constitutional', () => {
+    await this.tryRegister('Constitutional', async () => {
+      const { registerConstitutionalRoutes } = await import('../security/constitutional-routes.js');
       registerConstitutionalRoutes(this.app, this.secureYeoman);
     });
 
@@ -1351,6 +1390,21 @@ export class GatewayServer {
       this.getLogger().info('Sandbox scanning routes registered');
     } catch (err) {
       this.getLogger().debug('Sandbox scanning routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Event Subscription routes
+    try {
+      const eventDispatcher = this.secureYeoman.getEventDispatcher();
+      const eventSubscriptionStore = this.secureYeoman.getEventSubscriptionStore();
+      if (eventDispatcher && eventSubscriptionStore) {
+        const { registerEventRoutes } = await import('../events/event-routes.js');
+        registerEventRoutes(this.app, { dispatcher: eventDispatcher, store: eventSubscriptionStore });
+        this.getLogger().info('Event subscription routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Event subscription routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

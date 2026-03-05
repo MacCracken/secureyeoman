@@ -182,6 +182,66 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
     }
   });
 
+  // ── Detailed cost analysis ──────────────────────────────────────────────────
+
+  app.get(
+    '/api/v1/model/cost-analysis',
+    async (
+      request: FastifyRequest<{ Querystring: { days?: string; personalityId?: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const costOptimizer = secureYeoman.getCostOptimizer();
+        if (!costOptimizer) {
+          return sendError(reply, 503, 'Cost optimizer not available (AI client not initialized)');
+        }
+        const days = request.query.days ? parseInt(request.query.days, 10) : undefined;
+        const personalityId = request.query.personalityId || undefined;
+        return await costOptimizer.analyzeDetailed({ days, personalityId });
+      } catch (err) {
+        const message = toErrorMessage(err);
+        return sendError(reply, 500, message);
+      }
+    }
+  );
+
+  // ── Routing suggestions ────────────────────────────────────────────────────
+
+  app.get('/api/v1/model/routing-suggestions', async (_request, reply: FastifyReply) => {
+    try {
+      const costOptimizer = secureYeoman.getCostOptimizer();
+      if (!costOptimizer) {
+        return sendError(reply, 503, 'Cost optimizer not available (AI client not initialized)');
+      }
+      return await costOptimizer.getRoutingSuggestions();
+    } catch (err) {
+      const message = toErrorMessage(err);
+      return sendError(reply, 500, message);
+    }
+  });
+
+  // ── Cost forecast ──────────────────────────────────────────────────────────
+
+  app.get(
+    '/api/v1/model/cost-forecast',
+    async (
+      request: FastifyRequest<{ Querystring: { days?: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const costOptimizer = secureYeoman.getCostOptimizer();
+        if (!costOptimizer) {
+          return sendError(reply, 503, 'Cost optimizer not available (AI client not initialized)');
+        }
+        const days = request.query.days ? parseInt(request.query.days, 10) : 30;
+        return await costOptimizer.forecast(days);
+      } catch (err) {
+        const message = toErrorMessage(err);
+        return sendError(reply, 500, message);
+      }
+    }
+  );
+
   // ── Cost estimation (pre-execution) ─────────────────────────────────────────
 
   app.post(
