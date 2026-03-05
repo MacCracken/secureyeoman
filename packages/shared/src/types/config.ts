@@ -1077,13 +1077,33 @@ export const PersonalityDomainConfigSchema = z.object({
 });
 export type PersonalityDomainConfig = z.infer<typeof PersonalityDomainConfigSchema>;
 
-/** Operations domain: logging, metrics, notifications, intent, agentEval */
+// ── Training Pipeline Config ──────────────────────────────────────────
+export const TrainingPipelineConfigSchema = z
+  .object({
+    /** Enable the ML training pipeline (distillation, fine-tuning, evaluation, etc.). Default: true for backward compat. */
+    enabled: z.boolean().default(true),
+  })
+  .default({});
+export type TrainingPipelineConfig = z.infer<typeof TrainingPipelineConfigSchema>;
+
+// ── Conversation Analytics Config ─────────────────────────────────────
+export const ConversationAnalyticsConfigSchema = z
+  .object({
+    /** Enable conversation analytics (sentiment, summarization, entity extraction, engagement). Default: true for backward compat. */
+    enabled: z.boolean().default(true),
+  })
+  .default({});
+export type ConversationAnalyticsConfig = z.infer<typeof ConversationAnalyticsConfigSchema>;
+
+/** Operations domain: logging, metrics, notifications, intent, agentEval, training, analytics */
 export const OpsDomainConfigSchema = z.object({
   logging: LoggingConfigSchema.default({}),
   metrics: MetricsConfigSchema.default({}),
   notifications: NotificationsConfigSchema,
   intent: IntentFileConfigSchema,
   agentEval: AgentEvalConfigSchema,
+  training: TrainingPipelineConfigSchema,
+  analytics: ConversationAnalyticsConfigSchema,
 });
 export type OpsDomainConfig = z.infer<typeof OpsDomainConfigSchema>;
 

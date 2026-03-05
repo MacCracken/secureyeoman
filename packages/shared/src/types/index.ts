@@ -519,6 +519,10 @@ export {
   type ReadReplicaConfig,
   BackupReplicationConfigSchema,
   type BackupReplicationConfig,
+  TrainingPipelineConfigSchema,
+  type TrainingPipelineConfig,
+  ConversationAnalyticsConfigSchema,
+  type ConversationAnalyticsConfig,
 } from './config.js';
 
 // Agent Eval types
