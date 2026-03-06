@@ -24,6 +24,8 @@ import { PolicyAsCodeConfigSchema } from './policy-as-code.js';
 import { IacConfigSchema } from './iac.js';
 import { ChaosEngineeringConfigSchema } from './chaos-engineering.js';
 import { FederatedLearningConfigSchema } from './federated-learning.js';
+import { SandboxProfileNameSchema } from './sandbox-profiles.js';
+import { PretrainingConfigSchema } from './pretrain.js';
 import { ExternalizationPolicySchema } from './sandbox-scanning.js';
 import { z as zz } from 'zod';
 
@@ -226,6 +228,8 @@ const SandboxConfigSchema = z
     maxCpuPercent: z.number().int().positive().max(100).default(50),
     maxFileSizeMb: z.number().int().positive().max(10240).default(100),
     networkAllowed: z.boolean().default(true),
+    /** Active sandbox profile name. Overrides individual settings when set. */
+    activeProfile: SandboxProfileNameSchema.optional(),
     credentialProxy: z
       .object({
         enabled: z.boolean().default(false),
@@ -1152,6 +1156,8 @@ export const TrainingPipelineConfigSchema = z
   .object({
     /** Enable the ML training pipeline (distillation, fine-tuning, evaluation, etc.). Default: true for backward compat. */
     enabled: z.boolean().default(true),
+    /** Pre-training from scratch configuration. */
+    pretraining: PretrainingConfigSchema,
   })
   .default({});
 export type TrainingPipelineConfig = z.infer<typeof TrainingPipelineConfigSchema>;

@@ -10,7 +10,6 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 144 | IDE Experience | P3 — power user UX | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infrastructure, Dev Ecosystem | Future / Demand-Gated | — |
 
@@ -59,34 +58,10 @@
 
 **Prerequisite**: Phase 106 (license gating infrastructure — ✅).
 
-- [x] **Tier audit** — ✅ Comprehensive audit of all features into tiers with `requiresLicense` guards wired on 25+ route files. `LicensedFeature` expanded from 5 → 18 features. `FEATURE_TIER_MAP` maps each to minimum required tier. Dashboard `FeatureLock` shows tier-aware upgrade prompts.
-  - **Community** (free): Chat, personalities, basic brain/memory, manual workflows, MCP tools, marketplace skills, basic editor, training dataset export, community skills, basic observability (metrics dashboard read-only)
-  - **Pro** (6 features): `advanced_brain`, `provider_management`, `computer_use`, `custom_integrations`, `prompt_engineering`, `batch_inference`
-  - **Enterprise** (12 features): `adaptive_learning`, `sso_saml`, `multi_tenancy`, `cicd_integration`, `advanced_observability`, `a2a_federation`, `swarm_orchestration`, `confidential_computing`, `audit_export`, `dlp_security`, `compliance_governance`, `supply_chain`
 - [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates.
 - [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
 - [ ] **License key purchase flow** — Integration with payment provider or manual key issuance workflow. Dashboard license management page.
 - [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
-
----
-
-## Phase 144: IDE Experience
-
-**Priority**: P3 — Power user UX.
-
-*Evolves the basic editor (`/editor`) into a full IDE experience. The editor platform is mature (unified editor, MultiTerminal, model selectors, memory toggle, Agent World). These items add the missing IDE-class features for the standard editor view.*
-
-- [x] **Multi-file editing** — Tabs, split panes. *(Done — EditorToolbar tabs + 50/50 split view in EditorPage.)*
-- [x] **Project explorer** — File tree sidebar with create/rename/delete. *(Done — ProjectExplorer.tsx with context menu, drag-and-drop, keyboard navigation.)*
-- [x] **Command palette** — `Cmd/Ctrl+K` fuzzy command search across all editor actions. *(Done — CommandPalette.tsx with File/Panel/Navigation/Personality/Command categories.)*
-- [x] **Auto-Claude–style patterns** — Plan display, step-by-step approval, context badges. AI commit messages already exist in GitPanel. *(Done — AiPlanPanel.tsx with step approval, progress bar, pause/resume, context badges for files/memory/tools.)*
-- [x] **Keybindings editor** — UI for customizing keyboard shortcuts. *(Done — KeybindingsEditor.tsx modal with inline key capture, conflict detection, per-binding reset. useKeybindings hook with localStorage persistence.)*
-- [ ] **Inline AI completion** — Copilot-style ghost text suggestions from the active personality.
-- [ ] **Multi-file search & replace** — Cross-file search with preview and batch replace.
-- [ ] **Collaborative editing** — Yjs CRDT for real-time multi-user editing. *(yjs is a dependency but not yet wired.)*
-- [ ] **Responsive / mobile layout** — Adaptive layout for smaller screens.
-- [ ] **Training integration** — Export/annotation hooks from editor to training pipeline.
-- [ ] **Plugin / extension system** — Third-party editor extensions.
 
 ---
 
@@ -128,12 +103,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### LLM Lifecycle — Deferred
-
-- [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params). *(Deferred — revisit when fine-tuning has real-world usage.)*
-
----
-
 ### Voice & Community
 
 *Demand-Gated — implement when voice profile and marketplace demand justifies the investment.*
@@ -171,14 +140,31 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
+### Enterprise Upgrades
+
+*Security hardening and compliance capabilities for enterprise deployments.*
+
+- [ ] **WebAuthn/FIDO2 auth** — Hardware key authentication for admins. Passwordless login with security keys (YubiKey, Touch ID, Windows Hello). Attestation and assertion flows via `@simplewebauthn/server`.
+- [ ] **HSM Integration** — Hardware Security Module integration for key management. PKCS#11 interface for signing, encryption, and key rotation. Cloud HSM support (AWS CloudHSM, Azure Dedicated HSM, GCP Cloud HSM).
+
+---
+
 ### Infrastructure & Platform
 
 *Demand-Gated — implement once operational scale or compliance requirements justify the investment.*
 
-- [ ] **HSM Integration** — Hardware Security Module integration for key management.
 - [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
 - [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based graph layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
 - [ ] **Agent World — Configurable FPS** — fps slider in card settings popover (1–16 fps), persisted in layout config. Only worthwhile if users report animation overhead on low-power devices.
+
+---
+
+### IDE Extensions
+
+*Lower-priority IDE features. Implement when the core IDE experience is stable and user demand warrants.*
+
+- [ ] **Responsive / mobile layout** — Adaptive layout for smaller screens.
+- [ ] **Plugin / extension system** — Third-party editor extensions.
 
 ---
 
@@ -186,12 +172,7 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 *Lower-priority ideas. Not scheduled — track here for future consideration.*
 
-- [ ] **WebAuthn/FIDO2 auth** — Hardware key authentication for admins.
-- [ ] **Agent sandboxing profiles** — Named sandbox configs (dev/prod/high-security).
 - [ ] **Offline-first PWA** — ServiceWorker + IndexedDB. Closes mobile gap without native apps.
-- [x] **Chaos engineering toolkit** — Fault injection for workflow resilience testing. *(Done — ADR 025, `chaos/` module with 8 fault types, 7 targets, 9 REST endpoints, 53 tests.)*
-- [x] **Conversation branching visualization** — Visual tree with diff view. *(Done — ADR 026, Branch Explorer with 4 tabs: tree, timeline, stats, compare. 26 new tests.)*
-- [x] **Federated learning** — Multi-instance model improvement with differential privacy. *(ADR 027, [2026.3.8])*
 
 ---
 
@@ -213,4 +194,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-05 (Phase 144 keybindings + auto-claude). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-06 (Phase 144 complete, completed items pruned). See [Changelog](../../CHANGELOG.md) for full history.*

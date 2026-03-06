@@ -8,11 +8,11 @@
 [![Tests: ~16,100](https://img.shields.io/badge/Tests-~16%2C100-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 
-> Cloud AI made intelligence cheap. It also made everyone a tenant.
+> **Your AI. Your Rules. Your Infrastructure.**
 >
-> SecureYeoman inverts the model: a sovereign AI that runs on your infrastructure, under your governance, with your data going nowhere. No cloud rent. No behavioral extraction. No AI that answers to someone else.
+> Most AI assistants serve their platform. SecureYeoman serves you — self-hosted, enterprise-hardened, and answerable only to you.
 >
-> A yeoman owns their land. So should you.
+> Keep it local. Go hybrid. Connect any provider. Your data only moves when you say so.
 
 Ships with the default Agent Personality **F.R.I.D.A.Y.** — **F**riendly, **R**eliable, **I**ntelligent, **D**igitally **A**daptable **Y**eoman.
 
@@ -188,6 +188,6 @@ Enterprise features (Adaptive Learning, SSO/SAML, Multi-Tenancy, CI/CD, Advanced
 
 <div align="center">
 
-**SECUREYEOMAN** - Your trusted digital Yeoman
+**SECUREYEOMAN** — Your AI. Your Rules. Your Infrastructure.
 
 </div>

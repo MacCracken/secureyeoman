@@ -1,10 +1,72 @@
 # Changelog
 
-All notable changes to SecureYeoman are documented in this file. Versions use the date-based format `YYYY.M.D`.
+All notable changes to SecureYeoman are documented in this file. Versions correspond to git tags.
 
 ---
 
-## [2026.3.8] — 2026-03-06
+## [2026.3.6]
+
+### Phase 144: IDE Experience — Remaining Features
+
+#### Collaborative Editing (Yjs CRDT)
+
+- **`useCollabMonaco` hook** (`dashboard/hooks/useCollabMonaco.ts`): Yjs CRDT binding for Monaco editor. Same binary WebSocket protocol as `useCollabEditor`. Precise change application using Monaco's `onDidChangeModelContent` deltas (not full-text replace). Remote changes applied via Y.Text observe → Monaco model edits with remote-guard to prevent echo loops.
+- **`CollabPresence` component** (`dashboard/components/editor/CollabPresence.tsx`): Compact toolbar indicator showing colored user initials for other connected editors. Shows green dot when connected with no peers. Overflow count for 5+ users.
+- **Wired into `EditorPage`**: `collabDocId` derived from active tab's file path (`file:<path>`). Editor binds on mount. Presence users and connection status passed to `EditorToolbar`.
+- **8 tests** (`useCollabMonaco.test.ts`): WebSocket lifecycle, sync step 1, awareness parsing, connect/disconnect state.
+- **4 tests** (`CollabPresence.test.tsx`): Null render, connected dot, user dots, overflow count.
+
+#### Multi-file Search & Replace
+
+- **Backend** (`gateway/search-routes.ts`): `POST /api/v1/editor/search` (grep-based cross-file search with regex, case-sensitivity, glob filter, context lines, 500-match limit) and `POST /api/v1/editor/replace` (batch file replacement with path traversal protection, regex support, file-count limit).
+- **`SearchPanel` component** (`dashboard/components/editor/SearchPanel.tsx`): Full search sidebar with regex/case toggles, file glob filter, results grouped by file with expandable match lists, replace mode with per-file checkbox selection and batch replace, success notification with replacement count.
+- **Keyboard shortcut**: `Ctrl+Shift+F` toggles search panel.
+- **11 tests** (`search-routes.test.ts`): Query validation, grep execution, case-insensitive flag, glob include, empty results, replacement, path traversal rejection.
+- **7 tests** (`SearchPanel.test.tsx`): Render, search on Enter, file grouping, match navigation, replace toggle, no results.
+
+#### Inline AI Completion
+
+- **Backend** (`ai/inline-complete-routes.ts`): `POST /api/v1/ai/inline-complete` endpoint. Fill-in-the-middle prompt construction from prefix/suffix context. Personality-aware (includes system prompt context when personalityId provided). Context trimmed to 4000 chars. Temperature 0.2, max 256 tokens, stop sequences for clean cuts.
+- **`useInlineCompletion` hook** (`dashboard/hooks/useInlineCompletion.ts`): Registers Monaco `InlineCompletionsProvider` for all languages. 500ms debounce, cancellation-aware, minimum 5-char prefix threshold. Tab to accept ghost text.
+- **Wired into `EditorPage`**: Bound on editor mount alongside collab. Enabled by default (persisted in localStorage).
+- **7 tests** (`inline-complete-routes.test.ts`): Validation, completion, personality context, no-personality fallback, error handling, context trimming.
+
+#### Training Integration (Annotations)
+
+- **Backend** (`training/annotation-routes.ts`): 4 endpoints — `GET /api/v1/editor/annotations` (list with filePath/personalityId filters), `POST` (create with label validation: good/bad/instruction/response), `DELETE /:id`, `GET /export` (JSONL or CSV format). Instruction/response annotations export as role-based JSONL for fine-tuning. In-memory storage adapter (pluggable for PostgreSQL).
+- **`useAnnotationContextMenu` hook** (`dashboard/components/editor/AnnotationContextMenu.tsx`): Registers Monaco editor action "Add to Training Dataset" in right-click context menu. `Ctrl+Shift+T` keybinding. Opens positioned popover with label selector (good/bad/instruction/response), optional note field, and save button. Invalidates `annotations` query cache on save.
+- **Wired into `EditorPage`**: Action registered on editor mount. Popover rendered as fixed-position overlay.
+- **12 tests** (`annotation-routes.test.ts`): CRUD, label validation, filePath filtering, JSONL export (quality + role-based), CSV export.
+
+| File | Purpose |
+|------|---------|
+| `packages/dashboard/src/hooks/useCollabMonaco.ts` | Yjs CRDT ↔ Monaco binding |
+| `packages/dashboard/src/hooks/useInlineCompletion.ts` | Ghost text completion provider |
+| `packages/dashboard/src/components/editor/CollabPresence.tsx` | Toolbar presence indicator |
+| `packages/dashboard/src/components/editor/SearchPanel.tsx` | Multi-file search & replace UI |
+| `packages/dashboard/src/components/editor/AnnotationContextMenu.tsx` | Training annotation context menu |
+| `packages/core/src/gateway/search-routes.ts` | Search/replace REST endpoints |
+| `packages/core/src/ai/inline-complete-routes.ts` | Inline completion endpoint |
+| `packages/core/src/training/annotation-routes.ts` | Annotation CRUD + export endpoints |
+| Tests (7 files, 59 tests) | Full coverage for all new features |
+
+### LLM Pre-Training from Scratch (ADR 029)
+
+- **Shared types** (`shared/types/pretrain.ts`): `PretrainJob`, `PretrainJobCreate`, `CorpusSource`, `PretrainingConfig` schemas. 5 model architectures (gpt2, llama, mistral, phi, mamba). 7 job statuses (pending→validating→tokenizing→training→complete/failed/cancelled). 4 learning rate schedules (cosine, linear, constant, cosine_with_restarts). Full hyperparameter config (vocab size, context length, hidden/layers/heads, gradient accumulation, weight decay).
+- **Corpus loader** (`training/corpus-loader.ts`): Validates and ingests corpora in 5 formats (plaintext, JSONL, CSV, Parquet, Markdown). Auto-detects format from file extension. Token estimation (~4 chars/token). Document counting per format. Directory traversal for multi-file corpora. Source registry with stats aggregation.
+- **Pre-train manager** (`training/pretrain-manager.ts`): Job lifecycle (create/monitor/cancel/delete). Model size enforcement (≤3B hard cap, configurable max). Concurrent job limiting. Progress tracking (step, tokens processed, training/validation loss, perplexity). Parameter count estimation from architecture config. Docker-based execution (same pattern as FinetuneManager).
+- **9 REST endpoints** (`training/pretrain-routes.ts`): Jobs (list/get/create/cancel/delete/progress), corpus (list/validate/stats). License-gated under `adaptive_learning`.
+- **SQL migration** (`007_pretrain_jobs.sql`): `training.pretrain_jobs` table with full architecture config, training state, and metrics columns.
+- **Config** (`ops.training.pretraining`): `enabled`, `maxConcurrentJobs`, `maxModelParams`, `defaultImage`, `corpusDir`, `outputDir`, `maxCorpusSizeGb`, `checkpointRetentionDays`.
+- **46 tests** across 3 files: corpus-loader (20), pretrain-manager (13), pretrain-routes (13).
+
+### Agent Sandboxing Profiles (ADR 028)
+
+- **Shared types** (`shared/types/sandbox-profiles.ts`): `SandboxProfile`, `SandboxProfileName` (dev/staging/prod/high-security/custom), `SandboxProfileCreate` schemas. Full profile configuration: filesystem paths (read/write/exec), resource limits (memory, CPU, file size, timeout), network policies (allowed hosts/ports), credential proxy requirements, tool allow/blocklists.
+- **Profile registry** (`sandbox/sandbox-profiles.ts`): 4 built-in presets — **dev** (permissive: 4 GB, 90% CPU, unrestricted network), **staging** (moderate: 2 GB, ports 80/443/5432/6379), **prod** (locked: 1 GB, HTTPS only, credential proxy required, tool blocklist), **high-security** (maximum isolation: Landlock, no network, 512 MB, 15s timeout, extended tool blocklist). Custom profile CRUD. `toManagerConfig()` converts profiles to existing `SandboxManagerConfig` format.
+- **5 REST endpoints** (`sandbox/sandbox-profile-routes.ts`): List profiles, get by name, create custom, delete custom, get manager config for a profile.
+- **Config** (`security.sandbox.activeProfile`): Optional profile name selector on existing `SandboxConfigSchema`.
+- **20 tests** across 2 files: sandbox-profiles (12), sandbox-profile-routes (8).
 
 ### Federated Learning (ADR 027)
 
@@ -37,10 +99,6 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **SQL migration** (`005_chaos_engineering.sql`): `chaos` schema with `experiments` (rules as JSONB, status lifecycle, scheduling) and `experiment_results` (fault results as JSONB, metrics, steady-state validation) tables. Indexes on status, created_at, tenant_id, experiment_id.
 - **Config** (`security.chaos`): `enabled` (default false), `maxConcurrentExperiments`, `maxExperimentDurationMs`, `retainResults`, `safeMode`, `allowedTargetTypes`.
 - **52 tests** across 4 files: fault-injector (15), chaos-manager (15), chaos-routes (13), chaos-store (9).
-
----
-
-## [2026.3.7] — 2026-03-05
 
 ### Bug Fix — Personality Delete Button
 
@@ -91,10 +149,6 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **`MarketplaceTab` updated** (`skills/MarketplaceTab.tsx`): Category filter pills above the skills grid. When "All" is selected, skills are grouped by category within each source section (YEOMAN / Published) using collapsible folders. When a specific category is selected, the backend filters by category and skills display in a flat grid per source.
 - **`CommunityTab` updated** (`skills/CommunityTab.tsx`): Category filter pills above the community skills grid. Skills are grouped by category in collapsible folders. Category filter resets pagination. Backend category query param used for server-side filtering.
 - **14 tests** (`skills/CategoryFilter.test.tsx`): categoryLabel, SKILL_CATEGORIES, CategoryFilter (render, counts, hide empty, active state, onChange), CategoryGroupedGrid (multi-category grouping, single-category flat, collapse/expand, alphabetical sort).
-
----
-
-## [2026.3.6] — 2026-03-05
 
 ### License Tier Audit
 
@@ -183,10 +237,6 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **9 REST endpoints** (`brain/cognitive-routes.ts`): RAG eval (POST evaluate, GET latency, GET summary), schema clustering (POST trigger, GET list), retrieval optimizer (GET stats, POST feedback), reconsolidation (GET stats), working memory (GET items+stats).
 - **75 tests** across 5 files: rag-eval (19), reconsolidation (12), schema-clustering (11), activation (+2 salience tests), cognitive-routes (9).
 
----
-
-## [2026.3.5h] — 2026-03-05
-
 ### Phase 139 — OpenTelemetry & SIEM Integration (ADR 018)
 
 - **`withSpan()` instrumentation utility** (`telemetry/instrument.ts`): Concise wrapper for OTel span lifecycle — creates child spans, records exceptions, sets status, ends span. `getCurrentSpanId()` for log correlation.
@@ -213,7 +263,7 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
-## [2026.3.5] — 2026-03-05
+## [2026.3.5]
 
 ### Documentation & Site Audit
 
@@ -599,7 +649,7 @@ Applied 24 fixes across 11 files:
 
 ---
 
-## [2026.3.4] — 2026-03-04
+## [2026.3.4]
 
 ### Phase 125-D: Cognitive ML Memory Enhancements
 
@@ -838,7 +888,7 @@ Applied 24 fixes across 11 files:
 
 ---
 
-## [2026.3.3] — 2026-03-03
+## [2026.3.3]
 
 ### Phase 121: Security Hardening & Code Audit
 
@@ -1059,7 +1109,7 @@ Applied 24 fixes across 11 files:
 
 ---
 
-## [2026.3.2] — 2026-03-02
+## [2026.3.2]
 
 ### Phase 107-D: Portable Personality Format & Community Theme Sync
 
@@ -1248,7 +1298,7 @@ Applied 24 fixes across 11 files:
 
 ---
 
-## [2026.3.1] — 2026-03-01
+## [2026.3.1]
 
 ### Phase 99: Conversation Branching & Replay (ADR 179)
 
@@ -1426,7 +1476,7 @@ Applied 24 fixes across 11 files:
 
 ---
 
-## [2026.2.28] — 2026-02-28
+## [2026.2.28]
 
 ### Soul Module Code Quality Improvements (ADR 168)
 
@@ -1679,7 +1729,7 @@ Applied 24 fixes across 11 files:
 
 ---
 
-## [2026.2.27] — 2026-02-28
+## [2026.2.27]
 
 ### Added
 
@@ -1847,7 +1897,7 @@ Applied 24 fixes across 11 files:
 
 ---
 
-## [2026.2.26] — 2026-02-26
+## [2026.2.26]
 
 ### Added
 
@@ -1950,7 +2000,7 @@ Applied 24 fixes across 11 files:
 
 ---
 
-## [2026.2.25] — 2026-02-25
+## [2026.2.25]
 
 ### Added
 
@@ -2100,7 +2150,7 @@ Applied 24 fixes across 11 files:
 
 ---
 
-## [2026.2.24] — 2026-02-24
+## [2026.2.24]
 
 ### Phase XX.7 — Settings Active Souls Polish
 
@@ -6889,7 +6939,7 @@ Component development environment integrated into Developers section as its own 
 
 ---
 
-## [2026.2.17] — 2026-02-17 — [ADR 045](docs/adr/045-memory-audit-hardening.md), [ADR 041](docs/adr/041-multimodal-io.md), [ADR 044](docs/adr/044-anti-bot-proxy-integration.md), [ADR 042](docs/adr/042-kubernetes-deployment.md), [ADR 043](docs/adr/043-kubernetes-observability.md)
+## [2026.2.17] — [ADR 045](docs/adr/045-memory-audit-hardening.md), [ADR 041](docs/adr/041-multimodal-io.md), [ADR 044](docs/adr/044-anti-bot-proxy-integration.md), [ADR 042](docs/adr/042-kubernetes-deployment.md), [ADR 043](docs/adr/043-kubernetes-observability.md)
 
 ### Phase 8.8: Memory/Brain Hardening — [ADR 045](docs/adr/045-memory-audit-hardening.md)
 
@@ -7027,7 +7077,7 @@ Component development environment integrated into Developers section as its own 
 
 ---
 
-## [2026.2.16c] — 2026-02-16 — [ADR 034](docs/adr/034-sub-agent-delegation.md)
+## [2026.2.16c] — [ADR 034](docs/adr/034-sub-agent-delegation.md)
 
 ### Dashboard: Navigation Consolidation & Experiments
 
@@ -7057,7 +7107,7 @@ Component development environment integrated into Developers section as its own 
 
 ---
 
-## [2026.2.16b] — 2026-02-16 — [ADR 041](docs/adr/041-multimodal-io.md)
+## [2026.2.16b] — [ADR 041](docs/adr/041-multimodal-io.md)
 
 ### Phase 7.3: Multimodal I/O
 
@@ -7093,7 +7143,7 @@ Component development environment integrated into Developers section as its own 
 
 ---
 
-## [2026.2.16] — 2026-02-16 — [ADR 039](docs/adr/039-inline-form-pattern.md), [ADR 035](docs/adr/035-lifecycle-extension-hooks.md), [ADR 036](docs/adr/036-sandboxed-code-execution.md), [ADR 037](docs/adr/037-a2a-protocol.md), [ADR 038](docs/adr/038-webmcp-ecosystem-tools.md), [ADR 040](docs/adr/040-proactive-assistance.md)
+## [2026.2.16] — [ADR 039](docs/adr/039-inline-form-pattern.md), [ADR 035](docs/adr/035-lifecycle-extension-hooks.md), [ADR 036](docs/adr/036-sandboxed-code-execution.md), [ADR 037](docs/adr/037-a2a-protocol.md), [ADR 038](docs/adr/038-webmcp-ecosystem-tools.md), [ADR 040](docs/adr/040-proactive-assistance.md)
 
 ### Dashboard: Inline Form Pattern
 
@@ -7319,7 +7369,7 @@ Component development environment integrated into Developers section as its own 
 
 ---
 
-## [2026.2.15] — 2026-02-15 — [ADR 000](docs/adr/000-secureyeoman-architecture-overview.md), [ADR 001](docs/adr/001-dashboard-chat.md), [ADR 004](docs/adr/004-mcp-protocol.md), [ADR 015](docs/adr/015-rbac-capture-permissions.md), [ADR 025](docs/adr/025-cli-webhook-googlechat-integrations.md), [ADR 026](docs/adr/026-mcp-service-package.md), [ADR 027](docs/adr/027-gateway-security-hardening.md), [ADR 030](docs/adr/030-unified-connections-oauth.md)
+## [2026.2.15] — [ADR 000](docs/adr/000-secureyeoman-architecture-overview.md), [ADR 001](docs/adr/001-dashboard-chat.md), [ADR 004](docs/adr/004-mcp-protocol.md), [ADR 015](docs/adr/015-rbac-capture-permissions.md), [ADR 025](docs/adr/025-cli-webhook-googlechat-integrations.md), [ADR 026](docs/adr/026-mcp-service-package.md), [ADR 027](docs/adr/027-gateway-security-hardening.md), [ADR 030](docs/adr/030-unified-connections-oauth.md)
 
 ### Initial Release
 

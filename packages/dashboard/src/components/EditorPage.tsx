@@ -63,6 +63,10 @@ import { KeybindingsEditor } from './editor/KeybindingsEditor';
 import { AiPlanPanel, type AiPlan, type PlanStep } from './editor/AiPlanPanel';
 import { useKeybindings, matchesShortcut } from '../hooks/useKeybindings';
 import { EntityWidget, type EntityState } from './EntityWidget';
+import { useCollabMonaco } from '../hooks/useCollabMonaco';
+import { useInlineCompletion } from '../hooks/useInlineCompletion';
+import { useAnnotationContextMenu } from './editor/AnnotationContextMenu';
+import { SearchPanel } from './editor/SearchPanel';
 
 type MonacoEditor = Parameters<OnMount>[0];
 
@@ -682,6 +686,20 @@ function StandardEditorPage() {
   const editorRef = useRef<MonacoEditor | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // ── Inline AI completion ──
+  const [inlineCompletionEnabled, setInlineCompletionEnabled] = useState(
+    () => localStorage.getItem('editor:inlineCompletion') !== 'false'
+  );
+  const { bindEditor: completionBindEditor, unbindEditor: completionUnbindEditor } =
+    useInlineCompletion({ enabled: inlineCompletionEnabled, personalityId: selectedPersonalityId });
+
+  // ── Training annotations ──
+  const { registerAction: registerAnnotationAction, PopoverComponent: annotationPopover } =
+    useAnnotationContextMenu(selectedPersonalityId);
+
+  // ── Multi-file search ──
+  const [showSearch, setShowSearch] = useState(false);
+
   // ── Terminal output ref (feeds watch mode in chat) ──
   const terminalOutputRef = useRef<string>('');
 
@@ -714,6 +732,15 @@ function StandardEditorPage() {
   const filename = activeTab?.name ?? 'untitled.ts';
   const language = activeTab?.language ?? 'typescript';
   const editorContent = activeTab?.content ?? '';
+
+  // ── Collaborative editing ──
+  const collabDocId = activeTab?.path ? `file:${activeTab.path}` : null;
+  const {
+    bindEditor: collabBindEditor,
+    unbindEditor: collabUnbindEditor,
+    presenceUsers: collabUsers,
+    connected: collabConnected,
+  } = useCollabMonaco(collabDocId);
 
   const updateTabContent = useCallback(
     (content: string) => {
@@ -894,6 +921,9 @@ function StandardEditorPage() {
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     editor.updateOptions({ theme: isDark ? 'vs-dark' : 'vs' });
+    collabBindEditor(editor);
+    completionBindEditor(editor, monaco);
+    registerAnnotationAction(editor, monaco);
   };
 
   const handleSendToChat = useCallback(() => {
@@ -982,6 +1012,7 @@ function StandardEditorPage() {
         'toggle-git': () => setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git'),
         'toggle-settings': () => setSettingsOpen((v) => !v),
         'toggle-split': () => setSplitView((v) => !v),
+        'toggle-search': () => setShowSearch((v) => !v),
         'close-tab': () => closeTab(activeTabId),
       };
 
@@ -993,9 +1024,17 @@ function StandardEditorPage() {
         }
       }
 
+      // Ctrl+Shift+F — toggle search panel
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
+        e.preventDefault();
+        setShowSearch((v) => !v);
+        return;
+      }
+
       if (e.key === 'Escape') {
         setSettingsOpen(false);
         setKeybindingsOpen(false);
+        setShowSearch(false);
       }
     };
 
@@ -1383,6 +1422,8 @@ function StandardEditorPage() {
                 setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git');
               }}
               onToggleKeybindings={() => setKeybindingsOpen(true)}
+              collabUsers={collabUsers}
+              collabConnected={collabConnected}
             />
 
             {/* Settings Panel */}
@@ -1476,6 +1517,28 @@ function StandardEditorPage() {
                       }
                     }}
                     onCwdChange={setCwd}
+                  />
+                </div>
+              )}
+
+              {/* Search Panel sidebar */}
+              {showSearch && (
+                <div className="w-[300px] flex-shrink-0 overflow-hidden border-r border-border">
+                  <SearchPanel
+                    cwd={cwd}
+                    onNavigate={(file, line) => {
+                      // Open file and go to line
+                      const existing = tabs.find((t) => t.path === `${cwd}/${file}`);
+                      if (existing) {
+                        setActiveTabId(existing.id);
+                      }
+                      if (editorRef.current) {
+                        editorRef.current.revealLineInCenter(line);
+                        editorRef.current.setPosition({ lineNumber: line, column: 1 });
+                        editorRef.current.focus();
+                      }
+                    }}
+                    onClose={() => setShowSearch(false)}
                   />
                 </div>
               )}
@@ -2028,6 +2091,7 @@ function StandardEditorPage() {
         open={keybindingsOpen}
         onClose={() => setKeybindingsOpen(false)}
       />
+      {annotationPopover}
     </div>
   );
 }

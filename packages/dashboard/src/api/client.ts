@@ -6304,3 +6304,115 @@ export async function fetchSandboxPolicy(): Promise<{ policy: ExternalizationPol
     return { policy: { enabled: false } as ExternalizationPolicy };
   }
 }
+
+// ─── Editor Search & Replace API ────────────────────────────────
+
+export interface SearchMatch {
+  file: string;
+  line: number;
+  column: number;
+  text: string;
+  contextBefore: string[];
+  contextAfter: string[];
+}
+
+export interface SearchResult {
+  matches: SearchMatch[];
+  fileCount: number;
+  matchCount: number;
+  truncated: boolean;
+}
+
+export async function searchFiles(params: {
+  query: string;
+  cwd?: string;
+  glob?: string;
+  regex?: boolean;
+  caseSensitive?: boolean;
+  maxResults?: number;
+}): Promise<SearchResult> {
+  return request('/editor/search', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+export interface ReplaceResult {
+  files: Array<{ file: string; replacements: number }>;
+  totalReplacements: number;
+}
+
+export async function replaceInFiles(params: {
+  cwd?: string;
+  search: string;
+  replace: string;
+  files: string[];
+  regex?: boolean;
+  caseSensitive?: boolean;
+}): Promise<ReplaceResult> {
+  return request('/editor/replace', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+// ─── Editor Annotations API (Training Integration) ─────────────
+
+export interface Annotation {
+  id: string;
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  selectedText: string;
+  label: 'good' | 'bad' | 'instruction' | 'response';
+  note?: string;
+  personalityId?: string;
+  createdAt: string;
+}
+
+export async function fetchAnnotations(params?: {
+  filePath?: string;
+  personalityId?: string;
+}): Promise<{ annotations: Annotation[] }> {
+  const qs = new URLSearchParams();
+  if (params?.filePath) qs.set('filePath', params.filePath);
+  if (params?.personalityId) qs.set('personalityId', params.personalityId);
+  const q = qs.toString();
+  return request(`/editor/annotations${q ? `?${q}` : ''}`);
+}
+
+export async function createAnnotation(data: Omit<Annotation, 'id' | 'createdAt'>): Promise<{ annotation: Annotation }> {
+  return request('/editor/annotations', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteAnnotation(id: string): Promise<void> {
+  await request(`/editor/annotations/${id}`, { method: 'DELETE' });
+}
+
+export async function exportAnnotationsAsDataset(params?: {
+  personalityId?: string;
+  format?: 'jsonl' | 'csv';
+}): Promise<string> {
+  const qs = new URLSearchParams();
+  if (params?.personalityId) qs.set('personalityId', params.personalityId);
+  if (params?.format) qs.set('format', params.format);
+  const q = qs.toString();
+  return request(`/editor/annotations/export${q ? `?${q}` : ''}`);
+}
+
+// ─── Inline AI Completion API ───────────────────────────────────
+
+export async function fetchInlineCompletion(params: {
+  prefix: string;
+  suffix: string;
+  language: string;
+  personalityId?: string;
+}): Promise<{ completion: string }> {
+  return request('/ai/inline-complete', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}

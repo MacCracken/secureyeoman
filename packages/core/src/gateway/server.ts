@@ -43,6 +43,7 @@ import { OutboundWebhookStorage } from '../integrations/outbound-webhook-storage
 import { OutboundWebhookDispatcher } from '../integrations/outbound-webhook-dispatcher.js';
 import { registerChatRoutes } from '../ai/chat-routes.js';
 import { registerModelRoutes } from '../ai/model-routes.js';
+import { registerInlineCompleteRoutes } from '../ai/inline-complete-routes.js';
 import { _clearDynamicCache as clearModelCache } from '../ai/cost-calculator.js';
 import { uuidv7, sha256 } from '../utils/crypto.js';
 import { runWithCorrelationId } from '../utils/correlation-context.js';
@@ -54,6 +55,8 @@ import { requireSecret } from '../config/loader.js';
 import { registerSsoRoutes } from './sso-routes.js';
 // registerExperimentRoutes, registerMarketplaceRoutes — dynamic import (startup optimization)
 import { registerTerminalRoutes } from './terminal-routes.js';
+import { registerSearchRoutes } from './search-routes.js';
+import { registerAnnotationRoutes, InMemoryAnnotationStorage } from '../training/annotation-routes.js';
 import { registerWorktreeRoutes } from './worktree-routes.js';
 // registerConversationRoutes, registerBranchingRoutes — dynamic import (startup optimization)
 // registerAgentRoutes, registerSwarmRoutes, registerProfileSkillsRoutes, registerTeamRoutes, registerCouncilRoutes — dynamic import (startup optimization)
@@ -707,6 +710,31 @@ export class GatewayServer {
     // Model info + switch routes
     registerModelRoutes(this.app, { secureYeoman: this.secureYeoman });
 
+    // Inline AI completion routes
+    try {
+      const aiClient = this.secureYeoman.getAIClient();
+      const personalityMgr = this.secureYeoman.getPersonalityManager();
+      registerInlineCompleteRoutes(this.app, {
+        aiClient: {
+          async complete(prompt, options) {
+            const resp = await aiClient.chat({
+              messages: [{ role: 'user', content: prompt }],
+              temperature: options?.temperature,
+              stream: false,
+            });
+            return resp.content;
+          },
+        },
+        personalityManager: personalityMgr ? {
+          async getById(id: string) {
+            return personalityMgr.getById(id);
+          },
+        } : undefined,
+      });
+    } catch {
+      // AI client not available — inline completion disabled
+    }
+
     // MCP routes
     try {
       const mcpStorage = this.secureYeoman.getMcpStorage();
@@ -790,6 +818,8 @@ export class GatewayServer {
 
     // Terminal routes (always available)
     registerTerminalRoutes(this.app);
+    registerSearchRoutes(this.app);
+    registerAnnotationRoutes(this.app, { storage: new InMemoryAnnotationStorage() });
     registerWorktreeRoutes(this.app);
 
     // Conversation routes

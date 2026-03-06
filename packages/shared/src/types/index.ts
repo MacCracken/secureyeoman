@@ -816,6 +816,36 @@ export {
   type FederatedLearningConfig,
 } from './federated-learning.js';
 
+// Sandbox Profile types
+export {
+  SandboxProfileNameSchema,
+  SandboxProfileSchema,
+  SandboxProfileCreateSchema,
+  type SandboxProfileName,
+  type SandboxProfile,
+  type SandboxProfileCreate,
+} from './sandbox-profiles.js';
+
+// Pre-Training types
+export {
+  CorpusFormatSchema,
+  CorpusSourceSchema,
+  PretrainStatusSchema,
+  ModelArchitectureSchema,
+  LearningRateScheduleSchema,
+  PretrainJobSchema,
+  PretrainJobCreateSchema,
+  PretrainingConfigSchema,
+  type CorpusFormat,
+  type CorpusSource,
+  type PretrainStatus,
+  type ModelArchitecture,
+  type LearningRateSchedule,
+  type PretrainJob,
+  type PretrainJobCreate,
+  type PretrainingConfig,
+} from './pretrain.js';
+
 // Policy-as-Code types
 export {
   PolicyLanguageSchema,

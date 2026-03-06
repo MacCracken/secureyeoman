@@ -2,7 +2,7 @@
 
 **Status**: Accepted
 **Date**: 2026-03-06
-**Changelog**: [2026.3.8]
+**Changelog**: [2026.3.6]
 
 ## Context
 

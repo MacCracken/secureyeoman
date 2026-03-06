@@ -107,6 +107,34 @@ vi.mock('./EntityWidget', () => ({
   ),
 }));
 
+vi.mock('../hooks/useCollabMonaco', () => ({
+  useCollabMonaco: () => ({
+    bindEditor: vi.fn(),
+    unbindEditor: vi.fn(),
+    presenceUsers: [],
+    connected: false,
+    disconnect: vi.fn(),
+  }),
+}));
+
+vi.mock('../hooks/useInlineCompletion', () => ({
+  useInlineCompletion: () => ({
+    bindEditor: vi.fn(),
+    unbindEditor: vi.fn(),
+  }),
+}));
+
+vi.mock('./editor/AnnotationContextMenu', () => ({
+  useAnnotationContextMenu: () => ({
+    registerAction: vi.fn(),
+    PopoverComponent: null,
+  }),
+}));
+
+vi.mock('./editor/SearchPanel', () => ({
+  SearchPanel: () => <div data-testid="search-panel">Search Panel</div>,
+}));
+
 import * as api from '../api/client';
 import { EditorPage } from './EditorPage';
 

@@ -1,4 +1,5 @@
 import type { Personality } from '../../types';
+import type { PresenceUser } from '../../hooks/useCollabEditor.js';
 import {
   Folder,
   Settings,
@@ -15,6 +16,7 @@ import {
   Search,
   Keyboard,
 } from 'lucide-react';
+import { CollabPresence } from './CollabPresence.js';
 import { ModelWidget } from '../ModelWidget';
 import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -61,6 +63,8 @@ interface EditorToolbarProps {
   onToggleGit?: () => void;
   showGitButton?: boolean;
   onToggleKeybindings?: () => void;
+  collabUsers?: PresenceUser[];
+  collabConnected?: boolean;
 }
 
 export function EditorToolbar({
@@ -96,6 +100,8 @@ export function EditorToolbar({
   onToggleGit,
   showGitButton,
   onToggleKeybindings,
+  collabUsers = [],
+  collabConnected = false,
 }: EditorToolbarProps) {
   const [modelOpen, setModelOpen] = useState(false);
   const modelBtnRef = useRef<HTMLButtonElement>(null);
@@ -284,6 +290,9 @@ export function EditorToolbar({
           <span className="hidden xl:inline">Git</span>
         </button>
       )}
+
+      {/* Collab presence */}
+      <CollabPresence users={collabUsers} connected={collabConnected} />
 
       {/* Chat toggle */}
       <button
