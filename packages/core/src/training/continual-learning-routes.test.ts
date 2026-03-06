@@ -108,6 +108,7 @@ function buildMockSY(
       () => opts.driftDetectionManager ?? makeDriftDetectionManager()
     ),
     getOnlineUpdateManager: vi.fn(() => opts.onlineUpdateManager ?? makeOnlineUpdateManager()),
+    getLicenseManager: vi.fn(() => ({ isFeatureAllowed: () => true, getTier: () => 'community' })),
   } as any;
 }
 

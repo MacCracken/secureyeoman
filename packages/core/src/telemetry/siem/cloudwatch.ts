@@ -89,7 +89,7 @@ export class CloudWatchProvider implements SiemProvider {
       .join(';');
 
     const canonicalHeaders = Object.keys(headers)
-      .map((k) => `${k.toLowerCase()}:${headers[k].trim()}`)
+      .map((k) => `${k.toLowerCase()}:${(headers[k] ?? '').trim()}`)
       .sort()
       .join('\n') + '\n';
 

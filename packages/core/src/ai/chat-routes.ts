@@ -907,7 +907,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
   }
 
   // ── Guardrail Pipeline (Phase 143) — extensible filter chain ──────────────
-  const pipelineConfig = secureYeoman.getConfig().security.guardrailPipeline;
+  const pipelineConfig = secureYeoman.getConfig().security.guardrailPipeline ?? {
+    enabled: false,
+    autoLoadCustomFilters: false,
+    customFilterDir: '',
+    filters: [],
+  };
   const guardrailPipeline = new GuardrailPipeline(pipelineConfig, {
     auditRecord: (p) =>
       void secureYeoman.getAuditChain().record({

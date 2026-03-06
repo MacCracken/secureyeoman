@@ -1761,5 +1761,134 @@ export function getToolManifest(): ToolManifestEntry[] {
       description: 'Extract a watermark payload from watermarked text to identify provenance',
       category: 'dlp',
     },
+
+    // Agnostic QA Platform tools
+    {
+      name: 'agnostic_health',
+      description: 'Check if the Agnostic QA platform is reachable and healthy',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_agents_status',
+      description: 'List all Agnostic QA agents and their current status',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_agents_queues',
+      description: 'Get current queue depths for each Agnostic QA agent',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_dashboard',
+      description: 'Get the Agnostic QA platform dashboard overview',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_session_list',
+      description: 'List recent QA sessions from the Agnostic platform',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_session_detail',
+      description: 'Get full details and results for a specific QA session',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_generate_report',
+      description: 'Generate a QA report for a completed session',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_submit_qa',
+      description: 'Submit a QA task to the Agnostic 6-agent team',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_task_status',
+      description: 'Poll the status of a submitted QA task',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_delegate_a2a',
+      description: 'Delegate a QA task via the Agent-to-Agent protocol',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_session_diff',
+      description: 'Compare two sessions to detect regressions, fixes, and new/removed tests',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_structured_results',
+      description: 'Get typed structured results (security, performance, test execution) for a session',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_quality_trends',
+      description: 'Get quality trends over time — pass rates, coverage, flakiness',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_security_findings',
+      description: 'Extract security findings with severity, CWE IDs, and CVSS scores',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_qa_orchestrate',
+      description: 'Submit a QA task with fine-grained agent selection for targeted runs',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_quality_dashboard',
+      description: 'Get unified quality dashboard: sessions, pass rates, agent queues, LLM usage',
+      category: 'qa',
+    },
+
+    // Agnostic REST API proxy tools (registerApiProxyTool)
+    {
+      name: 'agnostic_proxy_sessions',
+      description: 'List recent QA sessions with pagination (proxy)',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_proxy_session_search',
+      description: 'Search QA sessions by keyword (proxy)',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_proxy_task_list',
+      description: 'List all QA tasks with status (proxy)',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_proxy_agent_detail',
+      description: 'Get detailed status for a specific agent (proxy)',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_proxy_agent_registration',
+      description: 'Get agent registry status — which agents are registered and active (proxy)',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_proxy_dashboard_overview',
+      description: 'Get full dashboard overview including active sessions and agent status (proxy)',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_proxy_llm_gateway',
+      description: 'Check AGNOS LLM Gateway health and status (proxy)',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_proxy_reports',
+      description: 'List available QA reports (proxy)',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_proxy_alerts',
+      description: 'Query recent system alerts with optional severity filter (proxy)',
+      category: 'qa',
+    },
   ];
 }

@@ -132,9 +132,10 @@ export class ReconsolidationManager {
         .replace('{overlapScore}', overlapScore.toFixed(2));
 
       const response = await this.deps.aiProvider.chat({
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user' as const, content: prompt }],
         temperature: 0,
         maxTokens: 500,
+        stream: false,
       });
 
       const decision = this.parseDecision(response.content, overlapScore);
@@ -186,14 +187,12 @@ export class ReconsolidationManager {
         // Create new memories for each split piece
         for (const content of decision.splitContents) {
           await this.deps.storage.createMemory({
-            id: uuidv7(),
             type: original.type,
             content,
             source: original.source,
             context: original.context,
             importance: original.importance,
-            personalityId: original.personalityId ?? undefined,
-          });
+          }, original.personalityId ?? undefined);
         }
 
         // Delete the original

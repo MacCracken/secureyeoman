@@ -1020,8 +1020,8 @@ export class BrainManager {
         hebbianBoost,
         weights?.hebbianScale ?? cfg.hebbianScale ?? 1.0,
         1.0,
-        weights?.alpha ?? cfg.alpha ?? 0.3,
-        weights?.boostCap ?? cfg.boostCap ?? 0.5,
+        weights?.alpha ?? cfg.activationWeight ?? 0.3,
+        weights?.boostCap ?? cfg.hebbianBoostCap ?? 0.5,
         salienceScore,
         weights?.salienceWeight ?? 0.1
       );

@@ -205,7 +205,7 @@ export class SloMonitor {
       const pctIdx = def.metricType === 'response_latency_p99'
         ? Math.ceil(sorted.length * 0.99) - 1
         : Math.ceil(sorted.length * 0.95) - 1;
-      return sorted[Math.max(0, pctIdx)];
+      return sorted[Math.max(0, pctIdx)] ?? 0;
     }
 
     // For rate-based: return the current rate as percentage

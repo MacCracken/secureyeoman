@@ -155,9 +155,10 @@ export class RagEvalEngine {
     const prompt = FAITHFULNESS_PROMPT.replace('{context}', contextStr).replace('{answer}', answer);
 
     const response = await this.deps.aiProvider!.chat({
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'user' as const, content: prompt }],
       temperature: 0,
       maxTokens: 200,
+      stream: false,
     });
 
     try {

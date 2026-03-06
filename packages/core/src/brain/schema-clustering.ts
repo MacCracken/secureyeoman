@@ -272,17 +272,16 @@ export class SchemaClusteringManager {
       };
       newSchemas.push(schema);
 
-      // Upsert as knowledge entry
+      // Persist as knowledge entry (create new; ignore if already exists)
       try {
-        await this.deps.storage.upsertKnowledge({
-          id: schema.id,
+        await this.deps.storage.createKnowledge({
           topic: `schema:${label}`,
           content: summary,
           source: 'schema-clustering',
           confidence: coherence,
         });
       } catch (err) {
-        this.deps.logger.warn('Failed to upsert schema knowledge', {
+        this.deps.logger.warn('Failed to create schema knowledge', {
           label,
           error: String(err),
         });
@@ -306,9 +305,10 @@ export class SchemaClusteringManager {
           samples.map((s, i) => `${i + 1}. ${s.slice(0, 200)}`).join('\n')
         );
         const response = await this.deps.aiProvider.chat({
-          messages: [{ role: 'user', content: prompt }],
+          messages: [{ role: 'user' as const, content: prompt }],
           temperature: 0,
           maxTokens: 200,
+          stream: false,
         });
         const json = JSON.parse(response.content);
         return {

@@ -27,6 +27,7 @@ const mockManager: Partial<ResponsibleAiManager> = {
 
 const mockSecureYeoman = {
   getResponsibleAiManager: () => mockManager as ResponsibleAiManager,
+  getLicenseManager: () => ({ isFeatureAllowed: () => true, getTier: () => 'community' }),
 } as unknown as SecureYeoman;
 
 describe('Responsible AI Routes', () => {

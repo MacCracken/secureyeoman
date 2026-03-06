@@ -35,6 +35,12 @@ function createMockSecureYeoman(overrides?: Record<string, unknown>) {
           groundingMode: 'flag',
         },
         inputValidation: {},
+        guardrailPipeline: {
+          enabled: false,
+          autoLoadCustomFilters: false,
+          customFilterDir: '',
+          filters: [],
+        },
       },
     }),
     getMetrics: () => Promise.resolve({ cpu: 10, mem: 50 }),
@@ -2920,7 +2926,7 @@ describe('GatewayServer', () => {
           getConfig: () => {
             callCount++;
             // First few calls are for setupRoutes (security policy etc.), let those work
-            if (callCount <= 5) {
+            if (callCount <= 10) {
               return {
                 core: { environment: 'development' },
                 security: {
@@ -2945,6 +2951,12 @@ describe('GatewayServer', () => {
                   allowAdvancedEditor: false,
                   abuseDetection: { enabled: false },
                   inputValidation: {},
+                  guardrailPipeline: {
+                    enabled: false,
+                    autoLoadCustomFilters: false,
+                    customFilterDir: '',
+                    filters: [],
+                  },
                 },
               };
             }

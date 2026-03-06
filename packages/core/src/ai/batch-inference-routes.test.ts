@@ -66,6 +66,10 @@ function makeAIClient() {
   } as any;
 }
 
+function makeLicenseManager() {
+  return { isFeatureAllowed: () => true, getTier: () => 'community' } as any;
+}
+
 function buildMockSY(
   opts: {
     batchManager?: any;
@@ -79,6 +83,7 @@ function buildMockSY(
     getSemanticCache: vi.fn(() => opts.semanticCache ?? makeSemanticCache()),
     getKvCacheWarmer: vi.fn(() => opts.kvCacheWarmer ?? makeKvCacheWarmer()),
     getAIClient: vi.fn(() => opts.aiClient ?? makeAIClient()),
+    getLicenseManager: vi.fn(() => makeLicenseManager()),
   } as any;
 }
 
