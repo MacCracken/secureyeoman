@@ -76,14 +76,14 @@
 
 *Evolves the basic editor (`/editor`) into a full IDE experience. The editor platform is mature (unified editor, MultiTerminal, model selectors, memory toggle, Agent World). These items add the missing IDE-class features for the standard editor view.*
 
-- [ ] **Auto-Claude–style patterns** — Plan display, step-by-step approval, AI commit messages, context badges.
-- [ ] **Multi-file editing** — Tabs, split panes.
-- [ ] **Project explorer** — File tree sidebar with create/rename/delete.
-- [ ] **Command palette** — `Cmd/Ctrl+K` fuzzy command search across all editor actions.
+- [x] **Multi-file editing** — Tabs, split panes. *(Done — EditorToolbar tabs + 50/50 split view in EditorPage.)*
+- [x] **Project explorer** — File tree sidebar with create/rename/delete. *(Done — ProjectExplorer.tsx with context menu, drag-and-drop, keyboard navigation.)*
+- [x] **Command palette** — `Cmd/Ctrl+K` fuzzy command search across all editor actions. *(Done — CommandPalette.tsx with File/Panel/Navigation/Personality/Command categories.)*
+- [x] **Auto-Claude–style patterns** — Plan display, step-by-step approval, context badges. AI commit messages already exist in GitPanel. *(Done — AiPlanPanel.tsx with step approval, progress bar, pause/resume, context badges for files/memory/tools.)*
+- [x] **Keybindings editor** — UI for customizing keyboard shortcuts. *(Done — KeybindingsEditor.tsx modal with inline key capture, conflict detection, per-binding reset. useKeybindings hook with localStorage persistence.)*
 - [ ] **Inline AI completion** — Copilot-style ghost text suggestions from the active personality.
 - [ ] **Multi-file search & replace** — Cross-file search with preview and batch replace.
-- [ ] **Collaborative editing** — Yjs CRDT for real-time multi-user editing.
-- [ ] **Keybindings editor** — UI for customizing keyboard shortcuts.
+- [ ] **Collaborative editing** — Yjs CRDT for real-time multi-user editing. *(yjs is a dependency but not yet wired.)*
 - [ ] **Responsive / mobile layout** — Adaptive layout for smaller screens.
 - [ ] **Training integration** — Export/annotation hooks from editor to training pipeline.
 - [ ] **Plugin / extension system** — Third-party editor extensions.
@@ -213,4 +213,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-05. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-05 (Phase 144 keybindings + auto-claude). See [Changelog](../../CHANGELOG.md) for full history.*

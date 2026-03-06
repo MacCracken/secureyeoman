@@ -4,6 +4,20 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.7] — 2026-03-05
+
+### Phase 144 — IDE Experience: Keybindings Editor & Auto-Claude Patterns
+
+- **Keybindings Editor** (`dashboard/components/editor/KeybindingsEditor.tsx`): Modal UI for viewing and rebinding all editor keyboard shortcuts. Category-grouped display (File, Editor, Panel, Terminal, Navigation). Inline key capture — press any combination to rebind. Conflict detection warns when a shortcut is already assigned. Per-binding reset and "Reset All" bulk restore. Accessible via toolbar keyboard icon and Command Palette ("Keyboard Shortcuts").
+- **`useKeybindings` hook** (`dashboard/hooks/useKeybindings.ts`): 12 configurable keybindings with localStorage persistence. `parseShortcut()`, `matchesShortcut()`, `eventToShortcut()` utilities. `findConflict()` duplicate detection. `setBinding()`, `resetBinding()`, `resetAll()` state management. Editor keyboard handler now reads from user-configurable bindings instead of hardcoded shortcuts.
+- **AI Plan Panel** (`dashboard/components/editor/AiPlanPanel.tsx`): Auto-Claude–style plan display showing AI reasoning steps in real-time during chat tool execution. Step statuses: pending, running, completed, failed, skipped, awaiting_approval. Step-by-step approval UI — approve or skip individual steps. Collapsible nested step hierarchy. Progress bar with color coding (blue=executing, green=completed, red=failed). Pause/resume execution control. Token usage counter. Panel auto-populates from streaming tool calls and clears on completion.
+- **Context Badges** (`AiPlanPanel.tsx`): Inline badges on plan steps showing referenced files (blue, clickable → opens in editor tab), memory refs (purple), and tool names (amber). Clickable file badges open the referenced file in the editor.
+- **EditorToolbar** (`dashboard/components/editor/EditorToolbar.tsx`): Added keyboard shortcuts button (Keyboard icon). `onToggleKeybindings` prop.
+- **EditorPage integration**: AI plan panel renders above chat messages in the sidebar. Keybindings editor overlay alongside Command Palette. Keyboard handler refactored to use configurable bindings. Plan state auto-syncs with active tool calls — steps transition from running→completed as tools finish, plan status moves to completed when chat response finishes.
+- **50 tests** across 3 files: useKeybindings (19 — parse, match, event conversion, hook CRUD, conflict detection, persistence), KeybindingsEditor (9 — render, open/close, edit mode, cancel, reset), AiPlanPanel (22 — badges, steps, approval, progress, collapse, pause, file click, plan status colors).
+
+---
+
 ## [2026.3.6] — 2026-03-05
 
 ### License Tier Audit

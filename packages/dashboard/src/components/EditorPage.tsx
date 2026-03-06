@@ -59,6 +59,9 @@ import { CommandPalette } from './editor/CommandPalette';
 import { ProjectExplorer } from './editor/ProjectExplorer';
 import { GitPanel } from './editor/GitPanel';
 import { EditorToolbar } from './editor/EditorToolbar';
+import { KeybindingsEditor } from './editor/KeybindingsEditor';
+import { AiPlanPanel, type AiPlan, type PlanStep } from './editor/AiPlanPanel';
+import { useKeybindings, matchesShortcut } from '../hooks/useKeybindings';
 
 type MonacoEditor = Parameters<OnMount>[0];
 
@@ -951,31 +954,47 @@ function StandardEditorPage() {
     runCodeMutation.mutate({ command: `${writeCommand} && ${runCommand}`, cwd });
   }, [filename, language, cwd, runCodeMutation]);
 
-  // Keyboard shortcuts
+  // Keybindings editor
+  const [keybindingsOpen, setKeybindingsOpen] = useState(false);
+  const keybindings = useKeybindings();
+
+  // Keyboard shortcuts — driven by user-configurable keybindings
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 'Enter':
-            e.preventDefault();
-            handleRunCode();
-            break;
-          case 's':
-            e.preventDefault();
-            setTabs((prev) =>
-              prev.map((t) => (t.id === activeTabId ? { ...t, isDirty: false } : t))
-            );
-            break;
-          case 'n':
-            if (e.shiftKey) {
-              e.preventDefault();
-              createNewTab();
-            }
-            break;
+      // Keybinding-driven shortcuts
+      const actions: Record<string, () => void> = {
+        'run-code': handleRunCode,
+        'save-file': () => setTabs((prev) =>
+          prev.map((t) => (t.id === activeTabId ? { ...t, isDirty: false } : t))
+        ),
+        'new-file': createNewTab,
+        'toggle-explorer': () => {
+          const n = !showExplorer;
+          localStorage.setItem('editor:showExplorer', String(n));
+          setShowExplorer(n);
+        },
+        'toggle-chat': () => {
+          const n = !showChat;
+          localStorage.setItem('editor:showChat', String(n));
+          setShowChat(n);
+        },
+        'toggle-git': () => setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git'),
+        'toggle-settings': () => setSettingsOpen((v) => !v),
+        'toggle-split': () => setSplitView((v) => !v),
+        'close-tab': () => closeTab(activeTabId),
+      };
+
+      for (const binding of keybindings.bindings) {
+        if (binding.shortcut && actions[binding.id] && matchesShortcut(e, binding.shortcut)) {
+          e.preventDefault();
+          actions[binding.id]();
+          return;
         }
       }
+
       if (e.key === 'Escape') {
         setSettingsOpen(false);
+        setKeybindingsOpen(false);
       }
     };
 
@@ -983,7 +1002,7 @@ function StandardEditorPage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeTabId, handleRunCode, createNewTab]);
+  }, [activeTabId, handleRunCode, createNewTab, closeTab, keybindings.bindings, showExplorer, showChat, activeBottomTab]);
 
   // Command palette
   const commands = useMemo<CommandItem[]>(() => {
@@ -1063,6 +1082,14 @@ function StandardEditorPage() {
         keywords: ['preferences', 'config'],
       },
       {
+        id: 'keybindings',
+        label: 'Keyboard Shortcuts',
+        category: 'panel',
+        icon: <Settings className="w-3.5 h-3.5" />,
+        action: () => setKeybindingsOpen(true),
+        keywords: ['keybindings', 'hotkeys', 'shortcuts'],
+      },
+      {
         id: 'nav-dashboard',
         label: 'Go to Dashboard',
         category: 'navigation',
@@ -1116,6 +1143,104 @@ function StandardEditorPage() {
 
   // AI commit messages
   const aiCommit = useAiCommitMessage(cwd, effectivePersonalityId);
+
+  // AI Plan state — populated when the AI generates a plan during chat
+  const [aiPlan, setAiPlan] = useState<AiPlan | null>(null);
+
+  const handleApproveStep = useCallback((stepId: string) => {
+    setAiPlan((prev) => {
+      if (!prev) return prev;
+      const updateStep = (steps: PlanStep[]): PlanStep[] =>
+        steps.map((s) =>
+          s.id === stepId
+            ? { ...s, status: 'completed' as const }
+            : s.children
+              ? { ...s, children: updateStep(s.children) }
+              : s
+        );
+      return { ...prev, steps: updateStep(prev.steps) };
+    });
+  }, []);
+
+  const handleRejectStep = useCallback((stepId: string) => {
+    setAiPlan((prev) => {
+      if (!prev) return prev;
+      const updateStep = (steps: PlanStep[]): PlanStep[] =>
+        steps.map((s) =>
+          s.id === stepId
+            ? { ...s, status: 'skipped' as const }
+            : s.children
+              ? { ...s, children: updateStep(s.children) }
+              : s
+        );
+      return { ...prev, steps: updateStep(prev.steps) };
+    });
+  }, []);
+
+  const handlePlanPauseResume = useCallback(() => {
+    setAiPlan((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        status: prev.status === 'paused' ? 'executing' : 'paused',
+      };
+    });
+  }, []);
+
+  // Build plan from AI response tool calls
+  useEffect(() => {
+    if (!isPending || activeToolCalls.length === 0) return;
+
+    setAiPlan((prev) => {
+      const existingIds = new Set(prev?.steps.map((s) => s.id) ?? []);
+      const newSteps: PlanStep[] = [];
+      for (const tc of activeToolCalls) {
+        const stepId = `tool-${tc.toolName}`;
+        if (!existingIds.has(stepId)) {
+          newSteps.push({
+            id: stepId,
+            description: tc.isMcp ? `${tc.serverName}: ${tc.toolName}` : tc.label,
+            status: 'running',
+            toolName: tc.toolName,
+          });
+        }
+      }
+      if (newSteps.length === 0 && prev) return prev;
+      const steps = [...(prev?.steps ?? []), ...newSteps];
+      return {
+        id: prev?.id ?? `plan-${Date.now()}`,
+        title: prev?.title ?? 'AI Task Plan',
+        steps,
+        status: 'executing',
+        createdAt: prev?.createdAt ?? Date.now(),
+      };
+    });
+  }, [activeToolCalls, isPending]);
+
+  // Mark completed tool steps
+  useEffect(() => {
+    if (!aiPlan) return;
+    const activeNames = new Set(activeToolCalls.map((tc) => tc.toolName));
+    setAiPlan((prev) => {
+      if (!prev) return prev;
+      let changed = false;
+      const steps = prev.steps.map((s) => {
+        if (s.status === 'running' && s.toolName && !activeNames.has(s.toolName)) {
+          changed = true;
+          return { ...s, status: 'completed' as const };
+        }
+        return s;
+      });
+      return changed ? { ...prev, steps } : prev;
+    });
+  }, [activeToolCalls, aiPlan]);
+
+  // Clear plan when chat completes
+  useEffect(() => {
+    if (!isPending && aiPlan?.status === 'executing') {
+      setAiPlan((prev) => prev ? { ...prev, status: 'completed' } : prev);
+    }
+  }, [isPending]);
 
   const handleInsertAtCursor = useCallback((msg: ChatMessage) => {
     const editor = editorRef.current;
@@ -1256,6 +1381,7 @@ function StandardEditorPage() {
               onToggleGit={() => {
                 setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git');
               }}
+              onToggleKeybindings={() => setKeybindingsOpen(true)}
             />
 
             {/* Settings Panel */}
@@ -1450,6 +1576,32 @@ function StandardEditorPage() {
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
+
+              {/* AI Plan Panel */}
+              {aiPlan && (
+                <div className="px-3 pt-2">
+                  <AiPlanPanel
+                    plan={aiPlan}
+                    onApproveStep={handleApproveStep}
+                    onRejectStep={handleRejectStep}
+                    onPauseResume={handlePlanPauseResume}
+                    onFileClick={(path) => {
+                      // Open file in a new tab
+                      const name = path.split('/').pop() ?? path;
+                      const existing = tabs.find((t) => t.path === path);
+                      if (existing) {
+                        setActiveTabId(existing.id);
+                      } else {
+                        const newTab = createEditorTab(name, cwd);
+                        newTab.path = path;
+                        newTab.language = detectLanguage(name);
+                        setTabs((prev) => [...prev, newTab]);
+                        setActiveTabId(newTab.id);
+                      }
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Chat messages */}
               <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
@@ -1846,6 +1998,12 @@ function StandardEditorPage() {
         setSelectedIndex={palette.setSelectedIndex}
         execute={palette.execute}
         close={palette.close}
+      />
+
+      {/* Keybindings Editor overlay */}
+      <KeybindingsEditor
+        open={keybindingsOpen}
+        onClose={() => setKeybindingsOpen(false)}
       />
     </div>
   );

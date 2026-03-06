@@ -13,6 +13,7 @@ import {
   Plus,
   GitBranch,
   Search,
+  Keyboard,
 } from 'lucide-react';
 import { ModelWidget } from '../ModelWidget';
 import { useRef, useState } from 'react';
@@ -59,6 +60,7 @@ interface EditorToolbarProps {
   onCommandPalette: () => void;
   onToggleGit?: () => void;
   showGitButton?: boolean;
+  onToggleKeybindings?: () => void;
 }
 
 export function EditorToolbar({
@@ -93,6 +95,7 @@ export function EditorToolbar({
   onCommandPalette,
   onToggleGit,
   showGitButton,
+  onToggleKeybindings,
 }: EditorToolbarProps) {
   const [modelOpen, setModelOpen] = useState(false);
   const modelBtnRef = useRef<HTMLButtonElement>(null);
@@ -192,6 +195,16 @@ export function EditorToolbar({
       >
         <Settings className="w-3.5 h-3.5" />
       </button>
+      {onToggleKeybindings && (
+        <button
+          onClick={onToggleKeybindings}
+          className="btn-ghost p-1.5 rounded"
+          title="Keyboard shortcuts"
+          data-testid="keybindings-btn"
+        >
+          <Keyboard className="w-3.5 h-3.5" />
+        </button>
+      )}
       <button
         onClick={onToggleSplitView}
         className={`btn-ghost p-1.5 rounded ${splitView ? 'bg-primary/10 text-primary' : ''}`}
