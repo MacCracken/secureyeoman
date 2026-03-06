@@ -12,12 +12,15 @@ import type { DocumentFormat, DocumentVisibility } from './types.js';
 import type { ProvenanceScores } from '@secureyeoman/shared';
 import { ProvenanceScoresSchema } from '@secureyeoman/shared';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { requiresLicense } from '../licensing/license-guard.js';
+import type { SecureYeoman } from '../secureyeoman.js';
 
 export interface DocumentRoutesOptions {
   documentManager: DocumentManager;
   brainManager: BrainManager;
   brainStorage?: BrainStorage;
   broadcast?: (channel: string, payload: unknown) => void;
+  secureYeoman?: SecureYeoman;
 }
 
 const FORMAT_FROM_EXT: Record<string, DocumentFormat> = {
@@ -36,11 +39,18 @@ function detectFormat(filename: string): DocumentFormat {
 }
 
 export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoutesOptions): void {
-  const { documentManager, broadcast } = opts;
+  const { documentManager, broadcast, secureYeoman } = opts;
+
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('advanced_brain', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── POST /api/v1/brain/documents/upload ──────────────────────────────────
   app.post(
     '/api/v1/brain/documents/upload',
+    featureGuardOpts,
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         // Collect all multipart parts

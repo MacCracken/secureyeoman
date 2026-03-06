@@ -5,16 +5,24 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { IacManager } from './iac-manager.js';
 import { sendError } from '../utils/errors.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface IacRouteOptions {
   iacManager: IacManager;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerIacRoutes(
   app: FastifyInstance,
   opts: IacRouteOptions
 ): void {
-  const { iacManager } = opts;
+  const { iacManager, secureYeoman } = opts;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── List templates ─────────────────────────────────────────────────
 
@@ -72,6 +80,7 @@ export function registerIacRoutes(
 
   app.post(
     '/api/v1/iac/sync',
+    featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
         const result = await iacManager.syncFromGit();

@@ -6,12 +6,20 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { BrowserSessionStorage } from './storage.js';
 import { sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import { requiresLicense } from '../licensing/license-guard.js';
+import type { SecureYeoman } from '../secureyeoman.js';
 
 export function registerBrowserRoutes(
   app: FastifyInstance,
-  opts: { browserSessionStorage: BrowserSessionStorage; browserConfig: Record<string, unknown> }
+  opts: { browserSessionStorage: BrowserSessionStorage; browserConfig: Record<string, unknown>; secureYeoman?: SecureYeoman }
 ): void {
-  const { browserSessionStorage, browserConfig } = opts;
+  const { browserSessionStorage, browserConfig, secureYeoman } = opts;
+
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('computer_use', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // List sessions
   app.get('/api/v1/browser/sessions', async (request) => {
@@ -39,6 +47,7 @@ export function registerBrowserRoutes(
   // Close session
   app.post(
     '/api/v1/browser/sessions/:id/close',
+    featureGuardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
       const { id } = request.params;
       const session = await browserSessionStorage.closeSession(id);

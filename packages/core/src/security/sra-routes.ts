@@ -9,6 +9,8 @@ import type { FastifyInstance } from 'fastify';
 import type { SraManager } from './sra-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 import {
   SraBlueprintCreateSchema,
   SraBlueprintUpdateSchema,
@@ -18,14 +20,20 @@ import {
 
 export interface SraRoutesOptions {
   sraManager: SraManager;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerSraRoutes(app: FastifyInstance, opts: SraRoutesOptions): void {
-  const { sraManager: mgr } = opts;
+  const { sraManager: mgr, secureYeoman } = opts;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── POST /api/v1/security/sra/blueprints ─────────────────────────────────
 
-  app.post('/api/v1/security/sra/blueprints', async (req, reply) => {
+  app.post('/api/v1/security/sra/blueprints', featureGuardOpts, async (req, reply) => {
     try {
       const parsed = SraBlueprintCreateSchema.safeParse(req.body);
       if (!parsed.success) {

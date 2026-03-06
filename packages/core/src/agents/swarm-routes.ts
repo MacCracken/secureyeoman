@@ -7,12 +7,19 @@ import type { SwarmManager } from './swarm-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { SwarmTemplateExport } from '@secureyeoman/shared';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export function registerSwarmRoutes(
   app: FastifyInstance,
-  opts: { swarmManager: SwarmManager }
+  opts: { swarmManager: SwarmManager; secureYeoman?: SecureYeoman }
 ): void {
-  const { swarmManager } = opts;
+  const { swarmManager, secureYeoman } = opts;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('swarm_orchestration', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── Template routes ──────────────────────────────────────────
 
@@ -48,6 +55,7 @@ export function registerSwarmRoutes(
 
   app.post(
     '/api/v1/agents/swarms/templates/import',
+    featureGuardOpts,
     async (
       request: FastifyRequest<{ Body: { template: SwarmTemplateExport } }>,
       reply: FastifyReply

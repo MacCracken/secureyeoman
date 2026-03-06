@@ -19,20 +19,29 @@ import {
   formatSyslog,
 } from './audit-export.js';
 import { sendError } from '../utils/errors.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface AuditExportRoutesOptions {
   auditStorage: SQLiteAuditStorage;
   hostname: string;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerAuditExportRoutes(
   app: FastifyInstance,
   opts: AuditExportRoutesOptions
 ): void {
-  const { auditStorage, hostname } = opts;
+  const { auditStorage, hostname, secureYeoman } = opts;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('audit_export', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   app.post(
     '/api/v1/audit/export',
+    featureGuardOpts,
     async (
       request: FastifyRequest<{
         Body: {

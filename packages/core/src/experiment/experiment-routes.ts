@@ -6,16 +6,25 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ExperimentManager } from './manager.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import { requiresLicense } from '../licensing/license-guard.js';
+import type { SecureYeoman } from '../secureyeoman.js';
 
 export interface ExperimentRoutesOptions {
   experimentManager: ExperimentManager;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerExperimentRoutes(
   app: FastifyInstance,
   opts: ExperimentRoutesOptions
 ): void {
-  const { experimentManager } = opts;
+  const { experimentManager, secureYeoman } = opts;
+
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('prompt_engineering', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   app.get(
     '/api/v1/experiments',
@@ -27,6 +36,7 @@ export function registerExperimentRoutes(
 
   app.post(
     '/api/v1/experiments',
+    featureGuardOpts,
     async (
       request: FastifyRequest<{
         Body: { name: string; description?: string; variants: unknown[] };

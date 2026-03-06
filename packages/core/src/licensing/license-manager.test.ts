@@ -1,6 +1,15 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { LicenseManager, type LicenseClaims, type LicensedFeature } from './license-manager.js';
+import {
+  LicenseManager,
+  type LicenseClaims,
+  type LicensedFeature,
+  PRO_FEATURES,
+  ENTERPRISE_FEATURES,
+  ALL_LICENSED_FEATURES,
+  FEATURE_TIER_MAP,
+  getFeatureTier,
+} from './license-manager.js';
 
 // ── Test keypair (generated fresh per test run — never committed) ─────────────
 
@@ -694,5 +703,105 @@ describe('LicenseManager — expiry boundary conditions', () => {
     expect(lm.isValid()).toBe(true);
     expect(lm.isFeatureAllowed('adaptive_learning')).toBe(true);
     expect(lm.toStatusObject().expiresAt).toBeNull();
+  });
+});
+
+// ── Tier Audit — feature classification ──────────────────────────────────────
+
+describe('Tier Audit — feature classification', () => {
+  it('PRO_FEATURES contains exactly 6 pro features', () => {
+    expect(PRO_FEATURES).toHaveLength(6);
+    expect(PRO_FEATURES).toContain('advanced_brain');
+    expect(PRO_FEATURES).toContain('provider_management');
+    expect(PRO_FEATURES).toContain('computer_use');
+    expect(PRO_FEATURES).toContain('custom_integrations');
+    expect(PRO_FEATURES).toContain('prompt_engineering');
+    expect(PRO_FEATURES).toContain('batch_inference');
+  });
+
+  it('ENTERPRISE_FEATURES contains exactly 12 enterprise features', () => {
+    expect(ENTERPRISE_FEATURES).toHaveLength(12);
+    expect(ENTERPRISE_FEATURES).toContain('adaptive_learning');
+    expect(ENTERPRISE_FEATURES).toContain('sso_saml');
+    expect(ENTERPRISE_FEATURES).toContain('multi_tenancy');
+    expect(ENTERPRISE_FEATURES).toContain('cicd_integration');
+    expect(ENTERPRISE_FEATURES).toContain('advanced_observability');
+    expect(ENTERPRISE_FEATURES).toContain('a2a_federation');
+    expect(ENTERPRISE_FEATURES).toContain('swarm_orchestration');
+    expect(ENTERPRISE_FEATURES).toContain('confidential_computing');
+    expect(ENTERPRISE_FEATURES).toContain('audit_export');
+    expect(ENTERPRISE_FEATURES).toContain('dlp_security');
+    expect(ENTERPRISE_FEATURES).toContain('compliance_governance');
+    expect(ENTERPRISE_FEATURES).toContain('supply_chain');
+  });
+
+  it('ALL_LICENSED_FEATURES is the union of PRO + ENTERPRISE', () => {
+    expect(ALL_LICENSED_FEATURES).toHaveLength(PRO_FEATURES.length + ENTERPRISE_FEATURES.length);
+    for (const f of PRO_FEATURES) expect(ALL_LICENSED_FEATURES).toContain(f);
+    for (const f of ENTERPRISE_FEATURES) expect(ALL_LICENSED_FEATURES).toContain(f);
+  });
+
+  it('no duplicates between PRO_FEATURES and ENTERPRISE_FEATURES', () => {
+    const overlap = PRO_FEATURES.filter((f) => ENTERPRISE_FEATURES.includes(f));
+    expect(overlap).toHaveLength(0);
+  });
+
+  it('FEATURE_TIER_MAP maps all pro features to pro', () => {
+    for (const f of PRO_FEATURES) {
+      expect(FEATURE_TIER_MAP[f]).toBe('pro');
+    }
+  });
+
+  it('FEATURE_TIER_MAP maps all enterprise features to enterprise', () => {
+    for (const f of ENTERPRISE_FEATURES) {
+      expect(FEATURE_TIER_MAP[f]).toBe('enterprise');
+    }
+  });
+
+  it('FEATURE_TIER_MAP has entries for all licensed features', () => {
+    for (const f of ALL_LICENSED_FEATURES) {
+      expect(FEATURE_TIER_MAP).toHaveProperty(f);
+    }
+  });
+
+  it('getFeatureTier() returns correct tier for each feature', () => {
+    expect(getFeatureTier('advanced_brain')).toBe('pro');
+    expect(getFeatureTier('adaptive_learning')).toBe('enterprise');
+    expect(getFeatureTier('a2a_federation')).toBe('enterprise');
+    expect(getFeatureTier('computer_use')).toBe('pro');
+  });
+});
+
+describe('Tier Audit — pro key with pro features', () => {
+  it('pro key grants pro features but not enterprise features', () => {
+    const key = buildKey(
+      validClaims({
+        tier: 'pro',
+        features: [...PRO_FEATURES],
+      })
+    );
+    const lm = withTestKeyAndEnforcement(key, true);
+    expect(lm.getTier()).toBe('pro');
+    for (const f of PRO_FEATURES) {
+      expect(lm.isFeatureAllowed(f)).toBe(true);
+    }
+    // Enterprise features not in key → denied
+    expect(lm.isFeatureAllowed('adaptive_learning')).toBe(false);
+    expect(lm.isFeatureAllowed('sso_saml')).toBe(false);
+    expect(lm.isFeatureAllowed('a2a_federation')).toBe(false);
+  });
+
+  it('enterprise key grants all features', () => {
+    const key = buildKey(
+      validClaims({
+        tier: 'enterprise',
+        features: [...ALL_LICENSED_FEATURES],
+      })
+    );
+    const lm = withTestKeyAndEnforcement(key, true);
+    expect(lm.getTier()).toBe('enterprise');
+    for (const f of ALL_LICENSED_FEATURES) {
+      expect(lm.isFeatureAllowed(f)).toBe(true);
+    }
   });
 });

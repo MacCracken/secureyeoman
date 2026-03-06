@@ -6,12 +6,19 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { CouncilManager } from './council-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export function registerCouncilRoutes(
   app: FastifyInstance,
-  opts: { councilManager: CouncilManager }
+  opts: { councilManager: CouncilManager; secureYeoman?: SecureYeoman }
 ): void {
-  const { councilManager } = opts;
+  const { councilManager, secureYeoman } = opts;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('swarm_orchestration', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── Catalog routes ─────────────────────────────────────────────
 
@@ -21,6 +28,7 @@ export function registerCouncilRoutes(
 
   app.post(
     '/api/v1/agents/councils/catalog/:name/install',
+    featureGuardOpts,
     async (request: FastifyRequest<{ Params: { name: string } }>, reply: FastifyReply) => {
       try {
         const template = await councilManager.installFromCatalog(request.params.name);

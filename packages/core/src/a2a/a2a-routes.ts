@@ -7,9 +7,16 @@ import type { A2AManager } from './manager.js';
 import type { TrustLevel } from './types.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
-export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AManager }): void {
-  const { a2aManager } = opts;
+export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AManager; secureYeoman?: SecureYeoman }): void {
+  const { a2aManager, secureYeoman } = opts;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('a2a_federation', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── Peer routes ────────────────────────────────────────────
 
@@ -28,6 +35,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
 
   app.post(
     '/api/v1/a2a/peers',
+    featureGuardOpts,
     async (
       request: FastifyRequest<{
         Body: {

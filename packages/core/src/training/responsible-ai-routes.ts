@@ -8,6 +8,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 import type {
   CohortAnalysisCreate,
   FairnessReportCreate,
@@ -26,6 +27,10 @@ export function registerResponsibleAiRoutes(
 ): void {
   const { secureYeoman } = opts;
 
+  const adaptiveLearningGuardOpts = {
+    preHandler: [requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager())],
+  } as Record<string, unknown>;
+
   function getManager() {
     const mgr = secureYeoman.getResponsibleAiManager();
     if (!mgr) throw new Error('Responsible AI module not initialized');
@@ -34,7 +39,7 @@ export function registerResponsibleAiRoutes(
 
   // ── Cohort Error Analysis ─────────────────────────────────────
 
-  app.post('/api/v1/responsible-ai/cohort-analysis', async (request, reply) => {
+  app.post('/api/v1/responsible-ai/cohort-analysis', adaptiveLearningGuardOpts, async (request, reply) => {
     try {
       const body = request.body as CohortAnalysisCreate;
       const result = await getManager().runCohortAnalysis(body);

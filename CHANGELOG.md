@@ -6,6 +6,15 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.6] — 2026-03-05
 
+### License Tier Audit
+
+- **`LicensedFeature` expanded** (`licensing/license-manager.ts`): 5 → 18 licensed features across two tiers. **Pro** (6): `advanced_brain`, `provider_management`, `computer_use`, `custom_integrations`, `prompt_engineering`, `batch_inference`. **Enterprise** (12): `adaptive_learning`, `sso_saml`, `multi_tenancy`, `cicd_integration`, `advanced_observability`, `a2a_federation`, `swarm_orchestration`, `confidential_computing`, `audit_export`, `dlp_security`, `compliance_governance`, `supply_chain`.
+- **`FEATURE_TIER_MAP`** (`licensing/license-manager.ts`): Maps each feature to its minimum required tier (`'pro'` or `'enterprise'`). `PRO_FEATURES` and `ENTERPRISE_FEATURES` arrays. `getFeatureTier()` helper.
+- **25 route files guarded**: `requiresLicense` preHandler added to write endpoints across all gatable features: a2a-routes, swarm-routes, council-routes, tee-routes, audit-export-routes, dlp-routes, federation-routes, policy-as-code-routes, iac-routes, sra-routes, guardrail-pipeline-routes, risk-assessment-routes, department-risk-routes, athi-routes, document-routes, cognitive-routes, provider-account-routes, browser-routes, integration-routes, routing-rules-routes, prompt-versioning-routes, experiment-routes, batch-inference-routes, continual-learning-routes, responsible-ai-routes.
+- **`server.ts`**: `secureYeoman` threaded to 15+ route registrations that previously lacked it (swarm, council, risk-assessment, department-risk, provider-account, athi, sra, tee, dlp, a2a, browser, routing-rules, audit-export, federation, integration, experiment, document).
+- **Dashboard `FeatureLock`**: 18 feature labels. Tier-aware upgrade prompts — community users see "Upgrade to Pro" for pro features, "Upgrade to Enterprise" for enterprise features. `isProFeature()` helper in `useLicense.tsx`.
+- **10 new tests** in `license-manager.test.ts`: tier audit feature classification, pro/enterprise array integrity, `FEATURE_TIER_MAP` completeness, `getFeatureTier()`, pro key grants only pro features, enterprise key grants all.
+
 ### Infrastructure-as-Code Management (ADR 024)
 
 - **Shared types** (`shared/types/iac.ts`): `IacTemplate`, `IacDeployment`, `IacVariable`, `IacValidationResult` schemas. 8 IaC tools (terraform, cloudformation, pulumi, helm, bicep, ansible, kubernetes, cdk). 6 cloud providers. 12 categories. `IacConfigSchema` with git repo settings, file limits, deployment retention.

@@ -18,25 +18,93 @@ import { createPublicKey, verify } from 'node:crypto';
 export type LicenseTier = 'community' | 'pro' | 'enterprise';
 
 export type LicensedFeature =
+  // ── Pro-tier features ───────────────────────────────────────────────────────
+  | 'advanced_brain'
+  | 'provider_management'
+  | 'computer_use'
+  | 'custom_integrations'
+  | 'prompt_engineering'
+  | 'batch_inference'
+  // ── Enterprise-tier features ────────────────────────────────────────────────
   | 'adaptive_learning'
   | 'sso_saml'
   | 'multi_tenancy'
   | 'cicd_integration'
-  | 'advanced_observability';
+  | 'advanced_observability'
+  | 'a2a_federation'
+  | 'swarm_orchestration'
+  | 'confidential_computing'
+  | 'audit_export'
+  | 'dlp_security'
+  | 'compliance_governance'
+  | 'supply_chain';
 
 /** @deprecated Use LicensedFeature instead. */
 export type EnterpriseFeature = LicensedFeature;
 
-export const ALL_LICENSED_FEATURES: LicensedFeature[] = [
+export const PRO_FEATURES: LicensedFeature[] = [
+  'advanced_brain',
+  'provider_management',
+  'computer_use',
+  'custom_integrations',
+  'prompt_engineering',
+  'batch_inference',
+];
+
+export const ENTERPRISE_FEATURES: LicensedFeature[] = [
   'adaptive_learning',
   'sso_saml',
   'multi_tenancy',
   'cicd_integration',
   'advanced_observability',
+  'a2a_federation',
+  'swarm_orchestration',
+  'confidential_computing',
+  'audit_export',
+  'dlp_security',
+  'compliance_governance',
+  'supply_chain',
 ];
+
+export const ALL_LICENSED_FEATURES: LicensedFeature[] = [
+  ...PRO_FEATURES,
+  ...ENTERPRISE_FEATURES,
+];
+
+/**
+ * Maps each licensed feature to its minimum required tier.
+ * Pro keys include PRO_FEATURES; enterprise keys include ALL.
+ */
+export const FEATURE_TIER_MAP: Record<LicensedFeature, LicenseTier> = {
+  // Pro
+  advanced_brain: 'pro',
+  provider_management: 'pro',
+  computer_use: 'pro',
+  custom_integrations: 'pro',
+  prompt_engineering: 'pro',
+  batch_inference: 'pro',
+  // Enterprise
+  adaptive_learning: 'enterprise',
+  sso_saml: 'enterprise',
+  multi_tenancy: 'enterprise',
+  cicd_integration: 'enterprise',
+  advanced_observability: 'enterprise',
+  a2a_federation: 'enterprise',
+  swarm_orchestration: 'enterprise',
+  confidential_computing: 'enterprise',
+  audit_export: 'enterprise',
+  dlp_security: 'enterprise',
+  compliance_governance: 'enterprise',
+  supply_chain: 'enterprise',
+};
 
 /** @deprecated Use ALL_LICENSED_FEATURES instead. */
 export const ALL_ENTERPRISE_FEATURES = ALL_LICENSED_FEATURES;
+
+/** Returns the minimum tier required for a given feature. */
+export function getFeatureTier(feature: LicensedFeature): LicenseTier {
+  return FEATURE_TIER_MAP[feature];
+}
 
 export interface LicenseClaims {
   tier: LicenseTier;

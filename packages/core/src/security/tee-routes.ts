@@ -8,13 +8,21 @@
 import type { FastifyInstance } from 'fastify';
 import { TeeAttestationVerifier } from './tee-attestation.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface TeeRouteDeps {
   teeVerifier: TeeAttestationVerifier;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerTeeRoutes(app: FastifyInstance, deps: TeeRouteDeps): void {
-  const { teeVerifier } = deps;
+  const { teeVerifier, secureYeoman } = deps;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('confidential_computing', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── GET /api/v1/security/tee/providers ──────────────────────────────────
 
@@ -47,7 +55,7 @@ export function registerTeeRoutes(app: FastifyInstance, deps: TeeRouteDeps): voi
 
   // ── POST /api/v1/security/tee/verify/:provider ─────────────────────────
 
-  app.post('/api/v1/security/tee/verify/:provider', async (req, reply) => {
+  app.post('/api/v1/security/tee/verify/:provider', featureGuardOpts, async (req, reply) => {
     const { provider } = req.params as { provider: string };
     try {
       const { allowed, result } = await teeVerifier.verifyAsync(provider);

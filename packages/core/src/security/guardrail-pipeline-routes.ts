@@ -7,16 +7,24 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { GuardrailPipeline } from './guardrail-pipeline.js';
 import { sendError } from '../utils/errors.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface GuardrailPipelineRouteOptions {
   pipeline: GuardrailPipeline;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerGuardrailPipelineRoutes(
   app: FastifyInstance,
   opts: GuardrailPipelineRouteOptions
 ): void {
-  const { pipeline } = opts;
+  const { pipeline, secureYeoman } = opts;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── List registered filters ────────────────────────────────────────
 
@@ -71,6 +79,7 @@ export function registerGuardrailPipelineRoutes(
 
   app.post(
     '/api/v1/security/guardrail-pipeline/metrics/reset',
+    featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       pipeline.metrics.reset();
       return reply.send({ ok: true });

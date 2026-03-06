@@ -1,17 +1,32 @@
 import { useContext, type ReactNode } from 'react';
 import { Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { LicenseContext, type LicensedFeature } from '../hooks/useLicense';
+import { LicenseContext, type LicensedFeature, isProFeature } from '../hooks/useLicense';
 
 /** @deprecated Use LicensedFeature */
 export type { LicensedFeature as EnterpriseFeature } from '../hooks/useLicense';
 
 const FEATURE_LABELS: Record<string, string> = {
+  // Pro
+  advanced_brain: 'Advanced Brain & Knowledge Base',
+  provider_management: 'Provider Account Management',
+  computer_use: 'Computer Use & Browser Automation',
+  custom_integrations: 'Custom Integrations',
+  prompt_engineering: 'Prompt Engineering & A/B Testing',
+  batch_inference: 'Batch Inference',
+  // Enterprise
   adaptive_learning: 'Adaptive Learning Pipeline',
   sso_saml: 'SSO / SAML',
   multi_tenancy: 'Multi-Tenancy',
   cicd_integration: 'CI/CD Integration',
   advanced_observability: 'Advanced Observability',
+  a2a_federation: 'A2A Federation',
+  swarm_orchestration: 'Swarm Orchestration',
+  confidential_computing: 'Confidential Computing',
+  audit_export: 'Audit Chain Export',
+  dlp_security: 'Data Loss Prevention',
+  compliance_governance: 'Compliance & Governance',
+  supply_chain: 'Supply Chain Security',
 };
 
 interface FeatureLockProps {
@@ -28,7 +43,8 @@ export function FeatureLock({ feature, children, className = '' }: FeatureLockPr
     return <>{children}</>;
   }
 
-  const tierLabel = ctx.license?.tier === 'community' ? 'Pro' : 'Enterprise';
+  const requiredTier = isProFeature(feature) ? 'Pro' : 'Enterprise';
+  const tierLabel = ctx.license?.tier === 'enterprise' ? 'Enterprise' : requiredTier;
 
   return (
     <div className={`relative ${className}`}>
@@ -40,7 +56,7 @@ export function FeatureLock({ feature, children, className = '' }: FeatureLockPr
             {FEATURE_LABELS[feature] ?? feature}
           </p>
           <p className="text-xs text-muted-foreground">
-            This feature requires a {tierLabel} license
+            This feature requires {tierLabel === 'Enterprise' ? 'an' : 'a'} {tierLabel} license
           </p>
           <Link
             to="/settings#license"

@@ -11,24 +11,34 @@ import type { PromptTemplateEngine, TemplateVariable } from './prompt-template.j
 import type { PromptLinter } from './prompt-linter.js';
 import type { PromptChangelog, ChangeCategory } from './prompt-changelog.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { requiresLicense } from '../licensing/license-guard.js';
+import type { SecureYeoman } from '../secureyeoman.js';
 
 export interface PromptVersioningRoutesOptions {
   abTestManager?: PromptAbTestManager;
   templateEngine?: PromptTemplateEngine;
   linter?: PromptLinter;
   changelog?: PromptChangelog;
+  secureYeoman?: SecureYeoman;
 }
 
 export async function registerPromptVersioningRoutes(
   app: FastifyInstance,
   opts: PromptVersioningRoutesOptions
 ): Promise<void> {
-  const { abTestManager, templateEngine, linter, changelog } = opts;
+  const { abTestManager, templateEngine, linter, changelog, secureYeoman } = opts;
+
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('prompt_engineering', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── A/B Testing ──────────────────────────────────────────
 
   app.post(
     '/api/v1/soul/prompt-tests',
+    featureGuardOpts,
     async (request: FastifyRequest<{ Body: PromptAbTestCreate }>, reply: FastifyReply) => {
       if (!abTestManager) return sendError(reply, 503, 'Prompt A/B testing not available');
 

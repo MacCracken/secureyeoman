@@ -3,21 +3,50 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchLicenseStatus, type LicenseStatus } from '../api/client';
 
 const ALL_LICENSED_FEATURES = [
+  // Pro
+  'advanced_brain',
+  'provider_management',
+  'computer_use',
+  'custom_integrations',
+  'prompt_engineering',
+  'batch_inference',
+  // Enterprise
   'adaptive_learning',
   'sso_saml',
   'multi_tenancy',
   'cicd_integration',
   'advanced_observability',
+  'a2a_federation',
+  'swarm_orchestration',
+  'confidential_computing',
+  'audit_export',
+  'dlp_security',
+  'compliance_governance',
+  'supply_chain',
 ] as const;
 
 export type LicensedFeature = (typeof ALL_LICENSED_FEATURES)[number];
 
+const PRO_FEATURES: readonly LicensedFeature[] = [
+  'advanced_brain',
+  'provider_management',
+  'computer_use',
+  'custom_integrations',
+  'prompt_engineering',
+  'batch_inference',
+];
+
 /** @deprecated Use LicensedFeature */
 export type EnterpriseFeature = LicensedFeature;
 
-export { ALL_LICENSED_FEATURES };
+export { ALL_LICENSED_FEATURES, PRO_FEATURES };
 /** @deprecated Use ALL_LICENSED_FEATURES */
 export const ALL_ENTERPRISE_FEATURES = ALL_LICENSED_FEATURES;
+
+/** Returns true if the feature is a pro-tier feature (not enterprise). */
+export function isProFeature(feature: LicensedFeature): boolean {
+  return (PRO_FEATURES as readonly string[]).includes(feature);
+}
 
 interface LicenseContextValue {
   license: LicenseStatus | null;

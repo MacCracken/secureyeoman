@@ -22,6 +22,8 @@ import { toErrorMessage, sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import { sanitizeForLogging } from '../utils/crypto.js';
 import { assertPublicUrl } from '../utils/ssrf-guard.js';
+import { requiresLicense } from '../licensing/license-guard.js';
+import type { SecureYeoman } from '../secureyeoman.js';
 
 function maskIntegration<T extends { config?: Record<string, unknown> }>(integration: T): T {
   if (!integration.config) return integration;
@@ -36,6 +38,7 @@ export interface IntegrationRoutesOptions {
   integrationStorage: IntegrationStorage;
   webhookTransformStorage?: WebhookTransformStorage;
   outboundWebhookStorage?: OutboundWebhookStorage;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerIntegrationRoutes(
@@ -47,7 +50,14 @@ export function registerIntegrationRoutes(
     integrationStorage,
     webhookTransformStorage,
     outboundWebhookStorage,
+    secureYeoman,
   } = opts;
+
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('custom_integrations', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
   const webhookTransformer = webhookTransformStorage
     ? new WebhookTransformer(webhookTransformStorage)
     : null;
@@ -97,6 +107,7 @@ export function registerIntegrationRoutes(
 
   app.post(
     '/api/v1/integrations',
+    featureGuardOpts,
     async (request: FastifyRequest<{ Body: IntegrationCreate }>, reply: FastifyReply) => {
       try {
         const integration = await integrationManager.createIntegration(request.body);

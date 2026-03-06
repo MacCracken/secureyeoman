@@ -14,6 +14,8 @@ import type { RetentionStore } from './retention-store.js';
 import type { RetentionManager } from './retention-manager.js';
 import type { ClassificationLevel } from './types.js';
 import { sendError, toErrorMessage } from '../../utils/errors.js';
+import type { SecureYeoman } from '../../secureyeoman.js';
+import { requiresLicense } from '../../licensing/license-guard.js';
 
 export interface DlpRouteDeps {
   classificationEngine: ClassificationEngine;
@@ -25,6 +27,7 @@ export interface DlpRouteDeps {
   egressMonitor?: EgressMonitor;
   retentionStore?: RetentionStore;
   retentionManager?: RetentionManager;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): void {
@@ -38,12 +41,19 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
     egressMonitor,
     retentionStore,
     retentionManager,
+    secureYeoman,
   } = deps;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('dlp_security', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── POST /api/v1/security/dlp/classify ──────────────────────────────────
 
   app.post<{ Body: { text: string; contentId?: string; contentType?: string } }>(
     '/api/v1/security/dlp/classify',
+    featureGuardOpts,
     async (req, reply) => {
       try {
         const { text, contentId, contentType } = req.body;

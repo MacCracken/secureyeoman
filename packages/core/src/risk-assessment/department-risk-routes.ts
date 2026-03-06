@@ -12,6 +12,8 @@ import {
 } from './department-risk-report-generator.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 import {
   DepartmentCreateSchema,
   DepartmentUpdateSchema,
@@ -21,18 +23,24 @@ import {
 
 export interface DepartmentRiskRoutesOptions {
   departmentRiskManager: DepartmentRiskManager;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerDepartmentRiskRoutes(
   app: FastifyInstance,
   opts: DepartmentRiskRoutesOptions
 ): void {
-  const { departmentRiskManager: mgr } = opts;
+  const { departmentRiskManager: mgr, secureYeoman } = opts;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── Department CRUD ──────────────────────────────────────────
 
   // POST /api/v1/risk/departments
-  app.post('/api/v1/risk/departments', async (req, reply) => {
+  app.post('/api/v1/risk/departments', featureGuardOpts, async (req, reply) => {
     try {
       const parsed = DepartmentCreateSchema.safeParse(req.body);
       if (!parsed.success) {

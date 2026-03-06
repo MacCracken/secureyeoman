@@ -102,9 +102,9 @@ describe('FeatureLock', () => {
         </FeatureLock>
       </Wrapper>
     );
-    expect(await screen.findByText('This feature requires a Pro license')).toBeInTheDocument();
+    expect(await screen.findByText('This feature requires an Enterprise license')).toBeInTheDocument();
     expect(screen.getByText('Adaptive Learning Pipeline')).toBeInTheDocument();
-    expect(screen.getByText('Upgrade to Pro')).toBeInTheDocument();
+    expect(screen.getByText('Upgrade to Enterprise')).toBeInTheDocument();
   });
 
   it('displays correct feature label for each feature', async () => {
@@ -150,8 +150,8 @@ describe('FeatureLock', () => {
         </FeatureLock>
       </Wrapper>
     );
-    // The children are still in the DOM but dimmed
-    await screen.findByText('This feature requires a Pro license');
+    // The children are still in the DOM but dimmed (sso_saml is enterprise tier)
+    await screen.findByText('This feature requires an Enterprise license');
     expect(screen.getByTestId('child')).toBeInTheDocument();
     // The parent wrapper should have opacity class
     const dimmedDiv = container.querySelector('.opacity-40');
@@ -178,7 +178,7 @@ describe('FeatureLock', () => {
         </FeatureLock>
       </Wrapper>
     );
-    await screen.findByText('This feature requires a Pro license');
+    await screen.findByText('This feature requires an Enterprise license');
     const wrapper = container.querySelector('.my-custom-class');
     expect(wrapper).not.toBeNull();
   });

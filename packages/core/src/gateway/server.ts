@@ -622,6 +622,7 @@ export class GatewayServer {
           broadcast: (channel, payload) => {
             this.broadcast(channel, payload);
           },
+          secureYeoman: this.secureYeoman,
         });
       } catch {
         // Document manager may not be available — skip routes
@@ -667,6 +668,7 @@ export class GatewayServer {
         integrationStorage,
         webhookTransformStorage,
         outboundWebhookStorage,
+        secureYeoman: this.secureYeoman,
       });
     } catch {
       // Integration manager may not be available — skip routes
@@ -769,7 +771,7 @@ export class GatewayServer {
       const experimentManager = this.secureYeoman.getExperimentManager();
       if (experimentManager) {
         const { registerExperimentRoutes } = await import('../experiment/experiment-routes.js');
-        registerExperimentRoutes(this.app, { experimentManager });
+        registerExperimentRoutes(this.app, { experimentManager, secureYeoman: this.secureYeoman });
       }
     });
 
@@ -822,7 +824,7 @@ export class GatewayServer {
       const swarmManager = this.secureYeoman.getSwarmManager();
       if (swarmManager) {
         const { registerSwarmRoutes } = await import('../agents/swarm-routes.js');
-        registerSwarmRoutes(this.app, { swarmManager });
+        registerSwarmRoutes(this.app, { swarmManager, secureYeoman: this.secureYeoman });
       }
     });
 
@@ -850,7 +852,7 @@ export class GatewayServer {
       const councilManager = this.secureYeoman.getCouncilManager();
       if (councilManager) {
         const { registerCouncilRoutes } = await import('../agents/council-routes.js');
-        registerCouncilRoutes(this.app, { councilManager });
+        registerCouncilRoutes(this.app, { councilManager, secureYeoman: this.secureYeoman });
       }
     });
 
@@ -957,7 +959,7 @@ export class GatewayServer {
       if (riskAssessmentManager) {
         const { registerRiskAssessmentRoutes } =
           await import('../risk-assessment/risk-assessment-routes.js');
-        registerRiskAssessmentRoutes(this.app, { riskAssessmentManager });
+        registerRiskAssessmentRoutes(this.app, { riskAssessmentManager, secureYeoman: this.secureYeoman });
       }
     });
 
@@ -967,7 +969,7 @@ export class GatewayServer {
       if (departmentRiskManager) {
         const { registerDepartmentRiskRoutes } =
           await import('../risk-assessment/department-risk-routes.js');
-        registerDepartmentRiskRoutes(this.app, { departmentRiskManager });
+        registerDepartmentRiskRoutes(this.app, { departmentRiskManager, secureYeoman: this.secureYeoman });
       }
     });
 
@@ -976,7 +978,7 @@ export class GatewayServer {
       const providerAccountManager = this.secureYeoman.getProviderAccountManager();
       if (providerAccountManager) {
         const { registerProviderAccountRoutes } = await import('../ai/provider-account-routes.js');
-        registerProviderAccountRoutes(this.app, { providerAccountManager });
+        registerProviderAccountRoutes(this.app, { providerAccountManager, secureYeoman: this.secureYeoman });
       }
     });
 
@@ -985,7 +987,7 @@ export class GatewayServer {
       const athiManager = this.secureYeoman.getAthiManager();
       if (athiManager) {
         const { registerAthiRoutes } = await import('../security/athi-routes.js');
-        registerAthiRoutes(this.app, { athiManager });
+        registerAthiRoutes(this.app, { athiManager, secureYeoman: this.secureYeoman });
       }
     });
 
@@ -994,7 +996,7 @@ export class GatewayServer {
       const sraManager = this.secureYeoman.getSraManager();
       if (sraManager) {
         const { registerSraRoutes } = await import('../security/sra-routes.js');
-        registerSraRoutes(this.app, { sraManager });
+        registerSraRoutes(this.app, { sraManager, secureYeoman: this.secureYeoman });
       }
     });
 
@@ -1017,7 +1019,7 @@ export class GatewayServer {
         },
         this.getLogger()
       );
-      registerTeeRoutes(this.app, { teeVerifier });
+      registerTeeRoutes(this.app, { teeVerifier, secureYeoman: this.secureYeoman });
       this.getLogger().info('TEE confidential computing routes registered');
     } catch (err) {
       this.getLogger().debug('TEE routes skipped', {
@@ -1045,6 +1047,7 @@ export class GatewayServer {
           watermarkStore: watermarkStore ?? undefined,
           retentionStore: retentionStore ?? undefined,
           retentionManager: retentionManager ?? undefined,
+          secureYeoman: this.secureYeoman,
         });
         this.getLogger().info('DLP routes registered');
       }
@@ -1084,7 +1087,7 @@ export class GatewayServer {
     try {
       const a2aManager = this.secureYeoman.getA2AManager();
       if (a2aManager) {
-        registerA2ARoutes(this.app, { a2aManager });
+        registerA2ARoutes(this.app, { a2aManager, secureYeoman: this.secureYeoman });
         this.getLogger().info('A2A routes registered');
       }
     } catch (err) {
@@ -1187,6 +1190,7 @@ export class GatewayServer {
         registerBrowserRoutes(this.app, {
           browserSessionStorage,
           browserConfig: { exposeBrowser: true },
+          secureYeoman: this.secureYeoman,
         });
         this.getLogger().info('Browser automation routes registered');
       }
@@ -1224,6 +1228,7 @@ export class GatewayServer {
         registerRoutingRulesRoutes(this.app, {
           storage: routingRulesStorage,
           manager: routingRulesManager,
+          secureYeoman: this.secureYeoman,
         });
         this.getLogger().info('Routing rules routes registered');
       }
@@ -1240,6 +1245,7 @@ export class GatewayServer {
         registerAuditExportRoutes(this.app, {
           auditStorage,
           hostname: osHostname(),
+          secureYeoman: this.secureYeoman,
         });
         this.getLogger().info('Audit export routes registered');
       }
@@ -1316,6 +1322,7 @@ export class GatewayServer {
           brainManager,
           marketplaceManager: marketplaceManager as any,
           soulManager: soulManager as any,
+          secureYeoman: this.secureYeoman,
         });
         this.getLogger().info('Federation routes registered');
       }

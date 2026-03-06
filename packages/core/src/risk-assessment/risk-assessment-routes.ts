@@ -8,9 +8,12 @@ import type { FastifyInstance } from 'fastify';
 import type { RiskAssessmentManager } from './risk-assessment-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface RiskAssessmentRoutesOptions {
   riskAssessmentManager: RiskAssessmentManager;
+  secureYeoman?: SecureYeoman;
 }
 
 const VALID_FORMATS = ['json', 'html', 'markdown', 'csv'] as const;
@@ -27,11 +30,16 @@ export function registerRiskAssessmentRoutes(
   app: FastifyInstance,
   opts: RiskAssessmentRoutesOptions
 ): void {
-  const { riskAssessmentManager: mgr } = opts;
+  const { riskAssessmentManager: mgr, secureYeoman } = opts;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── POST /api/v1/risk/assessments ─────────────────────────────────────────
 
-  app.post('/api/v1/risk/assessments', async (req, reply) => {
+  app.post('/api/v1/risk/assessments', featureGuardOpts, async (req, reply) => {
     const body = req.body as {
       name?: string;
       assessmentTypes?: string[];

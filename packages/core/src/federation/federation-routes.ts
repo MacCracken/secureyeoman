@@ -12,6 +12,8 @@ import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { FederationManager } from './federation-manager.js';
 import type { FederationStorage } from './federation-storage.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface FederationRoutesOptions {
   federationManager: FederationManager;
@@ -27,6 +29,7 @@ export interface FederationRoutesOptions {
     getPersonality(id: string): Promise<unknown>;
     createPersonality(data: unknown): Promise<unknown>;
   };
+  secureYeoman?: SecureYeoman;
 }
 
 /**
@@ -58,7 +61,12 @@ export function registerFederationRoutes(
   app: FastifyInstance,
   opts: FederationRoutesOptions
 ): void {
-  const { federationManager, federationStorage, brainManager, marketplaceManager } = opts;
+  const { federationManager, federationStorage, brainManager, marketplaceManager, secureYeoman } = opts;
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('a2a_federation', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── Authenticated outward routes ──────────────────────────────────────────
 
@@ -76,6 +84,7 @@ export function registerFederationRoutes(
   app.post(
     '/api/v1/federation/peers',
     {
+      ...featureGuardOpts,
       schema: {
         body: {
           type: 'object',

@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface ContinualLearningRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -16,10 +17,15 @@ export function registerContinualLearningRoutes(
 ): void {
   const { secureYeoman } = opts;
 
+  const adaptiveLearningGuardOpts = {
+    preHandler: [requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager())],
+  } as Record<string, unknown>;
+
   // ── Dataset Refresh ──────────────────────────────────────────────────
 
   app.post(
     '/api/v1/training/dataset-refresh/jobs',
+    adaptiveLearningGuardOpts,
     async (
       request: FastifyRequest<{
         Body: {

@@ -17,17 +17,26 @@ import type { RoutingRulesManager } from './routing-rules-manager.js';
 import type { RoutingRuleCreate, RoutingRuleUpdate, RoutingRuleDryRun } from '@secureyeoman/shared';
 import { sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import { requiresLicense } from '../licensing/license-guard.js';
+import type { SecureYeoman } from '../secureyeoman.js';
 
 export interface RoutingRulesRoutesOptions {
   storage: RoutingRulesStorage;
   manager: RoutingRulesManager;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerRoutingRulesRoutes(
   app: FastifyInstance,
   opts: RoutingRulesRoutesOptions
 ): void {
-  const { storage, manager } = opts;
+  const { storage, manager, secureYeoman } = opts;
+
+  const featureGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('custom_integrations', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── List ──────────────────────────────────────────────────────────────────
 
@@ -63,6 +72,7 @@ export function registerRoutingRulesRoutes(
 
   app.post(
     '/api/v1/routing-rules',
+    featureGuardOpts,
     async (request: FastifyRequest<{ Body: RoutingRuleCreate }>, reply: FastifyReply) => {
       const data = request.body;
       if (!data?.actionType) {
