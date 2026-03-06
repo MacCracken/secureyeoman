@@ -18,24 +18,20 @@ function makeMgr(): PretrainManager {
 function makeCorpusLoader(): CorpusLoader {
   return {
     listSources: vi.fn().mockReturnValue([]),
-    validateSource: vi
-      .fn()
-      .mockReturnValue({
-        valid: true,
-        errors: [],
-        tokenEstimate: 1000,
-        documentCount: 5,
-        sizeBytes: 4000,
-      }),
-    getStats: vi
-      .fn()
-      .mockReturnValue({
-        totalSources: 0,
-        totalTokens: 0,
-        totalDocuments: 0,
-        totalSizeBytes: 0,
-        formatBreakdown: {},
-      }),
+    validateSource: vi.fn().mockReturnValue({
+      valid: true,
+      errors: [],
+      tokenEstimate: 1000,
+      documentCount: 5,
+      sizeBytes: 4000,
+    }),
+    getStats: vi.fn().mockReturnValue({
+      totalSources: 0,
+      totalTokens: 0,
+      totalDocuments: 0,
+      totalSizeBytes: 0,
+      formatBreakdown: {},
+    }),
   } as unknown as CorpusLoader;
 }
 

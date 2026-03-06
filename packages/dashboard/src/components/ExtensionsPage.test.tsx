@@ -145,7 +145,10 @@ describe('ExtensionsPage', () => {
     mockRegisterExtensionWebhook.mockResolvedValue(undefined as never);
     mockRemoveExtensionWebhook.mockResolvedValue({ success: true } as never);
     mockFetchHookExecutionLog.mockResolvedValue({ entries: [] });
-    mockTestHookPoint.mockResolvedValue({ result: { vetoed: false, errors: [] }, durationMs: 5 } as never);
+    mockTestHookPoint.mockResolvedValue({
+      result: { vetoed: false, errors: [] },
+      durationMs: 5,
+    } as never);
   });
 
   // ── Rendering ──────────────────────────────────────────────
@@ -557,7 +560,10 @@ describe('ExtensionsPage', () => {
   });
 
   it('shows vetoed result from test trigger', async () => {
-    mockTestHookPoint.mockResolvedValue({ result: { vetoed: true, errors: [] }, durationMs: 12 } as never);
+    mockTestHookPoint.mockResolvedValue({
+      result: { vetoed: true, errors: [] },
+      durationMs: 12,
+    } as never);
     const user = userEvent.setup();
     renderComponent();
     await screen.findByText('Discover');
@@ -568,7 +574,10 @@ describe('ExtensionsPage', () => {
   });
 
   it('shows error result from test trigger', async () => {
-    mockTestHookPoint.mockResolvedValue({ result: { vetoed: false, errors: ['handler failed'] }, durationMs: 3 } as never);
+    mockTestHookPoint.mockResolvedValue({
+      result: { vetoed: false, errors: ['handler failed'] },
+      durationMs: 3,
+    } as never);
     const user = userEvent.setup();
     renderComponent();
     await screen.findByText('Discover');

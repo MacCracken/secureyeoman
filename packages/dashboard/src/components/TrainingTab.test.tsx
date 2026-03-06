@@ -136,7 +136,7 @@ function renderWithProviders(ui: React.ReactElement) {
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>{ui}</MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -188,8 +188,15 @@ describe('TrainingTab', () => {
     it('renders all sub-tab buttons', () => {
       renderWithProviders(<TrainingTab />);
       const tabLabels = [
-        'Export', 'Distillation', 'Fine-tune', 'Live',
-        'Computer Use', 'Evaluation', 'Preferences', 'Experiments', 'Deployment',
+        'Export',
+        'Distillation',
+        'Fine-tune',
+        'Live',
+        'Computer Use',
+        'Evaluation',
+        'Preferences',
+        'Experiments',
+        'Deployment',
       ];
       for (const label of tabLabels) {
         expect(screen.getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
@@ -205,14 +212,20 @@ describe('TrainingTab', () => {
       const user = userEvent.setup();
       renderWithProviders(<TrainingTab />);
       await user.click(screen.getByRole('tab', { name: /Distillation/ }));
-      expect(screen.getByRole('tab', { name: /Distillation/ })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('tab', { name: /Distillation/ })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      );
     });
 
     it('switches to Fine-tune tab on click', async () => {
       const user = userEvent.setup();
       renderWithProviders(<TrainingTab />);
       await user.click(screen.getByRole('tab', { name: /Fine-tune/ }));
-      expect(screen.getByRole('tab', { name: /Fine-tune/ })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('tab', { name: /Fine-tune/ })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      );
     });
 
     it('switches to Live tab on click', async () => {
@@ -226,7 +239,10 @@ describe('TrainingTab', () => {
       const user = userEvent.setup();
       renderWithProviders(<TrainingTab />);
       await user.click(screen.getByRole('tab', { name: /Computer Use/ }));
-      expect(screen.getByRole('tab', { name: /Computer Use/ })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('tab', { name: /Computer Use/ })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      );
     });
 
     it('loads lazy Evaluation tab', async () => {
@@ -290,7 +306,9 @@ describe('TrainingTab', () => {
     it('shows error state when stats fail', async () => {
       mockFetchTrainingStats.mockRejectedValue(new Error('Network error'));
       renderWithProviders(<TrainingTab />);
-      expect(await screen.findByText('Could not load stats', {}, { timeout: 3000 })).toBeInTheDocument();
+      expect(
+        await screen.findByText('Could not load stats', {}, { timeout: 3000 })
+      ).toBeInTheDocument();
     });
 
     it('renders all three format radio options', async () => {
@@ -343,7 +361,10 @@ describe('TrainingTab', () => {
       const btn = await screen.findByRole('button', { name: /download dataset/i });
       await user.click(btn);
       await waitFor(() => {
-        expect(mockExportTrainingDataset).toHaveBeenCalledWith({ format: 'sharegpt', limit: 10000 });
+        expect(mockExportTrainingDataset).toHaveBeenCalledWith({
+          format: 'sharegpt',
+          limit: 10000,
+        });
       });
       clickSpy.mockRestore();
     });
@@ -384,7 +405,9 @@ describe('TrainingTab', () => {
       const btn = screen.getByRole('button', { name: /download dataset/i });
       await user.click(btn);
       await waitFor(() => {
-        expect(mockExportTrainingDataset).toHaveBeenCalledWith(expect.objectContaining({ limit: 500 }));
+        expect(mockExportTrainingDataset).toHaveBeenCalledWith(
+          expect.objectContaining({ limit: 500 })
+        );
       });
       clickSpy.mockRestore();
     });
@@ -497,13 +520,17 @@ describe('TrainingTab', () => {
     });
 
     it('shows Retry button for failed jobs', async () => {
-      mockFetchDistillationJobs.mockResolvedValue([{ ...MOCK_PENDING_JOB, status: 'failed' as const }]);
+      mockFetchDistillationJobs.mockResolvedValue([
+        { ...MOCK_PENDING_JOB, status: 'failed' as const },
+      ]);
       await goToDistillation();
       expect(await screen.findByTitle('Retry job')).toBeInTheDocument();
     });
 
     it('does not show Run button for running or complete jobs', async () => {
-      mockFetchDistillationJobs.mockResolvedValue([{ ...MOCK_PENDING_JOB, status: 'running' as const }]);
+      mockFetchDistillationJobs.mockResolvedValue([
+        { ...MOCK_PENDING_JOB, status: 'running' as const },
+      ]);
       await goToDistillation();
       await screen.findByText('Test distillation');
       expect(screen.queryByTitle('Run job')).not.toBeInTheDocument();
@@ -605,7 +632,13 @@ describe('TrainingTab', () => {
     it('calls deleteDistillationJob on delete click', async () => {
       mockDeleteDistillationJob.mockResolvedValue(undefined);
       mockFetchDistillationJobs.mockResolvedValue([
-        { ...MOCK_PENDING_JOB, id: 'dj-del', name: 'To Delete', status: 'complete' as const, samplesGenerated: 100 },
+        {
+          ...MOCK_PENDING_JOB,
+          id: 'dj-del',
+          name: 'To Delete',
+          status: 'complete' as const,
+          samplesGenerated: 100,
+        },
       ]);
       const user = await goToDistillation();
       await waitFor(() => {
@@ -709,7 +742,12 @@ describe('TrainingTab', () => {
 
     it('renders finetune job card with details', async () => {
       mockFetchFinetuneJobs.mockResolvedValue([
-        { ...MOCK_FT_JOB, status: 'complete' as const, adapterPath: '/models/my-adapter', completedAt: Date.now() },
+        {
+          ...MOCK_FT_JOB,
+          status: 'complete' as const,
+          adapterPath: '/models/my-adapter',
+          completedAt: Date.now(),
+        },
       ]);
       await goToFinetune();
       await waitFor(() => {
@@ -722,7 +760,13 @@ describe('TrainingTab', () => {
 
     it('shows Register button for complete jobs', async () => {
       mockFetchFinetuneJobs.mockResolvedValue([
-        { ...MOCK_FT_JOB, id: 'ft-reg', status: 'complete' as const, adapterPath: '/models/adapter-x', completedAt: Date.now() },
+        {
+          ...MOCK_FT_JOB,
+          id: 'ft-reg',
+          status: 'complete' as const,
+          adapterPath: '/models/adapter-x',
+          completedAt: Date.now(),
+        },
       ]);
       mockRegisterFinetuneAdapter.mockResolvedValue({ success: true, adapterName: 'adapter-x' });
       const user = await goToFinetune();
@@ -749,7 +793,9 @@ describe('TrainingTab', () => {
 
     it('deletes a finetune job', async () => {
       mockDeleteFinetuneJob.mockResolvedValue(undefined);
-      mockFetchFinetuneJobs.mockResolvedValue([{ ...MOCK_FT_JOB, id: 'ft-del', name: 'Delete Me' }]);
+      mockFetchFinetuneJobs.mockResolvedValue([
+        { ...MOCK_FT_JOB, id: 'ft-del', name: 'Delete Me' },
+      ]);
       const user = await goToFinetune();
       await waitFor(() => {
         expect(screen.getByText('Delete Me')).toBeInTheDocument();
@@ -760,7 +806,12 @@ describe('TrainingTab', () => {
 
     it('shows adapter path for complete job', async () => {
       mockFetchFinetuneJobs.mockResolvedValue([
-        { ...MOCK_FT_JOB, status: 'complete' as const, adapterPath: '/models/path-adapter', completedAt: Date.now() },
+        {
+          ...MOCK_FT_JOB,
+          status: 'complete' as const,
+          adapterPath: '/models/path-adapter',
+          completedAt: Date.now(),
+        },
       ]);
       await goToFinetune();
       await waitFor(() => {
@@ -779,9 +830,7 @@ describe('TrainingTab', () => {
     });
 
     it('shows Logs button for running jobs', async () => {
-      mockFetchFinetuneJobs.mockResolvedValue([
-        { ...MOCK_FT_JOB, status: 'running' as const },
-      ]);
+      mockFetchFinetuneJobs.mockResolvedValue([{ ...MOCK_FT_JOB, status: 'running' as const }]);
       await goToFinetune();
       await waitFor(() => {
         expect(screen.getByText('Logs')).toBeInTheDocument();
@@ -843,7 +892,12 @@ describe('TrainingTab', () => {
     it('renders quality scores when present', async () => {
       mockFetchQualityScores.mockResolvedValue({
         conversations: [
-          { conversationId: 'conv-123456', qualityScore: 0.85, signalSource: 'jaccard', scoredAt: '2026-03-06' },
+          {
+            conversationId: 'conv-123456',
+            qualityScore: 0.85,
+            signalSource: 'jaccard',
+            scoredAt: '2026-03-06',
+          },
         ],
       });
       await goToLive();
@@ -859,7 +913,9 @@ describe('TrainingTab', () => {
         expect(screen.getAllByText(/Score now/).length).toBeGreaterThan(0);
       });
       // The button contains both an icon and "Score now" text
-      const scoreButtons = screen.getAllByRole('button').filter((b) => b.textContent?.includes('Score now'));
+      const scoreButtons = screen
+        .getAllByRole('button')
+        .filter((b) => b.textContent?.includes('Score now'));
       await user.click(scoreButtons[0]);
       expect(mockTriggerQualityScoring).toHaveBeenCalled();
       await waitFor(() => {
@@ -1088,7 +1144,7 @@ describe('TrainingTab', () => {
             semantic_similarity: 0.7,
             char_similarity: 0.6,
           }}
-        />,
+        />
       );
       expect(screen.getByText('Evaluation Metrics')).toBeInTheDocument();
       expect(screen.getByTestId('radar-chart')).toBeInTheDocument();
@@ -1100,9 +1156,7 @@ describe('TrainingTab', () => {
     });
 
     it('renders responsive container', () => {
-      renderWithProviders(
-        <EvalResultRadarCard metrics={{ tool_name_accuracy: 1.0 }} />,
-      );
+      renderWithProviders(<EvalResultRadarCard metrics={{ tool_name_accuracy: 1.0 }} />);
       expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
     });
   });

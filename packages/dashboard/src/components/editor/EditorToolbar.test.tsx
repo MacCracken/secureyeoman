@@ -169,9 +169,12 @@ describe('EditorToolbar', () => {
     const user = userEvent.setup();
     const { props } = renderToolbar();
     // There are two close buttons (one per tab)
-    const closeBtns = screen.getAllByRole('button').filter(
-      (btn) => btn.querySelector('.w-3.h-3') !== null || btn.classList.contains('hover:text-destructive')
-    );
+    const closeBtns = screen
+      .getAllByRole('button')
+      .filter(
+        (btn) =>
+          btn.querySelector('.w-3.h-3') !== null || btn.classList.contains('hover:text-destructive')
+      );
     // Click the close button next to app.tsx (second tab)
     const appTab = screen.getByText('app.tsx').closest('div')!;
     const closeBtn = appTab.querySelector('button.hover\\:text-destructive') as HTMLElement;

@@ -141,9 +141,7 @@ describe('PersonalityVersionHistory', () => {
     mockFetchVersions.mockResolvedValue({ versions: [], total: 0 });
     render(<PersonalityVersionHistory personalityId="pers-1" />);
     await waitFor(() => {
-      expect(
-        screen.getByText(/No versions recorded yet/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/No versions recorded yet/)).toBeInTheDocument();
     });
   });
 
@@ -273,7 +271,8 @@ describe('PersonalityVersionHistory', () => {
       expect(screen.getByText('Versions (1)')).toBeInTheDocument();
     });
     const tags = screen.getAllByText('2026.3.2');
-    const versionRow = tags.find((el) => el.closest('div[class*="cursor-pointer"]'))!
+    const versionRow = tags
+      .find((el) => el.closest('div[class*="cursor-pointer"]'))!
       .closest('div[class*="cursor-pointer"]')!;
     // Click to open preview
     fireEvent.click(versionRow);

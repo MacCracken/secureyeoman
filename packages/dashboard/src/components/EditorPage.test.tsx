@@ -228,9 +228,7 @@ vi.mock('./editor/EditorToolbar', () => ({
           />
           <button
             data-testid={`tab-rename-${t.id}`}
-            onClick={() =>
-              (onTabRenameStart as (id: string, name: string) => void)(t.id, t.name)
-            }
+            onClick={() => (onTabRenameStart as (id: string, name: string) => void)(t.id, t.name)}
           />
         </div>
       ))}
@@ -494,9 +492,7 @@ describe('EditorPage', () => {
 
   it('shows empty chat state with "Chat with the assistant about your code" message', async () => {
     renderComponent();
-    expect(
-      await screen.findByText(/Chat with.*assistant.*about your code/)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Chat with.*assistant.*about your code/)).toBeInTheDocument();
   });
 
   it('shows "No personalities configured" when personalities list is empty and loaded', async () => {

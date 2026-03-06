@@ -38,7 +38,7 @@ function renderComponent() {
   return render(
     <QueryClientProvider client={qc}>
       <HeartbeatsView />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -78,7 +78,14 @@ describe('HeartbeatsView', () => {
   });
 
   it('shows empty state when no tasks configured', async () => {
-    mockFetchHeartbeatStatus.mockResolvedValue({ tasks: [], running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null });
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      tasks: [],
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
+    });
     renderComponent();
     await waitFor(() => {
       expect(screen.getByText(/No heartbeat monitors configured/)).toBeInTheDocument();
@@ -88,7 +95,11 @@ describe('HeartbeatsView', () => {
   it('renders a list of heartbeat tasks', async () => {
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK, MOCK_TASK_DISABLED],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
     await waitFor(() => {
@@ -100,7 +111,11 @@ describe('HeartbeatsView', () => {
   it('displays the correct monitor count', async () => {
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK, MOCK_TASK_DISABLED],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
     await waitFor(() => {
@@ -111,7 +126,11 @@ describe('HeartbeatsView', () => {
   it('shows task type badge', async () => {
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
     await waitFor(() => {
@@ -122,7 +141,11 @@ describe('HeartbeatsView', () => {
   it('shows interval for tasks with intervalMs', async () => {
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
     await waitFor(() => {
@@ -133,7 +156,11 @@ describe('HeartbeatsView', () => {
   it('shows last run time for tasks that have run', async () => {
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
     await waitFor(() => {
@@ -144,7 +171,11 @@ describe('HeartbeatsView', () => {
   it('shows "never run" for tasks without lastRunAt', async () => {
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK_DISABLED],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
     await waitFor(() => {
@@ -156,7 +187,11 @@ describe('HeartbeatsView', () => {
     const user = userEvent.setup();
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK, MOCK_TASK_DISABLED],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
 
@@ -174,7 +209,11 @@ describe('HeartbeatsView', () => {
     const user = userEvent.setup();
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK, MOCK_TASK_DISABLED],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
 
@@ -191,7 +230,11 @@ describe('HeartbeatsView', () => {
     const user = userEvent.setup();
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
 
@@ -207,7 +250,11 @@ describe('HeartbeatsView', () => {
     const user = userEvent.setup();
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK, MOCK_TASK_DISABLED],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
 
@@ -228,7 +275,11 @@ describe('HeartbeatsView', () => {
   it('shows date preset buttons', async () => {
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
 
@@ -244,7 +295,11 @@ describe('HeartbeatsView', () => {
     const user = userEvent.setup();
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     mockFetchHeartbeatLog.mockResolvedValue({
       entries: [
@@ -289,7 +344,11 @@ describe('HeartbeatsView', () => {
     };
     mockFetchHeartbeatStatus.mockResolvedValue({
       tasks: [MOCK_TASK, taskB],
-      running: true, enabled: true, intervalMs: 60000, beatCount: 0, lastBeat: null,
+      running: true,
+      enabled: true,
+      intervalMs: 60000,
+      beatCount: 0,
+      lastBeat: null,
     });
     renderComponent();
 

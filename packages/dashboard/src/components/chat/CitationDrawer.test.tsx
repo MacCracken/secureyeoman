@@ -26,9 +26,7 @@ beforeEach(() => {
 
 describe('CitationDrawer', () => {
   it('returns null when source is null', () => {
-    const { container } = render(
-      <CitationDrawer source={null} messageId="m1" onClose={vi.fn()} />
-    );
+    const { container } = render(<CitationDrawer source={null} messageId="m1" onClose={vi.fn()} />);
     expect(container.innerHTML).toBe('');
   });
 
@@ -49,32 +47,68 @@ describe('CitationDrawer', () => {
   });
 
   it('renders document_chunk type', () => {
-    render(<CitationDrawer source={{ ...baseSrc, type: 'document_chunk' } as any} messageId="m1" onClose={vi.fn()} />);
+    render(
+      <CitationDrawer
+        source={{ ...baseSrc, type: 'document_chunk' } as any}
+        messageId="m1"
+        onClose={vi.fn()}
+      />
+    );
     expect(screen.getByText('document chunk')).toBeInTheDocument();
   });
 
   it('renders memory type', () => {
-    render(<CitationDrawer source={{ ...baseSrc, type: 'memory' } as any} messageId="m1" onClose={vi.fn()} />);
+    render(
+      <CitationDrawer
+        source={{ ...baseSrc, type: 'memory' } as any}
+        messageId="m1"
+        onClose={vi.fn()}
+      />
+    );
     expect(screen.getByText('memory')).toBeInTheDocument();
   });
 
   it('shows document title when present', () => {
-    render(<CitationDrawer source={{ ...baseSrc, documentTitle: 'My Doc' } as any} messageId="m1" onClose={vi.fn()} />);
+    render(
+      <CitationDrawer
+        source={{ ...baseSrc, documentTitle: 'My Doc' } as any}
+        messageId="m1"
+        onClose={vi.fn()}
+      />
+    );
     expect(screen.getByText('My Doc')).toBeInTheDocument();
   });
 
   it('shows URL when present', () => {
-    render(<CitationDrawer source={{ ...baseSrc, url: 'https://example.com' } as any} messageId="m1" onClose={vi.fn()} />);
+    render(
+      <CitationDrawer
+        source={{ ...baseSrc, url: 'https://example.com' } as any}
+        messageId="m1"
+        onClose={vi.fn()}
+      />
+    );
     expect(screen.getByText('https://example.com')).toBeInTheDocument();
   });
 
   it('shows confidence when present', () => {
-    render(<CitationDrawer source={{ ...baseSrc, confidence: 0.95 } as any} messageId="m1" onClose={vi.fn()} />);
+    render(
+      <CitationDrawer
+        source={{ ...baseSrc, confidence: 0.95 } as any}
+        messageId="m1"
+        onClose={vi.fn()}
+      />
+    );
     expect(screen.getByText('95%')).toBeInTheDocument();
   });
 
   it('shows trust score when present', () => {
-    render(<CitationDrawer source={{ ...baseSrc, trustScore: 0.8 } as any} messageId="m1" onClose={vi.fn()} />);
+    render(
+      <CitationDrawer
+        source={{ ...baseSrc, trustScore: 0.8 } as any}
+        messageId="m1"
+        onClose={vi.fn()}
+      />
+    );
     expect(screen.getByText('80%')).toBeInTheDocument();
   });
 

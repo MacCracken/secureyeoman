@@ -1319,9 +1319,7 @@ describe('RolesSettings', () => {
       ],
     });
     mockFetchAssignments.mockResolvedValue({
-      assignments: [
-        { userId: 'alice', roleId: 'role_admin' },
-      ],
+      assignments: [{ userId: 'alice', roleId: 'role_admin' }],
     });
     vi.mocked(api.createRole).mockResolvedValue({ id: 'new-role' } as never);
     vi.mocked(api.deleteRole).mockResolvedValue({ message: 'deleted' } as never);
@@ -1413,9 +1411,7 @@ describe('RolesSettings', () => {
 
   it('shows "No permissions" for roles with empty permissions', async () => {
     mockFetchRoles.mockResolvedValue({
-      roles: [
-        { id: 'r-empty', name: 'Empty', permissions: [], isBuiltin: false, inheritFrom: [] },
-      ],
+      roles: [{ id: 'r-empty', name: 'Empty', permissions: [], isBuiltin: false, inheritFrom: [] }],
     });
     renderRolesSettings();
     expect(await screen.findByText('No permissions')).toBeInTheDocument();

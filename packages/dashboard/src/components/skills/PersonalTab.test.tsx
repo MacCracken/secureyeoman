@@ -32,7 +32,9 @@ vi.stubGlobal(
     onerror: (() => void) | null = null;
     onmessage: (() => void) | null = null;
     send() {}
-    close() { this.onclose?.(); }
+    close() {
+      this.onclose?.();
+    }
   }
 );
 

@@ -119,7 +119,14 @@ describe('NotificationBell', () => {
   it('does not show badge when all notifications are read', () => {
     const stored = [
       { id: '1', type: 'security', title: 'A', message: 'B', timestamp: Date.now(), read: true },
-      { id: '2', type: 'task_completed', title: 'C', message: 'D', timestamp: Date.now(), read: true },
+      {
+        id: '2',
+        type: 'task_completed',
+        title: 'C',
+        message: 'D',
+        timestamp: Date.now(),
+        read: true,
+      },
     ];
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
     renderBell();
@@ -131,8 +138,12 @@ describe('NotificationBell', () => {
 
   it('shows 9+ when unread count exceeds 9', () => {
     const stored = Array.from({ length: 12 }, (_, i) => ({
-      id: `n${i}`, type: 'security', title: `Alert ${i}`, message: `msg ${i}`,
-      timestamp: Date.now() - i * 1000, read: false,
+      id: `n${i}`,
+      type: 'security',
+      title: `Alert ${i}`,
+      message: `msg ${i}`,
+      timestamp: Date.now() - i * 1000,
+      read: false,
     }));
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
     renderBell();
@@ -141,8 +152,12 @@ describe('NotificationBell', () => {
 
   it('shows exact count when unread is between 1-9', () => {
     const stored = Array.from({ length: 5 }, (_, i) => ({
-      id: `n${i}`, type: 'security', title: `A${i}`, message: `M${i}`,
-      timestamp: Date.now() - i * 1000, read: false,
+      id: `n${i}`,
+      type: 'security',
+      title: `A${i}`,
+      message: `M${i}`,
+      timestamp: Date.now() - i * 1000,
+      read: false,
     }));
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
     renderBell();
@@ -153,7 +168,14 @@ describe('NotificationBell', () => {
 
   it('marks a local notification as read when clicked', async () => {
     const stored = [
-      { id: 'r1', type: 'security', title: 'Unread Alert', message: 'Details', timestamp: Date.now(), read: false },
+      {
+        id: 'r1',
+        type: 'security',
+        title: 'Unread Alert',
+        message: 'Details',
+        timestamp: Date.now(),
+        read: false,
+      },
     ];
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
 
@@ -174,7 +196,14 @@ describe('NotificationBell', () => {
   it('marks all notifications as read', async () => {
     const stored = [
       { id: '1', type: 'security', title: 'A', message: 'B', timestamp: Date.now(), read: false },
-      { id: '2', type: 'task_completed', title: 'C', message: 'D', timestamp: Date.now() - 1000, read: false },
+      {
+        id: '2',
+        type: 'task_completed',
+        title: 'C',
+        message: 'D',
+        timestamp: Date.now() - 1000,
+        read: false,
+      },
     ];
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
 
@@ -208,8 +237,22 @@ describe('NotificationBell', () => {
 
   it('removes a notification when dismiss is clicked', async () => {
     const stored = [
-      { id: 'd1', type: 'security', title: 'Dismiss Me', message: 'Gone', timestamp: Date.now(), read: false },
-      { id: 'd2', type: 'task_completed', title: 'Keep Me', message: 'Stay', timestamp: Date.now() - 1000, read: false },
+      {
+        id: 'd1',
+        type: 'security',
+        title: 'Dismiss Me',
+        message: 'Gone',
+        timestamp: Date.now(),
+        read: false,
+      },
+      {
+        id: 'd2',
+        type: 'task_completed',
+        title: 'Keep Me',
+        message: 'Stay',
+        timestamp: Date.now() - 1000,
+        read: false,
+      },
     ];
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
 
@@ -403,9 +446,30 @@ describe('NotificationBell', () => {
 
   it('shows different notification types with correct styling', async () => {
     const stored = [
-      { id: '1', type: 'security', title: 'Sec', message: 'sec msg', timestamp: Date.now(), read: false },
-      { id: '2', type: 'task_completed', title: 'Done', message: 'done msg', timestamp: Date.now() - 1000, read: false },
-      { id: '3', type: 'task_failed', title: 'Fail', message: 'fail msg', timestamp: Date.now() - 2000, read: false },
+      {
+        id: '1',
+        type: 'security',
+        title: 'Sec',
+        message: 'sec msg',
+        timestamp: Date.now(),
+        read: false,
+      },
+      {
+        id: '2',
+        type: 'task_completed',
+        title: 'Done',
+        message: 'done msg',
+        timestamp: Date.now() - 1000,
+        read: false,
+      },
+      {
+        id: '3',
+        type: 'task_failed',
+        title: 'Fail',
+        message: 'fail msg',
+        timestamp: Date.now() - 2000,
+        read: false,
+      },
     ];
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
 
@@ -446,7 +510,14 @@ describe('NotificationBell', () => {
 
   it('shows "Just now" for recent notifications', async () => {
     const stored = [
-      { id: '1', type: 'security', title: 'Recent', message: 'msg', timestamp: Date.now() - 5000, read: false },
+      {
+        id: '1',
+        type: 'security',
+        title: 'Recent',
+        message: 'msg',
+        timestamp: Date.now() - 5000,
+        read: false,
+      },
     ];
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
     const user = userEvent.setup();
@@ -457,7 +528,14 @@ describe('NotificationBell', () => {
 
   it('shows minutes ago for notifications 1-59 min old', async () => {
     const stored = [
-      { id: '1', type: 'security', title: 'Old', message: 'msg', timestamp: Date.now() - 5 * 60 * 1000, read: false },
+      {
+        id: '1',
+        type: 'security',
+        title: 'Old',
+        message: 'msg',
+        timestamp: Date.now() - 5 * 60 * 1000,
+        read: false,
+      },
     ];
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
     const user = userEvent.setup();
@@ -468,7 +546,14 @@ describe('NotificationBell', () => {
 
   it('shows hours ago for notifications 1-23h old', async () => {
     const stored = [
-      { id: '1', type: 'security', title: 'Older', message: 'msg', timestamp: Date.now() - 3 * 3600 * 1000, read: false },
+      {
+        id: '1',
+        type: 'security',
+        title: 'Older',
+        message: 'msg',
+        timestamp: Date.now() - 3 * 3600 * 1000,
+        read: false,
+      },
     ];
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
     const user = userEvent.setup();

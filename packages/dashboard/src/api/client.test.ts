@@ -203,7 +203,12 @@ describe('verifySession', () => {
 
 describe('fetchHealth', () => {
   it('returns health data on success', async () => {
-    const health = { status: 'ok', version: '1.0', uptime: 100, checks: { database: true, auditChain: true } };
+    const health = {
+      status: 'ok',
+      version: '1.0',
+      uptime: 100,
+      checks: { database: true, auditChain: true },
+    };
     mockFetch.mockReturnValueOnce(jsonResponse(health));
     const result = await fetchHealth();
     expect(result.status).toBe('ok');
@@ -353,7 +358,9 @@ describe('Token refresh on 401', () => {
     // First call: 401
     mockFetch.mockReturnValueOnce(errorResponse('Unauthorized', 401));
     // Refresh call: success
-    mockFetch.mockReturnValueOnce(jsonResponse({ accessToken: 'newToken', refreshToken: 'newRefresh' }));
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({ accessToken: 'newToken', refreshToken: 'newRefresh' })
+    );
     // Retry call: success
     mockFetch.mockReturnValueOnce(jsonResponse({ tasks: [], total: 0 }));
 
@@ -784,20 +791,14 @@ describe('markNotificationRead', () => {
 describe('exportPersonality', () => {
   it('calls GET /soul/personalities/:id/export with format param', async () => {
     const blob = new Blob(['# personality'], { type: 'text/markdown' });
-    mockFetch.mockReturnValueOnce(
-      Promise.resolve(new Response(blob, { status: 200 }))
-    );
+    mockFetch.mockReturnValueOnce(Promise.resolve(new Response(blob, { status: 200 })));
     const result = await exportPersonality('p1', 'md');
     expect(result).toBeInstanceOf(Blob);
-    expect(mockFetch.mock.calls[0][0]).toBe(
-      '/api/v1/soul/personalities/p1/export?format=md'
-    );
+    expect(mockFetch.mock.calls[0][0]).toBe('/api/v1/soul/personalities/p1/export?format=md');
   });
 
   it('throws on non-ok response', async () => {
-    mockFetch.mockReturnValueOnce(
-      Promise.resolve(new Response(null, { status: 404 }))
-    );
+    mockFetch.mockReturnValueOnce(Promise.resolve(new Response(null, { status: 404 })));
     await expect(exportPersonality('p1')).rejects.toThrow('Export failed: 404');
   });
 });
@@ -1217,7 +1218,6 @@ describe('Heartbeat', () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ status: 'running' }));
     await fetchHeartbeatStatus();
   });
-
 });
 
 describe('Memories', () => {
@@ -1238,7 +1238,6 @@ describe('Risk Assessments', () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ assessments: [] }));
     await fetchRiskAssessments();
   });
-
 });
 
 describe('Backups', () => {

@@ -248,7 +248,13 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_diff')!;
-      await handler({ cwd: '/tmp/test-repo', staged: false, stat: false, ref: 'HEAD~3', path: 'src/' });
+      await handler({
+        cwd: '/tmp/test-repo',
+        staged: false,
+        stat: false,
+        ref: 'HEAD~3',
+        path: 'src/',
+      });
       expect(execFile).toHaveBeenCalledWith(
         'git',
         ['diff', 'HEAD~3', '--', 'src/'],
@@ -342,7 +348,13 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_pr_list')!;
-      await handler({ cwd: '/tmp/test-repo', state: 'open', limit: 10, author: 'user1', label: 'bug' });
+      await handler({
+        cwd: '/tmp/test-repo',
+        state: 'open',
+        limit: 10,
+        author: 'user1',
+        label: 'bug',
+      });
       expect(execFile).toHaveBeenCalledWith(
         'gh',
         ['pr', 'list', '--state', 'open', '--limit', '10', '--author', 'user1', '--label', 'bug'],
@@ -373,12 +385,30 @@ describe('git-tools', () => {
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_pr_create')!;
       await handler({
-        cwd: '/tmp/test-repo', title: 'Fix bug', body: 'details',
-        base: 'main', draft: true, label: ['bug', 'urgent'],
+        cwd: '/tmp/test-repo',
+        title: 'Fix bug',
+        body: 'details',
+        base: 'main',
+        draft: true,
+        label: ['bug', 'urgent'],
       });
       expect(execFile).toHaveBeenCalledWith(
         'gh',
-        ['pr', 'create', '--title', 'Fix bug', '--body', 'details', '--base', 'main', '--draft', '--label', 'bug', '--label', 'urgent'],
+        [
+          'pr',
+          'create',
+          '--title',
+          'Fix bug',
+          '--body',
+          'details',
+          '--base',
+          'main',
+          '--draft',
+          '--label',
+          'bug',
+          '--label',
+          'urgent',
+        ],
         expect.any(Object),
         expect.any(Function)
       );
@@ -405,10 +435,27 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_issue_list')!;
-      await handler({ cwd: '/tmp/test-repo', state: 'open', limit: 10, assignee: 'me', label: 'feat' });
+      await handler({
+        cwd: '/tmp/test-repo',
+        state: 'open',
+        limit: 10,
+        assignee: 'me',
+        label: 'feat',
+      });
       expect(execFile).toHaveBeenCalledWith(
         'gh',
-        ['issue', 'list', '--state', 'open', '--limit', '10', '--assignee', 'me', '--label', 'feat'],
+        [
+          'issue',
+          'list',
+          '--state',
+          'open',
+          '--limit',
+          '10',
+          '--assignee',
+          'me',
+          '--label',
+          'feat',
+        ],
         expect.any(Object),
         expect.any(Function)
       );
@@ -436,12 +483,26 @@ describe('git-tools', () => {
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_issue_create')!;
       await handler({
-        cwd: '/tmp/test-repo', title: 'New issue', body: 'content',
-        label: ['enhancement'], assignee: ['alice'],
+        cwd: '/tmp/test-repo',
+        title: 'New issue',
+        body: 'content',
+        label: ['enhancement'],
+        assignee: ['alice'],
       });
       expect(execFile).toHaveBeenCalledWith(
         'gh',
-        ['issue', 'create', '--title', 'New issue', '--body', 'content', '--label', 'enhancement', '--assignee', 'alice'],
+        [
+          'issue',
+          'create',
+          '--title',
+          'New issue',
+          '--body',
+          'content',
+          '--label',
+          'enhancement',
+          '--assignee',
+          'alice',
+        ],
         expect.any(Object),
         expect.any(Function)
       );

@@ -65,7 +65,9 @@ const MEMORY = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockFetchPersonalities.mockResolvedValue({ personalities: [{ id: 'p-1', name: 'FRIDAY' } as any] });
+  mockFetchPersonalities.mockResolvedValue({
+    personalities: [{ id: 'p-1', name: 'FRIDAY' } as any],
+  });
   mockFetchMemories.mockResolvedValue({ memories: [MEMORY] } as any);
   mockFetchKnowledge.mockResolvedValue({ entries: [] } as any);
   mockSearchSimilar.mockResolvedValue({ results: [] } as any);

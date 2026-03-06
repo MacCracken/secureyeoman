@@ -17,9 +17,7 @@ const sampleEntries = [
     status: 'open',
     owner: 'Jane Doe',
     dueDate: '2026-06-01',
-    mitigations: [
-      { id: 'm1', description: 'Implement MFA', status: 'in_progress', owner: 'John' },
-    ],
+    mitigations: [{ id: 'm1', description: 'Implement MFA', status: 'in_progress', owner: 'John' }],
     source: 'manual',
     createdAt: Date.now() - 86400000,
     updatedAt: Date.now(),

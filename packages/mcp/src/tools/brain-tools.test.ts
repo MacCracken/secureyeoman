@@ -65,10 +65,10 @@ describe('brain-tools', () => {
       const handler = globalToolRegistry.get('knowledge_search')!;
       await handler({ query: 'test', limit: 10, instanceId: 'peer-1' });
 
-      expect(client.get).toHaveBeenCalledWith(
-        '/api/v1/federation/peers/peer-1/knowledge/search',
-        { q: 'test', limit: '10' }
-      );
+      expect(client.get).toHaveBeenCalledWith('/api/v1/federation/peers/peer-1/knowledge/search', {
+        q: 'test',
+        limit: '10',
+      });
     });
   });
 

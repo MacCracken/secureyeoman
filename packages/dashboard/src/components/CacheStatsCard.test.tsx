@@ -41,7 +41,11 @@ describe('CacheStatsCard', () => {
   });
 
   it('shows error state', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 500, statusText: 'Server Error' } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error',
+    } as Response);
     renderCard();
     await waitFor(() => {
       expect(screen.getByText(/Error:/)).toBeInTheDocument();
@@ -100,7 +104,10 @@ describe('CacheStatsCard', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
       const u = String(url);
       if (u.includes('clear')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ cleared: true }) } as Response);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ cleared: true }),
+        } as Response);
       }
       return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStats) } as Response);
     });

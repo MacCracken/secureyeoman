@@ -79,9 +79,7 @@ describe('ResponsibleAiPage', () => {
 
   it('renders the page description', () => {
     renderComponent();
-    expect(
-      screen.getByText(/Bias detection, fairness analysis/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Bias detection, fairness analysis/)).toBeInTheDocument();
   });
 
   // ── Cohort Error Analysis interactions ───────────────────────────
@@ -102,7 +100,7 @@ describe('ResponsibleAiPage', () => {
       new Response(JSON.stringify({ slices: [] }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
-      }),
+      })
     );
 
     renderComponent();
@@ -114,7 +112,7 @@ describe('ResponsibleAiPage', () => {
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/cohort-analysis'),
-        expect.anything(),
+        expect.anything()
       );
     });
 
@@ -137,8 +135,8 @@ describe('ResponsibleAiPage', () => {
           groups: [],
           pass: true,
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
     );
 
     renderComponent();
@@ -151,7 +149,7 @@ describe('ResponsibleAiPage', () => {
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/fairness'),
-        expect.anything(),
+        expect.anything()
       );
     });
 
@@ -211,8 +209,8 @@ describe('ResponsibleAiPage', () => {
             },
           ],
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
     );
 
     renderComponent();
@@ -233,17 +231,19 @@ describe('ResponsibleAiPage', () => {
   it('shows empty cohort message when no slices', async () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({ slices: [] }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
+      new Response(JSON.stringify({ slices: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
     );
 
     renderComponent();
     const inputs = screen.getAllByPlaceholderText('Eval Run ID');
     await user.type(inputs[0], 'run-empty');
     await user.click(screen.getByText('Analyze'));
-    expect(await screen.findByText('No cohort slices found for this eval run.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No cohort slices found for this eval run.')
+    ).toBeInTheDocument();
 
     vi.restoreAllMocks();
   });
@@ -263,9 +263,7 @@ describe('ResponsibleAiPage', () => {
 
   it('shows cohort error state', async () => {
     const user = userEvent.setup();
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('', { status: 500 }),
-    );
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 500 }));
 
     renderComponent();
     const inputs = screen.getAllByPlaceholderText('Eval Run ID');
@@ -291,8 +289,8 @@ describe('ResponsibleAiPage', () => {
           ],
           inputText: 'Hello world test',
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
     );
 
     renderComponent();
@@ -336,8 +334,8 @@ describe('ResponsibleAiPage', () => {
             { id: 'e2', userId: 'bob', conversationId: 'conv-2', status: 'redacted' },
           ],
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
     );
 
     renderComponent();
@@ -371,8 +369,8 @@ describe('ResponsibleAiPage', () => {
             { id: 'e2', userId: 'bob', conversationId: 'conv-2', status: 'included' },
           ],
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
     );
 
     renderComponent();
@@ -410,8 +408,8 @@ describe('ResponsibleAiPage', () => {
           trainingData: 'Public',
           metrics: { accuracy: 0.95, f1: 0.92 },
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
     );
 
     renderComponent();
@@ -439,8 +437,8 @@ describe('ResponsibleAiPage', () => {
           groups: [],
           pass: false,
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
     );
 
     renderComponent();
@@ -462,8 +460,8 @@ describe('ResponsibleAiPage', () => {
           groups: [{ name: 'Group A', positiveRate: 0.8, sampleCount: 100 }],
           pass: true,
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
     );
 
     renderComponent();

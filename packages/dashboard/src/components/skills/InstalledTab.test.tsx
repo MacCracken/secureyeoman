@@ -47,9 +47,7 @@ function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
 describe('InstalledTab', () => {
@@ -79,7 +77,9 @@ describe('InstalledTab', () => {
 
     await waitFor(() => {
       // Source labels appear on skill cards
-      expect(screen.getAllByText(/AI Learned|AI Proposed|Marketplace|User/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/AI Learned|AI Proposed|Marketplace|User/).length).toBeGreaterThan(
+        0
+      );
     });
   });
 

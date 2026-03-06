@@ -306,9 +306,7 @@ describe('ExperimentsPage', () => {
               name: 'My Experiment',
               description: 'Testing something',
               status: 'running',
-              variants: [
-                { id: 'v1', name: 'Control', config: {}, trafficPercent: 50 },
-              ],
+              variants: [{ id: 'v1', name: 'Control', config: {}, trafficPercent: 50 }],
               createdAt: Date.now(),
             },
           ],

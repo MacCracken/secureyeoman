@@ -29,10 +29,38 @@ const mockSearches = [
     status: 'running',
     bestTrialId: 't2',
     trials: [
-      { id: 't1', params: { lr: 0.001 }, status: 'completed', loss: 0.5, startedAt: null, completedAt: null },
-      { id: 't2', params: { lr: 0.0005 }, status: 'completed', loss: 0.3, startedAt: null, completedAt: null },
-      { id: 't3', params: { lr: 0.01 }, status: 'running', loss: null, startedAt: null, completedAt: null },
-      { id: 't4', params: { lr: 0.1 }, status: 'failed', loss: null, startedAt: null, completedAt: null },
+      {
+        id: 't1',
+        params: { lr: 0.001 },
+        status: 'completed',
+        loss: 0.5,
+        startedAt: null,
+        completedAt: null,
+      },
+      {
+        id: 't2',
+        params: { lr: 0.0005 },
+        status: 'completed',
+        loss: 0.3,
+        startedAt: null,
+        completedAt: null,
+      },
+      {
+        id: 't3',
+        params: { lr: 0.01 },
+        status: 'running',
+        loss: null,
+        startedAt: null,
+        completedAt: null,
+      },
+      {
+        id: 't4',
+        params: { lr: 0.1 },
+        status: 'failed',
+        loss: null,
+        startedAt: null,
+        completedAt: null,
+      },
     ],
   },
 ];
@@ -49,7 +77,11 @@ describe('HyperparamSearchWidget', () => {
   });
 
   it('shows error state', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 500, statusText: 'Error' } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Error',
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText(/Error:/)).toBeInTheDocument();
@@ -57,7 +89,10 @@ describe('HyperparamSearchWidget', () => {
   });
 
   it('renders heading and wizard form', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Hyperparameter Search')).toBeInTheDocument();
@@ -66,7 +101,10 @@ describe('HyperparamSearchWidget', () => {
   });
 
   it('shows strategy radio buttons', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('grid')).toBeInTheDocument();
@@ -76,7 +114,10 @@ describe('HyperparamSearchWidget', () => {
   });
 
   it('shows Create Search button', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Create Search')).toBeInTheDocument();
@@ -84,7 +125,10 @@ describe('HyperparamSearchWidget', () => {
   });
 
   it('renders search jobs with trials', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve(mockSearches) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockSearches),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('lr-search')).toBeInTheDocument();
@@ -94,7 +138,10 @@ describe('HyperparamSearchWidget', () => {
   });
 
   it('shows Best Trial highlight', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve(mockSearches) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockSearches),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Best Trial')).toBeInTheDocument();
@@ -103,7 +150,10 @@ describe('HyperparamSearchWidget', () => {
   });
 
   it('shows name input placeholder', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByPlaceholderText('my-search-run')).toBeInTheDocument();
@@ -111,7 +161,10 @@ describe('HyperparamSearchWidget', () => {
   });
 
   it('disables Create Search when name is empty', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Create Search')).toBeDisabled();
@@ -121,7 +174,17 @@ describe('HyperparamSearchWidget', () => {
   it('shows no trials message when empty', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve([{ id: 'h2', name: 'empty-search', strategy: 'grid', status: 'pending', bestTrialId: null, trials: [] }]),
+      json: () =>
+        Promise.resolve([
+          {
+            id: 'h2',
+            name: 'empty-search',
+            strategy: 'grid',
+            status: 'pending',
+            bestTrialId: null,
+            trials: [],
+          },
+        ]),
     } as Response);
     renderWidget();
     await waitFor(() => {

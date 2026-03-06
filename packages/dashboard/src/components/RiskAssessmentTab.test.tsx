@@ -59,7 +59,7 @@ function renderComponent() {
   return render(
     <QueryClientProvider client={qc}>
       <RiskAssessmentTab />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 

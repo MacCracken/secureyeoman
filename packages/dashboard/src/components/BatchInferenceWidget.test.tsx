@@ -23,15 +23,37 @@ function renderWidget() {
 
 const mockJobs = [
   {
-    id: 'b1', name: 'eval-batch', status: 'completed', totalPrompts: 5, completedPrompts: 5, concurrency: 4,
+    id: 'b1',
+    name: 'eval-batch',
+    status: 'completed',
+    totalPrompts: 5,
+    completedPrompts: 5,
+    concurrency: 4,
     results: [
-      { promptIndex: 0, prompt: 'Explain AI', output: 'AI is...', latencyMs: 120, status: 'completed' },
-      { promptIndex: 1, prompt: 'Summarize', output: 'Summary...', latencyMs: 200, status: 'failed' },
+      {
+        promptIndex: 0,
+        prompt: 'Explain AI',
+        output: 'AI is...',
+        latencyMs: 120,
+        status: 'completed',
+      },
+      {
+        promptIndex: 1,
+        prompt: 'Summarize',
+        output: 'Summary...',
+        latencyMs: 200,
+        status: 'failed',
+      },
     ],
     createdAt: '2026-03-01T00:00:00Z',
   },
   {
-    id: 'b2', name: 'test-batch', status: 'running', totalPrompts: 10, completedPrompts: 3, concurrency: 2,
+    id: 'b2',
+    name: 'test-batch',
+    status: 'running',
+    totalPrompts: 10,
+    completedPrompts: 3,
+    concurrency: 2,
     results: [],
     createdAt: '2026-03-01T01:00:00Z',
   },
@@ -49,7 +71,11 @@ describe('BatchInferenceWidget', () => {
   });
 
   it('shows error state', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 500, statusText: 'Error' } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Error',
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText(/Error:/)).toBeInTheDocument();
@@ -58,7 +84,8 @@ describe('BatchInferenceWidget', () => {
 
   it('renders heading and form', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true, json: () => Promise.resolve([]),
+      ok: true,
+      json: () => Promise.resolve([]),
     } as Response);
     renderWidget();
     await waitFor(() => {
@@ -69,7 +96,8 @@ describe('BatchInferenceWidget', () => {
 
   it('shows form fields', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true, json: () => Promise.resolve([]),
+      ok: true,
+      json: () => Promise.resolve([]),
     } as Response);
     renderWidget();
     await waitFor(() => {
@@ -82,7 +110,8 @@ describe('BatchInferenceWidget', () => {
 
   it('submit button is disabled when fields are empty', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true, json: () => Promise.resolve([]),
+      ok: true,
+      json: () => Promise.resolve([]),
     } as Response);
     renderWidget();
     await waitFor(() => {
@@ -92,7 +121,8 @@ describe('BatchInferenceWidget', () => {
 
   it('renders job cards with progress', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true, json: () => Promise.resolve(mockJobs),
+      ok: true,
+      json: () => Promise.resolve(mockJobs),
     } as Response);
     renderWidget();
     await waitFor(() => {
@@ -105,7 +135,8 @@ describe('BatchInferenceWidget', () => {
 
   it('renders results table for completed job', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true, json: () => Promise.resolve(mockJobs),
+      ok: true,
+      json: () => Promise.resolve(mockJobs),
     } as Response);
     renderWidget();
     await waitFor(() => {
@@ -117,7 +148,8 @@ describe('BatchInferenceWidget', () => {
 
   it('shows job status badges', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true, json: () => Promise.resolve(mockJobs),
+      ok: true,
+      json: () => Promise.resolve(mockJobs),
     } as Response);
     renderWidget();
     await waitFor(() => {
@@ -128,7 +160,8 @@ describe('BatchInferenceWidget', () => {
 
   it('updates concurrency slider', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true, json: () => Promise.resolve([]),
+      ok: true,
+      json: () => Promise.resolve([]),
     } as Response);
     renderWidget();
     await waitFor(() => {
@@ -141,19 +174,25 @@ describe('BatchInferenceWidget', () => {
 
   it('submits batch job with prompts', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true, json: () => Promise.resolve([]),
+      ok: true,
+      json: () => Promise.resolve([]),
     } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByPlaceholderText('batch-eval-01')).toBeInTheDocument();
     });
-    fireEvent.change(screen.getByPlaceholderText('batch-eval-01'), { target: { value: 'my-batch' } });
+    fireEvent.change(screen.getByPlaceholderText('batch-eval-01'), {
+      target: { value: 'my-batch' },
+    });
     const textarea = screen.getByPlaceholderText(/Explain quantum/);
     fireEvent.change(textarea, { target: { value: 'Hello\nWorld' } });
-    fetchSpy.mockResolvedValue({ ok: true, json: () => Promise.resolve({ id: 'new' }) } as Response);
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ id: 'new' }),
+    } as Response);
     fireEvent.click(screen.getByText('Submit Batch'));
     await waitFor(() => {
-      const postCalls = fetchSpy.mock.calls.filter(c => {
+      const postCalls = fetchSpy.mock.calls.filter((c) => {
         const opts = c[1] as RequestInit | undefined;
         return opts?.method === 'POST';
       });

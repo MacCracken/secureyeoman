@@ -48,9 +48,7 @@ function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
 describe('AuditLogTab', () => {
@@ -65,11 +63,7 @@ describe('AuditLogTab', () => {
 
   it('should render audit entries', async () => {
     renderWithProviders(
-      <AuditLogTab
-        reviewed={new Set()}
-        onMarkReviewed={vi.fn()}
-        onMarkAllReviewed={vi.fn()}
-      />
+      <AuditLogTab reviewed={new Set()} onMarkReviewed={vi.fn()} onMarkAllReviewed={vi.fn()} />
     );
 
     await waitFor(() => {
@@ -82,11 +76,7 @@ describe('AuditLogTab', () => {
 
   it('should render filter controls', async () => {
     renderWithProviders(
-      <AuditLogTab
-        reviewed={new Set()}
-        onMarkReviewed={vi.fn()}
-        onMarkAllReviewed={vi.fn()}
-      />
+      <AuditLogTab reviewed={new Set()} onMarkReviewed={vi.fn()} onMarkAllReviewed={vi.fn()} />
     );
 
     await waitFor(() => {
@@ -115,11 +105,7 @@ describe('AuditLogTab', () => {
 
   it('should expand entry on click', async () => {
     renderWithProviders(
-      <AuditLogTab
-        reviewed={new Set()}
-        onMarkReviewed={vi.fn()}
-        onMarkAllReviewed={vi.fn()}
-      />
+      <AuditLogTab reviewed={new Set()} onMarkReviewed={vi.fn()} onMarkAllReviewed={vi.fn()} />
     );
 
     await waitFor(() => {
@@ -134,11 +120,7 @@ describe('AuditLogTab', () => {
 
   it('should render entries from API data', async () => {
     renderWithProviders(
-      <AuditLogTab
-        reviewed={new Set()}
-        onMarkReviewed={vi.fn()}
-        onMarkAllReviewed={vi.fn()}
-      />
+      <AuditLogTab reviewed={new Set()} onMarkReviewed={vi.fn()} onMarkAllReviewed={vi.fn()} />
     );
 
     await waitFor(() => {
@@ -150,11 +132,7 @@ describe('AuditLogTab', () => {
     vi.mocked(api.fetchAuditEntries).mockReturnValue(new Promise(() => {}));
 
     renderWithProviders(
-      <AuditLogTab
-        reviewed={new Set()}
-        onMarkReviewed={vi.fn()}
-        onMarkAllReviewed={vi.fn()}
-      />
+      <AuditLogTab reviewed={new Set()} onMarkReviewed={vi.fn()} onMarkAllReviewed={vi.fn()} />
     );
 
     expect(true).toBe(true);
@@ -162,11 +140,7 @@ describe('AuditLogTab', () => {
 
   it('should handle pagination', async () => {
     renderWithProviders(
-      <AuditLogTab
-        reviewed={new Set()}
-        onMarkReviewed={vi.fn()}
-        onMarkAllReviewed={vi.fn()}
-      />
+      <AuditLogTab reviewed={new Set()} onMarkReviewed={vi.fn()} onMarkAllReviewed={vi.fn()} />
     );
 
     await waitFor(() => {

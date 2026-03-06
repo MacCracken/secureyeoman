@@ -66,7 +66,13 @@ describe('McpManager', () => {
     mockFetchMcpServers.mockResolvedValue({
       servers: [
         { id: 's1', name: 'filesystem-server', transport: 'stdio', command: 'npx', enabled: true },
-        { id: 's2', name: 'web-server', transport: 'sse', url: 'https://example.com', enabled: false },
+        {
+          id: 's2',
+          name: 'web-server',
+          transport: 'sse',
+          url: 'https://example.com',
+          enabled: false,
+        },
       ],
       total: 2,
     } as any);
@@ -120,7 +126,12 @@ describe('McpManager', () => {
     } as any);
     mockFetchMcpTools.mockResolvedValue({
       tools: [
-        { serverId: 's1', serverName: 'test-server', name: 'read_file', description: 'Read a file' },
+        {
+          serverId: 's1',
+          serverName: 'test-server',
+          name: 'read_file',
+          description: 'Read a file',
+        },
       ],
     } as any);
     renderComponent();

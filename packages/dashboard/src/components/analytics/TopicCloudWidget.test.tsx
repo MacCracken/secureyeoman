@@ -4,9 +4,33 @@ import { render, screen } from '@testing-library/react';
 import { TopicCloudWidget } from './TopicCloudWidget';
 
 const samplePhrases = [
-  { id: '1', phrase: 'machine learning', frequency: 10, personalityId: 'p1', windowStart: '2026-03-01', windowEnd: '2026-03-06', updatedAt: '2026-03-06' },
-  { id: '2', phrase: 'security', frequency: 8, personalityId: 'p1', windowStart: '2026-03-01', windowEnd: '2026-03-06', updatedAt: '2026-03-06' },
-  { id: '3', phrase: 'deployment', frequency: 3, personalityId: 'p1', windowStart: '2026-03-01', windowEnd: '2026-03-06', updatedAt: '2026-03-06' },
+  {
+    id: '1',
+    phrase: 'machine learning',
+    frequency: 10,
+    personalityId: 'p1',
+    windowStart: '2026-03-01',
+    windowEnd: '2026-03-06',
+    updatedAt: '2026-03-06',
+  },
+  {
+    id: '2',
+    phrase: 'security',
+    frequency: 8,
+    personalityId: 'p1',
+    windowStart: '2026-03-01',
+    windowEnd: '2026-03-06',
+    updatedAt: '2026-03-06',
+  },
+  {
+    id: '3',
+    phrase: 'deployment',
+    frequency: 3,
+    personalityId: 'p1',
+    windowStart: '2026-03-01',
+    windowEnd: '2026-03-06',
+    updatedAt: '2026-03-06',
+  },
 ];
 
 describe('TopicCloudWidget', () => {
@@ -39,7 +63,22 @@ describe('TopicCloudWidget', () => {
   });
 
   it('should handle single phrase', () => {
-    render(<TopicCloudWidget phrases={[{ id: '1', phrase: 'test', frequency: 5, personalityId: 'p1', windowStart: '2026-03-01', windowEnd: '2026-03-06', updatedAt: '2026-03-06' }]} isLoading={false} />);
+    render(
+      <TopicCloudWidget
+        phrases={[
+          {
+            id: '1',
+            phrase: 'test',
+            frequency: 5,
+            personalityId: 'p1',
+            windowStart: '2026-03-01',
+            windowEnd: '2026-03-06',
+            updatedAt: '2026-03-06',
+          },
+        ]}
+        isLoading={false}
+      />
+    );
     expect(screen.getByText('test')).toBeInTheDocument();
   });
 });

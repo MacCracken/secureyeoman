@@ -279,7 +279,8 @@ describe('WorkflowVersionHistory', () => {
       expect(screen.getByText('Versions (1)')).toBeInTheDocument();
     });
     const tags = screen.getAllByText('2026.3.2');
-    const versionRow = tags.find((el) => el.closest('div[class*="cursor-pointer"]'))!
+    const versionRow = tags
+      .find((el) => el.closest('div[class*="cursor-pointer"]'))!
       .closest('div[class*="cursor-pointer"]')!;
     fireEvent.click(versionRow);
     await waitFor(() => {

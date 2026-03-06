@@ -31,7 +31,13 @@ function renderTab() {
 }
 
 const mockPairs = [
-  { id: 'p1', prompt: 'What is AI?', chosen: 'Good answer', rejected: 'Bad answer', source: 'annotation' },
+  {
+    id: 'p1',
+    prompt: 'What is AI?',
+    chosen: 'Good answer',
+    rejected: 'Bad answer',
+    source: 'annotation',
+  },
   { id: 'p2', prompt: 'Explain ML', chosen: 'ML is...', rejected: 'IDK', source: 'comparison' },
 ];
 

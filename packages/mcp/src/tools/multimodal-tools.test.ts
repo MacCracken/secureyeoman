@@ -171,7 +171,12 @@ describe('multimodal-tools', () => {
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('multimodal_generate_image')!;
-      const result = await handler({ prompt: 'bad', size: '1024x1024', quality: 'standard', style: 'vivid' });
+      const result = await handler({
+        prompt: 'bad',
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+      });
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Content policy violation');
@@ -192,7 +197,12 @@ describe('multimodal-tools', () => {
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('multimodal_generate_image')!;
-      const result = await handler({ prompt: 'hack', size: '1024x1024', quality: 'standard', style: 'vivid' });
+      const result = await handler({
+        prompt: 'hack',
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+      });
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Injection detected');

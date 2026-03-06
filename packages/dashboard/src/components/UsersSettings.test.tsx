@@ -541,7 +541,9 @@ describe('UsersSettings', () => {
 
     await waitFor(() => {
       // Button should be disabled while pending
-      const deleteBtn = screen.getAllByRole('button').find((b) => b.disabled && b.className.includes('destructive'));
+      const deleteBtn = screen
+        .getAllByRole('button')
+        .find((b) => b.disabled && b.className.includes('destructive'));
       expect(deleteBtn).toBeTruthy();
     });
   });
@@ -550,8 +552,8 @@ describe('UsersSettings', () => {
 
   it('renders delete button only for non-builtin users', async () => {
     const users: UserInfo[] = [
-      { ...SAMPLE_USERS[0], isBuiltin: true },   // Alice - builtin
-      { ...SAMPLE_USERS[1], isBuiltin: false },   // Bob - not builtin
+      { ...SAMPLE_USERS[0], isBuiltin: true }, // Alice - builtin
+      { ...SAMPLE_USERS[1], isBuiltin: false }, // Bob - not builtin
       {
         id: 'user-3',
         email: 'charlie@example.com',

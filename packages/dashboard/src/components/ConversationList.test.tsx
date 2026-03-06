@@ -67,8 +67,20 @@ describe('ConversationList', () => {
   it('renders conversation titles', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'First Chat', messageCount: 5, createdAt: Date.now(), updatedAt: Date.now() },
-        { id: 'c2', title: 'Second Chat', messageCount: 3, createdAt: Date.now(), updatedAt: Date.now() },
+        {
+          id: 'c1',
+          title: 'First Chat',
+          messageCount: 5,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+        {
+          id: 'c2',
+          title: 'Second Chat',
+          messageCount: 3,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
       ],
       total: 2,
     } as any);
@@ -124,7 +136,17 @@ describe('ConversationList', () => {
   it('calls onSelect and onMobileClose when a conversation is clicked', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'Chat A', messageCount: 2, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'Chat A',
+          messageCount: 2,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 1,
     } as any);
@@ -143,8 +165,28 @@ describe('ConversationList', () => {
   it('highlights the active conversation', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'Active', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
-        { id: 'c2', title: 'Inactive', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'Active',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
+        {
+          id: 'c2',
+          title: 'Inactive',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 2,
     } as any);
@@ -161,7 +203,17 @@ describe('ConversationList', () => {
   it('shows branch icon for forked conversations', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'Fork', messageCount: 1, parentConversationId: 'parent-1', forkMessageIndex: 3, branchLabel: 'alt', createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'Fork',
+          messageCount: 1,
+          parentConversationId: 'parent-1',
+          forkMessageIndex: 3,
+          branchLabel: 'alt',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 1,
     } as any);
@@ -183,7 +235,17 @@ describe('ConversationList', () => {
   it('calls deleteConversation and clears selection when active conv is deleted', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'To Delete', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'To Delete',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 1,
     } as any);
@@ -206,8 +268,28 @@ describe('ConversationList', () => {
   it('does not clear selection when deleting a non-active conversation', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'Keep', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
-        { id: 'c2', title: 'Remove', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'Keep',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
+        {
+          id: 'c2',
+          title: 'Remove',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 2,
     } as any);
@@ -234,7 +316,17 @@ describe('ConversationList', () => {
   it('enters rename mode and submits on Enter', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'Old Title', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'Old Title',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 1,
     } as any);
@@ -263,7 +355,17 @@ describe('ConversationList', () => {
   it('cancels rename on Escape', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'Keep This', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'Keep This',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 1,
     } as any);
@@ -284,7 +386,17 @@ describe('ConversationList', () => {
   it('does not submit rename if title is empty/whitespace', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'Title', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'Title',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 1,
     } as any);
@@ -305,8 +417,15 @@ describe('ConversationList', () => {
 
   it('shows conversation icons in collapsed rail (up to 10)', async () => {
     const convs = Array.from({ length: 12 }, (_, i) => ({
-      id: `c${i}`, title: `Conv ${i}`, messageCount: i, parentConversationId: null,
-      forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null,
+      id: `c${i}`,
+      title: `Conv ${i}`,
+      messageCount: i,
+      parentConversationId: null,
+      forkMessageIndex: null,
+      branchLabel: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      personalityId: null,
     }));
     mockFetchConversations.mockResolvedValue({ conversations: convs, total: 12 } as any);
     renderComponent({ collapsed: true });
@@ -322,7 +441,17 @@ describe('ConversationList', () => {
   it('calls onSelect when a collapsed rail conversation is clicked', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'Rail Chat', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'Rail Chat',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 1,
     } as any);
@@ -372,7 +501,17 @@ describe('ConversationList', () => {
   it('does not select conversation while rename input is active', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'Editing', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'Editing',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 1,
     } as any);
@@ -394,7 +533,17 @@ describe('ConversationList', () => {
   it('submits rename via the check button', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'c1', title: 'Before', messageCount: 1, parentConversationId: null, forkMessageIndex: null, branchLabel: null, createdAt: Date.now(), updatedAt: Date.now(), personalityId: null },
+        {
+          id: 'c1',
+          title: 'Before',
+          messageCount: 1,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          personalityId: null,
+        },
       ],
       total: 1,
     } as any);

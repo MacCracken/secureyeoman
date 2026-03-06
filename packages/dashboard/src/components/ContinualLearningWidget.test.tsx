@@ -31,19 +31,64 @@ const datasetStatus = {
 
 const driftData = {
   snapshots: [
-    { personality: 'default', mean: 0.5, baseline: 0.45, driftScore: 0.05, timestamp: '2026-03-01T12:00:00Z' },
-    { personality: 'formal', mean: 0.7, baseline: 0.4, driftScore: 0.35, timestamp: '2026-03-01T12:00:00Z' },
+    {
+      personality: 'default',
+      mean: 0.5,
+      baseline: 0.45,
+      driftScore: 0.05,
+      timestamp: '2026-03-01T12:00:00Z',
+    },
+    {
+      personality: 'formal',
+      mean: 0.7,
+      baseline: 0.4,
+      driftScore: 0.35,
+      timestamp: '2026-03-01T12:00:00Z',
+    },
   ],
   latestPerPersonality: {
-    default: { personality: 'default', mean: 0.5, baseline: 0.45, driftScore: 0.05, timestamp: '2026-03-01T12:00:00Z' },
-    formal: { personality: 'formal', mean: 0.7, baseline: 0.4, driftScore: 0.35, timestamp: '2026-03-01T12:00:00Z' },
+    default: {
+      personality: 'default',
+      mean: 0.5,
+      baseline: 0.45,
+      driftScore: 0.05,
+      timestamp: '2026-03-01T12:00:00Z',
+    },
+    formal: {
+      personality: 'formal',
+      mean: 0.7,
+      baseline: 0.4,
+      driftScore: 0.35,
+      timestamp: '2026-03-01T12:00:00Z',
+    },
   },
 };
 
 const onlineJobs = [
-  { id: 'j1', personality: 'default', status: 'completed', conversationCount: 50, startedAt: null, completedAt: null },
-  { id: 'j2', personality: 'formal', status: 'running', conversationCount: 20, startedAt: null, completedAt: null },
-  { id: 'j3', personality: 'casual', status: 'failed', conversationCount: 10, startedAt: null, completedAt: null },
+  {
+    id: 'j1',
+    personality: 'default',
+    status: 'completed',
+    conversationCount: 50,
+    startedAt: null,
+    completedAt: null,
+  },
+  {
+    id: 'j2',
+    personality: 'formal',
+    status: 'running',
+    conversationCount: 20,
+    startedAt: null,
+    completedAt: null,
+  },
+  {
+    id: 'j3',
+    personality: 'casual',
+    status: 'failed',
+    conversationCount: 10,
+    startedAt: null,
+    completedAt: null,
+  },
 ];
 
 let fetchCallCount: number;
@@ -168,7 +213,10 @@ describe('ContinualLearningWidget', () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
       const u = String(url);
       if (u.includes('drift')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ snapshots: [], latestPerPersonality: {} }) } as Response);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ snapshots: [], latestPerPersonality: {} }),
+        } as Response);
       }
       return Promise.resolve({ ok: true, json: () => Promise.resolve(datasetStatus) } as Response);
     });

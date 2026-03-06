@@ -118,8 +118,20 @@ describe('SoulSystemTab', () => {
   it('renders strategy list', async () => {
     mockFetchStrategies.mockResolvedValue({
       items: [
-        { id: 's1', name: 'Chain of Thought', slug: 'cot', category: 'chain_of_thought', isBuiltin: true },
-        { id: 's2', name: 'Custom Strategy', slug: 'custom', category: 'reflexion', isBuiltin: false },
+        {
+          id: 's1',
+          name: 'Chain of Thought',
+          slug: 'cot',
+          category: 'chain_of_thought',
+          isBuiltin: true,
+        },
+        {
+          id: 's2',
+          name: 'Custom Strategy',
+          slug: 'custom',
+          category: 'reflexion',
+          isBuiltin: false,
+        },
       ],
     } as any);
     renderComponent();
@@ -140,8 +152,22 @@ describe('SoulSystemTab', () => {
   it('renders soul personalities', async () => {
     mockFetchPersonalities.mockResolvedValue({
       personalities: [
-        { id: 'p1', name: 'Default Soul', isActive: true, isDefault: true, isArchetype: false, description: 'Main' },
-        { id: 'p2', name: 'Creative Soul', isActive: false, isDefault: false, isArchetype: true, description: '' },
+        {
+          id: 'p1',
+          name: 'Default Soul',
+          isActive: true,
+          isDefault: true,
+          isArchetype: false,
+          description: 'Main',
+        },
+        {
+          id: 'p2',
+          name: 'Creative Soul',
+          isActive: false,
+          isDefault: false,
+          isArchetype: true,
+          description: '',
+        },
       ],
     } as any);
     renderComponent();

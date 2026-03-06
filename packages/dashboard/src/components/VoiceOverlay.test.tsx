@@ -13,9 +13,7 @@ describe('VoiceOverlay', () => {
   });
 
   it('returns null when not active and not visible', () => {
-    const { container } = render(
-      <VoiceOverlay isActive={false} audioLevel={0} duration={0} />
-    );
+    const { container } = render(<VoiceOverlay isActive={false} audioLevel={0} duration={0} />);
     expect(container.innerHTML).toBe('');
   });
 
@@ -30,32 +28,24 @@ describe('VoiceOverlay', () => {
   });
 
   it('shows transcript when provided', () => {
-    render(
-      <VoiceOverlay isActive={true} audioLevel={0.5} duration={0} transcript="Hello world" />
-    );
+    render(<VoiceOverlay isActive={true} audioLevel={0.5} duration={0} transcript="Hello world" />);
     expect(screen.getByText('Hello world')).toBeInTheDocument();
     expect(screen.getByText('You:')).toBeInTheDocument();
   });
 
   it('does not show "Speak now..." when transcript is present', () => {
-    render(
-      <VoiceOverlay isActive={true} audioLevel={0} duration={0} transcript="hi" />
-    );
+    render(<VoiceOverlay isActive={true} audioLevel={0} duration={0} transcript="hi" />);
     expect(screen.queryByText('Speak now...')).not.toBeInTheDocument();
   });
 
   it('shows error message when error is set', () => {
-    render(
-      <VoiceOverlay isActive={true} audioLevel={0} duration={0} error="Microphone failed" />
-    );
+    render(<VoiceOverlay isActive={true} audioLevel={0} duration={0} error="Microphone failed" />);
     expect(screen.getByText('Microphone failed')).toBeInTheDocument();
     expect(screen.getByText('Error')).toBeInTheDocument();
   });
 
   it('does not show audio level bar or speak-now when error is set', () => {
-    render(
-      <VoiceOverlay isActive={true} audioLevel={0.8} duration={0} error="fail" />
-    );
+    render(<VoiceOverlay isActive={true} audioLevel={0.8} duration={0} error="fail" />);
     expect(screen.queryByText('Speak now...')).not.toBeInTheDocument();
   });
 
@@ -85,9 +75,7 @@ describe('VoiceOverlay', () => {
   });
 
   it('shows "Hold to talk" and "Released" when deactivated but still visible', () => {
-    const { rerender } = render(
-      <VoiceOverlay isActive={true} audioLevel={0} duration={0} />
-    );
+    const { rerender } = render(<VoiceOverlay isActive={true} audioLevel={0} duration={0} />);
     rerender(<VoiceOverlay isActive={false} audioLevel={0} duration={0} />);
     expect(screen.getByText('Hold to talk')).toBeInTheDocument();
     expect(screen.getByText('Released')).toBeInTheDocument();
@@ -107,9 +95,7 @@ describe('VoiceOverlay', () => {
   });
 
   it('clears timeout when reactivated before fade-out completes', () => {
-    const { rerender } = render(
-      <VoiceOverlay isActive={true} audioLevel={0} duration={0} />
-    );
+    const { rerender } = render(<VoiceOverlay isActive={true} audioLevel={0} duration={0} />);
     // Deactivate
     rerender(<VoiceOverlay isActive={false} audioLevel={0} duration={0} />);
     // Reactivate before 500ms
@@ -131,17 +117,13 @@ describe('VoiceOverlay', () => {
   });
 
   it('sets audio level bar width based on audioLevel prop', () => {
-    const { container } = render(
-      <VoiceOverlay isActive={true} audioLevel={0.75} duration={0} />
-    );
+    const { container } = render(<VoiceOverlay isActive={true} audioLevel={0.75} duration={0} />);
     const bar = container.querySelector('[style*="width: 75%"]');
     expect(bar).toBeTruthy();
   });
 
   it('shows animate-pulse indicator when active', () => {
-    const { container } = render(
-      <VoiceOverlay isActive={true} audioLevel={0} duration={0} />
-    );
+    const { container } = render(<VoiceOverlay isActive={true} audioLevel={0} duration={0} />);
     const pulse = container.querySelector('.animate-pulse');
     expect(pulse).toBeTruthy();
   });
@@ -164,16 +146,12 @@ describe('VoiceOverlay', () => {
   });
 
   it('applies opacity-100 class when active', () => {
-    const { container } = render(
-      <VoiceOverlay isActive={true} audioLevel={0} duration={0} />
-    );
+    const { container } = render(<VoiceOverlay isActive={true} audioLevel={0} duration={0} />);
     expect(container.innerHTML).toContain('opacity-100');
   });
 
   it('does not show transcript section when not active and no transcript', () => {
-    const { rerender } = render(
-      <VoiceOverlay isActive={true} audioLevel={0} duration={0} />
-    );
+    const { rerender } = render(<VoiceOverlay isActive={true} audioLevel={0} duration={0} />);
     rerender(<VoiceOverlay isActive={false} audioLevel={0} duration={0} />);
     expect(screen.queryByText('Speak now...')).not.toBeInTheDocument();
     expect(screen.queryByText('You:')).not.toBeInTheDocument();

@@ -56,7 +56,14 @@ describe('ExecutiveSummaryPanel', () => {
 
   it('renders department breakdown table when departments exist', () => {
     const departments = [
-      { id: 'd1', name: 'Engineering', score: 65, openRisks: 4, criticalRisks: 1, appetiteBreaches: 0 },
+      {
+        id: 'd1',
+        name: 'Engineering',
+        score: 65,
+        openRisks: 4,
+        criticalRisks: 1,
+        appetiteBreaches: 0,
+      },
       { id: 'd2', name: 'Finance', score: 30, openRisks: 2, criticalRisks: 0, appetiteBreaches: 1 },
     ];
     render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ departments })} />);
@@ -69,7 +76,14 @@ describe('ExecutiveSummaryPanel', () => {
 
   it('shows score level labels for departments', () => {
     const departments = [
-      { id: 'd1', name: 'HighRisk', score: 80, openRisks: 10, criticalRisks: 5, appetiteBreaches: 3 },
+      {
+        id: 'd1',
+        name: 'HighRisk',
+        score: 80,
+        openRisks: 10,
+        criticalRisks: 5,
+        appetiteBreaches: 3,
+      },
       { id: 'd2', name: 'LowRisk', score: 10, openRisks: 0, criticalRisks: 0, appetiteBreaches: 0 },
     ];
     render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ departments })} />);

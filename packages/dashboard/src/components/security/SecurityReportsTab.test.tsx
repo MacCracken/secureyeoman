@@ -21,9 +21,7 @@ function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
 describe('ReportsTab', () => {
@@ -80,11 +78,7 @@ describe('ReportsTab', () => {
 
   it('should render with reviewed prop', async () => {
     renderWithProviders(
-      <ReportsTab
-        reviewed={new Set(['a1'])}
-        onMarkReviewed={vi.fn()}
-        onMarkAllReviewed={vi.fn()}
-      />
+      <ReportsTab reviewed={new Set(['a1'])} onMarkReviewed={vi.fn()} onMarkAllReviewed={vi.fn()} />
     );
 
     await waitFor(() => {

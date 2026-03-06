@@ -501,9 +501,7 @@ describe('NewEntityDialog', () => {
     renderDialog();
     await user.click(screen.getByText('Experiment'));
     await waitFor(() => {
-      expect(
-        screen.getByText(/Control and Variant A variants/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Control and Variant A variants/)).toBeInTheDocument();
     });
   });
 
@@ -797,9 +795,7 @@ describe('NewEntityDialog', () => {
     await user.type(screen.getByPlaceholderText('My Extension'), 'Hook Extension');
     // The hooks textarea doesn't have an htmlFor-linked label, find it by its sibling context
     const allTextareas = document.querySelectorAll('textarea');
-    const hooksArea = Array.from(allTextareas).find(
-      (ta) => ta.placeholder.includes('pre-chat')
-    )!;
+    const hooksArea = Array.from(allTextareas).find((ta) => ta.placeholder.includes('pre-chat'))!;
     expect(hooksArea).toBeTruthy();
     await user.type(hooksArea, 'pre-chat, observe, 10');
     await user.click(screen.getByText('Register Extension'));
@@ -1072,10 +1068,7 @@ describe('NewEntityDialog', () => {
     });
     const typeSelect = screen.getByDisplayValue('Semantic \u2014 facts and concepts');
     await user.selectOptions(typeSelect, 'procedural');
-    await user.type(
-      screen.getByPlaceholderText('The memory content to store...'),
-      'How to deploy'
-    );
+    await user.type(screen.getByPlaceholderText('The memory content to store...'), 'How to deploy');
     await user.type(screen.getByPlaceholderText('e.g. user, system, chat'), 'system');
     await user.click(screen.getByText('Add to Memory'));
     await waitFor(() => {
@@ -1092,10 +1085,7 @@ describe('NewEntityDialog', () => {
     await waitFor(() => {
       expect(screen.getByText('Add Memory')).toBeInTheDocument();
     });
-    await user.type(
-      screen.getByPlaceholderText('The memory content to store...'),
-      'Some content'
-    );
+    await user.type(screen.getByPlaceholderText('The memory content to store...'), 'Some content');
     await user.type(screen.getByPlaceholderText('e.g. user, system, chat'), 'user');
     await user.click(screen.getByText('Add to Memory'));
     await waitFor(() => {
@@ -1111,10 +1101,7 @@ describe('NewEntityDialog', () => {
     await waitFor(() => {
       expect(screen.getByText('Add Memory')).toBeInTheDocument();
     });
-    await user.type(
-      screen.getByPlaceholderText('The memory content to store...'),
-      'Content'
-    );
+    await user.type(screen.getByPlaceholderText('The memory content to store...'), 'Content');
     await user.type(screen.getByPlaceholderText('e.g. user, system, chat'), 'src');
     await user.click(screen.getByText('Add to Memory'));
     await waitFor(() => {
@@ -1187,10 +1174,7 @@ describe('NewEntityDialog', () => {
       expect(screen.getByText('Add Memory')).toBeInTheDocument();
     });
     await user.click(screen.getByText('Knowledge Base'));
-    await user.type(
-      screen.getByPlaceholderText('e.g. Project Architecture, API Design'),
-      'Topic'
-    );
+    await user.type(screen.getByPlaceholderText('e.g. Project Architecture, API Design'), 'Topic');
     await user.type(
       screen.getByPlaceholderText(
         'Markdown or plain text content to store in the knowledge base...'
@@ -1212,10 +1196,7 @@ describe('NewEntityDialog', () => {
       expect(screen.getByText('Add Memory')).toBeInTheDocument();
     });
     await user.click(screen.getByText('Knowledge Base'));
-    await user.type(
-      screen.getByPlaceholderText('e.g. Project Architecture, API Design'),
-      'T'
-    );
+    await user.type(screen.getByPlaceholderText('e.g. Project Architecture, API Design'), 'T');
     await user.type(
       screen.getByPlaceholderText(
         'Markdown or plain text content to store in the knowledge base...'
@@ -1291,9 +1272,11 @@ describe('NewEntityDialog', () => {
     // Fill in goal name
     await user.type(screen.getByPlaceholderText('Goal name'), 'Safety');
     // Remove the goal
-    const removeButtons = screen.getAllByRole('button').filter(
-      (btn) => btn.querySelector('svg') && btn.className.includes('hover:text-destructive')
-    );
+    const removeButtons = screen
+      .getAllByRole('button')
+      .filter(
+        (btn) => btn.querySelector('svg') && btn.className.includes('hover:text-destructive')
+      );
     expect(removeButtons.length).toBeGreaterThan(0);
     await user.click(removeButtons[0]);
     expect(screen.getByText(/No goals yet/)).toBeInTheDocument();
@@ -1310,18 +1293,16 @@ describe('NewEntityDialog', () => {
     expect(screen.getByText('No hard boundaries defined.')).toBeInTheDocument();
     await user.click(screen.getByText('Add Boundary'));
     expect(screen.queryByText('No hard boundaries defined.')).not.toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText('e.g., Never delete production data')
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('e.g., Never delete production data')).toBeInTheDocument();
     await user.type(
       screen.getByPlaceholderText('e.g., Never delete production data'),
       'No deletions'
     );
     await user.type(screen.getByPlaceholderText('Rationale'), 'Safety');
     // Remove boundary
-    const removeButtons = screen.getAllByRole('button').filter(
-      (btn) => btn.className.includes('hover:text-destructive')
-    );
+    const removeButtons = screen
+      .getAllByRole('button')
+      .filter((btn) => btn.className.includes('hover:text-destructive'));
     await user.click(removeButtons[0]);
     expect(screen.getByText('No hard boundaries defined.')).toBeInTheDocument();
   });
@@ -1343,9 +1324,9 @@ describe('NewEntityDialog', () => {
     await user.selectOptions(enforcementSelect, 'block');
     expect(enforcementSelect).toHaveValue('block');
     // Remove
-    const removeButtons = screen.getAllByRole('button').filter(
-      (btn) => btn.className.includes('hover:text-destructive')
-    );
+    const removeButtons = screen
+      .getAllByRole('button')
+      .filter((btn) => btn.className.includes('hover:text-destructive'));
     await user.click(removeButtons[0]);
     expect(screen.getByText('No policies defined.')).toBeInTheDocument();
   });
@@ -1358,9 +1339,7 @@ describe('NewEntityDialog', () => {
       expect(screen.getByText('New Intent')).toBeInTheDocument();
     });
     await user.click(screen.getByText('Import JSON'));
-    expect(
-      screen.getByText(/Paste a full intent JSON document/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Paste a full intent JSON document/)).toBeInTheDocument();
     const textarea = screen.getByPlaceholderText(/\"name\": \"\.\.\.\"/);
     const validJson = JSON.stringify({
       name: 'Imported Intent',
@@ -1420,10 +1399,7 @@ describe('NewEntityDialog', () => {
       expect(screen.getByText('New Intent')).toBeInTheDocument();
     });
     // Fill in name
-    await user.type(
-      screen.getByPlaceholderText('e.g., Production Safety Intent'),
-      'Test Intent'
-    );
+    await user.type(screen.getByPlaceholderText('e.g., Production Safety Intent'), 'Test Intent');
     // Add a goal
     await user.click(screen.getByText('Add Goal'));
     await user.type(screen.getByPlaceholderText('Goal name'), 'Safety');
@@ -1449,10 +1425,7 @@ describe('NewEntityDialog', () => {
     await waitFor(() => {
       expect(screen.getByText('New Intent')).toBeInTheDocument();
     });
-    await user.type(
-      screen.getByPlaceholderText('e.g., Production Safety Intent'),
-      'Bad Intent'
-    );
+    await user.type(screen.getByPlaceholderText('e.g., Production Safety Intent'), 'Bad Intent');
     await user.click(screen.getByText('Create Intent'));
     await waitFor(() => {
       expect(mockCreateIntent).toHaveBeenCalled();
@@ -1472,10 +1445,7 @@ describe('NewEntityDialog', () => {
     await waitFor(() => {
       expect(screen.getByText('New Intent')).toBeInTheDocument();
     });
-    await user.type(
-      screen.getByPlaceholderText('e.g., Production Safety Intent'),
-      'Fail Intent'
-    );
+    await user.type(screen.getByPlaceholderText('e.g., Production Safety Intent'), 'Fail Intent');
     await user.click(screen.getByText('Create Intent'));
     await waitFor(() => {
       expect(mockCreateIntent).toHaveBeenCalled();
@@ -1495,10 +1465,7 @@ describe('NewEntityDialog', () => {
     await waitFor(() => {
       expect(screen.getByText('New Intent')).toBeInTheDocument();
     });
-    await user.type(
-      screen.getByPlaceholderText('e.g., Production Safety Intent'),
-      'Filter Test'
-    );
+    await user.type(screen.getByPlaceholderText('e.g., Production Safety Intent'), 'Filter Test');
     // Add a goal but leave name empty
     await user.click(screen.getByText('Add Goal'));
     // Don't fill the name, just submit
@@ -1559,10 +1526,7 @@ describe('NewEntityDialog', () => {
     await waitFor(() => {
       expect(screen.getByText('Add Memory')).toBeInTheDocument();
     });
-    await user.type(
-      screen.getByPlaceholderText('The memory content to store...'),
-      'Fact'
-    );
+    await user.type(screen.getByPlaceholderText('The memory content to store...'), 'Fact');
     await user.type(screen.getByPlaceholderText('e.g. user, system, chat'), 'user');
     await user.click(screen.getByText('Add to Memory'));
     await waitFor(() => {
@@ -1579,10 +1543,7 @@ describe('NewEntityDialog', () => {
       expect(screen.getByText('Add Memory')).toBeInTheDocument();
     });
     await user.click(screen.getByText('Knowledge Base'));
-    await user.type(
-      screen.getByPlaceholderText('e.g. Project Architecture, API Design'),
-      'Topic'
-    );
+    await user.type(screen.getByPlaceholderText('e.g. Project Architecture, API Design'), 'Topic');
     await user.type(
       screen.getByPlaceholderText(
         'Markdown or plain text content to store in the knowledge base...'

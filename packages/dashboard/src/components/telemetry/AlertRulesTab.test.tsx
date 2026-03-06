@@ -403,9 +403,9 @@ describe('AlertRulesTab', () => {
     expect(selects.length).toBeGreaterThan(0);
 
     // Remove the channel - the trash button inside the channel row
-    const removeButtons = screen.getAllByRole('button').filter(
-      (btn) => btn.querySelector('svg') && btn.classList.contains('text-destructive')
-    );
+    const removeButtons = screen
+      .getAllByRole('button')
+      .filter((btn) => btn.querySelector('svg') && btn.classList.contains('text-destructive'));
     expect(removeButtons.length).toBeGreaterThan(0);
     await userEvent.click(removeButtons[removeButtons.length - 1]);
     // Channel should be removed

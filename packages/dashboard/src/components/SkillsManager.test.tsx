@@ -238,9 +238,7 @@ describe('SkillsManager', () => {
     const statusFilter = screen.getByLabelText('Filter by status');
     await user.selectOptions(statusFilter, 'active');
     await waitFor(() => {
-      expect(mockFetchSkills).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'active' }),
-      );
+      expect(mockFetchSkills).toHaveBeenCalledWith(expect.objectContaining({ status: 'active' }));
     });
   });
 
@@ -254,7 +252,7 @@ describe('SkillsManager', () => {
     await user.selectOptions(sourceFilter, 'ai_proposed');
     await waitFor(() => {
       expect(mockFetchSkills).toHaveBeenCalledWith(
-        expect.objectContaining({ source: 'ai_proposed' }),
+        expect.objectContaining({ source: 'ai_proposed' })
       );
     });
   });
@@ -271,14 +269,8 @@ describe('SkillsManager', () => {
 
     await user.type(screen.getByPlaceholderText('e.g., Code Review'), 'New Skill Name');
     await user.type(screen.getByPlaceholderText('What this skill does'), 'A description');
-    await user.type(
-      screen.getByPlaceholderText(/Detailed instructions/),
-      'Do something',
-    );
-    await user.type(
-      screen.getByPlaceholderText(/Comma-separated patterns/),
-      'trigger1, trigger2',
-    );
+    await user.type(screen.getByPlaceholderText(/Detailed instructions/), 'Do something');
+    await user.type(screen.getByPlaceholderText(/Comma-separated patterns/), 'trigger1, trigger2');
 
     await user.click(screen.getByText('Save'));
     await waitFor(() => {
@@ -653,7 +645,9 @@ describe('SkillsManager', () => {
   // --- Search params ?create=true pre-fill ---
   it('opens create form pre-filled from search params', async () => {
     mockFetchSkills.mockResolvedValue({ skills: [] } as any);
-    renderManager(['/?create=true&name=AutoSkill&description=A+desc&trigger=t1,t2&action=Do+stuff']);
+    renderManager([
+      '/?create=true&name=AutoSkill&description=A+desc&trigger=t1,t2&action=Do+stuff',
+    ]);
     await waitFor(() => {
       expect(screen.getByText('Create Skill')).toBeInTheDocument();
     });
@@ -698,7 +692,7 @@ describe('SkillsManager', () => {
     await user.type(screen.getByPlaceholderText('e.g., Code Review'), 'Tools Skill');
     await user.type(
       screen.getByPlaceholderText(/Comma-separated tool names/),
-      'read_file, web_search',
+      'read_file, web_search'
     );
     await user.click(screen.getByText('Save'));
     await waitFor(() => {
@@ -717,10 +711,7 @@ describe('SkillsManager', () => {
     });
     await user.click(screen.getByText(/New Skill/));
     await user.type(screen.getByPlaceholderText('e.g., Code Review'), 'WF Skill');
-    await user.type(
-      screen.getByPlaceholderText(/Workflow ID to trigger/),
-      'wf-123',
-    );
+    await user.type(screen.getByPlaceholderText(/Workflow ID to trigger/), 'wf-123');
     await user.click(screen.getByText('Save'));
     await waitFor(() => {
       expect(mockCreateSkill).toHaveBeenCalledTimes(1);

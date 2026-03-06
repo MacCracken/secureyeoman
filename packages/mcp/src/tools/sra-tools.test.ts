@@ -69,8 +69,12 @@ describe('sra-tools', () => {
         const handler = globalToolRegistry.get(name);
         expect(handler, `${name} should be registered`).toBeDefined();
         const result = await handler!({
-          id: 'test', name: 'test', provider: 'aws', framework: 'aws_sra',
-          blueprintId: 'bp-1', description: 'test',
+          id: 'test',
+          name: 'test',
+          provider: 'aws',
+          framework: 'aws_sra',
+          blueprintId: 'bp-1',
+          description: 'test',
         });
         expect(result.isError, `${name} should return isError=true when disabled`).toBe(true);
         expect((result.content[0] as { text: string }).text).toContain('disabled');

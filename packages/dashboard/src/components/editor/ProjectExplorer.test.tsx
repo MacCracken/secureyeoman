@@ -201,7 +201,10 @@ describe('ProjectExplorer', () => {
     await waitFor(() => {
       expect(screen.getByText('myfile.txt')).toBeInTheDocument();
     });
-    await user.pointer({ target: screen.getByTestId('tree-node-myfile.txt'), keys: '[MouseRight]' });
+    await user.pointer({
+      target: screen.getByTestId('tree-node-myfile.txt'),
+      keys: '[MouseRight]',
+    });
     await waitFor(() => {
       expect(screen.getByTestId('context-menu')).toBeInTheDocument();
       expect(screen.getByText('Rename')).toBeInTheDocument();
@@ -254,7 +257,10 @@ describe('ProjectExplorer', () => {
     await waitFor(() => {
       expect(screen.getByText('rename-me.txt')).toBeInTheDocument();
     });
-    await user.pointer({ target: screen.getByTestId('tree-node-rename-me.txt'), keys: '[MouseRight]' });
+    await user.pointer({
+      target: screen.getByTestId('tree-node-rename-me.txt'),
+      keys: '[MouseRight]',
+    });
     await waitFor(() => {
       expect(screen.getByText('Rename')).toBeInTheDocument();
     });

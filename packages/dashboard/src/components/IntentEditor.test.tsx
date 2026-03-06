@@ -406,9 +406,7 @@ describe('IntentEditor', () => {
     });
     await user.click(screen.getByText('Import JSON'));
     await waitFor(() => {
-      expect(
-        screen.getByText(/Paste a full intent JSON document/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Paste a full intent JSON document/)).toBeInTheDocument();
     });
   });
 

@@ -31,7 +31,7 @@ export default tseslint.config(
       parserOptions: {
         project: [
           'tsconfig.lint.json',
-          'packages/dashboard/tsconfig.json',
+          'packages/dashboard/tsconfig.lint.json',
           'packages/dashboard/tsconfig.node.json',
         ],
         tsconfigRootDir: import.meta.dirname,

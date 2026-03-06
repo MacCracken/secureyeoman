@@ -942,21 +942,86 @@ describe('MetricsPage — Mission Control data display', () => {
       beatCount: 42,
       lastBeat: null,
       tasks: [
-        { enabled: true, name: 'health', type: 'health', lastRunAt: null, config: {}, personalityId: null, personalityName: null },
-        { enabled: false, name: 'scan', type: 'scan', lastRunAt: null, config: {}, personalityId: null, personalityName: null },
+        {
+          enabled: true,
+          name: 'health',
+          type: 'health',
+          lastRunAt: null,
+          config: {},
+          personalityId: null,
+          personalityName: null,
+        },
+        {
+          enabled: false,
+          name: 'scan',
+          type: 'scan',
+          lastRunAt: null,
+          config: {},
+          personalityId: null,
+          personalityName: null,
+        },
       ],
       totalTasks: 4,
       enabledTasks: 2,
     });
     mockFetchMcpServers.mockResolvedValue({
       servers: [
-        { id: 's1', name: 'MCP-Alpha', description: 'Primary', transport: 'stdio', command: null, args: [], url: null, env: {}, enabled: true, createdAt: 0, updatedAt: 0 },
-        { id: 's2', name: 'MCP-Beta', description: 'Secondary', transport: 'sse', command: null, args: [], url: null, env: {}, enabled: false, createdAt: 0, updatedAt: 0 },
+        {
+          id: 's1',
+          name: 'MCP-Alpha',
+          description: 'Primary',
+          transport: 'stdio',
+          command: null,
+          args: [],
+          url: null,
+          env: {},
+          enabled: true,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        {
+          id: 's2',
+          name: 'MCP-Beta',
+          description: 'Secondary',
+          transport: 'sse',
+          command: null,
+          args: [],
+          url: null,
+          env: {},
+          enabled: false,
+          createdAt: 0,
+          updatedAt: 0,
+        },
       ],
       total: 2,
     });
     mockFetchActiveDelegations.mockResolvedValue({
-      delegations: [{ delegationId: 'd1', profileId: 'p1', profileName: 'Agent-1', task: 'analyze', status: 'running', depth: 1, tokensUsed: 500, tokenBudget: 10000, startedAt: Date.now() - 30000, elapsedMs: 30000 }, { delegationId: 'd2', profileId: 'p2', profileName: 'Agent-2', task: 'report', status: 'running', depth: 2, tokensUsed: 200, tokenBudget: 10000, startedAt: Date.now() - 15000, elapsedMs: 15000 }],
+      delegations: [
+        {
+          delegationId: 'd1',
+          profileId: 'p1',
+          profileName: 'Agent-1',
+          task: 'analyze',
+          status: 'running',
+          depth: 1,
+          tokensUsed: 500,
+          tokenBudget: 10000,
+          startedAt: Date.now() - 30000,
+          elapsedMs: 30000,
+        },
+        {
+          delegationId: 'd2',
+          profileId: 'p2',
+          profileName: 'Agent-2',
+          task: 'report',
+          status: 'running',
+          depth: 2,
+          tokensUsed: 200,
+          tokenBudget: 10000,
+          startedAt: Date.now() - 15000,
+          elapsedMs: 15000,
+        },
+      ],
     });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({
@@ -972,30 +1037,124 @@ describe('MetricsPage — Mission Control data display', () => {
     });
     mockFetchPersonalities.mockResolvedValue({
       personalities: [
-        { id: 'p1', name: 'Atlas', description: 'Default', systemPrompt: '', traits: {}, sex: 'unspecified', voice: '', preferredLanguage: 'en', defaultModel: null, modelFallbacks: [], includeArchetypes: false, injectDateTime: false, empathyResonance: false, avatarUrl: null, isActive: true, isDefault: true, isArchetype: false, createdAt: 0, updatedAt: 0 },
-        { id: 'p2', name: 'Scout', description: 'Helper', systemPrompt: '', traits: {}, sex: 'unspecified', voice: '', preferredLanguage: 'en', defaultModel: null, modelFallbacks: [], includeArchetypes: false, injectDateTime: false, empathyResonance: false, avatarUrl: '/avatars/scout.png', isActive: true, isDefault: false, isArchetype: false, createdAt: 0, updatedAt: 0 },
+        {
+          id: 'p1',
+          name: 'Atlas',
+          description: 'Default',
+          systemPrompt: '',
+          traits: {},
+          sex: 'unspecified',
+          voice: '',
+          preferredLanguage: 'en',
+          defaultModel: null,
+          modelFallbacks: [],
+          includeArchetypes: false,
+          injectDateTime: false,
+          empathyResonance: false,
+          avatarUrl: null,
+          isActive: true,
+          isDefault: true,
+          isArchetype: false,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        {
+          id: 'p2',
+          name: 'Scout',
+          description: 'Helper',
+          systemPrompt: '',
+          traits: {},
+          sex: 'unspecified',
+          voice: '',
+          preferredLanguage: 'en',
+          defaultModel: null,
+          modelFallbacks: [],
+          includeArchetypes: false,
+          injectDateTime: false,
+          empathyResonance: false,
+          avatarUrl: '/avatars/scout.png',
+          isActive: true,
+          isDefault: false,
+          isArchetype: false,
+          createdAt: 0,
+          updatedAt: 0,
+        },
       ],
     });
     mockFetchTasks.mockResolvedValue({
       tasks: [
-        { id: 'task1', name: 'Analyze data', type: 'analysis', status: 'running', createdAt: Date.now() },
-        { id: 'task2', name: 'Generate report', type: 'code', status: 'running', createdAt: Date.now() },
+        {
+          id: 'task1',
+          name: 'Analyze data',
+          type: 'analysis',
+          status: 'running',
+          createdAt: Date.now(),
+        },
+        {
+          id: 'task2',
+          name: 'Generate report',
+          type: 'code',
+          status: 'running',
+          createdAt: Date.now(),
+        },
       ],
       total: 2,
     });
     mockFetchSecurityEvents.mockResolvedValue({
       events: [
-        { id: 'evt1', type: 'auth_failure', severity: 'warn', message: 'Login failed from 10.0.0.1', timestamp: Date.now(), acknowledged: false },
-        { id: 'evt2', type: 'rate_limit', severity: 'info', message: 'Rate limit exceeded', timestamp: Date.now(), acknowledged: false },
-        { id: 'evt3', type: 'injection_attempt', severity: 'critical', message: 'SQL injection blocked', timestamp: Date.now(), acknowledged: false },
+        {
+          id: 'evt1',
+          type: 'auth_failure',
+          severity: 'warn',
+          message: 'Login failed from 10.0.0.1',
+          timestamp: Date.now(),
+          acknowledged: false,
+        },
+        {
+          id: 'evt2',
+          type: 'rate_limit',
+          severity: 'info',
+          message: 'Rate limit exceeded',
+          timestamp: Date.now(),
+          acknowledged: false,
+        },
+        {
+          id: 'evt3',
+          type: 'injection_attempt',
+          severity: 'critical',
+          message: 'SQL injection blocked',
+          timestamp: Date.now(),
+          acknowledged: false,
+        },
       ],
       total: 3,
     });
     mockFetchAuditEntries.mockResolvedValue({
       entries: [
-        { id: 'a1', event: 'user_login', level: 'info', message: 'User admin logged in', timestamp: Date.now(), sequence: 1 },
-        { id: 'a2', event: 'config_change', level: 'warn', message: 'Config updated by admin', timestamp: Date.now(), sequence: 2 },
-        { id: 'a3', event: 'policy_violation', level: 'error', message: 'Policy breach detected', timestamp: Date.now(), sequence: 3 },
+        {
+          id: 'a1',
+          event: 'user_login',
+          level: 'info',
+          message: 'User admin logged in',
+          timestamp: Date.now(),
+          sequence: 1,
+        },
+        {
+          id: 'a2',
+          event: 'config_change',
+          level: 'warn',
+          message: 'Config updated by admin',
+          timestamp: Date.now(),
+          sequence: 2,
+        },
+        {
+          id: 'a3',
+          event: 'policy_violation',
+          level: 'error',
+          message: 'Policy breach detected',
+          timestamp: Date.now(),
+          sequence: 3,
+        },
       ],
       total: 3,
       limit: 50,
@@ -1003,8 +1162,30 @@ describe('MetricsPage — Mission Control data display', () => {
     });
     mockFetchWorkflows.mockResolvedValue({
       definitions: [
-        { id: 'wf1', name: 'Deploy Pipeline', steps: [], edges: [], triggers: [], isEnabled: true, version: 1, createdBy: 'admin', createdAt: 0, updatedAt: 0 },
-        { id: 'wf2', name: 'Backup Job', steps: [], edges: [], triggers: [], isEnabled: false, version: 1, createdBy: 'admin', createdAt: 0, updatedAt: 0 },
+        {
+          id: 'wf1',
+          name: 'Deploy Pipeline',
+          steps: [],
+          edges: [],
+          triggers: [],
+          isEnabled: true,
+          version: 1,
+          createdBy: 'admin',
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        {
+          id: 'wf2',
+          name: 'Backup Job',
+          steps: [],
+          edges: [],
+          triggers: [],
+          isEnabled: false,
+          version: 1,
+          createdBy: 'admin',
+          createdAt: 0,
+          updatedAt: 0,
+        },
       ],
       total: 2,
     });
@@ -1192,7 +1373,12 @@ describe('MetricsPage — Costs tab details', () => {
     vi.resetAllMocks();
     localStorage.removeItem('mission-control:layout');
     mockFetchHeartbeatStatus.mockResolvedValue({
-      running: false, enabled: false, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+      running: false,
+      enabled: false,
+      intervalMs: 60_000,
+      beatCount: 0,
+      lastBeat: null,
+      tasks: [],
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
@@ -1213,7 +1399,8 @@ describe('MetricsPage — Costs tab details', () => {
       recommendations: [],
     });
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
 
     renderMetricsPage();
@@ -1236,7 +1423,8 @@ describe('MetricsPage — Costs tab details', () => {
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
 
     renderMetricsPage();
@@ -1267,7 +1455,8 @@ describe('MetricsPage — Costs tab details', () => {
       ],
     });
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
 
     renderMetricsPage();
@@ -1287,7 +1476,8 @@ describe('MetricsPage — Costs tab details', () => {
     mockFetchMetrics.mockResolvedValue(metrics);
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
 
     renderMetricsPage();
@@ -1310,7 +1500,8 @@ describe('MetricsPage — Costs tab details', () => {
       recommendations: [],
     });
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
 
     renderMetricsPage();
@@ -1331,16 +1522,19 @@ describe('MetricsPage — Cost History sub-tab', () => {
     vi.resetAllMocks();
     localStorage.removeItem('mission-control:layout');
     mockFetchHeartbeatStatus.mockResolvedValue({
-      running: false, enabled: false, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+      running: false,
+      enabled: false,
+      intervalMs: 60_000,
+      beatCount: 0,
+      lastBeat: null,
+      tasks: [],
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchPersonalities.mockResolvedValue({
-      personalities: [
-        { id: 'p1', name: 'Atlas', isActive: true, isDefault: true } as any,
-      ],
+      personalities: [{ id: 'p1', name: 'Atlas', isActive: true, isDefault: true } as any],
     });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
@@ -1356,25 +1550,48 @@ describe('MetricsPage — Cost History sub-tab', () => {
 
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole('button', { name: /history/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('No usage records found for the selected filters.')).toBeInTheDocument();
+      expect(
+        screen.getByText('No usage records found for the selected filters.')
+      ).toBeInTheDocument();
     });
   });
 
   it('shows records table with data when records exist', async () => {
     mockFetchCostHistory.mockResolvedValue({
       records: [
-        { date: '2026-03-05', provider: 'anthropic', model: 'claude-3', personalityId: 'p1', inputTokens: 10000, outputTokens: 5000, cachedTokens: 2000, totalTokens: 15000, costUsd: 0.25, calls: 30 },
+        {
+          date: '2026-03-05',
+          provider: 'anthropic',
+          model: 'claude-3',
+          personalityId: 'p1',
+          inputTokens: 10000,
+          outputTokens: 5000,
+          cachedTokens: 2000,
+          totalTokens: 15000,
+          costUsd: 0.25,
+          calls: 30,
+        },
       ],
-      totals: { inputTokens: 10000, outputTokens: 5000, totalTokens: 15000, costUsd: 0.25, calls: 30 },
+      totals: {
+        inputTokens: 10000,
+        outputTokens: 5000,
+        totalTokens: 15000,
+        costUsd: 0.25,
+        calls: 30,
+      },
     });
 
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole('button', { name: /history/i }));
 
     await waitFor(() => {
@@ -1387,12 +1604,15 @@ describe('MetricsPage — Cost History sub-tab', () => {
 
   it('shows filter controls (From, To, Provider, Model, Personality, Group By)', async () => {
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
 
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole('button', { name: /history/i }));
 
     await waitFor(() => {
@@ -1407,12 +1627,15 @@ describe('MetricsPage — Cost History sub-tab', () => {
 
   it('shows provider options in the provider dropdown', async () => {
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
 
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole('button', { name: /history/i }));
 
     await waitFor(() => {
@@ -1424,12 +1647,15 @@ describe('MetricsPage — Cost History sub-tab', () => {
 
   it('shows personality options in the personality dropdown', async () => {
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
 
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole('button', { name: /history/i }));
 
     await waitFor(() => {
@@ -1439,12 +1665,15 @@ describe('MetricsPage — Cost History sub-tab', () => {
 
   it('shows Usage History heading and description', async () => {
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
 
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole('button', { name: /history/i }));
 
     await waitFor(() => {
@@ -1461,13 +1690,19 @@ describe('MetricsPage — Full Metrics infrastructure details', () => {
     vi.resetAllMocks();
     localStorage.removeItem('mission-control:layout');
     mockFetchHeartbeatStatus.mockResolvedValue({
-      running: false, enabled: false, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+      running: false,
+      enabled: false,
+      intervalMs: 60_000,
+      beatCount: 0,
+      lastBeat: null,
+      tasks: [],
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
@@ -1569,14 +1804,20 @@ describe('MetricsPage — Full Metrics security details', () => {
     vi.resetAllMocks();
     localStorage.removeItem('mission-control:layout');
     mockFetchHeartbeatStatus.mockResolvedValue({
-      running: false, enabled: false, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+      running: false,
+      enabled: false,
+      intervalMs: 60_000,
+      beatCount: 0,
+      lastBeat: null,
+      tasks: [],
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
@@ -1732,14 +1973,20 @@ describe('MetricsPage — health and uptime edge cases', () => {
     vi.resetAllMocks();
     localStorage.removeItem('mission-control:layout');
     mockFetchHeartbeatStatus.mockResolvedValue({
-      running: true, enabled: true, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+      running: true,
+      enabled: true,
+      intervalMs: 60_000,
+      beatCount: 0,
+      lastBeat: null,
+      tasks: [],
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
@@ -1764,7 +2011,12 @@ describe('MetricsPage — health and uptime edge cases', () => {
 
   it('shows "—" for uptime when health uptime is 0 (falsy)', () => {
     renderMetricsPage({
-      health: { status: 'ok', version: '1.0', uptime: 0, checks: { database: true, auditChain: true } },
+      health: {
+        status: 'ok',
+        version: '1.0',
+        uptime: 0,
+        checks: { database: true, auditChain: true },
+      },
     });
     // uptime: 0 is falsy, so the code shows "—"
     expect(screen.getByText('—')).toBeInTheDocument();
@@ -1772,7 +2024,12 @@ describe('MetricsPage — health and uptime edge cases', () => {
 
   it('shows core status text from health object', () => {
     renderMetricsPage({
-      health: { status: 'degraded', version: '1.0', uptime: 3600000, checks: { database: true, auditChain: true } },
+      health: {
+        status: 'degraded',
+        version: '1.0',
+        uptime: 3600000,
+        checks: { database: true, auditChain: true },
+      },
     });
     expect(screen.getByText('degraded')).toBeInTheDocument();
   });
@@ -1804,14 +2061,20 @@ describe('MetricsPage — no data scenarios', () => {
     vi.resetAllMocks();
     localStorage.removeItem('mission-control:layout');
     mockFetchHeartbeatStatus.mockResolvedValue({
-      running: false, enabled: false, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+      running: false,
+      enabled: false,
+      intervalMs: 60_000,
+      beatCount: 0,
+      lastBeat: null,
+      tasks: [],
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({
-      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
     });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });

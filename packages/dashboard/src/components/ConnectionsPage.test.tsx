@@ -950,9 +950,7 @@ describe('ConnectionsPage', () => {
   it('shows empty MCP state when no servers configured', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     renderComponent();
-    expect(
-      await screen.findByText(/No MCP servers configured yet/)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/No MCP servers configured yet/)).toBeInTheDocument();
   });
 
   // ── Discovered Tools section ───────────────────────────────────────

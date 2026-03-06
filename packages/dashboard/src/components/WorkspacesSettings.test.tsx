@@ -59,8 +59,20 @@ const WORKSPACE_NO_DESC = {
 };
 
 const USERS = [
-  { id: 'u-1', email: 'admin@test.com', displayName: 'Alice Admin', isAdmin: true, createdAt: 1700000000000 },
-  { id: 'u-2', email: 'bob@test.com', displayName: 'Bob User', isAdmin: false, createdAt: 1700000000000 },
+  {
+    id: 'u-1',
+    email: 'admin@test.com',
+    displayName: 'Alice Admin',
+    isAdmin: true,
+    createdAt: 1700000000000,
+  },
+  {
+    id: 'u-2',
+    email: 'bob@test.com',
+    displayName: 'Bob User',
+    isAdmin: false,
+    createdAt: 1700000000000,
+  },
   { id: 'u-3', email: 'carol@test.com', displayName: '', isAdmin: false, createdAt: 1700000000000 },
 ];
 
@@ -205,7 +217,9 @@ describe('WorkspacesSettings', () => {
 
   it('submits create form with trimmed values', async () => {
     const user = userEvent.setup();
-    mockCreateWorkspace.mockResolvedValue({ workspace: { ...WORKSPACE, id: 'ws-new', name: 'New Team' } } as any);
+    mockCreateWorkspace.mockResolvedValue({
+      workspace: { ...WORKSPACE, id: 'ws-new', name: 'New Team' },
+    } as any);
     renderSettings();
     await waitFor(() => {
       expect(screen.getByText('Engineering')).toBeInTheDocument();
@@ -223,7 +237,9 @@ describe('WorkspacesSettings', () => {
 
   it('submits create form with undefined description when empty', async () => {
     const user = userEvent.setup();
-    mockCreateWorkspace.mockResolvedValue({ workspace: { ...WORKSPACE, id: 'ws-new', name: 'X' } } as any);
+    mockCreateWorkspace.mockResolvedValue({
+      workspace: { ...WORKSPACE, id: 'ws-new', name: 'X' },
+    } as any);
     renderSettings();
     await waitFor(() => {
       expect(screen.getByText('Engineering')).toBeInTheDocument();
@@ -543,9 +559,9 @@ describe('WorkspacesSettings', () => {
     });
     await user.click(screen.getByText('Add'));
     // The Add submit button (not the "Add" toggle) should be disabled
-    const addBtns = screen.getAllByRole('button').filter(
-      (b) => b.textContent === 'Add' && b.classList.contains('btn')
-    );
+    const addBtns = screen
+      .getAllByRole('button')
+      .filter((b) => b.textContent === 'Add' && b.classList.contains('btn'));
     // The submit button is disabled because no user selected
     expect(addBtns[0]).toBeDisabled();
   });
@@ -570,9 +586,9 @@ describe('WorkspacesSettings', () => {
     // Change role to admin
     await user.selectOptions(screen.getByLabelText('Select role'), 'admin');
     // Click the submit Add button
-    const addBtns = screen.getAllByRole('button').filter(
-      (b) => b.textContent === 'Add' && b.classList.contains('btn')
-    );
+    const addBtns = screen
+      .getAllByRole('button')
+      .filter((b) => b.textContent === 'Add' && b.classList.contains('btn'));
     await user.click(addBtns[0]);
 
     expect(mockAddWorkspaceMember).toHaveBeenCalledWith('ws-1', {

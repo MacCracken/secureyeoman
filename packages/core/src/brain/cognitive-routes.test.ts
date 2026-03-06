@@ -4,15 +4,13 @@ import { registerCognitiveRoutes } from './cognitive-routes.js';
 
 function createMockBrainManager() {
   return {
-    getOptimizerStats: vi
-      .fn()
-      .mockReturnValue([
-        {
-          weights: { alpha: 0.3, hebbianScale: 1, boostCap: 0.5, salienceWeight: 0.1 },
-          mean: 0.6,
-          pulls: 10,
-        },
-      ]),
+    getOptimizerStats: vi.fn().mockReturnValue([
+      {
+        weights: { alpha: 0.3, hebbianScale: 1, boostCap: 0.5, salienceWeight: 0.1 },
+        mean: 0.6,
+        pulls: 10,
+      },
+    ]),
     recordRetrievalFeedback: vi.fn(),
     getReconsolidationStats: vi.fn().mockReturnValue({
       evaluated: 5,

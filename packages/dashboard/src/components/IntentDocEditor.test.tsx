@@ -81,10 +81,16 @@ const INTENT_DOC = {
     },
   ],
   hardBoundaries: [{ id: 'b-1', rule: 'Never delete prod data', rationale: 'Safety', rego: '' }],
-  policies: [{ id: 'p-1', rule: 'Log all actions', enforcement: 'warn', rationale: 'Audit', rego: '' }],
+  policies: [
+    { id: 'p-1', rule: 'Log all actions', enforcement: 'warn', rationale: 'Audit', rego: '' },
+  ],
   delegationFramework: {
     tenants: [
-      { id: 'dt-1', principle: 'Least privilege', decisionBoundaries: ['no-prod-write', 'read-only'] },
+      {
+        id: 'dt-1',
+        principle: 'Least privilege',
+        decisionBoundaries: ['no-prod-write', 'read-only'],
+      },
     ],
   },
   context: [{ key: 'orgName', value: 'ACME Corp' }],
@@ -327,7 +333,12 @@ describe('IntentDocEditor', () => {
 
   it('shows "Saving..." text during mutation', async () => {
     let resolveSave!: (v: unknown) => void;
-    mockUpdateIntent.mockImplementation(() => new Promise((r) => { resolveSave = r; }));
+    mockUpdateIntent.mockImplementation(
+      () =>
+        new Promise((r) => {
+          resolveSave = r;
+        })
+    );
 
     const user = userEvent.setup();
     renderDocEditor();

@@ -61,7 +61,9 @@ describe('useCanvasShortcuts keyboard handler', () => {
     expect(typeof mod.useCanvasShortcuts).toBe('function');
   });
 
-  function setupHandler(overrides: Partial<import('./useCanvasShortcuts').CanvasShortcutActions> = {}) {
+  function setupHandler(
+    overrides: Partial<import('./useCanvasShortcuts').CanvasShortcutActions> = {}
+  ) {
     const nodes = [
       makeNode('first', 20, 20),
       makeNode('second', 300, 20),

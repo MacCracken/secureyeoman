@@ -106,9 +106,7 @@ describe('ChatMarkdown', () => {
     renderMarkdown('Use `foo` here');
     const codes = document.querySelectorAll('code');
     // Find the inline code (no language-* class)
-    const inline = Array.from(codes).find(
-      (c) => !c.className.includes('language-'),
-    );
+    const inline = Array.from(codes).find((c) => !c.className.includes('language-'));
     expect(inline).toBeInTheDocument();
     expect(inline?.textContent).toBe('foo');
   });

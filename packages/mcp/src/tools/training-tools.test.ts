@@ -137,10 +137,9 @@ describe('training-tools', () => {
       const handler = globalToolRegistry.get('training_resume_from_checkpoint')!;
       await handler({ jobId: 'job-1', checkpointPath: '/ckpt/step-100' });
 
-      expect(client.post).toHaveBeenCalledWith(
-        '/api/v1/training/finetune/jobs/job-1/resume',
-        { checkpointPath: '/ckpt/step-100' }
-      );
+      expect(client.post).toHaveBeenCalledWith('/api/v1/training/finetune/jobs/job-1/resume', {
+        checkpointPath: '/ckpt/step-100',
+      });
     });
   });
 

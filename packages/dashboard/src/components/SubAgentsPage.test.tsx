@@ -567,14 +567,18 @@ describe('SubAgentsPage', () => {
     await screen.findByText('Active');
     await user.click(screen.getByText('Delegate Task'));
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Describe the task for the sub-agent...')).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText('Describe the task for the sub-agent...')
+      ).toBeInTheDocument();
     });
     // Click the header "Delegate Task" button again to toggle off
     const delegateBtns = screen.getAllByText('Delegate Task');
     // The first one is the header button
     await user.click(delegateBtns[0]);
     await waitFor(() => {
-      expect(screen.queryByPlaceholderText('Describe the task for the sub-agent...')).not.toBeInTheDocument();
+      expect(
+        screen.queryByPlaceholderText('Describe the task for the sub-agent...')
+      ).not.toBeInTheDocument();
     });
   });
 

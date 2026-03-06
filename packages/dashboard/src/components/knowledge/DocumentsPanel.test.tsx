@@ -86,7 +86,9 @@ const DOC_PENDING = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockFetchPersonalities.mockResolvedValue({ personalities: [{ id: 'p1', name: 'FRIDAY' } as any] });
+  mockFetchPersonalities.mockResolvedValue({
+    personalities: [{ id: 'p1', name: 'FRIDAY' } as any],
+  });
   mockListDocuments.mockResolvedValue({ documents: [DOC_READY], total: 1 });
 });
 

@@ -939,7 +939,10 @@ describe('SettingsPage', () => {
   });
 
   it('shows validation error when saving invalid custom theme', async () => {
-    mockValidateCustomThemeHook.mockReturnValue({ valid: false, error: 'Missing required color: primary' });
+    mockValidateCustomThemeHook.mockReturnValue({
+      valid: false,
+      error: 'Missing required color: primary',
+    });
 
     const user = userEvent.setup();
     renderComponent();
@@ -1034,9 +1037,7 @@ describe('SettingsPage', () => {
     // Enable schedule
     const checkbox = screen.getByRole('checkbox', { name: /Enable scheduled theme switching/ });
     await user.click(checkbox);
-    expect(mockSaveScheduleHook).toHaveBeenCalledWith(
-      expect.objectContaining({ enabled: true })
-    );
+    expect(mockSaveScheduleHook).toHaveBeenCalledWith(expect.objectContaining({ enabled: true }));
   });
 
   it('shows schedule time inputs when enabled and not using OS schedule', async () => {

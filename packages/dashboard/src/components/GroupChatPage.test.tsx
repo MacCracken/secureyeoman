@@ -318,9 +318,7 @@ describe('GroupChatPage', () => {
     mockFetchChannels.mockResolvedValue({ channels: [MOCK_CHANNEL], total: 1 });
     mockFetchMessages.mockResolvedValue({ messages: [], total: 0 });
     mockFetchPersonalities.mockResolvedValue({
-      personalities: [
-        { id: 'p-1', name: 'Friday', isDefault: true } as never,
-      ],
+      personalities: [{ id: 'p-1', name: 'Friday', isDefault: true } as never],
     } as never);
 
     renderPage();
@@ -340,8 +338,6 @@ describe('GroupChatPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/No active conversations/)).toBeInTheDocument();
     });
-    expect(
-      screen.getByText(/Group Chat shows real-time conversations/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Group Chat shows real-time conversations/)).toBeInTheDocument();
   });
 });

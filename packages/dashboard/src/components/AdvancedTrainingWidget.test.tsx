@@ -23,14 +23,24 @@ function renderWidget() {
 
 const mockJobs = [
   {
-    id: 'tj1', method: 'sft', gpuCount: 2, status: 'running', currentStep: 50, totalSteps: 100,
+    id: 'tj1',
+    method: 'sft',
+    gpuCount: 2,
+    status: 'running',
+    currentStep: 50,
+    totalSteps: 100,
     checkpoints: [
       { id: 'cp1', step: 25, loss: 0.45, date: '2026-03-01T00:00:00Z', path: '/ckpt/25' },
       { id: 'cp2', step: 50, loss: 0.32, date: '2026-03-01T01:00:00Z', path: '/ckpt/50' },
     ],
   },
   {
-    id: 'tj2', method: 'dpo', gpuCount: 4, status: 'completed', currentStep: 200, totalSteps: 200,
+    id: 'tj2',
+    method: 'dpo',
+    gpuCount: 4,
+    status: 'completed',
+    currentStep: 200,
+    totalSteps: 200,
     checkpoints: [],
   },
 ];
@@ -47,7 +57,11 @@ describe('AdvancedTrainingWidget', () => {
   });
 
   it('shows error state', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 500, statusText: 'Error' } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Error',
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText(/Error loading training data/)).toBeInTheDocument();
@@ -55,7 +69,10 @@ describe('AdvancedTrainingWidget', () => {
   });
 
   it('renders heading', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Advanced Training')).toBeInTheDocument();
@@ -63,7 +80,10 @@ describe('AdvancedTrainingWidget', () => {
   });
 
   it('shows training method selector with SFT, DPO, RLHF', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('SFT')).toBeInTheDocument();
@@ -74,7 +94,10 @@ describe('AdvancedTrainingWidget', () => {
   });
 
   it('shows GPU count slider', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('GPU Count')).toBeInTheDocument();
@@ -83,7 +106,10 @@ describe('AdvancedTrainingWidget', () => {
   });
 
   it('shows Start Training button', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Start Training')).toBeInTheDocument();
@@ -91,7 +117,10 @@ describe('AdvancedTrainingWidget', () => {
   });
 
   it('shows Training in Progress when active job exists', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve(mockJobs) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockJobs),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Training in Progress...')).toBeInTheDocument();
@@ -99,7 +128,10 @@ describe('AdvancedTrainingWidget', () => {
   });
 
   it('shows active job progress with step count', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve(mockJobs) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockJobs),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Running: SFT on 2 GPU(s)')).toBeInTheDocument();
@@ -108,7 +140,10 @@ describe('AdvancedTrainingWidget', () => {
   });
 
   it('renders checkpoints with Resume buttons', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve(mockJobs) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockJobs),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Checkpoints')).toBeInTheDocument();
@@ -119,7 +154,10 @@ describe('AdvancedTrainingWidget', () => {
   });
 
   it('shows loss values in checkpoints', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve(mockJobs) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockJobs),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Loss: 0.4500')).toBeInTheDocument();
@@ -130,7 +168,18 @@ describe('AdvancedTrainingWidget', () => {
   it('shows no checkpoints message when empty', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve([{ id: 'tj3', method: 'rlhf', gpuCount: 1, status: 'completed', currentStep: 10, totalSteps: 10, checkpoints: [] }]),
+      json: () =>
+        Promise.resolve([
+          {
+            id: 'tj3',
+            method: 'rlhf',
+            gpuCount: 1,
+            status: 'completed',
+            currentStep: 10,
+            totalSteps: 10,
+            checkpoints: [],
+          },
+        ]),
     } as Response);
     renderWidget();
     await waitFor(() => {
@@ -139,7 +188,10 @@ describe('AdvancedTrainingWidget', () => {
   });
 
   it('updates GPU count via slider', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    } as Response);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByRole('slider')).toBeInTheDocument();

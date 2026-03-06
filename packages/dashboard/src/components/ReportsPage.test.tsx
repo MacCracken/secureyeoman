@@ -38,7 +38,7 @@ function renderComponent() {
   return render(
     <QueryClientProvider client={qc}>
       <ReportsPage />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 

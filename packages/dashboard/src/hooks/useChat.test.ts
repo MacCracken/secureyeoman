@@ -153,10 +153,9 @@ describe('useChat', () => {
   });
 
   it('should load existing conversation', async () => {
-    const { result } = renderHook(
-      () => useChat({ conversationId: 'existing-1' }),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useChat({ conversationId: 'existing-1' }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.isLoadingConversation).toBe(false);
@@ -169,10 +168,9 @@ describe('useChat', () => {
   it('should handle conversation load error', async () => {
     vi.mocked(api.fetchConversation).mockRejectedValueOnce(new Error('Not found'));
 
-    const { result } = renderHook(
-      () => useChat({ conversationId: 'bad-id' }),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useChat({ conversationId: 'bad-id' }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.isLoadingConversation).toBe(false);
@@ -218,10 +216,9 @@ describe('useChat', () => {
   });
 
   it('should pass personalityId option', async () => {
-    const { result } = renderHook(
-      () => useChat({ personalityId: 'p1' }),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useChat({ personalityId: 'p1' }), {
+      wrapper: createWrapper(),
+    });
 
     act(() => {
       result.current.setInput('Test with personality');
@@ -303,10 +300,9 @@ describe('useChatStream', () => {
   });
 
   it('should load existing conversation', async () => {
-    const { result } = renderHook(
-      () => useChatStream({ conversationId: 'existing-1' }),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useChatStream({ conversationId: 'existing-1' }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.isLoadingConversation).toBe(false);

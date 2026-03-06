@@ -320,9 +320,7 @@ describe('ConsolidationSettings', () => {
     await user.click(screen.getByText('Run Now'));
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Consolidation failed. Check logs for details.')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Consolidation failed. Check logs for details.')).toBeInTheDocument();
     });
   });
 

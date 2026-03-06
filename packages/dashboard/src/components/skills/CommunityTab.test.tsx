@@ -89,7 +89,9 @@ describe('CommunityTab', () => {
     } as any);
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByText(/community skills must be installed per-personality/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/community skills must be installed per-personality/)
+      ).toBeInTheDocument();
     });
   });
 

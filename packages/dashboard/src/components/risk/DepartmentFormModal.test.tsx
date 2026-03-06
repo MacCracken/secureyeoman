@@ -16,9 +16,7 @@ describe('DepartmentFormModal', () => {
   });
 
   it('renders nothing when open is false', () => {
-    const { container } = render(
-      <DepartmentFormModal {...defaultProps} open={false} />
-    );
+    const { container } = render(<DepartmentFormModal {...defaultProps} open={false} />);
     expect(container.innerHTML).toBe('');
   });
 
@@ -29,10 +27,7 @@ describe('DepartmentFormModal', () => {
 
   it('renders edit department title when editing', () => {
     render(
-      <DepartmentFormModal
-        {...defaultProps}
-        department={{ id: 'd1', name: 'Engineering' }}
-      />
+      <DepartmentFormModal {...defaultProps} department={{ id: 'd1', name: 'Engineering' }} />
     );
     expect(screen.getByText('Edit Department')).toBeInTheDocument();
   });

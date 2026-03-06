@@ -34,8 +34,28 @@ function renderPage() {
 }
 
 const mockSkills = [
-  { id: 's1', name: 'Code Review', description: 'AI code review', version: '1.0.0', author: 'acme', category: 'dev', downloadCount: 100, installed: false, origin: 'marketplace' },
-  { id: 's2', name: 'Summarizer', description: 'Text summarizer', version: '2.1.0', author: 'labs', category: 'nlp', downloadCount: 50, installed: true, origin: 'community' },
+  {
+    id: 's1',
+    name: 'Code Review',
+    description: 'AI code review',
+    version: '1.0.0',
+    author: 'acme',
+    category: 'dev',
+    downloadCount: 100,
+    installed: false,
+    origin: 'marketplace',
+  },
+  {
+    id: 's2',
+    name: 'Summarizer',
+    description: 'Text summarizer',
+    version: '2.1.0',
+    author: 'labs',
+    category: 'nlp',
+    downloadCount: 50,
+    installed: true,
+    origin: 'community',
+  },
 ];
 
 beforeEach(() => {
@@ -125,7 +145,15 @@ describe('MarketplacePage', () => {
 
   it('shows pagination when total exceeds page size', async () => {
     const manySkills = Array.from({ length: 20 }, (_, i) => ({
-      id: `s${i}`, name: `Skill ${i}`, description: '', version: '1.0', author: 'a', category: 'c', downloadCount: 0, installed: false, origin: 'marketplace',
+      id: `s${i}`,
+      name: `Skill ${i}`,
+      description: '',
+      version: '1.0',
+      author: 'a',
+      category: 'c',
+      downloadCount: 0,
+      installed: false,
+      origin: 'marketplace',
     }));
     mockFetchSkills.mockResolvedValue({ skills: manySkills, total: 40 } as any);
     renderPage();

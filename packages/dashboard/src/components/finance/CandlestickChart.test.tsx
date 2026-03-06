@@ -5,14 +5,18 @@ import { CandlestickChart, type OhlcvPoint } from './CandlestickChart';
 
 // Mock recharts to avoid canvas issues in jsdom
 vi.mock('recharts', () => ({
-  ComposedChart: ({ children }: { children: React.ReactNode }) => <div data-testid="composed-chart">{children}</div>,
+  ComposedChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="composed-chart">{children}</div>
+  ),
   Bar: () => <div data-testid="bar" />,
   Line: () => <div data-testid="line" />,
   XAxis: () => <div />,
   YAxis: () => <div />,
   CartesianGrid: () => <div />,
   Tooltip: () => <div />,
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="chart-container">{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="chart-container">{children}</div>
+  ),
   Cell: () => <div />,
 }));
 
@@ -52,14 +56,7 @@ describe('CandlestickChart', () => {
   });
 
   it('should render with all options enabled', () => {
-    render(
-      <CandlestickChart
-        data={sampleData}
-        movingAverages={[3, 5]}
-        showVolume
-        height={500}
-      />
-    );
+    render(<CandlestickChart data={sampleData} movingAverages={[3, 5]} showVolume height={500} />);
     expect(screen.getByTestId('chart-container')).toBeInTheDocument();
   });
 
