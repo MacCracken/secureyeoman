@@ -6,6 +6,44 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.6] — 2026-03-05
 
+### Infrastructure-as-Code Management (ADR 024)
+
+- **Shared types** (`shared/types/iac.ts`): `IacTemplate`, `IacDeployment`, `IacVariable`, `IacValidationResult` schemas. 8 IaC tools (terraform, cloudformation, pulumi, helm, bicep, ansible, kubernetes, cdk). 6 cloud providers. 12 categories. `IacConfigSchema` with git repo settings, file limits, deployment retention.
+- **IaC validator** (`iac/iac-validator.ts`): Multi-tool validation — Terraform (HCL brace balance, backend config, provider blocks), CloudFormation (YAML/JSON syntax, template structure, tab indentation), Pulumi (project file, entry point), Helm (Chart.yaml, templates dir, values.yaml), Kubernetes (apiVersion/kind fields), Bicep/ARM (resource declarations, JSON syntax), Ansible (playbook structure), CDK (cdk.json, source files). Security checks: hardcoded secret detection (passwords, AWS access keys, private keys).
+- **IaC git repo** (`iac/iac-git-repo.ts`): Discovers templates in configurable `templateDir`. Reads `template.json` metadata. Auto-detects IaC tool from file extensions (.tf → Terraform, Chart.yaml → Helm, Pulumi.yaml → Pulumi, etc.). Recursive file discovery with .git/node_modules/.terraform exclusion.
+- **IaC manager** (`iac/iac-manager.ts`): Orchestrates git sync, validation, SRA template seeding, and deployment tracking. Optional periodic auto-sync. Per-template deployment retention cleanup. Inline validation by template ID or raw files.
+- **SRA populator** (`iac/iac-sra-populator.ts`): 5 built-in Terraform templates for critical SRA controls — AWS GuardDuty organization-wide (aws-sra-002), CloudTrail organization trail (aws-sra-003), AWS Config compliance rules (aws-sra-004), Azure Defender for Cloud (mcra-001), GCP organization policies (cisa-zta-001). Each with main.tf and variables.tf.
+- **PostgreSQL store** (`iac/iac-template-store.ts`): `PgBaseStorage` with upsert for templates, append-only deployments. List with tool/provider/category/sraControlId filtering. Deployment status updates with plan/apply output.
+- **10 REST endpoints** (`iac/iac-routes.ts`): GET list/get templates, DELETE template, POST sync from git, POST validate (by ID or inline), GET SRA remediation templates, GET list/get deployments, POST record deployment, GET repo info.
+- **SQL migration** (`004_iac.sql`): `iac` schema with `templates` (tool, cloud_provider, category, SRA control IDs, policy bundle link, validation state) and `deployments` (status lifecycle, plan/apply output, resource counts) tables. Indexes on tool, provider, compilation time, deployment status.
+- **Config** (`security.iac`): `enabled` (default false), `repo` (repoPath, remoteUrl, branch, templateDir, syncIntervalSec), `maxTemplateFiles`, `maxFileSizeBytes`, `retainDeployments`, `enableBuiltinTemplates`.
+- **52 tests** across 5 files: iac-validator (18), iac-manager (7), iac-routes (15), iac-template-store (7), iac-sra-populator (7).
+
+### Policy-as-Code Repository (ADR 023)
+
+- **Shared types** (`shared/types/policy-as-code.ts`): `PolicyBundle`, `PolicyFile`, `PolicyDeployment`, `PolicyEvalResult`, `BundleMetadata`, `BundleStatus` schemas. `PolicyAsCodeConfigSchema` with git repo settings, bundle size limits, and deployment retention.
+- **Bundle compiler** (`policy-as-code/bundle-compiler.ts`): Validates Rego (via OPA compile check with upload/delete cycle) and CEL (via local parser) policies. File size and count limits. SHA-256 content hashing. Falls back to syntax heuristics when OPA unavailable.
+- **Git policy repo** (`policy-as-code/git-policy-repo.ts`): Discovers bundles in configurable `bundleDir` subdirectory. Reads `bundle.json` metadata. Recursively discovers `.rego` and `.cel` files. Git pull with `--ff-only`. Commit SHA and branch tracking.
+- **Policy sync engine** (`policy-as-code/policy-sync.ts`): Deploys Rego policies to OPA with per-file error isolation. CEL files stored for local evaluation. Deployment chain via `previousDeploymentId`. Rollback re-deploys a target bundle and marks current as `rolled_back`. Dual-engine evaluation: OPA for Rego, local CEL fallback.
+- **Bundle manager** (`policy-as-code/bundle-manager.ts`): Orchestrates git sync, compilation, deployment, and evaluation. Optional periodic auto-sync with configurable interval. Per-bundle deployment retention cleanup.
+- **PostgreSQL store** (`policy-as-code/policy-bundle-store.ts`): `PgBaseStorage` with upsert for bundles, append-only deployments. List with name filtering. Status updates for deployment lifecycle.
+- **9 REST endpoints** (`policy-as-code/policy-as-code-routes.ts`): GET list/get bundles, DELETE bundle, POST sync from git, POST deploy bundle, GET list deployments, POST rollback, POST evaluate policy, GET repo info.
+- **SQL migration** (`003_policy_as_code.sql`): `policy_as_code` schema with `bundles` (JSONB metadata/files, commit SHA, validation state) and `deployments` (status, PR metadata, error tracking, deployment chain) tables. Indexes on bundle name, compilation time, deployment status.
+- **Config** (`security.policyAsCode`): `enabled` (default false), `repo` (repoPath, remoteUrl, branch, bundleDir, syncIntervalSec, requirePrApproval), `maxBundleFiles`, `maxFileSizeBytes`, `retainDeployments`.
+- **42 tests** across 5 files: bundle-compiler (10), policy-sync (11), bundle-manager (6), policy-as-code-routes (12), policy-bundle-store (9).
+
+### Agent Replay & Debugging (ADR 022)
+
+- **Execution trace recording** (`agent-replay/trace-recorder.ts`): `TraceRecorder` captures LLM calls, tool calls, guard checks, brain retrieval, and errors as structured `TraceStep` objects during agent execution. Configurable `maxStepsPerTrace` (default 200) and `maxToolResultLength` (default 10K) truncation. Each step is timestamped with duration tracking. Cumulative token/cost aggregation across LLM calls.
+- **Trace step types** (`shared/types/agent-replay.ts`): Discriminated union of 5 step types — `llm_call` (model, tokens, cost, stopReason), `tool_call` (name, args, result, blocked state), `guard_check` (guard name, findings, pass/fail), `brain_retrieval` (memories, knowledge, mode), `error` (message, source, recovered). `ExecutionTrace` wraps all steps with metadata (personality, model, input/output, tags, replay chain).
+- **Replay engine** (`agent-replay/replay-engine.ts`): Two modes — **mock replay** (uses recorded tool results, fast/deterministic) and **live replay** (re-executes with live LLM + tools). Model/provider/personality overrides. Concurrent replay limiting. `extractToolResults()` builds lookup maps from traces.
+- **Trace differ** (`agent-replay/trace-differ.ts`): Compares two traces — output match, tool call diffs (same/added/removed/args_differ/result_differ), step-by-step alignment (exact/similar/different/missing), duration/token/cost deltas. Optional output similarity score.
+- **Trace store** (`agent-replay/trace-store.ts`): PostgreSQL persistence via `PgBaseStorage`. List with filtering (conversationId, personalityId, tags, isReplay). Replay chain traversal via `sourceTraceId` links. Retention-based cleanup. List view omits steps for performance.
+- **8 REST endpoints** (`agent-replay/replay-routes.ts`): GET list traces, GET trace by ID, DELETE trace, GET replay chain, GET diff two traces, POST replay (mock), GET trace summary (step counts, tool names, blocked tools).
+- **SQL migration** (`002_agent_replay.sql`): `agent_replay.traces` table with JSONB steps column, indexes on tenant+created_at, conversation_id, personality_id, source_trace_id.
+- **Config** (`ops.agentReplay`): `enabled` (default false), `maxStepsPerTrace`, `maxToolResultLength`, `retentionDays`, `maxConcurrentReplays`.
+- **35 tests** across 4 files: trace-recorder (10), trace-differ (10), replay-engine (6), replay-routes (9).
+
 ### Phase 143 — Extensible Guardrail Pipeline (ADR 021)
 
 - **GuardrailFilter plugin interface** (`shared/types/guardrail-pipeline.ts`): Chain-of-responsibility contract with `onInput`/`onOutput` hooks, priority-ordered execution, and `dispose()` lifecycle. Filters return `GuardrailFilterResult` with pass/fail, modified text, and findings. `GuardrailFilterModule` export shape for custom filter authoring.

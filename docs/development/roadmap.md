@@ -186,8 +186,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 *Lower-priority ideas. Not scheduled — track here for future consideration.*
 
-- [ ] **Agent replay & debugging** — Record + replay execution traces. Complements eval harness (Phase 135).
-- [ ] **Policy-as-Code repository** — Git-backed OPA/CEL bundles. PR-based policy changes.
 - [ ] **WebAuthn/FIDO2 auth** — Hardware key authentication for admins.
 - [ ] **Agent sandboxing profiles** — Named sandbox configs (dev/prod/high-security).
 - [ ] **Offline-first PWA** — ServiceWorker + IndexedDB. Closes mobile gap without native apps.

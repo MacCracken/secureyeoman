@@ -19,6 +19,9 @@ import {
 } from './soul.js';
 import { ContentGuardrailConfigSchema } from './content-guardrail.js';
 import { GuardrailPipelineConfigSchema } from './guardrail-pipeline.js';
+import { AgentReplayConfigSchema } from './agent-replay.js';
+import { PolicyAsCodeConfigSchema } from './policy-as-code.js';
+import { IacConfigSchema } from './iac.js';
 import { ExternalizationPolicySchema } from './sandbox-scanning.js';
 import { z as zz } from 'zod';
 
@@ -1111,10 +1114,14 @@ export const InfraConfigSchema = z.object({
 });
 export type InfraConfig = z.infer<typeof InfraConfigSchema>;
 
-/** Security domain: security, gateway (auth lives here) */
+/** Security domain: security, gateway (auth lives here), policyAsCode */
 export const SecurityDomainConfigSchema = z.object({
   security: SecurityConfigSchema.default({}),
   gateway: GatewayConfigSchema.default({}),
+  /** Policy-as-Code: Git-backed OPA/CEL bundles with PR-based review. */
+  policyAsCode: PolicyAsCodeConfigSchema,
+  /** Infrastructure-as-Code: Git-backed IaC template management with validation. */
+  iac: IacConfigSchema,
 });
 export type SecurityDomainConfig = z.infer<typeof SecurityDomainConfigSchema>;
 
@@ -1161,6 +1168,8 @@ export const OpsDomainConfigSchema = z.object({
   notifications: NotificationsConfigSchema,
   intent: IntentFileConfigSchema,
   agentEval: AgentEvalConfigSchema,
+  /** Agent replay & debugging: execution trace recording and replay. */
+  agentReplay: AgentReplayConfigSchema,
   training: TrainingPipelineConfigSchema,
   analytics: ConversationAnalyticsConfigSchema,
 });

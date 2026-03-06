@@ -724,6 +724,79 @@ export {
   type FilterMetricsSummary,
 } from './guardrail-pipeline.js';
 
+// Infrastructure-as-Code types
+export {
+  IacToolSchema,
+  IacCloudProviderSchema,
+  IacCategorySchema,
+  IacTemplateFileSchema,
+  IacVariableSchema,
+  IacTemplateSchema,
+  IacValidationResultSchema,
+  IacDeploymentStatusSchema,
+  IacDeploymentSchema,
+  IacRepoConfigSchema,
+  IacConfigSchema,
+  type IacTool,
+  type IacCloudProvider,
+  type IacCategory,
+  type IacTemplateFile,
+  type IacVariable,
+  type IacTemplate,
+  type IacValidationResult,
+  type IacDeploymentStatus,
+  type IacDeployment,
+  type IacRepoConfig,
+  type IacConfig,
+} from './iac.js';
+
+// Policy-as-Code types
+export {
+  PolicyLanguageSchema,
+  PolicyEnforcementSchema,
+  PolicyFileSchema,
+  BundleMetadataSchema,
+  PolicyBundleSchema,
+  BundleStatusSchema,
+  PolicyDeploymentSchema,
+  PolicyEvalRequestSchema,
+  PolicyEvalResultSchema,
+  PolicyRepoConfigSchema,
+  PolicyAsCodeConfigSchema,
+  type PolicyLanguage,
+  type PolicyEnforcement,
+  type PolicyFile,
+  type BundleMetadata,
+  type PolicyBundle,
+  type BundleStatus,
+  type PolicyDeployment,
+  type PolicyEvalRequest,
+  type PolicyEvalResult,
+  type PolicyRepoConfig,
+  type PolicyAsCodeConfig,
+} from './policy-as-code.js';
+
+// Agent Replay types
+export {
+  TraceStepTypeSchema,
+  ReplayOptionsSchema,
+  AgentReplayConfigSchema,
+  type TraceStepType,
+  type TraceStepBase,
+  type LlmCallStep,
+  type ToolCallStep,
+  type GuardCheckStep,
+  type BrainRetrievalStep,
+  type ErrorStep,
+  type TraceStep,
+  type ExecutionTrace,
+  type ReplayOptions,
+  type TraceDiff,
+  type ToolCallDiff,
+  type StepAlignment,
+  type AgentReplayConfig,
+} from './agent-replay.js';
+
 // Analytics types (Phase 96)
 export {
   SentimentLabelSchema,
