@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { ToolSchema } from './ai.js';
 import { ContentGuardrailPersonalityConfigSchema } from './content-guardrail.js';
+import { GuardrailPipelinePersonalityConfigSchema } from './guardrail-pipeline.js';
 import { MemoryAuditPolicySchema } from './memory-audit.js';
 
 // ─── Personality ──────────────────────────────────────────────
@@ -283,6 +284,8 @@ export const BodyConfigSchema = z
     strictSystemPromptConfidentiality: z.boolean().optional(),
     /** Per-personality content guardrail overrides (block list additions, topic additions, PII mode). */
     contentGuardrails: ContentGuardrailPersonalityConfigSchema.optional(),
+    /** Per-personality guardrail pipeline overrides (Phase 143). */
+    guardrailPipeline: GuardrailPipelinePersonalityConfigSchema.optional(),
     /**
      * Knowledge retrieval mode for this personality.
      *

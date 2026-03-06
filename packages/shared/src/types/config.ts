@@ -18,6 +18,7 @@ import {
   ExternalBrainConfigSchema,
 } from './soul.js';
 import { ContentGuardrailConfigSchema } from './content-guardrail.js';
+import { GuardrailPipelineConfigSchema } from './guardrail-pipeline.js';
 import { ExternalizationPolicySchema } from './sandbox-scanning.js';
 import { z as zz } from 'zod';
 
@@ -587,6 +588,8 @@ export const SecurityConfigSchema = z.object({
     .default({}),
   /** Output-side content policy enforcement: PII redaction, topic restrictions, toxicity, block lists, grounding. */
   contentGuardrails: ContentGuardrailConfigSchema.default({}),
+  /** Extensible guardrail filter pipeline (Phase 143). */
+  guardrailPipeline: GuardrailPipelineConfigSchema.default({}),
   /** Data Loss Prevention: content classification, egress scanning, retention, watermarking. */
   dlp: DlpConfigSchema,
   /** Sandbox artifact scanning & externalization gate policy (Phase 116). */

@@ -10,19 +10,9 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 142 | Prompt Versioning & A/B Testing | P2 — iteration | ✅ Done |
-| 143 | Extensible Guardrail Pipeline | P2 — security | Planned |
 | 144 | IDE Experience | P3 — power user UX | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infrastructure, Dev Ecosystem | Future / Demand-Gated | — |
-
-### Recently Completed (see Changelog)
-
-| Phase | Name | Version | ADR |
-|-------|------|---------|-----|
-| 142 | Prompt Versioning & A/B Testing | [2026.3.6] | 020 |
-| 140+141 | RAG Eval Metrics + Cognitive ML Advanced | [2026.3.6] | 019 |
-| 139 | OpenTelemetry & SIEM Integration | [2026.3.5h] | 018 |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -77,20 +67,6 @@
 - [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
 - [ ] **License key purchase flow** — Integration with payment provider or manual key issuance workflow. Dashboard license management page.
 - [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
-
----
-
-## Phase 143: Extensible Guardrail Pipeline
-
-**Priority**: P2 — Pluggable filter chain beyond ResponseGuard.
-
-*Overlap note*: Phase 136 (DLP) added PII detection, content classification, and egress scanning. Phase 95 (ContentGuardrail) added input/output guardrails with sync/async evaluation. This extends those into a user-pluggable pipeline with custom filters and per-personality configuration.
-
-- [ ] **Filter plugin interface** — `GuardrailFilter` with `onInput`/`onOutput` hooks. Chain of responsibility.
-- [ ] **Custom filter SDK** — User-written TypeScript filters loaded from `guardrails/` directory.
-- [ ] **Per-personality filter config** — Different guardrail configs per personality.
-- [ ] **Dry-run mode** — Observation mode for threshold tuning.
-- [ ] **Filter metrics** — Activation rate, false positives, latency impact.
 
 ---
 
@@ -239,4 +215,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-05 (v2026.3.6). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-05. See [Changelog](../../CHANGELOG.md) for full history.*

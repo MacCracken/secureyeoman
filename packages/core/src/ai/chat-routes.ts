@@ -26,6 +26,14 @@ import { PromptGuard } from '../security/prompt-guard.js';
 import { createResponseGuard } from '../security/response-guard.js';
 import { AbuseDetector } from '../security/abuse-detector.js';
 import { createContentGuardrail } from '../security/content-guardrail.js';
+import { GuardrailPipeline } from '../security/guardrail-pipeline.js';
+import {
+  ToolOutputScannerFilter,
+  ResponseGuardFilter,
+  ContentGuardrailFilter,
+} from '../security/guardrail-builtin-filters.js';
+import { loadCustomFilters } from '../security/guardrail-filter-loader.js';
+import { registerGuardrailPipelineRoutes } from '../security/guardrail-pipeline-routes.js';
 import { LLMJudge } from '../security/llm-judge.js';
 import { ConstitutionalEngine } from '../security/constitutional.js';
 import { ContextCompactor, getContextWindowSize } from './context-compactor.js';
@@ -898,6 +906,54 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
     llmJudge = null;
   }
 
+  // ── Guardrail Pipeline (Phase 143) — extensible filter chain ──────────────
+  const pipelineConfig = secureYeoman.getConfig().security.guardrailPipeline;
+  const guardrailPipeline = new GuardrailPipeline(pipelineConfig, {
+    auditRecord: (p) =>
+      void secureYeoman.getAuditChain().record({
+        event: p.event,
+        level: p.level as 'info' | 'warn' | 'error',
+        message: p.message,
+        metadata: p.metadata,
+      }),
+    logger: (() => {
+      try {
+        return getLogger().child({ component: 'guardrail-pipeline' });
+      } catch {
+        return undefined;
+      }
+    })(),
+  });
+
+  // Register builtin filters as pipeline adapters
+  const toolOutputScannerFilter = new ToolOutputScannerFilter(scanner);
+  const responseGuardFilter = new ResponseGuardFilter(responseGuard);
+  const contentGuardrailFilter = new ContentGuardrailFilter(contentGuardrail);
+  guardrailPipeline.registerFilter(toolOutputScannerFilter);
+  guardrailPipeline.registerFilter(responseGuardFilter);
+  guardrailPipeline.registerFilter(contentGuardrailFilter);
+
+  // Load custom filters from disk (async, non-blocking)
+  if (pipelineConfig.autoLoadCustomFilters) {
+    void loadCustomFilters({
+      filterDir: pipelineConfig.customFilterDir,
+      logger: (() => {
+        try {
+          return getLogger().child({ component: 'guardrail-filter-loader' });
+        } catch {
+          return undefined;
+        }
+      })(),
+    }).then((customFilters) => {
+      for (const f of customFilters) {
+        guardrailPipeline.registerFilter(f);
+      }
+    });
+  }
+
+  // Register guardrail pipeline admin routes (Phase 143)
+  registerGuardrailPipelineRoutes(app, { pipeline: guardrailPipeline });
+
   // Context compactor — triggers at 80% of the model's context window.
   const compactor = new ContextCompactor();
 
@@ -1637,73 +1693,100 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           }
         }
 
-        // ── ResponseGuard (Phase 54) — output-side safety scan ────────────────
-        {
-          const rgResult = responseGuard.scan(response.content, {
-            source: 'dashboard_chat',
+        // ── Guardrail Pipeline (Phase 143) — unified output filter chain ──────
+        // Wraps ResponseGuard, ContentGuardrail, ToolOutputScanner + custom filters.
+        if (pipelineConfig.enabled) {
+          responseGuardFilter.setOptions({
+            brainContext: {
+              contextSnippets: brainContext?.contextSnippets,
+              memoriesUsed: brainContext?.memoriesUsed,
+            },
+            systemPrompt,
+            strictConfidentiality:
+              personality?.body?.strictSystemPromptConfidentiality ??
+              secureYeoman.getConfig().security.strictSystemPromptConfidentiality,
           });
-          if (!rgResult.passed) {
-            void secureYeoman.getAuditChain().record({
-              event: 'response_injection_detected',
-              level: 'warn',
-              message: 'ResponseGuard blocked LLM response',
-              metadata: {
-                findingCount: rgResult.findings.length,
-                findings: rgResult.findings.map((f) => f.patternName),
-              },
-            });
-            return sendError(reply, 400, 'Response blocked: safety policy violation');
-          }
-          if (rgResult.findings.length > 0) {
-            void secureYeoman.getAuditChain().record({
-              event: 'response_injection_detected',
-              level: 'warn',
-              message: 'ResponseGuard findings in LLM response (warn mode)',
-              metadata: {
-                findingCount: rgResult.findings.length,
-                findings: rgResult.findings.map((f) => f.patternName),
-              },
-            });
-          }
-          // Brain consistency check — warn-only
-          responseGuard.checkBrainConsistency(response.content, {
-            contextSnippets: brainContext?.contextSnippets,
-            memoriesUsed: brainContext?.memoriesUsed,
-          });
+          contentGuardrailFilter.setPersonalityConfig(personality?.body?.contentGuardrails);
 
-          // System prompt confidentiality check (Phase 77)
-          const _strictConf =
-            personality?.body?.strictSystemPromptConfidentiality ??
-            secureYeoman.getConfig().security.strictSystemPromptConfidentiality;
-          if (_strictConf && systemPrompt) {
-            const _leakResult = responseGuard.checkSystemPromptLeak(response.content, systemPrompt);
-            if (_leakResult.hasLeak) {
-              void secureYeoman.getAuditChain().record({
-                event: 'system_prompt_leak_detected',
-                level: 'warn',
-                message: 'System prompt content leak detected in response',
-                metadata: { overlapRatio: _leakResult.overlapRatio.toFixed(3) },
-              });
-            }
-          }
-        }
-
-        // ── Content Guardrails (Phase 95) — PII, topics, toxicity, block list, grounding
-        {
-          const cgResult = await contentGuardrail.scan(
+          const pipelineResult = await guardrailPipeline.runOutput(
             response.content,
             {
               source: 'dashboard_chat',
               personalityId: personality?.id,
               conversationId: conversationId,
             },
-            personality?.body?.contentGuardrails
+            personality?.body?.guardrailPipeline
           );
-          if (!cgResult.passed) {
-            return sendError(reply, 400, 'Response blocked: content policy violation');
+          if (!pipelineResult.passed) {
+            return sendError(reply, 400, 'Response blocked: guardrail policy violation');
           }
-          if (cgResult.text !== response.content) {
-            response.content = cgResult.text;
+          if (pipelineResult.text !== response.content) {
+            response.content = pipelineResult.text;
+          }
+        } else {
+          // ── Legacy path: direct guard calls (pipeline disabled) ──────────────
+          {
+            const rgResult = responseGuard.scan(response.content, {
+              source: 'dashboard_chat',
+            });
+            if (!rgResult.passed) {
+              void secureYeoman.getAuditChain().record({
+                event: 'response_injection_detected',
+                level: 'warn',
+                message: 'ResponseGuard blocked LLM response',
+                metadata: {
+                  findingCount: rgResult.findings.length,
+                  findings: rgResult.findings.map((f) => f.patternName),
+                },
+              });
+              return sendError(reply, 400, 'Response blocked: safety policy violation');
+            }
+            if (rgResult.findings.length > 0) {
+              void secureYeoman.getAuditChain().record({
+                event: 'response_injection_detected',
+                level: 'warn',
+                message: 'ResponseGuard findings in LLM response (warn mode)',
+                metadata: {
+                  findingCount: rgResult.findings.length,
+                  findings: rgResult.findings.map((f) => f.patternName),
+                },
+              });
+            }
+            responseGuard.checkBrainConsistency(response.content, {
+              contextSnippets: brainContext?.contextSnippets,
+              memoriesUsed: brainContext?.memoriesUsed,
+            });
+            const _strictConf =
+              personality?.body?.strictSystemPromptConfidentiality ??
+              secureYeoman.getConfig().security.strictSystemPromptConfidentiality;
+            if (_strictConf && systemPrompt) {
+              const _leakResult = responseGuard.checkSystemPromptLeak(response.content, systemPrompt);
+              if (_leakResult.hasLeak) {
+                void secureYeoman.getAuditChain().record({
+                  event: 'system_prompt_leak_detected',
+                  level: 'warn',
+                  message: 'System prompt content leak detected in response',
+                  metadata: { overlapRatio: _leakResult.overlapRatio.toFixed(3) },
+                });
+              }
+            }
+          }
+          {
+            const cgResult = await contentGuardrail.scan(
+              response.content,
+              {
+                source: 'dashboard_chat',
+                personalityId: personality?.id,
+                conversationId: conversationId,
+              },
+              personality?.body?.contentGuardrails
+            );
+            if (!cgResult.passed) {
+              return sendError(reply, 400, 'Response blocked: content policy violation');
+            }
+            if (cgResult.text !== response.content) {
+              response.content = cgResult.text;
+            }
           }
         }
 
@@ -2688,72 +2771,98 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           }
         }
 
-        // ── ResponseGuard (Phase 54) — output-side safety scan ────────────────
-        {
-          const rgResult = responseGuard.scan(safeContent, { source: 'dashboard_chat_stream' });
-          if (!rgResult.passed) {
-            void secureYeoman.getAuditChain().record({
-              event: 'response_injection_detected',
-              level: 'warn',
-              message: 'ResponseGuard blocked streamed LLM response',
-              metadata: {
-                findingCount: rgResult.findings.length,
-                findings: rgResult.findings.map((f) => f.patternName),
-              },
-            });
-            emit({ type: 'error', message: 'Response blocked: safety policy violation' });
-            return;
-          }
-          if (rgResult.findings.length > 0) {
-            void secureYeoman.getAuditChain().record({
-              event: 'response_injection_detected',
-              level: 'warn',
-              message: 'ResponseGuard findings in streamed LLM response (warn mode)',
-              metadata: {
-                findingCount: rgResult.findings.length,
-                findings: rgResult.findings.map((f) => f.patternName),
-              },
-            });
-          }
-          responseGuard.checkBrainConsistency(safeContent, {
-            contextSnippets: brainContext?.contextSnippets,
-            memoriesUsed: brainContext?.memoriesUsed,
-          });
-
-          // System prompt confidentiality check (Phase 77)
-          const _strictConfS =
-            personality?.body?.strictSystemPromptConfidentiality ??
-            secureYeoman.getConfig().security.strictSystemPromptConfidentiality;
-          if (_strictConfS && systemPrompt) {
-            const _leakResultS = responseGuard.checkSystemPromptLeak(safeContent, systemPrompt);
-            if (_leakResultS.hasLeak) {
-              void secureYeoman.getAuditChain().record({
-                event: 'system_prompt_leak_detected',
-                level: 'warn',
-                message: 'System prompt content leak detected in streamed response',
-                metadata: { overlapRatio: _leakResultS.overlapRatio.toFixed(3) },
-              });
-            }
-          }
-        }
-
-        // ── Content Guardrails (Phase 95) — PII, topics, toxicity, block list, grounding (stream)
+        // ── Guardrail Pipeline (Phase 143) — unified output filter chain (stream)
         let guardrailedContent = safeContent;
-        {
-          const cgResultS = await contentGuardrail.scan(
+        if (pipelineConfig.enabled) {
+          responseGuardFilter.setOptions({
+            brainContext: {
+              contextSnippets: brainContext?.contextSnippets,
+              memoriesUsed: brainContext?.memoriesUsed,
+            },
+            systemPrompt,
+            strictConfidentiality:
+              personality?.body?.strictSystemPromptConfidentiality ??
+              secureYeoman.getConfig().security.strictSystemPromptConfidentiality,
+          });
+          contentGuardrailFilter.setPersonalityConfig(personality?.body?.contentGuardrails);
+
+          const pipelineResultS = await guardrailPipeline.runOutput(
             safeContent,
             {
               source: 'dashboard_chat_stream',
               personalityId: personality?.id,
               conversationId: conversationId,
             },
-            personality?.body?.contentGuardrails
+            personality?.body?.guardrailPipeline
           );
-          if (!cgResultS.passed) {
-            emit({ type: 'error', message: 'Response blocked: content policy violation' });
+          if (!pipelineResultS.passed) {
+            emit({ type: 'error', message: 'Response blocked: guardrail policy violation' });
             return;
           }
-          guardrailedContent = cgResultS.text;
+          guardrailedContent = pipelineResultS.text;
+        } else {
+          // ── Legacy path: direct guard calls (pipeline disabled) ──────────────
+          {
+            const rgResult = responseGuard.scan(safeContent, { source: 'dashboard_chat_stream' });
+            if (!rgResult.passed) {
+              void secureYeoman.getAuditChain().record({
+                event: 'response_injection_detected',
+                level: 'warn',
+                message: 'ResponseGuard blocked streamed LLM response',
+                metadata: {
+                  findingCount: rgResult.findings.length,
+                  findings: rgResult.findings.map((f) => f.patternName),
+                },
+              });
+              emit({ type: 'error', message: 'Response blocked: safety policy violation' });
+              return;
+            }
+            if (rgResult.findings.length > 0) {
+              void secureYeoman.getAuditChain().record({
+                event: 'response_injection_detected',
+                level: 'warn',
+                message: 'ResponseGuard findings in streamed LLM response (warn mode)',
+                metadata: {
+                  findingCount: rgResult.findings.length,
+                  findings: rgResult.findings.map((f) => f.patternName),
+                },
+              });
+            }
+            responseGuard.checkBrainConsistency(safeContent, {
+              contextSnippets: brainContext?.contextSnippets,
+              memoriesUsed: brainContext?.memoriesUsed,
+            });
+            const _strictConfS =
+              personality?.body?.strictSystemPromptConfidentiality ??
+              secureYeoman.getConfig().security.strictSystemPromptConfidentiality;
+            if (_strictConfS && systemPrompt) {
+              const _leakResultS = responseGuard.checkSystemPromptLeak(safeContent, systemPrompt);
+              if (_leakResultS.hasLeak) {
+                void secureYeoman.getAuditChain().record({
+                  event: 'system_prompt_leak_detected',
+                  level: 'warn',
+                  message: 'System prompt content leak detected in streamed response',
+                  metadata: { overlapRatio: _leakResultS.overlapRatio.toFixed(3) },
+                });
+              }
+            }
+          }
+          {
+            const cgResultS = await contentGuardrail.scan(
+              safeContent,
+              {
+                source: 'dashboard_chat_stream',
+                personalityId: personality?.id,
+                conversationId: conversationId,
+              },
+              personality?.body?.contentGuardrails
+            );
+            if (!cgResultS.passed) {
+              emit({ type: 'error', message: 'Response blocked: content policy violation' });
+              return;
+            }
+            guardrailedContent = cgResultS.text;
+          }
         }
 
         // ── OPA output compliance (Phase 54) ──────────────────────────────────

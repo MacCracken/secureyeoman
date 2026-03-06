@@ -6,6 +6,18 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.6] — 2026-03-05
 
+### Phase 143 — Extensible Guardrail Pipeline (ADR 021)
+
+- **GuardrailFilter plugin interface** (`shared/types/guardrail-pipeline.ts`): Chain-of-responsibility contract with `onInput`/`onOutput` hooks, priority-ordered execution, and `dispose()` lifecycle. Filters return `GuardrailFilterResult` with pass/fail, modified text, and findings. `GuardrailFilterModule` export shape for custom filter authoring.
+- **GuardrailPipeline orchestrator** (`security/guardrail-pipeline.ts`): Registers/unregisters filters, executes them in priority order for input or output direction. Per-filter error isolation (fail-open). Supports global and per-personality `dryRun` mode — filters execute and report findings but never block. Per-personality filter allowlist/blocklist overrides.
+- **Builtin filter adapters** (`security/guardrail-builtin-filters.ts`): Wraps `ToolOutputScanner` (priority 100), `ResponseGuard` (priority 200), and `ContentGuardrail` (priority 300) as `GuardrailFilter` plugins. `PromptGuardFilter` for input-side injection detection. Context-dependent options (`setOptions`/`setPersonalityConfig`) updated before each pipeline run.
+- **Custom filter loader** (`security/guardrail-filter-loader.ts`): Discovers `.js`/`.mjs` modules from configurable `customFilterDir` (default: `guardrails/`). Validates `createFilter()` export, required fields (id, name, priority), and auto-prefixes `custom:` namespace. Async non-blocking load on startup.
+- **Filter metrics** (`security/guardrail-metrics.ts`): Per-filter tracking of executions, blocks, warnings, errors, finding counts, and latency (ring buffer with p95 computation). `getSnapshot()` returns `GuardrailMetricsSnapshot` for all registered filters.
+- **5 REST endpoints** (`security/guardrail-pipeline-routes.ts`): GET filters list, PUT toggle filter enabled/disabled, GET metrics snapshot, POST reset metrics, POST dry-run test endpoint for threshold tuning.
+- **Per-personality config** (`shared/types/soul.ts`): `guardrailPipeline` field on `BodyConfig` — per-personality dry-run override, disabled/enabled filter lists, per-filter config overrides.
+- **Chat routes integration** (`ai/chat-routes.ts`): When `security.guardrailPipeline.enabled`, both streaming and non-streaming handlers run unified pipeline instead of inline guard calls. Legacy path preserved when pipeline is disabled.
+- **52 tests** across 5 files: guardrail-pipeline (18), guardrail-metrics (8), guardrail-builtin-filters (12), guardrail-filter-loader (7), guardrail-pipeline-routes (7).
+
 ### Phase 142 — Prompt Versioning & A/B Testing (ADR 020)
 
 - **Prompt A/B Test Manager** (`soul/prompt-ab-test.ts`): In-memory prompt A/B testing with traffic-percentage-based variant selection and sticky assignment per conversation. One running test per personality enforcement. Variant traffic must sum to 100%. `resolvePrompt()` returns variant prompt for a conversation, `recordScore()` tracks quality, `evaluate()` checks readiness. `complete(winnerId)` and `cancel()` lifecycle.

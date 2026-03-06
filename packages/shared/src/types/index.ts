@@ -707,6 +707,23 @@ export {
   type GuardrailResult,
 } from './content-guardrail.js';
 
+// Guardrail Pipeline types (Phase 143)
+export {
+  GuardrailPipelineConfigSchema,
+  GuardrailPipelinePersonalityConfigSchema,
+  type GuardrailFilter,
+  type GuardrailFilterContext,
+  type GuardrailFilterFinding,
+  type GuardrailFilterResult,
+  type GuardrailFilterModule,
+  type GuardrailPipelineConfig,
+  type GuardrailPipelinePersonalityConfig,
+  type GuardrailPipelineResult,
+  type FilterExecutionMetric,
+  type GuardrailMetricsSnapshot,
+  type FilterMetricsSummary,
+} from './guardrail-pipeline.js';
+
 // Analytics types (Phase 96)
 export {
   SentimentLabelSchema,
