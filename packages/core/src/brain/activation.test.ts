@@ -128,4 +128,18 @@ describe('compositeScore', () => {
     const scale2 = compositeScore(0.5, 0, 0.2, 2.0);
     expect(scale2).toBeGreaterThan(scale1);
   });
+
+  it('includes salience contribution', () => {
+    const withSalience = compositeScore(0.5, 0, 0, 1.0, 1.0, 0.3, 0.5, 0.8, 0.2);
+    const withoutSalience = compositeScore(0.5, 0, 0, 1.0, 1.0, 0.3, 0.5, 0, 0.2);
+    expect(withSalience).toBeGreaterThan(withoutSalience);
+    // Difference should be 0.8 * 0.2 = 0.16
+    expect(withSalience - withoutSalience).toBeCloseTo(0.16, 5);
+  });
+
+  it('salience defaults to 0 when not provided', () => {
+    const withDefaults = compositeScore(0.8, 0, 0);
+    const withExplicit = compositeScore(0.8, 0, 0, 1.0, 1.0, 0.3, 0.5, 0, 0.1);
+    expect(withDefaults).toBeCloseTo(withExplicit, 10);
+  });
 });

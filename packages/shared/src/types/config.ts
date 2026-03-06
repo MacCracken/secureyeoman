@@ -703,11 +703,45 @@ const MetricsRetentionConfigSchema = z
   })
   .default({});
 
+// SIEM configuration (Phase 139)
+const SiemConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    provider: z.enum(['splunk', 'elastic', 'azure-sentinel', 'cloudwatch']).optional(),
+    endpoint: z.string().optional(),
+    /** Auth token (HEC token for Splunk, API key for Elastic, bearer for Azure) */
+    token: z.string().optional(),
+    /** Index / log group / stream name */
+    index: z.string().optional(),
+    /** Additional provider-specific fields */
+    region: z.string().optional(),
+    logGroupName: z.string().optional(),
+    logStreamName: z.string().optional(),
+    ruleId: z.string().optional(),
+    streamName: z.string().optional(),
+    username: z.string().optional(),
+    password: z.string().optional(),
+    batchSize: z.number().int().positive().max(500).default(50),
+    flushIntervalMs: z.number().int().positive().max(60_000).default(5_000),
+  })
+  .default({});
+export type SiemConfig = z.infer<typeof SiemConfigSchema>;
+
+// OTel extended configuration (Phase 139)
+const OtelConfigSchema = z
+  .object({
+    samplingRate: z.number().min(0).max(1).default(1.0),
+  })
+  .default({});
+export type OtelConfig = z.infer<typeof OtelConfigSchema>;
+
 // Metrics configuration
 export const MetricsConfigSchema = z.object({
   enabled: z.boolean().default(true),
   export: MetricsExportConfigSchema,
   retention: MetricsRetentionConfigSchema,
+  siem: SiemConfigSchema,
+  otel: OtelConfigSchema,
 });
 
 export type MetricsConfig = z.infer<typeof MetricsConfigSchema>;

@@ -103,6 +103,8 @@ import type { CognitiveMemoryStorage } from './cognitive-memory-store.js';
 import type { ContextRetriever } from './context-retrieval.js';
 import type { WorkingMemoryBuffer } from './working-memory.js';
 import type { SalienceClassifier } from './salience.js';
+import type { RetrievalOptimizer } from './retrieval-optimizer.js';
+import type { ReconsolidationManager } from './reconsolidation.js';
 
 export interface BrainManagerDeps {
   auditChain: AuditChain;
@@ -114,6 +116,8 @@ export interface BrainManagerDeps {
   contextRetriever?: ContextRetriever;
   workingMemoryBuffer?: WorkingMemoryBuffer;
   salienceClassifier?: SalienceClassifier;
+  retrievalOptimizer?: RetrievalOptimizer;
+  reconsolidationManager?: ReconsolidationManager;
 }
 
 // ── Cognitive Memory Types ──────────────────────────────────

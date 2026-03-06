@@ -20,6 +20,8 @@ export interface TelemetryConfig {
   otlpEndpoint?: string;
   /** Service name sent to the collector. Defaults to "secureyeoman". */
   serviceName?: string;
+  /** Head-based sampling rate (0.0–1.0). Defaults to 1.0 (sample everything). */
+  samplingRate?: number;
 }
 
 let _initialized = false;
@@ -46,18 +48,26 @@ export async function initTracing(config: TelemetryConfig = {}): Promise<void> {
       { NodeTracerProvider, BatchSpanProcessor },
       { OTLPTraceExporter },
       { resourceFromAttributes },
+      sdkTrace,
     ] = await Promise.all([
       import('@opentelemetry/sdk-trace-node'),
       import('@opentelemetry/exporter-trace-otlp-grpc'),
       import('@opentelemetry/resources'),
+      import('@opentelemetry/sdk-trace-base'),
     ]);
 
     const serviceName = config.serviceName ?? process.env.OTEL_SERVICE_NAME ?? 'secureyeoman';
+    const samplingRate = config.samplingRate ?? 1.0;
+
+    const sampler = samplingRate < 1.0
+      ? new sdkTrace.TraceIdRatioBasedSampler(samplingRate)
+      : new sdkTrace.AlwaysOnSampler();
 
     const resource = resourceFromAttributes({ 'service.name': serviceName });
     const exporter = new OTLPTraceExporter({ url: endpoint });
     const provider = new NodeTracerProvider({
       resource,
+      sampler,
       spanProcessors: [new BatchSpanProcessor(exporter)],
     });
     provider.register();

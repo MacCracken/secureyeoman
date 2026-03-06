@@ -12,6 +12,7 @@ import pino, { type Logger as PinoLogger, type LoggerOptions } from 'pino';
 import { sanitizeForLogging } from '../utils/crypto.js';
 import type { LoggingConfig } from '@secureyeoman/shared';
 import { getCurrentTraceId } from '../telemetry/otel.js';
+import { getCurrentSpanId } from '../telemetry/instrument.js';
 import { getCorrelationId } from '../utils/correlation-context.js';
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
@@ -69,6 +70,7 @@ function createPinoOptions(config: LoggingConfig): LoggerOptions {
             ...obj,
             '@timestamp': new Date().toISOString(),
             'trace.id': getCurrentTraceId() ?? undefined,
+            'span.id': getCurrentSpanId() ?? undefined,
             'transaction.id': getCorrelationId() ?? undefined,
           }),
         }

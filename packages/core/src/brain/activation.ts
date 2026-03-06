@@ -33,17 +33,21 @@ export function softplus(x: number): number {
 }
 
 /**
- * Composite score blending content match with ACT-R activation and Hebbian boost.
+ * Composite score blending content match with ACT-R activation, Hebbian boost,
+ * and salience weight.
  *
- * score = (1 − α)·contentMatch + α·σ(activation) + min(hebbianBoost, cap)·hebbianScale
+ * score = ((1 − α)·contentMatch + α·σ(activation) + min(hebbianBoost, cap)·hebbianScale
+ *          + salienceScore·salienceWeight) × confidence
  *
- * @param contentMatch   Original retrieval score [0–1]
- * @param activation     ACT-R activation value (unbounded real)
- * @param hebbianBoost   Sum of association weights from co-retrieved items
- * @param hebbianScale   Scaling factor for Hebbian contribution (default 1.0)
- * @param confidence     Document confidence [0–1] (default 1.0)
- * @param alpha          Blend weight for activation vs content [0–1] (default 0.3)
- * @param boostCap       Max Hebbian boost contribution (default 0.5)
+ * @param contentMatch    Original retrieval score [0–1]
+ * @param activation      ACT-R activation value (unbounded real)
+ * @param hebbianBoost    Sum of association weights from co-retrieved items
+ * @param hebbianScale    Scaling factor for Hebbian contribution (default 1.0)
+ * @param confidence      Document confidence [0–1] (default 1.0)
+ * @param alpha           Blend weight for activation vs content [0–1] (default 0.3)
+ * @param boostCap        Max Hebbian boost contribution (default 0.5)
+ * @param salienceScore   Composite salience score [0–1] (default 0)
+ * @param salienceWeight  Weight for salience contribution (default 0.1)
  */
 export function compositeScore(
   contentMatch: number,
@@ -52,11 +56,15 @@ export function compositeScore(
   hebbianScale = 1.0,
   confidence = 1.0,
   alpha = 0.3,
-  boostCap = 0.5
+  boostCap = 0.5,
+  salienceScore = 0,
+  salienceWeight = 0.1
 ): number {
   const normalizedActivation = sigmoid(activation);
   const cappedBoost = Math.min(hebbianBoost, boostCap) * hebbianScale;
-  const raw = (1 - alpha) * contentMatch + alpha * normalizedActivation + cappedBoost;
+  const salienceContribution = salienceScore * salienceWeight;
+  const raw =
+    (1 - alpha) * contentMatch + alpha * normalizedActivation + cappedBoost + salienceContribution;
   return raw * confidence;
 }
 

@@ -7,29 +7,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../storage/pg-base-storage.js', () => {
-  class PgBaseStorage {
-    protected pool: any;
-    constructor(pool: any) {
-      this.pool = pool;
-    }
-    async query<T>(sql: string, params?: unknown[]): Promise<T[]> {
-      const result = await this.pool.query(sql, params);
-      return result.rows;
-    }
-    async queryOne<T>(sql: string, params?: unknown[]): Promise<T | null> {
-      const result = await this.pool.query(sql, params);
-      return result.rows[0] ?? null;
-    }
-    async execute(sql: string, params?: unknown[]): Promise<number> {
-      const result = await this.pool.query(sql, params);
-      return result.rowCount ?? 0;
-    }
-  }
-  return { PgBaseStorage };
-});
-
 const mockQuery = vi.fn();
+
+vi.mock('../storage/pg-pool.js', () => ({
+  getPool: () => ({ query: mockQuery }),
+}));
 
 import { EvalManager } from './eval-manager.js';
 import type { EvalAgentDeps } from './eval-engine.js';
@@ -75,7 +57,6 @@ const mockLogger = {
 function makeManager(configOverrides: Partial<AgentEvalConfig> = {}) {
   mockQuery.mockReset();
   return new EvalManager({
-    pool: { query: mockQuery } as any,
     logger: mockLogger,
     agentDeps: makeAgentDeps(),
     config: makeConfig(configOverrides),

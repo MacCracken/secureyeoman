@@ -10,14 +10,18 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 139 | OpenTelemetry & SIEM Integration | P1 — enterprise | Planned |
-| 140 | RAG Evaluation Metrics | P1 — differentiation | Planned |
-| 141 | Cognitive ML — Advanced Features | P2 — ML | Planned |
 | 142 | Prompt Versioning & A/B Testing | P2 — iteration | Planned |
 | 143 | Extensible Guardrail Pipeline | P2 — security | Planned |
 | 144 | IDE Experience | P3 — power user UX | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infrastructure, Dev Ecosystem | Future / Demand-Gated | — |
+
+### Recently Completed (see Changelog)
+
+| Phase | Name | Version | ADR |
+|-------|------|---------|-----|
+| 140+141 | RAG Eval Metrics + Cognitive ML Advanced | [2026.3.6] | 211 |
+| 139 | OpenTelemetry & SIEM Integration | [2026.3.5h] | 210 |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -72,50 +76,6 @@
 - [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
 - [ ] **License key purchase flow** — Integration with payment provider or manual key issuance workflow. Dashboard license management page.
 - [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
-
----
-
-## Phase 139: OpenTelemetry & SIEM Integration
-
-**Priority**: P1 — Enterprise procurement checkbox. Unblocks deals where Prometheus alone isn't sufficient.
-
-**What exists**: `otel.ts` with `initTracing()` at startup. `otel-fastify-plugin.ts` for route spans. UUIDv7 correlation IDs on all requests.
-
-- [ ] **Deep OTel instrumentation** — Extend spans to AI provider calls, tool executions, workflow steps, A2A calls. Currently only Fastify request-level spans.
-- [ ] **Distributed trace context** — Propagate trace IDs across sub-agent delegations and cross-cluster federation calls.
-- [ ] **Trace-aware logging** — Enrich Pino entries with `traceId` and `spanId` for log-to-trace correlation.
-- [ ] **SIEM log forwarding** — Structured output for Splunk HEC, Elastic ECS, Azure Sentinel CEF, AWS CloudWatch. Configurable via `observability.siem`.
-- [ ] **Audit chain → SIEM bridge** — Real-time forwarding of audit chain events with severity mapping.
-- [ ] **Cost attribution dashboards** — Per-tenant, per-personality, per-workflow cost tracking. Budget alerts. CSV chargeback reports.
-- [ ] **SLO monitoring** — Response latency, tool success rate, retrieval quality SLOs. Burn-rate alerting.
-
----
-
-## Phase 140: RAG Evaluation Metrics
-
-**Priority**: P1 — Quantitative proof of knowledge retrieval quality. No competitor measures this.
-
-*Overlap note*: Phase 141 (Cognitive ML) includes retrieval optimizer, context retrieval, and salience scoring. RAG metrics should be co-developed with Phase 141 to share evaluation infrastructure.
-
-- [ ] **Faithfulness score** — LLM-as-Judge or NLI-based scoring against retrieved context.
-- [ ] **Answer relevance** — Semantic similarity between question and answer.
-- [ ] **Context recall / precision** — Did retrieval find all relevant docs? Were retrieved chunks used?
-- [ ] **Retrieval latency percentiles** — p50/p95/p99 for vector search, FTS, hybrid RRF.
-- [ ] **Chunk utilization rate** — Referenced chunks vs discarded. Indicates chunking quality.
-- [ ] **Dashboard widget** — RAG quality metrics with time-series trends and threshold alerts.
-
----
-
-## Phase 141: Cognitive ML — Advanced Features
-
-**Priority**: P2 — Builds on Phase 125-D scaffolds. Requires active ML features to be validated in production first.
-
-- [ ] **LLM Reconsolidation** — Wire `ReconsolidationManager` into `BrainManager.recall()`. When retrieved memory overlaps with query context (cosine 0.7–0.95), call AIProvider to decide keep/update/split. Add cooldown tracking per memory. Add REST endpoint `POST /brain/memories/:id/reconsolidate`. Add MCP tool `memory_reconsolidate`.
-- [ ] **Semantic Schema Clustering** — Complete `SchemaClusteringManager` pipeline: export embeddings from vector store, run k-means, filter by `minClusterSize`, label via LLM, upsert schema knowledge entries. Add scheduled worker alongside CognitiveMemoryManager. Add REST endpoint `GET /brain/schemas` and MCP tool `brain_schemas`.
-- [ ] **RL Retrieval Optimization** — Wire `RetrievalOptimizer` into `compositeScore()`. Connect `PreferenceLearner.recordFeedback()` to `optimizer.recordFeedback()`. Persist arm posteriors in `brain.meta`. Add dashboard widget showing arm stats and convergence.
-- [ ] **Salience-boosted compositeScore()** — Blend salience composite into the existing `compositeScore()` function as a new term. Load cached salience from `brain.meta` during cognitive ranking. Configurable via `salience.compositeBlendWeight`.
-- [ ] **Context Retrieval for Knowledge** — Extend context-fused search to `getRelevantContext()` knowledge path (currently only memories). Use `searchKnowledgeByVector()`.
-- [ ] **Working Memory REST API** — Expose working memory buffer via `GET /brain/working-memory` and `GET /brain/working-memory/stats`. Add MCP tools `brain_working_memory` and `brain_working_memory_stats`.
 
 ---
 
@@ -292,4 +252,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-05. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-05 (v2026.3.6). See [Changelog](../../CHANGELOG.md) for full history.*

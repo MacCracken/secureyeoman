@@ -26,6 +26,7 @@ import { applySkillTrustFilter } from '../soul/skill-trust.js';
 import { chunk as chunkContent } from './chunker.js';
 import { uuidv7 } from '../utils/crypto.js';
 import { actrActivation, ageDays, compositeScore } from './activation.js';
+import { withSpan } from '../telemetry/instrument.js';
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -89,6 +90,23 @@ export class BrainManager {
   // ── Memory Operations ──────────────────────────────────────
 
   async remember(
+    type: MemoryType,
+    content: string,
+    source: string,
+    context?: Record<string, string>,
+    importance?: number,
+    personalityId?: string
+  ): Promise<Memory> {
+    return withSpan('secureyeoman.brain', 'brain.remember', async (span) => {
+      span.setAttribute('brain.operation', 'remember');
+      span.setAttribute('brain.memory_type', type);
+      span.setAttribute('brain.source', source);
+      if (personalityId) span.setAttribute('brain.personality_id', personalityId);
+      return this._remember(type, content, source, context, importance, personalityId);
+    });
+  }
+
+  private async _remember(
     type: MemoryType,
     content: string,
     source: string,
@@ -196,6 +214,17 @@ export class BrainManager {
   }
 
   async recall(query: MemoryQuery): Promise<Memory[]> {
+    return withSpan('secureyeoman.brain', 'brain.recall', async (span) => {
+      span.setAttribute('brain.operation', 'recall');
+      if (query.search) span.setAttribute('brain.query', query.search.slice(0, 100));
+      if (query.personalityId) span.setAttribute('brain.personality_id', query.personalityId);
+      const results = await this._recall(query);
+      span.setAttribute('brain.result_count', results.length);
+      return results;
+    });
+  }
+
+  private async _recall(query: MemoryQuery): Promise<Memory[]> {
     if (!this.config.enabled) {
       return [];
     }
@@ -534,7 +563,18 @@ export class BrainManager {
 
         if (memResults.length > 0) {
           const fetchedMemories = await this.storage.getMemoryBatch(memResults.map((r) => r.id));
-          const rankedMemories = this.applyCognitiveRanking(fetchedMemories, Date.now());
+
+          // Build salience map from cached scores
+          let salienceMap: Map<string, number> | undefined;
+          if (this.salienceEnabled) {
+            salienceMap = new Map();
+            for (const m of fetchedMemories) {
+              const salience = await this.getMemorySalience(m.id);
+              if (salience) salienceMap.set(m.id, salience.composite);
+            }
+          }
+
+          const rankedMemories = this.applyCognitiveRanking(fetchedMemories, Date.now(), salienceMap);
           this.recordRetrieval(rankedMemories.map((m) => m.id));
 
           const memLines = ['### Memories (semantic)'];
@@ -950,27 +990,51 @@ export class BrainManager {
   }
 
   /**
-   * Re-rank memories using ACT-R activation and Hebbian associations.
-   * Filters below retrieval threshold τ.
+   * Re-rank memories using compositeScore (ACT-R activation, Hebbian boost,
+   * salience, and retrieval optimizer weights). Filters below retrieval threshold τ.
    */
-  applyCognitiveRanking(memories: Memory[], nowMs: number): Memory[] {
+  applyCognitiveRanking(
+    memories: Memory[],
+    nowMs: number,
+    salienceMap?: Map<string, number>
+  ): Memory[] {
     if (!this.cognitiveEnabled || memories.length === 0) return memories;
 
     const cfg = this.config.cognitiveMemory;
     const threshold = cfg.retrievalThreshold;
 
+    // Get optimized weights from retrieval optimizer (or defaults)
+    const optimizer = this.deps.retrievalOptimizer;
+    const weights = optimizer ? optimizer.selectWeights() : undefined;
+
     const scored = memories.map((m) => {
       const age = ageDays(m.lastAccessedAt, nowMs);
       const activation = actrActivation(m.accessCount, age);
-      return { memory: m, activation };
+      const hebbianBoost = (m as unknown as { hebbianBoost?: number }).hebbianBoost ?? 0;
+      const contentMatch = (m as unknown as { score?: number }).score ?? 0.5;
+      const salienceScore = salienceMap?.get(m.id) ?? 0;
+
+      const score = compositeScore(
+        contentMatch,
+        activation,
+        hebbianBoost,
+        weights?.hebbianScale ?? cfg.hebbianScale ?? 1.0,
+        1.0,
+        weights?.alpha ?? cfg.alpha ?? 0.3,
+        weights?.boostCap ?? cfg.boostCap ?? 0.5,
+        salienceScore,
+        weights?.salienceWeight ?? 0.1
+      );
+
+      return { memory: m, score, activation };
     });
 
-    // Filter by threshold
+    // Filter by activation threshold (not composite, since threshold is ACT-R based)
     const filtered = scored.filter((s) => s.activation >= threshold);
-    if (filtered.length === 0) return memories.slice(0, 1); // Always return at least the best match
+    if (filtered.length === 0) return memories.slice(0, 1);
 
-    // Sort by activation descending
-    filtered.sort((a, b) => b.activation - a.activation);
+    // Sort by composite score descending
+    filtered.sort((a, b) => b.score - a.score);
     return filtered.map((s) => s.memory);
   }
 
@@ -1088,6 +1152,22 @@ export class BrainManager {
     } catch {
       return null;
     }
+  }
+
+  // ── Retrieval Optimizer (Phase 141) ──────────────────────
+
+  recordRetrievalFeedback(positive: boolean): void {
+    this.deps.retrievalOptimizer?.recordFeedback(positive);
+  }
+
+  getOptimizerStats(): ReturnType<import('./retrieval-optimizer.js').RetrievalOptimizer['getStats']> | null {
+    return this.deps.retrievalOptimizer?.getStats() ?? null;
+  }
+
+  // ── Reconsolidation (Phase 141) ────────────────────────────
+
+  getReconsolidationStats(): ReturnType<import('./reconsolidation.js').ReconsolidationManager['getStats']> | null {
+    return this.deps.reconsolidationManager?.getStats() ?? null;
   }
 
   // ── Config ─────────────────────────────────────────────────

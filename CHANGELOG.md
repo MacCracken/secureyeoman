@@ -4,6 +4,57 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.6] — 2026-03-05
+
+### Phase 140 — RAG Evaluation Metrics (ADR 211)
+
+- **RAG evaluation engine** (`brain/rag-eval.ts`): Five-dimension RAG quality scoring — faithfulness (LLM-as-Judge or token-overlap fallback), answer relevance (embedding cosine similarity), context recall (reference coverage), context precision (relevant chunk fraction), chunk utilization (chunks referenced in answer). Overall score = mean of available metrics.
+- **LLM-as-Judge faithfulness**: Prompts AI provider with context + answer, expects JSON `{ faithful_sentences, total_sentences, score }`. Falls back to per-sentence Jaccard token overlap (threshold 0.2) when no AI provider or on error.
+- **Answer relevance**: Embedding cosine similarity between query and answer vectors. Falls back to token overlap when no embedding provider.
+- **Context recall/precision**: Token-overlap (recall threshold 0.15) and embedding-similarity (precision threshold 0.3) based scoring against query and reference answer.
+- **Retrieval latency tracking**: Rolling buffer (configurable, default 10K entries) with p50/p95/p99 percentile computation and mean.
+
+### Phase 141 — Cognitive ML Advanced Features (ADR 211)
+
+- **Reconsolidation Manager** (`brain/reconsolidation.ts`): Wired LLM-powered memory evolution. `evaluate()` checks overlap bounds [0.7, 0.95], enforces per-memory cooldown (default 1hr), prompts AIProvider for keep/update/split decision with structured JSON response. `apply()` mutates storage: update modifies content, split creates new memories and deletes original. Stats tracking for monitoring.
+- **Schema Clustering Manager** (`brain/schema-clustering.ts`): Completed full pipeline in `runClustering()`. Exports knowledge entries, embeds via EmbeddingProvider, runs k-means++ clustering, filters by minClusterSize, labels via LLM (JSON: label + summary) with keyword-extraction fallback, computes coherence (mean cosine similarity to centroid), upserts as `schema:{label}` knowledge entries.
+- **Salience-boosted compositeScore** (`brain/activation.ts`): Added `salienceScore` and `salienceWeight` parameters. Formula: `((1-α)·content + α·σ(activation) + cappedBoost + salience·salienceWeight) × confidence`. Backward-compatible defaults (0, 0.1).
+- **compositeScore integration**: `applyCognitiveRanking()` now uses full `compositeScore()` with Hebbian boost, salience map from cached metadata, and RetrievalOptimizer weights (Thompson Sampling). Previously used raw ACT-R activation alone.
+- **RetrievalOptimizer wired**: Thompson Sampling bandit `selectWeights()` provides alpha/hebbianScale/boostCap/salienceWeight per ranking pass. `recordRetrievalFeedback(positive)` exposed to REST API.
+- **BrainManagerDeps extended**: Added `retrievalOptimizer` and `reconsolidationManager` optional dependencies.
+- **9 REST endpoints** (`brain/cognitive-routes.ts`): RAG eval (POST evaluate, GET latency, GET summary), schema clustering (POST trigger, GET list), retrieval optimizer (GET stats, POST feedback), reconsolidation (GET stats), working memory (GET items+stats).
+- **75 tests** across 5 files: rag-eval (19), reconsolidation (12), schema-clustering (11), activation (+2 salience tests), cognitive-routes (9).
+
+---
+
+## [2026.3.5h] — 2026-03-05
+
+### Phase 139 — OpenTelemetry & SIEM Integration (ADR 210)
+
+- **`withSpan()` instrumentation utility** (`telemetry/instrument.ts`): Concise wrapper for OTel span lifecycle — creates child spans, records exceptions, sets status, ends span. `getCurrentSpanId()` for log correlation.
+- **Deep OTel instrumentation**: Workflow engine `dispatchStep()` wrapped in `workflow.step` spans (attributes: workflow ID, run ID, step ID/name/type, attempt, status). Brain manager `remember()`/`recall()` wrapped in `brain.remember`/`brain.recall` spans (attributes: operation, memory type, personality ID, result count, query). AI client and MCP client spans already existed from Phase 83.
+- **Trace sampling config**: `TelemetryConfig.samplingRate` (0.0–1.0) using `TraceIdRatioBasedSampler`. Config: `metrics.otel.samplingRate`.
+- **Trace-aware logging**: Pino ECS formatter now includes `span.id` alongside `trace.id` and `transaction.id` for complete log-to-trace-to-span correlation.
+- **SIEM forwarder** (`telemetry/siem/siem-forwarder.ts`): Abstract batch buffer with configurable `batchSize` (default 50) and `flushIntervalMs` (default 5s). Auto-flush on threshold. Stats tracking (forwarded/errors/dropped/pending). Graceful shutdown with final flush.
+- **Splunk HEC provider** (`telemetry/siem/splunk-hec.ts`): POST newline-delimited JSON to HEC endpoint. `Splunk <token>` auth. Configurable index and sourcetype.
+- **Elasticsearch ECS provider** (`telemetry/siem/elastic-ecs.ts`): Bulk API with ECS field mapping. Severity mapped to numeric levels (low=1, medium=2, high=3, critical=4). API key or basic auth.
+- **Azure Sentinel provider** (`telemetry/siem/azure-sentinel.ts`): Data Collection API (DCR-based) with CEF severity mapping (3/5/8/10). Bearer token auth.
+- **AWS CloudWatch provider** (`telemetry/siem/cloudwatch.ts`): PutLogEvents API with SigV4 signing. Configurable log group/stream.
+- **Audit chain → SIEM bridge** (`telemetry/audit-siem-bridge.ts`): Real-time forwarding of audit chain events and DLP egress events with severity mapping. Critical: `auth_lockout`, `injection_attempt`, `audit_chain_tampered`. High: `auth_failure`, `permission_denied`, `dlp_blocked`. Medium: config/role changes, `dlp_warned`. Low: normal operations. Events enriched with traceId, spanId, correlationId, tenantId, userId.
+- **Cost attribution tracker** (`telemetry/cost-attribution.ts`): Per-tenant, per-personality, per-workflow, per-provider, per-model cost breakdowns. Budget system with daily/monthly thresholds and exceeded detection. CSV chargeback export. 100K entry cap with FIFO eviction.
+- **SLO monitor** (`telemetry/slo-monitor.ts`): Define SLOs for `response_latency_p95/p99`, `tool_success_rate`, `ai_success_rate`, `retrieval_quality`. Sliding window observations with error budget computation. Burn-rate alerting via existing AlertManager channels. Short window (20% of total) burn-rate calculation.
+- **9 REST endpoints** under `/api/v1/observability/`: cost-attribution (GET + CSV), budgets (GET/POST/DELETE), SLOs (GET/POST/DELETE), SIEM status (GET). All gated by `advanced_observability` license.
+- **Config**: `SiemConfigSchema` (provider, endpoint, token, index, batchSize, flushIntervalMs) and `OtelConfigSchema` (samplingRate) added to `MetricsConfigSchema`.
+- **134 tests** across 15 files: instrument (5), SIEM forwarder (7), Splunk HEC (4), Elastic ECS (4), Azure Sentinel (3), CloudWatch (4), audit bridge (7), SLO monitor (12), cost attribution (12), observability routes (9), plus existing telemetry tests (67).
+
+### Test Fixes
+
+- **`eval-manager.test.ts`**: Mock targeted wrong module path (`pg-base-storage.js` → `pg-pool.js`). All 11 tests were hitting the real `PgBaseStorage.getPool()` singleton and failing with "pool not initialized". Removed stale `pool` constructor arg from `makeManager()`.
+- **`voice-announcements.test.ts`**: Assertion used Pino-style `(obj, msg)` arg order but `SecureLogger.warn()` takes `(msg, context)`. Swapped assertion order.
+- 13,326 core unit tests passing (558 files), 0 failures.
+
+---
+
 ## [2026.3.5] — 2026-03-05
 
 ### Documentation & Site Audit

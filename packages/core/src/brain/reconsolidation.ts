@@ -8,13 +8,14 @@
  * Mirrors biological memory reconsolidation where recalled memories enter
  * a labile state and can be rewritten.
  *
- * STATUS: Scaffold — types and interface defined, implementation pending.
+ * STATUS: Implemented — Phase 141
  */
 
 import type { AIProvider } from '../ai/providers/base.js';
 import type { BrainStorage } from './storage.js';
 import type { Memory } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
+import { uuidv7 } from '../utils/crypto.js';
 
 export type ReconsolidationAction = 'keep' | 'update' | 'split';
 
@@ -56,10 +57,33 @@ export interface ReconsolidationManagerDeps {
   logger: SecureLogger;
 }
 
+const RECONSOLIDATION_PROMPT = `You are evaluating whether a stored memory should be updated given new context.
+
+Stored Memory:
+{memory}
+
+New Context (from current query):
+{context}
+
+Overlap Score: {overlapScore}
+
+The memory and context overlap but are not identical. Decide:
+- "keep": The memory is fine as-is, the new context adds nothing.
+- "update": The memory should be updated to integrate the new information. Provide the updated content.
+- "split": The memory conflates two distinct topics. Provide the split contents as separate entries.
+
+Respond with JSON only:
+{
+  "action": "keep" | "update" | "split",
+  "updatedContent": "...",
+  "splitContents": ["...", "..."],
+  "reasoning": "brief explanation"
+}`;
+
 /**
- * ReconsolidationManager — Placeholder for LLM-powered memory evolution.
+ * ReconsolidationManager — LLM-powered memory evolution.
  *
- * Will be wired into BrainManager.recall() to check retrieved memories
+ * Wired into BrainManager.recall() to check retrieved memories
  * against the current query context and evolve them when appropriate.
  */
 export class ReconsolidationManager {
@@ -69,6 +93,9 @@ export class ReconsolidationManager {
   /** Track last reconsolidation time per memory to enforce cooldown. */
   private readonly cooldowns = new Map<string, number>();
 
+  /** Stats for monitoring. */
+  private stats = { evaluated: 0, kept: 0, updated: 0, split: 0, errors: 0 };
+
   constructor(config: Partial<ReconsolidationConfig>, deps: ReconsolidationManagerDeps) {
     this.config = { ...DEFAULT_RECONSOLIDATION_CONFIG, ...config };
     this.deps = deps;
@@ -77,30 +104,134 @@ export class ReconsolidationManager {
   /**
    * Check if a memory should be reconsolidated given the current context.
    * Returns null if no reconsolidation is needed.
-   *
-   * TODO: Implement LLM decision-making.
    */
   async evaluate(
-    _memory: Memory,
-    _queryContext: string,
-    _overlapScore: number
+    memory: Memory,
+    queryContext: string,
+    overlapScore: number
   ): Promise<ReconsolidationDecision | null> {
     if (!this.config.enabled) return null;
-    // Future implementation will:
-    // 1. Check cooldown
-    // 2. Verify overlap is in [overlapThreshold, dedupThreshold]
-    // 3. Call AIProvider with memory content + query context
-    // 4. Parse LLM response into ReconsolidationDecision
-    // 5. Apply the decision (update/split via storage)
-    return null;
+
+    // Check overlap bounds
+    if (overlapScore < this.config.overlapThreshold || overlapScore > this.config.dedupThreshold) {
+      return null;
+    }
+
+    // Check cooldown
+    const lastTime = this.cooldowns.get(memory.id);
+    if (lastTime && Date.now() - lastTime < this.config.cooldownMs) {
+      return null;
+    }
+
+    this.stats.evaluated++;
+
+    try {
+      const prompt = RECONSOLIDATION_PROMPT
+        .replace('{memory}', memory.content)
+        .replace('{context}', queryContext)
+        .replace('{overlapScore}', overlapScore.toFixed(2));
+
+      const response = await this.deps.aiProvider.chat({
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0,
+        maxTokens: 500,
+      });
+
+      const decision = this.parseDecision(response.content, overlapScore);
+      this.cooldowns.set(memory.id, Date.now());
+
+      switch (decision.action) {
+        case 'keep':
+          this.stats.kept++;
+          break;
+        case 'update':
+          this.stats.updated++;
+          break;
+        case 'split':
+          this.stats.split++;
+          break;
+      }
+
+      return decision;
+    } catch (err) {
+      this.stats.errors++;
+      this.deps.logger.warn('Reconsolidation evaluation failed', {
+        memoryId: memory.id,
+        error: String(err),
+      });
+      return null;
+    }
   }
 
   /**
    * Apply a reconsolidation decision to a memory.
-   *
-   * TODO: Implement storage mutations.
    */
-  async apply(_memoryId: string, _decision: ReconsolidationDecision): Promise<void> {
-    // Future implementation
+  async apply(memoryId: string, decision: ReconsolidationDecision): Promise<void> {
+    if (decision.action === 'keep') return;
+
+    try {
+      if (decision.action === 'update' && decision.updatedContent) {
+        await this.deps.storage.updateMemory(memoryId, {
+          content: decision.updatedContent,
+        });
+        this.deps.logger.info('Memory reconsolidated (update)', {
+          memoryId,
+          reasoning: decision.reasoning,
+        });
+      } else if (decision.action === 'split' && decision.splitContents?.length) {
+        // Get the original memory to preserve metadata
+        const original = await this.deps.storage.getMemory(memoryId);
+        if (!original) return;
+
+        // Create new memories for each split piece
+        for (const content of decision.splitContents) {
+          await this.deps.storage.createMemory({
+            id: uuidv7(),
+            type: original.type,
+            content,
+            source: original.source,
+            context: original.context,
+            importance: original.importance,
+            personalityId: original.personalityId ?? undefined,
+          });
+        }
+
+        // Delete the original
+        await this.deps.storage.deleteMemory(memoryId);
+        this.deps.logger.info('Memory reconsolidated (split)', {
+          memoryId,
+          splitCount: decision.splitContents.length,
+          reasoning: decision.reasoning,
+        });
+      }
+    } catch (err) {
+      this.deps.logger.warn('Failed to apply reconsolidation', {
+        memoryId,
+        action: decision.action,
+        error: String(err),
+      });
+    }
+  }
+
+  getStats(): typeof this.stats {
+    return { ...this.stats };
+  }
+
+  private parseDecision(content: string, overlapScore: number): ReconsolidationDecision {
+    try {
+      const json = JSON.parse(content);
+      const action = (['keep', 'update', 'split'] as const).includes(json.action)
+        ? json.action
+        : 'keep';
+      return {
+        action,
+        updatedContent: json.updatedContent,
+        splitContents: Array.isArray(json.splitContents) ? json.splitContents : undefined,
+        reasoning: json.reasoning ?? '',
+        overlapScore,
+      };
+    } catch {
+      return { action: 'keep', reasoning: 'Failed to parse LLM response', overlapScore };
+    }
   }
 }
