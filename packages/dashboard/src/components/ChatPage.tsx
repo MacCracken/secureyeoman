@@ -55,8 +55,8 @@ import { GroupChatPage } from './GroupChatPage';
 const ReplayDialog = lazy(() =>
   import('./chat/ReplayDialog').then((m) => ({ default: m.ReplayDialog }))
 );
-const BranchTreeView = lazy(() =>
-  import('./chat/BranchTreeView').then((m) => ({ default: m.BranchTreeView }))
+const BranchExplorer = lazy(() =>
+  import('./chat/BranchExplorer').then((m) => ({ default: m.BranchExplorer }))
 );
 import { PersonalityAvatar } from './PersonalityEditor';
 import { Link } from 'react-router-dom';
@@ -1493,16 +1493,19 @@ export function ChatPage() {
         </div>
       )}
 
-      {/* Branch tree side panel */}
+      {/* Branch explorer side panel */}
       {showBranchTree && selectedConversationId && (
         <Suspense fallback={null}>
-          <div className="w-80 flex-shrink-0">
-            <BranchTreeView
+          <div className="w-96 flex-shrink-0">
+            <BranchExplorer
               conversationId={selectedConversationId}
               activeConversationId={selectedConversationId}
               onNavigate={(id) => {
                 setSelectedConversationId(id);
-                setShowBranchTree(false);
+              }}
+              onCompare={(sourceId, targetId) => {
+                setSelectedConversationId(sourceId);
+                void queryClient.invalidateQueries({ queryKey: ['conversation', targetId] });
               }}
               onClose={() => {
                 setShowBranchTree(false);

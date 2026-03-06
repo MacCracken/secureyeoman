@@ -6,6 +6,27 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.8] — 2026-03-06
 
+### Federated Learning (ADR 027)
+
+- **Shared types** (`shared/types/federated-learning.ts`): Complete type system — `FederatedSession`, `FederatedSessionCreate`, `FederatedParticipant`, `FederatedRound`, `ModelUpdate`, `DifferentialPrivacyConfig`, `AggregationStrategy` (fedavg/fedprox/fedsgd/weighted_avg/median/trimmed_mean), `FederatedLearningConfig`. Zod schemas with privacy mechanism variants (gaussian/laplacian/local_dp/secure_aggregation). Status enums for participants, rounds, and sessions.
+- **Privacy engine** (`training/federated/privacy-engine.ts`): L2 gradient clipping, Gaussian noise (Box-Muller transform), Laplacian noise, local DP (randomised response). Sigma computation via analytic Gaussian mechanism. Privacy budget tracking and consumption per round.
+- **Aggregator** (`training/federated/aggregator.ts`): 6 aggregation strategies — FedAvg (McMahan et al. 2017, weighted by dataset size), FedProx (proximal term applied at local training), FedSGD (equal-weight gradient average), weighted average, coordinate-wise median (Byzantine-robust), trimmed mean (discard top/bottom 10%). Metric merging across participants.
+- **Federated manager** (`training/federated/federated-manager.ts`): Session lifecycle (create/pause/resume/cancel). Concurrent session limit enforcement. Participant registration with heartbeat monitoring (stale → disconnected). Round management with privacy budget checks. Auto-aggregation when all participant updates received.
+- **PostgreSQL store** (`training/federated/federated-store.ts`): `PgBaseStorage` with upsert for sessions, participants, rounds. Append-only model updates. Listing with status filters and pagination. Row-to-domain converters.
+- **16 REST endpoints** (`training/federated/federated-routes.ts`): Sessions (list/get/create/pause/resume/cancel), participants (list/register/heartbeat), rounds (list/create/get), model updates (submit/list/aggregate). License-gated under `adaptive_learning`.
+- **SQL migration** (`006_federated_learning.sql`): `federated` schema with 4 tables: `sessions`, `participants`, `rounds`, `model_updates`. Indexes on status, session_id, round_id, tenant_id.
+- **Config** (`ops.federatedLearning`): `enabled`, `maxConcurrentSessions`, `maxParticipantsPerSession`, `roundTimeoutMs`, `heartbeatIntervalMs`, `defaultPrivacy`, `retainRounds`.
+- **74 tests** across 5 files: privacy-engine (15), aggregator (12), federated-manager (17), federated-store (11), federated-routes (19).
+
+### Conversation Branching Visualization (ADR 026)
+
+- **Branch Explorer** (`dashboard/components/chat/BranchExplorer.tsx`): Tabbed container panel replacing the standalone `BranchTreeView` in ChatPage. Four tabs: Tree (existing ReactFlow graph), Timeline, Stats, Compare. Fetches branch tree once and shares across all tabs. Panel widened from `w-80` to `w-96`. Lazy-loaded `BranchTreeView` preserved as Tree tab.
+- **Branch Stats Panel** (`dashboard/components/chat/BranchStatsPanel.tsx`): Aggregate statistics across the entire branch tree. Summary cards: total branches, max depth, leaf count, average quality. Quality distribution histogram with 5 color-coded buckets (red→green, 0–1 range). Model usage breakdown sorted by frequency. Recursive tree traversal via `collectStats()`.
+- **Branch Timeline** (`dashboard/components/chat/BranchTimeline.tsx`): Vertical chronological timeline showing all branches in depth-first order. Color-coded depth indicators (6-color cycle). Quality score display with color gradient (green > 0.8 → red < 0.2). Model badges, branch labels, fork message indices. Click-to-navigate with active conversation highlighting.
+- **Branch Compare Selector** (`dashboard/components/chat/BranchCompareSelector.tsx`): Two-dropdown interface for selecting any pair of branches for side-by-side comparison. Branches indented by depth with quality scores. Disables same-branch comparison. Hidden when tree has fewer than 2 branches.
+- **ChatPage integration**: `BranchExplorer` replaces `BranchTreeView` lazy import. Side panel widened. `onCompare` callback wired for branch pair comparison. `onNavigate` no longer closes panel (allows continued exploration).
+- **26 tests** across 4 files: BranchExplorer (6), BranchStatsPanel (6), BranchTimeline (8), BranchCompareSelector (6).
+
 ### Chaos Engineering Toolkit (ADR 025)
 
 - **Shared types** (`shared/types/chaos-engineering.ts`): `ChaosExperiment`, `FaultRule`, `FaultConfig`, `ChaosExperimentResult`, `FaultInjectionResult`, `ChaosEngineeringConfig` Zod schemas. 8 fault types (latency, error, timeout, resource_exhaustion, dependency_failure, data_corruption, circuit_breaker_trip, rate_limit). 7 target types (workflow_step, ai_provider, integration, brain_storage, external_api, circuit_breaker, message_router). Discriminated union for typed fault configuration.

@@ -54,9 +54,8 @@ export function isPrivateUrl(rawUrl: string): boolean {
   try {
     parsed = new URL(rawUrl);
   } catch {
-    // Malformed URL — let the caller decide; we treat it as non-private so the
-    // subsequent fetch() will fail naturally.
-    return false;
+    // Malformed URL — treat as private/blocked to prevent bypass via URL parsing tricks
+    return true;
   }
 
   // Only allow http/https outbound calls
@@ -64,8 +63,13 @@ export function isPrivateUrl(rawUrl: string): boolean {
 
   const hostname = parsed.hostname.replace(/^\[|\]$/g, ''); // strip IPv6 brackets
 
-  // Explicit loopback hostnames
-  if (hostname === 'localhost' || hostname === 'ip6-localhost' || hostname === 'ip6-loopback') {
+  // Explicit loopback and cloud metadata hostnames
+  const BLOCKED_HOSTNAMES = [
+    'localhost', 'ip6-localhost', 'ip6-loopback',
+    'metadata.google.internal', 'metadata.internal',
+    'instance-data', // AWS EC2 alias
+  ];
+  if (BLOCKED_HOSTNAMES.includes(hostname)) {
     return true;
   }
 

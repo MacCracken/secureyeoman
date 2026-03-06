@@ -790,6 +790,32 @@ export {
   type ChaosEngineeringConfig,
 } from './chaos-engineering.js';
 
+// Federated Learning types
+export {
+  FederatedParticipantStatusSchema,
+  AggregationStrategySchema,
+  FederatedRoundStatusSchema,
+  PrivacyMechanismSchema,
+  DifferentialPrivacyConfigSchema,
+  FederatedParticipantSchema,
+  ModelUpdateSchema,
+  FederatedRoundSchema,
+  FederatedSessionSchema,
+  FederatedSessionCreateSchema,
+  FederatedLearningConfigSchema,
+  type FederatedParticipantStatus,
+  type AggregationStrategy,
+  type FederatedRoundStatus,
+  type PrivacyMechanism,
+  type DifferentialPrivacyConfig,
+  type FederatedParticipant,
+  type ModelUpdate,
+  type FederatedRound,
+  type FederatedSession,
+  type FederatedSessionCreate,
+  type FederatedLearningConfig,
+} from './federated-learning.js';
+
 // Policy-as-Code types
 export {
   PolicyLanguageSchema,

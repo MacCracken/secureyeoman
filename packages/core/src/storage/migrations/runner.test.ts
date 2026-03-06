@@ -14,6 +14,13 @@ import { initPool, getPool } from '../pg-pool.js';
 import { runMigrations } from './runner.js';
 import { MIGRATION_MANIFEST } from './manifest.js';
 
+function assertSafeIdentifier(name: string): string {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/.test(name)) {
+    throw new Error(`Unsafe SQL identifier rejected: ${name}`);
+  }
+  return name;
+}
+
 const dbConfig = {
   host: process.env['TEST_DB_HOST'] ?? process.env['DATABASE_HOST'] ?? 'localhost',
   port: Number(process.env['TEST_DB_PORT'] ?? '5432'),
@@ -71,6 +78,7 @@ async function wipeAllSchemas(): Promise<void> {
     'workspace',
   ];
   for (const s of schemas) {
+    assertSafeIdentifier(s);
     await pool.query(`DROP SCHEMA IF EXISTS ${s} CASCADE`);
   }
   await pool.query('DROP TABLE IF EXISTS schema_migrations');
@@ -79,13 +87,15 @@ async function wipeAllSchemas(): Promise<void> {
     `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('pg_stat_statements')`
   );
   for (const row of pubTables.rows) {
-    await pool.query(`DROP TABLE IF EXISTS public."${row.tablename}" CASCADE`);
+    const table = assertSafeIdentifier(row.tablename);
+    await pool.query(`DROP TABLE IF EXISTS public."${table}" CASCADE`);
   }
   const pubSeqs = await pool.query<{ sequencename: string }>(
     `SELECT sequencename FROM pg_sequences WHERE schemaname = 'public'`
   );
   for (const row of pubSeqs.rows) {
-    await pool.query(`DROP SEQUENCE IF EXISTS public."${row.sequencename}" CASCADE`);
+    const seq = assertSafeIdentifier(row.sequencename);
+    await pool.query(`DROP SEQUENCE IF EXISTS public."${seq}" CASCADE`);
   }
 }
 

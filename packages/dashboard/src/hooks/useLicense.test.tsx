@@ -183,13 +183,19 @@ describe('useLicense', () => {
     expect(result.current.hasFeature('adaptive_learning')).toBe(false);
   });
 
-  it('exports ALL_LICENSED_FEATURES with 5 features', () => {
-    expect(ALL_LICENSED_FEATURES).toHaveLength(5);
+  it('exports ALL_LICENSED_FEATURES with 18 features (6 pro + 12 enterprise)', () => {
+    expect(ALL_LICENSED_FEATURES).toHaveLength(18);
+    // Pro features
+    expect(ALL_LICENSED_FEATURES).toContain('advanced_brain');
+    expect(ALL_LICENSED_FEATURES).toContain('provider_management');
+    expect(ALL_LICENSED_FEATURES).toContain('batch_inference');
+    // Enterprise features
     expect(ALL_LICENSED_FEATURES).toContain('adaptive_learning');
     expect(ALL_LICENSED_FEATURES).toContain('sso_saml');
     expect(ALL_LICENSED_FEATURES).toContain('multi_tenancy');
     expect(ALL_LICENSED_FEATURES).toContain('cicd_integration');
     expect(ALL_LICENSED_FEATURES).toContain('advanced_observability');
+    expect(ALL_LICENSED_FEATURES).toContain('supply_chain');
   });
 
   it('exports ALL_ENTERPRISE_FEATURES as deprecated alias', () => {

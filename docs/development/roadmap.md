@@ -190,8 +190,8 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 - [ ] **Agent sandboxing profiles** — Named sandbox configs (dev/prod/high-security).
 - [ ] **Offline-first PWA** — ServiceWorker + IndexedDB. Closes mobile gap without native apps.
 - [x] **Chaos engineering toolkit** — Fault injection for workflow resilience testing. *(Done — ADR 025, `chaos/` module with 8 fault types, 7 targets, 9 REST endpoints, 53 tests.)*
-- [ ] **Conversation branching visualization** — Visual tree with diff view.
-- [ ] **Federated learning** — Multi-instance model improvement with differential privacy.
+- [x] **Conversation branching visualization** — Visual tree with diff view. *(Done — ADR 026, Branch Explorer with 4 tabs: tree, timeline, stats, compare. 26 new tests.)*
+- [x] **Federated learning** — Multi-instance model improvement with differential privacy. *(ADR 027, [2026.3.8])*
 
 ---
 

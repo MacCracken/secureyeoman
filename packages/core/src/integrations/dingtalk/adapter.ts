@@ -10,6 +10,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { assertPublicUrl } from '../../utils/ssrf-guard.js';
 
 interface DingTalkConfig {
   outboundWebhookUrl?: string;
@@ -73,6 +74,7 @@ export class DingTalkIntegration implements WebhookIntegration {
       this.dtConfig?.outboundWebhookUrl;
     if (!webhookUrl?.startsWith('http'))
       throw new Error('No DingTalk outbound webhook URL configured');
+    assertPublicUrl(webhookUrl, 'DingTalk Webhook URL');
 
     const isMarkdown = metadata?.markdown === true;
     const body = isMarkdown

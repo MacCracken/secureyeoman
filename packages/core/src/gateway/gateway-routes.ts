@@ -70,7 +70,11 @@ export function registerGatewayRoutes(app: FastifyInstance, opts: GatewayRoutesO
       }
 
       // 3. Resolve personality (key binding takes precedence)
-      const body = { ...request.body } as Record<string, unknown>;
+      const body = Object.fromEntries(
+        Object.entries(request.body as Record<string, unknown>).filter(
+          ([k]) => k !== '__proto__' && k !== 'constructor' && k !== 'prototype'
+        )
+      );
       if (authUser.gatewayPersonalityId) {
         body.personalityId = authUser.gatewayPersonalityId;
       }

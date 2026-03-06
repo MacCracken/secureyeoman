@@ -90,9 +90,11 @@ function renderSceneSvg(scene: ExcalidrawScene): string {
     const y = (el.y ?? 0) - minY + pad;
     const w = el.width ?? 100;
     const h = el.height ?? 50;
-    const stroke = el.strokeColor ?? '#1e1e1e';
+    const stroke = sanitizeSvgColor(String(el.strokeColor ?? '#1e1e1e'));
     const fill =
-      el.backgroundColor === 'transparent' || !el.backgroundColor ? 'none' : el.backgroundColor;
+      el.backgroundColor === 'transparent' || !el.backgroundColor
+        ? 'none'
+        : sanitizeSvgColor(String(el.backgroundColor));
 
     switch (el.type) {
       case 'rectangle':
@@ -157,6 +159,16 @@ function escapeHtml(str: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/** Validate SVG attribute values (colors, numeric) to prevent attribute injection */
+function sanitizeSvgColor(value: string): string {
+  // Allow hex colors, named CSS colors (alpha only), rgb/rgba, hsl/hsla, 'none', 'transparent'
+  if (/^#[0-9a-fA-F]{3,8}$/.test(value)) return value;
+  if (/^[a-zA-Z]{1,20}$/.test(value)) return value;
+  if (/^(rgb|hsl)a?\([0-9.,% ]+\)$/.test(value)) return value;
+  if (value === 'none' || value === 'transparent') return value;
+  return '#1e1e1e'; // safe fallback
 }
 
 // ── Component ────────────────────────────────────────────────────────

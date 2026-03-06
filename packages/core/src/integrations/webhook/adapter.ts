@@ -10,6 +10,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { assertPublicUrl } from '../../utils/ssrf-guard.js';
 
 interface WebhookConfig {
   webhookUrl?: string;
@@ -66,6 +67,7 @@ export class GenericWebhookIntegration implements WebhookIntegration {
     if (!this.webhookUrl) {
       throw new Error('No webhook URL configured');
     }
+    assertPublicUrl(this.webhookUrl, 'Webhook URL');
 
     const payload = JSON.stringify({ chatId, text, metadata, timestamp: Date.now() });
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };

@@ -23,6 +23,7 @@ import { AgentReplayConfigSchema } from './agent-replay.js';
 import { PolicyAsCodeConfigSchema } from './policy-as-code.js';
 import { IacConfigSchema } from './iac.js';
 import { ChaosEngineeringConfigSchema } from './chaos-engineering.js';
+import { FederatedLearningConfigSchema } from './federated-learning.js';
 import { ExternalizationPolicySchema } from './sandbox-scanning.js';
 import { z as zz } from 'zod';
 
@@ -1175,6 +1176,8 @@ export const OpsDomainConfigSchema = z.object({
   agentReplay: AgentReplayConfigSchema,
   training: TrainingPipelineConfigSchema,
   analytics: ConversationAnalyticsConfigSchema,
+  /** Federated Learning: Multi-instance model improvement with differential privacy. */
+  federatedLearning: FederatedLearningConfigSchema,
 });
 export type OpsDomainConfig = z.infer<typeof OpsDomainConfigSchema>;
 

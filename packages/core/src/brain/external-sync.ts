@@ -83,9 +83,17 @@ export class ExternalBrainSync {
     return this.config.path;
   }
 
-  /** Update configuration dynamically */
+  /** Update configuration dynamically (allowlisted keys only) */
   async updateConfig(config: Partial<ExternalBrainConfig>): Promise<void> {
-    Object.assign(this.config, config);
+    const ALLOWED_KEYS: ReadonlySet<string> = new Set([
+      'enabled', 'provider', 'path', 'subdir', 'syncIntervalMs',
+      'syncMemories', 'syncKnowledge', 'includeFrontmatter',
+    ]);
+    const safe: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(config)) {
+      if (ALLOWED_KEYS.has(k)) safe[k] = v;
+    }
+    Object.assign(this.config, safe);
 
     // Restart sync if needed
     this.stop();

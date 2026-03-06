@@ -103,9 +103,9 @@ describe('isPrivateUrl', () => {
   });
 
   describe('malformed URLs', () => {
-    it('returns false for malformed URLs (non-private treatment)', () => {
-      expect(isPrivateUrl('not-a-url')).toBe(false);
-      expect(isPrivateUrl('')).toBe(false);
+    it('treats malformed URLs as private (blocked) to prevent bypass', () => {
+      expect(isPrivateUrl('not-a-url')).toBe(true);
+      expect(isPrivateUrl('')).toBe(true);
     });
   });
 });

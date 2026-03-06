@@ -159,6 +159,14 @@ export class DatasetCuratorManager {
     const limit = rules.maxSamples ?? 10000;
 
     // Estimate tokens as char count / 4
+    // Use separate constant SQL strings to avoid template literal SQL construction
+    const MESSAGES_COL_PREVIEW = "'[]'::text AS messages";
+    const MESSAGES_COL_FULL = `(
+          SELECT json_agg(json_build_object('role', m.role, 'content', m.content) ORDER BY m.created_at)
+          FROM chat.messages m WHERE m.conversation_id = c.id
+        ) AS messages`;
+    const messagesCol = previewOnly ? MESSAGES_COL_PREVIEW : MESSAGES_COL_FULL;
+
     const sql = `
       SELECT
         c.id AS conversation_id,
@@ -168,14 +176,7 @@ export class DatasetCuratorManager {
           (SELECT SUM(LENGTH(m.content)) / 4 FROM chat.messages m WHERE m.conversation_id = c.id),
           0
         ) AS token_estimate,
-        ${
-          previewOnly
-            ? "'[]'::text"
-            : `(
-          SELECT json_agg(json_build_object('role', m.role, 'content', m.content) ORDER BY m.created_at)
-          FROM chat.messages m WHERE m.conversation_id = c.id
-        )`
-        } AS messages
+        ${messagesCol}
       FROM chat.conversations c
       LEFT JOIN training.conversation_quality cq ON cq.conversation_id = c.id
       ${where}

@@ -9,6 +9,14 @@
 import { initPool, closePool, resetPool, getPool } from './storage/pg-pool.js';
 import { runMigrations } from './storage/migrations/runner.js';
 
+/** Validate a PostgreSQL identifier to prevent SQL injection in DDL statements */
+function assertSafeIdentifier(name: string): string {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/.test(name)) {
+    throw new Error(`Unsafe SQL identifier rejected: ${name}`);
+  }
+  return name;
+}
+
 let initialized = false;
 
 /**
@@ -82,7 +90,8 @@ export async function truncateAllTables(): Promise<void> {
     // Get all tables in the schema
     const res = await pool.query(`SELECT tablename FROM pg_tables WHERE schemaname = $1`, [schema]);
     for (const row of res.rows) {
-      await pool.query(`TRUNCATE ${schema}."${row.tablename}" CASCADE`);
+      const table = assertSafeIdentifier(row.tablename);
+      await pool.query(`TRUNCATE ${schema}."${table}" CASCADE`);
     }
   }
 
@@ -92,7 +101,8 @@ export async function truncateAllTables(): Promise<void> {
     `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename != 'schema_migrations'`
   );
   for (const row of publicRes.rows) {
-    await pool.query(`TRUNCATE public."${row.tablename}" CASCADE`);
+    const table = assertSafeIdentifier(row.tablename);
+    await pool.query(`TRUNCATE public."${table}" CASCADE`);
   }
 
   // Re-seed the default tenant so FK constraints (tenant_id → auth.tenants) resolve.
@@ -113,7 +123,8 @@ export async function truncateWorkflowTables(): Promise<void> {
   const pool = getPool();
   const res = await pool.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'workflow'`);
   for (const row of res.rows) {
-    await pool.query(`TRUNCATE workflow."${row.tablename}" CASCADE`);
+    const table = assertSafeIdentifier(row.tablename);
+    await pool.query(`TRUNCATE workflow."${table}" CASCADE`);
   }
 }
 
