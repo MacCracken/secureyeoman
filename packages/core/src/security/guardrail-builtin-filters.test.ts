@@ -66,7 +66,9 @@ describe('ResponseGuardFilter', () => {
     guardMock = {
       scan: vi.fn().mockReturnValue({ passed: true, findings: [] }),
       checkBrainConsistency: vi.fn().mockReturnValue([]),
-      checkSystemPromptLeak: vi.fn().mockReturnValue({ hasLeak: false, overlapRatio: 0, redacted: '' }),
+      checkSystemPromptLeak: vi
+        .fn()
+        .mockReturnValue({ hasLeak: false, overlapRatio: 0, redacted: '' }),
     };
     filter = new ResponseGuardFilter(guardMock);
   });
@@ -128,9 +130,7 @@ describe('ContentGuardrailFilter', () => {
       scan: vi.fn().mockResolvedValue({
         passed: true,
         text: 'redacted text',
-        findings: [
-          { type: 'pii', action: 'redact', detail: 'email detected', contentHash: 'abc' },
-        ],
+        findings: [{ type: 'pii', action: 'redact', detail: 'email detected', contentHash: 'abc' }],
       }),
     };
     const filter = new ContentGuardrailFilter(guardrailMock as any);
@@ -147,9 +147,7 @@ describe('ContentGuardrailFilter', () => {
       scan: vi.fn().mockResolvedValue({
         passed: false,
         text: 'blocked',
-        findings: [
-          { type: 'block_list', action: 'block', detail: 'Bad word', contentHash: 'x' },
-        ],
+        findings: [{ type: 'block_list', action: 'block', detail: 'Bad word', contentHash: 'x' }],
       }),
     };
     const filter = new ContentGuardrailFilter(guardrailMock as any);

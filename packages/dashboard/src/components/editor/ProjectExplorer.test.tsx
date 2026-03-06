@@ -152,4 +152,138 @@ describe('ProjectExplorer', () => {
     renderExplorer();
     expect(screen.getByPlaceholderText('/path/to/folder')).toBeInTheDocument();
   });
+
+  it('renders refresh button', async () => {
+    mockExec.mockResolvedValue({ output: '', error: '', exitCode: 0, cwd: '/tmp' });
+    renderExplorer();
+    expect(screen.getByTitle('Refresh')).toBeInTheDocument();
+  });
+
+  it('calls onCwdChange when cwd input is submitted with Enter', async () => {
+    const user = userEvent.setup();
+    const onCwdChange = vi.fn();
+    mockExec.mockResolvedValue({ output: '', error: '', exitCode: 0, cwd: '/tmp' });
+    renderExplorer({ onCwdChange });
+    const input = screen.getByPlaceholderText('/path/to/folder');
+    await user.clear(input);
+    await user.type(input, '/new/path{Enter}');
+    expect(onCwdChange).toHaveBeenCalledWith('/new/path');
+  });
+
+  it('calls onCwdChange on blur with a different cwd', async () => {
+    const user = userEvent.setup();
+    const onCwdChange = vi.fn();
+    mockExec.mockResolvedValue({ output: '', error: '', exitCode: 0, cwd: '/tmp' });
+    renderExplorer({ onCwdChange });
+    const input = screen.getByPlaceholderText('/path/to/folder');
+    await user.clear(input);
+    await user.type(input, '/other/path');
+    await user.tab(); // triggers blur
+    expect(onCwdChange).toHaveBeenCalledWith('/other/path');
+  });
+
+  it('does not call onCwdChange when cwd has not changed', async () => {
+    const user = userEvent.setup();
+    const onCwdChange = vi.fn();
+    mockExec.mockResolvedValue({ output: '', error: '', exitCode: 0, cwd: '/tmp' });
+    renderExplorer({ onCwdChange });
+    const input = screen.getByPlaceholderText('/path/to/folder');
+    // Just press Enter without changing the value
+    await user.click(input);
+    await user.keyboard('{Enter}');
+    expect(onCwdChange).not.toHaveBeenCalled();
+  });
+
+  it('shows context menu with Rename and Delete for files', async () => {
+    const user = userEvent.setup();
+    mockExec.mockResolvedValue({ output: 'f myfile.txt', error: '', exitCode: 0, cwd: '/tmp' });
+    renderExplorer();
+    await waitFor(() => {
+      expect(screen.getByText('myfile.txt')).toBeInTheDocument();
+    });
+    await user.pointer({ target: screen.getByTestId('tree-node-myfile.txt'), keys: '[MouseRight]' });
+    await waitFor(() => {
+      expect(screen.getByTestId('context-menu')).toBeInTheDocument();
+      expect(screen.getByText('Rename')).toBeInTheDocument();
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+      // Files should NOT have New File / New Folder options
+      expect(screen.queryByText('New File')).not.toBeInTheDocument();
+      expect(screen.queryByText('New Folder')).not.toBeInTheDocument();
+    });
+  });
+
+  it('context menu has New File and New Folder for directories', async () => {
+    const user = userEvent.setup();
+    mockExec.mockResolvedValue({ output: 'd mydir', error: '', exitCode: 0, cwd: '/tmp' });
+    renderExplorer();
+    await waitFor(() => {
+      expect(screen.getByText('mydir')).toBeInTheDocument();
+    });
+    await user.pointer({ target: screen.getByTestId('tree-node-mydir'), keys: '[MouseRight]' });
+    await waitFor(() => {
+      expect(screen.getByText('New File')).toBeInTheDocument();
+      expect(screen.getByText('New Folder')).toBeInTheDocument();
+    });
+  });
+
+  it('closes context menu when overlay is clicked', async () => {
+    const user = userEvent.setup();
+    mockExec.mockResolvedValue({ output: 'f test.txt', error: '', exitCode: 0, cwd: '/tmp' });
+    renderExplorer();
+    await waitFor(() => {
+      expect(screen.getByText('test.txt')).toBeInTheDocument();
+    });
+    await user.pointer({ target: screen.getByTestId('tree-node-test.txt'), keys: '[MouseRight]' });
+    await waitFor(() => {
+      expect(screen.getByTestId('context-menu')).toBeInTheDocument();
+    });
+    // Click the fixed overlay to close context menu
+    const overlay = document.querySelector('.fixed.inset-0.z-50') as HTMLElement;
+    if (overlay) {
+      await user.click(overlay);
+      await waitFor(() => {
+        expect(screen.queryByTestId('context-menu')).not.toBeInTheDocument();
+      });
+    }
+  });
+
+  it('activates rename mode from context menu', async () => {
+    const user = userEvent.setup();
+    mockExec.mockResolvedValue({ output: 'f rename-me.txt', error: '', exitCode: 0, cwd: '/tmp' });
+    renderExplorer();
+    await waitFor(() => {
+      expect(screen.getByText('rename-me.txt')).toBeInTheDocument();
+    });
+    await user.pointer({ target: screen.getByTestId('tree-node-rename-me.txt'), keys: '[MouseRight]' });
+    await waitFor(() => {
+      expect(screen.getByText('Rename')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Rename'));
+    // Should show an input with the current name
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('rename-me.txt')).toBeInTheDocument();
+    });
+  });
+
+  it('handles empty output from listing gracefully', async () => {
+    mockExec.mockResolvedValue({ output: '  \n  \n  ', error: '', exitCode: 0, cwd: '/tmp' });
+    renderExplorer();
+    await waitFor(() => {
+      expect(screen.getByText('Empty directory')).toBeInTheDocument();
+    });
+  });
+
+  it('filters out . and .. entries', async () => {
+    mockExec.mockResolvedValue({
+      output: 'd .\nd ..\nf real.txt',
+      error: '',
+      exitCode: 0,
+      cwd: '/tmp',
+    });
+    renderExplorer();
+    await waitFor(() => {
+      expect(screen.getByText('real.txt')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('.')).not.toBeInTheDocument();
+  });
 });

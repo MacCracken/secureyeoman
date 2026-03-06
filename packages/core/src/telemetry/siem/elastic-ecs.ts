@@ -71,7 +71,8 @@ export class ElasticEcsProvider implements SiemProvider {
       headers.Authorization = `ApiKey ${this.config.apiKey}`;
     } else if (this.config.username && this.config.password) {
       headers.Authorization =
-        'Basic ' + Buffer.from(`${this.config.username}:${this.config.password}`).toString('base64');
+        'Basic ' +
+        Buffer.from(`${this.config.username}:${this.config.password}`).toString('base64');
     }
 
     const resp = await fetch(`${this.config.endpoint}/_bulk`, {

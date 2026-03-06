@@ -68,7 +68,9 @@ describe('ElasticEcsProvider', () => {
       index: 'idx',
     });
 
-    await expect(provider.send([makeEvent()])).rejects.toThrow('Elasticsearch bulk API returned 401');
+    await expect(provider.send([makeEvent()])).rejects.toThrow(
+      'Elasticsearch bulk API returned 401'
+    );
   });
 
   it('should map severity levels correctly', async () => {

@@ -106,7 +106,9 @@ describe('PrivacyEngine', () => {
   });
 
   it('reports not exhausted when disabled', () => {
-    expect(engine.isBudgetExhausted(makeConfig({ enabled: false, privacyBudgetUsed: 999 }))).toBe(false);
+    expect(engine.isBudgetExhausted(makeConfig({ enabled: false, privacyBudgetUsed: 999 }))).toBe(
+      false
+    );
   });
 
   it('consumes budget correctly', () => {

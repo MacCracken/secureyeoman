@@ -75,7 +75,8 @@ export const CANVAS_WIDGET_REGISTRY: readonly CanvasWidgetDef[] = [
     type: 'the-entity',
     label: 'The Entity',
     category: 'ai-agents',
-    description: 'AI consciousness visualization — neural network particle animation reacting to AI state',
+    description:
+      'AI consciousness visualization — neural network particle animation reacting to AI state',
     defaultWidth: 480,
     defaultHeight: 320,
     singleton: true,

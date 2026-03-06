@@ -17,7 +17,7 @@ export interface DiscoveredBundle {
   name: string;
   dir: string;
   metadata: BundleMetadata;
-  files: Array<{ path: string; language: PolicyLanguage; source: string }>;
+  files: { path: string; language: PolicyLanguage; source: string }[];
 }
 
 export interface GitInfo {
@@ -63,9 +63,7 @@ export class GitPolicyRepo {
         cwd: this.repoPath,
       });
     } catch (err) {
-      throw new Error(
-        `Git pull failed: ${err instanceof Error ? err.message : String(err)}`
-      );
+      throw new Error(`Git pull failed: ${err instanceof Error ? err.message : String(err)}`);
     }
     const after = await this.getGitInfo();
     return { updated: before.commitSha !== after.commitSha, commitSha: after.commitSha };
@@ -140,9 +138,9 @@ export class GitPolicyRepo {
   private async discoverFiles(
     rootDir: string,
     currentDir: string
-  ): Promise<Array<{ path: string; language: PolicyLanguage; source: string }>> {
+  ): Promise<{ path: string; language: PolicyLanguage; source: string }[]> {
     const entries = await readdir(currentDir);
-    const files: Array<{ path: string; language: PolicyLanguage; source: string }> = [];
+    const files: { path: string; language: PolicyLanguage; source: string }[] = [];
 
     for (const entry of entries) {
       const fullPath = join(currentDir, entry);

@@ -40,25 +40,19 @@ function makeTree(): BranchTreeNode {
 
 describe('BranchTimeline', () => {
   it('shows empty state when tree is null', () => {
-    render(
-      <BranchTimeline tree={null} activeConversationId={null} onNavigate={vi.fn()} />
-    );
+    render(<BranchTimeline tree={null} activeConversationId={null} onNavigate={vi.fn()} />);
     expect(screen.getByTestId('branch-timeline-empty')).toBeInTheDocument();
   });
 
   it('renders all branches in order', () => {
-    render(
-      <BranchTimeline tree={makeTree()} activeConversationId={null} onNavigate={vi.fn()} />
-    );
+    render(<BranchTimeline tree={makeTree()} activeConversationId={null} onNavigate={vi.fn()} />);
     expect(screen.getByTestId('timeline-entry-0')).toBeInTheDocument();
     expect(screen.getByTestId('timeline-entry-1')).toBeInTheDocument();
     expect(screen.getByTestId('timeline-entry-2')).toBeInTheDocument();
   });
 
   it('shows quality scores', () => {
-    render(
-      <BranchTimeline tree={makeTree()} activeConversationId={null} onNavigate={vi.fn()} />
-    );
+    render(<BranchTimeline tree={makeTree()} activeConversationId={null} onNavigate={vi.fn()} />);
     expect(screen.getByTestId('quality-0')).toHaveTextContent('0.850');
     expect(screen.getByTestId('quality-1')).toHaveTextContent('0.720');
   });
@@ -83,25 +77,19 @@ describe('BranchTimeline', () => {
   });
 
   it('shows branch labels and fork indices', () => {
-    render(
-      <BranchTimeline tree={makeTree()} activeConversationId={null} onNavigate={vi.fn()} />
-    );
+    render(<BranchTimeline tree={makeTree()} activeConversationId={null} onNavigate={vi.fn()} />);
     expect(screen.getByText('experiment-A')).toBeInTheDocument();
     expect(screen.getByText('forked @ msg 3')).toBeInTheDocument();
   });
 
   it('shows model badges', () => {
-    render(
-      <BranchTimeline tree={makeTree()} activeConversationId={null} onNavigate={vi.fn()} />
-    );
+    render(<BranchTimeline tree={makeTree()} activeConversationId={null} onNavigate={vi.fn()} />);
     expect(screen.getAllByText('gpt-4')).toHaveLength(2);
     expect(screen.getByText('claude-3')).toBeInTheDocument();
   });
 
   it('shows depth indicators', () => {
-    render(
-      <BranchTimeline tree={makeTree()} activeConversationId={null} onNavigate={vi.fn()} />
-    );
+    render(<BranchTimeline tree={makeTree()} activeConversationId={null} onNavigate={vi.fn()} />);
     expect(screen.getByText('depth 0')).toBeInTheDocument();
     expect(screen.getAllByText('depth 1')).toHaveLength(2);
   });

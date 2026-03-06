@@ -1766,7 +1766,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               personality?.body?.strictSystemPromptConfidentiality ??
               secureYeoman.getConfig().security.strictSystemPromptConfidentiality;
             if (_strictConf && systemPrompt) {
-              const _leakResult = responseGuard.checkSystemPromptLeak(response.content, systemPrompt);
+              const _leakResult = responseGuard.checkSystemPromptLeak(
+                response.content,
+                systemPrompt
+              );
               if (_leakResult.hasLeak) {
                 void secureYeoman.getAuditChain().record({
                   event: 'system_prompt_leak_detected',

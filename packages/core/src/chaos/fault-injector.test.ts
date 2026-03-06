@@ -73,7 +73,12 @@ describe('FaultInjector', () => {
 
   it('injects dependency failure fault', async () => {
     const rule = makeRule({
-      fault: { type: 'dependency_failure', dependencyName: 'redis', failureMode: 'unavailable', recoveryAfterMs: 0 },
+      fault: {
+        type: 'dependency_failure',
+        dependencyName: 'redis',
+        failureMode: 'unavailable',
+        recoveryAfterMs: 0,
+      },
     });
 
     const result = await injector.inject(rule);

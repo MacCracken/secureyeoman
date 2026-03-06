@@ -68,16 +68,16 @@ export function registerTerminalTools(
       }
 
       const result = (await client.post('/api/v1/terminal/execute', body)) as {
-        output: string;
-        error: string;
-        exitCode: number;
-        cwd: string;
+        output?: string;
+        error?: string;
+        exitCode?: number;
+        cwd?: string;
       };
 
       const parts: string[] = [];
       if (result.output) parts.push(result.output);
       if (result.error) parts.push(`[stderr] ${result.error}`);
-      parts.push(`[exit ${result.exitCode}] cwd: ${result.cwd}`);
+      parts.push(`[exit ${result.exitCode ?? -1}] cwd: ${result.cwd ?? ''}`);
 
       return {
         content: [{ type: 'text' as const, text: parts.join('\n') }],
@@ -105,10 +105,7 @@ export function registerTerminalTools(
       const { cwd } = args as { cwd?: string };
       const query = cwd ? { cwd } : undefined;
 
-      const result = (await client.get('/api/v1/terminal/tech-stack', query)) as {
-        stacks: string[];
-        allowedCommands: string[];
-      };
+      const result = await client.get('/api/v1/terminal/tech-stack', query);
 
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],

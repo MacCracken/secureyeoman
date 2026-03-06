@@ -111,24 +111,36 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
     );
   };
 
-  const selectAll = () => setFileGroups((prev) => prev.map((g) => ({ ...g, selected: true })));
-  const selectNone = () => setFileGroups((prev) => prev.map((g) => ({ ...g, selected: false })));
+  const selectAll = () => {
+    setFileGroups((prev) => prev.map((g) => ({ ...g, selected: true })));
+  };
+  const selectNone = () => {
+    setFileGroups((prev) => prev.map((g) => ({ ...g, selected: false })));
+  };
 
   return (
-    <div className="flex flex-col h-full bg-background border-r border-border" data-testid="search-panel">
+    <div
+      className="flex flex-col h-full bg-background border-r border-border"
+      data-testid="search-panel"
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
         <span className="text-xs font-medium">Search</span>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setShowReplace((v) => !v)}
+            onClick={() => {
+              setShowReplace((v) => !v);
+            }}
             className={`p-1 rounded text-xs ${showReplace ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
             title="Toggle replace"
           >
             <Replace className="w-3.5 h-3.5" />
           </button>
           {onClose && (
-            <button onClick={onClose} className="p-1 rounded text-muted-foreground hover:text-foreground">
+            <button
+              onClick={onClose}
+              className="p-1 rounded text-muted-foreground hover:text-foreground"
+            >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
@@ -145,7 +157,9 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
               className="w-full pl-7 pr-2 py-1.5 text-xs bg-muted/30 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="Search..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSearch();
               }}
@@ -153,14 +167,18 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
             />
           </div>
           <button
-            onClick={() => setCaseSensitive((v) => !v)}
+            onClick={() => {
+              setCaseSensitive((v) => !v);
+            }}
             className={`p-1 rounded text-xs ${caseSensitive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
             title="Match case"
           >
             <CaseSensitive className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => setUseRegex((v) => !v)}
+            onClick={() => {
+              setUseRegex((v) => !v);
+            }}
             className={`p-1 rounded text-xs ${useRegex ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
             title="Use regex"
           >
@@ -177,13 +195,21 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
                 className="w-full pl-7 pr-2 py-1.5 text-xs bg-muted/30 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="Replace..."
                 value={replaceText}
-                onChange={(e) => setReplaceText(e.target.value)}
+                onChange={(e) => {
+                  setReplaceText(e.target.value);
+                }}
                 data-testid="replace-input"
               />
             </div>
             <button
-              onClick={() => replaceMutation.mutate()}
-              disabled={!query.trim() || replaceMutation.isPending || fileGroups.filter((g) => g.selected).length === 0}
+              onClick={() => {
+                replaceMutation.mutate();
+              }}
+              disabled={
+                !query.trim() ||
+                replaceMutation.isPending ||
+                fileGroups.filter((g) => g.selected).length === 0
+              }
               className="px-2 py-1.5 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
               title="Replace all in selected files"
               data-testid="replace-all-btn"
@@ -198,15 +224,15 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
           className="w-full px-2 py-1 text-xs bg-muted/30 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
           placeholder="Files to include (e.g. *.ts, *.tsx)"
           value={glob}
-          onChange={(e) => setGlob(e.target.value)}
+          onChange={(e) => {
+            setGlob(e.target.value);
+          }}
         />
       </div>
 
       {/* Results */}
       <div className="flex-1 overflow-y-auto text-xs">
-        {searchMutation.isPending && (
-          <div className="p-3 text-muted-foreground">Searching...</div>
-        )}
+        {searchMutation.isPending && <div className="p-3 text-muted-foreground">Searching...</div>}
 
         {!searchMutation.isPending && totalMatches > 0 && (
           <div className="flex items-center justify-between px-3 py-1.5 text-muted-foreground border-b border-border">
@@ -217,15 +243,22 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
             </span>
             {showReplace && (
               <div className="flex gap-2">
-                <button onClick={selectAll} className="hover:text-foreground">All</button>
-                <button onClick={selectNone} className="hover:text-foreground">None</button>
+                <button onClick={selectAll} className="hover:text-foreground">
+                  All
+                </button>
+                <button onClick={selectNone} className="hover:text-foreground">
+                  None
+                </button>
               </div>
             )}
           </div>
         )}
 
         {replaceMutation.isSuccess && (
-          <div className="px-3 py-1.5 text-green-600 bg-green-50 border-b border-green-200 text-xs" data-testid="replace-success">
+          <div
+            className="px-3 py-1.5 text-green-600 bg-green-50 border-b border-green-200 text-xs"
+            data-testid="replace-success"
+          >
             Replaced {replaceMutation.data.totalReplacements} occurrence
             {replaceMutation.data.totalReplacements !== 1 ? 's' : ''} in{' '}
             {replaceMutation.data.files.length} file
@@ -237,7 +270,9 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
           <div key={group.file}>
             <div
               className="flex items-center gap-1 px-2 py-1 hover:bg-muted/50 cursor-pointer"
-              onClick={() => toggleExpand(gi)}
+              onClick={() => {
+                toggleExpand(gi);
+              }}
             >
               {showReplace && (
                 <button

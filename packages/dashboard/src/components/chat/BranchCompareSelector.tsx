@@ -22,11 +22,7 @@ interface FlatBranch {
   model: string | null;
 }
 
-function flattenBranches(
-  node: BranchTreeNode,
-  depth: number,
-  result: FlatBranch[]
-): void {
+function flattenBranches(node: BranchTreeNode, depth: number, result: FlatBranch[]): void {
   result.push({
     id: node.conversationId,
     title: node.title,
@@ -70,14 +66,17 @@ export function BranchCompareSelector({ tree, onCompare }: BranchCompareSelector
       <div className="flex items-center gap-2">
         <select
           value={sourceId}
-          onChange={(e) => setSourceId(e.target.value)}
+          onChange={(e) => {
+            setSourceId(e.target.value);
+          }}
           className="flex-1 border rounded px-2 py-1.5 text-xs bg-background truncate"
           data-testid="compare-source-select"
         >
           <option value="">Select source...</option>
           {branches.map((b) => (
             <option key={b.id} value={b.id} disabled={b.id === targetId}>
-              {'  '.repeat(b.depth)}{b.title}
+              {'  '.repeat(b.depth)}
+              {b.title}
               {b.qualityScore != null ? ` (${b.qualityScore.toFixed(2)})` : ''}
             </option>
           ))}
@@ -87,14 +86,17 @@ export function BranchCompareSelector({ tree, onCompare }: BranchCompareSelector
 
         <select
           value={targetId}
-          onChange={(e) => setTargetId(e.target.value)}
+          onChange={(e) => {
+            setTargetId(e.target.value);
+          }}
           className="flex-1 border rounded px-2 py-1.5 text-xs bg-background truncate"
           data-testid="compare-target-select"
         >
           <option value="">Select target...</option>
           {branches.map((b) => (
             <option key={b.id} value={b.id} disabled={b.id === sourceId}>
-              {'  '.repeat(b.depth)}{b.title}
+              {'  '.repeat(b.depth)}
+              {b.title}
               {b.qualityScore != null ? ` (${b.qualityScore.toFixed(2)})` : ''}
             </option>
           ))}

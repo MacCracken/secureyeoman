@@ -84,22 +84,18 @@ describe('SoulStorage', () => {
 
   describe('createPersonality', () => {
     it('inserts and returns the personality', async () => {
-      mockQuery
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [personalityRow], rowCount: 1 });
+      mockQuery.mockResolvedValueOnce({ rows: [personalityRow], rowCount: 1 });
 
       const p = await storage.createPersonality({ name: 'Test Personality' });
       expect(p.id).toBe('per-1');
       expect(p.name).toBe('Test Personality');
     });
 
-    it('throws when re-select fails', async () => {
-      mockQuery
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    it('throws when INSERT RETURNING yields no row', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
       await expect(storage.createPersonality({ name: 'x' })).rejects.toThrow(
-        'Failed to retrieve personality after insert'
+        'Failed to insert personality'
       );
     });
   });
@@ -598,12 +594,13 @@ describe('SoulStorage', () => {
 
   describe('createPersonality — isArchetype option', () => {
     it('passes isArchetype as true when specified', async () => {
-      mockQuery
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // INSERT
-        .mockResolvedValueOnce({ rows: [{ ...personalityRow, is_archetype: true }], rowCount: 1 });
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...personalityRow, is_archetype: true }],
+        rowCount: 1,
+      });
 
       const p = await storage.createPersonality({ name: 'Archetype' }, { isArchetype: true });
-      // The INSERT params (index 15) should be true for is_archetype
+      // The INSERT RETURNING params (index 15) should be true for is_archetype
       const params = mockQuery.mock.calls[0][1] as unknown[];
       expect(params[15]).toBe(true);
     });

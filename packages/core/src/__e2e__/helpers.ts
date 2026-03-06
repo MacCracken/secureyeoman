@@ -102,7 +102,7 @@ export async function startE2EServer(): Promise<E2EServer> {
       rbac,
       rateLimiter,
       logger: logger.child({ component: 'AuthService' }),
-    },
+    }
   );
 
   // ── Domain managers (real storage, real DB) ───────────────────
@@ -198,7 +198,7 @@ export async function startE2EServer(): Promise<E2EServer> {
 
 export async function login(
   baseUrl: string,
-  password = TEST_ADMIN_PASSWORD,
+  password = TEST_ADMIN_PASSWORD
 ): Promise<{ accessToken: string; refreshToken: string }> {
   const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
     method: 'POST',

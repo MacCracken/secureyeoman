@@ -5,13 +5,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('../../api/client', () => ({
-  fetchPersonalityVersions: vi.fn(),
-  fetchPersonalityDrift: vi.fn(),
-  tagPersonalityRelease: vi.fn(),
-  rollbackPersonality: vi.fn(),
-  fetchPersonalityVersionDiff: vi.fn(),
-}));
+vi.mock('../../api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../api/client')>();
+  return {
+    ...actual,
+    fetchPersonalityVersions: vi.fn(),
+    fetchPersonalityDrift: vi.fn(),
+    tagPersonalityRelease: vi.fn(),
+    rollbackPersonality: vi.fn(),
+    deletePersonalityTag: vi.fn(),
+    fetchPersonalityVersionDiff: vi.fn(),
+  };
+});
 
 import * as api from '../../api/client';
 import PersonalityVersionHistory from './PersonalityVersionHistory';
@@ -130,5 +135,208 @@ describe('PersonalityVersionHistory', () => {
     mockFetchDrift.mockReturnValue(new Promise(() => {}));
     render(<PersonalityVersionHistory personalityId="pers-1" />);
     expect(screen.getByText('Loading version history...')).toBeInTheDocument();
+  });
+
+  it('shows empty state when no versions exist', async () => {
+    mockFetchVersions.mockResolvedValue({ versions: [], total: 0 });
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(
+        screen.getByText(/No versions recorded yet/)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('shows changedFields in version list', async () => {
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('[name]')).toBeInTheDocument();
+    });
+  });
+
+  it('shows author in version list', async () => {
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('system')).toBeInTheDocument();
+    });
+  });
+
+  it('handles rollback with confirm', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockRollback.mockResolvedValue({} as any);
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('rollback')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('rollback'));
+    await waitFor(() => {
+      expect(mockRollback).toHaveBeenCalledWith('pers-1', 'pv-1');
+    });
+    vi.restoreAllMocks();
+  });
+
+  it('does not rollback when confirm is cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('rollback')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('rollback'));
+    expect(mockRollback).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it('shows error when rollback fails', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockRollback.mockRejectedValue(new Error('Rollback denied'));
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('rollback')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('rollback'));
+    await waitFor(() => {
+      expect(screen.getByText('Rollback denied')).toBeInTheDocument();
+    });
+    vi.restoreAllMocks();
+  });
+
+  it('shows error when tag release fails', async () => {
+    mockTagRelease.mockRejectedValue(new Error('Tag conflict'));
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('Tag Release')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Tag Release'));
+    await waitFor(() => {
+      expect(screen.getByText('Tag conflict')).toBeInTheDocument();
+    });
+  });
+
+  it('shows diff when diff button is clicked (multiple versions)', async () => {
+    const VERSION2 = {
+      ...VERSION,
+      id: 'pv-2',
+      versionTag: null,
+      changedFields: ['systemPrompt'],
+    };
+    mockFetchVersions.mockResolvedValue({ versions: [VERSION2, VERSION], total: 2 });
+    mockFetchDiff.mockResolvedValue({ diff: '+added line\n-removed line\n@@ context @@' });
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('Versions (2)')).toBeInTheDocument();
+    });
+    // The first version (not last) should have a diff button
+    fireEvent.click(screen.getByText('diff'));
+    await waitFor(() => {
+      expect(mockFetchDiff).toHaveBeenCalledWith('pers-1', 'pv-1', 'pv-2');
+    });
+    await waitFor(() => {
+      expect(screen.getByText(/Diff:/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows error when diff fails', async () => {
+    const VERSION2 = { ...VERSION, id: 'pv-2', versionTag: null, changedFields: [] };
+    mockFetchVersions.mockResolvedValue({ versions: [VERSION2, VERSION], total: 2 });
+    mockFetchDiff.mockRejectedValue(new Error('Diff error'));
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('diff')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('diff'));
+    await waitFor(() => {
+      expect(screen.getByText('Diff error')).toBeInTheDocument();
+    });
+  });
+
+  it('closes diff viewer when Close button is clicked', async () => {
+    const VERSION2 = { ...VERSION, id: 'pv-2', versionTag: null, changedFields: [] };
+    mockFetchVersions.mockResolvedValue({ versions: [VERSION2, VERSION], total: 2 });
+    mockFetchDiff.mockResolvedValue({ diff: '+line' });
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('diff')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('diff'));
+    await waitFor(() => {
+      expect(screen.getByText('Close')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Close'));
+    await waitFor(() => {
+      expect(screen.queryByText(/Diff:/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('toggles version preview off when same version is clicked again', async () => {
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('Versions (1)')).toBeInTheDocument();
+    });
+    const tags = screen.getAllByText('2026.3.2');
+    const versionRow = tags.find((el) => el.closest('div[class*="cursor-pointer"]'))!
+      .closest('div[class*="cursor-pointer"]')!;
+    // Click to open preview
+    fireEvent.click(versionRow);
+    await waitFor(() => {
+      expect(screen.getByText(/Preview:/)).toBeInTheDocument();
+    });
+    // Click again to close preview
+    fireEvent.click(versionRow);
+    await waitFor(() => {
+      expect(screen.queryByText(/Preview:/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows "untagged" for versions without a tag (not the last one)', async () => {
+    const UNTAGGED = { ...VERSION, id: 'pv-u', versionTag: null, changedFields: [] };
+    const INITIAL = { ...VERSION, id: 'pv-init', versionTag: null, changedFields: [] };
+    mockFetchVersions.mockResolvedValue({ versions: [UNTAGGED, INITIAL], total: 2 });
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('untagged')).toBeInTheDocument();
+      expect(screen.getByText('original')).toBeInTheDocument();
+    });
+  });
+
+  it('shows delete tag button (x) next to version tag', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const mockDeleteTag = vi.mocked(api.deletePersonalityTag);
+    mockDeleteTag.mockResolvedValue(undefined as any);
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByTitle('Remove tag')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTitle('Remove tag'));
+    await waitFor(() => {
+      expect(mockDeleteTag).toHaveBeenCalledWith('pers-1', 'pv-1');
+    });
+    vi.restoreAllMocks();
+  });
+
+  it('shows plural "changes" for multiple uncommitted changes', async () => {
+    mockFetchDrift.mockResolvedValue({ ...DRIFT, uncommittedChanges: 3 });
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('3 uncommitted changes')).toBeInTheDocument();
+    });
+  });
+
+  it('calls Tag First Release when no tags exist', async () => {
+    mockFetchDrift.mockResolvedValue({
+      lastTaggedVersion: null,
+      lastTaggedAt: null,
+      uncommittedChanges: 0,
+      changedFields: [],
+      diffSummary: '',
+    });
+    mockTagRelease.mockResolvedValue({} as any);
+    render(<PersonalityVersionHistory personalityId="pers-1" />);
+    await waitFor(() => {
+      expect(screen.getByText('Tag First Release')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Tag First Release'));
+    await waitFor(() => {
+      expect(mockTagRelease).toHaveBeenCalledWith('pers-1');
+    });
   });
 });

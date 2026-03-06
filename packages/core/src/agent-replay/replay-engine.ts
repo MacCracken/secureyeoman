@@ -43,9 +43,7 @@ export class ReplayEngine {
     deps: ReplayDeps
   ): Promise<ExecutionTrace> {
     if (this.activeReplays >= this.config.maxConcurrentReplays) {
-      throw new Error(
-        `Maximum concurrent replays (${this.config.maxConcurrentReplays}) reached`
-      );
+      throw new Error(`Maximum concurrent replays (${this.config.maxConcurrentReplays}) reached`);
     }
 
     this.activeReplays++;
@@ -59,10 +57,7 @@ export class ReplayEngine {
     }
   }
 
-  private mockReplay(
-    sourceTrace: ExecutionTrace,
-    options: ReplayOptions
-  ): ExecutionTrace {
+  private mockReplay(sourceTrace: ExecutionTrace, options: ReplayOptions): ExecutionTrace {
     const recorder = new TraceRecorder(this.config);
 
     // Replay all steps from the source trace as-is

@@ -9,9 +9,14 @@ vi.mock('../licensing/license-guard.js', () => ({
 }));
 
 const mockLogger = {
-  trace: vi.fn(), debug: vi.fn(), info: vi.fn(),
-  warn: vi.fn(), error: vi.fn(), fatal: vi.fn(),
-  child: vi.fn().mockReturnThis(), level: 'info' as const,
+  trace: vi.fn(),
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info' as const,
 };
 
 describe('Observability Routes', () => {

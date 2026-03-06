@@ -71,7 +71,10 @@ export class ChaosManager {
     };
 
     await this.store.saveExperiment(experiment);
-    this.log.info({ experimentId: experiment.id, name: experiment.name }, 'Chaos experiment created');
+    this.log.info(
+      { experimentId: experiment.id, name: experiment.name },
+      'Chaos experiment created'
+    );
     return experiment;
   }
 
@@ -79,9 +82,11 @@ export class ChaosManager {
     return this.store.getExperiment(id);
   }
 
-  async listExperiments(
-    opts?: { status?: ChaosExperimentStatus; limit?: number; offset?: number }
-  ): Promise<{ items: ChaosExperiment[]; total: number }> {
+  async listExperiments(opts?: {
+    status?: ChaosExperimentStatus;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ items: ChaosExperiment[]; total: number }> {
     return this.store.listExperiments(opts);
   }
 
@@ -128,7 +133,11 @@ export class ChaosManager {
     await this.store.updateExperimentStatus(id, 'running', { startedAt: startTime });
 
     let aborted = false;
-    const abortController = { abort: () => { aborted = true; } };
+    const abortController = {
+      abort: () => {
+        aborted = true;
+      },
+    };
     this.runningExperiments.set(id, abortController);
 
     const faultResults: FaultInjectionResult[] = [];
@@ -169,7 +178,8 @@ export class ChaosManager {
     }
 
     const completedAt = Date.now();
-    const endStatus = status === 'passed' ? 'completed' : status === 'aborted' ? 'aborted' : 'failed';
+    const endStatus =
+      status === 'passed' ? 'completed' : status === 'aborted' ? 'aborted' : 'failed';
     await this.store.updateExperimentStatus(id, endStatus, { completedAt });
 
     const metrics = this.computeMetrics(faultResults);
@@ -277,9 +287,7 @@ export class ChaosManager {
     }
   }
 
-  private computeMetrics(
-    results: FaultInjectionResult[]
-  ): ChaosExperimentResult['metrics'] {
+  private computeMetrics(results: FaultInjectionResult[]): ChaosExperimentResult['metrics'] {
     const total = results.length;
     const recovered = results.filter((r) => r.recovered).length;
     const recoveryTimes = results

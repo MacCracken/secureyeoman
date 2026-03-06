@@ -925,3 +925,929 @@ describe('MetricsPage — Mission Control customization', () => {
     });
   });
 });
+
+// ── Mission Control — data-driven sections ────────────────────────────────────
+
+describe('MetricsPage — Mission Control data display', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    capturedOnNodeClick = undefined;
+    mockNavigate.mockReset();
+    localStorage.removeItem('mission-control:layout');
+
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      running: true,
+      enabled: true,
+      intervalMs: 60_000,
+      beatCount: 42,
+      lastBeat: null,
+      tasks: [
+        { enabled: true, name: 'health', type: 'health', lastRunAt: null, config: {}, personalityId: null, personalityName: null },
+        { enabled: false, name: 'scan', type: 'scan', lastRunAt: null, config: {}, personalityId: null, personalityName: null },
+      ],
+      totalTasks: 4,
+      enabledTasks: 2,
+    });
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        { id: 's1', name: 'MCP-Alpha', description: 'Primary', transport: 'stdio', command: null, args: [], url: null, env: {}, enabled: true, createdAt: 0, updatedAt: 0 },
+        { id: 's2', name: 'MCP-Beta', description: 'Secondary', transport: 'sse', command: null, args: [], url: null, env: {}, enabled: false, createdAt: 0, updatedAt: 0 },
+      ],
+      total: 2,
+    });
+    mockFetchActiveDelegations.mockResolvedValue({
+      delegations: [{ delegationId: 'd1', profileId: 'p1', profileName: 'Agent-1', task: 'analyze', status: 'running', depth: 1, tokensUsed: 500, tokenBudget: 10000, startedAt: Date.now() - 30000, elapsedMs: 30000 }, { delegationId: 'd2', profileId: 'p2', profileName: 'Agent-2', task: 'report', status: 'running', depth: 2, tokensUsed: 200, tokenBudget: 10000, startedAt: Date.now() - 15000, elapsedMs: 15000 }],
+    });
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({
+      byProvider: {
+        anthropic: { tokensUsed: 50000, costUsd: 0.5, calls: 100, errors: 2 },
+        openai: { tokensUsed: 30000, costUsd: 0.3, calls: 80, errors: 0 },
+      },
+      recommendations: [],
+    });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [
+        { id: 'p1', name: 'Atlas', description: 'Default', systemPrompt: '', traits: {}, sex: 'unspecified', voice: '', preferredLanguage: 'en', defaultModel: null, modelFallbacks: [], includeArchetypes: false, injectDateTime: false, empathyResonance: false, avatarUrl: null, isActive: true, isDefault: true, isArchetype: false, createdAt: 0, updatedAt: 0 },
+        { id: 'p2', name: 'Scout', description: 'Helper', systemPrompt: '', traits: {}, sex: 'unspecified', voice: '', preferredLanguage: 'en', defaultModel: null, modelFallbacks: [], includeArchetypes: false, injectDateTime: false, empathyResonance: false, avatarUrl: '/avatars/scout.png', isActive: true, isDefault: false, isArchetype: false, createdAt: 0, updatedAt: 0 },
+      ],
+    });
+    mockFetchTasks.mockResolvedValue({
+      tasks: [
+        { id: 'task1', name: 'Analyze data', type: 'analysis', status: 'running', createdAt: Date.now() },
+        { id: 'task2', name: 'Generate report', type: 'code', status: 'running', createdAt: Date.now() },
+      ],
+      total: 2,
+    });
+    mockFetchSecurityEvents.mockResolvedValue({
+      events: [
+        { id: 'evt1', type: 'auth_failure', severity: 'warn', message: 'Login failed from 10.0.0.1', timestamp: Date.now(), acknowledged: false },
+        { id: 'evt2', type: 'rate_limit', severity: 'info', message: 'Rate limit exceeded', timestamp: Date.now(), acknowledged: false },
+        { id: 'evt3', type: 'injection_attempt', severity: 'critical', message: 'SQL injection blocked', timestamp: Date.now(), acknowledged: false },
+      ],
+      total: 3,
+    });
+    mockFetchAuditEntries.mockResolvedValue({
+      entries: [
+        { id: 'a1', event: 'user_login', level: 'info', message: 'User admin logged in', timestamp: Date.now(), sequence: 1 },
+        { id: 'a2', event: 'config_change', level: 'warn', message: 'Config updated by admin', timestamp: Date.now(), sequence: 2 },
+        { id: 'a3', event: 'policy_violation', level: 'error', message: 'Policy breach detected', timestamp: Date.now(), sequence: 3 },
+      ],
+      total: 3,
+      limit: 50,
+      offset: 0,
+    });
+    mockFetchWorkflows.mockResolvedValue({
+      definitions: [
+        { id: 'wf1', name: 'Deploy Pipeline', steps: [], edges: [], triggers: [], isEnabled: true, version: 1, createdBy: 'admin', createdAt: 0, updatedAt: 0 },
+        { id: 'wf2', name: 'Backup Job', steps: [], edges: [], triggers: [], isEnabled: false, version: 1, createdBy: 'admin', createdAt: 0, updatedAt: 0 },
+      ],
+      total: 2,
+    });
+  });
+
+  it('displays active task names from the fetched data', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('Analyze data')).toBeInTheDocument();
+    expect(screen.getByText('Generate report')).toBeInTheDocument();
+  });
+
+  it('displays active task types', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('analysis')).toBeInTheDocument();
+    expect(screen.getByText('code')).toBeInTheDocument();
+  });
+
+  it('displays workflow names from fetched data', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('Deploy Pipeline')).toBeInTheDocument();
+    expect(screen.getByText('Backup Job')).toBeInTheDocument();
+  });
+
+  it('renders MCP server names and status labels', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('MCP-Alpha')).toBeInTheDocument();
+    expect(screen.getByText('MCP-Beta')).toBeInTheDocument();
+    // Active / Off labels for servers
+    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(screen.getByText('Off')).toBeInTheDocument();
+  });
+
+  it('displays MCP server count in integrations header', async () => {
+    renderMetricsPage();
+    // "1/2 active" shown in integrations card
+    expect(await screen.findByText('1/2 active')).toBeInTheDocument();
+  });
+
+  it('shows MCP server count in system health row', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('1/2 servers')).toBeInTheDocument();
+  });
+
+  it('renders security event messages', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('Login failed from 10.0.0.1')).toBeInTheDocument();
+    expect(screen.getByText('Rate limit exceeded')).toBeInTheDocument();
+    expect(screen.getByText('SQL injection blocked')).toBeInTheDocument();
+  });
+
+  it('renders security event types formatted without underscores', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('auth failure')).toBeInTheDocument();
+    expect(screen.getByText('rate limit')).toBeInTheDocument();
+    expect(screen.getByText('injection attempt')).toBeInTheDocument();
+  });
+
+  it('renders audit stream entries with event names and messages', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('user login')).toBeInTheDocument();
+    expect(screen.getByText('User admin logged in')).toBeInTheDocument();
+    expect(screen.getByText('config change')).toBeInTheDocument();
+    expect(screen.getByText('Config updated by admin')).toBeInTheDocument();
+    expect(screen.getByText('policy violation')).toBeInTheDocument();
+  });
+
+  it('displays personality names in Agent Health section', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('Atlas')).toBeInTheDocument();
+    expect(screen.getByText('Scout')).toBeInTheDocument();
+  });
+
+  it('shows heartbeat Running indicator', async () => {
+    renderMetricsPage();
+    // "Running" appears in both KPI bar trend and Agent Health section
+    const runningTexts = await screen.findAllByText('Running');
+    expect(runningTexts.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows heartbeat Stopped indicator when not running', async () => {
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      running: false,
+      enabled: false,
+      intervalMs: 60_000,
+      beatCount: 0,
+      lastBeat: null,
+      tasks: [],
+    });
+    renderMetricsPage();
+    const stoppedTexts = await screen.findAllByText('Stopped');
+    expect(stoppedTexts.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows "Collecting data…" when history is empty (resource chart)', () => {
+    renderMetricsPage();
+    expect(screen.getByText('Collecting data…')).toBeInTheDocument();
+  });
+
+  it('renders cost breakdown provider data with token counts', async () => {
+    renderMetricsPage();
+    // Cost breakdown section shows provider data
+    expect(await screen.findByText('anthropic')).toBeInTheDocument();
+    expect(screen.getByText('openai')).toBeInTheDocument();
+  });
+
+  it('shows "No provider data yet" when cost breakdown has no providers', async () => {
+    mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
+    renderMetricsPage();
+    expect(await screen.findByText('No provider data yet')).toBeInTheDocument();
+  });
+
+  it('shows token stats in resource monitor (CPU, Memory, Tokens, Cost)', async () => {
+    const metrics = createMetricsSnapshot();
+    renderMetricsPage({ metrics });
+    // CPU
+    expect(screen.getByText(`${metrics.resources.cpuPercent.toFixed(1)}%`)).toBeInTheDocument();
+    // Memory
+    expect(screen.getByText(`${metrics.resources.memoryUsedMb.toFixed(0)} MB`)).toBeInTheDocument();
+  });
+
+  it('shows default personality name in Active Agents subtitle', async () => {
+    renderMetricsPage();
+    // "Atlas" appears in the KPI subtitle and Agent Health section
+    const atlasTexts = await screen.findAllByText(/Atlas/);
+    expect(atlasTexts.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders "Chain Valid" trend in Audit Entries KPI when chain is valid', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('Chain Valid')).toBeInTheDocument();
+  });
+
+  it('renders "Chain Invalid" trend in Audit Entries KPI when chain is invalid', async () => {
+    const metrics = createMetricsSnapshot({
+      security: { ...createMetricsSnapshot().security, auditChainValid: false },
+    });
+    renderMetricsPage({ metrics });
+    expect(await screen.findByText('Chain Invalid')).toBeInTheDocument();
+  });
+
+  it('shows "No active tasks" when inProgress is 0 and tasks list is empty', async () => {
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    const metrics = createMetricsSnapshot({
+      tasks: { ...createMetricsSnapshot().tasks, inProgress: 0 },
+    });
+    renderMetricsPage({ metrics });
+    expect(await screen.findByText('No active tasks')).toBeInTheDocument();
+  });
+
+  it('shows "No workflows" when workflow definitions is empty', async () => {
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
+    renderMetricsPage();
+    expect(await screen.findByText('No workflows')).toBeInTheDocument();
+  });
+
+  it('shows "No recent events" when security events list is empty', async () => {
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    renderMetricsPage();
+    expect(await screen.findByText('No recent events')).toBeInTheDocument();
+  });
+
+  it('shows "No audit entries" when audit entries list is empty', async () => {
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    renderMetricsPage();
+    expect(await screen.findByText('No audit entries')).toBeInTheDocument();
+  });
+
+  it('shows "No active agents" when no active personalities', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    renderMetricsPage();
+    expect(await screen.findByText('No active agents')).toBeInTheDocument();
+  });
+
+  it('shows "No MCP servers configured" when servers list is empty', async () => {
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
+    renderMetricsPage();
+    expect(await screen.findByText('No MCP servers configured')).toBeInTheDocument();
+  });
+});
+
+// ── Costs tab — CostSummaryTab detailed ──────────────────────────────────
+
+describe('MetricsPage — Costs tab details', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.removeItem('mission-control:layout');
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      running: false, enabled: false, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+    });
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
+  });
+
+  it('shows provider breakdown table with totals row', async () => {
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({
+      byProvider: {
+        anthropic: { tokensUsed: 50000, costUsd: 0.5, calls: 100, errors: 2 },
+        openai: { tokensUsed: 30000, costUsd: 0.3, calls: 80, errors: 0 },
+      },
+      recommendations: [],
+    });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Provider Breakdown')).toBeInTheDocument();
+      expect(screen.getByText('anthropic')).toBeInTheDocument();
+      expect(screen.getByText('openai')).toBeInTheDocument();
+      // Provider table headers
+      expect(screen.getByText('Provider')).toBeInTheDocument();
+      expect(screen.getByText('Tokens Used')).toBeInTheDocument();
+      expect(screen.getByText('Cost')).toBeInTheDocument();
+      // Total row
+      expect(screen.getByText('Total')).toBeInTheDocument();
+    });
+  });
+
+  it('shows token overview cards (Tokens Used Today, Tokens Cached Today, API Errors)', async () => {
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Tokens Used Today')).toBeInTheDocument();
+      expect(screen.getByText('Tokens Cached Today')).toBeInTheDocument();
+      expect(screen.getByText('API Errors')).toBeInTheDocument();
+    });
+  });
+
+  it('shows recommendation card with priority badge and details', async () => {
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({
+      byProvider: { anthropic: { tokensUsed: 1000, costUsd: 0.01, calls: 10, errors: 0 } },
+      recommendations: [
+        {
+          id: 'rec1',
+          title: 'Enable caching',
+          description: 'Turn on prompt caching',
+          priority: 'high',
+          estimatedSavingsUsd: 0.15,
+          currentCostUsd: 0.5,
+          suggestedAction: 'Toggle caching',
+          category: 'optimization',
+        },
+      ],
+    });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Enable caching')).toBeInTheDocument();
+      expect(screen.getByText('Turn on prompt caching')).toBeInTheDocument();
+      expect(screen.getByText('high')).toBeInTheDocument();
+      expect(screen.getByText('Toggle caching')).toBeInTheDocument();
+      expect(screen.getByText('optimization')).toBeInTheDocument();
+    });
+  });
+
+  it('shows cost summary card values', async () => {
+    const metrics = createMetricsSnapshot();
+    mockFetchMetrics.mockResolvedValue(metrics);
+    mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+
+    await waitFor(() => {
+      // Cost Today value
+      expect(screen.getByText(`$${metrics.resources.costUsdToday.toFixed(4)}`)).toBeInTheDocument();
+      // Cost This Month value
+      expect(screen.getByText(`$${metrics.resources.costUsdMonth.toFixed(4)}`)).toBeInTheDocument();
+    });
+  });
+
+  it('shows provider errors in red when > 0', async () => {
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({
+      byProvider: {
+        anthropic: { tokensUsed: 50000, costUsd: 0.5, calls: 100, errors: 5 },
+      },
+      recommendations: [],
+    });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+
+    await waitFor(() => {
+      // Errors column should show the count
+      const errorCells = screen.getAllByText('5');
+      expect(errorCells.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+});
+
+// ── Costs tab — CostHistoryTab ─────────────────────────────────────────────
+
+describe('MetricsPage — Cost History sub-tab', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.removeItem('mission-control:layout');
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      running: false, enabled: false, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+    });
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [
+        { id: 'p1', name: 'Atlas', isActive: true, isDefault: true } as any,
+      ],
+    });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
+  });
+
+  it('shows empty message when no records match filters', async () => {
+    mockFetchCostHistory.mockResolvedValue({
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('No usage records found for the selected filters.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows records table with data when records exist', async () => {
+    mockFetchCostHistory.mockResolvedValue({
+      records: [
+        { date: '2026-03-05', provider: 'anthropic', model: 'claude-3', personalityId: 'p1', inputTokens: 10000, outputTokens: 5000, cachedTokens: 2000, totalTokens: 15000, costUsd: 0.25, calls: 30 },
+      ],
+      totals: { inputTokens: 10000, outputTokens: 5000, totalTokens: 15000, costUsd: 0.25, calls: 30 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('2026-03-05')).toBeInTheDocument();
+      expect(screen.getByText('claude-3')).toBeInTheDocument();
+      // $0.2500 appears in both the record row and the totals row
+      expect(screen.getAllByText('$0.2500').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('shows filter controls (From, To, Provider, Model, Personality, Group By)', async () => {
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('From')).toBeInTheDocument();
+      expect(screen.getByText('To')).toBeInTheDocument();
+      expect(screen.getByText('Model')).toBeInTheDocument();
+      expect(screen.getByText('Personality')).toBeInTheDocument();
+      expect(screen.getByText('Group By')).toBeInTheDocument();
+      expect(screen.getByText('Apply')).toBeInTheDocument();
+    });
+  });
+
+  it('shows provider options in the provider dropdown', async () => {
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('All providers')).toBeInTheDocument();
+      expect(screen.getByText('Anthropic')).toBeInTheDocument();
+      expect(screen.getByText('OpenAI')).toBeInTheDocument();
+    });
+  });
+
+  it('shows personality options in the personality dropdown', async () => {
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('All personalities')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Usage History heading and description', async () => {
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Usage History')).toBeInTheDocument();
+      expect(screen.getByText('Aggregated token usage and cost over time')).toBeInTheDocument();
+    });
+  });
+});
+
+// ── Full Metrics — Infrastructure details ──────────────────────────────────
+
+describe('MetricsPage — Full Metrics infrastructure details', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.removeItem('mission-control:layout');
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      running: false, enabled: false, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+    });
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+    mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
+  });
+
+  it('shows Token Usage card with input/output/cached breakdown', () => {
+    const metrics = createMetricsSnapshot();
+    mockFetchMetrics.mockResolvedValue(metrics);
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('Token Usage')).toBeInTheDocument();
+    expect(screen.getByText('Input')).toBeInTheDocument();
+    expect(screen.getByText('Output')).toBeInTheDocument();
+    expect(screen.getByText('Cached')).toBeInTheDocument();
+  });
+
+  it('shows API Performance card with call volume and error rate', () => {
+    const metrics = createMetricsSnapshot();
+    mockFetchMetrics.mockResolvedValue(metrics);
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('API Performance')).toBeInTheDocument();
+    expect(screen.getByText('Total Calls')).toBeInTheDocument();
+    expect(screen.getByText('Avg Latency')).toBeInTheDocument();
+    expect(screen.getByText('Error rate')).toBeInTheDocument();
+  });
+
+  it('shows disk usage when diskLimitMb is set', () => {
+    const metrics = createMetricsSnapshot({
+      resources: {
+        ...createMetricsSnapshot().resources,
+        diskUsedMb: 1024,
+        diskLimitMb: 4096,
+      },
+    });
+    mockFetchMetrics.mockResolvedValue(metrics);
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText(/1024 MB of 4096 MB/)).toBeInTheDocument();
+  });
+
+  it('shows token limit usage bar when tokensLimitDaily is set', () => {
+    const metrics = createMetricsSnapshot({
+      resources: {
+        ...createMetricsSnapshot().resources,
+        tokensUsedToday: 150000,
+        tokensLimitDaily: 200000,
+      },
+    });
+    mockFetchMetrics.mockResolvedValue(metrics);
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('Daily limit usage')).toBeInTheDocument();
+    expect(screen.getByText('75%')).toBeInTheDocument();
+  });
+
+  it('shows CPU KPI tile in Infrastructure section', () => {
+    const metrics = createMetricsSnapshot();
+    mockFetchMetrics.mockResolvedValue(metrics);
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('CPU')).toBeInTheDocument();
+    expect(screen.getByText('Memory')).toBeInTheDocument();
+    expect(screen.getByText('Disk Used')).toBeInTheDocument();
+  });
+
+  it('shows CPU & Memory Over Time chart heading', () => {
+    const metrics = createMetricsSnapshot();
+    mockFetchMetrics.mockResolvedValue(metrics);
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('CPU & Memory Over Time')).toBeInTheDocument();
+    expect(screen.getByText(/last 30 data points/)).toBeInTheDocument();
+  });
+
+  it('shows "Collecting metrics data…" when no history data', () => {
+    const metrics = createMetricsSnapshot();
+    mockFetchMetrics.mockResolvedValue(metrics);
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('Collecting metrics data…')).toBeInTheDocument();
+  });
+});
+
+// ── Full Metrics — Security details ─────────────────────────────────────
+
+describe('MetricsPage — Full Metrics security details', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.removeItem('mission-control:layout');
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      running: false, enabled: false, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+    });
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
+  });
+
+  it('shows security KPI tiles (Blocked, Rate Limit, Injection, Active Sessions)', () => {
+    const metrics = createMetricsSnapshot();
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    // "Blocked Requests" and "Injection Attempts" appear in both KPI tiles and Audit Trail section
+    expect(screen.getAllByText('Blocked Requests').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Rate Limit Hits')).toBeInTheDocument();
+    expect(screen.getAllByText('Injection Attempts').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Active Sessions')).toBeInTheDocument();
+  });
+
+  it('shows authentication stats (Total, Success, Failed)', () => {
+    const metrics = createMetricsSnapshot();
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('Authentication')).toBeInTheDocument();
+    expect(screen.getByText('Login attempts — success vs failure')).toBeInTheDocument();
+    expect(screen.getByText('Success rate')).toBeInTheDocument();
+  });
+
+  it('shows events by severity section with bar data', () => {
+    const metrics = createMetricsSnapshot();
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('Events by Severity')).toBeInTheDocument();
+    expect(screen.getByText('Security event distribution')).toBeInTheDocument();
+  });
+
+  it('shows permission checks section with denial rate', () => {
+    const metrics = createMetricsSnapshot();
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('Permission Checks')).toBeInTheDocument();
+    expect(screen.getByText('Access control enforcement metrics')).toBeInTheDocument();
+    expect(screen.getByText('Denial rate')).toBeInTheDocument();
+    expect(screen.getByText('Total Checks')).toBeInTheDocument();
+    expect(screen.getByText('Denials')).toBeInTheDocument();
+  });
+
+  it('shows audit trail section with chain integrity and total entries', () => {
+    const metrics = createMetricsSnapshot();
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('Audit Trail')).toBeInTheDocument();
+    expect(screen.getByText('Tamper-evident log integrity')).toBeInTheDocument();
+    expect(screen.getByText('Total Entries')).toBeInTheDocument();
+  });
+
+  it('shows "Threats Detected" when injectionAttemptsTotal > 0', () => {
+    const metrics = createMetricsSnapshot({
+      security: { ...createMetricsSnapshot().security, injectionAttemptsTotal: 3 },
+    });
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('Threats Detected')).toBeInTheDocument();
+  });
+
+  it('shows "No Active Threats" when injectionAttemptsTotal is 0', () => {
+    const metrics = createMetricsSnapshot({
+      security: { ...createMetricsSnapshot().security, injectionAttemptsTotal: 0 },
+    });
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('No Active Threats')).toBeInTheDocument();
+  });
+
+  it('shows severity bar items with percentage labels', () => {
+    const metrics = createMetricsSnapshot();
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    // The severity data has info: 30, warn: 10, error: 4, critical: 1 = total 45
+    // Each row shows a percentage
+    expect(screen.getByText('Total events')).toBeInTheDocument();
+  });
+
+  it('shows top event types when eventsByType has data', () => {
+    const metrics = createMetricsSnapshot();
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getAllByText('Top event types').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows status distribution with task status bars', () => {
+    const metrics = createMetricsSnapshot();
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('Status Distribution')).toBeInTheDocument();
+    expect(screen.getByText('Tasks by current state')).toBeInTheDocument();
+    // completed: 120 should be shown
+    expect(screen.getByText('completed')).toBeInTheDocument();
+  });
+
+  it('shows Duration Percentiles card with p50/p95/p99 values', () => {
+    const metrics = createMetricsSnapshot();
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('Duration Percentiles')).toBeInTheDocument();
+    expect(screen.getByText('Execution time distribution')).toBeInTheDocument();
+    // p50/p95/p99 labels in the bottom summary row
+    expect(screen.getByText('p50')).toBeInTheDocument();
+    expect(screen.getByText('p95')).toBeInTheDocument();
+    expect(screen.getByText('p99')).toBeInTheDocument();
+  });
+
+  it('shows "No security events recorded" when severity data is empty', () => {
+    const metrics = createMetricsSnapshot({
+      security: {
+        ...createMetricsSnapshot().security,
+        eventsBySeverity: {},
+        eventsByType: {},
+      },
+    });
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('No security events recorded')).toBeInTheDocument();
+  });
+
+  it('shows "No task data yet" when status data is empty', () => {
+    const metrics = createMetricsSnapshot({
+      tasks: { ...createMetricsSnapshot().tasks, byStatus: {} },
+    });
+    renderMetricsPage({ metrics });
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+
+    expect(screen.getByText('No task data yet')).toBeInTheDocument();
+  });
+});
+
+// ── Health variant edge cases ─────────────────────────────────────────────
+
+describe('MetricsPage — health and uptime edge cases', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.removeItem('mission-control:layout');
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      running: true, enabled: true, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+    });
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
+  });
+
+  it('formats uptime as days + hours when > 24h', () => {
+    renderMetricsPage({
+      health: { ...HEALTH, uptime: 90_000_000 }, // 25 hours
+    });
+    expect(screen.getByText('1d 1h')).toBeInTheDocument();
+  });
+
+  it('formats uptime as hours + minutes when <= 24h', () => {
+    renderMetricsPage({
+      health: { ...HEALTH, uptime: 7_200_000 }, // 2 hours
+    });
+    expect(screen.getByText('2h 0m')).toBeInTheDocument();
+  });
+
+  it('shows "—" for uptime when health uptime is 0 (falsy)', () => {
+    renderMetricsPage({
+      health: { status: 'ok', version: '1.0', uptime: 0, checks: { database: true, auditChain: true } },
+    });
+    // uptime: 0 is falsy, so the code shows "—"
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('shows core status text from health object', () => {
+    renderMetricsPage({
+      health: { status: 'degraded', version: '1.0', uptime: 3600000, checks: { database: true, auditChain: true } },
+    });
+    expect(screen.getByText('degraded')).toBeInTheDocument();
+  });
+
+  it('shows "Down" for database when check fails', () => {
+    renderMetricsPage({
+      health: { ...HEALTH, checks: { database: false, auditChain: true } },
+    });
+    expect(screen.getByText('Down')).toBeInTheDocument();
+  });
+
+  it('shows "Invalid" for audit chain when check fails', () => {
+    renderMetricsPage({
+      health: { ...HEALTH, checks: { database: true, auditChain: false } },
+    });
+    expect(screen.getByText('Invalid')).toBeInTheDocument();
+  });
+
+  it('renders without crashing when metrics is undefined', () => {
+    renderMetricsPage({ metrics: undefined });
+    expect(screen.getByTestId('metrics-page')).toBeInTheDocument();
+  });
+});
+
+// ── Rendering without data ──────────────────────────────────────────────
+
+describe('MetricsPage — no data scenarios', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.removeItem('mission-control:layout');
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      running: false, enabled: false, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+    });
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
+  });
+
+  it('renders the page with all zero metrics', () => {
+    renderMetricsPage();
+    expect(screen.getByTestId('metrics-page')).toBeInTheDocument();
+    // KPI cards should still render
+    expect(screen.getByText('Active Agents')).toBeInTheDocument();
+  });
+
+  it('shows 0 for Active Tasks KPI when no tasks in progress', () => {
+    const metrics = createMetricsSnapshot({
+      tasks: { ...createMetricsSnapshot().tasks, inProgress: 0 },
+    });
+    renderMetricsPage({ metrics });
+    // "Active Tasks" appears in both KPI bar and the tasks feed card
+    expect(screen.getAllByText('Active Tasks').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows $0.0000 for Cost Today when no costs', () => {
+    const metrics = createMetricsSnapshot({
+      resources: { ...createMetricsSnapshot().resources, costUsdToday: 0, costUsdMonth: 0 },
+    });
+    renderMetricsPage({ metrics });
+    expect(screen.getByText('$0.0000')).toBeInTheDocument();
+  });
+
+  it('shows tasks by type in Full Metrics when byType has data', () => {
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
+    expect(screen.getByText('Tasks by Type')).toBeInTheDocument();
+    expect(screen.getByText('Volume breakdown by task category')).toBeInTheDocument();
+  });
+});

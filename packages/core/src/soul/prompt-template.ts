@@ -104,7 +104,10 @@ export class PromptTemplateEngine {
    * Expand all {{variable}} placeholders in the given text.
    * Returns the expanded text and a list of unresolved variables.
    */
-  expand(text: string, context?: Record<string, string>): {
+  expand(
+    text: string,
+    context?: Record<string, string>
+  ): {
     text: string;
     unresolved: string[];
   } {

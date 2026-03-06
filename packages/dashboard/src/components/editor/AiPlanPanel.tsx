@@ -16,7 +16,13 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────
 
-export type PlanStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'awaiting_approval';
+export type PlanStepStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'skipped'
+  | 'awaiting_approval';
 
 export interface PlanStep {
   id: string;
@@ -96,9 +102,12 @@ interface StepRowProps {
 }
 
 function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowProps) {
-  const [expanded, setExpanded] = useState(step.status === 'running' || step.status === 'awaiting_approval');
+  const [expanded, setExpanded] = useState(
+    step.status === 'running' || step.status === 'awaiting_approval'
+  );
   const hasChildren = step.children && step.children.length > 0;
-  const hasBadges = (step.files?.length ?? 0) > 0 || (step.memoryRefs?.length ?? 0) > 0 || step.toolName;
+  const hasBadges =
+    (step.files?.length ?? 0) > 0 || (step.memoryRefs?.length ?? 0) > 0 || step.toolName;
 
   return (
     <div data-testid={`plan-step-${step.id}`}>
@@ -115,7 +124,9 @@ function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowP
         {/* Expand toggle for nested steps */}
         {hasChildren ? (
           <button
-            onClick={() => setExpanded((v) => !v)}
+            onClick={() => {
+              setExpanded((v) => !v);
+            }}
             className="flex-shrink-0 mt-0.5"
           >
             {expanded ? (
@@ -133,7 +144,9 @@ function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowP
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <span className={`text-xs ${step.status === 'skipped' ? 'text-muted-foreground line-through' : ''}`}>
+          <span
+            className={`text-xs ${step.status === 'skipped' ? 'text-muted-foreground line-through' : ''}`}
+          >
             {step.description}
           </span>
 
@@ -146,7 +159,13 @@ function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowP
                   key={f}
                   type="file"
                   label={f.split('/').pop() ?? f}
-                  onClick={onFileClick ? () => onFileClick(f) : undefined}
+                  onClick={
+                    onFileClick
+                      ? () => {
+                          onFileClick(f);
+                        }
+                      : undefined
+                  }
                 />
               ))}
               {step.memoryRefs?.map((m) => (
@@ -188,7 +207,9 @@ function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowP
         {/* Duration */}
         {step.durationMs != null && (
           <span className="text-[10px] text-muted-foreground flex-shrink-0 tabular-nums">
-            {step.durationMs < 1000 ? `${step.durationMs}ms` : `${(step.durationMs / 1000).toFixed(1)}s`}
+            {step.durationMs < 1000
+              ? `${step.durationMs}ms`
+              : `${(step.durationMs / 1000).toFixed(1)}s`}
           </span>
         )}
       </div>
@@ -222,7 +243,13 @@ interface AiPlanPanelProps {
   onFileClick?: (path: string) => void;
 }
 
-export function AiPlanPanel({ plan, onApproveStep, onRejectStep, onPauseResume, onFileClick }: AiPlanPanelProps) {
+export function AiPlanPanel({
+  plan,
+  onApproveStep,
+  onRejectStep,
+  onPauseResume,
+  onFileClick,
+}: AiPlanPanelProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   if (!plan) return null;
@@ -237,7 +264,9 @@ export function AiPlanPanel({ plan, onApproveStep, onRejectStep, onPauseResume, 
       {/* Header */}
       <div
         className="flex items-center gap-2 px-3 py-2 bg-muted/30 border-b cursor-pointer select-none"
-        onClick={() => setCollapsed((v) => !v)}
+        onClick={() => {
+          setCollapsed((v) => !v);
+        }}
       >
         <ListChecks className="w-4 h-4 text-primary flex-shrink-0" />
         <span className="text-xs font-semibold flex-1 truncate">{plan.title}</span>
@@ -292,7 +321,11 @@ export function AiPlanPanel({ plan, onApproveStep, onRejectStep, onPauseResume, 
       <div className="h-0.5 bg-muted">
         <div
           className={`h-full transition-all duration-300 ${
-            plan.status === 'failed' ? 'bg-red-500' : plan.status === 'completed' ? 'bg-green-500' : 'bg-primary'
+            plan.status === 'failed'
+              ? 'bg-red-500'
+              : plan.status === 'completed'
+                ? 'bg-green-500'
+                : 'bg-primary'
           }`}
           style={{ width: `${progress}%` }}
           data-testid="progress-bar"

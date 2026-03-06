@@ -94,14 +94,11 @@ describe('Personality CRUD', () => {
     });
     const { personality: created } = await createRes.json();
 
-    const updateRes = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities/${created.id}`,
-      {
-        method: 'PUT',
-        headers: authHeaders(token),
-        body: JSON.stringify({ name: 'E2E-Bot-Updated', systemPrompt: 'Updated prompt.' }),
-      },
-    );
+    const updateRes = await fetch(`${server.baseUrl}/api/v1/soul/personalities/${created.id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ name: 'E2E-Bot-Updated', systemPrompt: 'Updated prompt.' }),
+    });
     expect(updateRes.status).toBe(200);
     const { personality: updated } = await updateRes.json();
     expect(updated.name).toBe('E2E-Bot-Updated');
@@ -116,10 +113,10 @@ describe('Personality CRUD', () => {
     });
     const { personality: created } = await createRes.json();
 
-    const deleteRes = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities/${created.id}`,
-      { method: 'DELETE', headers: authDeleteHeaders(token) },
-    );
+    const deleteRes = await fetch(`${server.baseUrl}/api/v1/soul/personalities/${created.id}`, {
+      method: 'DELETE',
+      headers: authDeleteHeaders(token),
+    });
     expect(deleteRes.status).toBe(204);
 
     // Verify it's gone
@@ -131,14 +128,11 @@ describe('Personality CRUD', () => {
   });
 
   it('returns 404 when updating non-existent personality', async () => {
-    const res = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities/non-existent-id`,
-      {
-        method: 'PUT',
-        headers: authHeaders(token),
-        body: JSON.stringify({ name: 'Ghost' }),
-      },
-    );
+    const res = await fetch(`${server.baseUrl}/api/v1/soul/personalities/non-existent-id`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ name: 'Ghost' }),
+    });
     expect(res.status).toBe(404);
   });
 
@@ -171,7 +165,7 @@ describe('Personality activation', () => {
 
     const activateRes = await fetch(
       `${server.baseUrl}/api/v1/soul/personalities/${created.id}/activate`,
-      { method: 'POST', headers: authHeaders(token), body: '{}' },
+      { method: 'POST', headers: authHeaders(token), body: '{}' }
     );
     expect(activateRes.status).toBe(200);
 
@@ -206,27 +200,27 @@ describe('Personality presets', () => {
 
 describe('Pagination', () => {
   it('paginates personality list', async () => {
-    // Create 3 personalities
+    // Create 3 personalities (use unique names with timestamp to avoid conflicts)
+    const tag = Date.now();
     for (let i = 1; i <= 3; i++) {
-      await fetch(`${server.baseUrl}/api/v1/soul/personalities`, {
+      const createRes = await fetch(`${server.baseUrl}/api/v1/soul/personalities`, {
         method: 'POST',
         headers: authHeaders(token),
-        body: JSON.stringify({ ...TEST_PERSONALITY, name: `Bot-${i}` }),
+        body: JSON.stringify({ ...TEST_PERSONALITY, name: `PagBot-${tag}-${i}` }),
       });
+      expect(createRes.status).toBe(201);
     }
 
-    const res = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities?limit=2&offset=0`,
-      { headers: authHeaders(token) },
-    );
+    const res = await fetch(`${server.baseUrl}/api/v1/soul/personalities?limit=2&offset=0`, {
+      headers: authHeaders(token),
+    });
     const body = await res.json();
     expect(body.personalities).toHaveLength(2);
     expect(body.total).toBe(3);
 
-    const page2 = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities?limit=2&offset=2`,
-      { headers: authHeaders(token) },
-    );
+    const page2 = await fetch(`${server.baseUrl}/api/v1/soul/personalities?limit=2&offset=2`, {
+      headers: authHeaders(token),
+    });
     const body2 = await page2.json();
     expect(body2.personalities).toHaveLength(1);
   });

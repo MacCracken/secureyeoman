@@ -125,22 +125,62 @@ describe('CorpusLoader', () => {
 
   it('registers and retrieves a source', () => {
     const source = {
-      id: 'src-1', name: 'Wiki', format: 'jsonl' as const,
-      path: '/data/wiki.jsonl', sizeBytes: 1000, tokenCount: 250,
-      documentCount: 10, textField: 'text', validated: true, addedAt: Date.now(),
+      id: 'src-1',
+      name: 'Wiki',
+      format: 'jsonl' as const,
+      path: '/data/wiki.jsonl',
+      sizeBytes: 1000,
+      tokenCount: 250,
+      documentCount: 10,
+      textField: 'text',
+      validated: true,
+      addedAt: Date.now(),
     };
     loader.registerSource(source);
     expect(loader.getSource('src-1')).toEqual(source);
   });
 
   it('lists all sources', () => {
-    loader.registerSource({ id: 'a', name: 'A', format: 'plaintext', path: '/a', sizeBytes: 0, tokenCount: 0, documentCount: 0, textField: 'text', validated: true, addedAt: 0 });
-    loader.registerSource({ id: 'b', name: 'B', format: 'jsonl', path: '/b', sizeBytes: 0, tokenCount: 0, documentCount: 0, textField: 'text', validated: true, addedAt: 0 });
+    loader.registerSource({
+      id: 'a',
+      name: 'A',
+      format: 'plaintext',
+      path: '/a',
+      sizeBytes: 0,
+      tokenCount: 0,
+      documentCount: 0,
+      textField: 'text',
+      validated: true,
+      addedAt: 0,
+    });
+    loader.registerSource({
+      id: 'b',
+      name: 'B',
+      format: 'jsonl',
+      path: '/b',
+      sizeBytes: 0,
+      tokenCount: 0,
+      documentCount: 0,
+      textField: 'text',
+      validated: true,
+      addedAt: 0,
+    });
     expect(loader.listSources()).toHaveLength(2);
   });
 
   it('removes a source', () => {
-    loader.registerSource({ id: 'x', name: 'X', format: 'plaintext', path: '/x', sizeBytes: 0, tokenCount: 0, documentCount: 0, textField: 'text', validated: true, addedAt: 0 });
+    loader.registerSource({
+      id: 'x',
+      name: 'X',
+      format: 'plaintext',
+      path: '/x',
+      sizeBytes: 0,
+      tokenCount: 0,
+      documentCount: 0,
+      textField: 'text',
+      validated: true,
+      addedAt: 0,
+    });
     expect(loader.removeSource('x')).toBe(true);
     expect(loader.getSource('x')).toBeNull();
   });
@@ -152,8 +192,30 @@ describe('CorpusLoader', () => {
   // ── Stats ────────────────────────────────────────────────────────
 
   it('computes aggregate stats', () => {
-    loader.registerSource({ id: 'a', name: 'A', format: 'plaintext', path: '/a', sizeBytes: 1000, tokenCount: 250, documentCount: 5, textField: 'text', validated: true, addedAt: 0 });
-    loader.registerSource({ id: 'b', name: 'B', format: 'jsonl', path: '/b', sizeBytes: 2000, tokenCount: 500, documentCount: 10, textField: 'text', validated: true, addedAt: 0 });
+    loader.registerSource({
+      id: 'a',
+      name: 'A',
+      format: 'plaintext',
+      path: '/a',
+      sizeBytes: 1000,
+      tokenCount: 250,
+      documentCount: 5,
+      textField: 'text',
+      validated: true,
+      addedAt: 0,
+    });
+    loader.registerSource({
+      id: 'b',
+      name: 'B',
+      format: 'jsonl',
+      path: '/b',
+      sizeBytes: 2000,
+      tokenCount: 500,
+      documentCount: 10,
+      textField: 'text',
+      validated: true,
+      addedAt: 0,
+    });
     const stats = loader.getStats();
     expect(stats.totalSources).toBe(2);
     expect(stats.totalTokens).toBe(750);

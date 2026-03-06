@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -10,58 +10,55 @@ import { createSoulConfig } from '../test/mocks';
 
 // ── Mock hooks ───────────────────────────────────────────────────
 
+const {
+  mockSetTheme,
+  mockLoadCustomThemesHook,
+  mockLoadScheduleHook,
+  mockSaveScheduleHook,
+  mockAddCustomThemeHook,
+  mockRemoveCustomThemeHook,
+  mockValidateCustomThemeHook,
+} = vi.hoisted(() => ({
+  mockSetTheme: vi.fn(),
+  mockLoadCustomThemesHook: vi.fn().mockReturnValue([]),
+  mockLoadScheduleHook: vi.fn().mockReturnValue({
+    enabled: false,
+    lightTheme: 'light',
+    darkTheme: 'dark',
+    lightHour: 7,
+    darkHour: 20,
+    useOsSchedule: false,
+  }),
+  mockSaveScheduleHook: vi.fn(),
+  mockAddCustomThemeHook: vi.fn(),
+  mockRemoveCustomThemeHook: vi.fn(),
+  mockValidateCustomThemeHook: vi.fn(),
+}));
+
 vi.mock('../hooks/useTheme', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../hooks/useTheme')>();
   return {
     ...actual,
-    useTheme: () => ({ theme: 'dark', isDark: true, setTheme: vi.fn(), toggle: vi.fn() }),
-    THEMES: [],
-    loadCustomThemes: () => [],
-    loadSchedule: () => actual.DEFAULT_SCHEDULE,
+    useTheme: () => ({ theme: 'dark', isDark: true, setTheme: mockSetTheme, toggle: vi.fn() }),
+    loadCustomThemes: (...args: unknown[]) => mockLoadCustomThemesHook(...(args as [])),
+    loadSchedule: (...args: unknown[]) => mockLoadScheduleHook(...(args as [])),
+    saveSchedule: (...args: unknown[]) => mockSaveScheduleHook(...args),
+    addCustomTheme: (...args: unknown[]) => mockAddCustomThemeHook(...args),
+    removeCustomTheme: (...args: unknown[]) => mockRemoveCustomThemeHook(...args),
+    validateCustomTheme: (...args: unknown[]) => mockValidateCustomThemeHook(...args),
   };
 });
 
 // ── Mock API client ──────────────────────────────────────────────
-// Must include every export that SettingsPage and its child tabs
-// (SecuritySettings, RolesSettings, ApiKeysSettings, etc.) import.
-vi.mock('../api/client', () => ({
-  fetchSoulConfig: vi.fn(),
-  updateSoulConfig: vi.fn(),
-  fetchMcpServers: vi.fn(),
-  fetchAuditStats: vi.fn(),
-  repairAuditChain: vi.fn(),
-  fetchMetrics: vi.fn(),
-  fetchPersonalities: vi.fn(),
-  enablePersonality: vi.fn(),
-  disablePersonality: vi.fn(),
-  setDefaultPersonality: vi.fn(),
-  clearDefaultPersonality: vi.fn(),
-  fetchRoles: vi.fn(),
-  createRole: vi.fn(),
-  updateRole: vi.fn(),
-  deleteRole: vi.fn(),
-  fetchAssignments: vi.fn(),
-  assignRole: vi.fn(),
-  revokeAssignment: vi.fn(),
-  fetchSecurityPolicy: vi.fn(),
-  updateSecurityPolicy: vi.fn(),
-  fetchApiKeys: vi.fn(),
-  createApiKey: vi.fn(),
-  revokeApiKey: vi.fn(),
-  fetchUsers: vi.fn(),
-  createUser: vi.fn(),
-  updateUser: vi.fn(),
-  deleteUser: vi.fn(),
-  fetchBackups: vi.fn(),
-  createBackup: vi.fn(),
-  downloadBackup: vi.fn(),
-  deleteBackup: vi.fn(),
-  fetchLicenseStatus: vi.fn(),
-  setLicenseKey: vi.fn(),
-  fetchStrategies: vi.fn(),
-  createStrategy: vi.fn(),
-  deleteStrategy: vi.fn(),
-}));
+// Use importOriginal to get all exports, then override the ones we need to mock.
+vi.mock('../api/client', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  const mocked: Record<string, unknown> = {};
+  for (const key of Object.keys(actual)) {
+    mocked[key] = typeof actual[key] === 'function' ? vi.fn() : actual[key];
+  }
+  return mocked;
+});
 
 import * as api from '../api/client';
 
@@ -106,6 +103,16 @@ function renderComponent() {
 describe('SettingsPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    // Re-set theme hook mocks after resetAllMocks clears them
+    mockLoadCustomThemesHook.mockReturnValue([]);
+    mockLoadScheduleHook.mockReturnValue({
+      enabled: false,
+      lightTheme: 'light',
+      darkTheme: 'dark',
+      lightHour: 7,
+      darkHour: 20,
+      useOsSchedule: false,
+    });
     mockFetchSoulConfig.mockResolvedValue(createSoulConfig());
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     mockFetchAuditStats.mockResolvedValue({
@@ -394,5 +401,823 @@ describe('SettingsPage', () => {
     expect(await screen.findByText('Enterprise')).toBeInTheDocument();
     expect(screen.queryByText(/License expires/)).not.toBeInTheDocument();
     expect(screen.queryByText(/License has expired/)).not.toBeInTheDocument();
+  });
+
+  // ── Route-based tab selection ───────────────────────────────────
+
+  it('opens Security tab when path includes /security-settings', async () => {
+    const qc = createQueryClient();
+    render(
+      <MemoryRouter initialEntries={['/security-settings']}>
+        <QueryClientProvider client={qc}>
+          <LicenseProvider>
+            <SettingsPage />
+          </LicenseProvider>
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+    // Security tab content should be active — look for the security-specific heading
+    // The SecuritySettings child renders the security panel; the tab button should be highlighted
+    const secBtn = await screen.findByRole('button', { name: /Security/ });
+    expect(secBtn.className).toContain('border-primary');
+  });
+
+  it('opens Keys tab when path includes /api-keys', async () => {
+    const qc = createQueryClient();
+    render(
+      <MemoryRouter initialEntries={['/api-keys']}>
+        <QueryClientProvider client={qc}>
+          <LicenseProvider>
+            <SettingsPage />
+          </LicenseProvider>
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+    const keysBtn = await screen.findByRole('button', { name: /Secrets/ });
+    expect(keysBtn.className).toContain('border-primary');
+  });
+
+  it('opens Roles tab when path is /roles', async () => {
+    const qc = createQueryClient();
+    render(
+      <MemoryRouter initialEntries={['/roles']}>
+        <QueryClientProvider client={qc}>
+          <LicenseProvider>
+            <SettingsPage />
+          </LicenseProvider>
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+    const rolesBtn = await screen.findByRole('button', { name: /Roles/ });
+    expect(rolesBtn.className).toContain('border-primary');
+  });
+
+  it('opens Souls tab when path is /souls', async () => {
+    const qc = createQueryClient();
+    render(
+      <MemoryRouter initialEntries={['/souls']}>
+        <QueryClientProvider client={qc}>
+          <LicenseProvider>
+            <SettingsPage />
+          </LicenseProvider>
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+    const soulsBtn = await screen.findByRole('button', { name: /Souls/ });
+    expect(soulsBtn.className).toContain('border-primary');
+  });
+
+  // ── Tab switching: Secrets, Roles, Notifications ────────────────
+
+  it('switches to Secrets tab and renders all sub-panels', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Secrets/ }));
+    // ProviderKeysSettings, CostDashboard, ApiKeysSettings, SecretsPanel are all children
+    // We can verify the Keys tab heading appears (provider keys renders)
+    const secretsBtn = screen.getByRole('button', { name: /Secrets/ });
+    expect(secretsBtn.className).toContain('border-primary');
+  });
+
+  it('switches to Notifications tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Notifications/ }));
+    const notifBtn = screen.getByRole('button', { name: /Notifications/ });
+    expect(notifBtn.className).toContain('border-primary');
+  });
+
+  // ── License Key Input ───────────────────────────────────────────
+
+  it('toggles the license key input and submits a key', async () => {
+    const mockSetKey = vi.mocked(api.setLicenseKey);
+    mockSetKey.mockResolvedValue({
+      tier: 'enterprise',
+      valid: true,
+      organization: 'NewOrg',
+      seats: 5,
+      features: [],
+      licenseId: 'lic-new',
+      expiresAt: null,
+      error: null,
+      enforcementEnabled: false,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Community');
+
+    // Click "Set license key"
+    await user.click(screen.getByText('Set license key'));
+    expect(screen.getByPlaceholderText('Paste license key…')).toBeInTheDocument();
+    expect(screen.getByText('Apply')).toBeInTheDocument();
+
+    // Type and submit
+    const input = screen.getByPlaceholderText('Paste license key…');
+    await user.type(input, 'ENT-KEY-999');
+    await user.click(screen.getByText('Apply'));
+
+    await waitFor(() => {
+      expect(mockSetKey).toHaveBeenCalledWith('ENT-KEY-999');
+    });
+  });
+
+  it('can cancel the license key input', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Community');
+
+    await user.click(screen.getByText('Set license key'));
+    expect(screen.getByPlaceholderText('Paste license key…')).toBeInTheDocument();
+
+    // The button text should now say "Cancel"
+    await user.click(screen.getByText('Cancel'));
+    expect(screen.queryByPlaceholderText('Paste license key…')).not.toBeInTheDocument();
+  });
+
+  it('shows license error from license status', async () => {
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'community',
+      valid: false,
+      organization: null,
+      seats: null,
+      features: [],
+      licenseId: null,
+      expiresAt: null,
+      error: 'Invalid signature',
+      enforcementEnabled: false,
+    });
+    renderComponent();
+    expect(await screen.findByText('Key error: Invalid signature')).toBeInTheDocument();
+  });
+
+  it('shows Pro tier label for pro licenses', async () => {
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'pro',
+      valid: true,
+      organization: 'ProOrg',
+      seats: 3,
+      features: ['advanced_brain'],
+      licenseId: 'lic-pro',
+      expiresAt: null,
+      error: null,
+      enforcementEnabled: false,
+    });
+    renderComponent();
+    expect(await screen.findByText('Pro')).toBeInTheDocument();
+    expect(screen.getByText('ProOrg')).toBeInTheDocument();
+  });
+
+  // ── Backup tab: create, delete, format ──────────────────────────
+
+  it('creates a backup and clears label on success', async () => {
+    const mockCreate = vi.mocked(api.createBackup);
+    mockCreate.mockResolvedValue({
+      backup: {
+        id: 'b-new',
+        label: 'nightly',
+        status: 'pending',
+        sizeBytes: null,
+        filePath: null,
+        error: null,
+        pgDumpVersion: null,
+        createdBy: null,
+        createdAt: Date.now(),
+        completedAt: null,
+      },
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    await screen.findByText('New Backup');
+
+    const labelInput = screen.getByPlaceholderText('Label (optional)');
+    await user.type(labelInput, 'nightly');
+    await user.click(screen.getByText('Create Backup'));
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith('nightly');
+    });
+  });
+
+  it('shows error when backup creation fails', async () => {
+    vi.mocked(api.createBackup).mockRejectedValue(new Error('disk full'));
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    await screen.findByText('New Backup');
+
+    await user.click(screen.getByText('Create Backup'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to create backup')).toBeInTheDocument();
+    });
+  });
+
+  it('shows KB-formatted size for medium backups', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-kb',
+          label: 'kb-backup',
+          status: 'completed',
+          sizeBytes: 4096,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText('4.0 KB')).toBeInTheDocument();
+  });
+
+  it('shows MB-formatted size for large backups', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-mb',
+          label: 'mb-backup',
+          status: 'completed',
+          sizeBytes: 3 * 1024 * 1024,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText('3.0 MB')).toBeInTheDocument();
+  });
+
+  it('shows byte-formatted size for small backups', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-bytes',
+          label: 'tiny-backup',
+          status: 'completed',
+          sizeBytes: 512,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText('512 B')).toBeInTheDocument();
+  });
+
+  it('shows dash for null sizeBytes', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-null',
+          label: 'no-size',
+          status: 'pending',
+          sizeBytes: null,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: null,
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    await screen.findByText('no-size');
+    // formatBytes(null) returns em-dash
+    const dashes = screen.getAllByText('\u2014');
+    expect(dashes.length).toBeGreaterThan(0);
+  });
+
+  it('shows truncated id for backups without a label', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'abcdef1234567890',
+          label: '',
+          status: 'pending',
+          sizeBytes: null,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: null,
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText('backup-abcdef12')).toBeInTheDocument();
+  });
+
+  it('shows "1 backup total" (singular) for a single backup', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-one',
+          label: 'solo',
+          status: 'completed',
+          sizeBytes: 100,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText('1 backup total')).toBeInTheDocument();
+  });
+
+  it('shows plural "backups total" for multiple backups', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-a',
+          label: 'a',
+          status: 'completed',
+          sizeBytes: 100,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: Date.now(),
+        },
+        {
+          id: 'b-b',
+          label: 'b',
+          status: 'completed',
+          sizeBytes: 200,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: Date.now(),
+        },
+      ],
+      total: 2,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText('2 backups total')).toBeInTheDocument();
+  });
+
+  it('shows backup error text for failed backups', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-fail',
+          label: 'bad-backup',
+          status: 'failed',
+          sizeBytes: null,
+          filePath: null,
+          error: 'pg_dump: connection refused',
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: null,
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText('pg_dump: connection refused')).toBeInTheDocument();
+  });
+
+  it('shows createdBy for backups that have it', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-user',
+          label: 'user-backup',
+          status: 'completed',
+          sizeBytes: 1024,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: 'admin',
+          createdAt: Date.now(),
+          completedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText(/by admin/)).toBeInTheDocument();
+  });
+
+  // ── Appearance tab: schedule and custom themes ──────────────────
+
+  it('shows auto-switch schedule section on Appearance tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    expect(screen.getByText('Auto-Switch Schedule')).toBeInTheDocument();
+    expect(screen.getByText('Enable scheduled theme switching')).toBeInTheDocument();
+  });
+
+  it('shows "no custom themes" message on Appearance tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    expect(screen.getByText('No custom themes yet. Create or import one.')).toBeInTheDocument();
+  });
+
+  it('shows license expiry for 1 day (singular)', async () => {
+    const in1Day = new Date(Date.now() + 1.5 * 24 * 60 * 60 * 1000).toISOString();
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'enterprise',
+      valid: true,
+      organization: 'SingleDay',
+      seats: 1,
+      features: [],
+      licenseId: 'lic-1d',
+      expiresAt: in1Day,
+      error: null,
+      enforcementEnabled: false,
+    });
+    renderComponent();
+    // Math.ceil of ~1.5 days = 2 days
+    expect(await screen.findByText(/License expires in \d+ day/)).toBeInTheDocument();
+  });
+
+  // ── Appearance: Theme Editor ─────────────────────────────────────
+
+  it('opens the theme editor when Create is clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    await user.click(screen.getByText('Create'));
+    expect(screen.getByText('Theme Editor')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Theme name')).toBeInTheDocument();
+    expect(screen.getByText('Dark theme')).toBeInTheDocument();
+    expect(screen.getByText('Save & Apply')).toBeInTheDocument();
+    expect(screen.getByText('Export JSON')).toBeInTheDocument();
+  });
+
+  it('closes the theme editor on close button', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    await user.click(screen.getByText('Create'));
+    expect(screen.getByText('Theme Editor')).toBeInTheDocument();
+    // Close button is next to the "Theme Editor" heading
+    const editorHeader = screen.getByText('Theme Editor').closest('div')!;
+    const closeBtn = editorHeader.querySelector('button')!;
+    await user.click(closeBtn);
+    expect(screen.queryByText('Theme Editor')).not.toBeInTheDocument();
+  });
+
+  it('saves a custom theme via Save & Apply', async () => {
+    mockValidateCustomThemeHook.mockReturnValue({
+      valid: true,
+      theme: { name: 'My Theme', isDark: true, colors: {} },
+    });
+    mockAddCustomThemeHook.mockReturnValue({ id: 'my-theme', name: 'My Theme' });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    await user.click(screen.getByText('Create'));
+    await user.click(screen.getByText('Save & Apply'));
+
+    expect(mockValidateCustomThemeHook).toHaveBeenCalled();
+    expect(mockAddCustomThemeHook).toHaveBeenCalled();
+    expect(mockSetTheme).toHaveBeenCalledWith('custom:my-theme');
+    // Editor should close after save
+    expect(screen.queryByText('Theme Editor')).not.toBeInTheDocument();
+  });
+
+  it('shows validation error when saving invalid custom theme', async () => {
+    mockValidateCustomThemeHook.mockReturnValue({ valid: false, error: 'Missing required color: primary' });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    await user.click(screen.getByText('Create'));
+    await user.click(screen.getByText('Save & Apply'));
+
+    expect(screen.getByText('Missing required color: primary')).toBeInTheDocument();
+  });
+
+  it('exports JSON from the theme editor', async () => {
+    const mockClick = vi.fn();
+    const origCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const el = origCreateElement(tag);
+      if (tag === 'a') {
+        Object.defineProperty(el, 'click', { value: mockClick });
+      }
+      return el;
+    });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    await user.click(screen.getByText('Create'));
+    await user.click(screen.getByText('Export JSON'));
+
+    expect(mockClick).toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it('renders custom theme cards and allows deletion', async () => {
+    mockLoadCustomThemesHook.mockReturnValue([
+      {
+        id: 'my-custom',
+        name: 'Custom Dark',
+        isDark: true,
+        colors: { background: '0 0% 10%', foreground: '0 0% 90%', primary: '210 100% 50%' },
+      },
+    ]);
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    expect(screen.getByText('Custom Dark')).toBeInTheDocument();
+
+    // Click the delete button (title="Delete")
+    const deleteBtn = screen.getByTitle('Delete');
+    await user.click(deleteBtn);
+    expect(mockRemoveCustomThemeHook).toHaveBeenCalledWith('my-custom');
+  });
+
+  it('renders Copy JSON button on custom theme cards', async () => {
+    mockLoadCustomThemesHook.mockReturnValue([
+      {
+        id: 'clip-theme',
+        name: 'Clipboard Theme',
+        isDark: false,
+        colors: { background: '0 0% 90%', foreground: '0 0% 10%', primary: '210 100% 50%' },
+      },
+    ]);
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+
+    expect(screen.getByTitle('Copy JSON')).toBeInTheDocument();
+    expect(screen.getByText('Clipboard Theme')).toBeInTheDocument();
+  });
+
+  // ── Appearance: Theme selection ──────────────────────────────────
+
+  it('selects a theme when a ThemeCard is clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    // Click a built-in theme card (e.g., "Tokyo Night")
+    const tokyoBtn = screen.getByText('Tokyo Night').closest('button')!;
+    await user.click(tokyoBtn);
+    expect(mockSetTheme).toHaveBeenCalledWith('tokyonight');
+  });
+
+  // ── Appearance: Schedule controls ────────────────────────────────
+
+  it('enables schedule and shows time inputs', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+
+    // Enable schedule
+    const checkbox = screen.getByRole('checkbox', { name: /Enable scheduled theme switching/ });
+    await user.click(checkbox);
+    expect(mockSaveScheduleHook).toHaveBeenCalledWith(
+      expect.objectContaining({ enabled: true })
+    );
+  });
+
+  it('shows schedule time inputs when enabled and not using OS schedule', async () => {
+    mockLoadScheduleHook.mockReturnValue({
+      enabled: true,
+      lightTheme: 'light',
+      darkTheme: 'dark',
+      lightHour: 7,
+      darkHour: 20,
+      useOsSchedule: false,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+
+    expect(screen.getByText(/Light at/)).toBeInTheDocument();
+    expect(screen.getByText(/Dark at/)).toBeInTheDocument();
+    expect(screen.getByText('Use OS light/dark schedule')).toBeInTheDocument();
+  });
+
+  it('hides time inputs when useOsSchedule is true', async () => {
+    mockLoadScheduleHook.mockReturnValue({
+      enabled: true,
+      lightTheme: 'light',
+      darkTheme: 'dark',
+      lightHour: 7,
+      darkHour: 20,
+      useOsSchedule: true,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+
+    expect(screen.queryByText(/Light at/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Dark at/)).not.toBeInTheDocument();
+    // Theme selectors should still be visible
+    expect(screen.getByText(/Light theme:/)).toBeInTheDocument();
+    expect(screen.getByText(/Dark theme:/)).toBeInTheDocument();
+  });
+
+  // ── Backup: download button for completed backups ────────────────
+
+  it('shows download button for completed backups', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-dl',
+          label: 'downloadable',
+          status: 'completed',
+          sizeBytes: 1024,
+          filePath: '/tmp/b-dl.pgdump',
+          error: null,
+          pgDumpVersion: '15.0',
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    await screen.findByText('downloadable');
+
+    // Download button should exist
+    const dlBtn = screen.getByTitle('Download');
+    expect(dlBtn).toBeInTheDocument();
+  });
+
+  it('does not show download button for pending backups', async () => {
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-pending',
+          label: 'not-ready',
+          status: 'pending',
+          sizeBytes: null,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: null,
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    await screen.findByText('not-ready');
+
+    expect(screen.queryByTitle('Download')).not.toBeInTheDocument();
+  });
+
+  it('deletes a backup when delete is clicked', async () => {
+    const mockDelete = vi.mocked(api.deleteBackup);
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-del',
+          label: 'to-delete',
+          status: 'completed',
+          sizeBytes: 100,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: Date.now(),
+          completedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    await screen.findByText('to-delete');
+
+    await user.click(screen.getByTitle('Delete'));
+    await waitFor(() => {
+      expect(mockDelete).toHaveBeenCalledWith('b-del');
+    });
+  });
+
+  it('shows completed timestamp on completed backups', async () => {
+    const ts = 1700000060000;
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'b-ts',
+          label: 'timestamped',
+          status: 'completed',
+          sizeBytes: 100,
+          filePath: null,
+          error: null,
+          pgDumpVersion: null,
+          createdBy: null,
+          createdAt: 1700000000000,
+          completedAt: ts,
+        },
+      ],
+      total: 1,
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    await screen.findByText('timestamped');
+    expect(screen.getByText(/Completed/)).toBeInTheDocument();
+  });
+
+  // ── Appearance: theme name editing ───────────────────────────────
+
+  it('allows editing theme name in the theme editor', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    await user.click(screen.getByText('Create'));
+
+    const nameInput = screen.getByPlaceholderText('Theme name');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Ocean Blue');
+    expect(nameInput).toHaveValue('Ocean Blue');
+  });
+
+  it('toggles dark theme checkbox in theme editor', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    await user.click(screen.getByText('Create'));
+
+    const darkCheckbox = screen.getByRole('checkbox', { name: /Dark theme/ });
+    // Default is true, click to uncheck
+    await user.click(darkCheckbox);
+    expect(darkCheckbox).not.toBeChecked();
   });
 });

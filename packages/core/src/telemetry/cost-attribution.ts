@@ -54,7 +54,7 @@ const MONTH_DAYS = 30;
 
 export class CostAttributionTracker {
   private entries: CostEntry[] = [];
-  private budgets: Map<string, CostBudget> = new Map();
+  private budgets = new Map<string, CostBudget>();
   private readonly logger: SecureLogger;
 
   constructor(logger: SecureLogger) {
@@ -100,20 +100,20 @@ export class CostAttributionTracker {
       const totalTokens = e.inputTokens + e.outputTokens;
 
       if (e.personalityId) {
-        const p = byPersonality[e.personalityId] ??= { costUsd: 0, tokens: 0 };
+        const p = (byPersonality[e.personalityId] ??= { costUsd: 0, tokens: 0 });
         p.costUsd += e.costUsd;
         p.tokens += totalTokens;
       }
       if (e.workflowId) {
-        const w = byWorkflow[e.workflowId] ??= { costUsd: 0, tokens: 0 };
+        const w = (byWorkflow[e.workflowId] ??= { costUsd: 0, tokens: 0 });
         w.costUsd += e.costUsd;
         w.tokens += totalTokens;
       }
-      const prov = byProvider[e.provider] ??= { costUsd: 0, tokens: 0 };
+      const prov = (byProvider[e.provider] ??= { costUsd: 0, tokens: 0 });
       prov.costUsd += e.costUsd;
       prov.tokens += totalTokens;
 
-      const m = byModel[e.model] ??= { costUsd: 0, tokens: 0 };
+      const m = (byModel[e.model] ??= { costUsd: 0, tokens: 0 });
       m.costUsd += e.costUsd;
       m.tokens += totalTokens;
     }
@@ -141,9 +141,7 @@ export class CostAttributionTracker {
     for (const budget of this.budgets.values()) {
       if (!budget.enabled) continue;
 
-      const periodStart = budget.period === 'daily'
-        ? now - DAY_MS
-        : now - DAY_MS * MONTH_DAYS;
+      const periodStart = budget.period === 'daily' ? now - DAY_MS : now - DAY_MS * MONTH_DAYS;
 
       const spend = this.entries
         .filter((e) => e.tenantId === budget.tenantId && e.timestamp >= periodStart)
@@ -175,7 +173,8 @@ export class CostAttributionTracker {
       filtered = filtered.filter((e) => e.timestamp <= endMs);
     }
 
-    const header = 'timestamp,tenant_id,personality_id,workflow_id,provider,model,input_tokens,output_tokens,cost_usd';
+    const header =
+      'timestamp,tenant_id,personality_id,workflow_id,provider,model,input_tokens,output_tokens,cost_usd';
     const rows = filtered.map((e) =>
       [
         new Date(e.timestamp).toISOString(),

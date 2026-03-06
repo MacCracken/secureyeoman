@@ -853,4 +853,169 @@ describe('memory command', () => {
     const body = JSON.parse((opts as { body: string }).body) as { limit: number };
     expect(body.limit).toBe(10);
   });
+
+  // ── --local mode ────────────────────────────────────────────────────────
+
+  it('--local rejects non-read-only subcommand', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({ argv: ['consolidate', '--local'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('--local mode only supports');
+    expect(getStderr()).toContain('consolidate');
+  });
+
+  it('--local rejects search subcommand', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['search', 'test', '--local'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('--local mode only supports');
+  });
+
+  // ── activation subcommand ─────────────────────────────────────────────
+
+  it('activation displays stats', async () => {
+    mockFetch({
+      stats: {
+        topMemories: [{ id: 'mem-1', activation: 0.95 }],
+        topDocuments: [{ id: 'doc-1', activation: 0.8 }],
+        associationCount: 42,
+        avgAssociationWeight: 0.65,
+        accessTrend: [{ day: '2026-03-01', count: 10 }],
+      },
+    });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['activation'], stdout, stderr });
+    expect(code).toBe(0);
+    const out = getStdout();
+    expect(out).toContain('Cognitive Memory Activation');
+    expect(out).toContain('42');
+    expect(out).toContain('0.650');
+    expect(out).toContain('mem-1');
+    expect(out).toContain('doc-1');
+    expect(out).toContain('2026-03-01');
+  });
+
+  it('activation --json outputs raw JSON', async () => {
+    mockFetch({
+      stats: {
+        topMemories: [],
+        topDocuments: [],
+        associationCount: 0,
+        avgAssociationWeight: 0,
+        accessTrend: [],
+      },
+    });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['activation', '--json'], stdout, stderr });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout());
+    expect(parsed.associationCount).toBe(0);
+  });
+
+  it('activation fails on HTTP error', async () => {
+    mockFetch({}, 500);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({ argv: ['activation'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Failed to fetch stats');
+  });
+
+  it('activation hides empty sections', async () => {
+    mockFetch({
+      stats: {
+        topMemories: [],
+        topDocuments: [],
+        associationCount: 5,
+        avgAssociationWeight: 0.5,
+        accessTrend: [],
+      },
+    });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['activation'], stdout, stderr });
+    expect(code).toBe(0);
+    const out = getStdout();
+    expect(out).not.toContain('Top Activated Memories');
+    expect(out).not.toContain('Top Activated Documents');
+    expect(out).not.toContain('7-Day Access Trend');
+  });
+
+  // ── stats with health snapshot ─────────────────────────────────────────
+
+  it('stats includes health snapshot when available', async () => {
+    let callCount = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        callCount++;
+        if (url.includes('/audit/health')) {
+          return {
+            ok: true,
+            status: 200,
+            headers: { get: () => 'application/json' },
+            json: async () => ({
+              health: {
+                healthScore: 85,
+                avgImportance: 0.7,
+                expiringWithin7Days: 3,
+                lastAuditAt: 1709600000000,
+              },
+            }),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ totalMemories: 50 }),
+        };
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['stats'], stdout, stderr });
+    expect(code).toBe(0);
+    const out = getStdout();
+    expect(out).toContain('Memory Health');
+    expect(out).toContain('Health Score: 85');
+    expect(out).toContain('Avg Importance: 0.7');
+    expect(out).toContain('Expiring (7 days): 3');
+  });
+
+  it('stats health snapshot shows Never when no lastAuditAt', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes('/audit/health')) {
+          return {
+            ok: true,
+            status: 200,
+            headers: { get: () => 'application/json' },
+            json: async () => ({
+              health: {
+                healthScore: 50,
+                avgImportance: 0.3,
+                expiringWithin7Days: 0,
+                lastAuditAt: null,
+              },
+            }),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ totalMemories: 10 }),
+        };
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['stats'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Last Audit: Never');
+  });
 });

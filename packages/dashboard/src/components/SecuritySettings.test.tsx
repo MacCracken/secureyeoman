@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { SecuritySettings } from './SecuritySettings';
+import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySettings';
 import { createMetricsSnapshot } from '../test/mocks';
 
 vi.mock('../api/client', () => ({
@@ -25,6 +26,9 @@ vi.mock('../api/client', () => ({
   fetchModelInfo: vi.fn(),
   fetchAgentConfig: vi.fn(),
   updateAgentConfig: vi.fn(),
+  fetchSecretKeys: vi.fn(),
+  setSecret: vi.fn(),
+  deleteSecret: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -1044,5 +1048,492 @@ describe('SecuritySettings', () => {
       expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
       expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowTrainingExport: true });
     });
+  });
+
+  // ── Prompt Security selects ──────────────────────────────────────────
+
+  it('renders Prompt Guard Mode select', async () => {
+    renderComponent();
+    expect(await screen.findByText('Prompt Guard Mode')).toBeInTheDocument();
+  });
+
+  it('renders Response Guard Mode select', async () => {
+    renderComponent();
+    expect(await screen.findByText('Response Guard Mode')).toBeInTheDocument();
+  });
+
+  it('renders Jailbreak Score Threshold slider', async () => {
+    renderComponent();
+    expect(await screen.findByText('Jailbreak Score Threshold')).toBeInTheDocument();
+    expect(screen.getByText('0.50')).toBeInTheDocument();
+  });
+
+  it('renders System Prompt Confidentiality toggle', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle System Prompt Confidentiality');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('renders Rate-Aware Abuse Detection toggle (on by default)', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Rate-Aware Abuse Detection');
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+  });
+
+  // ── Content Guardrails ──────────────────────────────────────────────
+
+  it('renders Content Guardrails toggle (off by default)', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Enable Content Guardrails');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('does not show PII mode when guardrails disabled', async () => {
+    renderComponent();
+    await screen.findByText('Content Guardrails');
+    expect(screen.queryByText('PII Detection Mode')).not.toBeInTheDocument();
+  });
+
+  it('shows content guardrail sub-settings when enabled', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
+      allowIntentEditor: false,
+      allowCodeEditor: false,
+      allowAdvancedEditor: false,
+      allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: true,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
+    });
+    renderComponent();
+    expect(await screen.findByText('PII Detection Mode')).toBeInTheDocument();
+    expect(screen.getByLabelText('Toggle Toxicity Filtering')).toBeInTheDocument();
+    expect(screen.getByText('Block List')).toBeInTheDocument();
+    expect(screen.getByText('Blocked Topics')).toBeInTheDocument();
+    expect(screen.getByLabelText('Toggle Grounding Verification')).toBeInTheDocument();
+  });
+
+  // ── Desktop Control sub-toggles ─────────────────────────────────────
+
+  it('does not show Camera toggle when Desktop Control is off', async () => {
+    renderComponent();
+    await screen.findByText('Desktop Control');
+    expect(screen.queryByLabelText('Toggle Camera Capture')).not.toBeInTheDocument();
+  });
+
+  it('shows Camera toggle when Desktop Control is on', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDesktopControl: true,
+      allowCamera: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
+      allowIntentEditor: false,
+      allowCodeEditor: false,
+      allowAdvancedEditor: false,
+      allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
+    });
+    renderComponent();
+    expect(await screen.findByLabelText('Toggle Camera Capture')).toBeInTheDocument();
+  });
+
+  // ── Organizational Intent sub-toggles ──────────────────────────────
+
+  it('renders Organizational Intent section', async () => {
+    renderComponent();
+    const headings = await screen.findAllByText('Organizational Intent');
+    expect(headings.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders Outbound Credential Proxy toggle', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Outbound Credential Proxy');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy with sandboxCredentialProxy when toggled', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Outbound Credential Proxy');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ sandboxCredentialProxy: true });
+    });
+  });
+
+  // ── Network Tools ────────────────────────────────────────────────────
+
+  it('renders Network Tools toggle (off by default)', async () => {
+    renderComponent();
+    expect(await screen.findByText('Network Tools')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Allow Network Tools');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy when toggling Network Tools', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Allow Network Tools');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowNetworkTools: true });
+    });
+  });
+
+  // ── Storybook toggle ─────────────────────────────────────────────────
+
+  it('renders Storybook toggle', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Storybook');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy when toggling Storybook', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Storybook');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowStorybook: true });
+    });
+  });
+
+  // ── Model default with provider set ──────────────────────────────────
+
+  it('renders "Using config file" badge when no model default is set', async () => {
+    renderComponent();
+    expect(await screen.findByText('Using config file')).toBeInTheDocument();
+  });
+
+  it('renders provider/model badge when default is set', async () => {
+    vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: 'openai', model: 'gpt-4' });
+    renderComponent();
+    expect(await screen.findByText(/OpenAI/)).toBeInTheDocument();
+  });
+
+  it('renders Clear button when model default is set', async () => {
+    vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: 'openai', model: 'gpt-4' });
+    renderComponent();
+    expect(await screen.findByText('Clear')).toBeInTheDocument();
+  });
+});
+
+// ── RolesSettings ─────────────────────────────────────────────────────
+
+function renderRolesSettings() {
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={createQueryClient()}>
+        <RolesSettings />
+      </QueryClientProvider>
+    </MemoryRouter>
+  );
+}
+
+describe('RolesSettings', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mockFetchRoles.mockResolvedValue({
+      roles: [
+        {
+          id: 'role_admin',
+          name: 'admin',
+          permissions: [{ resource: 'read', action: '*' }],
+          isBuiltin: true,
+        },
+        {
+          id: 'role_custom',
+          name: 'Custom Ops',
+          description: 'Custom role',
+          permissions: [{ resource: 'tasks', action: 'read' }],
+          isBuiltin: false,
+          inheritFrom: ['role_admin'],
+        },
+      ],
+    });
+    mockFetchAssignments.mockResolvedValue({
+      assignments: [
+        { userId: 'alice', roleId: 'role_admin' },
+      ],
+    });
+    vi.mocked(api.createRole).mockResolvedValue({ id: 'new-role' } as never);
+    vi.mocked(api.deleteRole).mockResolvedValue({ message: 'deleted' } as never);
+    vi.mocked(api.updateRole).mockResolvedValue({ id: 'role_custom' } as never);
+    vi.mocked(api.assignRole).mockResolvedValue({ message: 'assigned' } as never);
+    vi.mocked(api.revokeAssignment).mockResolvedValue({ message: 'revoked' } as never);
+  });
+
+  it('renders Roles & Permissions heading', async () => {
+    renderRolesSettings();
+    expect(await screen.findByText('Roles & Permissions')).toBeInTheDocument();
+  });
+
+  it('shows loading state for roles', () => {
+    mockFetchRoles.mockReturnValue(new Promise(() => {}));
+    renderRolesSettings();
+    expect(screen.getByText('Loading roles...')).toBeInTheDocument();
+  });
+
+  it('renders roles list with built-in badge', async () => {
+    renderRolesSettings();
+    const adminElements = await screen.findAllByText('admin');
+    expect(adminElements.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Built-in')).toBeInTheDocument();
+    expect(screen.getByText('Custom Ops')).toBeInTheDocument();
+  });
+
+  it('renders permissions for each role', async () => {
+    renderRolesSettings();
+    expect(await screen.findByText('read:*')).toBeInTheDocument();
+    expect(screen.getByText('tasks:read')).toBeInTheDocument();
+  });
+
+  it('shows edit and delete buttons for custom roles only', async () => {
+    renderRolesSettings();
+    await screen.findByText('Custom Ops');
+    expect(screen.getByTitle('Edit role')).toBeInTheDocument();
+    expect(screen.getByTitle('Delete role')).toBeInTheDocument();
+  });
+
+  it('opens role creation form when Add Custom Role clicked', async () => {
+    const user = userEvent.setup();
+    renderRolesSettings();
+    await screen.findByText('Custom Ops');
+    await user.click(screen.getByText(/Add Custom Role/));
+    expect(screen.getByPlaceholderText('e.g. Custom Ops')).toBeInTheDocument();
+  });
+
+  it('opens edit form when Edit button clicked', async () => {
+    const user = userEvent.setup();
+    renderRolesSettings();
+    await screen.findByText('Custom Ops');
+    await user.click(screen.getByTitle('Edit role'));
+    expect(screen.getByDisplayValue('Custom Ops')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Custom role')).toBeInTheDocument();
+  });
+
+  it('shows delete confirmation dialog', async () => {
+    const user = userEvent.setup();
+    renderRolesSettings();
+    await screen.findByText('Custom Ops');
+    await user.click(screen.getByTitle('Delete role'));
+    expect(await screen.findByText(/Are you sure you want to delete/)).toBeInTheDocument();
+  });
+
+  it('renders User Role Assignments table', async () => {
+    renderRolesSettings();
+    expect(await screen.findByText('User Role Assignments')).toBeInTheDocument();
+    expect(await screen.findByText('alice')).toBeInTheDocument();
+  });
+
+  it('shows loading state for assignments', () => {
+    mockFetchAssignments.mockReturnValue(new Promise(() => {}));
+    renderRolesSettings();
+    expect(screen.getByText('Loading assignments...')).toBeInTheDocument();
+  });
+
+  it('shows empty assignments message when no assignments', async () => {
+    mockFetchAssignments.mockResolvedValue({ assignments: [] });
+    renderRolesSettings();
+    expect(await screen.findByText('No active user role assignments.')).toBeInTheDocument();
+  });
+
+  it('shows empty roles message when no roles', async () => {
+    mockFetchRoles.mockResolvedValue({ roles: [] });
+    renderRolesSettings();
+    expect(await screen.findByText('No roles configured.')).toBeInTheDocument();
+  });
+
+  it('shows "No permissions" for roles with empty permissions', async () => {
+    mockFetchRoles.mockResolvedValue({
+      roles: [
+        { id: 'r-empty', name: 'Empty', permissions: [], isBuiltin: false, inheritFrom: [] },
+      ],
+    });
+    renderRolesSettings();
+    expect(await screen.findByText('No permissions')).toBeInTheDocument();
+  });
+
+  it('opens assignment form and shows role select', async () => {
+    const user = userEvent.setup();
+    renderRolesSettings();
+    await screen.findByText('Custom Ops');
+    await user.click(screen.getByText(/Assign Role/));
+    expect(screen.getByPlaceholderText('e.g. admin')).toBeInTheDocument();
+    expect(screen.getByText('Select a role...')).toBeInTheDocument();
+  });
+
+  it('shows revoke confirmation dialog', async () => {
+    const user = userEvent.setup();
+    renderRolesSettings();
+    await screen.findByText('alice');
+    const revokeBtn = screen.getByTitle('Revoke assignment');
+    await user.click(revokeBtn);
+    expect(await screen.findByText(/Revoke role assignment for user/)).toBeInTheDocument();
+  });
+});
+
+// ── SecretsPanel ──────────────────────────────────────────────────────
+
+function renderSecretsPanel() {
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={createQueryClient()}>
+        <SecretsPanel />
+      </QueryClientProvider>
+    </MemoryRouter>
+  );
+}
+
+const mockFetchSecretKeys = vi.mocked(api.fetchSecretKeys);
+
+describe('SecretsPanel', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mockFetchSecretKeys.mockResolvedValue({ keys: ['API_KEY', 'DB_PASS'] });
+    vi.mocked(api.setSecret).mockResolvedValue(undefined as never);
+    vi.mocked(api.deleteSecret).mockResolvedValue(undefined as never);
+    // Reset SecuritySettings mocks too since they share the module mock
+    mockFetchRoles.mockResolvedValue({ roles: [] });
+    mockFetchAssignments.mockResolvedValue({ assignments: [] });
+  });
+
+  it('renders Secrets heading and description', async () => {
+    renderSecretsPanel();
+    expect(screen.getByText('Secrets')).toBeInTheDocument();
+    expect(screen.getByText(/write-only/)).toBeInTheDocument();
+  });
+
+  it('shows loading state', () => {
+    mockFetchSecretKeys.mockReturnValue(new Promise(() => {}));
+    renderSecretsPanel();
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+
+  it('shows error state', async () => {
+    mockFetchSecretKeys.mockRejectedValue(new Error('fail'));
+    renderSecretsPanel();
+    expect(await screen.findByText('Failed to load secrets')).toBeInTheDocument();
+  });
+
+  it('shows empty state', async () => {
+    mockFetchSecretKeys.mockResolvedValue({ keys: [] });
+    renderSecretsPanel();
+    expect(await screen.findByText('No secrets stored yet.')).toBeInTheDocument();
+  });
+
+  it('renders secret keys', async () => {
+    renderSecretsPanel();
+    expect(await screen.findByText('API_KEY')).toBeInTheDocument();
+    expect(screen.getByText('DB_PASS')).toBeInTheDocument();
+  });
+
+  it('has delete button per secret', async () => {
+    renderSecretsPanel();
+    expect(await screen.findByLabelText('Delete secret API_KEY')).toBeInTheDocument();
+    expect(screen.getByLabelText('Delete secret DB_PASS')).toBeInTheDocument();
+  });
+
+  it('shows delete confirmation dialog', async () => {
+    const user = userEvent.setup();
+    renderSecretsPanel();
+    await screen.findByText('API_KEY');
+    await user.click(screen.getByLabelText('Delete secret API_KEY'));
+    expect(await screen.findByText(/Delete secret "API_KEY"/)).toBeInTheDocument();
+  });
+
+  it('opens add form when Add Secret clicked', async () => {
+    const user = userEvent.setup();
+    renderSecretsPanel();
+    await screen.findByText('API_KEY');
+    await user.click(screen.getByText('Add Secret'));
+    expect(screen.getByPlaceholderText('MY_SECRET_KEY')).toBeInTheDocument();
+  });
+
+  it('add form has name and value inputs', async () => {
+    const user = userEvent.setup();
+    renderSecretsPanel();
+    await screen.findByText('API_KEY');
+    await user.click(screen.getByText('Add Secret'));
+    expect(screen.getByPlaceholderText('MY_SECRET_KEY')).toBeInTheDocument();
+    const valueInputs = screen.getAllByDisplayValue('');
+    expect(valueInputs.length).toBeGreaterThan(0);
+  });
+
+  it('cancel button in add form hides the form', async () => {
+    const user = userEvent.setup();
+    renderSecretsPanel();
+    await screen.findByText('API_KEY');
+    await user.click(screen.getByText('Add Secret'));
+    expect(screen.getByPlaceholderText('MY_SECRET_KEY')).toBeInTheDocument();
+    await user.click(screen.getByText('Cancel'));
+    expect(screen.queryByPlaceholderText('MY_SECRET_KEY')).not.toBeInTheDocument();
   });
 });

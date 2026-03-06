@@ -8,8 +8,21 @@ const makePlan = (overrides: Partial<AiPlan> = {}): AiPlan => ({
   id: 'plan-1',
   title: 'Test Plan',
   steps: [
-    { id: 's1', description: 'Read file', status: 'completed', toolName: 'read_file', files: ['/src/app.ts'], durationMs: 120 },
-    { id: 's2', description: 'Analyze code', status: 'running', toolName: 'analyze', memoryRefs: ['context-1'] },
+    {
+      id: 's1',
+      description: 'Read file',
+      status: 'completed',
+      toolName: 'read_file',
+      files: ['/src/app.ts'],
+      durationMs: 120,
+    },
+    {
+      id: 's2',
+      description: 'Analyze code',
+      status: 'running',
+      toolName: 'analyze',
+      memoryRefs: ['context-1'],
+    },
     { id: 's3', description: 'Write output', status: 'awaiting_approval', toolName: 'write_file' },
     { id: 's4', description: 'Verify', status: 'pending' },
   ],
@@ -157,9 +170,7 @@ describe('AiPlanPanel', () => {
   it('renders green progress bar for completed plan', () => {
     const plan = makePlan({
       status: 'completed',
-      steps: [
-        { id: 's1', description: 'Done', status: 'completed' },
-      ],
+      steps: [{ id: 's1', description: 'Done', status: 'completed' }],
     });
     render(<AiPlanPanel plan={plan} />);
     const bar = screen.getByTestId('progress-bar');
@@ -169,9 +180,7 @@ describe('AiPlanPanel', () => {
   it('renders red progress bar for failed plan', () => {
     const plan = makePlan({
       status: 'failed',
-      steps: [
-        { id: 's1', description: 'Failed step', status: 'failed' },
-      ],
+      steps: [{ id: 's1', description: 'Failed step', status: 'failed' }],
     });
     render(<AiPlanPanel plan={plan} />);
     const bar = screen.getByTestId('progress-bar');

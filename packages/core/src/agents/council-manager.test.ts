@@ -510,5 +510,357 @@ describe('CouncilManager', () => {
       const result = await manager.convene({ templateId: 'tmpl-1', topic: 'Failure test' });
       expect(result).not.toBeNull();
     });
+
+    it('handles non-Error rejection in delegation', async () => {
+      const completedRun = { ...RUN, status: 'completed' as const };
+      const { manager, storage } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            members: [TEMPLATE.members[0]!],
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
+        },
+        agentOverrides: {
+          delegate: vi.fn().mockRejectedValue('string error'),
+        },
+      });
+
+      await manager.convene({ templateId: 'tmpl-1', topic: 'Non-Error rejection' });
+
+      expect(storage.createPosition).toHaveBeenCalledWith(
+        expect.objectContaining({ position: expect.stringContaining('Error: string error') })
+      );
+    });
+
+    it('handles delegation result with null result', async () => {
+      const completedRun = { ...RUN, status: 'completed' as const };
+      const { manager, storage } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
+        },
+        agentOverrides: {
+          delegate: vi.fn().mockResolvedValue({
+            ...DELEGATION_RESULT,
+            result: null,
+            tokenUsage: null,
+          }),
+        },
+      });
+
+      await manager.convene({ templateId: 'tmpl-1', topic: 'Null result test' });
+
+      expect(storage.createPosition).toHaveBeenCalledWith(
+        expect.objectContaining({ position: '' })
+      );
+    });
+
+    it('parsePositionResponse clamps confidence to [0, 1]', async () => {
+      const completedRun = { ...RUN, status: 'completed' as const };
+      const { manager, storage } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
+        },
+        agentOverrides: {
+          delegate: vi.fn().mockResolvedValue({
+            ...DELEGATION_RESULT,
+            result: '{"position":"test","confidence":5.0,"keyPoints":[]}',
+          }),
+        },
+      });
+
+      await manager.convene({ templateId: 'tmpl-1', topic: 'Clamp test' });
+
+      expect(storage.createPosition).toHaveBeenCalledWith(
+        expect.objectContaining({ confidence: 1 })
+      );
+    });
+
+    it('parsePositionResponse handles non-number confidence', async () => {
+      const completedRun = { ...RUN, status: 'completed' as const };
+      const { manager, storage } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
+        },
+        agentOverrides: {
+          delegate: vi.fn().mockResolvedValue({
+            ...DELEGATION_RESULT,
+            result: '{"position":"test","confidence":"high","keyPoints":"not-array"}',
+          }),
+        },
+      });
+
+      await manager.convene({ templateId: 'tmpl-1', topic: 'Bad types test' });
+
+      expect(storage.createPosition).toHaveBeenCalledWith(
+        expect.objectContaining({ confidence: 0.5, keyPoints: [] })
+      );
+    });
+
+    it('synthesize falls back when JSON parsing fails', async () => {
+      const { AIClient } = await import('../ai/client.js');
+      (AIClient as ReturnType<typeof vi.fn>).mockImplementationOnce(function () {
+        return {
+          chat: vi.fn().mockResolvedValue({
+            content: 'Not JSON at all',
+            usage: { totalTokens: 50 },
+          }),
+        };
+      });
+      // Second AIClient call for synthesis
+      (AIClient as ReturnType<typeof vi.fn>).mockImplementationOnce(function () {
+        return {
+          chat: vi.fn().mockResolvedValue({
+            content: 'Plain text synthesis',
+            usage: { totalTokens: 50 },
+          }),
+        };
+      });
+
+      const completedRun = { ...RUN, status: 'completed' as const };
+      const { manager, storage } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
+          getPositionsForRun: vi.fn().mockResolvedValue([
+            {
+              id: 'pos-1',
+              councilRunId: 'run-1',
+              memberRole: 'CFO',
+              round: 1,
+              position: 'Support',
+              confidence: 0.8,
+              keyPoints: ['Good'],
+              agreements: ['CTO'],
+              disagreements: [],
+              createdAt: 1000,
+            },
+          ]),
+        },
+      });
+
+      await manager.convene({ templateId: 'tmpl-1', topic: 'Fallback synthesis test' });
+
+      // Should still complete
+      expect(storage.updateRun).toHaveBeenCalledWith(
+        'run-1',
+        expect.objectContaining({ status: 'completed' })
+      );
+    });
+
+    it('synthesize handles error gracefully', async () => {
+      const { AIClient } = await import('../ai/client.js');
+      // First call for synthesis will throw
+      (AIClient as ReturnType<typeof vi.fn>).mockImplementationOnce(function () {
+        return {
+          chat: vi.fn().mockRejectedValue(new Error('AI service down')),
+        };
+      });
+
+      const completedRun = { ...RUN, status: 'completed' as const };
+      const { manager, storage } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
+        },
+      });
+
+      await manager.convene({ templateId: 'tmpl-1', topic: 'Synthesis error test' });
+
+      expect(storage.updateRun).toHaveBeenCalledWith(
+        'run-1',
+        expect.objectContaining({ status: 'completed' })
+      );
+    });
+
+    it('builds member prompt with context', async () => {
+      const completedRun = { ...RUN, status: 'completed' as const };
+      const { manager, subAgentManager } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
+        },
+      });
+
+      await manager.convene({
+        templateId: 'tmpl-1',
+        topic: 'Expansion',
+        context: 'Q4 results are strong',
+      });
+
+      const call = (subAgentManager.delegate as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(call[0].task).toContain('Context: Q4 results are strong');
+    });
+
+    it('builds member prompt without perspective', async () => {
+      const templateNoPerspective = {
+        ...TEMPLATE,
+        members: [{ role: 'Analyst', profileName: 'analyst', description: 'Generic', weight: 1 }],
+        maxRounds: 1,
+        deliberationStrategy: 'single_pass' as const,
+      };
+      const completedRun = { ...RUN, status: 'completed' as const };
+      const { manager, subAgentManager } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue(templateNoPerspective),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
+        },
+      });
+
+      await manager.convene({ templateId: 'tmpl-1', topic: 'No perspective' });
+
+      const call = (subAgentManager.delegate as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(call[0].task).not.toContain('Your perspective');
+    });
+  });
+
+  describe('updateTemplate', () => {
+    it('returns null when template not found', async () => {
+      const { manager } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue(null),
+        },
+      });
+      const result = await manager.updateTemplate('missing', { name: 'New' });
+      expect(result).toBeNull();
+    });
+
+    it('throws when editing builtin template', async () => {
+      const { manager } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue({ ...TEMPLATE, isBuiltin: true }),
+        },
+      });
+      await expect(manager.updateTemplate('tmpl-1', { name: 'New' })).rejects.toThrow(
+        'Cannot edit built-in templates'
+      );
+    });
+
+    it('updates non-builtin template', async () => {
+      const { manager, storage } = buildManager();
+      await manager.updateTemplate('tmpl-1', { name: 'Updated' });
+      expect(storage.updateTemplate).toHaveBeenCalledWith('tmpl-1', { name: 'Updated' });
+    });
+  });
+
+  describe('getRun', () => {
+    it('returns null when run not found', async () => {
+      const { manager } = buildManager({
+        storageOverrides: {
+          getRun: vi.fn().mockResolvedValue(null),
+        },
+      });
+      const result = await manager.getRun('missing');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('cancelRun', () => {
+    it('throws when run not found', async () => {
+      const { manager } = buildManager({
+        storageOverrides: {
+          getRun: vi.fn().mockResolvedValue(null),
+        },
+      });
+      await expect(manager.cancelRun('missing')).rejects.toThrow('Council run not found');
+    });
+
+    it('allows cancelling pending run', async () => {
+      const { manager, storage } = buildManager({
+        storageOverrides: {
+          getRun: vi.fn().mockResolvedValue({ ...RUN, status: 'pending' }),
+        },
+      });
+      await manager.cancelRun('run-1');
+      expect(storage.updateRun).toHaveBeenCalledWith(
+        'run-1',
+        expect.objectContaining({ status: 'cancelled' })
+      );
+    });
+  });
+
+  describe('convergence check', () => {
+    it('handles convergence check failure gracefully', async () => {
+      const consensusTemplate = {
+        ...TEMPLATE,
+        deliberationStrategy: 'until_consensus' as const,
+        maxRounds: 3,
+      };
+
+      const { AIClient } = await import('../ai/client.js');
+      (AIClient as ReturnType<typeof vi.fn>).mockImplementationOnce(function () {
+        return {
+          chat: vi.fn().mockRejectedValue(new Error('AI down')),
+        };
+      });
+
+      const completedRun = { ...RUN, status: 'completed' as const };
+      const { manager } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue(consensusTemplate),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
+        },
+      });
+
+      // Should not throw — convergence check failure is handled
+      await manager.convene({ templateId: 'tmpl-1', topic: 'Convergence fail test' });
+    });
+
+    it('handles unparseable convergence response', async () => {
+      const consensusTemplate = {
+        ...TEMPLATE,
+        deliberationStrategy: 'until_consensus' as const,
+        maxRounds: 3,
+      };
+
+      const { AIClient } = await import('../ai/client.js');
+      (AIClient as ReturnType<typeof vi.fn>).mockImplementationOnce(function () {
+        return {
+          chat: vi.fn().mockResolvedValue({
+            content: 'Not JSON',
+            usage: { totalTokens: 10 },
+          }),
+        };
+      });
+
+      const completedRun = { ...RUN, status: 'completed' as const };
+      const { manager } = buildManager({
+        storageOverrides: {
+          getTemplate: vi.fn().mockResolvedValue(consensusTemplate),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
+        },
+      });
+
+      await manager.convene({ templateId: 'tmpl-1', topic: 'Bad convergence response' });
+    });
   });
 });

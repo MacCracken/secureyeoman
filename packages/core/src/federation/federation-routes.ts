@@ -61,7 +61,8 @@ export function registerFederationRoutes(
   app: FastifyInstance,
   opts: FederationRoutesOptions
 ): void {
-  const { federationManager, federationStorage, brainManager, marketplaceManager, secureYeoman } = opts;
+  const { federationManager, federationStorage, brainManager, marketplaceManager, secureYeoman } =
+    opts;
   const featureGuardOpts = (
     secureYeoman
       ? { preHandler: [requiresLicense('a2a_federation', () => secureYeoman.getLicenseManager())] }

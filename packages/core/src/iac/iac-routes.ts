@@ -13,14 +13,15 @@ export interface IacRouteOptions {
   secureYeoman?: SecureYeoman;
 }
 
-export function registerIacRoutes(
-  app: FastifyInstance,
-  opts: IacRouteOptions
-): void {
+export function registerIacRoutes(app: FastifyInstance, opts: IacRouteOptions): void {
   const { iacManager, secureYeoman } = opts;
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 
@@ -116,7 +117,7 @@ export function registerIacRoutes(
         Body: {
           templateId?: string;
           tool?: string;
-          files?: Array<{ path: string; content: string }>;
+          files?: { path: string; content: string }[];
         };
       }>,
       reply: FastifyReply
@@ -136,11 +137,7 @@ export function registerIacRoutes(
 
         return sendError(reply, 400, 'Provide either templateId or (tool + files)');
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          err instanceof Error ? err.message : String(err)
-        );
+        return sendError(reply, 400, err instanceof Error ? err.message : String(err));
       }
     }
   );
@@ -231,22 +228,15 @@ export function registerIacRoutes(
         await iacManager.recordDeployment(deployment);
         return reply.code(201).send({ deployment });
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          err instanceof Error ? err.message : String(err)
-        );
+        return sendError(reply, 500, err instanceof Error ? err.message : String(err));
       }
     }
   );
 
   // ── Get repo info ──────────────────────────────────────────────────
 
-  app.get(
-    '/api/v1/iac/repo',
-    async (_req: FastifyRequest, reply: FastifyReply) => {
-      const info = await iacManager.getRepoInfo();
-      return reply.send(info);
-    }
-  );
+  app.get('/api/v1/iac/repo', async (_req: FastifyRequest, reply: FastifyReply) => {
+    const info = await iacManager.getRepoInfo();
+    return reply.send(info);
+  });
 }

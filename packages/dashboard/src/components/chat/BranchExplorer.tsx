@@ -57,7 +57,11 @@ export function BranchExplorer({
           <GitBranch className="w-4 h-4" />
           Branch Explorer
         </div>
-        <button onClick={onClose} className="btn-ghost p-1 rounded" data-testid="branch-explorer-close">
+        <button
+          onClick={onClose}
+          className="btn-ghost p-1 rounded"
+          data-testid="branch-explorer-close"
+        >
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -67,7 +71,9 @@ export function BranchExplorer({
         {TABS.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+            }}
             className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs transition-colors ${
               activeTab === tab.id
                 ? 'border-b-2 border-primary text-primary font-medium'

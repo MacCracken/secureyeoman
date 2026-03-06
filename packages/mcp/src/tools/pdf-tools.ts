@@ -368,7 +368,7 @@ export function registerPdfTools(
 
       const extracted = await client.post<ExtractPagesResult>(
         '/api/v1/brain/documents/extract-pages',
-        { pdfBase64, pageRange },
+        { pdfBase64, pageRange }
       );
 
       const pageAnalysis = extracted.pages
@@ -429,7 +429,7 @@ export function registerPdfTools(
 
       const extracted = await client.post<ExtractPagesResult>(
         '/api/v1/brain/documents/extract-pages',
-        { pdfBase64, pageRange },
+        { pdfBase64, pageRange }
       );
 
       const summaryStyle = style ?? 'executive';

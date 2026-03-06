@@ -300,4 +300,370 @@ describe('SpiritStorage', () => {
       expect(sql).toContain('ON CONFLICT(key)');
     });
   });
+
+  // ── Additional branch coverage ─────────────────────────────────
+
+  describe('createPassion — default values', () => {
+    it('uses default intensity and description when not provided', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [passionRow], rowCount: 1 });
+
+      await storage.createPassion({ name: 'Test', isActive: false });
+      const params = mockQuery.mock.calls[0][1];
+      expect(params[3]).toBe(''); // description defaults to ''
+      expect(params[4]).toBe(0.5); // intensity defaults to 0.5
+      expect(params[5]).toBe(false); // isActive passed through
+    });
+  });
+
+  describe('updatePassion — partial updates', () => {
+    it('preserves existing values when not provided in update', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [passionRow], rowCount: 1 }) // get existing
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // execute update
+        .mockResolvedValueOnce({ rows: [passionRow], rowCount: 1 }); // get after update
+
+      await storage.updatePassion('passion-1', {}); // empty update
+      const params = mockQuery.mock.calls[1][1];
+      expect(params[0]).toBe('Music'); // existing name preserved
+      expect(params[1]).toBe('Loves music'); // existing description preserved
+      expect(params[2]).toBe(0.9); // existing intensity preserved
+      expect(params[3]).toBe(true); // existing isActive preserved
+    });
+
+    it('throws when re-select after update fails', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [passionRow], rowCount: 1 }) // get existing
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // execute update
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // re-select fails
+
+      await expect(storage.updatePassion('passion-1', { name: 'New' })).rejects.toThrow(
+        'Failed to retrieve passion after update'
+      );
+    });
+
+    it('updates isActive to false when explicitly provided', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [passionRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [{ ...passionRow, is_active: false }], rowCount: 1 });
+
+      await storage.updatePassion('passion-1', { isActive: false });
+      const params = mockQuery.mock.calls[1][1];
+      expect(params[3]).toBe(false);
+    });
+  });
+
+  describe('listPassions — pagination', () => {
+    it('uses custom limit and offset', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '5' }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      await storage.listPassions(undefined, { limit: 20, offset: 10 });
+      const params = mockQuery.mock.calls[1][1];
+      expect(params[0]).toBe(20);
+      expect(params[1]).toBe(10);
+    });
+
+    it('returns 0 total when count is null', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{}], rowCount: 1 }) // count is undefined
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      const result = await storage.listPassions();
+      expect(result.total).toBe(0);
+    });
+  });
+
+  describe('getPassionCount', () => {
+    it('returns count', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ count: '42' }], rowCount: 1 });
+      expect(await storage.getPassionCount()).toBe(42);
+    });
+
+    it('returns 0 when no rows', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      expect(await storage.getPassionCount()).toBe(0);
+    });
+  });
+
+  // ── Inspiration branch coverage ────────────────────────────────
+
+  describe('createInspiration — defaults', () => {
+    it('uses default impact and description', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [inspirationRow], rowCount: 1 });
+
+      await storage.createInspiration({ source: 'Art', isActive: true });
+      const params = mockQuery.mock.calls[0][1];
+      expect(params[3]).toBe(''); // description
+      expect(params[4]).toBe(0.5); // impact
+    });
+
+    it('passes personalityId', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [inspirationRow], rowCount: 1 });
+
+      await storage.createInspiration({ source: 'Art', isActive: true }, 'pid-2');
+      const params = mockQuery.mock.calls[0][1];
+      expect(params[1]).toBe('pid-2');
+    });
+
+    it('throws when re-select fails', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      await expect(storage.createInspiration({ source: 'x', isActive: true })).rejects.toThrow(
+        'Failed to retrieve inspiration after insert'
+      );
+    });
+  });
+
+  describe('getInspiration — not found', () => {
+    it('returns null when not found', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      expect(await storage.getInspiration('missing')).toBeNull();
+    });
+  });
+
+  describe('updateInspiration — partial updates', () => {
+    it('updates and returns the updated inspiration', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [inspirationRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [{ ...inspirationRow, source: 'Art' }], rowCount: 1 });
+
+      const result = await storage.updateInspiration('insp-1', { source: 'Art' });
+      expect(result.source).toBe('Art');
+    });
+
+    it('preserves existing values with empty update', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [inspirationRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [inspirationRow], rowCount: 1 });
+
+      await storage.updateInspiration('insp-1', {});
+      const params = mockQuery.mock.calls[1][1];
+      expect(params[0]).toBe('Nature'); // existing source preserved
+      expect(params[3]).toBe(true); // existing isActive preserved
+    });
+
+    it('throws when re-select after update fails', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [inspirationRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      await expect(storage.updateInspiration('insp-1', { source: 'New' })).rejects.toThrow(
+        'Failed to retrieve inspiration after update'
+      );
+    });
+
+    it('updates isActive to false', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [inspirationRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [{ ...inspirationRow, is_active: false }], rowCount: 1 });
+
+      await storage.updateInspiration('insp-1', { isActive: false });
+      const params = mockQuery.mock.calls[1][1];
+      expect(params[3]).toBe(false);
+    });
+  });
+
+  describe('deleteInspiration — not found', () => {
+    it('returns false when not found', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      expect(await storage.deleteInspiration('missing')).toBe(false);
+    });
+  });
+
+  describe('listInspirations — with personalityId', () => {
+    it('filters by personalityId', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [inspirationRow], rowCount: 1 });
+
+      await storage.listInspirations('pid-1');
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('personality_id = $1');
+    });
+
+    it('uses custom limit and offset', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '0' }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      await storage.listInspirations(undefined, { limit: 5, offset: 2 });
+      const params = mockQuery.mock.calls[1][1];
+      expect(params[0]).toBe(5);
+      expect(params[1]).toBe(2);
+    });
+  });
+
+  describe('getActiveInspirations', () => {
+    it('filters by personalityId', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await storage.getActiveInspirations('pid-1');
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('personality_id = $1');
+    });
+  });
+
+  describe('getInspirationCount', () => {
+    it('returns count', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ count: '7' }], rowCount: 1 });
+      expect(await storage.getInspirationCount()).toBe(7);
+    });
+
+    it('returns 0 when no rows', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      expect(await storage.getInspirationCount()).toBe(0);
+    });
+  });
+
+  // ── Pain branch coverage ───────────────────────────────────────
+
+  describe('createPain — defaults', () => {
+    it('uses default severity and description', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [painRow], rowCount: 1 });
+
+      await storage.createPain({ trigger: 'Noise', isActive: true });
+      const params = mockQuery.mock.calls[0][1];
+      expect(params[3]).toBe(''); // description
+      expect(params[4]).toBe(0.5); // severity
+    });
+
+    it('passes personalityId', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [painRow], rowCount: 1 });
+
+      await storage.createPain({ trigger: 'Noise', isActive: true }, 'pid-3');
+      const params = mockQuery.mock.calls[0][1];
+      expect(params[1]).toBe('pid-3');
+    });
+
+    it('throws when re-select fails', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      await expect(storage.createPain({ trigger: 'x', isActive: true })).rejects.toThrow(
+        'Failed to retrieve pain after insert'
+      );
+    });
+  });
+
+  describe('getPain — not found', () => {
+    it('returns null when not found', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      expect(await storage.getPain('missing')).toBeNull();
+    });
+  });
+
+  describe('updatePain — partial updates', () => {
+    it('updates and returns', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [painRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [{ ...painRow, trigger_name: 'Silence' }], rowCount: 1 });
+
+      const result = await storage.updatePain('pain-1', { trigger: 'Silence' });
+      expect(result.trigger).toBe('Silence');
+    });
+
+    it('preserves existing values with empty update', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [painRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [painRow], rowCount: 1 });
+
+      await storage.updatePain('pain-1', {});
+      const params = mockQuery.mock.calls[1][1];
+      expect(params[0]).toBe('Loud noises'); // existing trigger
+      expect(params[3]).toBe(true); // existing isActive
+    });
+
+    it('throws when re-select after update fails', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [painRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      await expect(storage.updatePain('pain-1', { trigger: 'New' })).rejects.toThrow(
+        'Failed to retrieve pain after update'
+      );
+    });
+
+    it('updates isActive to false', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [painRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [{ ...painRow, is_active: false }], rowCount: 1 });
+
+      await storage.updatePain('pain-1', { isActive: false });
+      const params = mockQuery.mock.calls[1][1];
+      expect(params[3]).toBe(false);
+    });
+  });
+
+  describe('deletePain — not found', () => {
+    it('returns false when not found', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      expect(await storage.deletePain('missing')).toBe(false);
+    });
+  });
+
+  describe('listPains — with personalityId', () => {
+    it('filters by personalityId', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [painRow], rowCount: 1 });
+
+      await storage.listPains('pid-1');
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('personality_id = $1');
+    });
+
+    it('uses custom limit and offset', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '0' }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      await storage.listPains(undefined, { limit: 3, offset: 1 });
+      const params = mockQuery.mock.calls[1][1];
+      expect(params[0]).toBe(3);
+      expect(params[1]).toBe(1);
+    });
+  });
+
+  describe('getActivePains — with personalityId', () => {
+    it('filters by personalityId', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await storage.getActivePains('pid-1');
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('personality_id = $1');
+    });
+  });
+
+  describe('getPainCount', () => {
+    it('returns count', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ count: '15' }], rowCount: 1 });
+      expect(await storage.getPainCount()).toBe(15);
+    });
+
+    it('returns 0 when no rows', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      expect(await storage.getPainCount()).toBe(0);
+    });
+  });
 });

@@ -55,7 +55,11 @@ export function registerIntegrationRoutes(
 
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('custom_integrations', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('custom_integrations', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
   const webhookTransformer = webhookTransformStorage

@@ -20,7 +20,11 @@ export function registerPolicyAsCodeRoutes(
   const { bundleManager, secureYeoman } = opts;
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 
@@ -71,10 +75,7 @@ export function registerPolicyAsCodeRoutes(
   app.post(
     '/api/v1/policy-as-code/sync',
     featureGuardOpts,
-    async (
-      req: FastifyRequest<{ Body: { deployedBy?: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (req: FastifyRequest<{ Body: { deployedBy?: string } }>, reply: FastifyReply) => {
       const { deployedBy } = req.body ?? {};
       try {
         const result = await bundleManager.syncFromGit(deployedBy ?? 'api');
@@ -146,11 +147,7 @@ export function registerPolicyAsCodeRoutes(
             : null,
         });
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          err instanceof Error ? err.message : String(err)
-        );
+        return sendError(reply, 400, err instanceof Error ? err.message : String(err));
       }
     }
   );
@@ -195,11 +192,7 @@ export function registerPolicyAsCodeRoutes(
         );
         return reply.send({ deployment });
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          err instanceof Error ? err.message : String(err)
-        );
+        return sendError(reply, 400, err instanceof Error ? err.message : String(err));
       }
     }
   );
@@ -238,11 +231,8 @@ export function registerPolicyAsCodeRoutes(
 
   // ── Get git repo info ──────────────────────────────────────────────
 
-  app.get(
-    '/api/v1/policy-as-code/repo',
-    async (_req: FastifyRequest, reply: FastifyReply) => {
-      const info = await bundleManager.getRepoInfo();
-      return reply.send(info);
-    }
-  );
+  app.get('/api/v1/policy-as-code/repo', async (_req: FastifyRequest, reply: FastifyReply) => {
+    const info = await bundleManager.getRepoInfo();
+    return reply.send(info);
+  });
 }

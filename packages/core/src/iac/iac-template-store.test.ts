@@ -26,11 +26,24 @@ describe('IacTemplateStore', () => {
     mockQuery.mockResolvedValue({ rowCount: 1 });
 
     await store.saveTemplate({
-      id: 't-1', name: 'vpc', description: '', tool: 'terraform',
-      cloudProvider: 'aws', category: 'networking', version: '1.0.0',
-      files: [], variables: [], tags: [], sraControlIds: [],
-      commitSha: 'abc', ref: 'main', compiledAt: 123,
-      valid: true, validationErrors: [], isBuiltin: false, tenantId: 'default',
+      id: 't-1',
+      name: 'vpc',
+      description: '',
+      tool: 'terraform',
+      cloudProvider: 'aws',
+      category: 'networking',
+      version: '1.0.0',
+      files: [],
+      variables: [],
+      tags: [],
+      sraControlIds: [],
+      commitSha: 'abc',
+      ref: 'main',
+      compiledAt: 123,
+      valid: true,
+      validationErrors: [],
+      isBuiltin: false,
+      tenantId: 'default',
     });
 
     expect(mockQuery).toHaveBeenCalledOnce();
@@ -47,13 +60,28 @@ describe('IacTemplateStore', () => {
 
   it('getTemplate returns template when found', async () => {
     mockQuery.mockResolvedValue({
-      rows: [{
-        id: 't-1', name: 'vpc', description: '', tool: 'terraform',
-        cloud_provider: 'aws', category: 'networking', version: '1.0.0',
-        files: [], variables: [], tags: [], sra_control_ids: [],
-        commit_sha: 'abc', ref: 'main', compiled_at: 123,
-        valid: true, validation_errors: [], is_builtin: false, tenant_id: 'default',
-      }],
+      rows: [
+        {
+          id: 't-1',
+          name: 'vpc',
+          description: '',
+          tool: 'terraform',
+          cloud_provider: 'aws',
+          category: 'networking',
+          version: '1.0.0',
+          files: [],
+          variables: [],
+          tags: [],
+          sra_control_ids: [],
+          commit_sha: 'abc',
+          ref: 'main',
+          compiled_at: 123,
+          valid: true,
+          validation_errors: [],
+          is_builtin: false,
+          tenant_id: 'default',
+        },
+      ],
     });
 
     const result = await store.getTemplate('t-1');
@@ -63,12 +91,50 @@ describe('IacTemplateStore', () => {
   });
 
   it('listTemplates returns items and total', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '2' }] })
-      .mockResolvedValueOnce({ rows: [
-        { id: 't-1', name: 'a', tool: 'terraform', cloud_provider: 'aws', category: 'networking', version: '1', files: [], variables: [], tags: [], sra_control_ids: [], commit_sha: '', ref: 'main', compiled_at: 1, valid: true, validation_errors: [], is_builtin: false, tenant_id: 'default', description: '' },
-        { id: 't-2', name: 'b', tool: 'helm', cloud_provider: 'generic', category: 'container', version: '1', files: [], variables: [], tags: [], sra_control_ids: [], commit_sha: '', ref: 'main', compiled_at: 2, valid: true, validation_errors: [], is_builtin: false, tenant_id: 'default', description: '' },
-      ]});
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '2' }] }).mockResolvedValueOnce({
+      rows: [
+        {
+          id: 't-1',
+          name: 'a',
+          tool: 'terraform',
+          cloud_provider: 'aws',
+          category: 'networking',
+          version: '1',
+          files: [],
+          variables: [],
+          tags: [],
+          sra_control_ids: [],
+          commit_sha: '',
+          ref: 'main',
+          compiled_at: 1,
+          valid: true,
+          validation_errors: [],
+          is_builtin: false,
+          tenant_id: 'default',
+          description: '',
+        },
+        {
+          id: 't-2',
+          name: 'b',
+          tool: 'helm',
+          cloud_provider: 'generic',
+          category: 'container',
+          version: '1',
+          files: [],
+          variables: [],
+          tags: [],
+          sra_control_ids: [],
+          commit_sha: '',
+          ref: 'main',
+          compiled_at: 2,
+          valid: true,
+          validation_errors: [],
+          is_builtin: false,
+          tenant_id: 'default',
+          description: '',
+        },
+      ],
+    });
 
     const result = await store.listTemplates();
     expect(result.total).toBe(2);
@@ -76,9 +142,7 @@ describe('IacTemplateStore', () => {
   });
 
   it('listTemplates filters by tool', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] })
-      .mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] }).mockResolvedValueOnce({ rows: [] });
 
     await store.listTemplates({ tool: 'terraform' });
     const sql = mockQuery.mock.calls[0]![0] as string;
@@ -93,10 +157,21 @@ describe('IacTemplateStore', () => {
   it('saveDeployment persists record', async () => {
     mockQuery.mockResolvedValue({ rowCount: 1 });
     await store.saveDeployment({
-      id: 'd-1', templateId: 't-1', templateName: 'vpc', templateVersion: '1.0.0',
-      status: 'applied', variables: {}, planOutput: '', applyOutput: '',
-      errors: [], resourcesCreated: 3, resourcesModified: 0, resourcesDestroyed: 0,
-      deployedBy: 'admin', deployedAt: 123, tenantId: 'default',
+      id: 'd-1',
+      templateId: 't-1',
+      templateName: 'vpc',
+      templateVersion: '1.0.0',
+      status: 'applied',
+      variables: {},
+      planOutput: '',
+      applyOutput: '',
+      errors: [],
+      resourcesCreated: 3,
+      resourcesModified: 0,
+      resourcesDestroyed: 0,
+      deployedBy: 'admin',
+      deployedAt: 123,
+      tenantId: 'default',
     });
     const sql = mockQuery.mock.calls[0]![0] as string;
     expect(sql).toContain('INSERT INTO iac.deployments');

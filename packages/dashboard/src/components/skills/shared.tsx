@@ -563,7 +563,9 @@ export function CategoryFilter({
       <button
         role="tab"
         aria-selected={value === ''}
-        onClick={() => onChange('')}
+        onClick={() => {
+          onChange('');
+        }}
         className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
           value === ''
             ? 'bg-primary text-primary-foreground border-primary'
@@ -580,14 +582,17 @@ export function CategoryFilter({
             key={cat}
             role="tab"
             aria-selected={value === cat}
-            onClick={() => onChange(cat)}
+            onClick={() => {
+              onChange(cat);
+            }}
             className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
               value === cat
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-foreground/20'
             }`}
           >
-            {categoryLabel(cat)}{count !== undefined ? ` (${count})` : ''}
+            {categoryLabel(cat)}
+            {count !== undefined ? ` (${count})` : ''}
           </button>
         );
       })}
@@ -630,7 +635,9 @@ export function CategoryGroupedGrid({
         return (
           <section key={cat}>
             <button
-              onClick={() => setCollapsed((prev) => ({ ...prev, [cat]: !isCollapsed }))}
+              onClick={() => {
+                setCollapsed((prev) => ({ ...prev, [cat]: !isCollapsed }));
+              }}
               className="flex items-center gap-2 mb-3 group cursor-pointer"
               aria-expanded={!isCollapsed}
             >

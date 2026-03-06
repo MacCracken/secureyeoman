@@ -96,7 +96,7 @@ export function useInlineCompletion(options: InlineCompletionOptions) {
         }
       },
 
-      freeInlineCompletions: () => {
+      disposeInlineCompletions: () => {
         // No cleanup needed
       },
     });

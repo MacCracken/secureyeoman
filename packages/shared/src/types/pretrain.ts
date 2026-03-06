@@ -9,13 +9,7 @@ import { z } from 'zod';
 
 // ── Corpus Source ───────────────────────────────────────────────────
 
-export const CorpusFormatSchema = z.enum([
-  'plaintext',
-  'jsonl',
-  'parquet',
-  'csv',
-  'markdown',
-]);
+export const CorpusFormatSchema = z.enum(['plaintext', 'jsonl', 'parquet', 'csv', 'markdown']);
 export type CorpusFormat = z.infer<typeof CorpusFormatSchema>;
 
 export const CorpusSourceSchema = z.object({
@@ -45,13 +39,7 @@ export const PretrainStatusSchema = z.enum([
 ]);
 export type PretrainStatus = z.infer<typeof PretrainStatusSchema>;
 
-export const ModelArchitectureSchema = z.enum([
-  'gpt2',
-  'llama',
-  'mistral',
-  'phi',
-  'mamba',
-]);
+export const ModelArchitectureSchema = z.enum(['gpt2', 'llama', 'mistral', 'phi', 'mamba']);
 export type ModelArchitecture = z.infer<typeof ModelArchitectureSchema>;
 
 export const LearningRateScheduleSchema = z.enum([

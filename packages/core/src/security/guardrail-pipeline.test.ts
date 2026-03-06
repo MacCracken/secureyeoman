@@ -140,17 +140,13 @@ describe('GuardrailPipeline', () => {
           onOutput: async (text) => ({
             passed: false,
             text,
-            findings: [
-              { filterId: 'blocker', type: 'test', action: 'block', detail: 'blocked' },
-            ],
+            findings: [{ filterId: 'blocker', type: 'test', action: 'block', detail: 'blocked' }],
           }),
         })
       );
 
       const afterBlocker = vi.fn().mockResolvedValue({ passed: true, text: '', findings: [] });
-      pipeline.registerFilter(
-        makeFilter({ id: 'after', priority: 200, onOutput: afterBlocker })
-      );
+      pipeline.registerFilter(makeFilter({ id: 'after', priority: 200, onOutput: afterBlocker }));
 
       const result = await pipeline.runOutput('text', { source: 'test' });
       expect(result.passed).toBe(false);
@@ -169,9 +165,7 @@ describe('GuardrailPipeline', () => {
           onOutput: async (text) => ({
             passed: false,
             text,
-            findings: [
-              { filterId: 'blocker', type: 'test', action: 'block', detail: 'blocked' },
-            ],
+            findings: [{ filterId: 'blocker', type: 'test', action: 'block', detail: 'blocked' }],
           }),
         })
       );
@@ -197,14 +191,16 @@ describe('GuardrailPipeline', () => {
           onOutput: async (text) => ({
             passed: false,
             text,
-            findings: [
-              { filterId: 'blocker', type: 'test', action: 'block', detail: 'blocked' },
-            ],
+            findings: [{ filterId: 'blocker', type: 'test', action: 'block', detail: 'blocked' }],
           }),
         })
       );
 
-      const result = await pipeline.runOutput('text', { source: 'test' }, { dryRun: true, disabledFilters: [] });
+      const result = await pipeline.runOutput(
+        'text',
+        { source: 'test' },
+        { dryRun: true, disabledFilters: [] }
+      );
       expect(result.passed).toBe(true);
     });
 
@@ -217,10 +213,7 @@ describe('GuardrailPipeline', () => {
     });
 
     it('skips globally disabled filter IDs', async () => {
-      const p = new GuardrailPipeline(
-        makeConfig({ disabledFilters: ['test:disabled'] }),
-        deps
-      );
+      const p = new GuardrailPipeline(makeConfig({ disabledFilters: ['test:disabled'] }), deps);
       const spy = vi.fn().mockResolvedValue({ passed: true, text: 'x', findings: [] });
       p.registerFilter(makeFilter({ id: 'test:disabled', onOutput: spy }));
 
@@ -232,11 +225,7 @@ describe('GuardrailPipeline', () => {
       const spy = vi.fn().mockResolvedValue({ passed: true, text: 'x', findings: [] });
       pipeline.registerFilter(makeFilter({ id: 'skip-me', onOutput: spy }));
 
-      await pipeline.runOutput(
-        'text',
-        { source: 'test' },
-        { disabledFilters: ['skip-me'] }
-      );
+      await pipeline.runOutput('text', { source: 'test' }, { disabledFilters: ['skip-me'] });
       expect(spy).not.toHaveBeenCalled();
     });
 
@@ -275,9 +264,7 @@ describe('GuardrailPipeline', () => {
     });
 
     it('skips filters without the right hook', async () => {
-      const inputOnly = vi
-        .fn()
-        .mockResolvedValue({ passed: true, text: 'x', findings: [] });
+      const inputOnly = vi.fn().mockResolvedValue({ passed: true, text: 'x', findings: [] });
       pipeline.registerFilter(makeFilter({ id: 'input-only', onInput: inputOnly }));
 
       await pipeline.runOutput('text', { source: 'test' });

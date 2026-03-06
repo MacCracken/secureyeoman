@@ -201,6 +201,7 @@ export interface Personality {
       exposeTwitter?: boolean;
       exposeGithub?: boolean;
       exposeDocker?: boolean;
+      exposeTerminal?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -314,6 +315,7 @@ export interface PersonalityCreate {
       exposeTwitter?: boolean;
       exposeGithub?: boolean;
       exposeDocker?: boolean;
+      exposeTerminal?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -901,6 +903,8 @@ export interface McpFeatureConfig {
   exposeGithub: boolean;
   exposeKnowledgeBase: boolean;
   exposeDockerTools: boolean;
+  // Terminal tools
+  exposeTerminal: boolean;
   // CI/CD (Phase 90)
   exposeGithubActions: boolean;
   exposeJenkins: boolean;

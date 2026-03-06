@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Fastify from 'fastify';
-import {
-  registerAnnotationRoutes,
-  InMemoryAnnotationStorage,
-} from './annotation-routes.js';
+import { registerAnnotationRoutes, InMemoryAnnotationStorage } from './annotation-routes.js';
 
 vi.mock('../logging/logger.js', () => ({
   getLogger: () => ({

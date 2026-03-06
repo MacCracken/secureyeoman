@@ -94,7 +94,9 @@ describe('useKeybindings', () => {
     });
 
     expect(result.current.getShortcut('command-palette')).toBe('Ctrl+P');
-    expect(result.current.bindings.find((b) => b.id === 'command-palette')?.shortcut).toBe('Ctrl+P');
+    expect(result.current.bindings.find((b) => b.id === 'command-palette')?.shortcut).toBe(
+      'Ctrl+P'
+    );
 
     // Persisted to localStorage
     const stored = JSON.parse(localStorage.getItem('editor:keybindings') ?? '{}');

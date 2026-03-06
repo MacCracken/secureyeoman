@@ -35,7 +35,7 @@ export class BundleCompiler {
   async compile(
     bundleId: string,
     metadata: BundleMetadata,
-    files: Array<{ path: string; language: PolicyLanguage; source: string }>,
+    files: { path: string; language: PolicyLanguage; source: string }[],
     commitSha = '',
     ref = 'main'
   ): Promise<CompileResult> {
@@ -44,9 +44,7 @@ export class BundleCompiler {
 
     // Validate bundle-level constraints
     if (files.length > this.config.maxBundleFiles) {
-      errors.push(
-        `Bundle exceeds max files (${files.length} > ${this.config.maxBundleFiles})`
-      );
+      errors.push(`Bundle exceeds max files (${files.length} > ${this.config.maxBundleFiles})`);
     }
 
     for (const file of files) {
@@ -113,7 +111,9 @@ export class BundleCompiler {
         await this.opaClient.uploadPolicy(tempId, source);
         await this.opaClient.deletePolicy(tempId);
       } catch (err) {
-        errors.push(`${path}: OPA compile error — ${err instanceof Error ? err.message : String(err)}`);
+        errors.push(
+          `${path}: OPA compile error — ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
 
@@ -136,7 +136,9 @@ export class BundleCompiler {
       try {
         evalCel(line, {});
       } catch (err) {
-        errors.push(`${path}:${i + 1}: CEL parse error — ${err instanceof Error ? err.message : String(err)}`);
+        errors.push(
+          `${path}:${i + 1}: CEL parse error — ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
 

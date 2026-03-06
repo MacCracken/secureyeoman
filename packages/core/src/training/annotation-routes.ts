@@ -28,7 +28,11 @@ export interface Annotation {
 const VALID_LABELS = new Set(['good', 'bad', 'instruction', 'response']);
 
 export interface AnnotationStorageAdapter {
-  list(filter?: { filePath?: string; personalityId?: string; tenantId?: string }): Promise<Annotation[]>;
+  list(filter?: {
+    filePath?: string;
+    personalityId?: string;
+    tenantId?: string;
+  }): Promise<Annotation[]>;
   create(annotation: Annotation): Promise<void>;
   delete(id: string): Promise<boolean>;
 }
@@ -43,7 +47,8 @@ export class InMemoryAnnotationStorage implements AnnotationStorageAdapter {
   async list(filter?: { filePath?: string; personalityId?: string }): Promise<Annotation[]> {
     let result = this.annotations;
     if (filter?.filePath) result = result.filter((a) => a.filePath === filter.filePath);
-    if (filter?.personalityId) result = result.filter((a) => a.personalityId === filter.personalityId);
+    if (filter?.personalityId)
+      result = result.filter((a) => a.personalityId === filter.personalityId);
     return result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
@@ -101,7 +106,8 @@ export function registerAnnotationRoutes(
       }>,
       reply: FastifyReply
     ) => {
-      const { filePath, startLine, endLine, selectedText, label, note, personalityId } = request.body ?? {};
+      const { filePath, startLine, endLine, selectedText, label, note, personalityId } =
+        request.body ?? {};
 
       if (!filePath || typeof filePath !== 'string') {
         return sendError(reply, 400, 'filePath is required');
@@ -143,10 +149,7 @@ export function registerAnnotationRoutes(
   // DELETE /api/v1/editor/annotations/:id
   app.delete(
     '/api/v1/editor/annotations/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const deleted = await storage.delete(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Annotation not found');
       reply.code(204).send();

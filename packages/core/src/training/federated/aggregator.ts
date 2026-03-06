@@ -28,18 +28,12 @@ export class Aggregator {
   }
 
   /** Aggregate model updates using the specified strategy. */
-  aggregate(
-    updates: ModelUpdate[],
-    strategy: AggregationStrategy
-  ): AggregationResult {
+  aggregate(updates: ModelUpdate[], strategy: AggregationStrategy): AggregationResult {
     if (updates.length === 0) {
       throw new Error('No model updates to aggregate');
     }
 
-    this.log.info(
-      { strategy, updateCount: updates.length },
-      'Aggregating model updates'
-    );
+    this.log.info({ strategy, updateCount: updates.length }, 'Aggregating model updates');
 
     switch (strategy) {
       case 'fedavg':
@@ -95,9 +89,7 @@ export class Aggregator {
       .filter((l): l is number => l != null)
       .sort((a, b) => a - b);
 
-    const globalLoss = losses.length > 0
-      ? losses[Math.floor(losses.length / 2)]!
-      : 0;
+    const globalLoss = losses.length > 0 ? losses[Math.floor(losses.length / 2)]! : 0;
 
     const totalSize = updates.reduce((s, u) => s + u.datasetSizeSeen, 0);
     const globalMetrics = this.mergeMetrics(
@@ -154,10 +146,7 @@ export class Aggregator {
     };
   }
 
-  private mergeMetrics(
-    updates: ModelUpdate[],
-    weights: number[]
-  ): Record<string, number> {
+  private mergeMetrics(updates: ModelUpdate[], weights: number[]): Record<string, number> {
     const keys = new Set<string>();
     for (const u of updates) {
       for (const k of Object.keys(u.metricsJson)) keys.add(k);

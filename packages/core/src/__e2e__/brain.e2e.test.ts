@@ -94,10 +94,9 @@ describe('Memories', () => {
       body: JSON.stringify({ type: 'semantic', content: 'Pref 1', source: 'e2e' }),
     });
 
-    const res = await fetch(
-      `${server.baseUrl}/api/v1/brain/memories?type=episodic`,
-      { headers: authHeaders(token) },
-    );
+    const res = await fetch(`${server.baseUrl}/api/v1/brain/memories?type=episodic`, {
+      headers: authHeaders(token),
+    });
     const { memories } = await res.json();
     expect(memories).toHaveLength(1);
     expect(memories[0].content).toBe('Obs 1');
@@ -115,10 +114,10 @@ describe('Memories', () => {
     });
     const { memory } = await createRes.json();
 
-    const deleteRes = await fetch(
-      `${server.baseUrl}/api/v1/brain/memories/${memory.id}`,
-      { method: 'DELETE', headers: authDeleteHeaders(token) },
-    );
+    const deleteRes = await fetch(`${server.baseUrl}/api/v1/brain/memories/${memory.id}`, {
+      method: 'DELETE',
+      headers: authDeleteHeaders(token),
+    });
     expect(deleteRes.status).toBe(204);
 
     // Verify gone
@@ -189,10 +188,9 @@ describe('Knowledge', () => {
       }),
     });
 
-    const res = await fetch(
-      `${server.baseUrl}/api/v1/brain/knowledge?topic=testing`,
-      { headers: authHeaders(token) },
-    );
+    const res = await fetch(`${server.baseUrl}/api/v1/brain/knowledge?topic=testing`, {
+      headers: authHeaders(token),
+    });
     const { knowledge } = await res.json();
     expect(knowledge.length).toBeGreaterThanOrEqual(1);
     expect(knowledge[0].topic).toBe('testing');
@@ -211,10 +209,10 @@ describe('Knowledge', () => {
     });
     const { knowledge } = await createRes.json();
 
-    const deleteRes = await fetch(
-      `${server.baseUrl}/api/v1/brain/knowledge/${knowledge.id}`,
-      { method: 'DELETE', headers: authDeleteHeaders(token) },
-    );
+    const deleteRes = await fetch(`${server.baseUrl}/api/v1/brain/knowledge/${knowledge.id}`, {
+      method: 'DELETE',
+      headers: authDeleteHeaders(token),
+    });
     expect(deleteRes.status).toBe(204);
   });
 });

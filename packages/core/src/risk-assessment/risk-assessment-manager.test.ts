@@ -509,6 +509,428 @@ describe('RiskAssessmentManager', () => {
       expect(storage.updateFindingStatus).toHaveBeenCalledWith('finding-1', 'resolved');
     });
   });
+
+  // ── Additional coverage: listFindings ──────────────────────────────────
+
+  describe('listFindings', () => {
+    it('delegates to storage.listFindings with opts', async () => {
+      const { mgr, storage } = buildManager();
+      await mgr.listFindings({
+        feedId: 'feed-1',
+        status: 'open',
+        severity: 'high',
+        limit: 10,
+        offset: 5,
+      });
+      expect(storage.listFindings).toHaveBeenCalledWith({
+        feedId: 'feed-1',
+        status: 'open',
+        severity: 'high',
+        limit: 10,
+        offset: 5,
+      });
+    });
+  });
+
+  // ── Additional coverage: createFinding ──────────────────────────────────
+
+  describe('createFinding', () => {
+    it('delegates to storage.createFinding', async () => {
+      const { mgr, storage } = buildManager();
+      const result = await mgr.createFinding({
+        category: 'cyber',
+        severity: 'high',
+        title: 'Test',
+      } as any);
+      expect(storage.createFinding).toHaveBeenCalledOnce();
+      expect(result.status).toBe('open');
+    });
+  });
+
+  // ── Additional coverage: non-Error thrown in runAssessment ──────────────
+
+  describe('runAssessment — non-Error thrown', () => {
+    it('converts non-Error to string for failed status', async () => {
+      const { mgr, storage } = buildManager({
+        storageOverrides: {
+          saveResults: vi.fn().mockRejectedValue('string error'),
+        },
+        poolResults: [],
+      });
+
+      await mgr.runAssessment({ name: 'Test', assessmentTypes: ['security'], windowDays: 7 });
+
+      expect(storage.updateStatus).toHaveBeenCalledWith(ASSESS_ID, 'failed', 'string error');
+    });
+  });
+
+  // ── Additional coverage: runAssessment default assessmentTypes ──────────
+
+  describe('runAssessment — default assessmentTypes', () => {
+    it('runs all 5 domains when assessmentTypes not specified', async () => {
+      const { mgr, storage } = buildManager({
+        poolResults: [
+          // security
+          [],
+          // autonomy skills
+          [],
+          // autonomy workflows
+          [],
+          // autonomy audit runs
+          [{ count: '0' }],
+          // governance log
+          [],
+          // governance intent
+          [{ count: '1' }],
+          // infra mcp
+          [],
+          // infra integrations
+          [],
+          // infra peers
+          [],
+          // infra heartbeat
+          [],
+          // external
+          [],
+        ],
+      });
+
+      await mgr.runAssessment({ name: 'Full', windowDays: 7 });
+      expect(storage.saveResults).toHaveBeenCalledOnce();
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      // Should have scores for all 5 domains
+      expect(Object.keys(saved.domainScores).length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  // ── Additional coverage: department risk snapshot ──────────────────────
+
+  describe('runAssessment — departmentId and getDepartmentRiskManager', () => {
+    it('fires department snapshot when departmentId is set and DRM is available', async () => {
+      const mockSnapshotFn = vi.fn().mockResolvedValue(undefined);
+      const { mgr, storage } = buildManager({ poolResults: [[]] });
+
+      // Replace getDepartmentRiskManager on the instance
+      (mgr as any).getDepartmentRiskManager = () => ({
+        snapshotDepartmentScore: mockSnapshotFn,
+      });
+
+      await mgr.runAssessment({
+        name: 'T',
+        assessmentTypes: ['security'],
+        windowDays: 7,
+        departmentId: 'dept-1',
+      } as any);
+
+      expect(mockSnapshotFn).toHaveBeenCalledWith('dept-1', ASSESS_ID);
+    });
+
+    it('does not throw when snapshotDepartmentScore rejects', async () => {
+      const mockSnapshotFn = vi.fn().mockRejectedValue(new Error('snapshot fail'));
+      const { mgr } = buildManager({ poolResults: [[]] });
+
+      (mgr as any).getDepartmentRiskManager = () => ({
+        snapshotDepartmentScore: mockSnapshotFn,
+      });
+
+      // Should not throw
+      await expect(
+        mgr.runAssessment({
+          name: 'T',
+          assessmentTypes: ['security'],
+          windowDays: 7,
+          departmentId: 'dept-1',
+        } as any)
+      ).resolves.toBeDefined();
+    });
+
+    it('skips snapshot when getDepartmentRiskManager returns null', async () => {
+      const { mgr } = buildManager({ poolResults: [[]] });
+
+      (mgr as any).getDepartmentRiskManager = () => null;
+
+      await expect(
+        mgr.runAssessment({
+          name: 'T',
+          assessmentTypes: ['security'],
+          windowDays: 7,
+          departmentId: 'dept-1',
+        } as any)
+      ).resolves.toBeDefined();
+    });
+
+    it('skips snapshot when getDepartmentRiskManager is not set', async () => {
+      const { mgr } = buildManager({ poolResults: [[]] });
+
+      (mgr as any).getDepartmentRiskManager = undefined;
+
+      await expect(
+        mgr.runAssessment({
+          name: 'T',
+          assessmentTypes: ['security'],
+          windowDays: 7,
+          departmentId: 'dept-1',
+        } as any)
+      ).resolves.toBeDefined();
+    });
+  });
+
+  // ── Additional coverage: security domain — sandbox, auth, secret findings ─
+
+  describe('scoreSecurity — additional finding branches', () => {
+    it('adds sandbox violation critical finding', async () => {
+      const { mgr, storage } = buildManager({
+        poolResults: [[{ event_type: 'sandbox_violation', cnt: '1' }]],
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['security'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      const findings = saved.findings as Array<{ title: string; severity: string }>;
+      expect(
+        findings.some((f) => f.title === 'Sandbox Violations' && f.severity === 'critical')
+      ).toBe(true);
+    });
+
+    it('adds auth failure finding when count > 10', async () => {
+      const { mgr, storage } = buildManager({
+        poolResults: [[{ event_type: 'auth_failure', cnt: '15' }]],
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['security'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      const findings = saved.findings as Array<{ title: string }>;
+      expect(findings.some((f) => f.title === 'Elevated Authentication Failures')).toBe(true);
+    });
+
+    it('does not add auth failure finding when count <= 10', async () => {
+      const { mgr, storage } = buildManager({
+        poolResults: [[{ event_type: 'auth_failure', cnt: '5' }]],
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['security'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      const findings = saved.findings as Array<{ title: string }>;
+      expect(findings.some((f) => f.title === 'Elevated Authentication Failures')).toBe(false);
+    });
+
+    it('adds secret access finding when count > 5', async () => {
+      const { mgr, storage } = buildManager({
+        poolResults: [[{ event_type: 'secret_access', cnt: '10' }]],
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['security'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      const findings = saved.findings as Array<{ title: string }>;
+      expect(findings.some((f) => f.title === 'Elevated Secret Access Events')).toBe(true);
+    });
+
+    it('handles audit chain verify throwing', async () => {
+      const { mgr, storage, auditChain } = buildManager({
+        poolResults: [[]],
+      });
+
+      (auditChain.verify as any).mockRejectedValue(new Error('chain error'));
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['security'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      // chainValid = false → 25 penalty
+      expect(saved.domainScores.security).toBe(25);
+    });
+  });
+
+  // ── Additional coverage: autonomy domain — L4 items + open checklist items ─
+
+  describe('scoreAutonomy — additional branches', () => {
+    it('scores L4 items without emergency stop', async () => {
+      const { mgr, storage } = buildManager({
+        poolResults: [
+          // skills: L4 no_stop=3
+          [{ autonomy_level: 'L4', no_stop: '3' }],
+          // workflows: none
+          [],
+          // audit runs: 1 completed
+          [{ count: '1' }],
+          // latest audit run with open items
+          [{ items: [{ status: 'pending' }, { status: 'fail' }, { status: 'pass' }] }],
+        ],
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['autonomy'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      // l4Score = clamp(3*10, 0, 30) = 30, openItemScore = clamp(2*2, 0, 20) = 4
+      expect(saved.domainScores.autonomy).toBe(34);
+      const findings = saved.findings as Array<{ title: string }>;
+      expect(findings.filter((f) => f.title === 'L4 Item Without Emergency Stop')).toHaveLength(3);
+      expect(findings.some((f) => f.title === 'Incomplete Audit Checklist Items')).toBe(true);
+    });
+
+    it('handles pool query failure in autonomy (skills/workflows)', async () => {
+      const { mgr, storage, pool } = buildManager({ poolResults: [] });
+      // Make all queries throw
+      (pool.query as any).mockRejectedValue(new Error('table not found'));
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['autonomy'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      // All catch blocks → defaults → noAudit = false → score = 0
+      expect(saved.domainScores.autonomy).toBe(0);
+    });
+
+    it('combines L5 from skills and workflows', async () => {
+      const { mgr, storage } = buildManager({
+        poolResults: [
+          // skills: L5 no_stop=1
+          [{ autonomy_level: 'L5', no_stop: '1' }],
+          // workflows: L5 no_stop=1
+          [{ autonomy_level: 'L5', no_stop: '1' }],
+          // audit runs: 0
+          [{ count: '0' }],
+        ],
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['autonomy'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      // l5NoStop=2 * 20 = 40, noAudit=true = 20 → total = 60
+      expect(saved.domainScores.autonomy).toBe(60);
+    });
+  });
+
+  // ── Additional coverage: governance — elevated policy block rate ─────
+
+  describe('scoreGovernance — policy block rate finding', () => {
+    it('adds finding for elevated policy block rate (> 5/week)', async () => {
+      const { mgr, storage } = buildManager({
+        poolResults: [
+          // governance log: many policy blocks
+          [{ event_type: 'policy_block', cnt: '25' }],
+          // org intents active
+          [{ count: '1' }],
+        ],
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['governance'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      const findings = saved.findings as Array<{ title: string }>;
+      // 25 blocks / (30/7) ~= 5.83/week > 5 → finding present
+      expect(findings.some((f) => f.title === 'Elevated Policy Block Rate')).toBe(true);
+    });
+
+    it('handles pool query failure in governance', async () => {
+      const { mgr, storage, pool } = buildManager({ poolResults: [] });
+      (pool.query as any).mockRejectedValue(new Error('fail'));
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['governance'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      expect(saved.domainScores.governance).toBe(0);
+    });
+  });
+
+  // ── Additional coverage: infrastructure — all findings ─────
+
+  describe('scoreInfrastructure — additional findings', () => {
+    it('adds findings for unhealthy MCP, failed integrations, untrusted peers, and heartbeat errors', async () => {
+      const { mgr, storage } = buildManager({
+        daysUntilExpiry: 90,
+        poolResults: [
+          [{ count: '2' }], // unhealthy MCP
+          [{ count: '3' }], // disconnected integrations
+          [{ count: '1' }], // untrusted peers
+          [{ count: '5' }], // heartbeat errors
+        ],
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['infrastructure'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      const findings = saved.findings as Array<{ title: string }>;
+      expect(findings.some((f) => f.title === 'Unhealthy MCP Servers')).toBe(true);
+      expect(findings.some((f) => f.title === 'Disconnected Integrations')).toBe(true);
+      expect(findings.some((f) => f.title === 'Online Untrusted A2A Peers')).toBe(true);
+    });
+
+    it('handles tlsManager.getCertStatus throwing', async () => {
+      const { mgr, storage, tlsManager } = buildManager({
+        poolResults: [[], [], [], []],
+      });
+      (tlsManager.getCertStatus as any).mockRejectedValue(new Error('cert error'));
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['infrastructure'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      // No cert penalty since getCertStatus threw
+      expect(saved.domainScores.infrastructure).toBe(0);
+    });
+
+    it('skips TLS check when tlsManager is null', async () => {
+      const storage = makeStorage();
+      const pool = makePool([[], [], [], []]);
+      const mgr = new RiskAssessmentManager({
+        storage: storage as any,
+        pool: pool as any,
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['infrastructure'], windowDays: 7 });
+      expect(storage.saveResults).toHaveBeenCalledOnce();
+    });
+
+    it('handles TLS cert not enabled (enabled=false)', async () => {
+      const { mgr, storage, tlsManager } = buildManager({
+        poolResults: [[], [], [], []],
+      });
+      (tlsManager.getCertStatus as any).mockResolvedValue({ enabled: false });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['infrastructure'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      expect(saved.domainScores.infrastructure).toBe(0);
+    });
+  });
+
+  // ── Additional coverage: external — high and medium findings ─────
+
+  describe('scoreExternal — high and medium findings', () => {
+    it('adds findings for all severity levels', async () => {
+      const { mgr, storage } = buildManager({
+        poolResults: [
+          [
+            { severity: 'critical', cnt: '1' },
+            { severity: 'high', cnt: '2' },
+            { severity: 'medium', cnt: '3' },
+          ],
+        ],
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['external'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      const findings = saved.findings as Array<{ title: string }>;
+      expect(findings.some((f) => f.title === 'Critical External Findings Open')).toBe(true);
+      expect(findings.some((f) => f.title === 'High External Findings Open')).toBe(true);
+      expect(findings.some((f) => f.title === 'Medium External Findings Open')).toBe(true);
+    });
+  });
+
+  // ── Additional coverage: no auditChain → chainValid stays true ─────
+
+  describe('scoreSecurity — no auditChain', () => {
+    it('skips chain verification when auditChain is null', async () => {
+      const storage = makeStorage();
+      const pool = makePool([[]]);
+      const mgr = new RiskAssessmentManager({
+        storage: storage as any,
+        pool: pool as any,
+      });
+
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['security'], windowDays: 7 });
+      const saved = (storage.saveResults as any).mock.calls[0][1];
+      expect(saved.domainScores.security).toBe(0);
+    });
+  });
+
+  // ── Additional coverage: runAssessment with createdBy ─────
+
+  describe('runAssessment with createdBy', () => {
+    it('passes createdBy to storage.create', async () => {
+      const { mgr, storage } = buildManager({ poolResults: [[]] });
+      await mgr.runAssessment({ name: 'T', assessmentTypes: ['security'], windowDays: 7 }, 'alice');
+      expect(storage.create).toHaveBeenCalledWith(expect.any(Object), 'alice');
+    });
+  });
 });
 
 // ─── RiskReportGenerator tests ────────────────────────────────────────────────

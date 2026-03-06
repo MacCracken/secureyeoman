@@ -37,9 +37,22 @@ export const DEFAULT_LINTER_CONFIG: PromptLinterConfig = {
 };
 
 const SAFETY_KEYWORDS = [
-  'do not', "don't", 'never', 'refuse', 'decline', 'avoid',
-  'safety', 'harmful', 'dangerous', 'ethical', 'appropriate',
-  'boundaries', 'limit', 'restrict', 'forbidden', 'prohibited',
+  'do not',
+  "don't",
+  'never',
+  'refuse',
+  'decline',
+  'avoid',
+  'safety',
+  'harmful',
+  'dangerous',
+  'ethical',
+  'appropriate',
+  'boundaries',
+  'limit',
+  'restrict',
+  'forbidden',
+  'prohibited',
 ];
 
 const CONFLICTING_PAIRS: [RegExp, RegExp, string][] = [
@@ -130,7 +143,8 @@ export class PromptLinter {
       results.push({
         rule: 'missing-safety',
         severity: 'warning',
-        message: 'No safety boundary instructions detected. Consider adding guidance on harmful content, ethical limits, or refusal criteria.',
+        message:
+          'No safety boundary instructions detected. Consider adding guidance on harmful content, ethical limits, or refusal criteria.',
       });
     }
   }

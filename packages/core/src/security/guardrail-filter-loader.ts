@@ -64,7 +64,9 @@ export async function loadCustomFilters(opts: FilterLoaderOptions): Promise<Guar
 
       // Validate required fields
       if (!filter.id || !filter.name || typeof filter.priority !== 'number') {
-        logger?.warn('Custom filter missing required fields (id, name, priority), skipping', { file });
+        logger?.warn('Custom filter missing required fields (id, name, priority), skipping', {
+          file,
+        });
         continue;
       }
 
@@ -74,10 +76,10 @@ export async function loadCustomFilters(opts: FilterLoaderOptions): Promise<Guar
       }
 
       filters.push(filter);
-      logger?.info(
-        `Loaded custom guardrail filter: ${filter.name}`,
-        { filterId: filter.id, priority: filter.priority }
-      );
+      logger?.info(`Loaded custom guardrail filter: ${filter.name}`, {
+        filterId: filter.id,
+        priority: filter.priority,
+      });
     } catch (err) {
       logger?.error('Failed to load custom guardrail filter', { file, error: String(err) });
     }

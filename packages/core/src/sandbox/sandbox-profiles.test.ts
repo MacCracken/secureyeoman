@@ -80,8 +80,14 @@ describe('SandboxProfileRegistry', () => {
 
   it('custom profiles appear in list', () => {
     registry.saveCustomProfile({
-      name: 'custom', label: 'Test', technology: 'auto',
-      filesystem: {}, resources: {}, network: {}, credentialProxy: {}, toolRestrictions: {},
+      name: 'custom',
+      label: 'Test',
+      technology: 'auto',
+      filesystem: {},
+      resources: {},
+      network: {},
+      credentialProxy: {},
+      toolRestrictions: {},
       tenantId: 'default',
     } as any);
     expect(registry.listProfiles()).toHaveLength(5);
@@ -89,8 +95,14 @@ describe('SandboxProfileRegistry', () => {
 
   it('deletes a custom profile', () => {
     registry.saveCustomProfile({
-      name: 'custom', label: 'Temp', technology: 'auto',
-      filesystem: {}, resources: {}, network: {}, credentialProxy: {}, toolRestrictions: {},
+      name: 'custom',
+      label: 'Temp',
+      technology: 'auto',
+      filesystem: {},
+      resources: {},
+      network: {},
+      credentialProxy: {},
+      toolRestrictions: {},
       tenantId: 'default',
     } as any);
     expect(registry.deleteCustomProfile('Temp')).toBe(true);

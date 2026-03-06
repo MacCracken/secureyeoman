@@ -1847,6 +1847,14 @@ describe('DELETE /api/v1/training/preferences/:id (Phase 105)', () => {
     expect(res.statusCode).toBe(404);
     await app.close();
   });
+
+  it('deletes successfully with 204', async () => {
+    const mgr = buildMockPreferenceManager();
+    const { app } = await buildPhase98App({ getPreferenceManager: vi.fn(() => mgr) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/preferences/pp-1' });
+    expect(res.statusCode).toBe(204);
+    await app.close();
+  });
 });
 
 // ── Dataset Curator routes ─────────────────────────────────────────────────
@@ -2499,6 +2507,1005 @@ describe('DELETE /api/v1/training/hyperparam/searches/:id (Phase 131)', () => {
       url: '/api/v1/training/hyperparam/searches/missing',
     });
     expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+// ── Additional coverage: success paths & uncovered branches ─────────────────
+
+describe('POST /api/v1/training/export — stream error in main export', () => {
+  it('writes error marker when listConversations throws mid-stream', async () => {
+    const storage = buildMockConversationStorage();
+    // First call succeeds, second call (the check) throws
+    let callCount = 0;
+    storage.listConversations = vi.fn(async () => {
+      callCount++;
+      if (callCount > 1) throw new Error('db connection lost');
+      return { conversations: MOCK_CONVERSATIONS.slice(0, 1), total: 1 };
+    });
+    const app = await buildApp(buildMockSecureYeoman({ conversationStorage: storage }));
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/export',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toContain('db connection lost');
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/finetune/jobs/:id/logs', () => {
+  it('streams log lines as SSE', async () => {
+    const fm = buildMockFinetuneManager();
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/finetune/jobs/ft-1/logs',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('text/event-stream');
+    expect(res.payload).toContain('log line 1');
+    await app.close();
+  });
+
+  it('returns 503 when finetune manager unavailable', async () => {
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/finetune/jobs/ft-1/logs',
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('returns 404 when job not found', async () => {
+    const fm = buildMockFinetuneManager({ getJob: vi.fn().mockResolvedValue(null) });
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/finetune/jobs/bad/logs',
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('handles stream error gracefully', async () => {
+    const fm = buildMockFinetuneManager({
+      streamLogs: vi.fn().mockImplementation(async function* () {
+        throw new Error('container died');
+      }),
+    });
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/finetune/jobs/ft-1/logs',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toContain('container died');
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/judge/datasets/:id — success', () => {
+  it('returns a dataset', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/datasets/ds-1' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).id).toBe('ds-1');
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/judge/runs/:id — success', () => {
+  it('returns scores for an eval run', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/runs/run-1' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).scores).toBeDefined();
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/judge/comparisons', () => {
+  it('lists comparisons', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/comparisons' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).comparisons).toBeDefined();
+    await app.close();
+  });
+
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/comparisons' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/judge/comparisons/:id', () => {
+  it('returns comparison details', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/judge/comparisons/cmp-1',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).results).toBeDefined();
+    await app.close();
+  });
+
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/judge/comparisons/cmp-1',
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/preferences/export — success', () => {
+  it('exports preferences as DPO JSONL', async () => {
+    const pm = buildMockPreferenceManager();
+    const { app } = await buildPhase98App({
+      getPreferenceManager: vi.fn(() => pm),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/preferences/export',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('application/x-ndjson');
+    expect(res.payload).toContain('{"line":1}');
+    await app.close();
+  });
+
+  it('handles export error gracefully', async () => {
+    const pm = {
+      ...buildMockPreferenceManager(),
+      exportAsDpo: vi.fn(async function* () {
+        throw new Error('export failed');
+      }),
+    };
+    const { app } = await buildPhase98App({
+      getPreferenceManager: vi.fn(() => pm),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/preferences/export',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toContain('export failed');
+    await app.close();
+  });
+});
+
+// ── Dataset Curator success paths ───────────────────────────────────────────
+
+describe('Dataset curator routes — success paths', () => {
+  it('POST /preview returns preview', async () => {
+    const mgr = buildMockDatasetCuratorManager();
+    const { app } = await buildPhase98App({ getDatasetCuratorManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/curated-datasets/preview',
+      payload: { minQuality: 0.5 },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).sampleCount).toBe(10);
+    await app.close();
+  });
+
+  it('POST /curated-datasets creates a dataset', async () => {
+    const mgr = {
+      ...buildMockDatasetCuratorManager(),
+      commitDataset: vi.fn().mockResolvedValue({ id: 'cds-1', name: 'Test' }),
+    };
+    const { app } = await buildPhase98App({ getDatasetCuratorManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/curated-datasets',
+      payload: { name: 'Test', outputDir: '/tmp/out', rules: {} },
+    });
+    expect(res.statusCode).toBe(201);
+    await app.close();
+  });
+
+  it('POST /curated-datasets returns 400 when name missing', async () => {
+    const mgr = buildMockDatasetCuratorManager();
+    const { app } = await buildPhase98App({ getDatasetCuratorManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/curated-datasets',
+      payload: { name: '', outputDir: '/tmp' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('POST /curated-datasets returns 400 when outputDir missing', async () => {
+    const mgr = buildMockDatasetCuratorManager();
+    const { app } = await buildPhase98App({ getDatasetCuratorManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/curated-datasets',
+      payload: { name: 'X', outputDir: '' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('GET /curated-datasets lists datasets', async () => {
+    const mgr = {
+      ...buildMockDatasetCuratorManager(),
+      listDatasets: vi.fn().mockResolvedValue([{ id: 'cds-1' }]),
+    };
+    const { app } = await buildPhase98App({ getDatasetCuratorManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/curated-datasets?limit=10',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).datasets).toHaveLength(1);
+    await app.close();
+  });
+
+  it('GET /curated-datasets returns 503 when unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/curated-datasets' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('GET /curated-datasets/:id returns a dataset', async () => {
+    const mgr = buildMockDatasetCuratorManager();
+    const { app } = await buildPhase98App({ getDatasetCuratorManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/curated-datasets/ds-1',
+    });
+    expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+
+  it('GET /curated-datasets/:id returns 503 when unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/curated-datasets/ds-1' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('GET /curated-datasets/:id returns 404 when not found', async () => {
+    const mgr = buildMockDatasetCuratorManager();
+    mgr.getDataset.mockResolvedValue(null);
+    const { app } = await buildPhase98App({ getDatasetCuratorManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/curated-datasets/missing',
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('DELETE /curated-datasets/:id deletes successfully', async () => {
+    const mgr = buildMockDatasetCuratorManager();
+    const { app } = await buildPhase98App({ getDatasetCuratorManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/training/curated-datasets/ds-1',
+    });
+    expect(res.statusCode).toBe(204);
+    await app.close();
+  });
+});
+
+// ── Experiment Registry success paths ───────────────────────────────────────
+
+describe('Experiment registry routes — success paths', () => {
+  it('POST /experiments creates an experiment', async () => {
+    const mgr = buildMockExperimentRegistryManager();
+    const { app } = await buildPhase98App({ getExperimentRegistryManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/experiments',
+      payload: { name: 'test-exp' },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(JSON.parse(res.payload).id).toBe('exp-1');
+    await app.close();
+  });
+
+  it('GET /experiments lists experiments', async () => {
+    const mgr = buildMockExperimentRegistryManager();
+    const { app } = await buildPhase98App({ getExperimentRegistryManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/experiments?status=running&limit=10',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).experiments).toBeDefined();
+    await app.close();
+  });
+
+  it('GET /experiments/:id returns an experiment', async () => {
+    const mgr = buildMockExperimentRegistryManager();
+    const { app } = await buildPhase98App({ getExperimentRegistryManager: vi.fn(() => mgr) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/experiments/exp-1' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).id).toBe('exp-1');
+    await app.close();
+  });
+
+  it('PATCH /experiments/:id updates an experiment', async () => {
+    const mgr = buildMockExperimentRegistryManager();
+    const { app } = await buildPhase98App({ getExperimentRegistryManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/training/experiments/exp-1',
+      payload: { status: 'completed', notes: 'done' },
+    });
+    expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+
+  it('DELETE /experiments/:id deletes an experiment', async () => {
+    const mgr = buildMockExperimentRegistryManager();
+    const { app } = await buildPhase98App({ getExperimentRegistryManager: vi.fn(() => mgr) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/experiments/exp-1' });
+    expect(res.statusCode).toBe(204);
+    await app.close();
+  });
+
+  it('GET /experiments/diff returns a diff', async () => {
+    const mgr = buildMockExperimentRegistryManager();
+    const { app } = await buildPhase98App({ getExperimentRegistryManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/experiments/diff?idA=exp-1&idB=exp-2',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).diffs).toBeDefined();
+    await app.close();
+  });
+});
+
+// ── Model Version success paths ─────────────────────────────────────────────
+
+describe('Model version routes — success paths', () => {
+  it('POST /deploy creates a deployment', async () => {
+    const mgr = buildMockModelVersionManager();
+    const { app } = await buildPhase98App({ getModelVersionManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/deploy',
+      payload: { personalityId: 'p1', modelName: 'gpt-4' },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(JSON.parse(res.payload).id).toBe('mv-1');
+    await app.close();
+  });
+
+  it('POST /deploy/rollback rolls back', async () => {
+    const mgr = buildMockModelVersionManager();
+    const { app } = await buildPhase98App({ getModelVersionManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/deploy/rollback',
+      payload: { personalityId: 'p1' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).id).toBe('mv-0');
+    await app.close();
+  });
+
+  it('GET /model-versions lists versions', async () => {
+    const mgr = buildMockModelVersionManager();
+    const { app } = await buildPhase98App({ getModelVersionManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/model-versions?personalityId=p1',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).versions).toBeDefined();
+    await app.close();
+  });
+
+  it('GET /model-versions/:id returns a version', async () => {
+    const mgr = buildMockModelVersionManager();
+    const { app } = await buildPhase98App({ getModelVersionManager: vi.fn(() => mgr) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/model-versions/mv-1' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).id).toBe('mv-1');
+    await app.close();
+  });
+});
+
+// ── A/B Test success paths ──────────────────────────────────────────────────
+
+describe('A/B test routes — success paths', () => {
+  it('POST /ab-tests creates a test', async () => {
+    const mgr = buildMockAbTestManager();
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests',
+      payload: {
+        personalityId: 'p1',
+        name: 'Test AB',
+        modelA: 'gpt-4',
+        modelB: 'llama',
+        trafficPctB: 50,
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(JSON.parse(res.payload).id).toBe('ab-1');
+    await app.close();
+  });
+
+  it('POST /ab-tests returns 400 when personalityId missing', async () => {
+    const mgr = buildMockAbTestManager();
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests',
+      payload: { name: 'Test', modelA: 'a', modelB: 'b', trafficPctB: 50 },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('POST /ab-tests returns 400 when name missing', async () => {
+    const mgr = buildMockAbTestManager();
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests',
+      payload: { personalityId: 'p1', name: '', modelA: 'a', modelB: 'b', trafficPctB: 50 },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('POST /ab-tests returns 400 when modelA missing', async () => {
+    const mgr = buildMockAbTestManager();
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests',
+      payload: { personalityId: 'p1', name: 'Test', modelA: '', modelB: 'b', trafficPctB: 50 },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('POST /ab-tests returns 400 when modelB missing', async () => {
+    const mgr = buildMockAbTestManager();
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests',
+      payload: { personalityId: 'p1', name: 'Test', modelA: 'a', modelB: '', trafficPctB: 50 },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('GET /ab-tests lists tests', async () => {
+    const mgr = buildMockAbTestManager();
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/ab-tests?personalityId=p1&status=running',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).tests).toBeDefined();
+    await app.close();
+  });
+
+  it('GET /ab-tests/:id returns a test', async () => {
+    const mgr = buildMockAbTestManager();
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/ab-tests/ab-1' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).id).toBe('ab-1');
+    await app.close();
+  });
+
+  it('POST /ab-tests/:id/complete completes a test', async () => {
+    const mgr = buildMockAbTestManager();
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests/ab-1/complete',
+      payload: { winner: 'modelA' },
+    });
+    expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+
+  it('POST /ab-tests/:id/complete returns 400 when winner missing', async () => {
+    const mgr = buildMockAbTestManager();
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests/ab-1/complete',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('POST /ab-tests/:id/complete returns 404 when not found', async () => {
+    const mgr = buildMockAbTestManager();
+    mgr.completeTest.mockResolvedValue(null);
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests/missing/complete',
+      payload: { winner: 'modelA' },
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('POST /ab-tests/:id/cancel cancels a test', async () => {
+    const mgr = buildMockAbTestManager();
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests/ab-1/cancel',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+
+  it('POST /ab-tests/:id/cancel returns 404 when not found', async () => {
+    const mgr = buildMockAbTestManager();
+    mgr.cancelTest.mockResolvedValue(null);
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests/missing/cancel',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('POST /ab-tests/:id/evaluate evaluates a test', async () => {
+    const mgr = buildMockAbTestManager();
+    mgr.evaluateTest = vi.fn().mockResolvedValue({ results: [{ metric: 'quality', score: 0.8 }] });
+    const { app } = await buildPhase98App({ getAbTestManager: vi.fn(() => mgr) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/ab-tests/ab-1/evaluate',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).results).toBeDefined();
+    await app.close();
+  });
+});
+
+// ── Side-by-Side Rating ─────────────────────────────────────────────────────
+
+describe('POST /api/v1/training/side-by-side/rate', () => {
+  it('records a side-by-side rating with winner=a', async () => {
+    const pm = buildMockPreferenceManager();
+    const { app } = await buildPhase98App({ getPreferenceManager: vi.fn(() => pm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/side-by-side/rate',
+      payload: {
+        prompt: 'Which is better?',
+        responseA: 'Response A text',
+        responseB: 'Response B text',
+        winner: 'a',
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(pm.recordAnnotation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: 'Which is better?',
+        chosen: 'Response A text',
+        rejected: 'Response B text',
+        source: 'comparison',
+      })
+    );
+    await app.close();
+  });
+
+  it('records a side-by-side rating with winner=b', async () => {
+    const pm = buildMockPreferenceManager();
+    const { app } = await buildPhase98App({ getPreferenceManager: vi.fn(() => pm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/side-by-side/rate',
+      payload: {
+        prompt: 'Pick one',
+        responseA: 'A',
+        responseB: 'B',
+        winner: 'b',
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(pm.recordAnnotation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chosen: 'B',
+        rejected: 'A',
+      })
+    );
+    await app.close();
+  });
+
+  it('returns 503 when preference manager unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/side-by-side/rate',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('returns 400 when prompt missing', async () => {
+    const pm = buildMockPreferenceManager();
+    const { app } = await buildPhase98App({ getPreferenceManager: vi.fn(() => pm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/side-by-side/rate',
+      payload: { responseA: 'A', responseB: 'B', winner: 'a' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when responseA missing', async () => {
+    const pm = buildMockPreferenceManager();
+    const { app } = await buildPhase98App({ getPreferenceManager: vi.fn(() => pm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/side-by-side/rate',
+      payload: { prompt: 'Q', responseB: 'B', winner: 'a' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when responseB missing', async () => {
+    const pm = buildMockPreferenceManager();
+    const { app } = await buildPhase98App({ getPreferenceManager: vi.fn(() => pm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/side-by-side/rate',
+      payload: { prompt: 'Q', responseA: 'A', winner: 'a' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when winner is invalid', async () => {
+    const pm = buildMockPreferenceManager();
+    const { app } = await buildPhase98App({ getPreferenceManager: vi.fn(() => pm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/side-by-side/rate',
+      payload: { prompt: 'Q', responseA: 'A', responseB: 'B', winner: 'c' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+});
+
+// ── Resume startError branch ────────────────────────────────────────────────
+
+describe('POST /api/v1/training/finetune/jobs/:id/resume — startError', () => {
+  it('returns 201 with startError when Docker fails during resume', async () => {
+    const fm = buildMockFinetuneManager({
+      startJob: vi.fn().mockRejectedValue(new Error('Docker unavailable')),
+    });
+    const { app } = await buildPhase98App({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs/ft-1/resume',
+      payload: { checkpointPath: '/ckpt/200' },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(JSON.parse(res.payload).startError).toBe('Docker unavailable');
+    await app.close();
+  });
+});
+
+// ── Hyperparam search additional validation branches ────────────────────────
+
+describe('POST /api/v1/training/hyperparam/searches — validation branches', () => {
+  it('returns 400 when baseConfig missing', async () => {
+    const hm = buildMockHyperparamSearchManager();
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/hyperparam/searches',
+      payload: { name: 'test', searchStrategy: 'grid', paramSpace: {} },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when searchStrategy missing', async () => {
+    const hm = buildMockHyperparamSearchManager();
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/hyperparam/searches',
+      payload: { name: 'test', baseConfig: {}, paramSpace: {} },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when paramSpace missing', async () => {
+    const hm = buildMockHyperparamSearchManager();
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/hyperparam/searches',
+      payload: { name: 'test', baseConfig: {}, searchStrategy: 'grid' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+});
+
+// ── Hyperparam search 503 guards ────────────────────────────────────────────
+
+describe('Hyperparam search 503 guards', () => {
+  it('GET /searches returns 503 when unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/hyperparam/searches' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('GET /searches/:id returns 503 when unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/hyperparam/searches/hs-1',
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('POST /searches/:id/start returns 503 when unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/hyperparam/searches/hs-1/start',
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('DELETE /searches/:id returns 503 when unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/training/hyperparam/searches/hs-1',
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+// ── LLM Judge 503 guards for uncovered manager checks ───────────────────────
+
+describe('LLM Judge 503 guards — uncovered', () => {
+  it('GET /judge/datasets returns 503 when unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/datasets' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('GET /judge/datasets/:id returns 503 when unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/datasets/ds-1' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('DELETE /judge/datasets/:id returns 503 when unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/judge/datasets/ds-1' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('POST /judge/datasets returns 503 when unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/datasets',
+      payload: { name: 'x', samples: [{ input: 'hi' }] },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('POST /judge/pointwise returns 503 when unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pointwise',
+      payload: { datasetId: 'ds-1', modelName: 'gpt-4' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('GET /judge/runs returns 503 when unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/runs' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('GET /judge/runs/:id returns 503 when unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/runs/run-1' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('DELETE /judge/runs/:id returns 503 when unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/judge/runs/run-1' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('POST /judge/pairwise returns 503 when unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pairwise',
+      payload: { datasetId: 'ds-1', modelA: 'a', modelB: 'b' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('POST /judge/auto-eval returns 503 when unavailable', async () => {
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/auto-eval',
+      payload: { datasetId: 'ds-1', modelName: 'gpt-4' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+// ── Computer-use episodes 503 guard ─────────────────────────────────────────
+
+describe('GET /api/v1/training/computer-use/episodes — 503', () => {
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/computer-use/episodes',
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/computer-use/stats — 503', () => {
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/computer-use/stats' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('DELETE /api/v1/training/computer-use/episodes/:id — 503', () => {
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/training/computer-use/episodes/ep-1',
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+// ── Quality scoring additional 503 ──────────────────────────────────────────
+
+describe('POST /api/v1/training/quality/score — 503 guards', () => {
+  it('returns 503 when scorer unavailable', async () => {
+    const { app } = await buildMLApp({ getConversationQualityScorer: vi.fn(() => null) });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/quality/score' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('returns 503 when pool unavailable', async () => {
+    const scorer = buildMockQualityScorer();
+    const { app } = await buildMLApp({
+      getConversationQualityScorer: vi.fn(() => scorer),
+      getPool: vi.fn(() => null),
+    });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/quality/score' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+// ── Distillation manager 503 ────────────────────────────────────────────────
+
+describe('POST /api/v1/training/distillation/jobs/:id/run — 503', () => {
+  it('returns 503 when distillation manager unavailable', async () => {
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs/dist-1/run',
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+// ── Finetune manager 503 for register, logs ─────────────────────────────────
+
+describe('POST /api/v1/training/finetune/jobs/:id/register — 503', () => {
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs/ft-1/register',
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/finetune/jobs — 503', () => {
+  it('returns 503 when finetune manager unavailable', async () => {
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/finetune/jobs' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/finetune/jobs/:id — 503', () => {
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/finetune/jobs/ft-1' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('DELETE /api/v1/training/finetune/jobs/:id — 503', () => {
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/finetune/jobs/ft-1' });
+    expect(res.statusCode).toBe(503);
     await app.close();
   });
 });

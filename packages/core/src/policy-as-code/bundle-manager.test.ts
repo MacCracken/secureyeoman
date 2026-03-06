@@ -9,15 +9,28 @@ import type { PolicyAsCodeConfig } from '@secureyeoman/shared';
 vi.mock('./git-policy-repo.js', () => ({
   GitPolicyRepo: function () {
     return {
-      getGitInfo: vi.fn().mockResolvedValue({ commitSha: 'abc123', branch: 'main', shortSha: 'abc123' }),
+      getGitInfo: vi
+        .fn()
+        .mockResolvedValue({ commitSha: 'abc123', branch: 'main', shortSha: 'abc123' }),
       pull: vi.fn().mockResolvedValue({ updated: true, commitSha: 'def456' }),
       discoverBundles: vi.fn().mockResolvedValue([
         {
           name: 'security-baseline',
           dir: '/tmp/bundles/security-baseline',
-          metadata: { name: 'security-baseline', version: '1.0.0', description: 'Base policies', author: 'team', tags: ['security'], enforcement: 'warn' },
+          metadata: {
+            name: 'security-baseline',
+            version: '1.0.0',
+            description: 'Base policies',
+            author: 'team',
+            tags: ['security'],
+            enforcement: 'warn',
+          },
           files: [
-            { path: 'access.rego', language: 'rego', source: 'package access\ndefault allow = false' },
+            {
+              path: 'access.rego',
+              language: 'rego',
+              source: 'package access\ndefault allow = false',
+            },
           ],
         },
       ]),
@@ -28,20 +41,22 @@ vi.mock('./git-policy-repo.js', () => ({
 vi.mock('./bundle-compiler.js', () => ({
   BundleCompiler: function () {
     return {
-      compile: vi.fn().mockImplementation(async (id: string, metadata: any, files: any[], commitSha: string) => ({
-        bundle: {
-          id,
-          metadata,
-          files: files.map((f: any) => ({ ...f, sha256: 'a'.repeat(64) })),
-          commitSha,
-          ref: 'main',
-          compiledAt: Date.now(),
+      compile: vi
+        .fn()
+        .mockImplementation(async (id: string, metadata: any, files: any[], commitSha: string) => ({
+          bundle: {
+            id,
+            metadata,
+            files: files.map((f: any) => ({ ...f, sha256: 'a'.repeat(64) })),
+            commitSha,
+            ref: 'main',
+            compiledAt: Date.now(),
+            valid: true,
+            validationErrors: [],
+          },
           valid: true,
-          validationErrors: [],
-        },
-        valid: true,
-        errors: [],
-      })),
+          errors: [],
+        })),
     };
   },
 }));
@@ -131,7 +146,12 @@ describe('BundleManager', () => {
   });
 
   it('compiles and deploys a specific bundle', async () => {
-    const result = await manager.compileAndDeploy('security-baseline', 'admin', 42, 'https://pr/42');
+    const result = await manager.compileAndDeploy(
+      'security-baseline',
+      'admin',
+      42,
+      'https://pr/42'
+    );
 
     expect(result.bundle.valid).toBe(true);
     expect(result.deployment).not.toBeNull();

@@ -188,10 +188,10 @@ describe('Multi-entity lifecycle', () => {
     expect(mList.memories).toHaveLength(3);
 
     // Delete personality Alpha
-    const delRes = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities/${ids[0]}`,
-      { method: 'DELETE', headers: authDeleteHeaders(token) },
-    );
+    const delRes = await fetch(`${server.baseUrl}/api/v1/soul/personalities/${ids[0]}`, {
+      method: 'DELETE',
+      headers: authDeleteHeaders(token),
+    });
     expect(delRes.status).toBe(204);
 
     const pListAfter = await (

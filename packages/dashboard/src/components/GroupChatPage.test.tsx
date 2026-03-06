@@ -190,4 +190,158 @@ describe('GroupChatPage', () => {
     // We verify by checking call count stayed at 1 (no extra fetch yet).
     expect(mockFetchMessages).toHaveBeenCalledTimes(1);
   });
+
+  // ── Additional coverage tests ────────────────────────────────────
+
+  it('shows loading state for channels', () => {
+    mockFetchChannels.mockReturnValue(new Promise(() => {}));
+    renderPage();
+    expect(screen.getByText(/Loading channels/)).toBeInTheDocument();
+  });
+
+  it('shows personality name on channel with personality', async () => {
+    mockFetchChannels.mockResolvedValue({ channels: [MOCK_CHANNEL], total: 1 });
+    renderPage();
+    await waitFor(() => screen.getByText('Slack Workspace'));
+    expect(screen.getByText(/Friday/)).toBeInTheDocument();
+  });
+
+  it('shows chat ID in channel list', async () => {
+    mockFetchChannels.mockResolvedValue({ channels: [MOCK_CHANNEL], total: 1 });
+    renderPage();
+    await waitFor(() => screen.getByText('Slack Workspace'));
+    expect(screen.getByText('chat-abc')).toBeInTheDocument();
+  });
+
+  it('displays outbound messages with Bot icon styling', async () => {
+    const outboundMsg: api.GroupChatMessage = {
+      id: 'msg-2',
+      integrationId: 'int-1',
+      chatId: 'chat-abc',
+      platform: 'slack',
+      direction: 'outbound',
+      senderId: 'bot-1',
+      senderName: 'Friday Bot',
+      text: 'Hi user!',
+      attachments: [],
+      metadata: {},
+      timestamp: Date.now() - 10_000,
+      personalityId: 'p-1',
+      personalityName: 'Friday',
+    };
+
+    mockFetchChannels.mockResolvedValue({ channels: [MOCK_CHANNEL], total: 1 });
+    mockFetchMessages.mockResolvedValue({ messages: [outboundMsg], total: 1 });
+
+    renderPage();
+    await waitFor(() => screen.getByText('Slack Workspace'));
+    await userEvent.click(screen.getByText('Slack Workspace'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Hi user!')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Friday Bot')).toBeInTheDocument();
+  });
+
+  it('shows multiple channels from different platforms', async () => {
+    const telegramChannel: api.GroupChatChannel = {
+      integrationId: 'int-2',
+      chatId: 'chat-tg',
+      platform: 'telegram',
+      integrationName: 'Telegram Group',
+      lastMessageAt: Date.now() - 120_000,
+      lastMessageText: 'Hello from TG',
+      messageCount: 3,
+      unrepliedCount: 0,
+      personalityId: null,
+      personalityName: null,
+    };
+
+    mockFetchChannels.mockResolvedValue({
+      channels: [MOCK_CHANNEL, telegramChannel],
+      total: 2,
+    });
+
+    renderPage();
+
+    await waitFor(() => screen.getByText('Slack Workspace'));
+    expect(screen.getByText('Telegram Group')).toBeInTheDocument();
+  });
+
+  it('disables send button when reply is empty', async () => {
+    mockFetchChannels.mockResolvedValue({ channels: [MOCK_CHANNEL], total: 1 });
+    mockFetchMessages.mockResolvedValue({ messages: [], total: 0 });
+
+    renderPage();
+    await waitFor(() => screen.getByText('Slack Workspace'));
+    await userEvent.click(screen.getByText('Slack Workspace'));
+
+    await waitFor(() => screen.getByText('Send'));
+
+    const sendBtn = screen.getByText('Send').closest('button')!;
+    expect(sendBtn).toBeDisabled();
+  });
+
+  it('shows error when message send fails', async () => {
+    mockFetchChannels.mockResolvedValue({ channels: [MOCK_CHANNEL], total: 1 });
+    mockFetchMessages.mockResolvedValue({ messages: [], total: 0 });
+    mockSendMessage.mockRejectedValue(new Error('Network error'));
+
+    renderPage();
+    await waitFor(() => screen.getByText('Slack Workspace'));
+    await userEvent.click(screen.getByText('Slack Workspace'));
+
+    await waitFor(() => screen.getByPlaceholderText(/Type a reply/i));
+
+    await userEvent.type(screen.getByPlaceholderText(/Type a reply/i), 'Msg');
+    await userEvent.click(screen.getByText('Send'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to send/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows message count in the header when a channel is selected', async () => {
+    mockFetchChannels.mockResolvedValue({ channels: [MOCK_CHANNEL], total: 1 });
+    mockFetchMessages.mockResolvedValue({ messages: [], total: 0 });
+
+    renderPage();
+    await waitFor(() => screen.getByText('Slack Workspace'));
+    await userEvent.click(screen.getByText('Slack Workspace'));
+
+    await waitFor(() => {
+      expect(screen.getByText('5 messages')).toBeInTheDocument();
+    });
+  });
+
+  it('shows personality info in reply box when personalities exist', async () => {
+    mockFetchChannels.mockResolvedValue({ channels: [MOCK_CHANNEL], total: 1 });
+    mockFetchMessages.mockResolvedValue({ messages: [], total: 0 });
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [
+        { id: 'p-1', name: 'Friday', isDefault: true } as never,
+      ],
+    } as never);
+
+    renderPage();
+    await waitFor(() => screen.getByText('Slack Workspace'));
+    await userEvent.click(screen.getByText('Slack Workspace'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Replying as:/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows empty conversations help text', async () => {
+    mockFetchChannels.mockResolvedValue({ channels: [], total: 0 });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText(/No active conversations/)).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText(/Group Chat shows real-time conversations/),
+    ).toBeInTheDocument();
+  });
 });

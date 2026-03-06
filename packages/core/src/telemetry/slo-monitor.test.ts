@@ -2,9 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SloMonitor, type SloDefinition } from './slo-monitor.js';
 
 const mockLogger = {
-  trace: vi.fn(), debug: vi.fn(), info: vi.fn(),
-  warn: vi.fn(), error: vi.fn(), fatal: vi.fn(),
-  child: vi.fn().mockReturnThis(), level: 'info' as const,
+  trace: vi.fn(),
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info' as const,
 };
 
 const mockAlertManager = {
@@ -74,11 +79,13 @@ describe('SloMonitor', () => {
   });
 
   it('should track latency SLOs (lower is better)', () => {
-    monitor.addDefinition(makeSlo({
-      id: 'latency-slo',
-      metricType: 'response_latency_p95',
-      target: 200, // max 200ms
-    }));
+    monitor.addDefinition(
+      makeSlo({
+        id: 'latency-slo',
+        metricType: 'response_latency_p95',
+        target: 200, // max 200ms
+      })
+    );
 
     // All requests under 200ms
     for (let i = 0; i < 20; i++) monitor.record('response_latency_p95', 100 + i * 5);
@@ -89,11 +96,13 @@ describe('SloMonitor', () => {
   });
 
   it('should detect latency SLO violations', () => {
-    monitor.addDefinition(makeSlo({
-      id: 'latency-slo',
-      metricType: 'response_latency_p95',
-      target: 100,
-    }));
+    monitor.addDefinition(
+      makeSlo({
+        id: 'latency-slo',
+        metricType: 'response_latency_p95',
+        target: 100,
+      })
+    );
 
     // Many slow requests
     for (let i = 0; i < 20; i++) monitor.record('response_latency_p95', 500);
@@ -144,8 +153,8 @@ describe('SloMonitor', () => {
     expect(results).toHaveLength(2);
     const a = results.find((r) => r.id === 'slo-a')!;
     const b = results.find((r) => r.id === 'slo-b')!;
-    expect(a.compliant).toBe(true);   // 95 >= 90
-    expect(b.compliant).toBe(false);  // 95 < 99
+    expect(a.compliant).toBe(true); // 95 >= 90
+    expect(b.compliant).toBe(false); // 95 < 99
   });
 
   it('should handle alertManager being null', () => {

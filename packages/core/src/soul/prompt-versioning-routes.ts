@@ -30,7 +30,11 @@ export async function registerPromptVersioningRoutes(
 
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('prompt_engineering', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('prompt_engineering', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 
@@ -180,10 +184,7 @@ export async function registerPromptVersioningRoutes(
 
   app.post(
     '/api/v1/soul/lint',
-    async (
-      request: FastifyRequest<{ Body: { prompt: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { prompt: string } }>, reply: FastifyReply) => {
       if (!linter) return sendError(reply, 503, 'Prompt linter not available');
 
       const { prompt } = request.body;
@@ -241,7 +242,11 @@ export async function registerPromptVersioningRoutes(
         request.body;
 
       if (!personalityId || !author || !rationale || !currentPrompt) {
-        return sendError(reply, 400, 'personalityId, author, rationale, and currentPrompt are required');
+        return sendError(
+          reply,
+          400,
+          'personalityId, author, rationale, and currentPrompt are required'
+        );
       }
 
       const entry = changelog.addEntry({
@@ -275,7 +280,7 @@ export async function registerPromptVersioningRoutes(
     ) => {
       if (!changelog) return sendError(reply, 503, 'Prompt changelog not available');
 
-      const format = (request.query.format === 'csv' ? 'csv' : 'json') as 'json' | 'csv';
+      const format = request.query.format === 'csv' ? 'csv' : 'json';
       const exported = changelog.export({
         format,
         personalityId: request.query.personalityId,

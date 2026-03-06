@@ -99,36 +99,64 @@ describe('DepartmentRiskStorage', () => {
       const dept = await storage.getDepartment('not-found');
       expect(dept).toBeNull();
     });
-  });
 
-  describe('updateDepartment', () => {
-    it('updates only provided fields', async () => {
+    it('handles null/non-array fields in row conversion', async () => {
       mockQuery.mockResolvedValueOnce({
         rows: [
           {
-            id: 'dept-1',
-            name: 'New Name',
+            id: 'd1',
+            name: 'Minimal',
             description: null,
             mission: null,
-            objectives: [],
+            objectives: 'not-an-array',
             parent_id: null,
             team_id: null,
-            risk_appetite: {
-              security: 50,
-              operational: 50,
-              financial: 50,
-              compliance: 50,
-              reputational: 50,
-            },
-            compliance_targets: [],
-            metadata: {},
+            risk_appetite: null,
+            compliance_targets: 'not-an-array',
+            metadata: null,
             tenant_id: null,
-            created_at: 1000,
-            updated_at: 3000,
+            created_at: '1000',
+            updated_at: '2000',
           },
         ],
       });
+      const dept = await storage.getDepartment('d1');
+      expect(dept!.description).toBeUndefined();
+      expect(dept!.mission).toBeUndefined();
+      expect(dept!.objectives).toEqual([]);
+      expect(dept!.parentId).toBeUndefined();
+      expect(dept!.teamId).toBeUndefined();
+      expect(dept!.complianceTargets).toEqual([]);
+      expect(dept!.metadata).toEqual({});
+      expect(dept!.tenantId).toBeUndefined();
+    });
+  });
 
+  describe('updateDepartment', () => {
+    const baseDeptRow = {
+      id: 'dept-1',
+      name: 'New Name',
+      description: null,
+      mission: null,
+      objectives: [],
+      parent_id: null,
+      team_id: null,
+      risk_appetite: {
+        security: 50,
+        operational: 50,
+        financial: 50,
+        compliance: 50,
+        reputational: 50,
+      },
+      compliance_targets: [],
+      metadata: {},
+      tenant_id: null,
+      created_at: 1000,
+      updated_at: 3000,
+    };
+
+    it('updates only provided fields', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [baseDeptRow] });
       const dept = await storage.updateDepartment('dept-1', { name: 'New Name' });
       expect(dept!.name).toBe('New Name');
       const sql = mockQuery.mock.calls[0][0];
@@ -136,35 +164,46 @@ describe('DepartmentRiskStorage', () => {
       expect(sql).toContain('name = $1');
     });
 
-    it('returns existing department when no fields provided', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [
-          {
-            id: 'dept-1',
-            name: 'Engineering',
-            description: null,
-            mission: null,
-            objectives: [],
-            parent_id: null,
-            team_id: null,
-            risk_appetite: {
-              security: 50,
-              operational: 50,
-              financial: 50,
-              compliance: 50,
-              reputational: 50,
-            },
-            compliance_targets: [],
-            metadata: {},
-            tenant_id: null,
-            created_at: 1000,
-            updated_at: 1000,
-          },
-        ],
+    it('updates all fields simultaneously', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [baseDeptRow] });
+      await storage.updateDepartment('dept-1', {
+        name: 'Updated',
+        description: 'desc',
+        mission: 'mission',
+        objectives: [{ title: 'obj', priority: 'high' }],
+        parentId: 'p2',
+        teamId: 't2',
+        riskAppetite: {
+          security: 90,
+          operational: 90,
+          financial: 90,
+          compliance: 90,
+          reputational: 90,
+        },
+        complianceTargets: ['SOC2'],
+        metadata: { key: 'val' },
       });
+      const sql = mockQuery.mock.calls[0][0];
+      expect(sql).toContain('name = $1');
+      expect(sql).toContain('description = $2');
+      expect(sql).toContain('mission = $3');
+      expect(sql).toContain('objectives = $4');
+      expect(sql).toContain('parent_id = $5');
+      expect(sql).toContain('team_id = $6');
+      expect(sql).toContain('risk_appetite = $7');
+      expect(sql).toContain('compliance_targets = $8');
+      expect(sql).toContain('metadata = $9');
+    });
 
+    it('returns null when row not found on update', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      const dept = await storage.updateDepartment('missing', { name: 'X' });
+      expect(dept).toBeNull();
+    });
+
+    it('returns existing department when no fields provided', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [baseDeptRow] });
       await storage.updateDepartment('dept-1', {});
-      // Should call getDepartment, not UPDATE
       expect(mockQuery.mock.calls[0][0]).toContain('SELECT * FROM risk.departments');
     });
   });
@@ -233,6 +272,25 @@ describe('DepartmentRiskStorage', () => {
       await storage.listDepartments({ parentId: null });
       expect(mockQuery.mock.calls[0][0]).toContain('parent_id IS NULL');
     });
+
+    it('filters by parentId string', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      await storage.listDepartments({ parentId: 'p1' });
+      expect(mockQuery.mock.calls[0][1]).toContain('p1');
+    });
+
+    it('filters by tenantId', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      await storage.listDepartments({ tenantId: 'tenant-1' });
+      const sql = mockQuery.mock.calls[0][0];
+      expect(sql).toContain('tenant_id');
+    });
   });
 
   describe('getDepartmentTree', () => {
@@ -297,6 +355,194 @@ describe('DepartmentRiskStorage', () => {
       expect(entry.riskScore).toBe(20);
       expect(entry.createdBy).toBe('bob');
     });
+
+    it('inserts with minimal fields (null optionals)', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'entry-2',
+            department_id: 'dept-1',
+            title: 'Test',
+            description: null,
+            category: 'operational',
+            severity: 'low',
+            likelihood: 1,
+            impact: 1,
+            risk_score: 1,
+            owner: null,
+            mitigations: [],
+            status: 'open',
+            due_date: null,
+            source: null,
+            source_ref: null,
+            evidence_refs: [],
+            tenant_id: null,
+            created_by: null,
+            created_at: 1000,
+            updated_at: 1000,
+            closed_at: null,
+          },
+        ],
+      });
+      const entry = await storage.createRegisterEntry({
+        departmentId: 'dept-1',
+        title: 'Test',
+        category: 'operational',
+        severity: 'low',
+        likelihood: 1,
+        impact: 1,
+      });
+      expect(entry.owner).toBeUndefined();
+      expect(entry.createdBy).toBeUndefined();
+    });
+
+    it('records score with assessmentId and tenantId', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'score-2',
+            department_id: 'dept-1',
+            scored_at: '2026-03-02T00:00:00Z',
+            overall_score: 50,
+            domain_scores: {},
+            open_risks: 0,
+            overdue_risks: 0,
+            appetite_breaches: [],
+            assessment_id: 'a1',
+            tenant_id: 'tenant-1',
+            created_at: 1000,
+          },
+        ],
+      });
+      const score = await storage.recordDepartmentScore({
+        departmentId: 'dept-1',
+        overallScore: 50,
+        domainScores: {},
+        openRisks: 0,
+        overdueRisks: 0,
+        appetiteBreaches: [],
+        assessmentId: 'a1',
+        tenantId: 'tenant-1',
+      });
+      expect(score.assessmentId).toBe('a1');
+      expect(score.tenantId).toBe('tenant-1');
+    });
+  });
+
+  describe('updateRegisterEntry', () => {
+    const baseEntryRow = {
+      id: 'entry-1',
+      department_id: 'dept-1',
+      title: 'Updated',
+      description: null,
+      category: 'security',
+      severity: 'critical',
+      likelihood: 4,
+      impact: 5,
+      risk_score: 20,
+      owner: null,
+      mitigations: [],
+      status: 'open',
+      due_date: null,
+      source: null,
+      source_ref: null,
+      evidence_refs: [],
+      tenant_id: null,
+      created_by: null,
+      created_at: 1000,
+      updated_at: 2000,
+      closed_at: null,
+    };
+
+    it('updates all fields simultaneously', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [baseEntryRow] });
+      await storage.updateRegisterEntry('entry-1', {
+        title: 'Updated',
+        description: 'new desc',
+        category: 'compliance',
+        severity: 'high',
+        likelihood: 3,
+        impact: 4,
+        owner: 'bob',
+        mitigations: [{ description: 'Fix', status: 'done' }],
+        status: 'mitigated',
+        dueDate: '2026-05-01',
+        source: 'manual',
+        sourceRef: 'REF-002',
+        evidenceRefs: ['e1', 'e2'],
+      });
+      const sql = mockQuery.mock.calls[0][0];
+      expect(sql).toContain('title = $1');
+      expect(sql).toContain('description = $2');
+      expect(sql).toContain('evidence_refs = $13');
+    });
+
+    it('returns existing entry when no fields provided', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [baseEntryRow] });
+      await storage.updateRegisterEntry('entry-1', {});
+      expect(mockQuery.mock.calls[0][0]).toContain('SELECT * FROM risk.register_entries');
+    });
+
+    it('returns null when not found', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      const result = await storage.updateRegisterEntry('missing', { title: 'X' });
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('deleteRegisterEntry', () => {
+    it('returns true when deleted', async () => {
+      mockQuery.mockResolvedValueOnce({ rowCount: 1 });
+      expect(await storage.deleteRegisterEntry('entry-1')).toBe(true);
+    });
+
+    it('returns false when not found', async () => {
+      mockQuery.mockResolvedValueOnce({ rowCount: 0 });
+      expect(await storage.deleteRegisterEntry('missing')).toBe(false);
+    });
+  });
+
+  describe('getRegisterEntry', () => {
+    it('handles null/non-array fields in row conversion', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'e1',
+            department_id: 'd1',
+            title: 'Test',
+            description: null,
+            category: 'operational',
+            severity: 'low',
+            likelihood: '1',
+            impact: '1',
+            risk_score: '1',
+            owner: null,
+            mitigations: 'not-an-array',
+            status: 'closed',
+            due_date: null,
+            source: null,
+            source_ref: null,
+            evidence_refs: 'not-an-array',
+            tenant_id: null,
+            created_by: null,
+            created_at: '1000',
+            updated_at: '2000',
+            closed_at: '3000',
+          },
+        ],
+      });
+      const entry = await storage.getRegisterEntry('e1');
+      expect(entry!.description).toBeUndefined();
+      expect(entry!.owner).toBeUndefined();
+      expect(entry!.mitigations).toEqual([]);
+      expect(entry!.dueDate).toBeUndefined();
+      expect(entry!.source).toBeUndefined();
+      expect(entry!.sourceRef).toBeUndefined();
+      expect(entry!.evidenceRefs).toEqual([]);
+      expect(entry!.tenantId).toBeUndefined();
+      expect(entry!.createdBy).toBeUndefined();
+      expect(entry!.closedAt).toBe(3000);
+    });
   });
 
   describe('listRegisterEntries', () => {
@@ -317,6 +563,49 @@ describe('DepartmentRiskStorage', () => {
 
       await storage.listRegisterEntries({ overdue: true });
       expect(mockQuery.mock.calls[0][0]).toContain('due_date < now()');
+    });
+
+    it('filters by all fields combined', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      await storage.listRegisterEntries({
+        departmentId: 'dept-1',
+        status: 'open',
+        category: 'security',
+        severity: 'critical',
+        owner: 'alice',
+        tenantId: 'tenant-1',
+        overdue: true,
+        limit: 5,
+        offset: 10,
+      });
+      const sql = mockQuery.mock.calls[0][0];
+      expect(sql).toContain('department_id');
+      expect(sql).toContain('status');
+      expect(sql).toContain('category');
+      expect(sql).toContain('severity');
+      expect(sql).toContain('owner');
+      expect(sql).toContain('tenant_id');
+      expect(sql).toContain('due_date < now()');
+    });
+
+    it('lists with no filters', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '3' }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const result = await storage.listRegisterEntries();
+      expect(result.total).toBe(3);
+      expect(result.items).toEqual([]);
+    });
+
+    it('handles null count', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [undefined] }).mockResolvedValueOnce({ rows: [] });
+
+      const result = await storage.listRegisterEntries();
+      expect(result.total).toBe(0);
     });
   });
 
@@ -370,11 +659,66 @@ describe('DepartmentRiskStorage', () => {
     });
   });
 
+  describe('listDepartmentScores', () => {
+    it('lists with departmentId only', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      await storage.listDepartmentScores({ departmentId: 'd1' });
+      expect(mockQuery.mock.calls[0][0]).toContain('department_id = $1');
+    });
+
+    it('lists with from/to date filters', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      await storage.listDepartmentScores({
+        departmentId: 'd1',
+        from: '2026-01-01',
+        to: '2026-12-31',
+        limit: 50,
+      });
+      const sql = mockQuery.mock.calls[0][0];
+      expect(sql).toContain('scored_at >= $2');
+      expect(sql).toContain('scored_at <= $3');
+    });
+  });
+
   describe('getLatestScores', () => {
-    it('uses DISTINCT ON for latest per department', async () => {
+    it('uses DISTINCT ON without tenantId', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [] });
       await storage.getLatestScores();
-      expect(mockQuery.mock.calls[0][0]).toContain('DISTINCT ON (department_id)');
+      const sql = mockQuery.mock.calls[0][0];
+      expect(sql).toContain('DISTINCT ON (department_id)');
+      expect(sql).not.toContain('tenant_id');
+    });
+
+    it('filters by tenantId when provided', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      await storage.getLatestScores('tenant-1');
+      const sql = mockQuery.mock.calls[0][0];
+      expect(sql).toContain('tenant_id = $1');
+    });
+
+    it('handles null/non-array fields in score row conversion', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 's1',
+            department_id: 'd1',
+            scored_at: '2026-03-01',
+            overall_score: '50',
+            domain_scores: null,
+            open_risks: '0',
+            overdue_risks: '0',
+            appetite_breaches: 'not-array',
+            assessment_id: null,
+            tenant_id: null,
+            created_at: 1000,
+          },
+        ],
+      });
+      const scores = await storage.getLatestScores();
+      expect(scores[0].domainScores).toEqual({});
+      expect(scores[0].appetiteBreaches).toEqual([]);
+      expect(scores[0].assessmentId).toBeUndefined();
+      expect(scores[0].tenantId).toBeUndefined();
     });
   });
 

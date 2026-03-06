@@ -27,7 +27,11 @@ export function registerSraRoutes(app: FastifyInstance, opts: SraRoutesOptions):
   const { sraManager: mgr, secureYeoman } = opts;
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 

@@ -7,7 +7,12 @@
  */
 
 import { createHash } from 'node:crypto';
-import type { IacTool, IacTemplateFile, IacValidationResult, IacConfig } from '@secureyeoman/shared';
+import type {
+  IacTool,
+  IacTemplateFile,
+  IacValidationResult,
+  IacConfig,
+} from '@secureyeoman/shared';
 
 export class IacValidator {
   constructor(private readonly config: IacConfig) {}
@@ -15,10 +20,7 @@ export class IacValidator {
   /**
    * Validate template files for a given IaC tool.
    */
-  validate(
-    tool: IacTool,
-    files: Array<{ path: string; content: string }>
-  ): IacValidationResult {
+  validate(tool: IacTool, files: { path: string; content: string }[]): IacValidationResult {
     const start = Date.now();
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -27,7 +29,9 @@ export class IacValidator {
     for (const file of files) {
       const sizeBytes = Buffer.byteLength(file.content, 'utf-8');
       if (sizeBytes > this.config.maxFileSizeBytes) {
-        errors.push(`${file.path}: exceeds max size (${sizeBytes} > ${this.config.maxFileSizeBytes} bytes)`);
+        errors.push(
+          `${file.path}: exceeds max size (${sizeBytes} > ${this.config.maxFileSizeBytes} bytes)`
+        );
       }
     }
 
@@ -75,7 +79,7 @@ export class IacValidator {
 
   /** Validate Terraform HCL files. */
   private validateTerraform(
-    files: Array<{ path: string; content: string }>,
+    files: { path: string; content: string }[],
     errors: string[],
     warnings: string[]
   ): void {
@@ -92,7 +96,11 @@ export class IacValidator {
 
         // Check for required blocks in main.tf
         if (file.path.includes('main.tf') || file.path.endsWith('main.tf')) {
-          if (!file.content.includes('resource ') && !file.content.includes('module ') && !file.content.includes('data ')) {
+          if (
+            !file.content.includes('resource ') &&
+            !file.content.includes('module ') &&
+            !file.content.includes('data ')
+          ) {
             warnings.push(`${file.path}: no resource, module, or data blocks found`);
           }
         }
@@ -118,7 +126,7 @@ export class IacValidator {
 
   /** Validate CloudFormation templates. */
   private validateCloudFormation(
-    files: Array<{ path: string; content: string }>,
+    files: { path: string; content: string }[],
     errors: string[],
     warnings: string[]
   ): void {
@@ -134,12 +142,18 @@ export class IacValidator {
       // Check for AWSTemplateFormatVersion or Resources section
       if (file.path.endsWith('.json')) {
         this.checkJsonSyntax(file.path, file.content, errors);
-        if (!file.content.includes('"Resources"') && !file.content.includes('"AWSTemplateFormatVersion"')) {
+        if (
+          !file.content.includes('"Resources"') &&
+          !file.content.includes('"AWSTemplateFormatVersion"')
+        ) {
           warnings.push(`${file.path}: missing Resources or AWSTemplateFormatVersion`);
         }
       } else {
         // YAML checks
-        if (!file.content.includes('Resources:') && !file.content.includes('AWSTemplateFormatVersion:')) {
+        if (
+          !file.content.includes('Resources:') &&
+          !file.content.includes('AWSTemplateFormatVersion:')
+        ) {
           warnings.push(`${file.path}: missing Resources or AWSTemplateFormatVersion`);
         }
         this.checkYamlIndentation(file.path, file.content, warnings);
@@ -151,11 +165,13 @@ export class IacValidator {
 
   /** Validate Pulumi project files. */
   private validatePulumi(
-    files: Array<{ path: string; content: string }>,
+    files: { path: string; content: string }[],
     errors: string[],
     warnings: string[]
   ): void {
-    const hasPulumiYaml = files.some((f) => f.path === 'Pulumi.yaml' || f.path.endsWith('/Pulumi.yaml'));
+    const hasPulumiYaml = files.some(
+      (f) => f.path === 'Pulumi.yaml' || f.path.endsWith('/Pulumi.yaml')
+    );
     if (!hasPulumiYaml) {
       errors.push('Missing Pulumi.yaml project file');
       return;
@@ -179,7 +195,7 @@ export class IacValidator {
 
   /** Validate Helm chart structure. */
   private validateHelm(
-    files: Array<{ path: string; content: string }>,
+    files: { path: string; content: string }[],
     errors: string[],
     warnings: string[]
   ): void {
@@ -206,13 +222,11 @@ export class IacValidator {
 
   /** Validate Kubernetes manifests. */
   private validateKubernetes(
-    files: Array<{ path: string; content: string }>,
+    files: { path: string; content: string }[],
     errors: string[],
     warnings: string[]
   ): void {
-    const yamlFiles = files.filter(
-      (f) => f.path.endsWith('.yaml') || f.path.endsWith('.yml')
-    );
+    const yamlFiles = files.filter((f) => f.path.endsWith('.yaml') || f.path.endsWith('.yml'));
     if (yamlFiles.length === 0) {
       errors.push('No YAML manifest files found');
       return;
@@ -228,7 +242,7 @@ export class IacValidator {
 
   /** Validate Bicep/ARM templates. */
   private validateBicep(
-    files: Array<{ path: string; content: string }>,
+    files: { path: string; content: string }[],
     errors: string[],
     warnings: string[]
   ): void {
@@ -253,20 +267,22 @@ export class IacValidator {
 
   /** Validate Ansible playbooks. */
   private validateAnsible(
-    files: Array<{ path: string; content: string }>,
+    files: { path: string; content: string }[],
     errors: string[],
     warnings: string[]
   ): void {
-    const yamlFiles = files.filter(
-      (f) => f.path.endsWith('.yaml') || f.path.endsWith('.yml')
-    );
+    const yamlFiles = files.filter((f) => f.path.endsWith('.yaml') || f.path.endsWith('.yml'));
     if (yamlFiles.length === 0) {
       errors.push('No YAML playbook files found');
       return;
     }
 
     for (const file of yamlFiles) {
-      if (!file.content.includes('hosts:') && !file.content.includes('tasks:') && !file.content.includes('roles:')) {
+      if (
+        !file.content.includes('hosts:') &&
+        !file.content.includes('tasks:') &&
+        !file.content.includes('roles:')
+      ) {
         warnings.push(`${file.path}: does not appear to be a playbook (missing hosts/tasks/roles)`);
       }
     }
@@ -274,13 +290,11 @@ export class IacValidator {
 
   /** Validate CDK project. */
   private validateCdk(
-    files: Array<{ path: string; content: string }>,
+    files: { path: string; content: string }[],
     errors: string[],
     warnings: string[]
   ): void {
-    const hasCdkJson = files.some(
-      (f) => f.path === 'cdk.json' || f.path.endsWith('/cdk.json')
-    );
+    const hasCdkJson = files.some((f) => f.path === 'cdk.json' || f.path.endsWith('/cdk.json'));
     if (!hasCdkJson) {
       errors.push('Missing cdk.json');
       return;
@@ -334,13 +348,15 @@ export class IacValidator {
   private checkHardcodedSecrets(path: string, content: string, warnings: string[]): void {
     const secretPatterns = [
       /(?:password|secret|token|api_key|apikey|access_key)\s*[:=]\s*["'][^"']{8,}/i,
-      /AKIA[0-9A-Z]{16}/,  // AWS access key
+      /AKIA[0-9A-Z]{16}/, // AWS access key
       /(?:-----BEGIN (?:RSA |EC )?PRIVATE KEY-----)/,
     ];
 
     for (const pattern of secretPatterns) {
       if (pattern.test(content)) {
-        warnings.push(`${path}: possible hardcoded secret detected — use variables or a secrets manager`);
+        warnings.push(
+          `${path}: possible hardcoded secret detected — use variables or a secrets manager`
+        );
         break;
       }
     }

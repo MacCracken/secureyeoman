@@ -13,7 +13,12 @@ function makeMockManager() {
     deleteTemplate: vi.fn().mockResolvedValue(false),
     syncFromGit: vi.fn().mockResolvedValue({ templates: [], errors: [] }),
     validateTemplate: vi.fn().mockResolvedValue({
-      valid: true, errors: [], warnings: [], tool: 'terraform', fileCount: 1, durationMs: 1,
+      valid: true,
+      errors: [],
+      warnings: [],
+      tool: 'terraform',
+      fileCount: 1,
+      durationMs: 1,
     }),
     getRemediationTemplates: vi.fn().mockResolvedValue({ items: [], total: 0 }),
     listDeployments: vi.fn().mockResolvedValue([]),
@@ -41,7 +46,10 @@ describe('IaC Routes', () => {
   });
 
   it('GET /templates with query params filters', async () => {
-    await app.inject({ method: 'GET', url: '/api/v1/iac/templates?tool=terraform&cloudProvider=aws' });
+    await app.inject({
+      method: 'GET',
+      url: '/api/v1/iac/templates?tool=terraform&cloudProvider=aws',
+    });
     expect(mockManager.listTemplates).toHaveBeenCalledWith(
       expect.objectContaining({ tool: 'terraform', cloudProvider: 'aws' })
     );
@@ -84,7 +92,10 @@ describe('IaC Routes', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/iac/validate',
-      payload: { tool: 'terraform', files: [{ path: 'main.tf', content: 'resource "x" "y" {}\n' }] },
+      payload: {
+        tool: 'terraform',
+        files: [{ path: 'main.tf', content: 'resource "x" "y" {}\n' }],
+      },
     });
     expect(res.statusCode).toBe(200);
   });

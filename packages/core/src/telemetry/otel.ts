@@ -59,9 +59,10 @@ export async function initTracing(config: TelemetryConfig = {}): Promise<void> {
     const serviceName = config.serviceName ?? process.env.OTEL_SERVICE_NAME ?? 'secureyeoman';
     const samplingRate = config.samplingRate ?? 1.0;
 
-    const sampler = samplingRate < 1.0
-      ? new sdkTrace.TraceIdRatioBasedSampler(samplingRate)
-      : new sdkTrace.AlwaysOnSampler();
+    const sampler =
+      samplingRate < 1.0
+        ? new sdkTrace.TraceIdRatioBasedSampler(samplingRate)
+        : new sdkTrace.AlwaysOnSampler();
 
     const resource = resourceFromAttributes({ 'service.name': serviceName });
     const exporter = new OTLPTraceExporter({ url: endpoint });

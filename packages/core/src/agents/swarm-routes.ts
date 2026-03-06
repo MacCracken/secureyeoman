@@ -17,7 +17,11 @@ export function registerSwarmRoutes(
   const { swarmManager, secureYeoman } = opts;
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('swarm_orchestration', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('swarm_orchestration', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 

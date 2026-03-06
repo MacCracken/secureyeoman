@@ -1127,12 +1127,7 @@ const CostBreakdownSection = memo(function CostBreakdownSection({
 const EntitySection = memo(function EntitySection() {
   return (
     <div className="rounded-lg border border-cyan-900/50 bg-gray-900/80 p-0 overflow-hidden">
-      <EntityWidget
-        state="active"
-        height={380}
-        showLabel
-        label="THE ENTITY"
-      />
+      <EntityWidget state="active" height={380} showLabel label="THE ENTITY" />
     </div>
   );
 });
@@ -1425,9 +1420,7 @@ function MissionControlTab({
 
   const sorted = [...cardLayouts]
     .map((c) =>
-      c.id === 'the-entity' && hasEntityPersonality && !c.visible
-        ? { ...c, visible: true }
-        : c
+      c.id === 'the-entity' && hasEntityPersonality && !c.visible ? { ...c, visible: true } : c
     )
     .sort((a, b) => a.order - b.order);
 

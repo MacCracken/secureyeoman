@@ -15,7 +15,7 @@ function builtin(
   description: string,
   cloudProvider: 'aws' | 'azure' | 'gcp',
   sraControlIds: string[],
-  files: Array<{ path: string; content: string }>
+  files: { path: string; content: string }[]
 ): IacTemplate {
   return {
     id,

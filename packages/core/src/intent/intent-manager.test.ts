@@ -1721,4 +1721,574 @@ describe('logEnforcement auto-register-entry (Phase 111-C)', () => {
     await new Promise((r) => setTimeout(r, 10));
     expect(createEntry).not.toHaveBeenCalled();
   });
+
+  it('does not create entry when getDepartmentRiskManager returns null', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const mgr = new IntentManager({
+      storage: makeStorage({ logEnforcement: logSpy }),
+      opaClient: null,
+      getDepartmentRiskManager: () => null,
+    });
+
+    await mgr.logEnforcement({
+      eventType: 'boundary_violated',
+      details: 'Max tokens exceeded',
+      metadata: { departmentId: 'd1' },
+    } as any);
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(logSpy).toHaveBeenCalled();
+  });
+
+  it('does not create entry when getDepartmentRiskManager is not provided', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const mgr = new IntentManager({
+      storage: makeStorage({ logEnforcement: logSpy }),
+      opaClient: null,
+    });
+
+    await mgr.logEnforcement({
+      eventType: 'boundary_violated',
+      details: 'Violation',
+      metadata: { departmentId: 'd1' },
+    } as any);
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(logSpy).toHaveBeenCalled();
+  });
+
+  it('silently catches createRegisterEntry error (fire-and-forget)', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const createEntry = vi.fn().mockRejectedValue(new Error('DB error'));
+    const mgr = new IntentManager({
+      storage: makeStorage({ logEnforcement: logSpy }),
+      opaClient: null,
+      getDepartmentRiskManager: () => ({ createRegisterEntry: createEntry }),
+    });
+
+    await mgr.logEnforcement({
+      eventType: 'boundary_violated',
+      details: 'Violation',
+      metadata: { departmentId: 'd1' },
+    } as any);
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(createEntry).toHaveBeenCalled();
+    // No throw — fire-and-forget
+  });
+});
+
+// ── Additional branch coverage ──────────────────────────────────────────────
+
+describe('IntentManager — additional branch coverage', () => {
+  it('readSignal returns null when no active intent', async () => {
+    const mgr = new IntentManager({ storage: makeStorage(), opaClient: null });
+    const result = await mgr.readSignal('sig1');
+    expect(result).toBeNull();
+  });
+
+  it('readSignal returns null when signal not found in intent', async () => {
+    const intent = makeIntent({ signals: [] });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const result = await mgr.readSignal('nonexistent');
+    expect(result).toBeNull();
+  });
+
+  it('readSignal returns cached value when not stale', async () => {
+    const intent = makeIntent({
+      signals: [{ id: 's1', name: 'Latency', direction: 'above', threshold: 100, dataSources: [] }],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+      signalRefreshIntervalMs: 60_000,
+    });
+    await mgr.initialize();
+
+    // First read — fetches
+    const result1 = await mgr.readSignal('s1');
+    expect(result1).not.toBeNull();
+
+    // Second read — should return cached
+    const result2 = await mgr.readSignal('s1');
+    expect(result2).toEqual(result1);
+  });
+
+  it('readSignal builds result with value=null when no data source', async () => {
+    const intent = makeIntent({
+      signals: [{ id: 's1', name: 'NoDS', direction: 'above', threshold: 10, dataSources: [] }],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const result = await mgr.readSignal('s1');
+    expect(result?.value).toBeNull();
+    expect(result?.message).toContain('unavailable');
+  });
+
+  it('readSignal with data source that has no matching ds entry', async () => {
+    const intent = makeIntent({
+      signals: [
+        { id: 's1', name: 'Sig', direction: 'above', threshold: 10, dataSources: ['ds-missing'] },
+      ],
+      dataSources: [],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const result = await mgr.readSignal('s1');
+    expect(result?.value).toBeNull();
+  });
+
+  it('_buildSignalResult warning status for direction=below', async () => {
+    const intent = makeIntent({
+      signals: [
+        {
+          id: 's1',
+          name: 'Uptime',
+          direction: 'below' as const,
+          threshold: 95,
+          warningThreshold: 97,
+          dataSources: ['ds1'],
+        },
+      ],
+      dataSources: [{ id: 'ds1', name: 'Uptime Tool', type: 'mcp_tool', connection: 'get_uptime' }],
+    });
+    const callMcpTool = vi.fn().mockResolvedValue(96);
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+      callMcpTool,
+    });
+    await mgr.initialize();
+    const result = await mgr.readSignal('s1');
+    expect(result?.status).toBe('warning');
+    expect(result?.message).toContain('approaching');
+  });
+
+  it('_buildSignalResult critical for direction=below', async () => {
+    const intent = makeIntent({
+      signals: [
+        {
+          id: 's1',
+          name: 'Uptime',
+          direction: 'below' as const,
+          threshold: 95,
+          dataSources: ['ds1'],
+        },
+      ],
+      dataSources: [{ id: 'ds1', name: 'Uptime Tool', type: 'mcp_tool', connection: 'get_uptime' }],
+    });
+    const callMcpTool = vi.fn().mockResolvedValue(90);
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+      callMcpTool,
+    });
+    await mgr.initialize();
+    const result = await mgr.readSignal('s1');
+    expect(result?.status).toBe('critical');
+    expect(result?.message).toContain('below');
+  });
+
+  it('_buildSignalResult healthy for direction=below when value is good', async () => {
+    const intent = makeIntent({
+      signals: [
+        {
+          id: 's1',
+          name: 'Uptime',
+          direction: 'below' as const,
+          threshold: 95,
+          dataSources: ['ds1'],
+        },
+      ],
+      dataSources: [{ id: 'ds1', name: 'Uptime Tool', type: 'mcp_tool', connection: 'get_uptime' }],
+    });
+    const callMcpTool = vi.fn().mockResolvedValue(99);
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+      callMcpTool,
+    });
+    await mgr.initialize();
+    const result = await mgr.readSignal('s1');
+    expect(result?.status).toBe('healthy');
+    expect(result?.message).toContain('healthy');
+  });
+
+  it('resolveTradeoffProfile falls back to first profile when none is default', async () => {
+    const intent = makeIntent({
+      tradeoffProfiles: [
+        {
+          id: 'tp1',
+          name: 'NonDefault',
+          isDefault: false,
+          speedVsThoroughness: 0.3,
+          costVsQuality: 0.3,
+          autonomyVsConfirmation: 0.3,
+        },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const profile = mgr.resolveTradeoffProfile();
+    expect(profile?.id).toBe('tp1');
+  });
+
+  it('resolveTradeoffProfile returns null when profiles array is empty', async () => {
+    const intent = makeIntent({ tradeoffProfiles: [] });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const profile = mgr.resolveTradeoffProfile();
+    expect(profile).toBeNull();
+  });
+
+  it('getDecisionBoundaries handles tenants with empty decision boundaries', async () => {
+    const intent = makeIntent({
+      delegationFramework: {
+        tenants: [{ id: 't1', principle: 'Test', decisionBoundaries: [] }],
+      },
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const boundaries = mgr.getDecisionBoundaries();
+    expect(boundaries).toEqual(['[t1] Test']);
+  });
+
+  it('checkAuthorizedAction blocks when goalId not in appliesToGoals', async () => {
+    const intent = makeIntent({
+      authorizedActions: [
+        {
+          id: 'a1',
+          description: 'Deploy',
+          appliesToGoals: ['g1', 'g2'],
+          appliesToSignals: [],
+          mcpTools: [],
+        },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const result = await mgr.checkAuthorizedAction('a1', { goalId: 'g99' });
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain('does not apply to goal');
+  });
+
+  it('checkAuthorizedAction allows when goalId is in appliesToGoals', async () => {
+    const intent = makeIntent({
+      authorizedActions: [
+        {
+          id: 'a1',
+          description: 'Deploy',
+          appliesToGoals: ['g1', 'g2'],
+          appliesToSignals: [],
+          mcpTools: [],
+        },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const result = await mgr.checkAuthorizedAction('a1', { goalId: 'g1' });
+    expect(result.allowed).toBe(true);
+    expect(result.action?.id).toBe('a1');
+  });
+
+  it('checkAuthorizedAction allows when appliesToGoals is empty regardless of goalId', async () => {
+    const intent = makeIntent({
+      authorizedActions: [
+        {
+          id: 'a1',
+          description: 'Any',
+          appliesToGoals: [],
+          appliesToSignals: [],
+          mcpTools: [],
+        },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const result = await mgr.checkAuthorizedAction('a1', { goalId: 'any-goal' });
+    expect(result.allowed).toBe(true);
+  });
+
+  it('checkHardBoundaries — bare rule matches action description', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const intent = makeIntent({
+      hardBoundaries: [{ id: 'hb1', rule: 'production shutdown', rationale: 'Protect prod' }],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({
+        getActiveIntent: vi.fn().mockResolvedValue(intent),
+        logEnforcement: logSpy,
+      }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const result = await mgr.checkHardBoundaries('execute production shutdown now');
+    expect(result.allowed).toBe(false);
+    expect(result.violated?.id).toBe('hb1');
+  });
+
+  it('checkHardBoundaries — tool: rule does not match when no mcpTool provided', async () => {
+    const intent = makeIntent({
+      hardBoundaries: [{ id: 'hb1', rule: 'tool: dangerous_tool', rationale: 'Block tool' }],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const result = await mgr.checkHardBoundaries('some action');
+    expect(result.allowed).toBe(true);
+  });
+
+  it('checkPolicies with OPA that returns allow=true (not violated)', async () => {
+    const evaluateSpy = vi.spyOn(OpaClient.prototype, 'evaluate').mockResolvedValue(true);
+    const intent = makeIntent({
+      policies: [
+        {
+          id: 'p1',
+          rule: 'deny: pii',
+          enforcement: 'block',
+          rationale: 'No PII',
+          rego: 'package policy_p1\nallow = true',
+        },
+      ],
+    });
+    const opa = new OpaClient('http://opa:8181');
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: opa,
+    });
+    await mgr.initialize();
+    const result = await mgr.checkPolicies('some action with pii');
+    // OPA returned true (allow) → not violated → action=allow
+    expect(result.action).toBe('allow');
+    evaluateSpy.mockRestore();
+  });
+
+  it('checkPolicies falls back to substring matching when OPA throws', async () => {
+    const evaluateSpy = vi
+      .spyOn(OpaClient.prototype, 'evaluate')
+      .mockRejectedValue(new Error('OPA error'));
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const intent = makeIntent({
+      policies: [
+        {
+          id: 'p1',
+          rule: 'deny: pii leak',
+          enforcement: 'block',
+          rationale: 'No PII',
+          rego: 'package policy_p1\nallow = true',
+        },
+      ],
+    });
+    const opa = new OpaClient('http://opa:8181');
+    const mgr = new IntentManager({
+      storage: makeStorage({
+        getActiveIntent: vi.fn().mockResolvedValue(intent),
+        logEnforcement: logSpy,
+      }),
+      opaClient: opa,
+    });
+    await mgr.initialize();
+    const result = await mgr.checkPolicies('action pii leak detected');
+    expect(result.action).toBe('block');
+    evaluateSpy.mockRestore();
+  });
+
+  it('OPA hard boundary evaluation falls back when OPA throws', async () => {
+    const evaluateSpy = vi
+      .spyOn(OpaClient.prototype, 'evaluate')
+      .mockRejectedValue(new Error('OPA error'));
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const intent = makeIntent({
+      hardBoundaries: [
+        {
+          id: 'hb1',
+          rule: 'deny: dangerous',
+          rego: 'package boundary_hb1\nallow = false',
+          rationale: 'test',
+        },
+      ],
+    });
+    const opa = new OpaClient('http://opa:8181');
+    const mgr = new IntentManager({
+      storage: makeStorage({
+        getActiveIntent: vi.fn().mockResolvedValue(intent),
+        logEnforcement: logSpy,
+      }),
+      opaClient: opa,
+    });
+    await mgr.initialize();
+    const result = await mgr.checkHardBoundaries('do dangerous thing');
+    expect(result.allowed).toBe(false);
+    evaluateSpy.mockRestore();
+  });
+
+  it('_fetchMcpToolSignal returns null when callMcpTool throws', async () => {
+    const callMcpTool = vi.fn().mockRejectedValue(new Error('MCP error'));
+    const intent = makeIntent({
+      signals: [{ id: 's1', name: 'Sig', direction: 'above', threshold: 10, dataSources: ['ds1'] }],
+      dataSources: [{ id: 'ds1', name: 'Tool', type: 'mcp_tool', connection: 'failing_tool' }],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+      callMcpTool,
+    });
+    await mgr.initialize();
+    const result = await mgr.readSignal('s1');
+    expect(result?.value).toBeNull();
+  });
+
+  it('destroy clears the refresh timer', () => {
+    const mgr = new IntentManager({ storage: makeStorage(), opaClient: null });
+    mgr.destroy();
+    // Calling destroy again should be safe (timer already null)
+    mgr.destroy();
+  });
+
+  it('getStorage returns the storage instance', () => {
+    const storage = makeStorage();
+    const mgr = new IntentManager({ storage, opaClient: null });
+    expect(mgr.getStorage()).toBe(storage);
+  });
+
+  it('getActiveIntent returns null before initialize', () => {
+    const mgr = new IntentManager({ storage: makeStorage(), opaClient: null });
+    expect(mgr.getActiveIntent()).toBeNull();
+  });
+
+  it('queryEnforcementLog delegates to storage', async () => {
+    const querySpy = vi.fn().mockResolvedValue([{ id: 'e1' }]);
+    const mgr = new IntentManager({
+      storage: makeStorage({ queryEnforcementLog: querySpy }),
+      opaClient: null,
+    });
+    const result = await mgr.queryEnforcementLog({ limit: 10 } as any);
+    expect(querySpy).toHaveBeenCalledWith({ limit: 10 });
+    expect(result).toHaveLength(1);
+  });
+
+  it('composeSoulContext includes signal status in goals section', async () => {
+    const intent = makeIntent({
+      goals: [
+        {
+          id: 'g1',
+          name: 'Reliability',
+          priority: 1,
+          description: 'Keep uptime high',
+          successCriteria: '99.9%',
+          ownerRole: 'sre',
+          skills: [],
+          signals: ['s1'],
+          authorizedActions: [],
+        },
+      ],
+      signals: [
+        { id: 's1', name: 'Uptime', direction: 'below' as const, threshold: 95, dataSources: [] },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const result = await mgr.composeSoulContext();
+    expect(result).toContain('Uptime');
+    expect(result).toContain('Signals:');
+  });
+
+  it('composeSoulContext includes tradeoff profile notes when present', async () => {
+    const intent = makeIntent({
+      tradeoffProfiles: [
+        {
+          id: 'tp1',
+          name: 'Custom',
+          isDefault: true,
+          speedVsThoroughness: 0.5,
+          costVsQuality: 0.5,
+          autonomyVsConfirmation: 0.5,
+          notes: 'Prioritize user safety',
+        },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const result = await mgr.composeSoulContext();
+    expect(result).toContain('Prioritize user safety');
+  });
+
+  it('reloadActiveIntent clears signal cache', async () => {
+    const intent = makeIntent({
+      signals: [
+        { id: 's1', name: 'Test', direction: 'above' as const, threshold: 10, dataSources: [] },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    // Read signal to populate cache
+    await mgr.readSignal('s1');
+    expect((mgr as any).signalCache.size).toBe(1);
+    // Reload clears cache
+    await mgr.reloadActiveIntent();
+    expect((mgr as any).signalCache.size).toBe(0);
+  });
+
+  it('getGoalSkillSlugs returns empty set for goals without skills', async () => {
+    const intent = makeIntent({
+      goals: [
+        {
+          id: 'g1',
+          name: 'Goal',
+          priority: 1,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          signals: [],
+          authorizedActions: [],
+        },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+    const slugs = mgr.getGoalSkillSlugs();
+    expect(slugs.size).toBe(0);
+  });
 });

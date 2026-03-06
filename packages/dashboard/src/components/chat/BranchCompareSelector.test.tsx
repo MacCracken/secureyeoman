@@ -50,9 +50,7 @@ describe('BranchCompareSelector', () => {
       messageCount: 1,
       children: [],
     };
-    const { container } = render(
-      <BranchCompareSelector tree={singleNode} onCompare={vi.fn()} />
-    );
+    const { container } = render(<BranchCompareSelector tree={singleNode} onCompare={vi.fn()} />);
     expect(container.innerHTML).toBe('');
   });
 
@@ -97,9 +95,7 @@ describe('BranchCompareSelector', () => {
   });
 
   it('renders null when tree is null', () => {
-    const { container } = render(
-      <BranchCompareSelector tree={null} onCompare={vi.fn()} />
-    );
+    const { container } = render(<BranchCompareSelector tree={null} onCompare={vi.fn()} />);
     expect(container.innerHTML).toBe('');
   });
 });

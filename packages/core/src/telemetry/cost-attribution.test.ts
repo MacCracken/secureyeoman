@@ -2,9 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CostAttributionTracker, type CostEntry, type CostBudget } from './cost-attribution.js';
 
 const mockLogger = {
-  trace: vi.fn(), debug: vi.fn(), info: vi.fn(),
-  warn: vi.fn(), error: vi.fn(), fatal: vi.fn(),
-  child: vi.fn().mockReturnThis(), level: 'info' as const,
+  trace: vi.fn(),
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info' as const,
 };
 
 function makeEntry(overrides: Partial<CostEntry> = {}): CostEntry {
@@ -47,8 +52,17 @@ describe('CostAttributionTracker', () => {
 
   it('should compute summary by provider and model', () => {
     const now = Date.now();
-    tracker.record(makeEntry({ timestamp: now, provider: 'openai', model: 'gpt-4o', costUsd: 0.05 }));
-    tracker.record(makeEntry({ timestamp: now, provider: 'anthropic', model: 'claude-sonnet-4-6', costUsd: 0.01 }));
+    tracker.record(
+      makeEntry({ timestamp: now, provider: 'openai', model: 'gpt-4o', costUsd: 0.05 })
+    );
+    tracker.record(
+      makeEntry({
+        timestamp: now,
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-6',
+        costUsd: 0.01,
+      })
+    );
 
     const summary = tracker.getSummary('tenant-1', now - 1000, now + 1000);
     expect(summary.byProvider['openai'].costUsd).toBeCloseTo(0.05);
@@ -145,7 +159,9 @@ describe('CostAttributionTracker', () => {
 
       const csv = tracker.exportCsv();
       const lines = csv.split('\n');
-      expect(lines[0]).toBe('timestamp,tenant_id,personality_id,workflow_id,provider,model,input_tokens,output_tokens,cost_usd');
+      expect(lines[0]).toBe(
+        'timestamp,tenant_id,personality_id,workflow_id,provider,model,input_tokens,output_tokens,cost_usd'
+      );
       expect(lines).toHaveLength(3); // header + 2 rows
     });
 

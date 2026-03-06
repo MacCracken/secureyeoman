@@ -2,12 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  CategoryFilter,
-  CategoryGroupedGrid,
-  categoryLabel,
-  SKILL_CATEGORIES,
-} from './shared';
+import { CategoryFilter, CategoryGroupedGrid, categoryLabel, SKILL_CATEGORIES } from './shared';
 import type { CatalogSkill } from '../../types';
 
 function makeMockSkill(overrides: Partial<CatalogSkill> = {}): CatalogSkill {
@@ -116,7 +111,11 @@ describe('CategoryGroupedGrid', () => {
     render(
       <CategoryGroupedGrid
         skills={skills}
-        renderCard={(s) => <div key={s.id} data-testid={`card-${s.id}`}>{s.name}</div>}
+        renderCard={(s) => (
+          <div key={s.id} data-testid={`card-${s.id}`}>
+            {s.name}
+          </div>
+        )}
       />
     );
     expect(screen.getByText('Development')).toBeInTheDocument();
@@ -136,7 +135,11 @@ describe('CategoryGroupedGrid', () => {
     render(
       <CategoryGroupedGrid
         skills={skills}
-        renderCard={(s) => <div key={s.id} data-testid={`card-${s.id}`}>{s.name}</div>}
+        renderCard={(s) => (
+          <div key={s.id} data-testid={`card-${s.id}`}>
+            {s.name}
+          </div>
+        )}
       />
     );
     // No category headers when single category
@@ -154,7 +157,11 @@ describe('CategoryGroupedGrid', () => {
     render(
       <CategoryGroupedGrid
         skills={skills}
-        renderCard={(s) => <div key={s.id} data-testid={`card-${s.id}`}>{s.name}</div>}
+        renderCard={(s) => (
+          <div key={s.id} data-testid={`card-${s.id}`}>
+            {s.name}
+          </div>
+        )}
       />
     );
     // Both visible initially
@@ -178,10 +185,7 @@ describe('CategoryGroupedGrid', () => {
       makeMockSkill({ id: 's3', category: 'finance' }),
     ];
     const { container } = render(
-      <CategoryGroupedGrid
-        skills={skills}
-        renderCard={(s) => <div key={s.id}>{s.name}</div>}
-      />
+      <CategoryGroupedGrid skills={skills} renderCard={(s) => <div key={s.id}>{s.name}</div>} />
     );
     const headings = container.querySelectorAll('h3');
     const labels = Array.from(headings).map((h) => h.textContent);

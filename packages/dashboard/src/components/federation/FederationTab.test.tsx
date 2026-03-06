@@ -264,4 +264,241 @@ describe('FederationTab', () => {
       expect(screen.getByText('unknown')).toBeInTheDocument();
     });
   });
+
+  // ── Loading & Error States ──────────────────────────────────────
+
+  it('should show loading state while fetching peers', async () => {
+    let resolve: (v: { peers: typeof mockPeers }) => void;
+    mockFetchFederationPeers.mockReturnValue(
+      new Promise((r) => {
+        resolve = r;
+      })
+    );
+    renderTab();
+    expect(screen.getByText(/Loading peers/)).toBeInTheDocument();
+    resolve!({ peers: mockPeers });
+  });
+
+  it('should show error state when fetch fails', async () => {
+    mockFetchFederationPeers.mockRejectedValue(new Error('Network error'));
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load peers')).toBeInTheDocument();
+    });
+  });
+
+  // ── Collapse peer row ───────────────────────────────────────────
+
+  it('should collapse peer row when chevron is clicked again', async () => {
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    const expandBtn = screen.getByRole('button', { name: 'Expand' });
+    fireEvent.click(expandBtn);
+    expect(screen.getByText('Feature Sharing')).toBeInTheDocument();
+
+    const collapseBtn = screen.getByRole('button', { name: 'Collapse' });
+    fireEvent.click(collapseBtn);
+    expect(screen.queryByText('Feature Sharing')).not.toBeInTheDocument();
+  });
+
+  // ── Marketplace features ────────────────────────────────────────
+
+  it('should not show Browse marketplace button when marketplace feature is disabled', async () => {
+    mockFetchFederationPeers.mockResolvedValue({
+      peers: [
+        {
+          ...mockPeers[0],
+          features: { knowledge: true, marketplace: false, personalities: false },
+        },
+      ],
+    });
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    const expandBtn = screen.getByRole('button', { name: 'Expand' });
+    fireEvent.click(expandBtn);
+
+    expect(screen.queryByText('Browse peer marketplace')).not.toBeInTheDocument();
+  });
+
+  it('should show "No skills found" when peer marketplace has no skills', async () => {
+    mockFetchPeerMarketplace.mockResolvedValue({ skills: [] } as any);
+
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    const expandBtn = screen.getByRole('button', { name: 'Expand' });
+    fireEvent.click(expandBtn);
+    fireEvent.click(screen.getByText('Browse peer marketplace'));
+
+    await waitFor(() => {
+      expect(screen.getByText('No skills found.')).toBeInTheDocument();
+    });
+  });
+
+  it('should show skills in peer marketplace panel', async () => {
+    mockFetchPeerMarketplace.mockResolvedValue({
+      skills: [
+        { id: 'sk-1', name: 'Web Search', description: 'Search the web' },
+        { id: 'sk-2', name: 'Calculator', description: 'Do math' },
+      ],
+    } as any);
+
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    const expandBtn = screen.getByRole('button', { name: 'Expand' });
+    fireEvent.click(expandBtn);
+    fireEvent.click(screen.getByText('Browse peer marketplace'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Web Search')).toBeInTheDocument();
+      expect(screen.getByText('Calculator')).toBeInTheDocument();
+      expect(screen.getByText('Search the web')).toBeInTheDocument();
+    });
+  });
+
+  it('should close peer marketplace panel when Close is clicked', async () => {
+    mockFetchPeerMarketplace.mockResolvedValue({ skills: [] } as any);
+
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    const expandBtn = screen.getByRole('button', { name: 'Expand' });
+    fireEvent.click(expandBtn);
+    fireEvent.click(screen.getByText('Browse peer marketplace'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Remote Instance — Marketplace')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Close'));
+    expect(screen.queryByText('Remote Instance — Marketplace')).not.toBeInTheDocument();
+  });
+
+  // ── Bundles tab ─────────────────────────────────────────────────
+
+  it('should show personality dropdown in export section', async () => {
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [{ id: 'pers-1', name: 'Friday' }],
+    } as any);
+
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    fireEvent.click(screen.getByRole('button', { name: /personality bundles/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Select personality\u2026')).toBeInTheDocument();
+      expect(screen.getByText('Friday')).toBeInTheDocument();
+    });
+  });
+
+  it('should show export and import sections in bundles tab', async () => {
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    fireEvent.click(screen.getByRole('button', { name: /personality bundles/i }));
+
+    expect(screen.getByText('Export Personality Bundle')).toBeInTheDocument();
+    expect(screen.getByText('Import Personality Bundle')).toBeInTheDocument();
+    expect(screen.getByText(/Creates an encrypted/)).toBeInTheDocument();
+    expect(screen.getByText(/Decrypt and install/)).toBeInTheDocument();
+  });
+
+  it('should show Encryption Passphrase field in export section', async () => {
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    fireEvent.click(screen.getByRole('button', { name: /personality bundles/i }));
+
+    expect(screen.getByPlaceholderText('Strong passphrase')).toBeInTheDocument();
+  });
+
+  it('should show Passphrase and Name Override fields in import section', async () => {
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    fireEvent.click(screen.getByRole('button', { name: /personality bundles/i }));
+
+    expect(
+      screen.getByPlaceholderText('Passphrase used to encrypt the bundle')
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Rename on import')).toBeInTheDocument();
+  });
+
+  // ── Multiple peers ──────────────────────────────────────────────
+
+  it('should render multiple peers', async () => {
+    mockFetchFederationPeers.mockResolvedValue({
+      peers: [
+        ...mockPeers,
+        {
+          id: 'peer-2',
+          name: 'Second Instance',
+          url: 'https://second.example.com',
+          status: 'offline' as const,
+          features: { knowledge: false, marketplace: false, personalities: true },
+          lastSeen: null,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    });
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Remote Instance')).toBeInTheDocument();
+      expect(screen.getByText('Second Instance')).toBeInTheDocument();
+    });
+  });
+
+  // ── "Add your first peer" in empty state ────────────────────────
+
+  it('should show "Add your first peer" button in empty state', async () => {
+    mockFetchFederationPeers.mockResolvedValue({ peers: [] });
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Add your first peer')).toBeInTheDocument();
+    });
+  });
+
+  it('should open add form when "Add your first peer" is clicked in empty state', async () => {
+    mockFetchFederationPeers.mockResolvedValue({ peers: [] });
+    renderTab();
+    await waitFor(() => screen.getByText('Add your first peer'));
+    fireEvent.click(screen.getByText('Add your first peer'));
+    expect(screen.getByText('Add Federation Peer')).toBeInTheDocument();
+  });
+
+  // ── Tab switching ───────────────────────────────────────────────
+
+  it('should switch back to Peers from Bundles tab', async () => {
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    fireEvent.click(screen.getByRole('button', { name: /personality bundles/i }));
+    expect(screen.getByText('Export Personality Bundle')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^peers$/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Remote Instance')).toBeInTheDocument();
+    });
+  });
+
+  // ── Feature toggles ────────────────────────────────────────────
+
+  it('should show toggle switches for features when expanded', async () => {
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    const expandBtn = screen.getByRole('button', { name: 'Expand' });
+    fireEvent.click(expandBtn);
+
+    const switches = screen.getAllByRole('switch');
+    expect(switches.length).toBe(3);
+    // knowledge is on, marketplace is on, personalities is off
+    expect(switches[0]).toHaveAttribute('aria-checked', 'true');
+    expect(switches[1]).toHaveAttribute('aria-checked', 'true');
+    expect(switches[2]).toHaveAttribute('aria-checked', 'false');
+  });
 });

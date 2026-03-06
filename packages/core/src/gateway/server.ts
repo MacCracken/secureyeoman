@@ -56,7 +56,10 @@ import { registerSsoRoutes } from './sso-routes.js';
 // registerExperimentRoutes, registerMarketplaceRoutes — dynamic import (startup optimization)
 import { registerTerminalRoutes } from './terminal-routes.js';
 import { registerSearchRoutes } from './search-routes.js';
-import { registerAnnotationRoutes, InMemoryAnnotationStorage } from '../training/annotation-routes.js';
+import {
+  registerAnnotationRoutes,
+  InMemoryAnnotationStorage,
+} from '../training/annotation-routes.js';
 import { registerWorktreeRoutes } from './worktree-routes.js';
 // registerConversationRoutes, registerBranchingRoutes — dynamic import (startup optimization)
 // registerAgentRoutes, registerSwarmRoutes, registerProfileSkillsRoutes, registerTeamRoutes, registerCouncilRoutes — dynamic import (startup optimization)
@@ -713,7 +716,7 @@ export class GatewayServer {
     // Inline AI completion routes
     try {
       const aiClient = this.secureYeoman.getAIClient();
-      const personalityMgr = this.secureYeoman.getPersonalityManager();
+      const soulMgr = this.secureYeoman.getSoulManager();
       registerInlineCompleteRoutes(this.app, {
         aiClient: {
           async complete(prompt, options) {
@@ -725,11 +728,13 @@ export class GatewayServer {
             return resp.content;
           },
         },
-        personalityManager: personalityMgr ? {
-          async getById(id: string) {
-            return personalityMgr.getById(id);
-          },
-        } : undefined,
+        personalityManager: soulMgr
+          ? {
+              async getById(id: string) {
+                return soulMgr.getPersonality(id);
+              },
+            }
+          : undefined,
       });
     } catch {
       // AI client not available — inline completion disabled
@@ -989,7 +994,10 @@ export class GatewayServer {
       if (riskAssessmentManager) {
         const { registerRiskAssessmentRoutes } =
           await import('../risk-assessment/risk-assessment-routes.js');
-        registerRiskAssessmentRoutes(this.app, { riskAssessmentManager, secureYeoman: this.secureYeoman });
+        registerRiskAssessmentRoutes(this.app, {
+          riskAssessmentManager,
+          secureYeoman: this.secureYeoman,
+        });
       }
     });
 
@@ -999,7 +1007,10 @@ export class GatewayServer {
       if (departmentRiskManager) {
         const { registerDepartmentRiskRoutes } =
           await import('../risk-assessment/department-risk-routes.js');
-        registerDepartmentRiskRoutes(this.app, { departmentRiskManager, secureYeoman: this.secureYeoman });
+        registerDepartmentRiskRoutes(this.app, {
+          departmentRiskManager,
+          secureYeoman: this.secureYeoman,
+        });
       }
     });
 
@@ -1008,7 +1019,10 @@ export class GatewayServer {
       const providerAccountManager = this.secureYeoman.getProviderAccountManager();
       if (providerAccountManager) {
         const { registerProviderAccountRoutes } = await import('../ai/provider-account-routes.js');
-        registerProviderAccountRoutes(this.app, { providerAccountManager, secureYeoman: this.secureYeoman });
+        registerProviderAccountRoutes(this.app, {
+          providerAccountManager,
+          secureYeoman: this.secureYeoman,
+        });
       }
     });
 

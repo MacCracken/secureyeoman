@@ -4,7 +4,11 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ChaosManager } from './chaos-manager.js';
-import type { ChaosEngineeringConfig, ChaosExperiment, ChaosExperimentCreate } from '@secureyeoman/shared';
+import type {
+  ChaosEngineeringConfig,
+  ChaosExperiment,
+  ChaosExperimentCreate,
+} from '@secureyeoman/shared';
 
 const defaultConfig: ChaosEngineeringConfig = {
   enabled: true,
@@ -125,7 +129,17 @@ describe('ChaosManager', () => {
     await expect(
       manager.createExperiment({
         name: 'Too long',
-        rules: [{ id: 'r', name: 'r', targetType: 'workflow_step', targetId: 's', fault: { type: 'latency', minMs: 1, maxMs: 2, distribution: 'uniform' }, probability: 1, enabled: true }],
+        rules: [
+          {
+            id: 'r',
+            name: 'r',
+            targetType: 'workflow_step',
+            targetId: 's',
+            fault: { type: 'latency', minMs: 1, maxMs: 2, distribution: 'uniform' },
+            probability: 1,
+            enabled: true,
+          },
+        ],
         durationMs: 999_999_999,
       } as any)
     ).rejects.toThrow('exceeds max');
@@ -176,15 +190,17 @@ describe('ChaosManager', () => {
 
   it('rejects disallowed target types', async () => {
     const exp = makeExperiment({
-      rules: [{
-        id: 'r-1',
-        name: 'Bad target',
-        targetType: 'brain_storage',
-        targetId: 'store-1',
-        fault: { type: 'latency', minMs: 1, maxMs: 2, distribution: 'uniform' },
-        probability: 1,
-        enabled: true,
-      }],
+      rules: [
+        {
+          id: 'r-1',
+          name: 'Bad target',
+          targetType: 'brain_storage',
+          targetId: 'store-1',
+          fault: { type: 'latency', minMs: 1, maxMs: 2, distribution: 'uniform' },
+          probability: 1,
+          enabled: true,
+        },
+      ],
     });
     mockStore.getExperiment.mockResolvedValue(exp);
 

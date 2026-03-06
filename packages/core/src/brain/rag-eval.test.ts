@@ -26,14 +26,17 @@ describe('RagEvalEngine', () => {
   describe('scoreFaithfulness (token overlap)', () => {
     it('returns high score when answer matches context', async () => {
       const answer = 'The capital of France is Paris. It is a beautiful city.';
-      const contexts = ['Paris is the capital of France, known for its beautiful architecture and culture.'];
+      const contexts = [
+        'Paris is the capital of France, known for its beautiful architecture and culture.',
+      ];
 
       const score = await engine.scoreFaithfulness(answer, contexts);
       expect(score).toBeGreaterThanOrEqual(0.5);
     });
 
     it('returns low score when answer has no context support', async () => {
-      const answer = 'Quantum computing will revolutionize cryptography by breaking RSA encryption.';
+      const answer =
+        'Quantum computing will revolutionize cryptography by breaking RSA encryption.';
       const contexts = ['Paris is the capital of France.'];
 
       const score = await engine.scoreFaithfulness(answer, contexts);
@@ -80,7 +83,9 @@ describe('RagEvalEngine', () => {
       deps = createDeps({ aiProvider: mockAi as any });
       engine = new RagEvalEngine({ enabled: true, useLlmJudge: true }, deps);
 
-      const score = await engine.scoreFaithfulness('The capital is Paris.', ['Paris is the capital.']);
+      const score = await engine.scoreFaithfulness('The capital is Paris.', [
+        'Paris is the capital.',
+      ]);
       expect(score).toBeGreaterThan(0);
       expect(deps.logger.warn).toHaveBeenCalled();
     });
@@ -88,7 +93,10 @@ describe('RagEvalEngine', () => {
 
   describe('scoreAnswerRelevance', () => {
     it('uses token overlap when no embedding provider', async () => {
-      const score = await engine.scoreAnswerRelevance('What is Paris?', 'Paris is the capital of France.');
+      const score = await engine.scoreAnswerRelevance(
+        'What is Paris?',
+        'Paris is the capital of France.'
+      );
       expect(score).toBeGreaterThan(0);
     });
 
@@ -141,10 +149,7 @@ describe('RagEvalEngine', () => {
   describe('scoreChunkUtilization', () => {
     it('counts chunks referenced in answer', () => {
       const answer = 'Paris is the capital and France is in Europe.';
-      const contexts = [
-        'Paris is the capital of France.',
-        'The moon orbits the Earth.',
-      ];
+      const contexts = ['Paris is the capital of France.', 'The moon orbits the Earth.'];
 
       const score = engine.scoreChunkUtilization(answer, contexts);
       expect(score).toBe(0.5); // only first chunk is utilized

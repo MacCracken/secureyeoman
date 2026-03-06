@@ -69,7 +69,9 @@ describe('CloudWatchProvider', () => {
       secretAccessKey: 'secret',
     });
 
-    await expect(provider.send([makeEvent()])).rejects.toThrow('CloudWatch PutLogEvents returned 400');
+    await expect(provider.send([makeEvent()])).rejects.toThrow(
+      'CloudWatch PutLogEvents returned 400'
+    );
   });
 
   it('should throw when credentials are missing', async () => {

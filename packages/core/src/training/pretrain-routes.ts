@@ -15,14 +15,15 @@ export interface PretrainRouteOptions {
   secureYeoman?: SecureYeoman;
 }
 
-export function registerPretrainRoutes(
-  app: FastifyInstance,
-  opts: PretrainRouteOptions
-): void {
+export function registerPretrainRoutes(app: FastifyInstance, opts: PretrainRouteOptions): void {
   const { pretrainManager, corpusLoader, secureYeoman } = opts;
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 
@@ -93,13 +94,10 @@ export function registerPretrainRoutes(
 
   // ── Corpus ────────────────────────────────────────────────────────
 
-  app.get(
-    '/api/v1/training/pretrain/corpus',
-    async (_req: FastifyRequest, reply: FastifyReply) => {
-      const sources = corpusLoader.listSources();
-      return reply.send({ items: sources, total: sources.length });
-    }
-  );
+  app.get('/api/v1/training/pretrain/corpus', async (_req: FastifyRequest, reply: FastifyReply) => {
+    const sources = corpusLoader.listSources();
+    return reply.send({ items: sources, total: sources.length });
+  });
 
   app.post(
     '/api/v1/training/pretrain/corpus/validate',

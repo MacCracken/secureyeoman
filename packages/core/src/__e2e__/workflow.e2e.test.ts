@@ -94,21 +94,18 @@ describe('Workflow CRUD', () => {
     });
     const { definition: created } = await createRes.json();
 
-    const updateRes = await fetch(
-      `${server.baseUrl}/api/v1/workflows/${created.id}`,
-      {
-        method: 'PUT',
-        headers: authHeaders(token),
-        body: JSON.stringify({
-          name: 'Updated Workflow',
-          description: 'Updated description',
-          steps: created.steps,
-          edges: created.edges,
-          triggers: [],
-          isEnabled: false,
-        }),
-      },
-    );
+    const updateRes = await fetch(`${server.baseUrl}/api/v1/workflows/${created.id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        name: 'Updated Workflow',
+        description: 'Updated description',
+        steps: created.steps,
+        edges: created.edges,
+        triggers: [],
+        isEnabled: false,
+      }),
+    });
     expect(updateRes.status).toBe(200);
     const { definition: updated } = await updateRes.json();
     expect(updated.name).toBe('Updated Workflow');
@@ -123,10 +120,10 @@ describe('Workflow CRUD', () => {
     });
     const { definition: created } = await createRes.json();
 
-    const deleteRes = await fetch(
-      `${server.baseUrl}/api/v1/workflows/${created.id}`,
-      { method: 'DELETE', headers: authDeleteHeaders(token) },
-    );
+    const deleteRes = await fetch(`${server.baseUrl}/api/v1/workflows/${created.id}`, {
+      method: 'DELETE',
+      headers: authDeleteHeaders(token),
+    });
     expect(deleteRes.status).toBe(204);
 
     const listRes = await fetch(`${server.baseUrl}/api/v1/workflows`, {
@@ -137,10 +134,9 @@ describe('Workflow CRUD', () => {
   });
 
   it('returns error for non-existent workflow run', async () => {
-    const res = await fetch(
-      `${server.baseUrl}/api/v1/workflows/runs/non-existent-run`,
-      { headers: authHeaders(token) },
-    );
+    const res = await fetch(`${server.baseUrl}/api/v1/workflows/runs/non-existent-run`, {
+      headers: authHeaders(token),
+    });
     expect([404, 500]).toContain(res.status);
   });
 });
@@ -154,10 +150,9 @@ describe('Workflow export/import', () => {
     });
     const { definition: created } = await createRes.json();
 
-    const exportRes = await fetch(
-      `${server.baseUrl}/api/v1/workflows/${created.id}/export`,
-      { headers: authHeaders(token) },
-    );
+    const exportRes = await fetch(`${server.baseUrl}/api/v1/workflows/${created.id}/export`, {
+      headers: authHeaders(token),
+    });
     expect(exportRes.status).toBe(200);
     const exported = await exportRes.json();
     // Export wraps in { workflow, exportedAt, requires }
@@ -175,10 +170,9 @@ describe('Workflow export/import', () => {
     });
     const { definition: created } = await createRes.json();
 
-    const exportRes = await fetch(
-      `${server.baseUrl}/api/v1/workflows/${created.id}/export`,
-      { headers: authHeaders(token) },
-    );
+    const exportRes = await fetch(`${server.baseUrl}/api/v1/workflows/${created.id}/export`, {
+      headers: authHeaders(token),
+    });
     const exportPayload = await exportRes.json();
 
     // Change name to avoid conflict
@@ -206,10 +200,9 @@ describe('Workflow pagination', () => {
       });
     }
 
-    const res = await fetch(
-      `${server.baseUrl}/api/v1/workflows?limit=2&offset=0`,
-      { headers: authHeaders(token) },
-    );
+    const res = await fetch(`${server.baseUrl}/api/v1/workflows?limit=2&offset=0`, {
+      headers: authHeaders(token),
+    });
     const body = await res.json();
     expect(body.definitions).toHaveLength(2);
     expect(body.total).toBe(4);

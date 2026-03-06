@@ -14,10 +14,7 @@ export interface ReplayRouteOptions {
   replayEngine: ReplayEngine;
 }
 
-export function registerReplayRoutes(
-  app: FastifyInstance,
-  opts: ReplayRouteOptions
-): void {
+export function registerReplayRoutes(app: FastifyInstance, opts: ReplayRouteOptions): void {
   const { traceStore, replayEngine } = opts;
 
   // ── List traces ────────────────────────────────────────────────────
@@ -138,11 +135,7 @@ export function registerReplayRoutes(
         await traceStore.saveTrace(replayTrace);
         return reply.send(replayTrace);
       } catch (err) {
-        return sendError(
-          reply,
-          429,
-          err instanceof Error ? err.message : 'Replay failed'
-        );
+        return sendError(reply, 429, err instanceof Error ? err.message : 'Replay failed');
       }
     }
   );

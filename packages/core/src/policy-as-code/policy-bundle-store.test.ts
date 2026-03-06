@@ -28,7 +28,14 @@ describe('PolicyBundleStore', () => {
 
     await store.saveBundle({
       id: 'b-1',
-      metadata: { name: 'test', version: '1.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+      metadata: {
+        name: 'test',
+        version: '1.0.0',
+        description: '',
+        author: '',
+        tags: [],
+        enforcement: 'warn',
+      },
       files: [],
       commitSha: 'abc',
       ref: 'main',
@@ -52,16 +59,18 @@ describe('PolicyBundleStore', () => {
 
   it('getBundle returns bundle when found', async () => {
     mockQuery.mockResolvedValue({
-      rows: [{
-        id: 'b-1',
-        metadata: { name: 'test', version: '1.0.0' },
-        files: [],
-        commit_sha: 'abc',
-        ref: 'main',
-        compiled_at: 123,
-        valid: true,
-        validation_errors: [],
-      }],
+      rows: [
+        {
+          id: 'b-1',
+          metadata: { name: 'test', version: '1.0.0' },
+          files: [],
+          commit_sha: 'abc',
+          ref: 'main',
+          compiled_at: 123,
+          valid: true,
+          validation_errors: [],
+        },
+      ],
     });
 
     const result = await store.getBundle('b-1');
@@ -73,16 +82,18 @@ describe('PolicyBundleStore', () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [{ count: '1' }] }) // count query
       .mockResolvedValueOnce({
-        rows: [{
-          id: 'b-1',
-          metadata: { name: 'test', version: '1.0.0' },
-          files: [],
-          commit_sha: 'abc',
-          ref: 'main',
-          compiled_at: 123,
-          valid: true,
-          validation_errors: [],
-        }],
+        rows: [
+          {
+            id: 'b-1',
+            metadata: { name: 'test', version: '1.0.0' },
+            files: [],
+            commit_sha: 'abc',
+            ref: 'main',
+            compiled_at: 123,
+            valid: true,
+            validation_errors: [],
+          },
+        ],
       });
 
     const result = await store.listBundles();

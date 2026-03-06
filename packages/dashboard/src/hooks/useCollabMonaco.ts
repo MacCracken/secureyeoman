@@ -44,7 +44,7 @@ export function useCollabMonaco(docId: string | null): CollabMonacoState {
   const wsRef = useRef<WebSocket | null>(null);
   const editorRef = useRef<MonacoEditor | null>(null);
   const isRemoteRef = useRef(false); // guard against echo loops
-  const disposablesRef = useRef<Array<{ dispose: () => void }>>([]);
+  const disposablesRef = useRef<{ dispose: () => void }[]>([]);
 
   const disconnect = useCallback(() => {
     wsRef.current?.close();
@@ -108,10 +108,10 @@ export function useCollabMonaco(docId: string | null): CollabMonacoState {
       isRemoteRef.current = true;
       try {
         let offset = 0;
-        const edits: Array<{
+        const edits: {
           range: import('monaco-editor').IRange;
           text: string;
-        }> = [];
+        }[] = [];
 
         for (const delta of event.delta) {
           if (delta.retain != null) {
@@ -151,7 +151,11 @@ export function useCollabMonaco(docId: string | null): CollabMonacoState {
       }
     };
     ytext.observe(observer);
-    disposablesRef.current.push({ dispose: () => ytext.unobserve(observer) });
+    disposablesRef.current.push({
+      dispose: () => {
+        ytext.unobserve(observer);
+      },
+    });
   }, []);
 
   // Main effect: manage Y.Doc + WebSocket lifecycle

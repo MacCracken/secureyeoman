@@ -17,7 +17,10 @@ interface InlineCompleteBody {
 
 export interface InlineCompleteOptions {
   aiClient: {
-    complete(prompt: string, options?: { maxTokens?: number; temperature?: number; stop?: string[] }): Promise<string>;
+    complete(
+      prompt: string,
+      options?: { maxTokens?: number; temperature?: number; stop?: string[] }
+    ): Promise<string>;
   };
   personalityManager?: {
     getById(id: string): Promise<{ systemPrompt?: string } | null>;
@@ -32,10 +35,7 @@ export function registerInlineCompleteRoutes(
 
   app.post(
     '/api/v1/ai/inline-complete',
-    async (
-      request: FastifyRequest<{ Body: InlineCompleteBody }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: InlineCompleteBody }>, reply: FastifyReply) => {
       const { prefix, suffix, language, personalityId } = request.body ?? {};
 
       if (typeof prefix !== 'string') {

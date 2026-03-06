@@ -574,7 +574,11 @@ export class BrainManager {
             }
           }
 
-          const rankedMemories = this.applyCognitiveRanking(fetchedMemories, Date.now(), salienceMap);
+          const rankedMemories = this.applyCognitiveRanking(
+            fetchedMemories,
+            Date.now(),
+            salienceMap
+          );
           this.recordRetrieval(rankedMemories.map((m) => m.id));
 
           const memLines = ['### Memories (semantic)'];
@@ -1160,13 +1164,17 @@ export class BrainManager {
     this.deps.retrievalOptimizer?.recordFeedback(positive);
   }
 
-  getOptimizerStats(): ReturnType<import('./retrieval-optimizer.js').RetrievalOptimizer['getStats']> | null {
+  getOptimizerStats(): ReturnType<
+    import('./retrieval-optimizer.js').RetrievalOptimizer['getStats']
+  > | null {
     return this.deps.retrievalOptimizer?.getStats() ?? null;
   }
 
   // ── Reconsolidation (Phase 141) ────────────────────────────
 
-  getReconsolidationStats(): ReturnType<import('./reconsolidation.js').ReconsolidationManager['getStats']> | null {
+  getReconsolidationStats(): ReturnType<
+    import('./reconsolidation.js').ReconsolidationManager['getStats']
+  > | null {
     return this.deps.reconsolidationManager?.getStats() ?? null;
   }
 

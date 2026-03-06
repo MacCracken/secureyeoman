@@ -79,7 +79,10 @@ describe('kMeans', () => {
   });
 
   it('handles k > n by capping', () => {
-    const points = [[1, 0], [0, 1]];
+    const points = [
+      [1, 0],
+      [0, 1],
+    ];
     const result = kMeans(points, 5, 50);
     expect(result.assignments).toHaveLength(2);
     expect(result.centroids.length).toBeLessThanOrEqual(2);

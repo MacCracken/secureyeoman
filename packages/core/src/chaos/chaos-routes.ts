@@ -14,14 +14,15 @@ export interface ChaosRouteOptions {
   secureYeoman?: SecureYeoman;
 }
 
-export function registerChaosRoutes(
-  app: FastifyInstance,
-  opts: ChaosRouteOptions
-): void {
+export function registerChaosRoutes(app: FastifyInstance, opts: ChaosRouteOptions): void {
   const { chaosManager, secureYeoman } = opts;
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 
@@ -49,10 +50,7 @@ export function registerChaosRoutes(
 
   app.get(
     '/api/v1/chaos/experiments/:experimentId',
-    async (
-      req: FastifyRequest<{ Params: { experimentId: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (req: FastifyRequest<{ Params: { experimentId: string } }>, reply: FastifyReply) => {
       const experiment = await chaosManager.getExperiment(req.params.experimentId);
       if (!experiment) return sendError(reply, 404, 'Experiment not found');
       return reply.send(experiment);
@@ -81,10 +79,7 @@ export function registerChaosRoutes(
   app.post(
     '/api/v1/chaos/experiments/:experimentId/run',
     featureGuardOpts,
-    async (
-      req: FastifyRequest<{ Params: { experimentId: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (req: FastifyRequest<{ Params: { experimentId: string } }>, reply: FastifyReply) => {
       try {
         const result = await chaosManager.runExperiment(req.params.experimentId);
         return reply.send(result);
@@ -127,10 +122,7 @@ export function registerChaosRoutes(
   app.post(
     '/api/v1/chaos/experiments/:experimentId/abort',
     featureGuardOpts,
-    async (
-      req: FastifyRequest<{ Params: { experimentId: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (req: FastifyRequest<{ Params: { experimentId: string } }>, reply: FastifyReply) => {
       const aborted = await chaosManager.abortExperiment(req.params.experimentId);
       if (!aborted) return sendError(reply, 404, 'Experiment not running');
       return reply.send({ ok: true });
@@ -142,10 +134,7 @@ export function registerChaosRoutes(
   app.delete(
     '/api/v1/chaos/experiments/:experimentId',
     featureGuardOpts,
-    async (
-      req: FastifyRequest<{ Params: { experimentId: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (req: FastifyRequest<{ Params: { experimentId: string } }>, reply: FastifyReply) => {
       try {
         const deleted = await chaosManager.deleteExperiment(req.params.experimentId);
         if (!deleted) return sendError(reply, 404, 'Experiment not found');
@@ -160,10 +149,7 @@ export function registerChaosRoutes(
 
   app.get(
     '/api/v1/chaos/experiments/:experimentId/results',
-    async (
-      req: FastifyRequest<{ Params: { experimentId: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (req: FastifyRequest<{ Params: { experimentId: string } }>, reply: FastifyReply) => {
       const results = await chaosManager.getResults(req.params.experimentId);
       return reply.send({ items: results, total: results.length });
     }
@@ -171,13 +157,10 @@ export function registerChaosRoutes(
 
   // ── Status overview ────────────────────────────────────────────
 
-  app.get(
-    '/api/v1/chaos/status',
-    async (_req: FastifyRequest, reply: FastifyReply) => {
-      return reply.send({
-        runningExperiments: chaosManager.runningCount,
-        enabled: true,
-      });
-    }
-  );
+  app.get('/api/v1/chaos/status', async (_req: FastifyRequest, reply: FastifyReply) => {
+    return reply.send({
+      runningExperiments: chaosManager.runningCount,
+      enabled: true,
+    });
+  });
 }

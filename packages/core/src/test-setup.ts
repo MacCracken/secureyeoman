@@ -53,56 +53,33 @@ export async function setupTestDb(): Promise<void> {
  */
 export async function truncateAllTables(): Promise<void> {
   const pool = getPool();
-  const schemas = [
-    'a2a',
-    'admin',
-    'agents',
-    'audit',
-    'auth',
-    'brain',
-    'browser',
-    'chat',
-    'comms',
-    'dashboard',
-    'execution',
-    'experiment',
-    'extensions',
-    'federation',
-    'integration',
-    'marketplace',
-    'mcp',
-    'multimodal',
-    'proactive',
-    'rbac',
-    'risk',
-    'rotation',
-    'security',
-    'soul',
-    'spirit',
-    'task',
-    'telemetry',
-    'training',
-    'workflow',
-    'workspace',
-  ];
 
-  for (const schema of schemas) {
-    // Get all tables in the schema
-    const res = await pool.query(`SELECT tablename FROM pg_tables WHERE schemaname = $1`, [schema]);
-    for (const row of res.rows) {
-      const table = assertSafeIdentifier(row.tablename);
-      await pool.query(`TRUNCATE ${schema}."${table}" CASCADE`);
-    }
+  // Build a single TRUNCATE statement for all application tables.
+  // This is atomic, faster, and avoids mid-iteration schema-drop issues
+  // that occurred with per-table TRUNCATE CASCADE calls.
+  const res = await pool.query<{ full_name: string }>(
+    `SELECT schemaname || '.' || '"' || tablename || '"' AS full_name
+     FROM pg_tables
+     WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'public')
+       AND schemaname NOT LIKE 'pg_%'
+     ORDER BY schemaname, tablename`
+  );
+
+  if (res.rows.length > 0) {
+    const tableList = res.rows.map((r) => r.full_name).join(', ');
+    await pool.query(`TRUNCATE ${tableList} CASCADE`);
   }
 
   // Also truncate public-schema user tables (e.g. oauth_tokens, usage_records, outbound_webhooks)
   // Excludes schema_migrations so migration state is preserved across test runs.
-  const publicRes = await pool.query(
-    `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename != 'schema_migrations'`
+  const publicRes = await pool.query<{ full_name: string }>(
+    `SELECT 'public."' || tablename || '"' AS full_name
+     FROM pg_tables
+     WHERE schemaname = 'public' AND tablename != 'schema_migrations'`
   );
-  for (const row of publicRes.rows) {
-    const table = assertSafeIdentifier(row.tablename);
-    await pool.query(`TRUNCATE public."${table}" CASCADE`);
+  if (publicRes.rows.length > 0) {
+    const pubList = publicRes.rows.map((r) => r.full_name).join(', ');
+    await pool.query(`TRUNCATE ${pubList} CASCADE`);
   }
 
   // Re-seed the default tenant so FK constraints (tenant_id → auth.tenants) resolve.

@@ -126,8 +126,7 @@ export class ReconsolidationManager {
     this.stats.evaluated++;
 
     try {
-      const prompt = RECONSOLIDATION_PROMPT
-        .replace('{memory}', memory.content)
+      const prompt = RECONSOLIDATION_PROMPT.replace('{memory}', memory.content)
         .replace('{context}', queryContext)
         .replace('{overlapScore}', overlapScore.toFixed(2));
 
@@ -186,13 +185,16 @@ export class ReconsolidationManager {
 
         // Create new memories for each split piece
         for (const content of decision.splitContents) {
-          await this.deps.storage.createMemory({
-            type: original.type,
-            content,
-            source: original.source,
-            context: original.context,
-            importance: original.importance,
-          }, original.personalityId ?? undefined);
+          await this.deps.storage.createMemory(
+            {
+              type: original.type,
+              content,
+              source: original.source,
+              context: original.context,
+              importance: original.importance,
+            },
+            original.personalityId ?? undefined
+          );
         }
 
         // Delete the original

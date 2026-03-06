@@ -221,7 +221,7 @@ export class PromptAbTestManager {
    */
   complete(testId: string, winnerVariantId: string): PromptAbTest | null {
     const test = this.tests.get(testId);
-    if (!test || test.status !== 'running') return null;
+    if (test?.status !== 'running') return null;
 
     test.status = 'completed';
     test.completedAt = Date.now();
@@ -235,7 +235,7 @@ export class PromptAbTestManager {
    */
   cancel(testId: string): boolean {
     const test = this.tests.get(testId);
-    if (!test || test.status !== 'running') return false;
+    if (test?.status !== 'running') return false;
 
     test.status = 'completed';
     test.completedAt = Date.now();

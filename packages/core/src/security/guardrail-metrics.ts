@@ -87,7 +87,15 @@ export class GuardrailMetricsCollector {
         errorCount: stat.errors,
         activationRate:
           stat.executions > 0
-            ? Math.round(((stat.findings > 0 ? stat.blocks + stat.warnings + (stat.findings - stat.blocks - stat.warnings > 0 ? 1 : 0) : 0) / stat.executions) * 10000) / 10000
+            ? Math.round(
+                ((stat.findings > 0
+                  ? stat.blocks +
+                    stat.warnings +
+                    (stat.findings - stat.blocks - stat.warnings > 0 ? 1 : 0)
+                  : 0) /
+                  stat.executions) *
+                  10000
+              ) / 10000
             : 0,
       });
     }

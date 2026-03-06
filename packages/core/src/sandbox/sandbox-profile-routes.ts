@@ -16,13 +16,10 @@ export function registerSandboxProfileRoutes(
 ): void {
   const { profileRegistry } = opts;
 
-  app.get(
-    '/api/v1/sandbox/profiles',
-    async (_req: FastifyRequest, reply: FastifyReply) => {
-      const profiles = profileRegistry.listProfiles();
-      return reply.send({ items: profiles, total: profiles.length });
-    }
-  );
+  app.get('/api/v1/sandbox/profiles', async (_req: FastifyRequest, reply: FastifyReply) => {
+    const profiles = profileRegistry.listProfiles();
+    return reply.send({ items: profiles, total: profiles.length });
+  });
 
   app.get(
     '/api/v1/sandbox/profiles/:name',
@@ -33,31 +30,28 @@ export function registerSandboxProfileRoutes(
     }
   );
 
-  app.post(
-    '/api/v1/sandbox/profiles',
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const body = req.body as any;
-        if (!body.label) return sendError(reply, 400, 'label is required');
-        const profile = profileRegistry.saveCustomProfile({
-          name: 'custom',
-          label: body.label,
-          description: body.description ?? '',
-          enabled: body.enabled ?? true,
-          technology: body.technology ?? 'auto',
-          filesystem: body.filesystem ?? {},
-          resources: body.resources ?? {},
-          network: body.network ?? {},
-          credentialProxy: body.credentialProxy ?? {},
-          toolRestrictions: body.toolRestrictions ?? {},
-          tenantId: body.tenantId ?? 'default',
-        });
-        return reply.code(201).send(profile);
-      } catch (err) {
-        return sendError(reply, 400, (err as Error).message);
-      }
+  app.post('/api/v1/sandbox/profiles', async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const body = req.body as any;
+      if (!body.label) return sendError(reply, 400, 'label is required');
+      const profile = profileRegistry.saveCustomProfile({
+        name: 'custom',
+        label: body.label,
+        description: body.description ?? '',
+        enabled: body.enabled ?? true,
+        technology: body.technology ?? 'auto',
+        filesystem: body.filesystem ?? {},
+        resources: body.resources ?? {},
+        network: body.network ?? {},
+        credentialProxy: body.credentialProxy ?? {},
+        toolRestrictions: body.toolRestrictions ?? {},
+        tenantId: body.tenantId ?? 'default',
+      });
+      return reply.code(201).send(profile);
+    } catch (err) {
+      return sendError(reply, 400, (err as Error).message);
     }
-  );
+  });
 
   app.delete(
     '/api/v1/sandbox/profiles/:label',

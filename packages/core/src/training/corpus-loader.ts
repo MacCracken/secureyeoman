@@ -82,7 +82,11 @@ export class CorpusLoader {
           const fileStat = statSync(filePath);
           if (!fileStat.isFile()) continue;
           sizeBytes += fileStat.size;
-          const result = this.validateSingleFile(filePath, format ?? this.detectFormat(filePath), textField);
+          const result = this.validateSingleFile(
+            filePath,
+            format ?? this.detectFormat(filePath),
+            textField
+          );
           totalChars += result.chars;
           documentCount += result.documents;
           errors.push(...result.errors);
@@ -110,7 +114,11 @@ export class CorpusLoader {
   /** Register a validated corpus source. */
   registerSource(source: CorpusSource): void {
     this.sources.set(source.id, source);
-    this.log.info('Corpus source registered', { sourceId: source.id, name: source.name, format: source.format });
+    this.log.info('Corpus source registered', {
+      sourceId: source.id,
+      name: source.name,
+      format: source.format,
+    });
   }
 
   /** Get a registered source by ID. */

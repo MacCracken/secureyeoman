@@ -180,14 +180,17 @@ describe('ReplayEngine', () => {
       source,
       { mockToolCalls: false },
       {
-        executeAndTrace: () => new Promise((resolve) => setTimeout(() => resolve({ output: 'ok', model: 'm', provider: 'p' }), 100)),
+        executeAndTrace: () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve({ output: 'ok', model: 'm', provider: 'p' }), 100)
+          ),
       }
     );
 
     // Try another — should reject
-    await expect(
-      engine.replay(source, { mockToolCalls: true }, noopDeps)
-    ).rejects.toThrow('Maximum concurrent replays');
+    await expect(engine.replay(source, { mockToolCalls: true }, noopDeps)).rejects.toThrow(
+      'Maximum concurrent replays'
+    );
 
     await slow;
 

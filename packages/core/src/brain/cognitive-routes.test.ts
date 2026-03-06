@@ -4,12 +4,22 @@ import { registerCognitiveRoutes } from './cognitive-routes.js';
 
 function createMockBrainManager() {
   return {
-    getOptimizerStats: vi.fn().mockReturnValue([
-      { weights: { alpha: 0.3, hebbianScale: 1, boostCap: 0.5, salienceWeight: 0.1 }, mean: 0.6, pulls: 10 },
-    ]),
+    getOptimizerStats: vi
+      .fn()
+      .mockReturnValue([
+        {
+          weights: { alpha: 0.3, hebbianScale: 1, boostCap: 0.5, salienceWeight: 0.1 },
+          mean: 0.6,
+          pulls: 10,
+        },
+      ]),
     recordRetrievalFeedback: vi.fn(),
     getReconsolidationStats: vi.fn().mockReturnValue({
-      evaluated: 5, kept: 3, updated: 1, split: 1, errors: 0,
+      evaluated: 5,
+      kept: 3,
+      updated: 1,
+      split: 1,
+      errors: 0,
     }),
     getWorkingMemoryItems: vi.fn().mockReturnValue([]),
     getWorkingMemoryStats: vi.fn().mockReturnValue({ size: 0, prefetchSize: 0, trajectorySize: 0 }),
@@ -27,7 +37,11 @@ function createMockRagEval() {
       overall: 0.825,
     }),
     getLatencyPercentiles: vi.fn().mockReturnValue({
-      p50: 50, p95: 100, p99: 200, count: 10, mean: 60,
+      p50: 50,
+      p95: 100,
+      p99: 200,
+      count: 10,
+      mean: 60,
     }),
     getSummary: vi.fn().mockReturnValue({
       latency: { p50: 50, p95: 100, p99: 200, count: 10, mean: 60 },
@@ -39,12 +53,16 @@ function createMockRagEval() {
 
 function createMockSchemaClustering() {
   return {
-    runClustering: vi.fn().mockResolvedValue([
-      { id: 's1', label: 'Test', summary: 'test', memberIds: ['a', 'b'], coherence: 0.8 },
-    ]),
-    getSchemas: vi.fn().mockReturnValue([
-      { id: 's1', label: 'Test', summary: 'test', memberIds: ['a', 'b'], coherence: 0.8 },
-    ]),
+    runClustering: vi
+      .fn()
+      .mockResolvedValue([
+        { id: 's1', label: 'Test', summary: 'test', memberIds: ['a', 'b'], coherence: 0.8 },
+      ]),
+    getSchemas: vi
+      .fn()
+      .mockReturnValue([
+        { id: 's1', label: 'Test', summary: 'test', memberIds: ['a', 'b'], coherence: 0.8 },
+      ]),
   } as any;
 }
 

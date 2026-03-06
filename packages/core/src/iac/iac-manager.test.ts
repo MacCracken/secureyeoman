@@ -9,7 +9,9 @@ import type { IacConfig } from '@secureyeoman/shared';
 vi.mock('./iac-git-repo.js', () => ({
   IacGitRepo: function () {
     return {
-      getGitInfo: vi.fn().mockResolvedValue({ commitSha: 'abc123', branch: 'main', shortSha: 'abc123' }),
+      getGitInfo: vi
+        .fn()
+        .mockResolvedValue({ commitSha: 'abc123', branch: 'main', shortSha: 'abc123' }),
       pull: vi.fn().mockResolvedValue({ updated: true, commitSha: 'def456' }),
       discoverTemplates: vi.fn().mockResolvedValue([
         {
@@ -24,7 +26,10 @@ vi.mock('./iac-git-repo.js', () => ({
           tags: ['aws', 'vpc'],
           sraControlIds: [],
           files: [
-            { path: 'main.tf', content: 'resource "aws_vpc" "main" {\n  cidr_block = "10.0.0.0/16"\n}\n' },
+            {
+              path: 'main.tf',
+              content: 'resource "aws_vpc" "main" {\n  cidr_block = "10.0.0.0/16"\n}\n',
+            },
           ],
         },
       ]),
@@ -40,7 +45,13 @@ vi.mock('./iac-sra-populator.js', () => ({
 
 const defaultConfig: IacConfig = {
   enabled: true,
-  repo: { repoPath: '/tmp/iac-repo', remoteUrl: '', branch: 'main', templateDir: 'templates', syncIntervalSec: 0 },
+  repo: {
+    repoPath: '/tmp/iac-repo',
+    remoteUrl: '',
+    branch: 'main',
+    templateDir: 'templates',
+    syncIntervalSec: 0,
+  },
   maxTemplateFiles: 200,
   maxFileSizeBytes: 512_000,
   retainDeployments: 100,

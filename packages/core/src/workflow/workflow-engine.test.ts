@@ -141,6 +141,7 @@ function makeEngine(
     lineageStorage?: unknown;
     cicdConfig?: unknown;
     alertManager?: unknown;
+    councilManager?: unknown;
   } = {}
 ): WorkflowEngine {
   return new WorkflowEngine({
@@ -156,6 +157,7 @@ function makeEngine(
     lineageStorage: (opts.lineageStorage ?? null) as never,
     cicdConfig: (opts.cicdConfig ?? null) as never,
     alertManager: (opts.alertManager ?? null) as never,
+    councilManager: (opts.councilManager ?? null) as never,
   });
 }
 
@@ -2361,5 +2363,526 @@ describe('WorkflowEngine deterministic dispatch', () => {
     const run = makeRun();
     await engine.execute(run, def);
     expect(mockExecFileSync).toHaveBeenCalledWith('whoami', [], expect.any(Object));
+  });
+});
+
+// ── Additional branch coverage tests ──────────────────────────────────────────
+
+describe('WorkflowEngine.execute — step dispatch: council', () => {
+  it('fails workflow when councilManager not available', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'council1',
+      type: 'council',
+      config: { templateId: 'ct-1', topicTemplate: 'Discuss topic' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+
+  it('delegates to councilManager and captures result', async () => {
+    const storage = makeStorage();
+    const mockCouncilManager = {
+      convene: vi.fn().mockResolvedValue({ decision: 'Consensus reached' }),
+    };
+    const engine = makeEngine({ storage, councilManager: mockCouncilManager as any });
+    const step = makeStep({
+      id: 'council1',
+      type: 'council',
+      config: {
+        templateId: 'ct-1',
+        topicTemplate: 'Should we deploy?',
+        contextTemplate: 'Background info',
+        tokenBudget: 5000,
+        maxRounds: 3,
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockCouncilManager.convene).toHaveBeenCalledWith(
+      expect.objectContaining({
+        templateId: 'ct-1',
+        topic: 'Should we deploy?',
+        context: 'Background info',
+        tokenBudget: 5000,
+        maxRounds: 3,
+        initiatedBy: 'workflow',
+      })
+    );
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: diagram_generation', () => {
+  it('returns diagram config container with toolChain', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'diagram1',
+      type: 'diagram_generation',
+      config: {
+        diagramType: 'sequence',
+        descriptionTemplate: 'User flow diagram',
+        style: 'detailed',
+        format: 'png',
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('uses default values when config properties missing', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'diagram2',
+      type: 'diagram_generation',
+      config: {},
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: document_analysis', () => {
+  it('returns document analysis config with toolChain', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'doc1',
+      type: 'document_analysis',
+      config: {
+        analysisType: 'entities',
+        documentTemplate: 'Some document text',
+        outputFormat: 'json',
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('uses default values when config properties missing', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'doc2',
+      type: 'document_analysis',
+      config: {},
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — agent step with contextTemplate', () => {
+  it('includes context when contextTemplate is provided', async () => {
+    const mockSubAgentManager = {
+      delegate: vi.fn().mockResolvedValue({ result: 'Done with context' }),
+    };
+    const engine = makeEngine({ subAgentManager: mockSubAgentManager as any });
+    const step = makeStep({
+      id: 'agent-ctx',
+      type: 'agent',
+      config: {
+        profile: 'researcher',
+        taskTemplate: 'Do research',
+        contextTemplate: 'Prior context info',
+        modelOverride: 'gpt-4o',
+        maxTokenBudget: 10000,
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockSubAgentManager.delegate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: 'Prior context info',
+        modelOverride: 'gpt-4o',
+        maxTokenBudget: 10000,
+      })
+    );
+  });
+
+  it('omits context when contextTemplate is not provided', async () => {
+    const mockSubAgentManager = {
+      delegate: vi.fn().mockResolvedValue({ result: 'Done' }),
+    };
+    const engine = makeEngine({ subAgentManager: mockSubAgentManager as any });
+    const step = makeStep({
+      id: 'agent-noctx',
+      type: 'agent',
+      config: { profile: 'researcher', taskTemplate: 'Do research' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockSubAgentManager.delegate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: undefined,
+      })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — swarm step with optional params', () => {
+  it('passes contextTemplate and tokenBudget to swarmManager', async () => {
+    const mockSwarmManager = {
+      executeSwarm: vi.fn().mockResolvedValue({ result: 'Swarmed' }),
+    };
+    const engine = makeEngine({ swarmManager: mockSwarmManager as any });
+    const step = makeStep({
+      id: 'swarm-full',
+      type: 'swarm',
+      config: {
+        templateId: 'tmpl-1',
+        taskTemplate: 'Swarm task',
+        contextTemplate: 'Swarm context',
+        tokenBudget: 25000,
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockSwarmManager.executeSwarm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: 'Swarm context',
+        tokenBudget: 25000,
+      })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — subworkflow nesting depth limit', () => {
+  it('fails when subworkflow depth exceeds MAX_SUBWORKFLOW_DEPTH', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    // Set depth to max
+    (engine as any).subworkflowDepth = 10;
+    const step = makeStep({
+      id: 'sub1',
+      type: 'subworkflow',
+      config: { workflowId: 'wf-sub' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — subworkflow with inputTemplate', () => {
+  it('passes resolved input to sub-workflow', async () => {
+    const subDef = makeDefinition(
+      [makeStep({ id: 'sub-step1', type: 'transform', config: { outputTemplate: 'sub-done' } })],
+      { id: 'wf-sub', name: 'Sub WF' }
+    );
+    const subRun = makeRun({
+      id: 'sub-run-1',
+      workflowId: 'wf-sub',
+      output: { 'sub-step1': 'sub-done' },
+    });
+    const storage = makeStorage();
+    (storage.getDefinition as any).mockResolvedValue(subDef);
+    (storage.createRun as any).mockResolvedValue(subRun);
+    (storage.getRun as any).mockResolvedValue({ ...subRun, output: { result: 'sub-result' } });
+
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'sub-with-input',
+      type: 'subworkflow',
+      config: { workflowId: 'wf-sub', inputTemplate: 'some input data' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.createRun).toHaveBeenCalledWith(
+      'wf-sub',
+      'Sub WF',
+      expect.objectContaining({ data: 'some input data' }),
+      'subworkflow'
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — output record handling', () => {
+  it('stores string output directly as result', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'str-out',
+      type: 'transform',
+      config: { outputTemplate: 'hello world' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateStepRun).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        status: 'completed',
+        output: { result: 'hello world' },
+      })
+    );
+  });
+
+  it('stores null output without result wrapper', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'null-out',
+      type: 'mcp',
+      config: {},
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateStepRun).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        status: 'completed',
+        output: null,
+      })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — fallback step without fallbackStepId', () => {
+  it('onError=fallback without fallbackStepId — does not crash', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'fb-no-id',
+      type: 'agent',
+      config: { profile: 'test', taskTemplate: 'do it' },
+      onError: 'fallback',
+      // no fallbackStepId
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    // Should complete without crash
+    expect(storage.updateStepRun).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — training_job: distillation not available', () => {
+  it('fails when distillationManager not available for distillation job', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'train-dist-na',
+      type: 'training_job',
+      config: { jobType: 'distillation', jobId: 'job-1' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — evaluation without evaluationManager', () => {
+  it('fails when evaluationManager not available', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'eval-na',
+      type: 'evaluation',
+      config: { datasetPath: '/tmp/test.jsonl' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — conditional_deploy with NaN metric', () => {
+  it('does not deploy when metric is NaN', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'cond-nan',
+      type: 'conditional_deploy',
+      config: {
+        metricPath: 'steps.eval.output.nonexistent',
+        threshold: 0.5,
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    // Step should complete but with deployed:false since NaN < threshold
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — conditional_deploy with finetuneManager', () => {
+  it('registers with Ollama when finetuneManager and jobId are provided', async () => {
+    const mockFinetuneManager = {
+      registerWithOllama: vi.fn().mockResolvedValue(undefined),
+    };
+    const mockLineageStorage = {
+      recordDeployment: vi.fn().mockResolvedValue(undefined),
+    };
+    const engine = makeEngine({
+      finetuneManager: mockFinetuneManager as any,
+      lineageStorage: mockLineageStorage as any,
+    });
+
+    // Set up context with a high metric value
+    const evalStep = makeStep({
+      id: 'eval',
+      type: 'transform',
+      config: { outputTemplate: '0.9' },
+    });
+    const deployStep = makeStep({
+      id: 'deploy',
+      type: 'conditional_deploy',
+      config: {
+        metricPath: 'steps.eval.output',
+        threshold: 0.5,
+        jobId: 'job-123',
+      },
+      dependsOn: ['eval'],
+    });
+    const def = makeDefinition([evalStep, deployStep]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockFinetuneManager.registerWithOllama).toHaveBeenCalledWith(
+      'job-123',
+      'http://ollama:11434'
+    );
+  });
+
+  it('handles Ollama registration failure gracefully (non-fatal)', async () => {
+    const storage = makeStorage();
+    const mockFinetuneManager = {
+      registerWithOllama: vi.fn().mockRejectedValue(new Error('Ollama down')),
+    };
+    const engine = makeEngine({
+      storage,
+      finetuneManager: mockFinetuneManager as any,
+    });
+    const evalStep = makeStep({
+      id: 'eval',
+      type: 'transform',
+      config: { outputTemplate: '0.9' },
+    });
+    const deployStep = makeStep({
+      id: 'deploy',
+      type: 'conditional_deploy',
+      config: {
+        metricPath: 'steps.eval.output',
+        threshold: 0.5,
+        jobId: 'job-123',
+      },
+      dependsOn: ['eval'],
+    });
+    const def = makeDefinition([evalStep, deployStep]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    // Should still succeed
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — triggerMode: any edge cases', () => {
+  it('any-step with empty dependsOn behaves like a root step', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'any-root',
+      type: 'transform',
+      config: { outputTemplate: 'root-any' },
+      triggerMode: 'any' as any,
+      dependsOn: [],
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — webhook step defaults', () => {
+  it('uses POST and no body when not configured', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve('ok'),
+    });
+    try {
+      const engine = makeEngine();
+      const step = makeStep({
+        id: 'wh-defaults',
+        type: 'webhook',
+        config: { url: 'https://example.com/hook' },
+      });
+      const def = makeDefinition([step]);
+      const run = makeRun();
+      await engine.execute(run, def);
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'https://example.com/hook',
+        expect.objectContaining({
+          method: 'POST',
+          body: undefined,
+        })
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

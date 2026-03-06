@@ -9,9 +9,21 @@ import type { PolicyBundle, PolicyDeployment } from '@secureyeoman/shared';
 function makeBundle(overrides: Partial<PolicyBundle> = {}): PolicyBundle {
   return {
     id: 'bundle-1',
-    metadata: { name: 'test-bundle', version: '1.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+    metadata: {
+      name: 'test-bundle',
+      version: '1.0.0',
+      description: '',
+      author: '',
+      tags: [],
+      enforcement: 'warn',
+    },
     files: [
-      { path: 'access.rego', language: 'rego', source: 'package access\ndefault allow = false', sha256: 'a'.repeat(64) },
+      {
+        path: 'access.rego',
+        language: 'rego',
+        source: 'package access\ndefault allow = false',
+        sha256: 'a'.repeat(64),
+      },
       { path: 'check.cel', language: 'cel', source: 'role == "admin"', sha256: 'b'.repeat(64) },
     ],
     commitSha: 'abc123',
@@ -74,7 +86,12 @@ describe('PolicySync', () => {
 
   it('records PR metadata in deployment', async () => {
     const bundle = makeBundle();
-    const deployment = await sync.deploy(bundle, 'reviewer', 42, 'https://github.com/org/repo/pull/42');
+    const deployment = await sync.deploy(
+      bundle,
+      'reviewer',
+      42,
+      'https://github.com/org/repo/pull/42'
+    );
 
     expect(deployment.prNumber).toBe(42);
     expect(deployment.prUrl).toBe('https://github.com/org/repo/pull/42');
@@ -158,9 +175,7 @@ describe('PolicySync', () => {
 
     mockStore.getDeployment.mockResolvedValue(prevDeployment);
     mockStore.getBundle.mockResolvedValue(prevBundle);
-    mockStore.listDeployments.mockResolvedValue([
-      { id: 'deploy-current', status: 'deployed' },
-    ]);
+    mockStore.listDeployments.mockResolvedValue([{ id: 'deploy-current', status: 'deployed' }]);
 
     const deployment = await sync.rollback('test-bundle', 'deploy-prev', 'admin');
 

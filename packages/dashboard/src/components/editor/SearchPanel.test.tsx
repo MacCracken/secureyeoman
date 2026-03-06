@@ -42,7 +42,14 @@ describe('SearchPanel', () => {
   it('performs search on Enter', async () => {
     mockSearchFiles.mockResolvedValue({
       matches: [
-        { file: 'test.ts', line: 10, column: 0, text: 'const foo = 42;', contextBefore: [], contextAfter: [] },
+        {
+          file: 'test.ts',
+          line: 10,
+          column: 0,
+          text: 'const foo = 42;',
+          contextBefore: [],
+          contextAfter: [],
+        },
       ],
       fileCount: 1,
       matchCount: 1,
@@ -90,7 +97,14 @@ describe('SearchPanel', () => {
     const onNavigate = vi.fn();
     mockSearchFiles.mockResolvedValue({
       matches: [
-        { file: 'x.ts', line: 42, column: 0, text: 'match text', contextBefore: [], contextAfter: [] },
+        {
+          file: 'x.ts',
+          line: 42,
+          column: 0,
+          text: 'match text',
+          contextBefore: [],
+          contextAfter: [],
+        },
       ],
       fileCount: 1,
       matchCount: 1,
@@ -126,7 +140,9 @@ describe('SearchPanel', () => {
       : null;
     // Find close button by the X icon's parent
     const btns = screen.getAllByRole('button');
-    const xBtn = btns.find((b) => b.closest('[data-testid="search-panel"]') && b.querySelector('.lucide-x'));
+    const xBtn = btns.find(
+      (b) => b.closest('[data-testid="search-panel"]') && b.querySelector('.lucide-x')
+    );
     if (xBtn) {
       await userEvent.click(xBtn);
       expect(onClose).toHaveBeenCalled();

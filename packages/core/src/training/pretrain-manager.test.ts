@@ -25,16 +25,39 @@ function makeConfig(overrides: Partial<PretrainingConfig> = {}): PretrainingConf
 
 function makeJobRow(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'pt-abc', name: 'Test Job', status: 'pending', architecture: 'llama',
-    parameter_count: '125M', vocab_size: 32000, context_length: 2048,
-    hidden_size: 768, num_layers: 12, num_heads: 12, intermediate_size: 3072,
-    corpus_source_ids: [], total_tokens: 1000000, tokens_processed: 0,
-    batch_size: 32, gradient_accumulation_steps: 4, learning_rate: 0.0003,
-    lr_schedule: 'cosine', warmup_steps: 1000, weight_decay: 0.01,
-    max_steps: 100000, current_step: 0, checkpoint_steps: 5000, eval_steps: 1000,
-    image: 'ghcr.io/secureyeoman/pretrain-runner:latest', container_id: null,
-    output_path: null, error_message: null, num_gpus: 1,
-    created_at: Date.now(), started_at: 0, completed_at: 0, tenant_id: 'default',
+    id: 'pt-abc',
+    name: 'Test Job',
+    status: 'pending',
+    architecture: 'llama',
+    parameter_count: '125M',
+    vocab_size: 32000,
+    context_length: 2048,
+    hidden_size: 768,
+    num_layers: 12,
+    num_heads: 12,
+    intermediate_size: 3072,
+    corpus_source_ids: [],
+    total_tokens: 1000000,
+    tokens_processed: 0,
+    batch_size: 32,
+    gradient_accumulation_steps: 4,
+    learning_rate: 0.0003,
+    lr_schedule: 'cosine',
+    warmup_steps: 1000,
+    weight_decay: 0.01,
+    max_steps: 100000,
+    current_step: 0,
+    checkpoint_steps: 5000,
+    eval_steps: 1000,
+    image: 'ghcr.io/secureyeoman/pretrain-runner:latest',
+    container_id: null,
+    output_path: null,
+    error_message: null,
+    num_gpus: 1,
+    created_at: Date.now(),
+    started_at: 0,
+    completed_at: 0,
+    tenant_id: 'default',
     ...overrides,
   };
 }
@@ -54,24 +77,35 @@ describe('PretrainManager', () => {
       .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // listJobs (check concurrent)
       .mockResolvedValueOnce({ rows: [makeJobRow()], rowCount: 1 }); // INSERT
     const job = await manager.createJob({
-      name: 'Test', architecture: 'llama', parameterCount: '125M',
-      corpusSourceIds: [], totalTokens: 1000000,
+      name: 'Test',
+      architecture: 'llama',
+      parameterCount: '125M',
+      corpusSourceIds: [],
+      totalTokens: 1000000,
     } as any);
     expect(job.name).toBe('Test Job');
     expect(job.status).toBe('pending');
   });
 
   it('rejects job exceeding max model size', async () => {
-    await expect(manager.createJob({
-      name: 'Too Big', parameterCount: '7B', corpusSourceIds: [],
-    } as any)).rejects.toThrow('exceeds maximum');
+    await expect(
+      manager.createJob({
+        name: 'Too Big',
+        parameterCount: '7B',
+        corpusSourceIds: [],
+      } as any)
+    ).rejects.toThrow('exceeds maximum');
   });
 
   it('rejects when max concurrent jobs reached', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [makeJobRow(), makeJobRow()], rowCount: 2 });
-    await expect(manager.createJob({
-      name: 'Blocked', parameterCount: '125M', corpusSourceIds: [],
-    } as any)).rejects.toThrow('Max concurrent');
+    await expect(
+      manager.createJob({
+        name: 'Blocked',
+        parameterCount: '125M',
+        corpusSourceIds: [],
+      } as any)
+    ).rejects.toThrow('Max concurrent');
   });
 
   // ── Get / List ───────────────────────────────────────────────────
@@ -89,7 +123,10 @@ describe('PretrainManager', () => {
   });
 
   it('lists all jobs', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [makeJobRow(), makeJobRow({ id: 'pt-def' })], rowCount: 2 });
+    mockQuery.mockResolvedValueOnce({
+      rows: [makeJobRow(), makeJobRow({ id: 'pt-def' })],
+      rowCount: 2,
+    });
     const jobs = await manager.listJobs();
     expect(jobs).toHaveLength(2);
   });
@@ -143,7 +180,10 @@ describe('PretrainManager', () => {
 
   it('estimates parameter count', () => {
     const estimate = manager.estimateParams({
-      vocabSize: 32000, hiddenSize: 768, numLayers: 12, intermediateSize: 3072,
+      vocabSize: 32000,
+      hiddenSize: 768,
+      numLayers: 12,
+      intermediateSize: 3072,
     });
     // Should be roughly 125M range
     expect(estimate).toBeGreaterThan(50_000_000);

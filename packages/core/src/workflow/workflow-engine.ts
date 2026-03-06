@@ -309,17 +309,21 @@ export class WorkflowEngine {
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        output = await withSpan('secureyeoman.workflow', `workflow.step ${step.type}`, async (span) => {
-          span.setAttribute('workflow.id', definition.id);
-          span.setAttribute('workflow.run_id', runId);
-          span.setAttribute('workflow.step_id', step.id);
-          span.setAttribute('workflow.step_name', step.name);
-          span.setAttribute('workflow.step_type', step.type);
-          span.setAttribute('workflow.attempt', attempt + 1);
-          const result = await this.dispatchStep(step, ctx, runId, definition.id);
-          span.setAttribute('workflow.step_status', 'completed');
-          return result;
-        });
+        output = await withSpan(
+          'secureyeoman.workflow',
+          `workflow.step ${step.type}`,
+          async (span) => {
+            span.setAttribute('workflow.id', definition.id);
+            span.setAttribute('workflow.run_id', runId);
+            span.setAttribute('workflow.step_id', step.id);
+            span.setAttribute('workflow.step_name', step.name);
+            span.setAttribute('workflow.step_type', step.type);
+            span.setAttribute('workflow.attempt', attempt + 1);
+            const result = await this.dispatchStep(step, ctx, runId, definition.id);
+            span.setAttribute('workflow.step_status', 'completed');
+            return result;
+          }
+        );
 
         // ── Output schema validation (Phase 54 + Phase 83 strict mode) ──────
         const stepCfg = step.config as Record<string, unknown> | undefined;

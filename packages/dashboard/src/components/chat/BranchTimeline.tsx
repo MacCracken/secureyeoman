@@ -87,7 +87,7 @@ export function BranchTimeline({ tree, activeConversationId, onNavigate }: Branc
     <div className="space-y-0 p-4" data-testid="branch-timeline">
       {entries.map((entry, i) => {
         const isActive = entry.id === activeConversationId;
-        const depthColor = DEPTH_COLORS[entry.depth % DEPTH_COLORS.length]!;
+        const depthColor = DEPTH_COLORS[entry.depth % DEPTH_COLORS.length];
         const isLast = i === entries.length - 1;
 
         return (
@@ -100,7 +100,9 @@ export function BranchTimeline({ tree, activeConversationId, onNavigate }: Branc
 
             {/* Content */}
             <button
-              onClick={() => onNavigate(entry.id)}
+              onClick={() => {
+                onNavigate(entry.id);
+              }}
               className={`flex-1 text-left border rounded-lg p-2.5 mb-2 transition-colors hover:bg-accent/50 ${
                 isActive ? 'ring-2 ring-primary bg-primary/5' : ''
               }`}
@@ -112,9 +114,7 @@ export function BranchTimeline({ tree, activeConversationId, onNavigate }: Branc
                   ) : (
                     <GitBranch className="w-3 h-3 text-muted-foreground" />
                   )}
-                  <span className="text-xs font-medium truncate max-w-[180px]">
-                    {entry.title}
-                  </span>
+                  <span className="text-xs font-medium truncate max-w-[180px]">{entry.title}</span>
                 </div>
                 {entry.qualityScore != null && (
                   <span

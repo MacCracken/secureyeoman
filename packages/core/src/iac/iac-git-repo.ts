@@ -31,7 +31,7 @@ export interface DiscoveredTemplate {
   tags: string[];
   sraControlIds: string[];
   policyBundleName?: string;
-  files: Array<{ path: string; content: string }>;
+  files: { path: string; content: string }[];
 }
 
 export interface GitInfo {
@@ -60,10 +60,13 @@ function detectTool(files: string[]): IacTool {
   if (files.some((f) => f === 'cdk.json')) return 'cdk';
   if (files.some((f) => f.endsWith('.bicep'))) return 'bicep';
   if (files.some((f) => f.includes('playbook') || f.includes('ansible'))) return 'ansible';
-  if (files.some((f) => {
-    // Read content would be needed for full detection
-    return f.endsWith('.yaml') || f.endsWith('.yml');
-  })) return 'kubernetes';
+  if (
+    files.some((f) => {
+      // Read content would be needed for full detection
+      return f.endsWith('.yaml') || f.endsWith('.yml');
+    })
+  )
+    return 'kubernetes';
   return 'terraform'; // default
 }
 
@@ -168,9 +171,9 @@ export class IacGitRepo {
       category: (meta.category as IacCategory) ?? 'other',
       version: (meta.version as string) ?? '0.0.0',
       description: (meta.description as string) ?? '',
-      variables: Array.isArray(meta.variables) ? meta.variables as IacVariable[] : [],
-      tags: Array.isArray(meta.tags) ? meta.tags as string[] : [],
-      sraControlIds: Array.isArray(meta.sraControlIds) ? meta.sraControlIds as string[] : [],
+      variables: Array.isArray(meta.variables) ? (meta.variables as IacVariable[]) : [],
+      tags: Array.isArray(meta.tags) ? (meta.tags as string[]) : [],
+      sraControlIds: Array.isArray(meta.sraControlIds) ? (meta.sraControlIds as string[]) : [],
       policyBundleName: (meta.policyBundleName as string) ?? undefined,
       files: relevantFiles,
     };
@@ -179,9 +182,9 @@ export class IacGitRepo {
   private async discoverFiles(
     rootDir: string,
     currentDir: string
-  ): Promise<Array<{ path: string; content: string }>> {
+  ): Promise<{ path: string; content: string }[]> {
     const entries = await readdir(currentDir);
-    const files: Array<{ path: string; content: string }> = [];
+    const files: { path: string; content: string }[] = [];
 
     for (const entry of entries) {
       if (entry === '.git' || entry === 'node_modules' || entry === '.terraform') continue;

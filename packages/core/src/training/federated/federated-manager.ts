@@ -62,13 +62,18 @@ export class FederatedManager {
   // ── Session Management ─────────────────────────────────────────
 
   async createSession(input: FederatedSessionCreate): Promise<FederatedSession> {
-    const activeSessions = await this.store.listSessions({ status: 'active', limit: this.config.maxConcurrentSessions + 1 });
+    const activeSessions = await this.store.listSessions({
+      status: 'active',
+      limit: this.config.maxConcurrentSessions + 1,
+    });
     if (activeSessions.items.length >= this.config.maxConcurrentSessions) {
       throw new Error(`Max concurrent sessions (${this.config.maxConcurrentSessions}) reached`);
     }
 
     if (input.participantIds.length < input.minParticipants) {
-      throw new Error(`Need at least ${input.minParticipants} participants, got ${input.participantIds.length}`);
+      throw new Error(
+        `Need at least ${input.minParticipants} participants, got ${input.participantIds.length}`
+      );
     }
 
     const session: FederatedSession = {
@@ -89,9 +94,11 @@ export class FederatedManager {
     return this.store.getSession(id);
   }
 
-  async listSessions(
-    opts?: { status?: string; limit?: number; offset?: number }
-  ): Promise<{ items: FederatedSession[]; total: number }> {
+  async listSessions(opts?: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ items: FederatedSession[]; total: number }> {
     return this.store.listSessions(opts);
   }
 
@@ -153,9 +160,10 @@ export class FederatedManager {
     return this.store.getParticipant(id);
   }
 
-  async listParticipants(
-    opts?: { status?: string; limit?: number }
-  ): Promise<FederatedParticipant[]> {
+  async listParticipants(opts?: {
+    status?: string;
+    limit?: number;
+  }): Promise<FederatedParticipant[]> {
     return this.store.listParticipants(opts);
   }
 
@@ -209,21 +217,19 @@ export class FederatedManager {
     session.updatedAt = Date.now();
     await this.store.saveSession(session);
 
-    this.log.info(
-      { sessionId, roundId: round.id, roundNumber },
-      'Federated round started'
-    );
+    this.log.info({ sessionId, roundId: round.id, roundNumber }, 'Federated round started');
 
     return round;
   }
 
-  async submitUpdate(
-    roundId: string,
-    update: Omit<ModelUpdate, 'roundId'>
-  ): Promise<void> {
+  async submitUpdate(roundId: string, update: Omit<ModelUpdate, 'roundId'>): Promise<void> {
     const round = await this.store.getRound(roundId);
     if (!round) throw new Error(`Round ${roundId} not found`);
-    if (round.status !== 'distributing' && round.status !== 'training' && round.status !== 'collecting') {
+    if (
+      round.status !== 'distributing' &&
+      round.status !== 'training' &&
+      round.status !== 'collecting'
+    ) {
       throw new Error(`Round ${roundId} is not accepting updates (status: ${round.status})`);
     }
 
@@ -245,7 +251,12 @@ export class FederatedManager {
     await this.store.saveRound(round);
 
     this.log.info(
-      { roundId, participantId: update.participantId, received: round.updatesReceived, required: round.updatesRequired },
+      {
+        roundId,
+        participantId: update.participantId,
+        received: round.updatesReceived,
+        required: round.updatesRequired,
+      },
       'Model update submitted'
     );
 
@@ -289,10 +300,7 @@ export class FederatedManager {
     return this.store.getRound(id);
   }
 
-  async listRounds(
-    sessionId: string,
-    opts?: { limit?: number }
-  ): Promise<FederatedRound[]> {
+  async listRounds(sessionId: string, opts?: { limit?: number }): Promise<FederatedRound[]> {
     return this.store.listRounds(sessionId, opts);
   }
 

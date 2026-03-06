@@ -327,15 +327,61 @@ export class SchemaClusteringManager {
   private extractKeywords(samples: string[]): { label: string; summary: string } {
     const wordCounts = new Map<string, number>();
     const stopWords = new Set([
-      'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-      'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-      'should', 'may', 'might', 'can', 'to', 'of', 'in', 'for', 'on', 'with',
-      'at', 'by', 'from', 'as', 'into', 'through', 'and', 'or', 'but', 'not',
-      'this', 'that', 'it', 'its', 'they', 'them', 'their', 'we', 'our',
+      'the',
+      'a',
+      'an',
+      'is',
+      'are',
+      'was',
+      'were',
+      'be',
+      'been',
+      'being',
+      'have',
+      'has',
+      'had',
+      'do',
+      'does',
+      'did',
+      'will',
+      'would',
+      'could',
+      'should',
+      'may',
+      'might',
+      'can',
+      'to',
+      'of',
+      'in',
+      'for',
+      'on',
+      'with',
+      'at',
+      'by',
+      'from',
+      'as',
+      'into',
+      'through',
+      'and',
+      'or',
+      'but',
+      'not',
+      'this',
+      'that',
+      'it',
+      'its',
+      'they',
+      'them',
+      'their',
+      'we',
+      'our',
     ]);
 
     for (const sample of samples) {
-      const words = sample.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/);
+      const words = sample
+        .toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .split(/\s+/);
       for (const word of words) {
         if (word.length > 2 && !stopWords.has(word)) {
           wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
@@ -353,11 +399,7 @@ export class SchemaClusteringManager {
     return { label, summary };
   }
 
-  private computeCoherence(
-    embeddings: number[][],
-    indices: number[],
-    centroid: number[]
-  ): number {
+  private computeCoherence(embeddings: number[][], indices: number[], centroid: number[]): number {
     if (indices.length === 0) return 0;
 
     let totalSim = 0;

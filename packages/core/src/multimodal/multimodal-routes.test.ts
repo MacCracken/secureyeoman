@@ -4,6 +4,20 @@ import Fastify, { FastifyInstance } from 'fastify';
 import { registerMultimodalRoutes } from './multimodal-routes.js';
 import type { MultimodalManager } from './manager.js';
 
+vi.mock('./stt/transcribe.js', () => ({
+  createCustomVocabulary: vi.fn().mockResolvedValue({ vocabularyName: 'test', status: 'READY' }),
+  listCustomVocabularies: vi
+    .fn()
+    .mockResolvedValue([{ vocabularyName: 'test', languageCode: 'en-US' }]),
+  deleteCustomVocabulary: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('./tts/polly.js', () => ({
+  describeVoices: vi.fn().mockResolvedValue([{ id: 'Joanna', name: 'Joanna' }]),
+  listLexicons: vi.fn().mockResolvedValue([{ name: 'default' }]),
+  putLexicon: vi.fn().mockResolvedValue(undefined),
+}));
+
 function createMockManager(): MultimodalManager {
   return {
     analyzeImage: vi.fn().mockResolvedValue({ description: 'test', labels: [], durationMs: 10 }),
@@ -567,6 +581,385 @@ describe('Multimodal Routes — validation', () => {
       });
       expect(res.statusCode).toBe(200);
       expect(manager.setModel).toHaveBeenCalledWith('tts', 'tts-1-hd');
+    });
+  });
+
+  // ── Jobs endpoint ──────────────────────────────────────────────────
+
+  describe('GET /api/v1/multimodal/jobs', () => {
+    it('returns jobs list', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/multimodal/jobs',
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.payload).jobs).toEqual([]);
+    });
+
+    it('passes type and status query params', async () => {
+      const listJobsMock = manager.getStorage().listJobs as ReturnType<typeof vi.fn>;
+      await app.inject({
+        method: 'GET',
+        url: '/api/v1/multimodal/jobs?type=vision&status=completed&limit=5&offset=10',
+      });
+      expect(listJobsMock).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'vision', status: 'completed', limit: 5, offset: 10 })
+      );
+    });
+  });
+
+  // ── Config endpoint ─────────────────────────────────────────────
+
+  describe('GET /api/v1/multimodal/config', () => {
+    it('returns config with providers', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/multimodal/config',
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(body.enabled).toBe(true);
+      expect(body.providers).toBeDefined();
+      expect(body.providers.vision).toBeDefined();
+    });
+  });
+
+  // ── Provider/model error paths ──────────────────────────────────
+
+  describe('PATCH /api/v1/multimodal/provider error path', () => {
+    it('returns 500 when setProvider throws', async () => {
+      (manager.setProvider as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('provider switch failed')
+      );
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/multimodal/provider',
+        payload: { type: 'vision', provider: 'openai' },
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  describe('PATCH /api/v1/multimodal/model error path', () => {
+    it('returns 500 when setModel throws', async () => {
+      (manager.setModel as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('model not found')
+      );
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/multimodal/model',
+        payload: { type: 'stt', model: 'bad-model' },
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  // ── Vision/STT/TTS error paths ─────────────────────────────────
+
+  describe('POST /api/v1/multimodal/audio/transcribe error path', () => {
+    it('returns 500 when transcribeAudio throws', async () => {
+      (manager.transcribeAudio as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('STT provider unavailable')
+      );
+      const validAudio = Buffer.alloc(1200, 0x55).toString('base64');
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/audio/transcribe',
+        payload: { audioBase64: validAudio, format: 'mp3' },
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  describe('POST /api/v1/multimodal/audio/speak error path', () => {
+    it('returns 500 when synthesizeSpeech throws', async () => {
+      (manager.synthesizeSpeech as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('TTS provider error')
+      );
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/audio/speak',
+        payload: { text: 'Hello' },
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  describe('POST /api/v1/multimodal/image/generate error path', () => {
+    it('returns 500 when generateImage throws', async () => {
+      (manager.generateImage as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('Image gen failed')
+      );
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/image/generate',
+        payload: { prompt: 'A cat' },
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  // ── Streaming TTS unknown format fallback ──────────────────────
+
+  describe('POST /api/v1/multimodal/audio/speak/stream unknown format', () => {
+    it('falls back to audio/mpeg for unknown format', async () => {
+      (manager.synthesizeSpeechBinary as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        buffer: Buffer.from('data'),
+        format: 'unknown_format',
+        durationMs: 10,
+      });
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/audio/speak/stream',
+        payload: { text: 'Hello' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toBe('audio/mpeg');
+    });
+  });
+
+  // ── Custom Vocabulary routes ───────────────────────────────────
+
+  describe('POST /api/v1/multimodal/transcribe/vocabulary', () => {
+    it('creates a custom vocabulary', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/transcribe/vocabulary',
+        payload: {
+          vocabularyName: 'test-vocab',
+          languageCode: 'en-US',
+          entries: [{ phrase: 'SecureYeoman' }],
+        },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('rejects missing vocabularyName', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/transcribe/vocabulary',
+        payload: {
+          languageCode: 'en-US',
+          entries: [{ phrase: 'test' }],
+        },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('rejects missing entries', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/transcribe/vocabulary',
+        payload: {
+          vocabularyName: 'test-vocab',
+          languageCode: 'en-US',
+          entries: [],
+        },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('rejects invalid vocabularyName characters', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/transcribe/vocabulary',
+        payload: {
+          vocabularyName: 'bad name with spaces!',
+          languageCode: 'en-US',
+          entries: [{ phrase: 'test' }],
+        },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.payload).message).toContain('alphanumeric');
+    });
+
+    it('rejects vocabularyName over 200 chars', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/transcribe/vocabulary',
+        payload: {
+          vocabularyName: 'a'.repeat(201),
+          languageCode: 'en-US',
+          entries: [{ phrase: 'test' }],
+        },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 500 when createCustomVocabulary throws', async () => {
+      const { createCustomVocabulary } = await import('./stt/transcribe.js');
+      (createCustomVocabulary as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('AWS error')
+      );
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/transcribe/vocabulary',
+        payload: {
+          vocabularyName: 'test-vocab',
+          languageCode: 'en-US',
+          entries: [{ phrase: 'test' }],
+        },
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  describe('GET /api/v1/multimodal/transcribe/vocabulary', () => {
+    it('lists custom vocabularies', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/multimodal/transcribe/vocabulary',
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.payload).vocabularies).toBeDefined();
+    });
+
+    it('returns 500 when listCustomVocabularies throws', async () => {
+      const { listCustomVocabularies } = await import('./stt/transcribe.js');
+      (listCustomVocabularies as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('AWS error')
+      );
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/multimodal/transcribe/vocabulary',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  describe('DELETE /api/v1/multimodal/transcribe/vocabulary/:name', () => {
+    it('deletes a custom vocabulary', async () => {
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/multimodal/transcribe/vocabulary/test-vocab',
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.payload).ok).toBe(true);
+    });
+
+    it('returns 500 when deleteCustomVocabulary throws', async () => {
+      const { deleteCustomVocabulary } = await import('./stt/transcribe.js');
+      (deleteCustomVocabulary as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('AWS error')
+      );
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/multimodal/transcribe/vocabulary/test-vocab',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  // ── Polly Voice & Lexicon routes ───────────────────────────────
+
+  describe('GET /api/v1/multimodal/polly/voices', () => {
+    it('lists voices', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/multimodal/polly/voices',
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.payload).voices).toBeDefined();
+    });
+
+    it('passes languageCode query param', async () => {
+      const { describeVoices } = await import('./tts/polly.js');
+      await app.inject({
+        method: 'GET',
+        url: '/api/v1/multimodal/polly/voices?languageCode=en-US',
+      });
+      expect(describeVoices).toHaveBeenCalledWith('en-US');
+    });
+
+    it('returns 500 when describeVoices throws', async () => {
+      const { describeVoices } = await import('./tts/polly.js');
+      (describeVoices as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('AWS error'));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/multimodal/polly/voices',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  describe('GET /api/v1/multimodal/polly/lexicons', () => {
+    it('lists lexicons', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/multimodal/polly/lexicons',
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.payload).lexicons).toBeDefined();
+    });
+
+    it('returns 500 when listLexicons throws', async () => {
+      const { listLexicons } = await import('./tts/polly.js');
+      (listLexicons as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('AWS error'));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/multimodal/polly/lexicons',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  describe('POST /api/v1/multimodal/polly/lexicons', () => {
+    it('creates a lexicon', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/polly/lexicons',
+        payload: { name: 'my-lexicon', content: '<lexicon>...</lexicon>' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.payload).ok).toBe(true);
+    });
+
+    it('rejects missing name', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/polly/lexicons',
+        payload: { content: '<lexicon>...</lexicon>' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('rejects missing content', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/polly/lexicons',
+        payload: { name: 'my-lexicon' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('rejects invalid name characters', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/polly/lexicons',
+        payload: { name: 'bad name!', content: '<lexicon/>' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.payload).message).toContain('alphanumeric');
+    });
+
+    it('rejects name over 100 chars', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/polly/lexicons',
+        payload: { name: 'a'.repeat(101), content: '<lexicon/>' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 500 when putLexicon throws', async () => {
+      const { putLexicon } = await import('./tts/polly.js');
+      (putLexicon as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('AWS error'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/polly/lexicons',
+        payload: { name: 'my-lexicon', content: '<lexicon/>' },
+      });
+      expect(res.statusCode).toBe(500);
     });
   });
 

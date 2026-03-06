@@ -995,9 +995,9 @@ function StandardEditorPage() {
       // Keybinding-driven shortcuts
       const actions: Record<string, () => void> = {
         'run-code': handleRunCode,
-        'save-file': () => setTabs((prev) =>
-          prev.map((t) => (t.id === activeTabId ? { ...t, isDirty: false } : t))
-        ),
+        'save-file': () => {
+          setTabs((prev) => prev.map((t) => (t.id === activeTabId ? { ...t, isDirty: false } : t)));
+        },
         'new-file': createNewTab,
         'toggle-explorer': () => {
           const n = !showExplorer;
@@ -1009,11 +1009,21 @@ function StandardEditorPage() {
           localStorage.setItem('editor:showChat', String(n));
           setShowChat(n);
         },
-        'toggle-git': () => setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git'),
-        'toggle-settings': () => setSettingsOpen((v) => !v),
-        'toggle-split': () => setSplitView((v) => !v),
-        'toggle-search': () => setShowSearch((v) => !v),
-        'close-tab': () => closeTab(activeTabId),
+        'toggle-git': () => {
+          setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git');
+        },
+        'toggle-settings': () => {
+          setSettingsOpen((v) => !v);
+        },
+        'toggle-split': () => {
+          setSplitView((v) => !v);
+        },
+        'toggle-search': () => {
+          setShowSearch((v) => !v);
+        },
+        'close-tab': () => {
+          closeTab(activeTabId);
+        },
       };
 
       for (const binding of keybindings.bindings) {
@@ -1042,7 +1052,16 @@ function StandardEditorPage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeTabId, handleRunCode, createNewTab, closeTab, keybindings.bindings, showExplorer, showChat, activeBottomTab]);
+  }, [
+    activeTabId,
+    handleRunCode,
+    createNewTab,
+    closeTab,
+    keybindings.bindings,
+    showExplorer,
+    showChat,
+    activeBottomTab,
+  ]);
 
   // Command palette
   const commands = useMemo<CommandItem[]>(() => {
@@ -1126,7 +1145,9 @@ function StandardEditorPage() {
         label: 'Keyboard Shortcuts',
         category: 'panel',
         icon: <Settings className="w-3.5 h-3.5" />,
-        action: () => setKeybindingsOpen(true),
+        action: () => {
+          setKeybindingsOpen(true);
+        },
         keywords: ['keybindings', 'hotkeys', 'shortcuts'],
       },
       {
@@ -1278,7 +1299,7 @@ function StandardEditorPage() {
   // Clear plan when chat completes
   useEffect(() => {
     if (!isPending && aiPlan?.status === 'executing') {
-      setAiPlan((prev) => prev ? { ...prev, status: 'completed' } : prev);
+      setAiPlan((prev) => (prev ? { ...prev, status: 'completed' } : prev));
     }
   }, [isPending]);
 
@@ -1421,7 +1442,9 @@ function StandardEditorPage() {
               onToggleGit={() => {
                 setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git');
               }}
-              onToggleKeybindings={() => setKeybindingsOpen(true)}
+              onToggleKeybindings={() => {
+                setKeybindingsOpen(true);
+              }}
               collabUsers={collabUsers}
               collabConnected={collabConnected}
             />
@@ -1538,7 +1561,9 @@ function StandardEditorPage() {
                         editorRef.current.focus();
                       }
                     }}
-                    onClose={() => setShowSearch(false)}
+                    onClose={() => {
+                      setShowSearch(false);
+                    }}
                   />
                 </div>
               )}
@@ -1648,7 +1673,7 @@ function StandardEditorPage() {
                     ? 'active'
                     : isPending
                       ? 'thinking'
-                      : 'dormant' as EntityState
+                      : ('dormant' as EntityState)
                 }
                 height={120}
                 compact
@@ -1659,7 +1684,7 @@ function StandardEditorPage() {
                       ? 'REASONING'
                       : isPending
                         ? 'PROCESSING'
-                        : currentPersonality?.name?.toUpperCase() ?? 'STANDBY'
+                        : (currentPersonality?.name?.toUpperCase() ?? 'STANDBY')
                 }
               />
 
@@ -2089,7 +2114,9 @@ function StandardEditorPage() {
       {/* Keybindings Editor overlay */}
       <KeybindingsEditor
         open={keybindingsOpen}
-        onClose={() => setKeybindingsOpen(false)}
+        onClose={() => {
+          setKeybindingsOpen(false);
+        }}
       />
       {annotationPopover}
     </div>

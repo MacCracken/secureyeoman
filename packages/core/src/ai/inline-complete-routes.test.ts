@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Fastify from 'fastify';
-import { registerInlineCompleteRoutes, type InlineCompleteOptions } from './inline-complete-routes.js';
+import {
+  registerInlineCompleteRoutes,
+  type InlineCompleteOptions,
+} from './inline-complete-routes.js';
 
 vi.mock('../logging/logger.js', () => ({
   getLogger: () => ({

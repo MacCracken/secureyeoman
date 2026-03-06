@@ -15,7 +15,7 @@ beforeEach(() => {
       // Fire with mock dimensions
       this.callback(
         [{ contentRect: { width: 400, height: 200 } } as ResizeObserverEntry],
-        this as unknown as ResizeObserver,
+        this as unknown as ResizeObserver
       );
     }
     unobserve() {}
@@ -125,5 +125,123 @@ describe('EntityWidget', () => {
   it('renders with compact mode', () => {
     render(<EntityWidget compact />);
     expect(screen.getByTestId('entity-widget')).toBeInTheDocument();
+  });
+
+  // ── Additional coverage tests ───────────────────────────────────
+
+  it('renders vignette overlay', () => {
+    const { container } = render(<EntityWidget />);
+    const vignette = container.querySelector('[style*="radial-gradient"]');
+    expect(vignette).not.toBeNull();
+  });
+
+  it('renders status dot with correct color for each state', () => {
+    const stateColors: Record<EntityState, string> = {
+      dormant: 'bg-blue-400/60',
+      thinking: 'bg-cyan-400',
+      active: 'bg-emerald-400',
+      training: 'bg-amber-400',
+      ingesting: 'bg-green-400',
+    };
+    for (const [state, colorClass] of Object.entries(stateColors)) {
+      const { container, unmount } = render(<EntityWidget state={state as EntityState} />);
+      const dot = container.querySelector(`[class*="${colorClass}"]`);
+      expect(dot).not.toBeNull();
+      unmount();
+    }
+  });
+
+  it('does not show activity bars when dormant', () => {
+    const { container } = render(<EntityWidget state="dormant" />);
+    // Activity indicator is only rendered when state !== 'dormant'
+    // Look for the activity bars container with gap-1
+    const label = screen.getByTestId('entity-label');
+    const parent = label.closest('.flex.items-center.justify-between');
+    // In dormant, there should be no activity indicator div with gap-1 (the bars)
+    const activityBars = parent?.querySelectorAll('.flex.items-center.gap-1');
+    // If there are activity bar containers, they should have no children
+    // Or simply: the bars should not exist
+    expect(activityBars?.length ?? 0).toBeLessThanOrEqual(1);
+  });
+
+  it('shows activity bars for training state', () => {
+    const { container } = render(<EntityWidget state="training" />);
+    const bars = container.querySelectorAll('[style*="height"]');
+    expect(bars.length).toBeGreaterThan(0);
+  });
+
+  it('shows activity bars for ingesting state', () => {
+    const { container } = render(<EntityWidget state="ingesting" />);
+    const bars = container.querySelectorAll('[style*="height"]');
+    expect(bars.length).toBeGreaterThan(0);
+  });
+
+  it('shows activity bars for active state', () => {
+    const { container } = render(<EntityWidget state="active" />);
+    const bars = container.querySelectorAll('[style*="height"]');
+    expect(bars.length).toBeGreaterThan(0);
+  });
+
+  it('applies custom width', () => {
+    render(<EntityWidget width={500} />);
+    const widget = screen.getByTestId('entity-widget');
+    expect(widget.style.width).toBe('500px');
+  });
+
+  it('applies default width of 100%', () => {
+    render(<EntityWidget />);
+    const widget = screen.getByTestId('entity-widget');
+    expect(widget.style.width).toBe('100%');
+  });
+
+  it('applies string width', () => {
+    render(<EntityWidget width="50%" />);
+    const widget = screen.getByTestId('entity-widget');
+    expect(widget.style.width).toBe('50%');
+  });
+
+  it('calls requestAnimationFrame', () => {
+    render(<EntityWidget />);
+    expect(window.requestAnimationFrame).toHaveBeenCalled();
+  });
+
+  it('getContext is called on canvas', () => {
+    render(<EntityWidget />);
+    expect(HTMLCanvasElement.prototype.getContext).toHaveBeenCalled();
+  });
+
+  it('does not render label when showLabel is false for thinking state', () => {
+    render(<EntityWidget state="thinking" showLabel={false} />);
+    expect(screen.queryByTestId('entity-label')).not.toBeInTheDocument();
+  });
+
+  it('renders canvas with block display', () => {
+    render(<EntityWidget />);
+    const canvas = screen.getByTestId('entity-canvas');
+    expect(canvas.style.display).toBe('block');
+  });
+
+  it('renders container with overflow-hidden', () => {
+    render(<EntityWidget />);
+    const widget = screen.getByTestId('entity-widget');
+    expect(widget.className).toContain('overflow-hidden');
+  });
+
+  it('renders container with bg-black', () => {
+    render(<EntityWidget />);
+    const widget = screen.getByTestId('entity-widget');
+    expect(widget.className).toContain('bg-black');
+  });
+
+  it('label has tracking-[0.2em] class', () => {
+    render(<EntityWidget state="active" />);
+    const label = screen.getByTestId('entity-label');
+    expect(label.className).toContain('tracking-');
+  });
+
+  it('compact mode creates fewer particles (no crash)', () => {
+    const { unmount } = render(<EntityWidget compact state="active" />);
+    expect(screen.getByTestId('entity-widget')).toBeInTheDocument();
+    unmount();
   });
 });

@@ -69,19 +69,27 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### Test Coverage — Final Push (Phase 105)
+### Test Coverage — Current Status (2026-03-06)
 
-Current: 86.35% stmt / 76.24% branches / 87.21% lines. Target: 88% stmt / 77% branches.
+**Core unit: 89.67% stmt / 79.49% branches** (target 88% / 77% — exceeded).
 
-**Remaining targets by coverage gap** (directory-level):
+| Suite | Files | Tests | Stmts % | Branch % | Status |
+|-------|-------|-------|---------|----------|--------|
+| Core Unit | 607 | 15,110 | 89.67 | 79.49 | All passing |
+| Dashboard | 100 | 1,408 | 44.56 | 46.32 | All passing |
+| MCP | 57 | 820 | 58.51 | 46.51 | All passing |
+| Core E2E | 7 | 53 | — | — | All passing |
+| Core DB (integration) | 41 | 886 | — | — | All passing (clean DB verified) |
 
-| Directory | Priority |
-|-----------|----------|
-| `sandbox/` | MEDIUM — sandbox exec branches |
-| `cli/commands/` | MEDIUM — flag parsing branches |
-| `config/` | MEDIUM — config validation branches |
-| `training/` | MEDIUM — manager logic branches |
-| `workflow/` | LOW — good stmt, branch gap in engine conditions |
+**Improvement areas per suite:**
+
+| Suite | Area | Notes |
+|-------|------|-------|
+| Core Unit | `sandbox/`, `config/`, `cli/commands/` | Branch coverage gaps in exec paths and flag parsing |
+| Core Unit | `training/federated/`, `workflow/` | Manager logic branches, engine conditions |
+| Dashboard | All components | 44% stmt coverage — unit test sweep in progress |
+| MCP | Tool handlers, manifest | 58% stmt coverage — unit test sweep in progress |
+| Core E2E | Expand coverage | Currently 7 files / 53 tests; add training, delegation, analytics flows |
 
 ---
 

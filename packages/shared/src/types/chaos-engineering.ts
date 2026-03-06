@@ -188,12 +188,14 @@ export const ChaosExperimentResultSchema = z.object({
   faultResults: z.array(FaultInjectionResultSchema).default([]),
   steadyStateValidated: z.boolean().default(false),
   summary: z.string().default(''),
-  metrics: z.object({
-    totalFaultsInjected: z.number().default(0),
-    faultsRecovered: z.number().default(0),
-    meanRecoveryTimeMs: z.number().default(0),
-    circuitBreakersTripped: z.number().default(0),
-  }).default({}),
+  metrics: z
+    .object({
+      totalFaultsInjected: z.number().default(0),
+      faultsRecovered: z.number().default(0),
+      meanRecoveryTimeMs: z.number().default(0),
+      circuitBreakersTripped: z.number().default(0),
+    })
+    .default({}),
 });
 export type ChaosExperimentResult = z.infer<typeof ChaosExperimentResultSchema>;
 
@@ -206,12 +208,9 @@ export const ChaosEngineeringConfigSchema = z
     maxExperimentDurationMs: z.number().int().min(1000).default(600_000),
     retainResults: z.number().int().min(1).default(200),
     safeMode: z.boolean().default(true),
-    allowedTargetTypes: z.array(ChaosTargetTypeSchema).default([
-      'workflow_step',
-      'ai_provider',
-      'integration',
-      'circuit_breaker',
-    ]),
+    allowedTargetTypes: z
+      .array(ChaosTargetTypeSchema)
+      .default(['workflow_step', 'ai_provider', 'integration', 'circuit_breaker']),
   })
   .default({});
 export type ChaosEngineeringConfig = z.infer<typeof ChaosEngineeringConfigSchema>;

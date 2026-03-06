@@ -376,5 +376,493 @@ describe('GmailIntegration', () => {
       await vi.advanceTimersByTimeAsync(1001);
       expect(mockLogger.warn).toHaveBeenCalled();
     });
+
+    it('skips messages without messagesAdded', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      mockFetch.mockResolvedValueOnce(makeProfileResponse()); // init
+      await adapter.init(makeConfig({ pollIntervalMs: 1000 }), makeDeps(onMessage));
+      await adapter.start();
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          history: [{ id: 'h-empty' }], // no messagesAdded
+          historyId: 'h-300',
+        }),
+        text: vi.fn().mockResolvedValue(''),
+      });
+
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(onMessage).not.toHaveBeenCalled();
+    });
+
+    it('skips empty history', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      mockFetch.mockResolvedValueOnce(makeProfileResponse()); // init
+      await adapter.init(makeConfig({ pollIntervalMs: 1000 }), makeDeps(onMessage));
+      await adapter.start();
+
+      mockFetch.mockResolvedValueOnce(makeHistoryResponse([])); // no history entries
+
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(onMessage).not.toHaveBeenCalled();
+    });
+
+    it('handles poll error gracefully', async () => {
+      mockFetch.mockResolvedValueOnce(makeProfileResponse()); // init
+      await adapter.init(makeConfig({ pollIntervalMs: 1000 }), makeDeps());
+      await adapter.start();
+
+      mockFetch.mockRejectedValueOnce(new Error('Connection reset'));
+
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(mockLogger.warn).toHaveBeenCalledWith('Gmail poll error', expect.any(Object));
+    });
+
+    it('handles non-Error poll error', async () => {
+      mockFetch.mockResolvedValueOnce(makeProfileResponse()); // init
+      await adapter.init(makeConfig({ pollIntervalMs: 1000 }), makeDeps());
+      await adapter.start();
+
+      mockFetch.mockRejectedValueOnce('string error');
+
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(mockLogger.warn).toHaveBeenCalledWith('Gmail poll error', {
+        error: 'Unknown error',
+      });
+    });
+
+    it('skips message when processMessage fetch fails', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      mockFetch.mockResolvedValueOnce(makeProfileResponse()); // init
+      await adapter.init(makeConfig({ pollIntervalMs: 1000 }), makeDeps(onMessage));
+      await adapter.start();
+
+      mockFetch.mockResolvedValueOnce(makeHistoryResponse(['msg-fail']));
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500 }); // processMessage fails
+
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(onMessage).not.toHaveBeenCalled();
+    });
+
+    it('extracts text from multipart payload (text/plain part)', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      mockFetch.mockResolvedValueOnce(makeProfileResponse()); // init
+      await adapter.init(makeConfig({ pollIntervalMs: 1000 }), makeDeps(onMessage));
+      await adapter.start();
+
+      const bodyData = Buffer.from('Multipart text body').toString('base64url');
+      mockFetch.mockResolvedValueOnce(makeHistoryResponse(['msg-mp']));
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          id: 'msg-mp',
+          threadId: 't-mp',
+          labelIds: ['INBOX'],
+          snippet: 'MP',
+          internalDate: '1700000000000',
+          payload: {
+            mimeType: 'multipart/alternative',
+            headers: [
+              { name: 'From', value: 'Bob <bob@example.com>' },
+              { name: 'Subject', value: 'MP Subject' },
+              { name: 'Message-ID', value: '<mp@example.com>' },
+            ],
+            parts: [
+              { mimeType: 'text/plain', body: { data: bodyData, size: 19 } },
+              { mimeType: 'text/html', body: { data: 'aHRtbA', size: 4 } },
+            ],
+          },
+        }),
+        text: vi.fn().mockResolvedValue(''),
+      });
+
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(onMessage).toHaveBeenCalledOnce();
+      expect(onMessage.mock.calls[0][0].text).toBe('Multipart text body');
+    });
+
+    it('extracts text from nested multipart via recursion', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      mockFetch.mockResolvedValueOnce(makeProfileResponse()); // init
+      await adapter.init(makeConfig({ pollIntervalMs: 1000 }), makeDeps(onMessage));
+      await adapter.start();
+
+      const bodyData = Buffer.from('Deep nested text').toString('base64url');
+      mockFetch.mockResolvedValueOnce(makeHistoryResponse(['msg-nested']));
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          id: 'msg-nested',
+          threadId: 't-nested',
+          labelIds: ['INBOX'],
+          snippet: 'Nested',
+          internalDate: '1700000000000',
+          payload: {
+            mimeType: 'multipart/mixed',
+            headers: [
+              { name: 'From', value: 'nested@example.com' },
+              { name: 'Subject', value: 'Nested' },
+              { name: 'Message-ID', value: '<nested@example.com>' },
+            ],
+            parts: [
+              {
+                mimeType: 'multipart/alternative',
+                parts: [{ mimeType: 'text/plain', body: { data: bodyData, size: 16 } }],
+              },
+            ],
+          },
+        }),
+        text: vi.fn().mockResolvedValue(''),
+      });
+
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(onMessage).toHaveBeenCalledOnce();
+      expect(onMessage.mock.calls[0][0].text).toBe('Deep nested text');
+    });
+
+    it('returns empty string when no text body found', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      mockFetch.mockResolvedValueOnce(makeProfileResponse()); // init
+      await adapter.init(makeConfig({ pollIntervalMs: 1000 }), makeDeps(onMessage));
+      await adapter.start();
+
+      mockFetch.mockResolvedValueOnce(makeHistoryResponse(['msg-notext']));
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          id: 'msg-notext',
+          threadId: 't-notext',
+          labelIds: ['INBOX'],
+          snippet: 'No text',
+          internalDate: '1700000000000',
+          payload: {
+            mimeType: 'image/png',
+            headers: [
+              { name: 'From', value: 'img@example.com' },
+              { name: 'Subject', value: 'Image only' },
+              { name: 'Message-ID', value: '<img@example.com>' },
+            ],
+            body: { size: 0 },
+          },
+        }),
+        text: vi.fn().mockResolvedValue(''),
+      });
+
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(onMessage).toHaveBeenCalledOnce();
+      expect(onMessage.mock.calls[0][0].text).toBe('');
+    });
+
+    it('parses sender without angle bracket format', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      mockFetch.mockResolvedValueOnce(makeProfileResponse()); // init
+      await adapter.init(makeConfig({ pollIntervalMs: 1000 }), makeDeps(onMessage));
+      await adapter.start();
+
+      const bodyData = Buffer.from('test').toString('base64url');
+      mockFetch.mockResolvedValueOnce(makeHistoryResponse(['msg-nofmt']));
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          id: 'msg-nofmt',
+          threadId: 't-nofmt',
+          labelIds: ['INBOX'],
+          snippet: '',
+          internalDate: '1700000000000',
+          payload: {
+            mimeType: 'text/plain',
+            headers: [
+              { name: 'From', value: 'plainuser@example.com' },
+              { name: 'Subject', value: 'Plain' },
+              { name: 'Message-ID', value: '<plain@example.com>' },
+            ],
+            body: { data: bodyData, size: 4 },
+          },
+        }),
+        text: vi.fn().mockResolvedValue(''),
+      });
+
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(onMessage).toHaveBeenCalledOnce();
+      expect(onMessage.mock.calls[0][0].senderId).toBe('plainuser@example.com');
+      expect(onMessage.mock.calls[0][0].senderName).toBe('plainuser@example.com');
+    });
+
+    it('filters message by custom label in processMessage', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+
+      // Init: profile
+      mockFetch.mockResolvedValueOnce(makeProfileResponse());
+      // Start: resolve label
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          labels: [{ id: 'Label_Custom', name: 'custom-label' }],
+        }),
+      });
+
+      await adapter.init(
+        makeConfig({
+          labelFilter: 'label',
+          labelName: 'custom-label',
+          pollIntervalMs: 1000,
+        }),
+        makeDeps(onMessage)
+      );
+      await adapter.start();
+
+      const bodyData = Buffer.from('test').toString('base64url');
+      mockFetch.mockResolvedValueOnce(makeHistoryResponse(['msg-nolabel']));
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          id: 'msg-nolabel',
+          threadId: 't-nolabel',
+          labelIds: ['INBOX'], // does NOT include Label_Custom
+          snippet: '',
+          internalDate: '1700000000000',
+          payload: {
+            mimeType: 'text/plain',
+            headers: [
+              { name: 'From', value: 'test@example.com' },
+              { name: 'Subject', value: 'Test' },
+              { name: 'Message-ID', value: '<test@example.com>' },
+            ],
+            body: { data: bodyData, size: 4 },
+          },
+        }),
+        text: vi.fn().mockResolvedValue(''),
+      });
+
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(onMessage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sendMessage() edge cases', () => {
+    it('includes In-Reply-To and References headers', async () => {
+      await adapter.init(makeConfig(), makeDeps());
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ id: 'reply-1' }),
+      });
+      await adapter.sendMessage('to@example.com', 'Reply', {
+        inReplyTo: '<orig@example.com>',
+        references: '<orig@example.com> <prev@example.com>',
+      });
+      const sendCall = mockFetch.mock.calls.find(([url]: [string]) =>
+        url.includes('/messages/send')
+      );
+      const body = JSON.parse(sendCall![1].body);
+      const decoded = Buffer.from(body.raw, 'base64url').toString('utf-8');
+      expect(decoded).toContain('In-Reply-To: <orig@example.com>');
+      expect(decoded).toContain('References: <orig@example.com> <prev@example.com>');
+    });
+
+    it('returns empty string when send response has no id', async () => {
+      await adapter.init(makeConfig(), makeDeps());
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({}),
+      });
+      const id = await adapter.sendMessage('to@example.com', 'test');
+      expect(id).toBe('');
+    });
+  });
+
+  describe('ensureValidToken', () => {
+    it('skips refresh when token is not expired', async () => {
+      const config = makeConfig({
+        tokenExpiresAt: Date.now() + 60 * 60 * 1000, // 1 hour from now
+      });
+      await adapter.init(config, makeDeps());
+      mockFetch.mockClear();
+
+      // Trigger sendMessage which calls ensureValidToken
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ id: 'msg-1' }),
+      });
+      await adapter.sendMessage('to@example.com', 'test');
+
+      // Should NOT have called the token endpoint
+      const tokenCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
+        url.includes('oauth2.googleapis.com')
+      );
+      expect(tokenCalls.length).toBe(0);
+    });
+
+    it('warns when missing OAuth credentials', async () => {
+      const origClientId = process.env.GMAIL_OAUTH_CLIENT_ID;
+      const origSecret = process.env.GMAIL_OAUTH_CLIENT_SECRET;
+      const origGoogleId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+      const origGoogleSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+      delete process.env.GMAIL_OAUTH_CLIENT_ID;
+      delete process.env.GMAIL_OAUTH_CLIENT_SECRET;
+      delete process.env.GOOGLE_OAUTH_CLIENT_ID;
+      delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+
+      const config = makeConfig({ tokenExpiresAt: 0 });
+      await adapter.init(config, makeDeps());
+      mockFetch.mockClear();
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ id: 'msg-1' }),
+      });
+      await adapter.sendMessage('to@example.com', 'test');
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Cannot refresh Gmail token: missing OAuth credentials'
+      );
+
+      process.env.GMAIL_OAUTH_CLIENT_ID = origClientId;
+      process.env.GMAIL_OAUTH_CLIENT_SECRET = origSecret;
+      process.env.GOOGLE_OAUTH_CLIENT_ID = origGoogleId;
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET = origGoogleSecret;
+    });
+
+    it('warns when token refresh fails', async () => {
+      process.env.GMAIL_OAUTH_CLIENT_ID = 'client-id';
+      process.env.GMAIL_OAUTH_CLIENT_SECRET = 'client-secret';
+
+      const config = makeConfig({ tokenExpiresAt: 0 });
+      await adapter.init(config, makeDeps());
+      mockFetch.mockClear();
+
+      // Token refresh fails
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        text: vi.fn().mockResolvedValue('Invalid refresh token'),
+      });
+      // Send still succeeds (uses old token)
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ id: 'msg-1' }),
+      });
+      await adapter.sendMessage('to@example.com', 'test');
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Gmail token refresh failed',
+        expect.any(Object)
+      );
+
+      delete process.env.GMAIL_OAUTH_CLIENT_ID;
+      delete process.env.GMAIL_OAUTH_CLIENT_SECRET;
+    });
+  });
+
+  describe('stop() edge cases', () => {
+    it('stop is idempotent when not running', async () => {
+      await expect(adapter.stop()).resolves.not.toThrow();
+    });
+  });
+
+  describe('start() label resolution', () => {
+    it('creates label when labelFilter is "custom" and label not found', async () => {
+      mockFetch
+        .mockResolvedValueOnce(makeProfileResponse()) // init profile
+        .mockResolvedValueOnce({
+          ok: true,
+          json: vi.fn().mockResolvedValue({ labels: [] }), // no matching label
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: vi.fn().mockResolvedValue({ id: 'Label_New', name: 'new-label' }),
+        })
+        .mockResolvedValueOnce(makeProfileResponse()); // historyId
+
+      await adapter.init(
+        makeConfig({
+          labelFilter: 'custom',
+          labelName: 'new-label',
+          lastHistoryId: undefined,
+        }),
+        makeDeps()
+      );
+      await adapter.start();
+
+      // Should have called create label
+      const createCalls = mockFetch.mock.calls.filter(
+        ([url, opts]: [string, RequestInit]) => url.includes('/labels') && opts?.method === 'POST'
+      );
+      expect(createCalls.length).toBe(1);
+    });
+
+    it('does not create label when labelFilter is "label" and label not found', async () => {
+      mockFetch
+        .mockResolvedValueOnce(makeProfileResponse()) // init profile
+        .mockResolvedValueOnce({
+          ok: true,
+          json: vi.fn().mockResolvedValue({ labels: [] }), // no matching label
+        })
+        .mockResolvedValueOnce(makeProfileResponse()); // historyId
+
+      await adapter.init(
+        makeConfig({
+          labelFilter: 'label',
+          labelName: 'missing-label',
+          lastHistoryId: undefined,
+        }),
+        makeDeps()
+      );
+      await adapter.start();
+
+      // Should NOT have called create label
+      const createCalls = mockFetch.mock.calls.filter(
+        ([url, opts]: [string, RequestInit]) => url.includes('/labels') && opts?.method === 'POST'
+      );
+      expect(createCalls.length).toBe(0);
+    });
+
+    it('handles createLabel failure gracefully', async () => {
+      mockFetch
+        .mockResolvedValueOnce(makeProfileResponse()) // init profile
+        .mockResolvedValueOnce({
+          ok: true,
+          json: vi.fn().mockResolvedValue({ labels: [] }), // no matching label
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          text: vi.fn().mockResolvedValue('Label creation failed'),
+        })
+        .mockResolvedValueOnce(makeProfileResponse()); // historyId
+
+      await adapter.init(
+        makeConfig({
+          labelFilter: 'custom',
+          labelName: 'fail-label',
+          lastHistoryId: undefined,
+        }),
+        makeDeps()
+      );
+      await adapter.start();
+
+      expect(mockLogger.warn).toHaveBeenCalledWith('Failed to create Gmail label', {
+        labelName: 'fail-label',
+      });
+    });
+
+    it('handles resolveLabelId failure gracefully', async () => {
+      mockFetch
+        .mockResolvedValueOnce(makeProfileResponse()) // init profile
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        }) // labels fetch fails
+        .mockResolvedValueOnce(makeProfileResponse()); // historyId
+
+      await adapter.init(
+        makeConfig({
+          labelFilter: 'label',
+          labelName: 'bad-label',
+          lastHistoryId: undefined,
+        }),
+        makeDeps()
+      );
+      // Should not throw
+      await expect(adapter.start()).resolves.not.toThrow();
+    });
   });
 });

@@ -23,7 +23,7 @@ interface AnnotationPopoverProps {
   onClose: () => void;
 }
 
-const LABELS: Array<{ value: Annotation['label']; label: string; color: string }> = [
+const LABELS: { value: Annotation['label']; label: string; color: string }[] = [
   { value: 'good', label: 'Good', color: 'bg-green-500' },
   { value: 'bad', label: 'Bad', color: 'bg-red-500' },
   { value: 'instruction', label: 'Instruction', color: 'bg-blue-500' },
@@ -69,7 +69,9 @@ function AnnotationPopover({
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+    };
   }, [onClose]);
 
   return (
@@ -90,14 +92,17 @@ function AnnotationPopover({
       </div>
 
       <div className="text-xs text-muted-foreground mb-2 truncate" title={selectedText}>
-        {selectedText.slice(0, 80)}{selectedText.length > 80 ? '...' : ''}
+        {selectedText.slice(0, 80)}
+        {selectedText.length > 80 ? '...' : ''}
       </div>
 
       <div className="flex gap-1 mb-2">
         {LABELS.map((l) => (
           <button
             key={l.value}
-            onClick={() => setLabel(l.value)}
+            onClick={() => {
+              setLabel(l.value);
+            }}
             className={`flex-1 px-1.5 py-1 text-xs rounded border transition-colors ${
               label === l.value
                 ? 'border-primary bg-primary/10 text-primary'
@@ -113,14 +118,18 @@ function AnnotationPopover({
         className="w-full px-2 py-1 text-xs bg-muted/30 border border-border rounded mb-2 focus:outline-none focus:ring-1 focus:ring-primary"
         placeholder="Optional note..."
         value={note}
-        onChange={(e) => setNote(e.target.value)}
+        onChange={(e) => {
+          setNote(e.target.value);
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') mutation.mutate();
         }}
       />
 
       <button
-        onClick={() => mutation.mutate()}
+        onClick={() => {
+          mutation.mutate();
+        }}
         disabled={mutation.isPending}
         className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
         data-testid="annotation-save-btn"
@@ -166,8 +175,13 @@ export function useAnnotationContextMenu(personalityId?: string | null) {
             startLine: selection.startLineNumber,
             endLine: selection.endLineNumber,
             personalityId: personalityId ?? undefined,
-            position: { x: Math.min(x, window.innerWidth - 280), y: Math.min(y, window.innerHeight - 300) },
-            onClose: () => setPopover(null),
+            position: {
+              x: Math.min(x, window.innerWidth - 280),
+              y: Math.min(y, window.innerHeight - 300),
+            },
+            onClose: () => {
+              setPopover(null);
+            },
           });
         },
       });

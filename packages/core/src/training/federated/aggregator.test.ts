@@ -97,7 +97,7 @@ describe('Aggregator', () => {
 
   it('computes trimmed mean discarding outliers', () => {
     const updates = [
-      makeUpdate({ trainingLoss: 100 }),  // outlier high
+      makeUpdate({ trainingLoss: 100 }), // outlier high
       makeUpdate({ trainingLoss: 0.3 }),
       makeUpdate({ trainingLoss: 0.4 }),
       makeUpdate({ trainingLoss: 0.5 }),
@@ -106,7 +106,7 @@ describe('Aggregator', () => {
       makeUpdate({ trainingLoss: 0.8 }),
       makeUpdate({ trainingLoss: 0.9 }),
       makeUpdate({ trainingLoss: 1.0 }),
-      makeUpdate({ trainingLoss: -50 }),  // outlier low
+      makeUpdate({ trainingLoss: -50 }), // outlier low
     ];
     const result = agg.aggregate(updates, 'trimmed_mean');
     expect(result.strategy).toBe('trimmed_mean');
@@ -116,10 +116,7 @@ describe('Aggregator', () => {
   });
 
   it('falls back to fedavg when trimming removes all', () => {
-    const updates = [
-      makeUpdate({ trainingLoss: 0.5 }),
-      makeUpdate({ trainingLoss: 0.6 }),
-    ];
+    const updates = [makeUpdate({ trainingLoss: 0.5 }), makeUpdate({ trainingLoss: 0.6 })];
     // 10% trim of 2 = 1 each side → empty trimmed, falls back
     const result = agg.aggregate(updates, 'trimmed_mean');
     expect(result.participantCount).toBe(2);
@@ -128,10 +125,7 @@ describe('Aggregator', () => {
   // ── Weighted Average ─────────────────────────────────────────────
 
   it('computes weighted_avg with equal weights', () => {
-    const updates = [
-      makeUpdate({ trainingLoss: 0.3 }),
-      makeUpdate({ trainingLoss: 0.9 }),
-    ];
+    const updates = [makeUpdate({ trainingLoss: 0.3 }), makeUpdate({ trainingLoss: 0.9 })];
     const result = agg.aggregate(updates, 'weighted_avg');
     expect(result.globalLoss).toBeCloseTo(0.6, 5);
     expect(result.strategy).toBe('weighted_avg');

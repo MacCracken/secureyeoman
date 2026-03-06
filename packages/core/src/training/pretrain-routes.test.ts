@@ -18,8 +18,24 @@ function makeMgr(): PretrainManager {
 function makeCorpusLoader(): CorpusLoader {
   return {
     listSources: vi.fn().mockReturnValue([]),
-    validateSource: vi.fn().mockReturnValue({ valid: true, errors: [], tokenEstimate: 1000, documentCount: 5, sizeBytes: 4000 }),
-    getStats: vi.fn().mockReturnValue({ totalSources: 0, totalTokens: 0, totalDocuments: 0, totalSizeBytes: 0, formatBreakdown: {} }),
+    validateSource: vi
+      .fn()
+      .mockReturnValue({
+        valid: true,
+        errors: [],
+        tokenEstimate: 1000,
+        documentCount: 5,
+        sizeBytes: 4000,
+      }),
+    getStats: vi
+      .fn()
+      .mockReturnValue({
+        totalSources: 0,
+        totalTokens: 0,
+        totalDocuments: 0,
+        totalSizeBytes: 0,
+        formatBreakdown: {},
+      }),
   } as unknown as CorpusLoader;
 }
 
@@ -58,7 +74,8 @@ describe('pretrain-routes', () => {
 
   it('POST /jobs creates a job', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/training/pretrain/jobs',
+      method: 'POST',
+      url: '/api/v1/training/pretrain/jobs',
       payload: { name: 'Test', architecture: 'llama', parameterCount: '125M' },
     });
     expect(res.statusCode).toBe(201);
@@ -67,20 +84,27 @@ describe('pretrain-routes', () => {
   it('POST /jobs returns 400 on error', async () => {
     (mgr.createJob as any).mockRejectedValueOnce(new Error('Too big'));
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/training/pretrain/jobs',
+      method: 'POST',
+      url: '/api/v1/training/pretrain/jobs',
       payload: { name: 'Big', parameterCount: '7B' },
     });
     expect(res.statusCode).toBe(400);
   });
 
   it('POST /jobs/:id/cancel cancels', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/training/pretrain/jobs/pt-1/cancel' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/pretrain/jobs/pt-1/cancel',
+    });
     expect(res.statusCode).toBe(200);
   });
 
   it('POST /jobs/:id/cancel returns 404 when not cancellable', async () => {
     (mgr.cancelJob as any).mockResolvedValueOnce(false);
-    const res = await app.inject({ method: 'POST', url: '/api/v1/training/pretrain/jobs/pt-1/cancel' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/pretrain/jobs/pt-1/cancel',
+    });
     expect(res.statusCode).toBe(404);
   });
 
@@ -91,7 +115,8 @@ describe('pretrain-routes', () => {
 
   it('POST /jobs/:id/progress updates progress', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/training/pretrain/jobs/pt-1/progress',
+      method: 'POST',
+      url: '/api/v1/training/pretrain/jobs/pt-1/progress',
       payload: { currentStep: 100, trainingLoss: 3.5 },
     });
     expect(res.statusCode).toBe(200);
@@ -106,7 +131,8 @@ describe('pretrain-routes', () => {
 
   it('POST /corpus/validate validates a path', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/training/pretrain/corpus/validate',
+      method: 'POST',
+      url: '/api/v1/training/pretrain/corpus/validate',
       payload: { path: '/data/corpus.jsonl' },
     });
     expect(res.statusCode).toBe(200);
@@ -115,7 +141,8 @@ describe('pretrain-routes', () => {
 
   it('POST /corpus/validate rejects missing path', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/training/pretrain/corpus/validate',
+      method: 'POST',
+      url: '/api/v1/training/pretrain/corpus/validate',
       payload: {},
     });
     expect(res.statusCode).toBe(400);

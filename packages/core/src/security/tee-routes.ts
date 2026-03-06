@@ -20,7 +20,11 @@ export function registerTeeRoutes(app: FastifyInstance, deps: TeeRouteDeps): voi
   const { teeVerifier, secureYeoman } = deps;
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('confidential_computing', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('confidential_computing', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 

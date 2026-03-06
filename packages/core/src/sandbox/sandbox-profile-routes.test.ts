@@ -37,7 +37,8 @@ describe('sandbox-profile-routes', () => {
 
   it('POST /profiles creates a custom profile', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/sandbox/profiles',
+      method: 'POST',
+      url: '/api/v1/sandbox/profiles',
       payload: { label: 'My Profile', technology: 'wasm' },
     });
     expect(res.statusCode).toBe(201);
@@ -46,7 +47,8 @@ describe('sandbox-profile-routes', () => {
 
   it('POST /profiles rejects missing label', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/sandbox/profiles',
+      method: 'POST',
+      url: '/api/v1/sandbox/profiles',
       payload: { technology: 'auto' },
     });
     expect(res.statusCode).toBe(400);
@@ -54,8 +56,14 @@ describe('sandbox-profile-routes', () => {
 
   it('DELETE /profiles/:label deletes custom profile', async () => {
     registry.saveCustomProfile({
-      name: 'custom', label: 'Temp', technology: 'auto',
-      filesystem: {}, resources: {}, network: {}, credentialProxy: {}, toolRestrictions: {},
+      name: 'custom',
+      label: 'Temp',
+      technology: 'auto',
+      filesystem: {},
+      resources: {},
+      network: {},
+      credentialProxy: {},
+      toolRestrictions: {},
       tenantId: 'default',
     } as any);
     const res = await app.inject({ method: 'DELETE', url: '/api/v1/sandbox/profiles/Temp' });

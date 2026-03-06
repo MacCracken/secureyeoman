@@ -75,7 +75,14 @@ export function registerSearchRoutes(app: FastifyInstance): void {
       }>,
       reply: FastifyReply
     ) => {
-      const { query, cwd = '/tmp', glob, regex = false, caseSensitive = true, maxResults } = request.body ?? {};
+      const {
+        query,
+        cwd = '/tmp',
+        glob,
+        regex = false,
+        caseSensitive = true,
+        maxResults,
+      } = request.body ?? {};
 
       if (!query || typeof query !== 'string' || query.length === 0) {
         return sendError(reply, 400, 'query is required');
@@ -105,9 +112,9 @@ export function registerSearchRoutes(app: FastifyInstance): void {
         }
 
         // Use -- to prevent pattern from being interpreted as flags
-        const args = [...flags, '--', JSON.stringify(query).slice(1, -1)].map((a) =>
-          `'${a.replace(/'/g, "'\\''")}'`
-        ).join(' ');
+        const args = [...flags, '--', JSON.stringify(query).slice(1, -1)]
+          .map((a) => `'${a.replace(/'/g, "'\\''")}'`)
+          .join(' ');
 
         const cmd = `grep ${args} . 2>/dev/null | head -n ${limit * 5}`;
 
@@ -156,7 +163,14 @@ export function registerSearchRoutes(app: FastifyInstance): void {
       }>,
       reply: FastifyReply
     ) => {
-      const { cwd = '/tmp', search, replace, files, regex = false, caseSensitive = true } = request.body ?? {};
+      const {
+        cwd = '/tmp',
+        search,
+        replace,
+        files,
+        regex = false,
+        caseSensitive = true,
+      } = request.body ?? {};
 
       if (!search || typeof search !== 'string') {
         return sendError(reply, 400, 'search is required');
@@ -176,7 +190,7 @@ export function registerSearchRoutes(app: FastifyInstance): void {
       let totalReplacements = 0;
 
       try {
-        const flags = regex ? (caseSensitive ? 'g' : 'gi') : (caseSensitive ? 'g' : 'gi');
+        const flags = regex ? (caseSensitive ? 'g' : 'gi') : caseSensitive ? 'g' : 'gi';
         const searchPattern = regex ? new RegExp(search, flags) : null;
 
         for (const file of files) {
@@ -259,12 +273,14 @@ function parseGrepOutput(stdout: string, cwd: string, limit: number): SearchMatc
         if (matches.length >= limit) break;
       }
 
-      const filePath = m[1].startsWith('./') ? m[1].slice(2) : m[1];
-      const text = m[3].length > MAX_LINE_LENGTH ? m[3].slice(0, MAX_LINE_LENGTH) : m[3];
+      const rawPath = m[1] ?? '';
+      const filePath = rawPath.startsWith('./') ? rawPath.slice(2) : rawPath;
+      const rawText = m[3] ?? '';
+      const text = rawText.length > MAX_LINE_LENGTH ? rawText.slice(0, MAX_LINE_LENGTH) : rawText;
 
       currentMatch = {
         file: filePath,
-        line: parseInt(m[2], 10),
+        line: parseInt(m[2] ?? '0', 10),
         column: 0,
         text,
         contextBefore: [...contextBuffer],
@@ -276,7 +292,8 @@ function parseGrepOutput(stdout: string, cwd: string, limit: number): SearchMatc
 
     const c = contextRegex.exec(line);
     if (c) {
-      const ctxText = c[3].length > MAX_LINE_LENGTH ? c[3].slice(0, MAX_LINE_LENGTH) : c[3];
+      const rawCtx = c[3] ?? '';
+      const ctxText = rawCtx.length > MAX_LINE_LENGTH ? rawCtx.slice(0, MAX_LINE_LENGTH) : rawCtx;
       if (currentMatch) {
         currentMatch.contextAfter!.push(ctxText);
       } else {

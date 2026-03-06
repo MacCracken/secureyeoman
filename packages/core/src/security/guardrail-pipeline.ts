@@ -24,13 +24,17 @@ export interface GuardrailPipelineDeps {
     message: string;
     metadata?: Record<string, unknown>;
   }) => void;
-  logger?: { info(msg: string, ctx?: Record<string, unknown>): void; warn(msg: string, ctx?: Record<string, unknown>): void; error(msg: string, ctx?: Record<string, unknown>): void };
+  logger?: {
+    info(msg: string, ctx?: Record<string, unknown>): void;
+    warn(msg: string, ctx?: Record<string, unknown>): void;
+    error(msg: string, ctx?: Record<string, unknown>): void;
+  };
 }
 
 export class GuardrailPipeline {
   private readonly config: GuardrailPipelineConfig;
   private readonly deps: GuardrailPipelineDeps;
-  private readonly filters: Map<string, GuardrailFilter> = new Map();
+  private readonly filters = new Map<string, GuardrailFilter>();
   private sortedFilters: GuardrailFilter[] = [];
   readonly metrics: GuardrailMetricsCollector;
 

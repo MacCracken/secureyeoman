@@ -55,22 +55,24 @@ describe('ChaosStore', () => {
 
   it('gets an experiment by id', async () => {
     mockQuery.mockResolvedValue({
-      rows: [{
-        id: 'exp-1',
-        name: 'Found',
-        description: '',
-        status: 'draft',
-        rules: [],
-        duration_ms: 60000,
-        steady_state_hypothesis: '',
-        rollback_on_failure: true,
-        scheduled_at: 0,
-        started_at: 0,
-        completed_at: 0,
-        tenant_id: 'default',
-        created_by: 'test',
-        created_at: 1000,
-      }],
+      rows: [
+        {
+          id: 'exp-1',
+          name: 'Found',
+          description: '',
+          status: 'draft',
+          rules: [],
+          duration_ms: 60000,
+          steady_state_hypothesis: '',
+          rollback_on_failure: true,
+          scheduled_at: 0,
+          started_at: 0,
+          completed_at: 0,
+          tenant_id: 'default',
+          created_by: 'test',
+          created_at: 1000,
+        },
+      ],
     });
 
     const result = await store.getExperiment('exp-1');
@@ -85,14 +87,30 @@ describe('ChaosStore', () => {
   });
 
   it('lists experiments with status filter', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '2' }] })
-      .mockResolvedValueOnce({
-        rows: [
-          { id: 'e1', name: 'A', status: 'draft', rules: [], duration_ms: 1000, tenant_id: 'default', created_by: 'sys', created_at: 1 },
-          { id: 'e2', name: 'B', status: 'draft', rules: [], duration_ms: 2000, tenant_id: 'default', created_by: 'sys', created_at: 2 },
-        ],
-      });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '2' }] }).mockResolvedValueOnce({
+      rows: [
+        {
+          id: 'e1',
+          name: 'A',
+          status: 'draft',
+          rules: [],
+          duration_ms: 1000,
+          tenant_id: 'default',
+          created_by: 'sys',
+          created_at: 1,
+        },
+        {
+          id: 'e2',
+          name: 'B',
+          status: 'draft',
+          rules: [],
+          duration_ms: 2000,
+          tenant_id: 'default',
+          created_by: 'sys',
+          created_at: 2,
+        },
+      ],
+    });
 
     const result = await store.listExperiments({ status: 'draft' });
     expect(result.total).toBe(2);
@@ -126,7 +144,12 @@ describe('ChaosStore', () => {
       faultResults: [],
       steadyStateValidated: true,
       summary: 'All good',
-      metrics: { totalFaultsInjected: 0, faultsRecovered: 0, meanRecoveryTimeMs: 0, circuitBreakersTripped: 0 },
+      metrics: {
+        totalFaultsInjected: 0,
+        faultsRecovered: 0,
+        meanRecoveryTimeMs: 0,
+        circuitBreakersTripped: 0,
+      },
     });
 
     expect(mockQuery.mock.calls[0][0]).toContain('INSERT INTO chaos.experiment_results');
@@ -134,17 +157,19 @@ describe('ChaosStore', () => {
 
   it('gets results for experiment', async () => {
     mockQuery.mockResolvedValue({
-      rows: [{
-        experiment_id: 'exp-1',
-        status: 'passed',
-        started_at: 1000,
-        completed_at: 2000,
-        duration_ms: 1000,
-        fault_results: [],
-        steady_state_validated: true,
-        summary: 'ok',
-        metrics: {},
-      }],
+      rows: [
+        {
+          experiment_id: 'exp-1',
+          status: 'passed',
+          started_at: 1000,
+          completed_at: 2000,
+          duration_ms: 1000,
+          fault_results: [],
+          steady_state_validated: true,
+          summary: 'ok',
+          metrics: {},
+        },
+      ],
     });
 
     const results = await store.getResults('exp-1');

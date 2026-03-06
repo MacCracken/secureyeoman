@@ -14,18 +14,90 @@ const STORAGE_KEY = 'editor:keybindings';
 
 /** Canonical default keybindings for the standard editor. */
 export const DEFAULT_KEYBINDINGS: KeyBinding[] = [
-  { id: 'command-palette', label: 'Command Palette', category: 'editor', shortcut: 'Ctrl+K', defaultShortcut: 'Ctrl+K' },
-  { id: 'run-code', label: 'Run Code', category: 'file', shortcut: 'Ctrl+Enter', defaultShortcut: 'Ctrl+Enter' },
-  { id: 'save-file', label: 'Save File', category: 'file', shortcut: 'Ctrl+S', defaultShortcut: 'Ctrl+S' },
-  { id: 'new-file', label: 'New File', category: 'file', shortcut: 'Ctrl+Shift+N', defaultShortcut: 'Ctrl+Shift+N' },
-  { id: 'toggle-explorer', label: 'Toggle Explorer', category: 'panel', shortcut: 'Ctrl+B', defaultShortcut: 'Ctrl+B' },
-  { id: 'toggle-chat', label: 'Toggle Chat', category: 'panel', shortcut: 'Ctrl+Shift+C', defaultShortcut: 'Ctrl+Shift+C' },
-  { id: 'toggle-git', label: 'Toggle Git Panel', category: 'panel', shortcut: 'Ctrl+Shift+G', defaultShortcut: 'Ctrl+Shift+G' },
-  { id: 'toggle-terminal', label: 'Focus Terminal', category: 'terminal', shortcut: 'Ctrl+`', defaultShortcut: 'Ctrl+`' },
-  { id: 'toggle-settings', label: 'Editor Settings', category: 'panel', shortcut: 'Ctrl+,', defaultShortcut: 'Ctrl+,' },
-  { id: 'toggle-split', label: 'Toggle Split View', category: 'editor', shortcut: 'Ctrl+\\', defaultShortcut: 'Ctrl+\\' },
-  { id: 'close-tab', label: 'Close Tab', category: 'file', shortcut: 'Ctrl+W', defaultShortcut: 'Ctrl+W' },
-  { id: 'go-dashboard', label: 'Go to Dashboard', category: 'navigation', shortcut: '', defaultShortcut: '' },
+  {
+    id: 'command-palette',
+    label: 'Command Palette',
+    category: 'editor',
+    shortcut: 'Ctrl+K',
+    defaultShortcut: 'Ctrl+K',
+  },
+  {
+    id: 'run-code',
+    label: 'Run Code',
+    category: 'file',
+    shortcut: 'Ctrl+Enter',
+    defaultShortcut: 'Ctrl+Enter',
+  },
+  {
+    id: 'save-file',
+    label: 'Save File',
+    category: 'file',
+    shortcut: 'Ctrl+S',
+    defaultShortcut: 'Ctrl+S',
+  },
+  {
+    id: 'new-file',
+    label: 'New File',
+    category: 'file',
+    shortcut: 'Ctrl+Shift+N',
+    defaultShortcut: 'Ctrl+Shift+N',
+  },
+  {
+    id: 'toggle-explorer',
+    label: 'Toggle Explorer',
+    category: 'panel',
+    shortcut: 'Ctrl+B',
+    defaultShortcut: 'Ctrl+B',
+  },
+  {
+    id: 'toggle-chat',
+    label: 'Toggle Chat',
+    category: 'panel',
+    shortcut: 'Ctrl+Shift+C',
+    defaultShortcut: 'Ctrl+Shift+C',
+  },
+  {
+    id: 'toggle-git',
+    label: 'Toggle Git Panel',
+    category: 'panel',
+    shortcut: 'Ctrl+Shift+G',
+    defaultShortcut: 'Ctrl+Shift+G',
+  },
+  {
+    id: 'toggle-terminal',
+    label: 'Focus Terminal',
+    category: 'terminal',
+    shortcut: 'Ctrl+`',
+    defaultShortcut: 'Ctrl+`',
+  },
+  {
+    id: 'toggle-settings',
+    label: 'Editor Settings',
+    category: 'panel',
+    shortcut: 'Ctrl+,',
+    defaultShortcut: 'Ctrl+,',
+  },
+  {
+    id: 'toggle-split',
+    label: 'Toggle Split View',
+    category: 'editor',
+    shortcut: 'Ctrl+\\',
+    defaultShortcut: 'Ctrl+\\',
+  },
+  {
+    id: 'close-tab',
+    label: 'Close Tab',
+    category: 'file',
+    shortcut: 'Ctrl+W',
+    defaultShortcut: 'Ctrl+W',
+  },
+  {
+    id: 'go-dashboard',
+    label: 'Go to Dashboard',
+    category: 'navigation',
+    shortcut: '',
+    defaultShortcut: '',
+  },
 ];
 
 function loadOverrides(): Record<string, string> {
@@ -42,7 +114,9 @@ function saveOverrides(overrides: Record<string, string>) {
 }
 
 /** Parse a display shortcut into the parts a KeyboardEvent check needs. */
-export function parseShortcut(shortcut: string): { ctrl: boolean; shift: boolean; alt: boolean; meta: boolean; key: string } | null {
+export function parseShortcut(
+  shortcut: string
+): { ctrl: boolean; shift: boolean; alt: boolean; meta: boolean; key: string } | null {
   if (!shortcut) return null;
   const parts = shortcut.split('+').map((p) => p.trim());
   const ctrl = parts.includes('Ctrl');
@@ -56,13 +130,12 @@ export function parseShortcut(shortcut: string): { ctrl: boolean; shift: boolean
 /** Check if a KeyboardEvent matches a shortcut string. */
 export function matchesShortcut(e: KeyboardEvent, shortcut: string): boolean {
   const parsed = parseShortcut(shortcut);
-  if (!parsed || !parsed.key) return false;
+  if (!parsed?.key) return false;
   const modMatch =
     (parsed.ctrl ? e.ctrlKey || e.metaKey : !e.ctrlKey && !e.metaKey) &&
     parsed.shift === e.shiftKey &&
     parsed.alt === e.altKey;
-  const keyMatch = e.key.toLowerCase() === parsed.key.toLowerCase() ||
-    e.key === parsed.key;
+  const keyMatch = e.key.toLowerCase() === parsed.key.toLowerCase() || e.key === parsed.key;
   return modMatch && keyMatch;
 }
 
@@ -79,17 +152,29 @@ export function eventToShortcut(e: KeyboardEvent | React.KeyboardEvent): string 
 
   // Normalize special keys
   const normalized =
-    key === ' ' ? 'Space' :
-    key === 'Escape' ? 'Escape' :
-    key === 'Enter' ? 'Enter' :
-    key === 'Backspace' ? 'Backspace' :
-    key === 'Delete' ? 'Delete' :
-    key === 'Tab' ? 'Tab' :
-    key === 'ArrowUp' ? 'Up' :
-    key === 'ArrowDown' ? 'Down' :
-    key === 'ArrowLeft' ? 'Left' :
-    key === 'ArrowRight' ? 'Right' :
-    key.length === 1 ? key.toUpperCase() : key;
+    key === ' '
+      ? 'Space'
+      : key === 'Escape'
+        ? 'Escape'
+        : key === 'Enter'
+          ? 'Enter'
+          : key === 'Backspace'
+            ? 'Backspace'
+            : key === 'Delete'
+              ? 'Delete'
+              : key === 'Tab'
+                ? 'Tab'
+                : key === 'ArrowUp'
+                  ? 'Up'
+                  : key === 'ArrowDown'
+                    ? 'Down'
+                    : key === 'ArrowLeft'
+                      ? 'Left'
+                      : key === 'ArrowRight'
+                        ? 'Right'
+                        : key.length === 1
+                          ? key.toUpperCase()
+                          : key;
 
   parts.push(normalized);
   return parts.join('+');

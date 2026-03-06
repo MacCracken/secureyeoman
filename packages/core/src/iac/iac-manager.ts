@@ -117,7 +117,10 @@ export class IacManager {
 
       if (!validation.valid) {
         allErrors.push(...validation.errors.map((e) => `${d.name}: ${e}`));
-        this.log.warn({ template: d.name, errors: validation.errors }, 'Template validation failed');
+        this.log.warn(
+          { template: d.name, errors: validation.errors },
+          'Template validation failed'
+        );
       } else {
         this.log.info({ template: d.name, tool: d.tool, files: d.files.length }, 'Template synced');
       }
@@ -130,7 +133,7 @@ export class IacManager {
    * Validate a template by ID or by providing files directly.
    */
   async validateTemplate(
-    templateIdOrFiles: string | { tool: string; files: Array<{ path: string; content: string }> }
+    templateIdOrFiles: string | { tool: string; files: { path: string; content: string }[] }
   ) {
     if (typeof templateIdOrFiles === 'string') {
       const template = await this.store.getTemplate(templateIdOrFiles);
@@ -140,10 +143,7 @@ export class IacManager {
         template.files.map((f) => ({ path: f.path, content: f.content }))
       );
     }
-    return this.validator.validate(
-      templateIdOrFiles.tool as any,
-      templateIdOrFiles.files
-    );
+    return this.validator.validate(templateIdOrFiles.tool as any, templateIdOrFiles.files);
   }
 
   /** Get SRA remediation templates for a control. */

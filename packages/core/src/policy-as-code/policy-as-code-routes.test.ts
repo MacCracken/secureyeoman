@@ -55,7 +55,10 @@ describe('Policy-as-Code Routes', () => {
   });
 
   it('GET /bundles/:id returns 404 for missing', async () => {
-    const res = await app.inject({ method: 'GET', url: '/api/v1/policy-as-code/bundles/not-found' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/policy-as-code/bundles/not-found',
+    });
     expect(res.statusCode).toBe(404);
   });
 
@@ -67,7 +70,10 @@ describe('Policy-as-Code Routes', () => {
   });
 
   it('DELETE /bundles/:id returns 404 for missing', async () => {
-    const res = await app.inject({ method: 'DELETE', url: '/api/v1/policy-as-code/bundles/not-found' });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/policy-as-code/bundles/not-found',
+    });
     expect(res.statusCode).toBe(404);
   });
 

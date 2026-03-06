@@ -695,3 +695,357 @@ describe('crew -h alias', () => {
     expect(getStdout()).toContain('crew');
   });
 });
+
+// ── wf:versions ──────────────────────────────────────────────────────────────
+
+describe('crew wf:versions', () => {
+  it('lists workflow versions', async () => {
+    mockFetch([
+      {
+        ok: true,
+        status: 200,
+        data: {
+          versions: [
+            {
+              id: 'v-1',
+              versionTag: 'v1.0.0',
+              changedFields: ['name', 'steps'],
+              author: 'admin',
+              createdAt: Date.now(),
+            },
+            {
+              id: 'v-2',
+              versionTag: null,
+              changedFields: [],
+              author: 'user',
+              createdAt: Date.now(),
+            },
+          ],
+          total: 2,
+        },
+      },
+    ]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:versions', 'wf-1'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('v1.0.0');
+    expect(getStdout()).toContain('admin');
+  });
+
+  it('returns JSON with --json', async () => {
+    mockFetch([
+      {
+        ok: true,
+        status: 200,
+        data: { versions: [], total: 0 },
+      },
+    ]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({
+      argv: ['wf:versions', 'wf-1', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout());
+    expect(parsed.total).toBe(0);
+  });
+
+  it('returns 1 when no id provided', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:versions'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('returns 1 on API error', async () => {
+    mockFetch([{ ok: false, status: 500, data: { error: 'server error' } }]);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:versions', 'wf-1'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('server error');
+  });
+});
+
+// ── wf:tag ───────────────────────────────────────────────────────────────────
+
+describe('crew wf:tag', () => {
+  it('tags a workflow with explicit tag', async () => {
+    mockFetch([
+      {
+        ok: true,
+        status: 200,
+        data: { versionTag: 'v2.0.0', id: 'v-tag-1234abcd' },
+      },
+    ]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({
+      argv: ['wf:tag', 'wf-1', 'v2.0.0'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('v2.0.0');
+  });
+
+  it('tags a workflow without explicit tag', async () => {
+    mockFetch([
+      {
+        ok: true,
+        status: 200,
+        data: { versionTag: 'v1.0.1', id: 'v-auto-1234abcd' },
+      },
+    ]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:tag', 'wf-1'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('v1.0.1');
+  });
+
+  it('returns JSON with --json', async () => {
+    mockFetch([
+      {
+        ok: true,
+        status: 200,
+        data: { versionTag: 'v1.0.0', id: 'v-json' },
+      },
+    ]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({
+      argv: ['wf:tag', 'wf-1', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout());
+    expect(parsed.versionTag).toBe('v1.0.0');
+  });
+
+  it('returns 1 when no id provided', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:tag'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('returns 1 on API error', async () => {
+    mockFetch([{ ok: false, status: 500, data: { error: 'tag error' } }]);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:tag', 'wf-1'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('tag error');
+  });
+});
+
+// ── wf:rollback ──────────────────────────────────────────────────────────────
+
+describe('crew wf:rollback', () => {
+  it('rolls back a workflow', async () => {
+    mockFetch([{ ok: true, status: 200, data: { ok: true } }]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({
+      argv: ['wf:rollback', 'wf-1', 'v-old'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Rollback complete');
+  });
+
+  it('returns JSON with --json', async () => {
+    mockFetch([{ ok: true, status: 200, data: { rolled: true } }]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({
+      argv: ['wf:rollback', 'wf-1', 'v-old', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout());
+    expect(parsed.rolled).toBe(true);
+  });
+
+  it('returns 1 when no versionId provided', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:rollback', 'wf-1'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('returns 1 when no id provided', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:rollback'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('returns 1 on API error', async () => {
+    mockFetch([{ ok: false, status: 500, data: { error: 'rollback error' } }]);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({
+      argv: ['wf:rollback', 'wf-1', 'v-old'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('rollback error');
+  });
+});
+
+// ── wf:drift ─────────────────────────────────────────────────────────────────
+
+describe('crew wf:drift', () => {
+  it('shows drift with uncommitted changes', async () => {
+    mockFetch([
+      {
+        ok: true,
+        status: 200,
+        data: {
+          lastTaggedVersion: 'v1.0.0',
+          uncommittedChanges: 3,
+          changedFields: ['steps', 'name'],
+          diffSummary: 'Steps reordered',
+        },
+      },
+    ]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:drift', 'wf-1'], stdout, stderr });
+    expect(code).toBe(0);
+    const out = getStdout();
+    expect(out).toContain('v1.0.0');
+    expect(out).toContain('3 uncommitted change(s)');
+    expect(out).toContain('steps, name');
+    expect(out).toContain('Steps reordered');
+  });
+
+  it('shows no drift', async () => {
+    mockFetch([
+      {
+        ok: true,
+        status: 200,
+        data: {
+          lastTaggedVersion: 'v1.0.0',
+          uncommittedChanges: 0,
+          changedFields: [],
+          diffSummary: '',
+        },
+      },
+    ]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:drift', 'wf-1'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('No drift detected');
+  });
+
+  it('shows no tagged releases yet', async () => {
+    mockFetch([
+      {
+        ok: true,
+        status: 200,
+        data: {
+          lastTaggedVersion: null,
+          uncommittedChanges: 0,
+          changedFields: [],
+          diffSummary: '',
+        },
+      },
+    ]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:drift', 'wf-1'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('No tagged releases yet');
+  });
+
+  it('returns JSON with --json', async () => {
+    mockFetch([
+      {
+        ok: true,
+        status: 200,
+        data: {
+          lastTaggedVersion: 'v1.0.0',
+          uncommittedChanges: 1,
+          changedFields: ['desc'],
+          diffSummary: '',
+        },
+      },
+    ]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({
+      argv: ['wf:drift', 'wf-1', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout());
+    expect(parsed.lastTaggedVersion).toBe('v1.0.0');
+  });
+
+  it('returns 1 when no id provided', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:drift'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('returns 1 on API error', async () => {
+    mockFetch([{ ok: false, status: 500, data: { error: 'drift error' } }]);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({ argv: ['wf:drift', 'wf-1'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('drift error');
+  });
+});
+
+// ── crew list — license error branch ──────────────────────────────────────
+
+describe('crew list — license error', () => {
+  it('handles license error from list', async () => {
+    mockFetch([
+      {
+        ok: false,
+        status: 402,
+        data: { error: 'License required', feature: 'teams', statusCode: 402 },
+      },
+    ]);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({ argv: ['list'], stdout, stderr });
+    expect(code).toBe(1);
+  });
+});
+
+// ── crew run — license error branch ───────────────────────────────────────
+
+describe('crew run — license error', () => {
+  it('handles license error from run', async () => {
+    mockFetch([
+      {
+        ok: false,
+        status: 402,
+        data: { error: 'License required', feature: 'teams', statusCode: 402 },
+      },
+    ]);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await crewCommand.run({
+      argv: ['run', 'team-1', 'task', '--timeout', '5000'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+  });
+});
+
+// ── crew show — builtin team ──────────────────────────────────────────────
+
+describe('crew show — builtin team', () => {
+  it('shows builtin indicator', async () => {
+    const builtinTeam = { ...TEAM, isBuiltin: true };
+    mockFetch([
+      { ok: true, status: 200, data: { team: builtinTeam } },
+      { ok: true, status: 200, data: { runs: [], total: 0 } },
+    ]);
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await crewCommand.run({ argv: ['show', 'team-1'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('builtin');
+  });
+});

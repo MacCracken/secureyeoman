@@ -525,4 +525,223 @@ describe('SubAgentsPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Profile')).toBeInTheDocument();
   });
+
+  // ── Delegate form fields ────────────────────────────────────────
+
+  it('shows profile selector with available profiles in delegate form', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Delegate Task'));
+    await waitFor(() => {
+      // The profiles should be listed in the select
+      const option1 = screen.getByText('researcher (built-in)');
+      const option2 = screen.getByText('coder');
+      expect(option1).toBeInTheDocument();
+      expect(option2).toBeInTheDocument();
+    });
+  });
+
+  it('shows context textarea in delegate form', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Delegate Task'));
+    expect(screen.getByPlaceholderText('Additional context...')).toBeInTheDocument();
+  });
+
+  it('disables delegate button when task is empty', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Delegate Task'));
+    await waitFor(() => {
+      const delegateBtn = screen.getByText('Delegate');
+      expect(delegateBtn.closest('button')).toBeDisabled();
+    });
+  });
+
+  it('can close delegate form with X button', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Delegate Task'));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Describe the task for the sub-agent...')).toBeInTheDocument();
+    });
+    // Click the header "Delegate Task" button again to toggle off
+    const delegateBtns = screen.getAllByText('Delegate Task');
+    // The first one is the header button
+    await user.click(delegateBtns[0]);
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText('Describe the task for the sub-agent...')).not.toBeInTheDocument();
+    });
+  });
+
+  // ── Profiles tab — new profile form ──────────────────────────────
+
+  it('opens new profile form when New Profile is clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Profiles'));
+    await screen.findByText('New Profile');
+    await user.click(screen.getByText('New Profile'));
+    await waitFor(() => {
+      expect(screen.getByText('New Agent Profile')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('e.g. reviewer')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('What this agent specializes in')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('You are a...')).toBeInTheDocument();
+    });
+  });
+
+  it('shows max token budget field in new profile form', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Profiles'));
+    await screen.findByText('New Profile');
+    await user.click(screen.getByText('New Profile'));
+    await waitFor(() => {
+      expect(screen.getByText('Max Token Budget')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('50000')).toBeInTheDocument();
+    });
+  });
+
+  it('shows allowed tools textarea in new profile form', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Profiles'));
+    await screen.findByText('New Profile');
+    await user.click(screen.getByText('New Profile'));
+    await waitFor(() => {
+      expect(screen.getByText('Allowed Tools')).toBeInTheDocument();
+    });
+  });
+
+  it('Create button disabled when name and prompt are empty', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Profiles'));
+    await screen.findByText('New Profile');
+    await user.click(screen.getByText('New Profile'));
+    await waitFor(() => {
+      expect(screen.getByText('Create').closest('button')).toBeDisabled();
+    });
+  });
+
+  // ── Profile details ────────────────────────────────────────────
+
+  it('shows token budget and model on profile cards', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Profiles'));
+    await waitFor(() => {
+      expect(screen.getByText('50,000 tokens')).toBeInTheDocument();
+      expect(screen.getByText('Model: gpt-4')).toBeInTheDocument();
+    });
+  });
+
+  it('shows "All tools" for profiles with empty allowedTools', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Profiles'));
+    await waitFor(() => {
+      expect(screen.getByText('All tools')).toBeInTheDocument();
+    });
+  });
+
+  it('shows tool pattern count for profiles with specific tools', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Profiles'));
+    await waitFor(() => {
+      expect(screen.getByText('1 tool pattern')).toBeInTheDocument();
+    });
+  });
+
+  // ── Active delegation details ──────────────────────────────────
+
+  it('shows elapsed time for active delegation', async () => {
+    renderComponent();
+    await screen.findByText('researcher');
+    expect(screen.getByText('30s')).toBeInTheDocument();
+  });
+
+  // ── History tab — status filter ────────────────────────────────
+
+  it('shows status filter dropdown in history tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('History'));
+    await waitFor(() => {
+      expect(screen.getByText('All statuses')).toBeInTheDocument();
+    });
+  });
+
+  it('shows token count in history items', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('History'));
+    await waitFor(() => {
+      expect(screen.getByText('7,000 tokens')).toBeInTheDocument();
+    });
+  });
+
+  // ── Empty active delegations with profiles ─────────────────────
+
+  it('shows profile shortcuts in empty active delegations state', async () => {
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('No active delegations')).toBeInTheDocument();
+    });
+    // Should show buttons for first 4 profiles
+    expect(screen.getAllByText('researcher').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('coder').length).toBeGreaterThanOrEqual(1);
+  });
+
+  // ── Description text ───────────────────────────────────────────
+
+  it('shows swarm description text', async () => {
+    renderComponent();
+    await screen.findByText('Active');
+    expect(screen.getByText(/Swarm infers task complexity/)).toBeInTheDocument();
+  });
+
+  // ── Skills section on profiles ─────────────────────────────────
+
+  it('shows Skills section on profile cards', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Profiles'));
+    await waitFor(() => {
+      const skillsBtns = screen.getAllByText(/Skills \(\d+\)/);
+      expect(skillsBtns.length).toBeGreaterThan(0);
+    });
+  });
+
+  // ── Delete profile ─────────────────────────────────────────────
+
+  it('calls deleteAgentProfile when delete button is clicked on non-builtin profile', async () => {
+    const user = userEvent.setup();
+    mockDeleteAgentProfile.mockResolvedValue(undefined as never);
+    renderComponent();
+    await screen.findByText('Active');
+    await user.click(screen.getByText('Profiles'));
+    await screen.findByText('coder');
+    const deleteBtn = screen.getByTitle('Delete profile');
+    await user.click(deleteBtn);
+    await waitFor(() => {
+      expect(mockDeleteAgentProfile).toHaveBeenCalled();
+    });
+  });
 });

@@ -22,7 +22,11 @@ export function registerExperimentRoutes(
 
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('prompt_engineering', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('prompt_engineering', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 

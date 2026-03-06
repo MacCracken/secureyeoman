@@ -110,10 +110,7 @@ export class PolicyBundleStore extends PgBaseStorage {
   }
 
   async deleteBundle(id: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM policy_as_code.bundles WHERE id = $1',
-      [id]
-    );
+    const count = await this.execute('DELETE FROM policy_as_code.bundles WHERE id = $1', [id]);
     return count > 0;
   }
 
@@ -153,10 +150,7 @@ export class PolicyBundleStore extends PgBaseStorage {
     return row ? rowToDeployment(row) : null;
   }
 
-  async listDeployments(
-    bundleName?: string,
-    limit = 50
-  ): Promise<PolicyDeployment[]> {
+  async listDeployments(bundleName?: string, limit = 50): Promise<PolicyDeployment[]> {
     const conditions = ['1=1'];
     const values: unknown[] = [];
     let idx = 1;
@@ -177,16 +171,13 @@ export class PolicyBundleStore extends PgBaseStorage {
   }
 
   async updateDeploymentStatus(id: string, status: BundleStatus): Promise<void> {
-    await this.execute(
-      'UPDATE policy_as_code.deployments SET status = $1 WHERE id = $2',
-      [status, id]
-    );
+    await this.execute('UPDATE policy_as_code.deployments SET status = $1 WHERE id = $2', [
+      status,
+      id,
+    ]);
   }
 
-  async deleteOldDeployments(
-    bundleName: string,
-    retain: number
-  ): Promise<number> {
+  async deleteOldDeployments(bundleName: string, retain: number): Promise<number> {
     const result = await this.execute(
       `DELETE FROM policy_as_code.deployments
        WHERE bundle_name = $1

@@ -52,7 +52,10 @@ interface DataStream {
 
 // ── Color palettes ────────────────────────────────────────────────
 
-const PALETTES: Record<EntityState, { primary: string; secondary: string; glow: string; core: string; stream: string }> = {
+const PALETTES: Record<
+  EntityState,
+  { primary: string; secondary: string; glow: string; core: string; stream: string }
+> = {
   dormant: {
     primary: 'rgba(100, 160, 220, 0.6)',
     secondary: 'rgba(80, 120, 180, 0.3)',
@@ -112,7 +115,14 @@ function createParticles(count: number, w: number, h: number): Particle[] {
   const particles: Particle[] = [];
   for (let i = 0; i < count; i++) {
     const ring = i < 3 ? 0 : i < 10 ? 1 : i < 22 ? 2 : 3;
-    const ringRadius = ring === 0 ? 0 : ring === 1 ? Math.min(w, h) * 0.12 : ring === 2 ? Math.min(w, h) * 0.25 : Math.min(w, h) * 0.38;
+    const ringRadius =
+      ring === 0
+        ? 0
+        : ring === 1
+          ? Math.min(w, h) * 0.12
+          : ring === 2
+            ? Math.min(w, h) * 0.25
+            : Math.min(w, h) * 0.38;
     const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
     const r = ringRadius + (Math.random() - 0.5) * ringRadius * 0.4;
 
@@ -137,16 +147,19 @@ function createParticles(count: number, w: number, h: number): Particle[] {
 
 // ── Speed / intensity multipliers per state ───────────────────────
 
-const STATE_CONFIG: Record<EntityState, {
-  speedMul: number;
-  connectionDist: number;
-  connectionAlpha: number;
-  coreSize: number;
-  corePulseSpeed: number;
-  particleGlow: number;
-  streamCount: number;
-  streamSpeed: number;
-}> = {
+const STATE_CONFIG: Record<
+  EntityState,
+  {
+    speedMul: number;
+    connectionDist: number;
+    connectionAlpha: number;
+    coreSize: number;
+    corePulseSpeed: number;
+    particleGlow: number;
+    streamCount: number;
+    streamSpeed: number;
+  }
+> = {
   dormant: {
     speedMul: 0.3,
     connectionDist: 80,
@@ -208,7 +221,7 @@ function renderFrame(
   state: EntityState,
   time: number,
   w: number,
-  h: number,
+  h: number
 ) {
   const palette = PALETTES[state];
   const cfg = STATE_CONFIG[state];
@@ -254,7 +267,9 @@ function renderFrame(
         // Pulse connections near active data streams
         const streamBoost = streams.some(
           (s) => (s.fromIdx === i && s.toIdx === j) || (s.fromIdx === j && s.toIdx === i)
-        ) ? 0.4 : 0;
+        )
+          ? 0.4
+          : 0;
 
         ctx.strokeStyle = hexAlpha(palette.secondary, Math.min(alpha + streamBoost, 0.8));
         ctx.lineWidth = alpha > 0.15 ? 1.2 : 0.6;
@@ -327,7 +342,7 @@ function stepPhysics(
   state: EntityState,
   time: number,
   w: number,
-  h: number,
+  h: number
 ): DataStream[] {
   const cfg = STATE_CONFIG[state];
   const cx = w / 2;
@@ -335,7 +350,14 @@ function stepPhysics(
 
   for (const p of particles) {
     // Orbital motion
-    const ringRadius = p.ring === 0 ? 5 : p.ring === 1 ? Math.min(w, h) * 0.12 : p.ring === 2 ? Math.min(w, h) * 0.25 : Math.min(w, h) * 0.38;
+    const ringRadius =
+      p.ring === 0
+        ? 5
+        : p.ring === 1
+          ? Math.min(w, h) * 0.12
+          : p.ring === 2
+            ? Math.min(w, h) * 0.25
+            : Math.min(w, h) * 0.38;
     p.angle += p.angleSpeed * cfg.speedMul;
 
     const targetX = cx + Math.cos(p.angle) * ringRadius;
@@ -449,11 +471,14 @@ export function EntityWidget({
   // Track canvas dimensions for responsive resize
   const [dims, setDims] = useState({ w: 0, h: 0 });
 
-  const initParticles = useCallback((w: number, h: number) => {
-    const count = compact ? 20 : 35;
-    particlesRef.current = createParticles(count, w, h);
-    streamsRef.current = [];
-  }, [compact]);
+  const initParticles = useCallback(
+    (w: number, h: number) => {
+      const count = compact ? 20 : 35;
+      particlesRef.current = createParticles(count, w, h);
+      streamsRef.current = [];
+    },
+    [compact]
+  );
 
   // Resize observer
   useEffect(() => {
@@ -475,7 +500,9 @@ export function EntityWidget({
       }
     });
     observer.observe(canvas);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+    };
   }, [initParticles]);
 
   // Animation loop
@@ -501,7 +528,7 @@ export function EntityWidget({
         currentState,
         t,
         dims.w,
-        dims.h,
+        dims.h
       );
 
       renderFrame(ctx, particlesRef.current, streamsRef.current, currentState, t, dims.w, dims.h);
@@ -565,7 +592,13 @@ export function EntityWidget({
                 <div
                   key={i}
                   className={`w-0.5 rounded-full ${
-                    state === 'active' ? 'bg-emerald-400' : state === 'training' ? 'bg-amber-400' : state === 'ingesting' ? 'bg-green-400' : 'bg-cyan-400'
+                    state === 'active'
+                      ? 'bg-emerald-400'
+                      : state === 'training'
+                        ? 'bg-amber-400'
+                        : state === 'ingesting'
+                          ? 'bg-green-400'
+                          : 'bg-cyan-400'
                   }`}
                   style={{
                     height: `${6 + Math.sin(Date.now() / 200 + i * 1.2) * 4}px`,

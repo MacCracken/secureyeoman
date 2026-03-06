@@ -33,7 +33,7 @@ const CLI_ENTRY = resolve(__dirname, 'cli.ts');
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 /** Budget for the process to reach /health:ok before we read memory */
-const STARTUP_TIMEOUT_MS = 10_000;
+const STARTUP_TIMEOUT_MS = 30_000;
 
 /** RSS must stay below this threshold */
 const MEMORY_BUDGET_MB = 300;

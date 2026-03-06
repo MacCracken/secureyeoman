@@ -49,7 +49,9 @@ function makeMockStore() {
     getTrace: vi.fn(async (id: string) => traces.get(id) ?? null),
     listTraces: vi.fn(async () => ({ items: [...traces.values()], total: traces.size })),
     deleteTrace: vi.fn(async (id: string) => traces.delete(id)),
-    saveTrace: vi.fn(async (t: ExecutionTrace) => { traces.set(t.id, t); }),
+    saveTrace: vi.fn(async (t: ExecutionTrace) => {
+      traces.set(t.id, t);
+    }),
     getReplayChain: vi.fn(async () => [t1]),
   };
 }
@@ -103,7 +105,10 @@ describe('Replay Routes', () => {
   });
 
   it('GET /traces/:traceId/chain returns chain', async () => {
-    const res = await app.inject({ method: 'GET', url: '/api/v1/agent-replay/traces/trace-1/chain' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/agent-replay/traces/trace-1/chain',
+    });
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.payload).chain).toHaveLength(1);
   });
@@ -114,7 +119,10 @@ describe('Replay Routes', () => {
   });
 
   it('GET /traces/:traceId/summary returns summary', async () => {
-    const res = await app.inject({ method: 'GET', url: '/api/v1/agent-replay/traces/trace-1/summary' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/agent-replay/traces/trace-1/summary',
+    });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.payload);
     expect(body.toolCallCount).toBe(1);

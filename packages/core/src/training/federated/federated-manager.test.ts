@@ -15,8 +15,14 @@ function makeConfig(overrides: Partial<FederatedLearningConfig> = {}): Federated
     roundTimeoutMs: 300_000,
     heartbeatIntervalMs: 0, // disable timer in tests
     defaultPrivacy: {
-      enabled: false, mechanism: 'gaussian', epsilon: 1, delta: 1e-5,
-      maxGradientNorm: 1, noiseSigma: 0, privacyBudgetTotal: 10, privacyBudgetUsed: 0,
+      enabled: false,
+      mechanism: 'gaussian',
+      epsilon: 1,
+      delta: 1e-5,
+      maxGradientNorm: 1,
+      noiseSigma: 0,
+      privacyBudgetTotal: 10,
+      privacyBudgetUsed: 0,
     },
     retainRounds: 500,
     ...overrides,
@@ -25,12 +31,30 @@ function makeConfig(overrides: Partial<FederatedLearningConfig> = {}): Federated
 
 function makeSession(overrides: Partial<FederatedSession> = {}): FederatedSession {
   return {
-    id: 'fl-1', name: 'Test', description: '', modelId: 'model-1',
+    id: 'fl-1',
+    name: 'Test',
+    description: '',
+    modelId: 'model-1',
     aggregationStrategy: 'fedavg',
-    privacy: { enabled: false, mechanism: 'gaussian', epsilon: 1, delta: 1e-5, maxGradientNorm: 1, noiseSigma: 0, privacyBudgetTotal: 10, privacyBudgetUsed: 0 },
-    minParticipants: 2, maxRounds: 10, currentRound: 0, convergenceThreshold: 0.001,
-    status: 'active', participantIds: ['fp-1', 'fp-2'],
-    createdAt: 1000, updatedAt: 1000, tenantId: 'default',
+    privacy: {
+      enabled: false,
+      mechanism: 'gaussian',
+      epsilon: 1,
+      delta: 1e-5,
+      maxGradientNorm: 1,
+      noiseSigma: 0,
+      privacyBudgetTotal: 10,
+      privacyBudgetUsed: 0,
+    },
+    minParticipants: 2,
+    maxRounds: 10,
+    currentRound: 0,
+    convergenceThreshold: 0.001,
+    status: 'active',
+    participantIds: ['fp-1', 'fp-2'],
+    createdAt: 1000,
+    updatedAt: 1000,
+    tenantId: 'default',
     ...overrides,
   };
 }
@@ -69,10 +93,25 @@ describe('FederatedManager', () => {
 
   it('creates a session', async () => {
     const session = await manager.createSession({
-      name: 'FL Test', modelId: 'model-1', participantIds: ['fp-1', 'fp-2'],
-      minParticipants: 2, maxRounds: 10, description: '', aggregationStrategy: 'fedavg',
-      privacy: { enabled: false, mechanism: 'gaussian', epsilon: 1, delta: 1e-5, maxGradientNorm: 1, noiseSigma: 0, privacyBudgetTotal: 10, privacyBudgetUsed: 0 },
-      convergenceThreshold: 0.001, tenantId: 'default',
+      name: 'FL Test',
+      modelId: 'model-1',
+      participantIds: ['fp-1', 'fp-2'],
+      minParticipants: 2,
+      maxRounds: 10,
+      description: '',
+      aggregationStrategy: 'fedavg',
+      privacy: {
+        enabled: false,
+        mechanism: 'gaussian',
+        epsilon: 1,
+        delta: 1e-5,
+        maxGradientNorm: 1,
+        noiseSigma: 0,
+        privacyBudgetTotal: 10,
+        privacyBudgetUsed: 0,
+      },
+      convergenceThreshold: 0.001,
+      tenantId: 'default',
     });
     expect(session.id).toMatch(/^fl-/);
     expect(session.status).toBe('active');
@@ -81,19 +120,37 @@ describe('FederatedManager', () => {
 
   it('rejects session when max concurrent reached', async () => {
     (store.listSessions as any).mockResolvedValueOnce({ items: [{}, {}, {}], total: 3 });
-    await expect(manager.createSession({
-      name: 'FL', modelId: 'm', participantIds: ['a', 'b'],
-      minParticipants: 2, maxRounds: 10, description: '', aggregationStrategy: 'fedavg',
-      privacy: {} as any, convergenceThreshold: 0.001, tenantId: 'default',
-    })).rejects.toThrow('Max concurrent sessions');
+    await expect(
+      manager.createSession({
+        name: 'FL',
+        modelId: 'm',
+        participantIds: ['a', 'b'],
+        minParticipants: 2,
+        maxRounds: 10,
+        description: '',
+        aggregationStrategy: 'fedavg',
+        privacy: {} as any,
+        convergenceThreshold: 0.001,
+        tenantId: 'default',
+      })
+    ).rejects.toThrow('Max concurrent sessions');
   });
 
   it('rejects session with insufficient participants', async () => {
-    await expect(manager.createSession({
-      name: 'FL', modelId: 'm', participantIds: ['a'],
-      minParticipants: 3, maxRounds: 10, description: '', aggregationStrategy: 'fedavg',
-      privacy: {} as any, convergenceThreshold: 0.001, tenantId: 'default',
-    })).rejects.toThrow('Need at least 3 participants');
+    await expect(
+      manager.createSession({
+        name: 'FL',
+        modelId: 'm',
+        participantIds: ['a'],
+        minParticipants: 3,
+        maxRounds: 10,
+        description: '',
+        aggregationStrategy: 'fedavg',
+        privacy: {} as any,
+        convergenceThreshold: 0.001,
+        tenantId: 'default',
+      })
+    ).rejects.toThrow('Need at least 3 participants');
   });
 
   it('gets a session by id', async () => {
@@ -140,7 +197,11 @@ describe('FederatedManager', () => {
   });
 
   it('processes heartbeat', async () => {
-    (store.getParticipant as any).mockResolvedValueOnce({ id: 'fp-1', status: 'registered', lastHeartbeat: 0 });
+    (store.getParticipant as any).mockResolvedValueOnce({
+      id: 'fp-1',
+      status: 'registered',
+      lastHeartbeat: 0,
+    });
     const ok = await manager.heartbeat('fp-1');
     expect(ok).toBe(true);
     expect(store.saveParticipant).toHaveBeenCalled();
@@ -169,14 +230,27 @@ describe('FederatedManager', () => {
   });
 
   it('rejects round when max rounds reached', async () => {
-    (store.getSession as any).mockResolvedValueOnce(makeSession({ currentRound: 10, maxRounds: 10 }));
+    (store.getSession as any).mockResolvedValueOnce(
+      makeSession({ currentRound: 10, maxRounds: 10 })
+    );
     await expect(manager.startRound('fl-1')).rejects.toThrow('max rounds');
   });
 
   it('rejects round when privacy budget exhausted', async () => {
-    (store.getSession as any).mockResolvedValueOnce(makeSession({
-      privacy: { enabled: true, mechanism: 'gaussian', epsilon: 1, delta: 1e-5, maxGradientNorm: 1, noiseSigma: 0, privacyBudgetTotal: 5, privacyBudgetUsed: 5 },
-    }));
+    (store.getSession as any).mockResolvedValueOnce(
+      makeSession({
+        privacy: {
+          enabled: true,
+          mechanism: 'gaussian',
+          epsilon: 1,
+          delta: 1e-5,
+          maxGradientNorm: 1,
+          noiseSigma: 0,
+          privacyBudgetTotal: 5,
+          privacyBudgetUsed: 5,
+        },
+      })
+    );
     await expect(manager.startRound('fl-1')).rejects.toThrow('Privacy budget exhausted');
   });
 
@@ -184,22 +258,46 @@ describe('FederatedManager', () => {
 
   it('submits an update and auto-aggregates when complete', async () => {
     const round = {
-      id: 'fr-1', sessionId: 'fl-1', roundNumber: 1, status: 'distributing',
-      aggregationStrategy: 'fedavg', participantIds: ['fp-1'],
-      updatesReceived: 0, updatesRequired: 1, privacy: { enabled: false } as any,
-      startedAt: 1000, completedAt: 0, createdAt: 1000, tenantId: 'default',
-      globalModelVersion: '', globalMetrics: {},
+      id: 'fr-1',
+      sessionId: 'fl-1',
+      roundNumber: 1,
+      status: 'distributing',
+      aggregationStrategy: 'fedavg',
+      participantIds: ['fp-1'],
+      updatesReceived: 0,
+      updatesRequired: 1,
+      privacy: { enabled: false } as any,
+      startedAt: 1000,
+      completedAt: 0,
+      createdAt: 1000,
+      tenantId: 'default',
+      globalModelVersion: '',
+      globalMetrics: {},
     };
     (store.getRound as any)
       .mockResolvedValueOnce({ ...round }) // submitUpdate lookup
       .mockResolvedValueOnce({ ...round, updatesReceived: 1, status: 'collecting' }); // aggregateRound lookup
     (store.getUpdatesForRound as any).mockResolvedValueOnce([
-      { participantId: 'fp-1', roundId: 'fr-1', gradientChecksum: 'abc', datasetSizeSeen: 100, trainingLoss: 0.5, metricsJson: {}, submittedAt: 1000, privacyNoiseApplied: false },
+      {
+        participantId: 'fp-1',
+        roundId: 'fr-1',
+        gradientChecksum: 'abc',
+        datasetSizeSeen: 100,
+        trainingLoss: 0.5,
+        metricsJson: {},
+        submittedAt: 1000,
+        privacyNoiseApplied: false,
+      },
     ]);
 
     await manager.submitUpdate('fr-1', {
-      participantId: 'fp-1', gradientChecksum: 'abc', datasetSizeSeen: 100,
-      trainingLoss: 0.5, metricsJson: {}, submittedAt: 1000, privacyNoiseApplied: false,
+      participantId: 'fp-1',
+      gradientChecksum: 'abc',
+      datasetSizeSeen: 100,
+      trainingLoss: 0.5,
+      metricsJson: {},
+      submittedAt: 1000,
+      privacyNoiseApplied: false,
     });
 
     // saveModelUpdate + 2x saveRound (collecting + completed)
@@ -208,11 +306,19 @@ describe('FederatedManager', () => {
 
   it('rejects update from non-participant', async () => {
     (store.getRound as any).mockResolvedValueOnce({
-      id: 'fr-1', status: 'collecting', participantIds: ['fp-1'],
+      id: 'fr-1',
+      status: 'collecting',
+      participantIds: ['fp-1'],
     });
-    await expect(manager.submitUpdate('fr-1', {
-      participantId: 'fp-999', gradientChecksum: 'x', datasetSizeSeen: 10,
-      metricsJson: {}, submittedAt: 1000, privacyNoiseApplied: false,
-    })).rejects.toThrow('not in this round');
+    await expect(
+      manager.submitUpdate('fr-1', {
+        participantId: 'fp-999',
+        gradientChecksum: 'x',
+        datasetSizeSeen: 10,
+        metricsJson: {},
+        submittedAt: 1000,
+        privacyNoiseApplied: false,
+      })
+    ).rejects.toThrow('not in this round');
   });
 });

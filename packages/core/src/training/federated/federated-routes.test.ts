@@ -56,8 +56,14 @@ describe('federated-routes', () => {
 
   it('POST /sessions creates session', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/federated/sessions',
-      payload: { name: 'Test', modelId: 'model-1', participantIds: ['fp-1', 'fp-2'], minParticipants: 2 },
+      method: 'POST',
+      url: '/api/v1/federated/sessions',
+      payload: {
+        name: 'Test',
+        modelId: 'model-1',
+        participantIds: ['fp-1', 'fp-2'],
+        minParticipants: 2,
+      },
     });
     expect(res.statusCode).toBe(201);
     expect(mgr.createSession).toHaveBeenCalled();
@@ -66,7 +72,8 @@ describe('federated-routes', () => {
   it('POST /sessions returns 400 on error', async () => {
     (mgr.createSession as any).mockRejectedValueOnce(new Error('Max concurrent'));
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/federated/sessions',
+      method: 'POST',
+      url: '/api/v1/federated/sessions',
       payload: {},
     });
     expect(res.statusCode).toBe(400);
@@ -98,7 +105,8 @@ describe('federated-routes', () => {
 
   it('POST /participants registers', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/federated/participants',
+      method: 'POST',
+      url: '/api/v1/federated/participants',
       payload: { peerId: 'peer-1', name: 'Node A', datasetSize: 500 },
     });
     expect(res.statusCode).toBe(201);
@@ -106,20 +114,27 @@ describe('federated-routes', () => {
 
   it('POST /participants rejects missing fields', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/federated/participants',
+      method: 'POST',
+      url: '/api/v1/federated/participants',
       payload: { peerId: 'peer-1' },
     });
     expect(res.statusCode).toBe(400);
   });
 
   it('POST /participants/:id/heartbeat succeeds', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/federated/participants/fp-1/heartbeat' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/federated/participants/fp-1/heartbeat',
+    });
     expect(res.statusCode).toBe(200);
   });
 
   it('POST /participants/:id/heartbeat returns 404 when missing', async () => {
     (mgr.heartbeat as any).mockResolvedValueOnce(false);
-    const res = await app.inject({ method: 'POST', url: '/api/v1/federated/participants/fp-1/heartbeat' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/federated/participants/fp-1/heartbeat',
+    });
     expect(res.statusCode).toBe(404);
   });
 
@@ -144,7 +159,8 @@ describe('federated-routes', () => {
 
   it('POST /rounds/:id/updates submits update', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/api/v1/federated/rounds/fr-1/updates',
+      method: 'POST',
+      url: '/api/v1/federated/rounds/fr-1/updates',
       payload: { participantId: 'fp-1', gradientChecksum: 'abc', datasetSizeSeen: 100 },
     });
     expect(res.statusCode).toBe(201);
@@ -156,7 +172,10 @@ describe('federated-routes', () => {
   });
 
   it('POST /rounds/:id/aggregate triggers aggregation', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/federated/rounds/fr-1/aggregate' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/federated/rounds/fr-1/aggregate',
+    });
     expect(res.statusCode).toBe(200);
     expect(mgr.aggregateRound).toHaveBeenCalledWith('fr-1');
   });

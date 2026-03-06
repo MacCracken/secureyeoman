@@ -215,9 +215,10 @@ export class SoulStorage extends PgBaseStorage {
     const now = Date.now();
     const id = uuidv7();
 
-    await this.query(
+    const row = await this.queryOne<PersonalityRow>(
       `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, inject_date_time, empathy_resonance, is_active, is_default, is_archetype, avatar_url, body, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15, $16, $17, $18::jsonb, $19, $20)`,
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15, $16, $17, $18::jsonb, $19, $20)
+       RETURNING *`,
       [
         id,
         data.name,
@@ -254,9 +255,8 @@ export class SoulStorage extends PgBaseStorage {
       ]
     );
 
-    const result = await this.getPersonality(id);
-    if (!result) throw new Error(`Failed to retrieve personality after insert: ${id}`);
-    return result;
+    if (!row) throw new Error(`Failed to insert personality: ${id}`);
+    return rowToPersonality(row);
   }
 
   async getPersonality(id: string): Promise<Personality | null> {

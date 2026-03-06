@@ -6,11 +6,7 @@
  */
 
 import type { Logger } from 'pino';
-import type {
-  FaultRule,
-  FaultConfig,
-  FaultInjectionResult,
-} from '@secureyeoman/shared';
+import type { FaultRule, FaultConfig, FaultInjectionResult } from '@secureyeoman/shared';
 
 export interface FaultInjectorDeps {
   log: Logger;
@@ -102,7 +98,12 @@ export class FaultInjector {
       case 'timeout':
         return this.injectTimeout(ruleId, fault.timeoutMs);
       case 'resource_exhaustion':
-        return this.injectResourceExhaustion(ruleId, fault.resource, fault.pressure, fault.durationMs);
+        return this.injectResourceExhaustion(
+          ruleId,
+          fault.resource,
+          fault.pressure,
+          fault.durationMs
+        );
       case 'dependency_failure':
         return this.injectDependencyFailure(fault.dependencyName, fault.failureMode);
       case 'data_corruption':
@@ -161,10 +162,7 @@ export class FaultInjector {
     return `Simulated ${corruptionType} data corruption${field}`;
   }
 
-  private async injectCircuitBreakerTrip(
-    breakerName: string,
-    holdOpenMs: number
-  ): Promise<string> {
+  private async injectCircuitBreakerTrip(breakerName: string, holdOpenMs: number): Promise<string> {
     return `Tripped circuit breaker '${breakerName}' for ${holdOpenMs}ms`;
   }
 

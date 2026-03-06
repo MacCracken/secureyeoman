@@ -62,7 +62,7 @@ describe('Audit trail', () => {
     const body = await res.json();
 
     const failedEntry = body.entries.find(
-      (e: { event?: string }) => e.event === 'auth_failure' || e.event === 'login_failed',
+      (e: { event?: string }) => e.event === 'auth_failure' || e.event === 'login_failed'
     );
     expect(failedEntry).toBeDefined();
   });

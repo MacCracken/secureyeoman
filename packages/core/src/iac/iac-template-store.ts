@@ -70,12 +70,25 @@ export class IacTemplateStore extends PgBaseStorage {
         compiled_at = EXCLUDED.compiled_at, valid = EXCLUDED.valid,
         validation_errors = EXCLUDED.validation_errors`,
       [
-        t.id, t.name, t.description, t.tool, t.cloudProvider,
-        t.category, t.version, JSON.stringify(t.files),
-        JSON.stringify(t.variables), JSON.stringify(t.tags),
-        JSON.stringify(t.sraControlIds), t.policyBundleName ?? null,
-        t.commitSha, t.ref, t.compiledAt, t.valid,
-        JSON.stringify(t.validationErrors), t.isBuiltin, t.tenantId,
+        t.id,
+        t.name,
+        t.description,
+        t.tool,
+        t.cloudProvider,
+        t.category,
+        t.version,
+        JSON.stringify(t.files),
+        JSON.stringify(t.variables),
+        JSON.stringify(t.tags),
+        JSON.stringify(t.sraControlIds),
+        t.policyBundleName ?? null,
+        t.commitSha,
+        t.ref,
+        t.compiledAt,
+        t.valid,
+        JSON.stringify(t.validationErrors),
+        t.isBuiltin,
+        t.tenantId,
       ]
     );
   }
@@ -144,10 +157,7 @@ export class IacTemplateStore extends PgBaseStorage {
   }
 
   async deleteTemplate(id: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM iac.templates WHERE id = $1',
-      [id]
-    );
+    const count = await this.execute('DELETE FROM iac.templates WHERE id = $1', [id]);
     return count > 0;
   }
 
@@ -160,11 +170,22 @@ export class IacTemplateStore extends PgBaseStorage {
         deployed_by, deployed_at, previous_deployment_id, tenant_id
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
       [
-        d.id, d.templateId, d.templateName, d.templateVersion, d.status,
-        JSON.stringify(d.variables), d.planOutput, d.applyOutput,
-        JSON.stringify(d.errors), d.resourcesCreated, d.resourcesModified,
-        d.resourcesDestroyed, d.deployedBy, d.deployedAt,
-        d.previousDeploymentId ?? null, d.tenantId,
+        d.id,
+        d.templateId,
+        d.templateName,
+        d.templateVersion,
+        d.status,
+        JSON.stringify(d.variables),
+        d.planOutput,
+        d.applyOutput,
+        JSON.stringify(d.errors),
+        d.resourcesCreated,
+        d.resourcesModified,
+        d.resourcesDestroyed,
+        d.deployedBy,
+        d.deployedAt,
+        d.previousDeploymentId ?? null,
+        d.tenantId,
       ]
     );
   }
@@ -177,10 +198,7 @@ export class IacTemplateStore extends PgBaseStorage {
     return row ? rowToDeployment(row) : null;
   }
 
-  async listDeployments(
-    templateName?: string,
-    limit = 50
-  ): Promise<IacDeployment[]> {
+  async listDeployments(templateName?: string, limit = 50): Promise<IacDeployment[]> {
     const conditions = ['1=1'];
     const values: unknown[] = [];
     let idx = 1;
@@ -221,10 +239,10 @@ export class IacTemplateStore extends PgBaseStorage {
       values.push(JSON.stringify(output.errors));
     }
 
-    await this.execute(
-      `UPDATE iac.deployments SET ${sets.join(', ')} WHERE id = $${idx}`,
-      [...values, id]
-    );
+    await this.execute(`UPDATE iac.deployments SET ${sets.join(', ')} WHERE id = $${idx}`, [
+      ...values,
+      id,
+    ]);
   }
 
   async deleteOldDeployments(templateName: string, retain: number): Promise<number> {

@@ -22,7 +22,11 @@ export function registerProviderAccountRoutes(
 
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('provider_management', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('provider_management', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 

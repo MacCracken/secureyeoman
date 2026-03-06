@@ -68,11 +68,20 @@ export class ChaosStore extends PgBaseStorage {
         started_at = EXCLUDED.started_at,
         completed_at = EXCLUDED.completed_at`,
       [
-        e.id, e.name, e.description, e.status,
-        JSON.stringify(e.rules), e.durationMs,
-        e.steadyStateHypothesis, e.rollbackOnFailure,
-        e.scheduledAt, e.startedAt, e.completedAt,
-        e.tenantId, e.createdBy, e.createdAt,
+        e.id,
+        e.name,
+        e.description,
+        e.status,
+        JSON.stringify(e.rules),
+        e.durationMs,
+        e.steadyStateHypothesis,
+        e.rollbackOnFailure,
+        e.scheduledAt,
+        e.startedAt,
+        e.completedAt,
+        e.tenantId,
+        e.createdBy,
+        e.createdAt,
       ]
     );
   }
@@ -146,10 +155,7 @@ export class ChaosStore extends PgBaseStorage {
   }
 
   async deleteExperiment(id: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM chaos.experiments WHERE id = $1',
-      [id]
-    );
+    const count = await this.execute('DELETE FROM chaos.experiments WHERE id = $1', [id]);
     return count > 0;
   }
 
@@ -163,8 +169,12 @@ export class ChaosStore extends PgBaseStorage {
         summary, metrics, created_at
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [
-        result.id, result.experimentId, result.status,
-        result.startedAt, result.completedAt, result.durationMs,
+        result.id,
+        result.experimentId,
+        result.status,
+        result.startedAt,
+        result.completedAt,
+        result.durationMs,
         JSON.stringify(result.faultResults),
         result.steadyStateValidated,
         result.summary,
@@ -184,9 +194,8 @@ export class ChaosStore extends PgBaseStorage {
   }
 
   async deleteResults(experimentId: string): Promise<number> {
-    return this.execute(
-      'DELETE FROM chaos.experiment_results WHERE experiment_id = $1',
-      [experimentId]
-    );
+    return this.execute('DELETE FROM chaos.experiment_results WHERE experiment_id = $1', [
+      experimentId,
+    ]);
   }
 }

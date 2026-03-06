@@ -1834,7 +1834,8 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'agnostic_structured_results',
-      description: 'Get typed structured results (security, performance, test execution) for a session',
+      description:
+        'Get typed structured results (security, performance, test execution) for a session',
       category: 'qa',
     },
     {

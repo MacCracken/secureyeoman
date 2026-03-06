@@ -5,7 +5,11 @@
  * defaults. Custom profiles can be created and persisted.
  */
 
-import type { SandboxProfile, SandboxProfileName, SandboxProfileCreate } from '@secureyeoman/shared';
+import type {
+  SandboxProfile,
+  SandboxProfileName,
+  SandboxProfileCreate,
+} from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 
 export interface SandboxProfileRegistryDeps {
@@ -16,7 +20,8 @@ const BUILTIN_PROFILES: SandboxProfile[] = [
   {
     name: 'dev',
     label: 'Development',
-    description: 'Permissive sandbox for local development. Network unrestricted, generous resource limits.',
+    description:
+      'Permissive sandbox for local development. Network unrestricted, generous resource limits.',
     enabled: true,
     technology: 'auto',
     filesystem: {
@@ -45,7 +50,8 @@ const BUILTIN_PROFILES: SandboxProfile[] = [
   {
     name: 'staging',
     label: 'Staging',
-    description: 'Moderate restrictions simulating production. Network allowed with host filtering.',
+    description:
+      'Moderate restrictions simulating production. Network allowed with host filtering.',
     enabled: true,
     technology: 'auto',
     filesystem: {
@@ -74,7 +80,8 @@ const BUILTIN_PROFILES: SandboxProfile[] = [
   {
     name: 'prod',
     label: 'Production',
-    description: 'Locked-down sandbox for production workloads. Restricted paths, credential proxy recommended.',
+    description:
+      'Locked-down sandbox for production workloads. Restricted paths, credential proxy recommended.',
     enabled: true,
     technology: 'auto',
     filesystem: {
@@ -103,7 +110,8 @@ const BUILTIN_PROFILES: SandboxProfile[] = [
   {
     name: 'high-security',
     label: 'High Security',
-    description: 'Maximum isolation. No network, minimal filesystem, credential proxy enforced, strict tool blocklist.',
+    description:
+      'Maximum isolation. No network, minimal filesystem, credential proxy enforced, strict tool blocklist.',
     enabled: true,
     technology: 'landlock',
     filesystem: {
@@ -125,7 +133,14 @@ const BUILTIN_PROFILES: SandboxProfile[] = [
     credentialProxy: { required: true, allowedHosts: [] },
     toolRestrictions: {
       allowlist: [],
-      blocklist: ['shell_exec', 'file_delete', 'file_write', 'docker_exec', 'docker_run', 'browser_navigate'],
+      blocklist: [
+        'shell_exec',
+        'file_delete',
+        'file_write',
+        'docker_exec',
+        'docker_run',
+        'browser_navigate',
+      ],
     },
     isBuiltin: true,
     createdAt: 0,

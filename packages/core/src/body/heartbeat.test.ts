@@ -1855,4 +1855,656 @@ describe('HeartbeatManager', () => {
       );
     });
   });
+
+  // ── Additional coverage tests ────────────────────────────────────
+
+  describe('overnight schedule range', () => {
+    it('should run check when inside overnight activeHours (e.g., 22:00-06:00 at 23:00)', async () => {
+      global.Date = class extends Date {
+        constructor(...args: unknown[]) {
+          if (args.length === 0) {
+            super('2024-01-01T23:00:00Z');
+          } else {
+            super(args[0] as string | number | Date);
+          }
+        }
+        getUTCHours() {
+          return 23;
+        }
+        getUTCMinutes() {
+          return 0;
+        }
+      } as any;
+
+      const config = defaultConfig({
+        checks: [
+          {
+            name: 'overnight',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 100,
+            schedule: {
+              activeHours: { start: '22:00', end: '06:00' },
+            },
+            config: {},
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config);
+      const result = await hb.beat();
+
+      expect(result.checks).toHaveLength(1);
+    });
+
+    it('should skip check when outside overnight activeHours (e.g., 22:00-06:00 at 12:00)', async () => {
+      global.Date = class extends Date {
+        constructor(...args: unknown[]) {
+          if (args.length === 0) {
+            super('2024-01-01T12:00:00Z');
+          } else {
+            super(args[0] as string | number | Date);
+          }
+        }
+        getUTCHours() {
+          return 12;
+        }
+        getUTCMinutes() {
+          return 0;
+        }
+      } as any;
+
+      const config = defaultConfig({
+        checks: [
+          {
+            name: 'overnight',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 100,
+            schedule: {
+              activeHours: { start: '22:00', end: '06:00' },
+            },
+            config: {},
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config);
+      const result = await hb.beat();
+
+      expect(result.checks).toHaveLength(0);
+    });
+  });
+
+  describe('conditionMatches — on_ok and on_warning', () => {
+    it('on_ok triggers only on ok status', async () => {
+      const config = defaultConfig({
+        checks: [
+          {
+            name: 'ok_only',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 100,
+            config: {},
+            actions: [
+              {
+                condition: 'on_ok' as const,
+                action: 'notify' as const,
+                config: { channel: 'console', messageTemplate: 'ok_triggered' },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config);
+      await hb.beat();
+
+      expect(logger.info).toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('ok_triggered') })
+      );
+    });
+
+    it('on_warning triggers only on warning status', async () => {
+      const config = defaultConfig({
+        checks: [
+          {
+            name: 'warn_only',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 100,
+            config: { warnRssMb: 0 }, // RSS > 0 always triggers warning
+            actions: [
+              {
+                condition: 'on_warning' as const,
+                action: 'notify' as const,
+                config: { channel: 'console', messageTemplate: 'warn_triggered' },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config);
+      await hb.beat();
+
+      expect(logger.info).toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('warn_triggered') })
+      );
+    });
+  });
+
+  describe('conditionMatches — default case returns false', () => {
+    it('unknown condition does not trigger action', async () => {
+      const config = defaultConfig({
+        checks: [
+          {
+            name: 'unknown_cond',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 100,
+            config: {},
+            actions: [
+              {
+                condition: 'never' as any,
+                action: 'notify' as any,
+                config: { channel: 'console', messageTemplate: 'should_not_fire' },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config);
+      await hb.beat();
+
+      expect(logger.info).not.toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('should_not_fire') })
+      );
+    });
+  });
+
+  describe('proactive check type', () => {
+    it('returns ok with proactive type and config data', async () => {
+      const config = defaultConfig({
+        checks: [
+          {
+            name: 'proactive_check',
+            type: 'proactive' as any,
+            enabled: true,
+            intervalMs: 100,
+            config: { key: 'value' },
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config as any);
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'proactive_check');
+      expect(check?.status).toBe('ok');
+      expect(check?.type).toBe('proactive');
+      expect(check?.data).toEqual({ key: 'value' });
+    });
+  });
+
+  describe('unknown check type — default case in runCheck', () => {
+    it('returns error for unknown check type', async () => {
+      const config = defaultConfig({
+        checks: [
+          {
+            name: 'weird_type',
+            type: 'nonexistent' as any,
+            enabled: true,
+            intervalMs: 100,
+            config: {},
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config as any);
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'weird_type');
+      expect(check?.status).toBe('error');
+      expect(check?.message).toContain('Unknown check type');
+    });
+  });
+
+  describe('initialize — hydrates taskLastRun from logStorage', () => {
+    it('hydrates from log storage entries', async () => {
+      const recentTime = Date.now(); // Use current time so interval hasn't elapsed
+      const logStorage = {
+        persist: vi.fn().mockResolvedValue({ id: 'log-1' }),
+        list: vi.fn().mockResolvedValue({ entries: [{ ranAt: recentTime }], total: 1 }),
+      };
+      const config = defaultConfig({
+        checks: [
+          {
+            name: 'health',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 10_000_000,
+            config: {},
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
+      await hb.initialize();
+
+      // After hydration, the check should NOT be due since lastRun was set recently
+      const result = await hb.beat();
+      expect(result.checks).toHaveLength(0); // not due yet
+    });
+
+    it('skips hydration when no logStorage', async () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      await hb.initialize(); // should not throw
+    });
+
+    it('handles logStorage.list throwing gracefully', async () => {
+      const logStorage = {
+        persist: vi.fn(),
+        list: vi.fn().mockRejectedValue(new Error('DB down')),
+      };
+      const config = defaultConfig({
+        checks: [
+          { name: 'health', type: 'system_health', enabled: true, intervalMs: 100, config: {} },
+        ],
+      });
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
+      await hb.initialize(); // should not throw
+      // Task should still run since hydration failed
+      const result = await hb.beat();
+      expect(result.checks).toHaveLength(1);
+    });
+  });
+
+  describe('beat — error path in check execution', () => {
+    it('handles non-Error thrown from check (String error)', async () => {
+      const logStorage = {
+        persist: vi.fn().mockResolvedValue({ id: 'log-1' }),
+        list: vi.fn().mockResolvedValue({ entries: [], total: 0 }),
+      };
+      const config = defaultConfig({
+        checks: [{ name: 'bad_check', type: 'custom', enabled: true, intervalMs: 0, config: {} }],
+      });
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
+      (hb as any).runCheck = vi.fn().mockRejectedValue('string error');
+
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'bad_check');
+      expect(check?.status).toBe('error');
+      expect(check?.message).toBe('Check failed');
+    });
+  });
+
+  describe('notify action — adapter dispatch via integrationId', () => {
+    it('dispatches to specific adapter by integrationId', async () => {
+      const mockAdapter = {
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+      };
+      const intManager = {
+        getRunningCount: vi.fn().mockReturnValue(1),
+        getAdapter: vi.fn().mockReturnValue(mockAdapter),
+        getAdaptersByPlatform: vi.fn().mockReturnValue([]),
+      } as any;
+
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: {
+                  channel: 'slack',
+                  integrationId: 'int-123',
+                  recipients: ['#general'],
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg, intManager);
+      await hb.beat();
+
+      expect(intManager.getAdapter).toHaveBeenCalledWith('int-123');
+      expect(mockAdapter.sendMessage).toHaveBeenCalledWith(
+        '#general',
+        expect.any(String),
+        expect.any(Object)
+      );
+    });
+
+    it('dispatches to platform adapters when no integrationId', async () => {
+      const mockAdapter = {
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+      };
+      const intManager = {
+        getRunningCount: vi.fn().mockReturnValue(1),
+        getAdapter: vi.fn(),
+        getAdaptersByPlatform: vi.fn().mockReturnValue([mockAdapter]),
+      } as any;
+
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: {
+                  channel: 'slack',
+                  recipients: ['#alerts'],
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg, intManager);
+      await hb.beat();
+
+      expect(intManager.getAdaptersByPlatform).toHaveBeenCalledWith('slack');
+      expect(mockAdapter.sendMessage).toHaveBeenCalled();
+    });
+
+    it('handles adapter.sendMessage throwing', async () => {
+      const mockAdapter = {
+        sendMessage: vi.fn().mockRejectedValue(new Error('send failed')),
+      };
+      const intManager = {
+        getRunningCount: vi.fn().mockReturnValue(1),
+        getAdapter: vi.fn(),
+        getAdaptersByPlatform: vi.fn().mockReturnValue([mockAdapter]),
+      } as any;
+
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: {
+                  channel: 'slack',
+                  recipients: ['admin'],
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg, intManager);
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+
+    it('logs warn when no adapters found', async () => {
+      const intManager = {
+        getRunningCount: vi.fn().mockReturnValue(0),
+        getAdapter: vi.fn().mockReturnValue(null),
+        getAdaptersByPlatform: vi.fn().mockReturnValue([]),
+      } as any;
+
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: {
+                  channel: 'slack',
+                  integrationId: 'missing-int',
+                  recipients: ['admin'],
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg, intManager);
+      await hb.beat();
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        'No running adapters found for notification channel',
+        expect.objectContaining({ channel: 'slack' })
+      );
+    });
+  });
+
+  describe('notify action — email channel metadata', () => {
+    it('passes subject metadata for email channel', async () => {
+      const mockAdapter = {
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+      };
+      const intManager = {
+        getRunningCount: vi.fn().mockReturnValue(1),
+        getAdapter: vi.fn(),
+        getAdaptersByPlatform: vi.fn().mockReturnValue([mockAdapter]),
+      } as any;
+
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'email_check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: {
+                  channel: 'email',
+                  recipients: ['user@example.com'],
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg, intManager);
+      await hb.beat();
+
+      expect(mockAdapter.sendMessage).toHaveBeenCalledWith(
+        'user@example.com',
+        expect.any(String),
+        expect.objectContaining({ subject: 'email_check' })
+      );
+    });
+  });
+
+  describe('webhook — HTTP error response', () => {
+    it('retries on HTTP error response', async () => {
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+        } as Response)
+        .mockResolvedValueOnce({ ok: true, status: 200 } as Response);
+
+      const config = defaultConfig({
+        checks: [
+          {
+            name: 'http_error',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 100,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'webhook' as const,
+                config: {
+                  url: 'https://example.com/hook',
+                  retryCount: 1,
+                  retryDelayMs: 10,
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config);
+      await hb.beat();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      fetchSpy.mockRestore();
+    });
+  });
+
+  describe('setActivePersonalityIds — multiple personalities', () => {
+    it('persists log entries for each active personality', async () => {
+      const logStorage = {
+        persist: vi.fn().mockResolvedValue({ id: 'log-1' }),
+        list: vi.fn().mockResolvedValue({ entries: [], total: 0 }),
+      };
+      const config = defaultConfig({
+        checks: [
+          { name: 'health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+        ],
+      });
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
+      hb.setActivePersonalityIds([
+        { id: 'p1', name: 'Alpha' },
+        { id: 'p2', name: 'Beta' },
+      ]);
+      await hb.beat();
+
+      // Should persist 2 log entries (one per personality)
+      expect(logStorage.persist).toHaveBeenCalledTimes(2);
+      expect(logStorage.persist).toHaveBeenCalledWith(
+        expect.objectContaining({ personalityId: 'p1' })
+      );
+      expect(logStorage.persist).toHaveBeenCalledWith(
+        expect.objectContaining({ personalityId: 'p2' })
+      );
+    });
+  });
+
+  describe('omnipresentMind personality scoped stats', () => {
+    it('uses unscoped stats for omnipresent personality on system_health', async () => {
+      const logStorage = {
+        persist: vi.fn().mockResolvedValue({ id: 'log-1' }),
+        list: vi.fn().mockResolvedValue({ entries: [], total: 0 }),
+      };
+      const config = defaultConfig({
+        checks: [
+          { name: 'health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+        ],
+      });
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
+      hb.setActivePersonalityIds([{ id: 'p1', name: 'Omni', omnipresentMind: true }]);
+      await hb.beat();
+
+      // brain.getStats should be called with undefined for omnipresent
+      expect(brain.getStats).toHaveBeenCalledWith(undefined);
+    });
+  });
+
+  describe('setPersonalitySchedule — null resets', () => {
+    it('setPersonalitySchedule(null) clears the schedule', () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.setPersonalitySchedule({
+        enabled: true,
+        start: '09:00',
+        end: '17:00',
+        daysOfWeek: [],
+        timezone: 'UTC',
+      });
+      expect(hb.getStatus().personalitySchedule).not.toBeNull();
+      hb.setPersonalitySchedule(null);
+      expect(hb.getStatus().personalitySchedule).toBeNull();
+      // With null schedule, personality is never at rest
+      expect(hb.getStatus().personalityAtRest).toBe(false);
+    });
+  });
+
+  describe('remember action — defaults', () => {
+    it('uses default importance, category, memoryType when not specified in config', async () => {
+      const config = defaultConfig({
+        checks: [
+          {
+            name: 'rem_defaults',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 100,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'remember' as const,
+                config: {},
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config);
+      await hb.beat();
+
+      expect(brain.remember).toHaveBeenCalledWith(
+        'episodic',
+        expect.stringContaining('Heartbeat alert from "rem_defaults"'),
+        'heartbeat_alert',
+        expect.any(Object),
+        0.5
+      );
+    });
+  });
 });

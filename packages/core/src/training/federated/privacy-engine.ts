@@ -30,15 +30,13 @@ export class PrivacyEngine {
   }
 
   /** Add noise to gradients for differential privacy. */
-  addNoise(
-    gradients: number[],
-    config: DifferentialPrivacyConfig
-  ): number[] {
+  addNoise(gradients: number[], config: DifferentialPrivacyConfig): number[] {
     if (!config.enabled) return gradients;
 
-    const sigma = config.noiseSigma > 0
-      ? config.noiseSigma
-      : this.computeSigma(config.epsilon, config.delta, config.maxGradientNorm);
+    const sigma =
+      config.noiseSigma > 0
+        ? config.noiseSigma
+        : this.computeSigma(config.epsilon, config.delta, config.maxGradientNorm);
 
     switch (config.mechanism) {
       case 'gaussian':

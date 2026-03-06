@@ -19,7 +19,8 @@ function rowToSession(row: Record<string, unknown>): FederatedSession {
     name: row.name as string,
     description: (row.description as string) ?? '',
     modelId: row.model_id as string,
-    aggregationStrategy: (row.aggregation_strategy as FederatedSession['aggregationStrategy']) ?? 'fedavg',
+    aggregationStrategy:
+      (row.aggregation_strategy as FederatedSession['aggregationStrategy']) ?? 'fedavg',
     privacy: (row.privacy as FederatedSession['privacy']) ?? {},
     minParticipants: Number(row.min_participants ?? 2),
     maxRounds: Number(row.max_rounds ?? 100),
@@ -53,7 +54,8 @@ function rowToRound(row: Record<string, unknown>): FederatedRound {
     id: row.id as string,
     roundNumber: Number(row.round_number ?? 1),
     status: (row.status as FederatedRoundStatus) ?? 'pending',
-    aggregationStrategy: (row.aggregation_strategy as FederatedRound['aggregationStrategy']) ?? 'fedavg',
+    aggregationStrategy:
+      (row.aggregation_strategy as FederatedRound['aggregationStrategy']) ?? 'fedavg',
     globalModelVersion: (row.global_model_version as string) ?? '',
     participantIds: (row.participant_ids as string[]) ?? [],
     updatesReceived: Number(row.updates_received ?? 0),
@@ -86,17 +88,29 @@ export class FederatedStore extends PgBaseStorage {
         status = EXCLUDED.status, participant_ids = EXCLUDED.participant_ids,
         updated_at = EXCLUDED.updated_at`,
       [
-        s.id, s.name, s.description, s.modelId, s.aggregationStrategy,
-        JSON.stringify(s.privacy), s.minParticipants, s.maxRounds,
-        s.currentRound, s.convergenceThreshold, s.status,
-        JSON.stringify(s.participantIds), s.createdAt, s.updatedAt, s.tenantId,
+        s.id,
+        s.name,
+        s.description,
+        s.modelId,
+        s.aggregationStrategy,
+        JSON.stringify(s.privacy),
+        s.minParticipants,
+        s.maxRounds,
+        s.currentRound,
+        s.convergenceThreshold,
+        s.status,
+        JSON.stringify(s.participantIds),
+        s.createdAt,
+        s.updatedAt,
+        s.tenantId,
       ]
     );
   }
 
   async getSession(id: string): Promise<FederatedSession | null> {
     const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM federated.sessions WHERE id = $1', [id]
+      'SELECT * FROM federated.sessions WHERE id = $1',
+      [id]
     );
     return row ? rowToSession(row) : null;
   }
@@ -115,7 +129,8 @@ export class FederatedStore extends PgBaseStorage {
 
     const where = conditions.join(' AND ');
     const countResult = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*)::TEXT AS count FROM federated.sessions WHERE ${where}`, values
+      `SELECT COUNT(*)::TEXT AS count FROM federated.sessions WHERE ${where}`,
+      values
     );
     const total = parseInt(countResult?.count ?? '0', 10);
 
@@ -148,16 +163,24 @@ export class FederatedStore extends PgBaseStorage {
         rounds_participated = EXCLUDED.rounds_participated,
         contribution_weight = EXCLUDED.contribution_weight`,
       [
-        p.id, p.peerId, p.name, p.status, p.datasetSize,
-        p.lastHeartbeat, p.roundsParticipated,
-        p.contributiionWeight, p.registeredAt, p.tenantId,
+        p.id,
+        p.peerId,
+        p.name,
+        p.status,
+        p.datasetSize,
+        p.lastHeartbeat,
+        p.roundsParticipated,
+        p.contributiionWeight,
+        p.registeredAt,
+        p.tenantId,
       ]
     );
   }
 
   async getParticipant(id: string): Promise<FederatedParticipant | null> {
     const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM federated.participants WHERE id = $1', [id]
+      'SELECT * FROM federated.participants WHERE id = $1',
+      [id]
     );
     return row ? rowToParticipant(row) : null;
   }
@@ -176,11 +199,13 @@ export class FederatedStore extends PgBaseStorage {
 
     const limit = Math.min(opts.limit ?? 100, 500);
 
-    return (await this.queryMany<Record<string, unknown>>(
-      `SELECT * FROM federated.participants WHERE ${conditions.join(' AND ')}
+    return (
+      await this.queryMany<Record<string, unknown>>(
+        `SELECT * FROM federated.participants WHERE ${conditions.join(' AND ')}
        ORDER BY registered_at DESC LIMIT $${idx++}`,
-      [...values, limit]
-    )).map(rowToParticipant);
+        [...values, limit]
+      )
+    ).map(rowToParticipant);
   }
 
   // ── Rounds ─────────────────────────────────────────────────────
@@ -198,33 +223,43 @@ export class FederatedStore extends PgBaseStorage {
         global_loss = EXCLUDED.global_loss, global_metrics = EXCLUDED.global_metrics,
         privacy = EXCLUDED.privacy, completed_at = EXCLUDED.completed_at`,
       [
-        r.id, r.sessionId ?? '', r.roundNumber, r.status, r.aggregationStrategy,
-        r.globalModelVersion, JSON.stringify(r.participantIds),
-        r.updatesReceived, r.updatesRequired,
-        r.globalLoss ?? null, JSON.stringify(r.globalMetrics),
-        JSON.stringify(r.privacy), r.startedAt, r.completedAt,
-        r.createdAt, r.tenantId,
+        r.id,
+        r.sessionId ?? '',
+        r.roundNumber,
+        r.status,
+        r.aggregationStrategy,
+        r.globalModelVersion,
+        JSON.stringify(r.participantIds),
+        r.updatesReceived,
+        r.updatesRequired,
+        r.globalLoss ?? null,
+        JSON.stringify(r.globalMetrics),
+        JSON.stringify(r.privacy),
+        r.startedAt,
+        r.completedAt,
+        r.createdAt,
+        r.tenantId,
       ]
     );
   }
 
   async getRound(id: string): Promise<FederatedRound | null> {
     const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM federated.rounds WHERE id = $1', [id]
+      'SELECT * FROM federated.rounds WHERE id = $1',
+      [id]
     );
     return row ? rowToRound(row) : null;
   }
 
-  async listRounds(
-    sessionId: string,
-    opts: { limit?: number } = {}
-  ): Promise<FederatedRound[]> {
+  async listRounds(sessionId: string, opts: { limit?: number } = {}): Promise<FederatedRound[]> {
     const limit = Math.min(opts.limit ?? 50, 500);
-    return (await this.queryMany<Record<string, unknown>>(
-      `SELECT * FROM federated.rounds WHERE session_id = $1
+    return (
+      await this.queryMany<Record<string, unknown>>(
+        `SELECT * FROM federated.rounds WHERE session_id = $1
        ORDER BY round_number DESC LIMIT $2`,
-      [sessionId, limit]
-    )).map(rowToRound);
+        [sessionId, limit]
+      )
+    ).map(rowToRound);
   }
 
   // ── Model Updates ──────────────────────────────────────────────
@@ -237,9 +272,16 @@ export class FederatedStore extends PgBaseStorage {
         metrics_json, submitted_at, privacy_noise_applied
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
-        u.id, u.participantId, u.roundId, u.gradientChecksum,
-        u.datasetSizeSeen, u.trainingLoss ?? null, u.validationLoss ?? null,
-        JSON.stringify(u.metricsJson), u.submittedAt, u.privacyNoiseApplied,
+        u.id,
+        u.participantId,
+        u.roundId,
+        u.gradientChecksum,
+        u.datasetSizeSeen,
+        u.trainingLoss ?? null,
+        u.validationLoss ?? null,
+        JSON.stringify(u.metricsJson),
+        u.submittedAt,
+        u.privacyNoiseApplied,
       ]
     );
   }

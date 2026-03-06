@@ -297,4 +297,390 @@ describe('SwarmStorage', () => {
       expect(result).toHaveLength(0);
     });
   });
+
+  // ── Additional coverage tests ────────────────────────────────────
+
+  describe('updateTemplate', () => {
+    it('returns null when no fields provided', async () => {
+      const result = await storage.updateTemplate('tmpl-1', {});
+      expect(result).toBeNull();
+      expect(mockQuery).not.toHaveBeenCalled();
+    });
+
+    it('updates name only', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...templateRow, name: 'New Name' }],
+        rowCount: 1,
+      });
+      const result = await storage.updateTemplate('tmpl-1', { name: 'New Name' });
+      expect(result!.name).toBe('New Name');
+    });
+
+    it('updates description only', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...templateRow, description: 'Updated desc' }],
+        rowCount: 1,
+      });
+      const result = await storage.updateTemplate('tmpl-1', { description: 'Updated desc' });
+      expect(result!.description).toBe('Updated desc');
+    });
+
+    it('updates strategy only', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...templateRow, strategy: 'sequential' }],
+        rowCount: 1,
+      });
+      const result = await storage.updateTemplate('tmpl-1', { strategy: 'sequential' as any });
+      expect(result!.strategy).toBe('sequential');
+    });
+
+    it('updates roles only', async () => {
+      const newRoles = [{ role: 'writer', profileName: 'writer', description: 'Writes' }];
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...templateRow, roles: newRoles }], rowCount: 1 });
+      const result = await storage.updateTemplate('tmpl-1', { roles: newRoles as any });
+      expect(result!.roles).toEqual(newRoles);
+    });
+
+    it('updates coordinatorProfile', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...templateRow, coordinator_profile: 'coord-1' }],
+        rowCount: 1,
+      });
+      const result = await storage.updateTemplate('tmpl-1', { coordinatorProfile: 'coord-1' });
+      expect(result!.coordinatorProfile).toBe('coord-1');
+    });
+
+    it('updates coordinatorProfile to null (via undefined value)', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...templateRow, coordinator_profile: null }],
+        rowCount: 1,
+      });
+      // When coordinatorProfile is explicitly in the data object with undefined value,
+      // the `'coordinatorProfile' in data` check is true and it pushes null
+      const data = { coordinatorProfile: undefined };
+      const result = await storage.updateTemplate('tmpl-1', data as any);
+      expect(result!.coordinatorProfile).toBeNull();
+    });
+
+    it('returns null when template not found (builtin or missing)', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await storage.updateTemplate('no-such', { name: 'X' });
+      expect(result).toBeNull();
+    });
+
+    it('updates multiple fields at once', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...templateRow, name: 'New', description: 'Desc', strategy: 'sequential' }],
+        rowCount: 1,
+      });
+      const result = await storage.updateTemplate('tmpl-1', {
+        name: 'New',
+        description: 'Desc',
+        strategy: 'sequential' as any,
+      });
+      expect(result!.name).toBe('New');
+    });
+  });
+
+  describe('updateRun — individual field branches', () => {
+    it('updates result only', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...runRow, result: 'output' }], rowCount: 1 });
+      const result = await storage.updateRun('run-1', { result: 'output' });
+      expect(result!.result).toBe('output');
+    });
+
+    it('updates error only', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...runRow, error: 'fail' }], rowCount: 1 });
+      const result = await storage.updateRun('run-1', { error: 'fail' });
+      expect(result!.error).toBe('fail');
+    });
+
+    it('updates tokensUsedPrompt only', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...runRow, tokens_used_prompt: 500 }],
+        rowCount: 1,
+      });
+      const result = await storage.updateRun('run-1', { tokensUsedPrompt: 500 });
+      expect(result!.tokensUsedPrompt).toBe(500);
+    });
+
+    it('updates tokensUsedCompletion only', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...runRow, tokens_used_completion: 300 }],
+        rowCount: 1,
+      });
+      const result = await storage.updateRun('run-1', { tokensUsedCompletion: 300 });
+      expect(result!.tokensUsedCompletion).toBe(300);
+    });
+
+    it('updates startedAt only', async () => {
+      const now = Date.now();
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...runRow, started_at: now }], rowCount: 1 });
+      const result = await storage.updateRun('run-1', { startedAt: now });
+      expect(result!.startedAt).toBe(now);
+    });
+
+    it('updates completedAt only', async () => {
+      const now = Date.now();
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...runRow, completed_at: now }], rowCount: 1 });
+      const result = await storage.updateRun('run-1', { completedAt: now });
+      expect(result!.completedAt).toBe(now);
+    });
+
+    it('returns null when run not found after update', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await storage.updateRun('no-such', { status: 'completed' as any });
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('updateMember — individual field branches', () => {
+    it('updates result only', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...memberRow, result: 'output' }], rowCount: 1 });
+      const result = await storage.updateMember('mem-1', { result: 'output' });
+      expect(result!.result).toBe('output');
+    });
+
+    it('updates delegationId only', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...memberRow, delegation_id: 'del-2' }],
+        rowCount: 1,
+      });
+      const result = await storage.updateMember('mem-1', { delegationId: 'del-2' });
+      expect(result!.delegationId).toBe('del-2');
+    });
+
+    it('updates startedAt only', async () => {
+      const now = Date.now();
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...memberRow, started_at: now }], rowCount: 1 });
+      const result = await storage.updateMember('mem-1', { startedAt: now });
+      expect(result!.startedAt).toBe(now);
+    });
+
+    it('updates completedAt only', async () => {
+      const now = Date.now();
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...memberRow, completed_at: now }], rowCount: 1 });
+      const result = await storage.updateMember('mem-1', { completedAt: now });
+      expect(result!.completedAt).toBe(now);
+    });
+
+    it('returns null when member not found after update', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await storage.updateMember('no-such', { status: 'done' });
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('toTs helper (via row mapping)', () => {
+    it('converts ISO string timestamp', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          {
+            ...runRow,
+            created_at: '2024-01-15T10:00:00Z',
+            started_at: '2024-01-15T10:01:00Z',
+            completed_at: null,
+          },
+        ],
+        rowCount: 1,
+      });
+      const result = await storage.getRun('run-1');
+      expect(result!.createdAt).toBe(new Date('2024-01-15T10:00:00Z').getTime());
+      expect(result!.startedAt).toBe(new Date('2024-01-15T10:01:00Z').getTime());
+      expect(result!.completedAt).toBeNull();
+    });
+
+    it('passes through numeric timestamps', async () => {
+      const ts = 1700000000000;
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...memberRow, created_at: ts, started_at: ts, completed_at: ts }],
+        rowCount: 1,
+      });
+      const members = await storage.getMembersForRun('run-1');
+      expect(members[0]!.createdAt).toBe(ts);
+      expect(members[0]!.startedAt).toBe(ts);
+      expect(members[0]!.completedAt).toBe(ts);
+    });
+
+    it('handles null/undefined in optional timestamps', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...runRow, started_at: undefined, completed_at: null }],
+        rowCount: 1,
+      });
+      const result = await storage.getRun('run-1');
+      expect(result!.startedAt).toBeNull();
+      expect(result!.completedAt).toBeNull();
+    });
+  });
+
+  describe('templateFromRow — roles null fallback', () => {
+    it('uses empty array when roles is null', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...templateRow, roles: null }],
+        rowCount: 1,
+      });
+      const result = await storage.getTemplate('tmpl-1');
+      expect(result!.roles).toEqual([]);
+    });
+  });
+
+  describe('listTemplates — countResult null fallback', () => {
+    it('returns total 0 when countResult is null', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // count returns no rows
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await storage.listTemplates();
+      expect(result.total).toBe(0);
+    });
+  });
+
+  describe('listRuns — countRow null fallback', () => {
+    it('returns total 0 when countRow is null', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // count returns no rows
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await storage.listRuns();
+      expect(result.total).toBe(0);
+    });
+  });
+
+  describe('getProfileSkills', () => {
+    it('maps raw rows to CatalogSkill objects', async () => {
+      const now = Date.now();
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'skill-1',
+            name: 'Test Skill',
+            description: 'A skill',
+            version: '2.0.0',
+            author: 'alice',
+            author_info: { name: 'Alice' },
+            category: 'security',
+            tags: ['a', 'b'],
+            download_count: 10,
+            rating: 4.5,
+            installed: true,
+            installed_globally: false,
+            source: 'published',
+            origin: 'marketplace',
+            published_at: now,
+            instructions: 'Do stuff',
+            trigger_patterns: ['hello'],
+            use_when: 'always',
+            do_not_use_when: 'never',
+            success_criteria: 'works',
+            mcp_tools_allowed: ['tool1'],
+            routing: 'explicit',
+            autonomy_level: 'L2',
+            tools: [],
+            created_at: now,
+            updated_at: now,
+          },
+        ],
+        rowCount: 1,
+      });
+      const skills = await storage.getProfileSkills('profile-1');
+      expect(skills).toHaveLength(1);
+      expect(skills[0]!.id).toBe('skill-1');
+      expect(skills[0]!.name).toBe('Test Skill');
+      expect(skills[0]!.version).toBe('2.0.0');
+      expect(skills[0]!.category).toBe('security');
+      expect(skills[0]!.routing).toBe('explicit');
+      expect(skills[0]!.autonomyLevel).toBe('L2');
+    });
+
+    it('uses defaults for null/missing fields', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'skill-2',
+            name: 'Minimal',
+            created_at: Date.now(),
+            updated_at: Date.now(),
+          },
+        ],
+        rowCount: 1,
+      });
+      const skills = await storage.getProfileSkills('profile-1');
+      expect(skills[0]!.description).toBe('');
+      expect(skills[0]!.version).toBe('1.0.0');
+      expect(skills[0]!.author).toBe('');
+      expect(skills[0]!.category).toBe('general');
+      expect(skills[0]!.tags).toEqual([]);
+      expect(skills[0]!.downloadCount).toBe(0);
+      expect(skills[0]!.rating).toBe(0);
+      expect(skills[0]!.installed).toBe(false);
+      expect(skills[0]!.installedGlobally).toBe(false);
+      expect(skills[0]!.source).toBe('published');
+      expect(skills[0]!.origin).toBe('marketplace');
+      expect(skills[0]!.publishedAt).toBe(0);
+      expect(skills[0]!.instructions).toBe('');
+      expect(skills[0]!.triggerPatterns).toEqual([]);
+      expect(skills[0]!.useWhen).toBe('');
+      expect(skills[0]!.doNotUseWhen).toBe('');
+      expect(skills[0]!.successCriteria).toBe('');
+      expect(skills[0]!.mcpToolsAllowed).toEqual([]);
+      expect(skills[0]!.routing).toBe('fuzzy');
+      expect(skills[0]!.autonomyLevel).toBe('L1');
+      expect(skills[0]!.tools).toEqual([]);
+    });
+
+    it('returns empty array when no skills', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const skills = await storage.getProfileSkills('profile-empty');
+      expect(skills).toEqual([]);
+    });
+  });
+
+  describe('addProfileSkill', () => {
+    it('calls query with insert', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+      await storage.addProfileSkill('profile-1', 'skill-1');
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO agents.profile_skills'),
+        ['profile-1', 'skill-1']
+      );
+    });
+  });
+
+  describe('removeProfileSkill', () => {
+    it('calls execute with delete', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+      await storage.removeProfileSkill('profile-1', 'skill-1');
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM agents.profile_skills'),
+        ['profile-1', 'skill-1']
+      );
+    });
+  });
+
+  describe('createTemplate — optional field defaults', () => {
+    it('uses empty string for description when not provided', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [templateRow], rowCount: 1 });
+      await storage.createTemplate({
+        name: 'No Desc',
+        strategy: 'parallel',
+        roles: [],
+      });
+      // The second arg to the INSERT should include '' for description
+      const callArgs = mockQuery.mock.calls[0][1] as unknown[];
+      expect(callArgs[2]).toBe(''); // description default
+    });
+
+    it('passes coordinatorProfile when provided', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...templateRow, coordinator_profile: 'coord' }],
+        rowCount: 1,
+      });
+      await storage.createTemplate({
+        name: 'With Coord',
+        strategy: 'parallel',
+        roles: [],
+        coordinatorProfile: 'coord',
+      });
+      const callArgs = mockQuery.mock.calls[0][1] as unknown[];
+      expect(callArgs[5]).toBe('coord');
+    });
+  });
 });

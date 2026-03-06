@@ -36,7 +36,14 @@ describe('BundleCompiler', () => {
   it('compiles a valid Rego bundle', async () => {
     const result = await compiler.compile(
       'test-1',
-      { name: 'test', version: '1.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+      {
+        name: 'test',
+        version: '1.0.0',
+        description: '',
+        author: '',
+        tags: [],
+        enforcement: 'warn',
+      },
       [{ path: 'access.rego', language: 'rego', source: 'package access\ndefault allow = false' }]
     );
 
@@ -51,7 +58,14 @@ describe('BundleCompiler', () => {
   it('compiles a valid CEL bundle', async () => {
     const result = await compiler.compile(
       'test-2',
-      { name: 'cel-test', version: '1.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+      {
+        name: 'cel-test',
+        version: '1.0.0',
+        description: '',
+        author: '',
+        tags: [],
+        enforcement: 'warn',
+      },
       [{ path: 'check.cel', language: 'cel', source: 'role == "admin"\nstatus == "active"' }]
     );
 
@@ -62,7 +76,14 @@ describe('BundleCompiler', () => {
   it('skips blank lines and comments in CEL files', async () => {
     const result = await compiler.compile(
       'test-3',
-      { name: 'cel-comments', version: '1.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+      {
+        name: 'cel-comments',
+        version: '1.0.0',
+        description: '',
+        author: '',
+        tags: [],
+        enforcement: 'warn',
+      },
       [{ path: 'rules.cel', language: 'cel', source: '# This is a comment\n\nrole == "admin"' }]
     );
 
@@ -72,7 +93,14 @@ describe('BundleCompiler', () => {
   it('fails on missing package declaration in Rego', async () => {
     const result = await compiler.compile(
       'test-4',
-      { name: 'bad-rego', version: '1.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+      {
+        name: 'bad-rego',
+        version: '1.0.0',
+        description: '',
+        author: '',
+        tags: [],
+        enforcement: 'warn',
+      },
       [{ path: 'bad.rego', language: 'rego', source: 'default allow = false' }]
     );
 
@@ -85,7 +113,14 @@ describe('BundleCompiler', () => {
 
     const result = await compiler.compile(
       'test-5',
-      { name: 'opa-fail', version: '1.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+      {
+        name: 'opa-fail',
+        version: '1.0.0',
+        description: '',
+        author: '',
+        tags: [],
+        enforcement: 'warn',
+      },
       [{ path: 'err.rego', language: 'rego', source: 'package err\nINVALID SYNTAX' }]
     );
 
@@ -96,7 +131,14 @@ describe('BundleCompiler', () => {
   it('fails on file exceeding max size', async () => {
     const result = await compiler.compile(
       'test-6',
-      { name: 'big-file', version: '1.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+      {
+        name: 'big-file',
+        version: '1.0.0',
+        description: '',
+        author: '',
+        tags: [],
+        enforcement: 'warn',
+      },
       [{ path: 'huge.rego', language: 'rego', source: 'x'.repeat(300_000) }]
     );
 
@@ -116,7 +158,14 @@ describe('BundleCompiler', () => {
 
     const result = await c.compile(
       'test-7',
-      { name: 'too-many', version: '1.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+      {
+        name: 'too-many',
+        version: '1.0.0',
+        description: '',
+        author: '',
+        tags: [],
+        enforcement: 'warn',
+      },
       files
     );
 
@@ -128,7 +177,14 @@ describe('BundleCompiler', () => {
     const c = new BundleCompiler(null, defaultConfig);
     const result = await c.compile(
       'test-8',
-      { name: 'no-opa', version: '1.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+      {
+        name: 'no-opa',
+        version: '1.0.0',
+        description: '',
+        author: '',
+        tags: [],
+        enforcement: 'warn',
+      },
       [{ path: 'local.rego', language: 'rego', source: 'package local\ndefault allow = true' }]
     );
 
@@ -146,7 +202,14 @@ describe('BundleCompiler', () => {
     const c = new BundleCompiler(null, defaultConfig);
     const result = await c.compile(
       'test-9',
-      { name: 'meta', version: '2.0.0', description: '', author: '', tags: [], enforcement: 'warn' },
+      {
+        name: 'meta',
+        version: '2.0.0',
+        description: '',
+        author: '',
+        tags: [],
+        enforcement: 'warn',
+      },
       [{ path: 'p.cel', language: 'cel', source: 'x == "y"' }],
       'abc123def456',
       'feature/policy'

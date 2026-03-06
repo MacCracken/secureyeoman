@@ -13,14 +13,15 @@ export interface FederatedRouteOptions {
   secureYeoman?: SecureYeoman;
 }
 
-export function registerFederatedRoutes(
-  app: FastifyInstance,
-  opts: FederatedRouteOptions
-): void {
+export function registerFederatedRoutes(app: FastifyInstance, opts: FederatedRouteOptions): void {
   const { federatedManager, secureYeoman } = opts;
   const featureGuardOpts = (
     secureYeoman
-      ? { preHandler: [requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager())] }
+      ? {
+          preHandler: [
+            requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager()),
+          ],
+        }
       : {}
   ) as Record<string, unknown>;
 
@@ -126,7 +127,9 @@ export function registerFederatedRoutes(
         return sendError(reply, 400, 'peerId and name are required');
       }
       const participant = await federatedManager.registerParticipant(
-        body.peerId, body.name, body.datasetSize ?? 0
+        body.peerId,
+        body.name,
+        body.datasetSize ?? 0
       );
       return reply.code(201).send(participant);
     }
@@ -149,10 +152,9 @@ export function registerFederatedRoutes(
       req: FastifyRequest<{ Params: { sessionId: string }; Querystring: { limit?: string } }>,
       reply: FastifyReply
     ) => {
-      const rounds = await federatedManager.listRounds(
-        req.params.sessionId,
-        { limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined }
-      );
+      const rounds = await federatedManager.listRounds(req.params.sessionId, {
+        limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
+      });
       return reply.send({ items: rounds, total: rounds.length });
     }
   );

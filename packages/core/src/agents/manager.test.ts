@@ -37,6 +37,7 @@ const mockStorage = {
   storeDelegationMessage: vi.fn(),
   getDelegationMessages: vi.fn().mockResolvedValue([]),
   pruneDelegations: vi.fn().mockResolvedValue(0),
+  storeEnabled: vi.fn().mockResolvedValue(undefined),
   close: vi.fn(),
 };
 
@@ -66,6 +67,7 @@ describe('SubAgentManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    defaultConfig.enabled = true;
     manager = new SubAgentManager(defaultConfig, {
       storage: mockStorage as any,
       aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
@@ -1110,6 +1112,657 @@ describe('SubAgentManager', () => {
       });
       expect(result.status).toBe('failed');
       expect(result.error).toContain('ENOENT');
+    });
+  });
+
+  // ── setEnabled ──────────────────────────────────────────────────────────
+
+  describe('setEnabled', () => {
+    it('updates config.enabled and persists to storage', async () => {
+      mockStorage.storeEnabled = vi.fn().mockResolvedValue(undefined);
+      expect(manager.getConfig().enabled).toBe(true);
+      await manager.setEnabled(false);
+      expect(manager.getConfig().enabled).toBe(false);
+      expect(mockStorage.storeEnabled).toHaveBeenCalledWith(false);
+      // Restore so subsequent tests aren't affected (shared config ref)
+      await manager.setEnabled(true);
+    });
+  });
+
+  // ── initialize branches ───────────────────────────────────────────────
+
+  describe('initialize — stored enabled state', () => {
+    it('restores stored enabled=false from storage', async () => {
+      mockStorage.getStoredEnabled.mockResolvedValueOnce(false);
+      mockStorage.pruneDelegations.mockResolvedValueOnce(0);
+      const mgr = new SubAgentManager(
+        { ...defaultConfig, enabled: true },
+        {
+          storage: mockStorage as any,
+          aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
+          aiClientDeps: {},
+          auditChain: mockAuditChain as any,
+          logger: mockLogger as any,
+        }
+      );
+      await mgr.initialize();
+      expect(mgr.getConfig().enabled).toBe(false);
+    });
+
+    it('logs when pruned > 0', async () => {
+      mockStorage.getStoredEnabled.mockResolvedValueOnce(null);
+      mockStorage.pruneDelegations.mockResolvedValueOnce(5);
+      await manager.initialize();
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Pruned 5'));
+    });
+  });
+
+  // ── profile lookup by name fallback ─────────────────────────────────────
+
+  describe('delegate — profile lookup by name fallback', () => {
+    it('falls back to getProfileByName when getProfile returns null', async () => {
+      const namedProfile = {
+        id: 'named-1',
+        name: 'by-name-profile',
+        systemPrompt: 'Sys.',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+      };
+      mockStorage.getProfile.mockResolvedValue(null);
+      mockStorage.getProfileByName.mockResolvedValue(namedProfile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+      mockStorage.storeDelegationMessage.mockResolvedValue(undefined);
+
+      mockAiChat.mockResolvedValue({
+        content: 'Named result.',
+        stopReason: 'end_turn',
+        toolCalls: [],
+        usage: { inputTokens: 50, outputTokens: 25 },
+      });
+
+      const result = await manager.delegate({ profile: 'by-name-profile', task: 'go' });
+      expect(result.status).toBe('completed');
+      expect(mockStorage.getProfileByName).toHaveBeenCalledWith('by-name-profile');
+    });
+  });
+
+  // ── token budget clamping (MIN_TOKEN_BUDGET = 20_000) ─────────────────
+
+  describe('delegate — token budget clamping', () => {
+    it('clamps token budget up to MIN_TOKEN_BUDGET (20k) when caller requests less', async () => {
+      const profile = {
+        id: 'clamp-prof',
+        name: 'clamp-profile',
+        systemPrompt: 'Sys.',
+        maxTokenBudget: 100000,
+        allowedTools: [],
+      };
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+      mockStorage.storeDelegationMessage.mockResolvedValue(undefined);
+
+      mockAiChat.mockResolvedValue({
+        content: 'Done.',
+        stopReason: 'end_turn',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5 },
+      });
+
+      await manager.delegate({
+        profile: 'clamp-profile',
+        task: 'test',
+        maxTokenBudget: 100, // way below 20k floor
+      });
+
+      // The createDelegation call should have tokenBudget >= 20000
+      const createCall = mockStorage.createDelegation.mock.calls[0][0];
+      expect(createCall.tokenBudget).toBeGreaterThanOrEqual(20000);
+    });
+  });
+
+  // ── model router branches ──────────────────────────────────────────────
+
+  describe('delegate — model router', () => {
+    it('uses model router selected model when confidence >= 0.5', async () => {
+      const mockCostCalc = {};
+      const mgr = new SubAgentManager(defaultConfig, {
+        storage: mockStorage as any,
+        aiClientConfig: { model: { provider: 'anthropic', model: 'default-model' } as any },
+        aiClientDeps: {},
+        auditChain: mockAuditChain as any,
+        logger: mockLogger as any,
+        costCalculator: mockCostCalc as any,
+      });
+
+      // Spy on the ModelRouter.route method
+      const modelRouter = (mgr as any).modelRouter;
+      vi.spyOn(modelRouter, 'route').mockReturnValue({
+        selectedModel: 'gpt-4-turbo',
+        confidence: 0.8,
+        tier: 'premium',
+        taskProfile: { taskType: 'analysis', complexity: 'high' },
+      });
+
+      const profile = {
+        id: 'router-prof',
+        name: 'router-test',
+        systemPrompt: 'Sys.',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+        defaultModel: 'fallback-model',
+      };
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+      mockStorage.storeDelegationMessage.mockResolvedValue(undefined);
+
+      mockAiChat.mockResolvedValue({
+        content: 'Routed.',
+        stopReason: 'end_turn',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5 },
+      });
+
+      await mgr.delegate({ profile: 'router-test', task: 'complex analysis' });
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'ModelRouter selected model for delegation',
+        expect.objectContaining({ selectedModel: 'gpt-4-turbo' })
+      );
+    });
+
+    it('falls back to profile.defaultModel when router confidence < 0.5', async () => {
+      const mockCostCalc = {};
+      const mgr = new SubAgentManager(defaultConfig, {
+        storage: mockStorage as any,
+        aiClientConfig: { model: { provider: 'anthropic', model: 'default-model' } as any },
+        aiClientDeps: {},
+        auditChain: mockAuditChain as any,
+        logger: mockLogger as any,
+        costCalculator: mockCostCalc as any,
+      });
+
+      const modelRouter = (mgr as any).modelRouter;
+      vi.spyOn(modelRouter, 'route').mockReturnValue({
+        selectedModel: 'gpt-4-turbo',
+        confidence: 0.3,
+        tier: 'premium',
+        taskProfile: { taskType: 'simple', complexity: 'low' },
+      });
+
+      const profile = {
+        id: 'router-low',
+        name: 'router-low-conf',
+        systemPrompt: 'Sys.',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+        defaultModel: 'profile-default',
+      };
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+      mockStorage.storeDelegationMessage.mockResolvedValue(undefined);
+
+      mockAiChat.mockResolvedValue({
+        content: 'Low conf.',
+        stopReason: 'end_turn',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5 },
+      });
+
+      await mgr.delegate({ profile: 'router-low-conf', task: 'simple task' });
+      // Should NOT log the model router selection
+      expect(mockLogger.debug).not.toHaveBeenCalledWith(
+        'ModelRouter selected model for delegation',
+        expect.anything()
+      );
+    });
+  });
+
+  // ── sealOnComplete = false ─────────────────────────────────────────────
+
+  describe('delegate — sealOnComplete false', () => {
+    it('skips message storage when sealOnComplete is false', async () => {
+      const mgr = new SubAgentManager(
+        { ...defaultConfig, context: { sealOnComplete: false, brainWriteScope: 'delegated' } },
+        {
+          storage: mockStorage as any,
+          aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
+          aiClientDeps: {},
+          auditChain: mockAuditChain as any,
+          logger: mockLogger as any,
+        }
+      );
+
+      const profile = {
+        id: 'seal-off',
+        name: 'no-seal',
+        systemPrompt: 'Sys.',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+      };
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+      mockStorage.storeDelegationMessage.mockResolvedValue(undefined);
+
+      mockAiChat.mockResolvedValue({
+        content: 'No seal.',
+        stopReason: 'end_turn',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5 },
+      });
+
+      await mgr.delegate({ profile: 'no-seal', task: 'test' });
+      expect(mockStorage.storeDelegationMessage).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── listActive with initiatedByPersonalityId ───────────────────────────
+
+  describe('listActive — initiatedByPersonalityId', () => {
+    it('includes initiatedByPersonalityId in SubAgentInfo', async () => {
+      (manager as any).activeDelegations.set('del-pers', {
+        abortController: new AbortController(),
+        promise: new Promise(() => {}),
+        startedAt: Date.now() - 500,
+        profileName: 'persona-agent',
+        task: 'personality task',
+        depth: 0,
+        tokenBudget: 30000,
+        tokensUsed: 100,
+        initiatedByPersonalityId: 'personality-abc',
+      });
+
+      const active = await manager.listActive();
+      expect(active).toHaveLength(1);
+      expect(active[0].initiatedByPersonalityId).toBe('personality-abc');
+
+      (manager as any).activeDelegations.clear();
+    });
+  });
+
+  // ── mcp-bridge — object result (non-string) ───────────────────────────
+
+  describe('mcp-bridge profile — object result', () => {
+    it('JSON.stringifies non-string MCP result', async () => {
+      const mockMcpClient = {
+        getAllTools: vi
+          .fn()
+          .mockReturnValue([{ name: 'obj-tool', serverId: 'srv-1', description: 'Returns obj' }]),
+        callTool: vi.fn().mockResolvedValue({ data: 'structured', count: 42 }),
+      };
+
+      const mcpManager = new SubAgentManager(defaultConfig, {
+        storage: mockStorage as any,
+        aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
+        aiClientDeps: {},
+        auditChain: mockAuditChain as any,
+        logger: mockLogger as any,
+        mcpClient: mockMcpClient as any,
+      });
+
+      const profile = {
+        id: 'mcp-obj',
+        name: 'mcp-obj-result',
+        systemPrompt: '',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+        type: 'mcp-bridge',
+        mcpTool: 'obj-tool',
+      };
+
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+
+      const result = await mcpManager.delegate({ profile: 'mcp-obj-result', task: 'get obj' });
+      expect(result.status).toBe('completed');
+      expect(result.result).toBe(JSON.stringify({ data: 'structured', count: 42 }));
+    });
+  });
+
+  // ── getResult with child delegations ──────────────────────────────────
+
+  describe('getResult — with child delegations', () => {
+    it('recursively builds child delegation results', async () => {
+      const parentRecord = {
+        id: 'parent-del',
+        profileId: 'prof-p',
+        status: 'completed',
+        result: 'Parent done',
+        error: null,
+        tokensUsedPrompt: 200,
+        tokensUsedCompletion: 100,
+        startedAt: 1000,
+        completedAt: 3000,
+      };
+      const childRecord = {
+        id: 'child-del',
+        parentDelegationId: 'parent-del',
+        profileId: 'prof-c',
+        status: 'completed',
+        result: 'Child done',
+        error: null,
+        tokensUsedPrompt: 50,
+        tokensUsedCompletion: 25,
+        startedAt: 1500,
+        completedAt: 2500,
+      };
+
+      mockStorage.getDelegation.mockResolvedValue(parentRecord);
+      // First getDelegationTree call (parent): returns parent + child
+      // Second getDelegationTree call (child): returns empty
+      mockStorage.getDelegationTree
+        .mockResolvedValueOnce([parentRecord, childRecord])
+        .mockResolvedValueOnce([]);
+      // buildResultFromRecord recurses into children first, so child profile is resolved before parent
+      mockStorage.getProfile
+        .mockResolvedValueOnce({ id: 'prof-c', name: 'child-profile' })
+        .mockResolvedValueOnce({ id: 'prof-p', name: 'parent-profile' });
+
+      const result = await manager.getResult('parent-del');
+      expect(result).not.toBeNull();
+      expect(result!.subDelegations).toHaveLength(1);
+      expect(result!.subDelegations[0].profile).toBe('child-profile');
+      expect(result!.subDelegations[0].result).toBe('Child done');
+    });
+
+    it('returns durationMs=0 when completedAt or startedAt is missing', async () => {
+      const record = {
+        id: 'no-times',
+        profileId: 'prof-x',
+        status: 'failed',
+        result: null,
+        error: 'timeout',
+        tokensUsedPrompt: 0,
+        tokensUsedCompletion: 0,
+        startedAt: null,
+        completedAt: null,
+      };
+      mockStorage.getDelegation.mockResolvedValue(record);
+      mockStorage.getDelegationTree.mockResolvedValue([]);
+      mockStorage.getProfile.mockResolvedValue({ id: 'prof-x', name: 'timed-out' });
+
+      const result = await manager.getResult('no-times');
+      expect(result!.durationMs).toBe(0);
+    });
+  });
+
+  // ── auditRecord error catch ───────────────────────────────────────────
+
+  describe('delegation — audit record error is caught', () => {
+    it('still returns completed when audit chain throws', async () => {
+      const profile = {
+        id: 'audit-err-prof',
+        name: 'audit-err',
+        systemPrompt: 'Sys.',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+      };
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+      mockStorage.storeDelegationMessage.mockResolvedValue(undefined);
+      mockAuditChain.record.mockRejectedValueOnce(new Error('Audit DB down'));
+
+      mockAiChat.mockResolvedValue({
+        content: 'Result despite audit fail.',
+        stopReason: 'end_turn',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5 },
+      });
+
+      const result = await manager.delegate({ profile: 'audit-err', task: 'test' });
+      expect(result.status).toBe('completed');
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Failed to record delegation audit event',
+        expect.anything()
+      );
+    });
+  });
+
+  // ── MCP tool inputSchema handling in LLM loop ─────────────────────────
+
+  describe('LLM delegation — MCP tool schema handling', () => {
+    it('adds type:object to MCP tool schema when missing', async () => {
+      const mockMcpClient = {
+        getAllTools: vi.fn().mockReturnValue([
+          { name: 'schema_tool', serverId: 'srv', description: 'No type', inputSchema: {} },
+          {
+            name: 'typed_tool',
+            serverId: 'srv',
+            description: 'Has type',
+            inputSchema: { type: 'object', properties: { x: { type: 'number' } } },
+          },
+        ]),
+        callTool: vi.fn().mockResolvedValue('ok'),
+      };
+
+      const mcpManager = new SubAgentManager(defaultConfig, {
+        storage: mockStorage as any,
+        aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
+        aiClientDeps: {},
+        auditChain: mockAuditChain as any,
+        logger: mockLogger as any,
+        mcpClient: mockMcpClient as any,
+      });
+
+      const profile = {
+        id: 'schema-prof',
+        name: 'schema-test',
+        systemPrompt: 'Sys.',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+      };
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+      mockStorage.storeDelegationMessage.mockResolvedValue(undefined);
+
+      mockAiChat.mockResolvedValue({
+        content: 'Schema done.',
+        stopReason: 'end_turn',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5 },
+      });
+
+      await mcpManager.delegate({ profile: 'schema-test', task: 'test schemas' });
+
+      // The tools passed to chat should have type:'object' on both
+      const chatArgs = mockAiChat.mock.calls[0][0];
+      const tools = chatArgs.tools;
+      const schemaTool = tools.find((t: any) => t.name === 'schema_tool');
+      const typedTool = tools.find((t: any) => t.name === 'typed_tool');
+      expect(schemaTool.parameters.type).toBe('object');
+      expect(typedTool.parameters.type).toBe('object');
+    });
+  });
+
+  // ── toolMatchesProfile patterns ─────────────────────────────────────────
+
+  describe('delegate — toolMatchesProfile filtering', () => {
+    it('filters MCP tools by allowedTools wildcard pattern', async () => {
+      const mockMcpClient = {
+        getAllTools: vi.fn().mockReturnValue([
+          { name: 'web_search', serverId: 'srv', description: 'Search', inputSchema: {} },
+          { name: 'web_browse', serverId: 'srv', description: 'Browse', inputSchema: {} },
+          { name: 'fs_read', serverId: 'srv', description: 'Read', inputSchema: {} },
+          { name: 'memory_recall', serverId: 'srv', description: 'Memory', inputSchema: {} },
+        ]),
+        callTool: vi.fn().mockResolvedValue('ok'),
+      };
+
+      const mcpManager = new SubAgentManager(defaultConfig, {
+        storage: mockStorage as any,
+        aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
+        aiClientDeps: {},
+        auditChain: mockAuditChain as any,
+        logger: mockLogger as any,
+        mcpClient: mockMcpClient as any,
+      });
+
+      // Profile with prefix pattern + exact match
+      const profile = {
+        id: 'filter-prof',
+        name: 'filtered',
+        systemPrompt: 'Sys.',
+        maxTokenBudget: 50000,
+        allowedTools: ['web_*', 'memory_recall'],
+      };
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+      mockStorage.storeDelegationMessage.mockResolvedValue(undefined);
+
+      mockAiChat.mockResolvedValue({
+        content: 'Filtered.',
+        stopReason: 'end_turn',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5 },
+      });
+
+      await mcpManager.delegate({ profile: 'filtered', task: 'test' });
+
+      const chatArgs = mockAiChat.mock.calls[0][0];
+      const mcpToolNames = chatArgs.tools
+        .map((t: any) => t.name)
+        .filter(
+          (n: string) =>
+            !n.startsWith('delegate') && !n.startsWith('list_sub') && !n.startsWith('get_deleg')
+        );
+      // web_search, web_browse, memory_recall should pass; fs_read should not
+      expect(mcpToolNames).toContain('web_search');
+      expect(mcpToolNames).toContain('web_browse');
+      expect(mcpToolNames).toContain('memory_recall');
+      expect(mcpToolNames).not.toContain('fs_read');
+    });
+
+    it('allows all tools with wildcard * pattern', async () => {
+      const mockMcpClient = {
+        getAllTools: vi
+          .fn()
+          .mockReturnValue([
+            { name: 'any_tool', serverId: 'srv', description: 'Any', inputSchema: {} },
+          ]),
+        callTool: vi.fn().mockResolvedValue('ok'),
+      };
+
+      const mcpManager = new SubAgentManager(defaultConfig, {
+        storage: mockStorage as any,
+        aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
+        aiClientDeps: {},
+        auditChain: mockAuditChain as any,
+        logger: mockLogger as any,
+        mcpClient: mockMcpClient as any,
+      });
+
+      const profile = {
+        id: 'wildcard-prof',
+        name: 'wildcard',
+        systemPrompt: 'Sys.',
+        maxTokenBudget: 50000,
+        allowedTools: ['*'],
+      };
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+      mockStorage.storeDelegationMessage.mockResolvedValue(undefined);
+
+      mockAiChat.mockResolvedValue({
+        content: 'Wildcard.',
+        stopReason: 'end_turn',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5 },
+      });
+
+      await mcpManager.delegate({ profile: 'wildcard', task: 'test' });
+
+      const chatArgs = mockAiChat.mock.calls[0][0];
+      const toolNames = chatArgs.tools.map((t: any) => t.name);
+      expect(toolNames).toContain('any_tool');
+    });
+  });
+
+  // ── delegate with modelOverride ─────────────────────────────────────────
+
+  describe('delegate — modelOverride', () => {
+    it('uses modelOverride when provided, bypassing router', async () => {
+      const profile = {
+        id: 'override-prof',
+        name: 'override-test',
+        systemPrompt: 'Sys.',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+        defaultModel: 'default-model',
+      };
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+      mockStorage.storeDelegationMessage.mockResolvedValue(undefined);
+
+      mockAiChat.mockResolvedValue({
+        content: 'Override result.',
+        stopReason: 'end_turn',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5 },
+      });
+
+      await manager.delegate({
+        profile: 'override-test',
+        task: 'test',
+        modelOverride: 'custom-model-v2',
+      } as any);
+
+      expect(mockAiChat).toHaveBeenCalled();
+    });
+  });
+
+  // ── mcp-bridge — extensionManager emit ────────────────────────────────
+
+  describe('mcp-bridge profile — extensionManager events', () => {
+    it('emits before and after events when extensionManager present', async () => {
+      const mockExtManager = { emit: vi.fn().mockResolvedValue(undefined) };
+      const mockMcpClient = {
+        getAllTools: vi
+          .fn()
+          .mockReturnValue([{ name: 'ext-tool', serverId: 'srv', description: 'Ext tool' }]),
+        callTool: vi.fn().mockResolvedValue('ext result'),
+      };
+
+      const mgr = new SubAgentManager(defaultConfig, {
+        storage: mockStorage as any,
+        aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
+        aiClientDeps: {},
+        auditChain: mockAuditChain as any,
+        logger: mockLogger as any,
+        mcpClient: mockMcpClient as any,
+        extensionManager: mockExtManager as any,
+      });
+
+      const profile = {
+        id: 'ext-prof',
+        name: 'ext-bridge',
+        systemPrompt: '',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+        type: 'mcp-bridge',
+        mcpTool: 'ext-tool',
+      };
+      mockStorage.getProfile.mockResolvedValue(profile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+
+      await mgr.delegate({ profile: 'ext-bridge', task: 'ext task' });
+      expect(mockExtManager.emit).toHaveBeenCalledWith(
+        'agent:mcp-bridge-before-execute',
+        expect.objectContaining({ event: 'agent:mcp-bridge-before-execute' })
+      );
+      expect(mockExtManager.emit).toHaveBeenCalledWith(
+        'agent:mcp-bridge-after-execute',
+        expect.objectContaining({ event: 'agent:mcp-bridge-after-execute' })
+      );
     });
   });
 

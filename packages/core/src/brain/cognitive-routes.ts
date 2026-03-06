@@ -115,16 +115,13 @@ export async function registerCognitiveRoutes(
     }
   );
 
-  app.get(
-    '/api/v1/brain/schemas',
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      if (!schemaClusteringManager) {
-        return sendError(reply, 503, 'Schema clustering not available');
-      }
-
-      return { schemas: schemaClusteringManager.getSchemas() };
+  app.get('/api/v1/brain/schemas', async (_request: FastifyRequest, reply: FastifyReply) => {
+    if (!schemaClusteringManager) {
+      return sendError(reply, 503, 'Schema clustering not available');
     }
-  );
+
+    return { schemas: schemaClusteringManager.getSchemas() };
+  });
 
   // ── Retrieval Optimizer ──────────────────────────────────────
 
@@ -138,10 +135,7 @@ export async function registerCognitiveRoutes(
 
   app.post(
     '/api/v1/brain/retrieval-optimizer/feedback',
-    async (
-      request: FastifyRequest<{ Body: { positive: boolean } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { positive: boolean } }>, reply: FastifyReply) => {
       const { positive } = request.body;
       if (typeof positive !== 'boolean') {
         return sendError(reply, 400, 'positive (boolean) is required');

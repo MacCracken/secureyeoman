@@ -96,7 +96,9 @@ export function KeybindingsEditor({ open, onClose }: KeybindingsEditorProps) {
       <div className="absolute inset-0 bg-black/50" />
       <div
         className="relative w-full max-w-lg bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
@@ -125,7 +127,10 @@ export function KeybindingsEditor({ open, onClose }: KeybindingsEditorProps) {
         </div>
 
         {/* Bindings list */}
-        <div className="max-h-[60vh] overflow-y-auto px-4 py-2 space-y-3" data-testid="keybindings-list">
+        <div
+          className="max-h-[60vh] overflow-y-auto px-4 py-2 space-y-3"
+          data-testid="keybindings-list"
+        >
           {groups.map((group) => (
             <div key={group.category}>
               <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
@@ -177,7 +182,9 @@ export function KeybindingsEditor({ open, onClose }: KeybindingsEditorProps) {
                         </button>
                         {binding.shortcut !== binding.defaultShortcut && (
                           <button
-                            onClick={() => resetBinding(binding.id)}
+                            onClick={() => {
+                              resetBinding(binding.id);
+                            }}
                             className="opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Reset to default"
                             data-testid={`reset-${binding.id}`}

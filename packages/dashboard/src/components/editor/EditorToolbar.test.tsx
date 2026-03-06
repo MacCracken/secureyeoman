@@ -164,4 +164,180 @@ describe('EditorToolbar', () => {
     await user.click(newBtn);
     expect(props.onNewTab).toHaveBeenCalled();
   });
+
+  it('calls onTabClose when X button clicked on a tab', async () => {
+    const user = userEvent.setup();
+    const { props } = renderToolbar();
+    // There are two close buttons (one per tab)
+    const closeBtns = screen.getAllByRole('button').filter(
+      (btn) => btn.querySelector('.w-3.h-3') !== null || btn.classList.contains('hover:text-destructive')
+    );
+    // Click the close button next to app.tsx (second tab)
+    const appTab = screen.getByText('app.tsx').closest('div')!;
+    const closeBtn = appTab.querySelector('button.hover\\:text-destructive') as HTMLElement;
+    if (closeBtn) {
+      await user.click(closeBtn);
+      expect(props.onTabClose).toHaveBeenCalledWith('2');
+    }
+  });
+
+  it('calls onToggleSettings when settings button clicked', async () => {
+    const user = userEvent.setup();
+    const { props } = renderToolbar();
+    const settingsBtn = screen.getByTitle('Editor settings');
+    await user.click(settingsBtn);
+    expect(props.onToggleSettings).toHaveBeenCalled();
+  });
+
+  it('calls onToggleSplitView when split button clicked', async () => {
+    const user = userEvent.setup();
+    const { props } = renderToolbar();
+    const splitBtn = screen.getByTitle('Toggle split view');
+    await user.click(splitBtn);
+    expect(props.onToggleSplitView).toHaveBeenCalled();
+  });
+
+  it('calls onSendToChat when send-to-chat button clicked', async () => {
+    const user = userEvent.setup();
+    const { props } = renderToolbar();
+    const sendBtn = screen.getByTitle('Send selected text (or all) to chat');
+    await user.click(sendBtn);
+    expect(props.onSendToChat).toHaveBeenCalled();
+  });
+
+  it('highlights settings button when settingsOpen is true', () => {
+    renderToolbar({ settingsOpen: true });
+    const btn = screen.getByTitle('Editor settings');
+    expect(btn.className).toContain('bg-primary/10');
+  });
+
+  it('highlights split button when splitView is true', () => {
+    renderToolbar({ splitView: true });
+    const btn = screen.getByTitle('Toggle split view');
+    expect(btn.className).toContain('bg-primary/10');
+  });
+
+  it('highlights chat button when showChat is true', () => {
+    renderToolbar({ showChat: true });
+    const btn = screen.getByTitle(/chat panel/i);
+    expect(btn.className).toContain('bg-primary/15');
+  });
+
+  it('highlights world button when showWorld is true', () => {
+    renderToolbar({ showWorld: true });
+    const btn = screen.getByTitle(/agent world/i);
+    expect(btn.className).toContain('bg-primary/15');
+  });
+
+  it('highlights memory button when memoryEnabled is true', () => {
+    renderToolbar({ memoryEnabled: true });
+    const btn = screen.getByTitle(/Memory on/i);
+    expect(btn.className).toContain('bg-primary/15');
+  });
+
+  it('shows memory-off title when memoryEnabled is false', () => {
+    renderToolbar({ memoryEnabled: false });
+    expect(screen.getByTitle('Memory off')).toBeInTheDocument();
+  });
+
+  it('disables run button when runDisabled is true', () => {
+    renderToolbar({ runDisabled: true });
+    const runBtn = screen.getByTitle('Run code in terminal (Ctrl+Enter)');
+    expect(runBtn).toBeDisabled();
+  });
+
+  it('calls onToggleWorld when world button clicked', async () => {
+    const user = userEvent.setup();
+    const { props } = renderToolbar();
+    const worldBtn = screen.getByTitle(/agent world/i);
+    await user.click(worldBtn);
+    expect(props.onToggleWorld).toHaveBeenCalled();
+  });
+
+  it('shows model name from modelInfo', () => {
+    renderToolbar({ modelInfo: { current: { model: 'claude-3' } } });
+    expect(screen.getByText('claude-3')).toBeInTheDocument();
+  });
+
+  it('shows "Model" when modelInfo is undefined', () => {
+    renderToolbar({ modelInfo: undefined });
+    expect(screen.getByText('Model')).toBeInTheDocument();
+  });
+
+  it('opens model widget on model button click', async () => {
+    const user = userEvent.setup();
+    renderToolbar();
+    const modelBtn = screen.getByTitle('Switch model');
+    await user.click(modelBtn);
+    expect(screen.getByTestId('model-widget')).toBeInTheDocument();
+  });
+
+  it('shows rename input when renamingTabId matches', () => {
+    renderToolbar({ renamingTabId: '1', renameValue: 'new-name.ts' });
+    const input = screen.getByDisplayValue('new-name.ts');
+    expect(input).toBeInTheDocument();
+  });
+
+  it('calls onTabRenameStart on double-click of tab name', async () => {
+    const user = userEvent.setup();
+    const { props } = renderToolbar();
+    const tabName = screen.getByText('index.ts');
+    await user.dblClick(tabName);
+    expect(props.onTabRenameStart).toHaveBeenCalledWith('1', 'index.ts');
+  });
+
+  it('calls onTabRenameConfirm on Enter in rename input', async () => {
+    const user = userEvent.setup();
+    const { props } = renderToolbar({ renamingTabId: '1', renameValue: 'new.ts' });
+    const input = screen.getByDisplayValue('new.ts');
+    await user.type(input, '{Enter}');
+    expect(props.onTabRenameConfirm).toHaveBeenCalled();
+  });
+
+  it('calls onTabRenameCancel on Escape in rename input', async () => {
+    const user = userEvent.setup();
+    const { props } = renderToolbar({ renamingTabId: '1', renameValue: 'new.ts' });
+    const input = screen.getByDisplayValue('new.ts');
+    await user.type(input, '{Escape}');
+    expect(props.onTabRenameCancel).toHaveBeenCalled();
+  });
+
+  it('calls onTabRenameChange when typing in rename input', async () => {
+    const user = userEvent.setup();
+    const { props } = renderToolbar({ renamingTabId: '1', renameValue: '' });
+    const input = screen.getByRole('textbox');
+    await user.type(input, 'x');
+    expect(props.onTabRenameChange).toHaveBeenCalled();
+  });
+
+  it('does not show git button when showGitButton is false', () => {
+    renderToolbar({ showGitButton: false });
+    expect(screen.queryByTitle('Toggle Git panel')).not.toBeInTheDocument();
+  });
+
+  it('shows keybindings button when onToggleKeybindings is provided', async () => {
+    const onToggleKeybindings = vi.fn();
+    const user = userEvent.setup();
+    const { props } = renderToolbar({ onToggleKeybindings });
+    const btn = screen.getByTestId('keybindings-btn');
+    await user.click(btn);
+    expect(onToggleKeybindings).toHaveBeenCalled();
+  });
+
+  it('does not show keybindings button when handler is not provided', () => {
+    renderToolbar({ onToggleKeybindings: undefined });
+    expect(screen.queryByTestId('keybindings-btn')).not.toBeInTheDocument();
+  });
+
+  it('shows active tab with primary styling', () => {
+    renderToolbar({ activeTabId: '1' });
+    const tab = screen.getByText('index.ts').closest('div');
+    expect(tab?.className).toContain('bg-primary/10');
+  });
+
+  it('shows inactive tab without primary styling', () => {
+    renderToolbar({ activeTabId: '1' });
+    const tab = screen.getByText('app.tsx').closest('div');
+    expect(tab?.className).toContain('hover:bg-muted/50');
+  });
 });

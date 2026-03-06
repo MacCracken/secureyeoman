@@ -11,7 +11,11 @@ import type { SecureYeoman } from '../secureyeoman.js';
 
 export function registerBrowserRoutes(
   app: FastifyInstance,
-  opts: { browserSessionStorage: BrowserSessionStorage; browserConfig: Record<string, unknown>; secureYeoman?: SecureYeoman }
+  opts: {
+    browserSessionStorage: BrowserSessionStorage;
+    browserConfig: Record<string, unknown>;
+    secureYeoman?: SecureYeoman;
+  }
 ): void {
   const { browserSessionStorage, browserConfig, secureYeoman } = opts;
 

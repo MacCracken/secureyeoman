@@ -25,11 +25,7 @@ interface TreeStats {
   leafCount: number;
 }
 
-function collectStats(
-  node: BranchTreeNode,
-  depth: number,
-  stats: TreeStats
-): void {
+function collectStats(node: BranchTreeNode, depth: number, stats: TreeStats): void {
   stats.totalBranches++;
   if (depth > stats.maxDepth) stats.maxDepth = depth;
   if (node.children.length === 0) stats.leafCount++;
@@ -37,7 +33,7 @@ function collectStats(
   if (node.qualityScore != null) {
     stats.branchesWithScores++;
     const bucket = Math.min(4, Math.floor(node.qualityScore * 5));
-    stats.qualityBuckets[bucket]!++;
+    stats.qualityBuckets[bucket]++;
 
     if (stats.minQuality === null || node.qualityScore < stats.minQuality) {
       stats.minQuality = node.qualityScore;
@@ -102,9 +98,7 @@ export function BranchStatsPanel({ tree }: BranchStatsPanelProps) {
     );
   }
 
-  const modelEntries = Object.entries(stats.modelCounts).sort(
-    ([, a], [, b]) => b - a
-  );
+  const modelEntries = Object.entries(stats.modelCounts).sort(([, a], [, b]) => b - a);
   const maxBucket = Math.max(...stats.qualityBuckets, 1);
 
   return (
@@ -194,7 +188,10 @@ function StatCard({
         {icon}
         {label}
       </div>
-      <div className="text-lg font-bold" data-testid={`stat-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div
+        className="text-lg font-bold"
+        data-testid={`stat-${label.toLowerCase().replace(/\s+/g, '-')}`}
+      >
         {value}
       </div>
     </div>

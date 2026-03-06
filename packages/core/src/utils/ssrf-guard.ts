@@ -65,8 +65,11 @@ export function isPrivateUrl(rawUrl: string): boolean {
 
   // Explicit loopback and cloud metadata hostnames
   const BLOCKED_HOSTNAMES = [
-    'localhost', 'ip6-localhost', 'ip6-loopback',
-    'metadata.google.internal', 'metadata.internal',
+    'localhost',
+    'ip6-localhost',
+    'ip6-loopback',
+    'metadata.google.internal',
+    'metadata.internal',
     'instance-data', // AWS EC2 alias
   ];
   if (BLOCKED_HOSTNAMES.includes(hostname)) {

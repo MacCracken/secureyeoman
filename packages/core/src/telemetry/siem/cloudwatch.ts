@@ -70,7 +70,10 @@ export class CloudWatchProvider implements SiemProvider {
 
     const host = `logs.${this.config.region}.amazonaws.com`;
     const now = new Date();
-    const amzDate = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+    const amzDate = now
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}Z$/, 'Z');
     const dateStamp = amzDate.slice(0, 8);
 
     const headers: Record<string, string> = {
@@ -88,19 +91,22 @@ export class CloudWatchProvider implements SiemProvider {
       .sort()
       .join(';');
 
-    const canonicalHeaders = Object.keys(headers)
-      .map((k) => `${k.toLowerCase()}:${(headers[k] ?? '').trim()}`)
-      .sort()
-      .join('\n') + '\n';
+    const canonicalHeaders =
+      Object.keys(headers)
+        .map((k) => `${k.toLowerCase()}:${(headers[k] ?? '').trim()}`)
+        .sort()
+        .join('\n') + '\n';
 
     const payloadHash = createHash('sha256').update(body).digest('hex');
-    const canonicalRequest = [
-      'POST', '/', '', canonicalHeaders, signedHeaders, payloadHash,
-    ].join('\n');
+    const canonicalRequest = ['POST', '/', '', canonicalHeaders, signedHeaders, payloadHash].join(
+      '\n'
+    );
 
     const credentialScope = `${dateStamp}/${this.config.region}/logs/aws4_request`;
     const stringToSign = [
-      'AWS4-HMAC-SHA256', amzDate, credentialScope,
+      'AWS4-HMAC-SHA256',
+      amzDate,
+      credentialScope,
       createHash('sha256').update(canonicalRequest).digest('hex'),
     ].join('\n');
 

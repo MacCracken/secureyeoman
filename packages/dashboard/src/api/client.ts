@@ -6342,7 +6342,7 @@ export async function searchFiles(params: {
 }
 
 export interface ReplaceResult {
-  files: Array<{ file: string; replacements: number }>;
+  files: { file: string; replacements: number }[];
   totalReplacements: number;
 }
 
@@ -6385,7 +6385,9 @@ export async function fetchAnnotations(params?: {
   return request(`/editor/annotations${q ? `?${q}` : ''}`);
 }
 
-export async function createAnnotation(data: Omit<Annotation, 'id' | 'createdAt'>): Promise<{ annotation: Annotation }> {
+export async function createAnnotation(
+  data: Omit<Annotation, 'id' | 'createdAt'>
+): Promise<{ annotation: Annotation }> {
   return request('/editor/annotations', {
     method: 'POST',
     body: JSON.stringify(data),

@@ -110,7 +110,7 @@ export class PolicySync {
 
     // Mark current active deployment as rolled_back
     const current = await this.store.listDeployments(bundleName, 1);
-    if (current[0] && current[0].status === 'deployed') {
+    if (current[0]?.status === 'deployed') {
       await this.store.updateDeploymentStatus(current[0].id, 'rolled_back');
     }
 

@@ -25,7 +25,8 @@ export function diffTraces(
     outputSimilarity,
     toolCallDiffs: diffToolCalls(a.steps, b.steps),
     durationDiffMs: b.totalDurationMs - a.totalDurationMs,
-    tokenDiff: (b.totalInputTokens + b.totalOutputTokens) - (a.totalInputTokens + a.totalOutputTokens),
+    tokenDiff:
+      b.totalInputTokens + b.totalOutputTokens - (a.totalInputTokens + a.totalOutputTokens),
     costDiff: b.totalCostUsd - a.totalCostUsd,
     stepAlignment: alignSteps(a.steps, b.steps),
   };
@@ -43,9 +44,7 @@ function diffToolCalls(stepsA: TraceStep[], stepsB: TraceStep[]): ToolCallDiff[]
   const matchedB = new Set<number>();
 
   for (const ta of toolsA) {
-    const matchIdx = toolsB.findIndex(
-      (tb, i) => !matchedB.has(i) && tb.toolName === ta.toolName
-    );
+    const matchIdx = toolsB.findIndex((tb, i) => !matchedB.has(i) && tb.toolName === ta.toolName);
 
     if (matchIdx === -1) {
       diffs.push({ toolName: ta.toolName, status: 'removed_in_b' });

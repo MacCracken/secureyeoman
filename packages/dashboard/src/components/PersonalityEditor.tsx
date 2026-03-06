@@ -116,24 +116,114 @@ interface TraitDef {
 
 const TRAIT_DEFS: TraitDef[] = [
   // Communication — 5 levels: far-left → left → balanced → right → far-right
-  { key: 'formality', label: 'Formality', options: ['street', 'casual', 'balanced', 'formal', 'ceremonial'], category: 'communication', description: 'Language register and tone' },
-  { key: 'humor', label: 'Humor', options: ['deadpan', 'dry', 'balanced', 'witty', 'comedic'], category: 'communication', description: 'Use of humor in responses' },
-  { key: 'verbosity', label: 'Verbosity', options: ['terse', 'concise', 'balanced', 'detailed', 'exhaustive'], category: 'communication', description: 'Response length and depth' },
-  { key: 'directness', label: 'Directness', options: ['evasive', 'diplomatic', 'balanced', 'candid', 'blunt'], category: 'communication', description: 'How directly opinions are stated' },
+  {
+    key: 'formality',
+    label: 'Formality',
+    options: ['street', 'casual', 'balanced', 'formal', 'ceremonial'],
+    category: 'communication',
+    description: 'Language register and tone',
+  },
+  {
+    key: 'humor',
+    label: 'Humor',
+    options: ['deadpan', 'dry', 'balanced', 'witty', 'comedic'],
+    category: 'communication',
+    description: 'Use of humor in responses',
+  },
+  {
+    key: 'verbosity',
+    label: 'Verbosity',
+    options: ['terse', 'concise', 'balanced', 'detailed', 'exhaustive'],
+    category: 'communication',
+    description: 'Response length and depth',
+  },
+  {
+    key: 'directness',
+    label: 'Directness',
+    options: ['evasive', 'diplomatic', 'balanced', 'candid', 'blunt'],
+    category: 'communication',
+    description: 'How directly opinions are stated',
+  },
   // Emotional
-  { key: 'warmth', label: 'Warmth', options: ['cold', 'reserved', 'balanced', 'friendly', 'effusive'], category: 'emotional', description: 'Emotional tone and approachability' },
-  { key: 'empathy', label: 'Empathy', options: ['detached', 'analytical', 'balanced', 'empathetic', 'compassionate'], category: 'emotional', description: 'Emotional awareness and response' },
-  { key: 'patience', label: 'Patience', options: ['brisk', 'efficient', 'balanced', 'patient', 'nurturing'], category: 'emotional', description: 'Willingness to repeat and re-explain' },
-  { key: 'confidence', label: 'Confidence', options: ['humble', 'modest', 'balanced', 'assertive', 'authoritative'], category: 'emotional', description: 'Self-assurance in responses' },
+  {
+    key: 'warmth',
+    label: 'Warmth',
+    options: ['cold', 'reserved', 'balanced', 'friendly', 'effusive'],
+    category: 'emotional',
+    description: 'Emotional tone and approachability',
+  },
+  {
+    key: 'empathy',
+    label: 'Empathy',
+    options: ['detached', 'analytical', 'balanced', 'empathetic', 'compassionate'],
+    category: 'emotional',
+    description: 'Emotional awareness and response',
+  },
+  {
+    key: 'patience',
+    label: 'Patience',
+    options: ['brisk', 'efficient', 'balanced', 'patient', 'nurturing'],
+    category: 'emotional',
+    description: 'Willingness to repeat and re-explain',
+  },
+  {
+    key: 'confidence',
+    label: 'Confidence',
+    options: ['humble', 'modest', 'balanced', 'assertive', 'authoritative'],
+    category: 'emotional',
+    description: 'Self-assurance in responses',
+  },
   // Cognitive
-  { key: 'creativity', label: 'Creativity', options: ['rigid', 'conventional', 'balanced', 'imaginative', 'avant-garde'], category: 'cognitive', description: 'Novelty and originality of ideas' },
-  { key: 'risk_tolerance', label: 'Risk Tolerance', options: ['risk-averse', 'cautious', 'balanced', 'bold', 'reckless'], category: 'cognitive', description: 'Willingness to suggest unconventional solutions' },
-  { key: 'curiosity', label: 'Curiosity', options: ['narrow', 'focused', 'balanced', 'curious', 'exploratory'], category: 'cognitive', description: 'Tendency to ask follow-up questions and explore tangents' },
-  { key: 'skepticism', label: 'Skepticism', options: ['gullible', 'trusting', 'balanced', 'skeptical', 'contrarian'], category: 'cognitive', description: 'How readily claims are accepted vs questioned' },
+  {
+    key: 'creativity',
+    label: 'Creativity',
+    options: ['rigid', 'conventional', 'balanced', 'imaginative', 'avant-garde'],
+    category: 'cognitive',
+    description: 'Novelty and originality of ideas',
+  },
+  {
+    key: 'risk_tolerance',
+    label: 'Risk Tolerance',
+    options: ['risk-averse', 'cautious', 'balanced', 'bold', 'reckless'],
+    category: 'cognitive',
+    description: 'Willingness to suggest unconventional solutions',
+  },
+  {
+    key: 'curiosity',
+    label: 'Curiosity',
+    options: ['narrow', 'focused', 'balanced', 'curious', 'exploratory'],
+    category: 'cognitive',
+    description: 'Tendency to ask follow-up questions and explore tangents',
+  },
+  {
+    key: 'skepticism',
+    label: 'Skepticism',
+    options: ['gullible', 'trusting', 'balanced', 'skeptical', 'contrarian'],
+    category: 'cognitive',
+    description: 'How readily claims are accepted vs questioned',
+  },
   // Professional
-  { key: 'autonomy', label: 'Autonomy', options: ['dependent', 'consultative', 'balanced', 'proactive', 'autonomous'], category: 'professional', description: 'Initiative in taking action without explicit requests' },
-  { key: 'pedagogy', label: 'Pedagogy', options: ['terse-answer', 'answer-focused', 'balanced', 'explanatory', 'socratic'], category: 'professional', description: 'Tendency to explain reasoning vs just giving answers' },
-  { key: 'precision', label: 'Precision', options: ['approximate', 'loose', 'balanced', 'precise', 'meticulous'], category: 'professional', description: 'Attention to exact details and edge cases' },
+  {
+    key: 'autonomy',
+    label: 'Autonomy',
+    options: ['dependent', 'consultative', 'balanced', 'proactive', 'autonomous'],
+    category: 'professional',
+    description: 'Initiative in taking action without explicit requests',
+  },
+  {
+    key: 'pedagogy',
+    label: 'Pedagogy',
+    options: ['terse-answer', 'answer-focused', 'balanced', 'explanatory', 'socratic'],
+    category: 'professional',
+    description: 'Tendency to explain reasoning vs just giving answers',
+  },
+  {
+    key: 'precision',
+    label: 'Precision',
+    options: ['approximate', 'loose', 'balanced', 'precise', 'meticulous'],
+    category: 'professional',
+    description: 'Attention to exact details and edge cases',
+  },
 ];
 
 const TRAIT_CATEGORIES: { key: TraitDef['category']; label: string }[] = [
@@ -182,10 +272,7 @@ function DispositionEditor({
     const selected = traits[def.key];
     const isCore = CORE_TRAIT_KEYS.has(def.key);
     return (
-      <div
-        key={def.key}
-        className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3"
-      >
+      <div key={def.key} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
         <div className="sm:w-28 flex items-center gap-1.5">
           <span className="text-xs text-muted-foreground" title={def.description}>
             {def.label}
@@ -195,7 +282,9 @@ function DispositionEditor({
           {def.options.map((opt) => (
             <button
               key={opt}
-              onClick={() => setTrait(def.key, opt)}
+              onClick={() => {
+                setTrait(def.key, opt);
+              }}
               className={`px-2 py-0.5 text-xs rounded border transition-colors ${
                 selected === opt
                   ? 'bg-primary text-primary-foreground border-primary'
@@ -207,7 +296,9 @@ function DispositionEditor({
           ))}
           {!isCore && selected && (
             <button
-              onClick={() => clearTrait(def.key)}
+              onClick={() => {
+                clearTrait(def.key);
+              }}
               className="px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-destructive"
               title="Clear trait"
             >
@@ -227,13 +318,13 @@ function DispositionEditor({
       <label className="block text-sm font-medium mb-2">Disposition</label>
 
       {/* Core traits */}
-      <div className="space-y-2 mb-3">
-        {coreTraits.map(renderTraitRow)}
-      </div>
+      <div className="space-y-2 mb-3">{coreTraits.map(renderTraitRow)}</div>
 
       {/* Advanced toggle */}
       <button
-        onClick={() => setShowAdvanced((v) => !v)}
+        onClick={() => {
+          setShowAdvanced((v) => !v);
+        }}
         className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 mb-3 transition-colors"
       >
         <ChevronDown
@@ -260,9 +351,7 @@ function DispositionEditor({
                 <h4 className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
                   {cat.label}
                 </h4>
-                <div className="space-y-2">
-                  {catTraits.map(renderTraitRow)}
-                </div>
+                <div className="space-y-2">{catTraits.map(renderTraitRow)}</div>
               </div>
             );
           })}
@@ -275,7 +364,9 @@ function DispositionEditor({
             <CustomTraitInput
               traits={traits}
               knownKeys={new Set(TRAIT_DEFS.map((t) => t.key))}
-              onAdd={(key, value) => setTrait(key, value)}
+              onAdd={(key, value) => {
+                setTrait(key, value);
+              }}
               onRemove={clearTrait}
             />
           </div>
@@ -322,7 +413,9 @@ function CustomTraitInput({
             {v}
           </span>
           <button
-            onClick={() => onRemove(k)}
+            onClick={() => {
+              onRemove(k);
+            }}
             className="px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-destructive"
             title="Remove custom trait"
           >
@@ -335,7 +428,9 @@ function CustomTraitInput({
           className="bg-background border border-border rounded px-2 py-1 text-xs w-28"
           placeholder="trait name"
           value={newKey}
-          onChange={(e) => setNewKey(e.target.value)}
+          onChange={(e) => {
+            setNewKey(e.target.value);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleAdd();
           }}
@@ -344,7 +439,9 @@ function CustomTraitInput({
           className="bg-background border border-border rounded px-2 py-1 text-xs w-28"
           placeholder="value"
           value={newValue}
-          onChange={(e) => setNewValue(e.target.value)}
+          onChange={(e) => {
+            setNewValue(e.target.value);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleAdd();
           }}
@@ -5519,7 +5616,9 @@ export function PersonalityEditor({
 
             <DispositionEditor
               traits={form.traits ?? {}}
-              onChange={(traits) => setForm((f) => ({ ...f, traits }))}
+              onChange={(traits) => {
+                setForm((f) => ({ ...f, traits }));
+              }}
             />
           </CollapsibleSection>
 

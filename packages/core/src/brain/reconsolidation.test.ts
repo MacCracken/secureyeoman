@@ -3,7 +3,9 @@ import { ReconsolidationManager } from './reconsolidation.js';
 import type { ReconsolidationManagerDeps } from './reconsolidation.js';
 import type { Memory } from './types.js';
 
-function createMockDeps(overrides: Partial<ReconsolidationManagerDeps> = {}): ReconsolidationManagerDeps {
+function createMockDeps(
+  overrides: Partial<ReconsolidationManagerDeps> = {}
+): ReconsolidationManagerDeps {
   return {
     aiProvider: {
       name: 'test' as any,

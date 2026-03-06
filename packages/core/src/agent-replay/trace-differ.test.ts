@@ -78,8 +78,19 @@ describe('diffTraces', () => {
   });
 
   it('computes duration/token/cost diffs', () => {
-    const a = makeTrace({ totalDurationMs: 1000, totalInputTokens: 100, totalOutputTokens: 50, totalCostUsd: 0.01 });
-    const b = makeTrace({ id: 'b', totalDurationMs: 1500, totalInputTokens: 200, totalOutputTokens: 80, totalCostUsd: 0.02 });
+    const a = makeTrace({
+      totalDurationMs: 1000,
+      totalInputTokens: 100,
+      totalOutputTokens: 50,
+      totalCostUsd: 0.01,
+    });
+    const b = makeTrace({
+      id: 'b',
+      totalDurationMs: 1500,
+      totalInputTokens: 200,
+      totalOutputTokens: 80,
+      totalCostUsd: 0.02,
+    });
     const diff = diffTraces(a, b);
     expect(diff.durationDiffMs).toBe(500);
     expect(diff.tokenDiff).toBe(130);
@@ -87,8 +98,13 @@ describe('diffTraces', () => {
   });
 
   it('diffs matching tool calls', () => {
-    const a = makeTrace({ steps: [makeToolStep({ toolName: 'search', args: { q: '1' }, result: 'r1' })] });
-    const b = makeTrace({ id: 'b', steps: [makeToolStep({ toolName: 'search', args: { q: '1' }, result: 'r1' })] });
+    const a = makeTrace({
+      steps: [makeToolStep({ toolName: 'search', args: { q: '1' }, result: 'r1' })],
+    });
+    const b = makeTrace({
+      id: 'b',
+      steps: [makeToolStep({ toolName: 'search', args: { q: '1' }, result: 'r1' })],
+    });
     const diff = diffTraces(a, b);
     expect(diff.toolCallDiffs).toHaveLength(1);
     expect(diff.toolCallDiffs[0]!.status).toBe('same');
@@ -96,7 +112,10 @@ describe('diffTraces', () => {
 
   it('detects tool calls with different args', () => {
     const a = makeTrace({ steps: [makeToolStep({ toolName: 'search', args: { q: 'a' } })] });
-    const b = makeTrace({ id: 'b', steps: [makeToolStep({ toolName: 'search', args: { q: 'b' } })] });
+    const b = makeTrace({
+      id: 'b',
+      steps: [makeToolStep({ toolName: 'search', args: { q: 'b' } })],
+    });
     const diff = diffTraces(a, b);
     expect(diff.toolCallDiffs[0]!.status).toBe('args_differ');
   });

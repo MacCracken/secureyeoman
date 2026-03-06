@@ -39,15 +39,19 @@ export function registerResponsibleAiRoutes(
 
   // ── Cohort Error Analysis ─────────────────────────────────────
 
-  app.post('/api/v1/responsible-ai/cohort-analysis', adaptiveLearningGuardOpts, async (request, reply) => {
-    try {
-      const body = request.body as CohortAnalysisCreate;
-      const result = await getManager().runCohortAnalysis(body);
-      return reply.send(result);
-    } catch (err) {
-      return sendError(reply, 400, toErrorMessage(err));
+  app.post(
+    '/api/v1/responsible-ai/cohort-analysis',
+    adaptiveLearningGuardOpts,
+    async (request, reply) => {
+      try {
+        const body = request.body as CohortAnalysisCreate;
+        const result = await getManager().runCohortAnalysis(body);
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 400, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   app.get('/api/v1/responsible-ai/cohort-analysis/:id', async (request, reply) => {
     try {

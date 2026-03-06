@@ -10,7 +10,10 @@ import { parsePagination } from '../utils/pagination.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { requiresLicense } from '../licensing/license-guard.js';
 
-export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AManager; secureYeoman?: SecureYeoman }): void {
+export function registerA2ARoutes(
+  app: FastifyInstance,
+  opts: { a2aManager: A2AManager; secureYeoman?: SecureYeoman }
+): void {
   const { a2aManager, secureYeoman } = opts;
   const featureGuardOpts = (
     secureYeoman

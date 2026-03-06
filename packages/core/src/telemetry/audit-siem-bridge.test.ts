@@ -11,9 +11,14 @@ const mockForwarder = {
 } as unknown as SiemForwarder;
 
 const mockLogger = {
-  trace: vi.fn(), debug: vi.fn(), info: vi.fn(),
-  warn: vi.fn(), error: vi.fn(), fatal: vi.fn(),
-  child: vi.fn().mockReturnThis(), level: 'info' as const,
+  trace: vi.fn(),
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info' as const,
 };
 
 describe('AuditSiemBridge', () => {
@@ -59,7 +64,9 @@ describe('AuditSiemBridge', () => {
     });
 
     it('should handle errors gracefully', () => {
-      (mockForwarder.forward as any).mockImplementationOnce(() => { throw new Error('fail'); });
+      (mockForwarder.forward as any).mockImplementationOnce(() => {
+        throw new Error('fail');
+      });
       bridge.forwardAuditEvent({ event: 'test' });
       expect(mockLogger.error).toHaveBeenCalled();
     });

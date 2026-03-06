@@ -37,14 +37,10 @@ export function CollabPresence({ users, connected }: CollabPresenceProps) {
               </span>
             ))}
           </div>
-          {users.length > 4 && (
-            <span className="text-[10px]">+{users.length - 4}</span>
-          )}
+          {users.length > 4 && <span className="text-[10px]">+{users.length - 4}</span>}
         </div>
       ) : (
-        connected && (
-          <span className="w-2 h-2 rounded-full bg-green-500" title="Connected" />
-        )
+        connected && <span className="w-2 h-2 rounded-full bg-green-500" title="Connected" />
       )}
     </div>
   );

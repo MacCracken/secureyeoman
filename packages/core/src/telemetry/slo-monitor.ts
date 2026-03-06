@@ -54,15 +54,12 @@ const MAX_OBSERVATIONS = 10_000;
 const BURN_RATE_SHORT_WINDOW_RATIO = 0.2; // 1h of a 5h window
 
 export class SloMonitor {
-  private readonly definitions: Map<string, SloDefinition> = new Map();
-  private readonly observations: Map<string, Observation[]> = new Map();
+  private readonly definitions = new Map<string, SloDefinition>();
+  private readonly observations = new Map<string, Observation[]>();
   private readonly logger: SecureLogger;
   private readonly getAlertManager: (() => AlertManager | null) | undefined;
 
-  constructor(
-    logger: SecureLogger,
-    getAlertManager?: () => AlertManager | null
-  ) {
+  constructor(logger: SecureLogger, getAlertManager?: () => AlertManager | null) {
     this.logger = logger;
     this.getAlertManager = getAlertManager;
   }
@@ -142,14 +139,14 @@ export class SloMonitor {
       const sloTarget = this.normalizedTarget(def);
       const errorBudget = 1 - sloTarget;
       const errorRate = 1 - goodRate;
-      const errorBudgetRemaining = errorBudget > 0 ? Math.max(0, 1 - errorRate / errorBudget) : (goodRate >= sloTarget ? 1 : 0);
+      const errorBudgetRemaining =
+        errorBudget > 0 ? Math.max(0, 1 - errorRate / errorBudget) : goodRate >= sloTarget ? 1 : 0;
 
       // Burn rate: compare short window to long window
       const shortCutoff = now - def.windowMs * BURN_RATE_SHORT_WINDOW_RATIO;
       const shortObs = windowObs.filter((o) => o.timestamp >= shortCutoff);
-      const shortGoodRate = shortObs.length > 0
-        ? shortObs.filter((o) => o.good).length / shortObs.length
-        : goodRate;
+      const shortGoodRate =
+        shortObs.length > 0 ? shortObs.filter((o) => o.good).length / shortObs.length : goodRate;
       const shortErrorRate = 1 - shortGoodRate;
       const burnRate = errorBudget > 0 ? shortErrorRate / errorBudget : 0;
 
@@ -202,9 +199,10 @@ export class SloMonitor {
 
     if (def.metricType.startsWith('response_latency')) {
       const sorted = obs.map((o) => o.value).sort((a, b) => a - b);
-      const pctIdx = def.metricType === 'response_latency_p99'
-        ? Math.ceil(sorted.length * 0.99) - 1
-        : Math.ceil(sorted.length * 0.95) - 1;
+      const pctIdx =
+        def.metricType === 'response_latency_p99'
+          ? Math.ceil(sorted.length * 0.99) - 1
+          : Math.ceil(sorted.length * 0.95) - 1;
       return sorted[Math.max(0, pctIdx)] ?? 0;
     }
 

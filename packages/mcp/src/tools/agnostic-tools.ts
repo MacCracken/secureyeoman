@@ -560,7 +560,9 @@ export function registerAgnosticTools(
         'Requires DATABASE_ENABLED=true on the Agnostic side.',
       inputSchema: {
         base_session_id: z.string().describe('Base session ID (the "before" — e.g. main branch)'),
-        compare_session_id: z.string().describe('Compare session ID (the "after" — e.g. PR branch)'),
+        compare_session_id: z
+          .string()
+          .describe('Compare session ID (the "after" — e.g. PR branch)'),
       },
     },
     wrapToolHandler('agnostic_session_diff', middleware, async (args) => {
@@ -675,7 +677,10 @@ export function registerAgnosticTools(
       }
       return {
         content: [
-          { type: 'text' as const, text: formatResponse(`Quality Trends (${args.days} days)`, body) },
+          {
+            type: 'text' as const,
+            text: formatResponse(`Quality Trends (${args.days} days)`, body),
+          },
         ],
       };
     })
@@ -760,10 +765,7 @@ export function registerAgnosticTools(
         run_junior_qa: z.boolean().default(false).describe('Include junior-qa agent'),
         run_qa_analyst: z.boolean().default(false).describe('Include qa-analyst agent'),
         run_qa_manager: z.boolean().default(false).describe('Include qa-manager agent'),
-        standards: z
-          .array(z.string())
-          .default([])
-          .describe('Compliance standards to check'),
+        standards: z.array(z.string()).default([]).describe('Compliance standards to check'),
       },
     },
     wrapToolHandler('agnostic_qa_orchestrate', middleware, async (args) => {
@@ -908,7 +910,10 @@ function createAgnosticApiClient(config: McpServiceConfig): ICoreApiClient {
     async put<T = unknown>(path: string, payload?: unknown): Promise<T> {
       // Agnostic has no PUT endpoints exposed as proxy tools; stub for interface
       const authHeaders = await getAuthHeaders(config);
-      const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders };
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      };
       const res = await fetch(`${config.agnosticUrl}${path}`, {
         method: 'PUT',
         headers,
@@ -920,7 +925,10 @@ function createAgnosticApiClient(config: McpServiceConfig): ICoreApiClient {
     },
     async delete<T = unknown>(path: string): Promise<T> {
       const authHeaders = await getAuthHeaders(config);
-      const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders };
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      };
       const res = await fetch(`${config.agnosticUrl}${path}`, { method: 'DELETE', headers });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(`Agnostic API error ${res.status}: ${JSON.stringify(body)}`);

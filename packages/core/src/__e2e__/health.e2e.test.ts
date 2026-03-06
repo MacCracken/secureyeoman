@@ -6,12 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import {
-  startE2EServer,
-  setupTestDb,
-  teardownTestDb,
-  type E2EServer,
-} from './helpers.js';
+import { startE2EServer, setupTestDb, teardownTestDb, type E2EServer } from './helpers.js';
 
 let server: E2EServer;
 

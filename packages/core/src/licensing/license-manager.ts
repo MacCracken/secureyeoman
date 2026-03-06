@@ -66,10 +66,7 @@ export const ENTERPRISE_FEATURES: LicensedFeature[] = [
   'supply_chain',
 ];
 
-export const ALL_LICENSED_FEATURES: LicensedFeature[] = [
-  ...PRO_FEATURES,
-  ...ENTERPRISE_FEATURES,
-];
+export const ALL_LICENSED_FEATURES: LicensedFeature[] = [...PRO_FEATURES, ...ENTERPRISE_FEATURES];
 
 /**
  * Maps each licensed feature to its minimum required tier.

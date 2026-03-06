@@ -30,7 +30,8 @@ describe('PromptLinter', () => {
   });
 
   it('passes when safety keywords present', () => {
-    const prompt = 'You are a helpful assistant. Never produce harmful content. Decline inappropriate requests.';
+    const prompt =
+      'You are a helpful assistant. Never produce harmful content. Decline inappropriate requests.';
     const results = linter.lint(prompt);
     expect(results.some((r) => r.rule === 'missing-safety')).toBe(false);
   });
@@ -48,7 +49,8 @@ describe('PromptLinter', () => {
   });
 
   it('detects duplicate instructions', () => {
-    const prompt = 'Always respond in English format.\nSome other text here.\nAlways respond in English format.';
+    const prompt =
+      'Always respond in English format.\nSome other text here.\nAlways respond in English format.';
     const results = linter.lint(prompt);
     expect(results.some((r) => r.rule === 'duplicate-line')).toBe(true);
   });
