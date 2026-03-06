@@ -1,8 +1,6 @@
 # ADR 008: MCP Server & Tools
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 

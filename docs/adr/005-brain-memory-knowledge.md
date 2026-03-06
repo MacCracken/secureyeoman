@@ -1,8 +1,6 @@
 # ADR 005: Brain, Memory & Knowledge
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 

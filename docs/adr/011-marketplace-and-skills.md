@@ -1,8 +1,6 @@
 # ADR 011: Marketplace & Skills
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 

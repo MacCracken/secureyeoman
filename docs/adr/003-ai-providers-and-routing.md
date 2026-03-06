@@ -1,8 +1,6 @@
 # ADR 003: AI Providers & Model Routing
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 

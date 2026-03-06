@@ -1,8 +1,6 @@
 # ADR 006: Training & Evaluation
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 

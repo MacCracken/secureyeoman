@@ -1,4 +1,4 @@
-# ADR 207 — Data Loss Prevention & Content Classification
+# ADR 015 — Data Loss Prevention & Content Classification
 
 **Status**: Accepted
 **Date**: 2026-03-05

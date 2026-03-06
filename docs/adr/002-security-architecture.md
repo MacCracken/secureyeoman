@@ -1,8 +1,6 @@
 # ADR 002: Security Architecture
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 
@@ -202,11 +200,37 @@ All active tools validate targets against the scope allowlist before execution. 
 
 A 37-tool network automation toolkit covers SSH device automation, topology discovery, routing/switching analysis, security auditing, NetBox source-of-truth integration, NVD CVE lookup, subnet utilities, and PCAP analysis. Tools are grouped into six independently toggleable feature sets reflecting different risk postures (device automation vs. read-only discovery vs. external API queries). Configuration push operations are classified as high-autonomy and require explicit approval gates. NetBox access is read-only by default with a separate write-enablement flag.
 
-#### Confidential Computing (TEE)
+#### Confidential Computing — TEE Full Stack (Phase 129)
 
-TEE-aware provider routing ensures AI inference runs in hardware-isolated environments when required. Configuration supports three levels: `off`, `optional`, and `required`, with per-model and per-personality overrides. A static provider capability table maps providers to known TEE support. The AI client verifies TEE compliance before every provider API call; non-compliant providers trigger the fallback chain to TEE-capable alternatives. The model router filters candidates by TEE capability during selection.
+TEE-aware provider routing ensures AI inference runs in hardware-isolated environments when required. Configuration supports three levels: `off`, `optional`, and `required`, with per-model and per-personality overrides. TEE requirements resolve in precedence order: per-personality, per-model, then security-level global setting. Failure actions are configurable: block (trigger fallback), warn (log and proceed), or audit-only (silent recording).
 
-TEE requirements resolve in precedence order: per-personality, per-model, then security-level global setting. Failure actions are configurable: block (trigger fallback), warn (log and proceed), or audit-only (silent recording).
+**Remote Attestation Providers.** Three pluggable `RemoteAttestationProvider` implementations registered via `TeeAttestationVerifier.registerRemoteProvider()`:
+- **Azure MAA** (`azure-maa.ts`): POST to `{tenantUrl}/attest/SgxEnclave`, parse JWT attestation token, validate `x-ms-attestation-type` and `x-ms-policy-signer` claims. 5s timeout via AbortSignal.
+- **NVIDIA RAA** (`nvidia-raa.ts`): POST to NVIDIA Local GPU Attestation REST API. Parse `confidential_compute_mode`, `driver_version`, `gpu_uuid` from response. Validates CC mode is active.
+- **AWS Nitro** (`aws-nitro.ts`): Read attestation document from `/dev/nsm`. Minimal CBOR decoder (no npm dependency) parses COSE_Sign1 structure. Extract and validate PCR values against expected measurements.
+
+**Async Attestation.** `TeeAttestationVerifier.verifyAsync()` provides async remote attestation path alongside existing sync `verify()`. Bounded attestation history (100 per provider) via `getAttestationHistory()`. Static `detectHardware()` probes `/dev/sgx_enclave`, `/dev/sev`, `/dev/tpm0`, and `nvidia-smi` for CC mode.
+
+**TEE Sandbox Backends.** Two new `Sandbox` implementations following the existing GVisor pattern:
+- **SGX** (`sgx-sandbox.ts`): Detects `/dev/sgx_enclave` or `/dev/isgx` + Gramine binary. Executes via `gramine-sgx` manifest. Falls back to in-process execution.
+- **SEV** (`sev-sandbox.ts`): Detects `/dev/sev` + `qemu-system-x86_64`. Launches SEV-SNP micro-VM. Falls back to in-process execution.
+`SandboxManager` technology enum extended with `'sgx' | 'sev'`. `SandboxCapabilities` extended with `sgx`, `sev`, `tpm` booleans.
+
+**Encrypted Model Weights.** `TeeEncryptionManager` provides AES-256-GCM encryption for model weight files. Wire format: `SEALED_V1 (8 bytes) || iv (12) || authTag (16) || keySourceTag (1) || ciphertext`. Three key sources: `tpm` (via `tpm2_unseal`), `tee` (stub — requires SGX sealing), `keyring` (env var `SECUREYEOMAN_MODEL_ENCRYPTION_KEY`). Key cache with manual clear.
+
+**Confidential GPU Detection.** `tee-gpu.ts` provides `detectConfidentialGpu()` (runs `nvidia-smi` query for CC mode), `isGpuConfidential()`, and `blockNonConfidentialGpu()` (throws when `confidentialCompute: 'required'` and GPU is not in CC mode).
+
+**Confidential Pipeline.** `ConfidentialPipelineManager` provides end-to-end chain-of-custody for TEE operations. `createConfidentialRequest()` generates a nonce, starts attestation chain with SHA-256 hash links, and verifies provider attestation. `verifyConfidentialResponse()` completes the chain with cryptographic proof. `getChainOfCustody()` and `listCompletedChains()` for compliance queries. Audit events: `tee_pipeline_start`, `tee_pipeline_attestation`, `tee_pipeline_complete`. Bounded at 1,000 active requests with LRU eviction.
+
+**REST API.** Three routes under `/api/v1/security/tee`: `GET /providers` (list capabilities + hardware detection), `GET /attestation/:provider` (last attestation result), `POST /verify/:provider` (force re-verify). Convention-based RBAC via `security` resource in PREFIX_RESOURCE_MAP.
+
+**MCP Tools.** Three tools feature-gated by `exposeTee` in `McpFeaturesSchema`: `tee_providers`, `tee_status`, `tee_verify`. Added to `manifest.ts` and `index.ts`.
+
+**CLI.** `secureyeoman tee` subcommand with `status`, `verify <provider>`, and `hardware` actions. Aliased as `confidential`.
+
+**Dashboard.** `TeeStatusWidget` with provider table (ShieldCheck/ShieldAlert/ShieldOff icons), hardware detection status, TEE coverage percentage bar, and verify buttons. Canvas registry entry (`'tee-status'`, category: monitoring).
+
+**Config.** `TeeConfigSchema` extended with `remoteAttestation` (azureMaa, nvidiaRaa, awsNitro) and `teeHardware` (sgxEnabled, sevEnabled, encryptedModels) sub-objects.
 
 #### Accepted Risk: Dev-Dependency Vulnerabilities
 

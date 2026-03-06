@@ -1,4 +1,4 @@
-# ADR 209: Supply Chain Security & Compliance Artifacts
+# ADR 017: Supply Chain Security & Compliance Artifacts
 
 **Status**: Accepted
 **Date**: 2026-03-05

@@ -1,8 +1,6 @@
 # ADR 010: Identity & Soul System
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 

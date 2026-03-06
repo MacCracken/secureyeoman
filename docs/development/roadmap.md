@@ -10,7 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 142 | Prompt Versioning & A/B Testing | P2 — iteration | Planned |
+| 142 | Prompt Versioning & A/B Testing | P2 — iteration | ✅ Done |
 | 143 | Extensible Guardrail Pipeline | P2 — security | Planned |
 | 144 | IDE Experience | P3 — power user UX | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
@@ -20,8 +20,9 @@
 
 | Phase | Name | Version | ADR |
 |-------|------|---------|-----|
-| 140+141 | RAG Eval Metrics + Cognitive ML Advanced | [2026.3.6] | 211 |
-| 139 | OpenTelemetry & SIEM Integration | [2026.3.5h] | 210 |
+| 142 | Prompt Versioning & A/B Testing | [2026.3.6] | 020 |
+| 140+141 | RAG Eval Metrics + Cognitive ML Advanced | [2026.3.6] | 019 |
+| 139 | OpenTelemetry & SIEM Integration | [2026.3.5h] | 018 |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -76,20 +77,6 @@
 - [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
 - [ ] **License key purchase flow** — Integration with payment provider or manual key issuance workflow. Dashboard license management page.
 - [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
-
----
-
-## Phase 142: Prompt Versioning & A/B Testing
-
-**Priority**: P2 — Valuable for teams iterating on prompts. Compliance teams want audit trails.
-
-*Overlap note*: Phase 114 (Versioning) already stores `PersonalityVersion` snapshots with diff support. This extends that to structured A/B testing and prompt-specific tooling.
-
-- [ ] **Prompt version store** — Versioned snapshots of system prompts, skill instructions, tool descriptions. Diff view. Rollback.
-- [ ] **A/B testing** — Route % of conversations to variant prompts. Track outcomes. Statistical significance.
-- [ ] **Prompt changelog** — Annotated history with rationale. Exportable for compliance.
-- [ ] **Template variables** — `{{variable}}` substitution. Centralized safety preamble, compliance disclaimers.
-- [ ] **Prompt linting** — Detect conflicting instructions, overly long prompts, missing safety boundaries.
 
 ---
 

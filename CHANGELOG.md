@@ -6,7 +6,16 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.6] — 2026-03-05
 
-### Phase 140 — RAG Evaluation Metrics (ADR 211)
+### Phase 142 — Prompt Versioning & A/B Testing (ADR 020)
+
+- **Prompt A/B Test Manager** (`soul/prompt-ab-test.ts`): In-memory prompt A/B testing with traffic-percentage-based variant selection and sticky assignment per conversation. One running test per personality enforcement. Variant traffic must sum to 100%. `resolvePrompt()` returns variant prompt for a conversation, `recordScore()` tracks quality, `evaluate()` checks readiness. `complete(winnerId)` and `cancel()` lifecycle.
+- **Prompt Template Engine** (`soul/prompt-template.ts`): `{{variable}}` expansion with builtin variables (date, time, datetime, year) and user-registered variables. Context overrides take priority over registry. `extractVariables()` finds all referenced names. Configurable max value length with truncation. Disable mode for passthrough.
+- **Prompt Linter** (`soul/prompt-linter.ts`): 7 lint rules — empty-prompt (error), max-length 8K (warning), max-lines 200 (warning), missing-safety (warning), conflicting-instructions with 4 conflict pair patterns (warning), duplicate-line (warning), template-variable (info). Configurable `checkTemplateVars` toggle.
+- **Prompt Changelog** (`soul/prompt-changelog.ts`): Annotated change history with 8 categories (safety, behavior, tone, capability, formatting, performance, compliance, other). JSON and CSV export with date range filtering. CSV escaping for commas/quotes. Auto-incrementing IDs with deterministic ordering tiebreaker.
+- **16 REST endpoints** (`soul/prompt-versioning-routes.ts`): A/B tests (POST create, GET list, GET by id, POST evaluate, POST complete, POST score), template variables (GET list, POST register, DELETE remove, POST expand), linter (POST lint), changelog (POST add, GET list, GET export).
+- **56 tests** across 5 files: prompt-ab-test (12), prompt-template (13), prompt-linter (11), prompt-changelog (9), prompt-versioning-routes (11).
+
+### Phase 140 — RAG Evaluation Metrics (ADR 019)
 
 - **RAG evaluation engine** (`brain/rag-eval.ts`): Five-dimension RAG quality scoring — faithfulness (LLM-as-Judge or token-overlap fallback), answer relevance (embedding cosine similarity), context recall (reference coverage), context precision (relevant chunk fraction), chunk utilization (chunks referenced in answer). Overall score = mean of available metrics.
 - **LLM-as-Judge faithfulness**: Prompts AI provider with context + answer, expects JSON `{ faithful_sentences, total_sentences, score }`. Falls back to per-sentence Jaccard token overlap (threshold 0.2) when no AI provider or on error.
@@ -14,7 +23,7 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Context recall/precision**: Token-overlap (recall threshold 0.15) and embedding-similarity (precision threshold 0.3) based scoring against query and reference answer.
 - **Retrieval latency tracking**: Rolling buffer (configurable, default 10K entries) with p50/p95/p99 percentile computation and mean.
 
-### Phase 141 — Cognitive ML Advanced Features (ADR 211)
+### Phase 141 — Cognitive ML Advanced Features (ADR 019)
 
 - **Reconsolidation Manager** (`brain/reconsolidation.ts`): Wired LLM-powered memory evolution. `evaluate()` checks overlap bounds [0.7, 0.95], enforces per-memory cooldown (default 1hr), prompts AIProvider for keep/update/split decision with structured JSON response. `apply()` mutates storage: update modifies content, split creates new memories and deletes original. Stats tracking for monitoring.
 - **Schema Clustering Manager** (`brain/schema-clustering.ts`): Completed full pipeline in `runClustering()`. Exports knowledge entries, embeds via EmbeddingProvider, runs k-means++ clustering, filters by minClusterSize, labels via LLM (JSON: label + summary) with keyword-extraction fallback, computes coherence (mean cosine similarity to centroid), upserts as `schema:{label}` knowledge entries.
@@ -29,7 +38,7 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.5h] — 2026-03-05
 
-### Phase 139 — OpenTelemetry & SIEM Integration (ADR 210)
+### Phase 139 — OpenTelemetry & SIEM Integration (ADR 018)
 
 - **`withSpan()` instrumentation utility** (`telemetry/instrument.ts`): Concise wrapper for OTel span lifecycle — creates child spans, records exceptions, sets status, ends span. `getCurrentSpanId()` for log correlation.
 - **Deep OTel instrumentation**: Workflow engine `dispatchStep()` wrapped in `workflow.step` spans (attributes: workflow ID, run ID, step ID/name/type, attempt, status). Brain manager `remember()`/`recall()` wrapped in `brain.remember`/`brain.recall` spans (attributes: operation, memory type, personality ID, result count, query). AI client and MCP client spans already existed from Phase 83.
@@ -65,7 +74,7 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Cross-doc consistency** — Fixed stale numbers in ADR 001, ADR 008, security-model.md, responsible-ai.md, deployment.md, white-paper.md, features.md, marketing-strategy.md, openapi.yaml.
 - **Comparison table updated** — Site now uses Agent Zero, PicoClaw, Ironclaw (was Goose/ZeroClaw/TrustClaw in `.md` variant).
 
-### Supply Chain Security & Compliance Artifacts (Phase 138, Brainstorm #2, ADR 209)
+### Supply Chain Security & Compliance Artifacts (Phase 138, Brainstorm #2, ADR 017)
 
 - **SBOM generation** (`supply-chain/sbom-generator.ts`): CycloneDX 1.5 JSON SBOM from `package-lock.json`. Supports lockfile v1/v2/v3. Extracts name, version, purl, integrity hashes, licenses, registry URLs, scope. Satisfies US EO 14028 and EU Cyber Resilience Act requirements.
 - **Release verification** (`supply-chain/release-verifier.ts`): SHA256 checksum verification (streaming hash) + optional Sigstore cosign keyless signature verification. Graceful degradation when cosign CLI absent.
@@ -143,7 +152,7 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Config**: `DlpConfigSchema` in `SecurityConfigSchema` with sub-objects (classification, scanning, retention, watermarking).
 - **Route permissions**: Convention-based via `/api/v1/security/dlp` prefix → `security` resource.
 - **Tests**: 147 new tests across 14 files (130 core, 9 MCP, 8 dashboard).
-- **Docs**: ADR 207, guide `data-loss-prevention.md`.
+- **Docs**: ADR 015, guide `data-loss-prevention.md`.
 
 ### Phase 137 — Multi-Region & High Availability
 
@@ -154,7 +163,7 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Migration `007_ha.sql`**: `federation.delegations` table, `admin.backup_replications` table, conditional cross-cluster columns on `federation.peers`.
 - **Config**: `ReadReplicaConfigSchema`, `BackupReplicationConfigSchema` (new). Database config extended with `readReplicas`, `replicaPoolSize`, `maxReplicationLagMs`.
 - **Tests**: 30+ tests across pg-pool read replicas, HA health checks, and backup replication manager.
-- **Docs**: ADR 208, guide `multi-region-ha.md`.
+- **Docs**: ADR 016, guide `multi-region-ha.md`.
 
 ### Phase 135 — Agent Evaluation Harness
 
@@ -171,7 +180,7 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Dashboard**: `AgentEvalWidget` — suite selector, run history table with pass/fail badges, per-scenario drill-down with assertion details and tool call errors.
 - **Route permissions**: Convention-based via `/api/v1/eval` prefix → `eval` resource.
 - **Tests**: 30+ tests across eval engine (assertions, tool validation, scenario execution, timeouts, budgets) and eval manager (CRUD, suite runs, cancellation). Dashboard widget tests.
-- **Docs**: ADR 206, guide `agent-eval-harness.md`.
+- **Docs**: ADR 014, guide `agent-eval-harness.md`.
 
 ### Pro Tier & License Rename
 

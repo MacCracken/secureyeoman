@@ -1,8 +1,6 @@
 # ADR 009: Integrations & Platforms
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 

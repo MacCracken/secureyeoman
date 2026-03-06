@@ -1,8 +1,6 @@
 # ADR 004: Agents & Orchestration
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 

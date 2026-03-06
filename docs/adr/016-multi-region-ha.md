@@ -1,4 +1,4 @@
-# ADR 208: Multi-Region & High Availability
+# ADR 016: Multi-Region & High Availability
 
 **Status**: Accepted
 **Date**: 2026-03-05

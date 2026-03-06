@@ -1,8 +1,6 @@
 # ADR 007: Dashboard & Editor
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 

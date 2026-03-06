@@ -204,4 +204,4 @@ Create suites organized by concern:
 
 ## API Reference
 
-See [ADR 206](../adr/206-agent-eval-harness.md) for the full endpoint table and schema details.
+See [ADR 014](../adr/014-agent-eval-harness.md) for the full endpoint table and schema details.

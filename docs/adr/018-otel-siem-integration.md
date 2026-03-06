@@ -1,4 +1,4 @@
-# ADR 210: OpenTelemetry & SIEM Integration
+# ADR 018: OpenTelemetry & SIEM Integration
 
 **Status**: Accepted
 **Date**: 2026-03-05

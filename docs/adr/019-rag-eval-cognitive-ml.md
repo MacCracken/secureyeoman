@@ -1,4 +1,4 @@
-# ADR 211: RAG Evaluation Metrics & Cognitive ML Advanced
+# ADR 019: RAG Evaluation Metrics & Cognitive ML Advanced
 
 **Status**: Accepted
 **Date**: 2026-03-05

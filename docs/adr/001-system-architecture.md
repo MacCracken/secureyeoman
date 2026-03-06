@@ -1,8 +1,6 @@
 # ADR 001: System Architecture
 
-## Status
-
-Accepted
+**Status**: Accepted
 
 ## Context
 
