@@ -3,6 +3,7 @@ export type CanvasWidgetType =
   | 'editor'
   | 'frozen-output'
   | 'agent-world'
+  | 'the-entity'
   | 'training-live'
   | 'task-kanban'
   | 'git-panel'
@@ -69,6 +70,15 @@ export const CANVAS_WIDGET_REGISTRY: readonly CanvasWidgetDef[] = [
     description: 'Live ASCII personality activity view',
     defaultWidth: 680,
     defaultHeight: 420,
+  },
+  {
+    type: 'the-entity',
+    label: 'The Entity',
+    category: 'ai-agents',
+    description: 'AI consciousness visualization — neural network particle animation reacting to AI state',
+    defaultWidth: 480,
+    defaultHeight: 320,
+    singleton: true,
   },
   {
     type: 'chat',

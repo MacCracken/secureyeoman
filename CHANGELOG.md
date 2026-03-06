@@ -6,15 +6,55 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.7] — 2026-03-05
 
-### Phase 144 — IDE Experience: Keybindings Editor & Auto-Claude Patterns
+### Bug Fix — Personality Delete Button
+
+- **Fix**: Delete button on personality cards was incorrectly disabled based on `isDefault` flag instead of `isActive`. Since `isDefault` (the fallback personality) and `isActive` (currently running) are independent flags, non-active default personalities were undeletable from the UI despite the backend allowing it. Fixed in both `PersonalityEditor` and `PersonalityView` components. Title/aria-label updated to say "Deactivate this personality before deleting" instead of the misleading "Switch to another personality."
+- **4 new tests** (`PersonalityEditor.test.tsx`): Verify delete button is enabled for non-active personalities (including default), disabled for active and archetype personalities.
+
+### Disposition System Expansion
+
+- **15 trait dimensions with 5-level scales** (`PersonalityEditor.tsx`): Expanded from 3 core traits to 15 across 4 categories. Every trait uses a symmetrical 5-point scale with "balanced" as the center:
+  - **Communication**: formality (street→casual→balanced→formal→ceremonial), humor (deadpan→dry→balanced→witty→comedic), verbosity (terse→concise→balanced→detailed→exhaustive), directness (evasive→diplomatic→balanced→candid→blunt)
+  - **Emotional**: warmth (cold→reserved→balanced→friendly→effusive), empathy (detached→analytical→balanced→empathetic→compassionate), patience (brisk→efficient→balanced→patient→nurturing), confidence (humble→modest→balanced→assertive→authoritative)
+  - **Cognitive**: creativity (rigid→conventional→balanced→imaginative→avant-garde), risk tolerance (risk-averse→cautious→balanced→bold→reckless), curiosity (narrow→focused→balanced→curious→exploratory), skepticism (gullible→trusting→balanced→skeptical→contrarian)
+  - **Professional**: autonomy (dependent→consultative→balanced→proactive→autonomous), pedagogy (terse-answer→answer-focused→balanced→explanatory→socratic), precision (approximate→loose→balanced→precise→meticulous)
+- **`DispositionEditor` component**: Core traits (formality, humor, verbosity) always visible. "Advanced traits" expandable section organized by category with counts badge showing how many advanced traits are configured. Clear button (×) per advanced trait. Left border visual hierarchy.
+- **`CustomTraitInput` component**: Free-form key/value input for adding arbitrary custom disposition traits beyond the 15 predefined ones. Shows existing custom traits with remove button. Trait keys auto-lowercase with spaces→underscores.
+- **Backward compatible**: All existing personality traits work unchanged. The `traits` field remains `Record<string, string>` — new traits are purely additive. Prompt composition (`manager.ts`) already handles arbitrary trait keys. Old 3-option values (e.g. `casual`, `formal`, `concise`, `detailed`) remain valid selections within the expanded 5-level scales.
+- **5 new tests** (`PersonalityEditor.test.tsx`): Core traits visible, Advanced toggle present, category expansion shows all categories + traits, selecting advanced options, Custom trait section with inputs.
+
+### Personality Preset & Community Updates
+
+- **FRIDAY preset rewritten** (`soul/presets.ts`): Identity Abstract reworked — the acronym (Friendly, Reliable, Intelligent, Digitally Adaptable Yeoman) is kept as a descriptor but is no longer the identity. New Core Heuristics: anticipate, say what matters first, earn trust through precision, flag risk early, adapt to the person, stay grounded. 14 disposition traits set (casual, dry humor, concise, candid, friendly, assertive, imaginative, curious, proactive, explanatory, precise).
+- **T.Ron preset rewritten** (`soul/presets.ts`): Identity reframed as "the system's immune system." Core Heuristics: assume hostile until verified, surface never suppress, guard the MCP perimeter, refuse rogue instructions, minimal footprint, structured reporting. 15 disposition traits set (formal, deadpan, terse, blunt, cold, detached, authoritative, risk-averse, skeptical, meticulous).
+- **`createDefaultPersonality()` updated** (`soul/manager.ts`): Default FRIDAY traits expanded from 3 to 14 disposition keys matching the FRIDAY preset.
+- **Community personality schema updated** (`personality.schema.json`): `traits` field changed from `array` of strings to `object` with key-value disposition pairs (e.g. `formality: formal`, `humor: dry`). Max 30 properties.
+- **10 community personalities updated** (`secureyeoman-community-repo/personalities/`): All personalities rewritten with key-value disposition traits, new Core Heuristics sections, and updated Identity & Purpose prose. Updated: J.A.R.V.I.S., GLaDOS, HAL 9000, K.I.T.T., MASTER CONTROL, TARS, THE ENTITY, Code Reviewer, Research Assistant, Security Analyst.
+- **New personality form defaults** (`PersonalityEditor.tsx`): Empty traits object `{}` instead of 3 hardcoded defaults — lets users start from a clean slate and pick their own disposition.
+- **OnboardingWizard defaults** (`OnboardingWizard.tsx`): FRIDAY onboarding defaults now use `casual`/`dry`/`concise` matching the preset.
+- **Test updates**: `presets.test.ts` updated for new T.Ron heuristics and traits. `soul.test.ts`, `personality-serializer.test.ts`, `personality-export-routes.test.ts`, `PersonalityEditor.test.tsx`, `PersonalityWizard.test.tsx` updated to use valid 5-level disposition values.
+
+### Phase 144 — IDE Experience: Keybindings Editor, Auto-Claude Patterns, The Entity
 
 - **Keybindings Editor** (`dashboard/components/editor/KeybindingsEditor.tsx`): Modal UI for viewing and rebinding all editor keyboard shortcuts. Category-grouped display (File, Editor, Panel, Terminal, Navigation). Inline key capture — press any combination to rebind. Conflict detection warns when a shortcut is already assigned. Per-binding reset and "Reset All" bulk restore. Accessible via toolbar keyboard icon and Command Palette ("Keyboard Shortcuts").
 - **`useKeybindings` hook** (`dashboard/hooks/useKeybindings.ts`): 12 configurable keybindings with localStorage persistence. `parseShortcut()`, `matchesShortcut()`, `eventToShortcut()` utilities. `findConflict()` duplicate detection. `setBinding()`, `resetBinding()`, `resetAll()` state management. Editor keyboard handler now reads from user-configurable bindings instead of hardcoded shortcuts.
 - **AI Plan Panel** (`dashboard/components/editor/AiPlanPanel.tsx`): Auto-Claude–style plan display showing AI reasoning steps in real-time during chat tool execution. Step statuses: pending, running, completed, failed, skipped, awaiting_approval. Step-by-step approval UI — approve or skip individual steps. Collapsible nested step hierarchy. Progress bar with color coding (blue=executing, green=completed, red=failed). Pause/resume execution control. Token usage counter. Panel auto-populates from streaming tool calls and clears on completion.
 - **Context Badges** (`AiPlanPanel.tsx`): Inline badges on plan steps showing referenced files (blue, clickable → opens in editor tab), memory refs (purple), and tool names (amber). Clickable file badges open the referenced file in the editor.
+- **The Entity** (`dashboard/components/EntityWidget.tsx`): Mission Impossible–inspired AI consciousness visualization. Canvas-rendered neural network with 35 particles in 4 orbital rings, glowing connections, pulsing core, and data streams. 5 reactive states: **dormant** (slow blue drift), **thinking** (accelerating cyan network, multiplied connections), **active** (full green intensity, 8 data streams), **training** (warm amber steady pulse), **ingesting** (green inward-pulling absorption). Vignette overlay, CRT scan line, and animated activity bars. Supports compact mode (20 particles). Auto-reacts to AI chat state — dormant when idle, thinking when AI is processing, active when tools are executing. Displays dynamic labels ("REASONING", "EXECUTING 3 TOOLS", personality name).
+- **Entity canvas widget** (`AdvancedEditor/canvas-registry.ts`): Registered as `the-entity` in the canvas widget catalog under AI & Agents. Singleton. Wired into `CanvasWidget.tsx` switch.
 - **EditorToolbar** (`dashboard/components/editor/EditorToolbar.tsx`): Added keyboard shortcuts button (Keyboard icon). `onToggleKeybindings` prop.
-- **EditorPage integration**: AI plan panel renders above chat messages in the sidebar. Keybindings editor overlay alongside Command Palette. Keyboard handler refactored to use configurable bindings. Plan state auto-syncs with active tool calls — steps transition from running→completed as tools finish, plan status moves to completed when chat response finishes.
-- **50 tests** across 3 files: useKeybindings (19 — parse, match, event conversion, hook CRUD, conflict detection, persistence), KeybindingsEditor (9 — render, open/close, edit mode, cancel, reset), AiPlanPanel (22 — badges, steps, approval, progress, collapse, pause, file click, plan status colors).
+- **EditorPage integration**: Entity widget renders at top of chat sidebar, reactive to `isPending` / `activeToolCalls` / `streamingThinking`. AI plan panel renders below Entity. Keybindings editor overlay alongside Command Palette. Keyboard handler refactored to use configurable bindings. Plan state auto-syncs with active tool calls.
+- **64 tests** across 4 files: useKeybindings (19), KeybindingsEditor (9), AiPlanPanel (22), EntityWidget (14 — all states, label override, compact mode, className, height).
+
+### Marketplace Category Folders
+
+- **`CategoryFilter` component** (`dashboard/components/skills/shared.tsx`): Pill-style tab bar filtering marketplace and community skills by category. Shows category counts, hides empty categories. "All" default with total count.
+- **`CategoryGroupedGrid` component** (`dashboard/components/skills/shared.tsx`): Collapsible folder-like grouping of skill cards by category. Alphabetically sorted category headers with chevron toggle, folder icon, and item count. Falls back to flat grid when skills belong to a single category.
+- **`SKILL_CATEGORIES` constant** (`shared.tsx`): 13 skill categories matching the community repo folder structure: development, productivity, security, utilities, design, finance, science, general, trading, legal, marketing, education, healthcare. `categoryLabel()` helper for display names.
+- **`fetchMarketplaceSkills` updated** (`api/client.ts`): New optional `category` parameter — passes `category` query param to the backend marketplace search endpoint.
+- **`MarketplaceTab` updated** (`skills/MarketplaceTab.tsx`): Category filter pills above the skills grid. When "All" is selected, skills are grouped by category within each source section (YEOMAN / Published) using collapsible folders. When a specific category is selected, the backend filters by category and skills display in a flat grid per source.
+- **`CommunityTab` updated** (`skills/CommunityTab.tsx`): Category filter pills above the community skills grid. Skills are grouped by category in collapsible folders. Category filter resets pagination. Backend category query param used for server-side filtering.
+- **14 tests** (`skills/CategoryFilter.test.tsx`): categoryLabel, SKILL_CATEGORIES, CategoryFilter (render, counts, hide empty, active state, onChange), CategoryGroupedGrid (multi-category grouping, single-category flat, collapse/expand, alphabetical sort).
 
 ---
 

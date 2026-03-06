@@ -101,6 +101,12 @@ vi.mock('./AdvancedEditor/AdvancedEditorPage', () => ({
   AdvancedEditorPage: () => <div data-testid="advanced-editor-page">Advanced Editor</div>,
 }));
 
+vi.mock('./EntityWidget', () => ({
+  EntityWidget: ({ state, label }: { state?: string; label?: string }) => (
+    <div data-testid="entity-widget" data-state={state}>{label ?? 'STANDBY'}</div>
+  ),
+}));
+
 import * as api from '../api/client';
 import { EditorPage } from './EditorPage';
 

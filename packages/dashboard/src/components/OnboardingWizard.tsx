@@ -68,7 +68,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     name: 'FRIDAY',
     description: 'Friendly, Reliable, Intelligent Digitally Adaptable Yeoman',
     systemPrompt: '',
-    traits: { formality: 'balanced', humor: 'subtle', verbosity: 'concise' },
+    traits: { formality: 'casual', humor: 'dry', verbosity: 'concise' },
     sex: 'unspecified',
     voice: '',
     preferredLanguage: '',

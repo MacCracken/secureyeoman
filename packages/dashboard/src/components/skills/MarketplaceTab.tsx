@@ -16,6 +16,8 @@ import {
   ContentSuspense,
   LazyWorkflowsTab,
   LazySwarmTemplatesTab,
+  CategoryFilter,
+  CategoryGroupedGrid,
   type ContentType,
 } from './shared';
 
@@ -34,6 +36,7 @@ export function MarketplaceTab({
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
   const [previewSkill, setPreviewSkill] = useState<CatalogSkill | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const personalityInitialized = useRef(false);
 
   const { data: personalitiesData } = useQuery({
@@ -54,14 +57,16 @@ export function MarketplaceTab({
 
   // Fetch marketplace (builtin + published) skills — exclude community via origin filter
   const { data, isLoading } = useQuery({
-    queryKey: ['marketplace', query, selectedPersonalityId],
+    queryKey: ['marketplace', query, selectedPersonalityId, selectedCategory],
     queryFn: () =>
       fetchMarketplaceSkills(
         query || undefined,
         undefined,
         selectedPersonalityId,
         'marketplace',
-        200
+        200,
+        undefined,
+        selectedCategory || undefined
       ),
   });
 
@@ -99,32 +104,35 @@ export function MarketplaceTab({
   const builtinSkills = allSkills.filter((s: CatalogSkill) => s.source === 'builtin');
   const publishedSkills = allSkills.filter((s: CatalogSkill) => s.source === 'published');
 
-  const renderGrid = (skills: CatalogSkill[], badgeFn?: (s: CatalogSkill) => React.ReactNode) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {skills.map((skill) => (
-        <SkillCard
-          key={skill.id}
-          skill={skill}
-          badge={badgeFn?.(skill)}
-          installing={installingId === skill.id && installMut.isPending}
-          uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
-          onPreview={() => {
-            setPreviewSkill(skill);
-          }}
-          onInstall={() => {
-            setInstallingId(skill.id);
-            installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
-          }}
-          onUninstall={() => {
-            setUninstallingId(skill.id);
-            uninstallMut.mutate({
-              id: skill.id,
-              personalityId: selectedPersonalityId || undefined,
-            });
-          }}
-        />
-      ))}
-    </div>
+  // Build category counts for filter pills
+  const categoryCounts = allSkills.reduce<Record<string, number>>((acc, s) => {
+    const cat = s.category || 'general';
+    acc[cat] = (acc[cat] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const renderCard = (skill: CatalogSkill, badgeFn?: (s: CatalogSkill) => React.ReactNode) => (
+    <SkillCard
+      key={skill.id}
+      skill={skill}
+      badge={badgeFn?.(skill)}
+      installing={installingId === skill.id && installMut.isPending}
+      uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
+      onPreview={() => {
+        setPreviewSkill(skill);
+      }}
+      onInstall={() => {
+        setInstallingId(skill.id);
+        installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
+      }}
+      onUninstall={() => {
+        setUninstallingId(skill.id);
+        uninstallMut.mutate({
+          id: skill.id,
+          personalityId: selectedPersonalityId || undefined,
+        });
+      }}
+    />
   );
 
   return (
@@ -199,6 +207,13 @@ export function MarketplaceTab({
               />
             </div>
 
+            {/* Category filter */}
+            <CategoryFilter
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              counts={categoryCounts}
+            />
+
             {isLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -210,9 +225,9 @@ export function MarketplaceTab({
                   {query ? 'No skills found' : 'Marketplace is empty'}
                 </p>
               </div>
-            ) : (
+            ) : selectedCategory ? (
+              /* When filtering by category, show a flat grouped grid */
               <div className="space-y-8">
-                {/* YEOMAN Built-ins */}
                 {builtinSkills.length > 0 && (
                   <section>
                     <div className="flex items-center gap-2 mb-4">
@@ -222,16 +237,18 @@ export function MarketplaceTab({
                         ({builtinSkills.length})
                       </span>
                     </div>
-                    {renderGrid(builtinSkills, () => (
-                      <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                        <Shield className="w-2.5 h-2.5" />
-                        YEOMAN
-                      </span>
-                    ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {builtinSkills.map((s) =>
+                        renderCard(s, () => (
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                            <Shield className="w-2.5 h-2.5" />
+                            YEOMAN
+                          </span>
+                        ))
+                      )}
+                    </div>
                   </section>
                 )}
-
-                {/* Published */}
                 {publishedSkills.length > 0 && (
                   <section>
                     <div className="flex items-center gap-2 mb-4">
@@ -241,7 +258,51 @@ export function MarketplaceTab({
                         ({publishedSkills.length})
                       </span>
                     </div>
-                    {renderGrid(publishedSkills)}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {publishedSkills.map((s) => renderCard(s))}
+                    </div>
+                  </section>
+                )}
+              </div>
+            ) : (
+              /* When showing all categories, group by category within each source section */
+              <div className="space-y-8">
+                {builtinSkills.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Shield className="w-4 h-4 text-primary" />
+                      <h3 className="text-sm font-semibold text-foreground">YEOMAN Skills</h3>
+                      <span className="text-xs text-muted-foreground">
+                        ({builtinSkills.length})
+                      </span>
+                    </div>
+                    <CategoryGroupedGrid
+                      skills={builtinSkills}
+                      renderCard={(s) =>
+                        renderCard(s, () => (
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                            <Shield className="w-2.5 h-2.5" />
+                            YEOMAN
+                          </span>
+                        ))
+                      }
+                    />
+                  </section>
+                )}
+
+                {publishedSkills.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Store className="w-4 h-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-foreground">Published</h3>
+                      <span className="text-xs text-muted-foreground">
+                        ({publishedSkills.length})
+                      </span>
+                    </div>
+                    <CategoryGroupedGrid
+                      skills={publishedSkills}
+                      renderCard={(s) => renderCard(s)}
+                    />
                   </section>
                 )}
               </div>

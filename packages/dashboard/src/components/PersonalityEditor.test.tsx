@@ -117,7 +117,7 @@ const MOCK_PERSONALITY = {
   name: 'TestPersonality',
   description: 'A test personality',
   systemPrompt: '',
-  traits: { formality: 'balanced', humor: 'subtle', verbosity: 'concise' },
+  traits: { formality: 'balanced', humor: 'dry', verbosity: 'concise' },
   sex: 'unspecified' as const,
   voice: '',
   preferredLanguage: '',
@@ -875,5 +875,166 @@ describe('PersonalityEditor — Organizational Intent toggle', () => {
     expect(screen.getByText('Summarise')).toBeInTheDocument();
     expect(screen.getByText('Truncate')).toBeInTheDocument();
     expect(screen.getByText('Error')).toBeInTheDocument();
+  });
+});
+
+describe('PersonalityEditor — delete button', () => {
+  it('delete button is enabled for non-active, non-archetype personality', async () => {
+    const personality = {
+      ...MOCK_PERSONALITY,
+      isActive: false,
+      isDefault: false,
+      isArchetype: false,
+    };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [personality] });
+    renderComponent();
+    const deleteBtn = await screen.findByLabelText(`Delete personality ${personality.name}`);
+    expect(deleteBtn).not.toBeDisabled();
+  });
+
+  it('delete button is enabled for default but non-active personality', async () => {
+    const personality = {
+      ...MOCK_PERSONALITY,
+      isActive: false,
+      isDefault: true,
+      isArchetype: false,
+    };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [personality] });
+    renderComponent();
+    const deleteBtn = await screen.findByLabelText(`Delete personality ${personality.name}`);
+    expect(deleteBtn).not.toBeDisabled();
+  });
+
+  it('delete button is disabled for active personality', async () => {
+    const personality = {
+      ...MOCK_PERSONALITY,
+      isActive: true,
+      isDefault: false,
+      isArchetype: false,
+    };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [personality] });
+    renderComponent();
+    const deleteBtn = await screen.findByLabelText(
+      'Cannot delete active personality — deactivate first'
+    );
+    expect(deleteBtn).toBeDisabled();
+  });
+
+  it('delete button is disabled for archetype personality', async () => {
+    const personality = {
+      ...MOCK_PERSONALITY,
+      isActive: false,
+      isDefault: false,
+      isArchetype: true,
+    };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [personality] });
+    renderComponent();
+    const deleteBtn = await screen.findByLabelText('Cannot delete system preset');
+    expect(deleteBtn).toBeDisabled();
+  });
+});
+
+describe('PersonalityEditor — Disposition', () => {
+  it('shows core traits (formality, humor, verbosity) by default', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    // Soul section is defaultOpen — wait for it to render
+    await screen.findByText('Soul — Essence');
+
+    // Core traits visible
+    expect(screen.getByText('Formality')).toBeInTheDocument();
+    expect(screen.getByText('Humor')).toBeInTheDocument();
+    expect(screen.getByText('Verbosity')).toBeInTheDocument();
+
+    // Core options visible
+    expect(screen.getByText('casual')).toBeInTheDocument();
+    expect(screen.getByText('formal')).toBeInTheDocument();
+    expect(screen.getByText('witty')).toBeInTheDocument();
+  });
+
+  it('shows Advanced traits toggle', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    // Soul section is defaultOpen — wait for it to render
+    await screen.findByText('Soul — Essence');
+
+    expect(screen.getByText('Advanced traits')).toBeInTheDocument();
+  });
+
+  it('expanding Advanced traits reveals emotional, cognitive, professional categories', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    // Soul section is defaultOpen — wait for it to render
+    await screen.findByText('Soul — Essence');
+
+    // Advanced traits hidden initially
+    expect(screen.queryByText('Warmth')).not.toBeInTheDocument();
+
+    // Expand advanced
+    await user.click(screen.getByText('Advanced traits'));
+
+    // Category headers
+    expect(screen.getByText('Emotional')).toBeInTheDocument();
+    expect(screen.getByText('Cognitive')).toBeInTheDocument();
+    expect(screen.getByText('Professional')).toBeInTheDocument();
+
+    // Advanced trait labels
+    expect(screen.getByText('Warmth')).toBeInTheDocument();
+    expect(screen.getByText('Creativity')).toBeInTheDocument();
+    expect(screen.getByText('Autonomy')).toBeInTheDocument();
+    expect(screen.getByText('Directness')).toBeInTheDocument();
+  });
+
+  it('can select an advanced trait option', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    // Soul section is defaultOpen — wait for it to render
+    await screen.findByText('Soul — Essence');
+
+    await user.click(screen.getByText('Advanced traits'));
+
+    // Select "effusive" for warmth
+    const effusiveBtn = screen.getByText('effusive');
+    await user.click(effusiveBtn);
+    expect(effusiveBtn).toHaveClass('bg-primary');
+  });
+
+  it('shows Custom trait section with add inputs', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    // Soul section is defaultOpen — wait for it to render
+    await screen.findByText('Soul — Essence');
+
+    await user.click(screen.getByText('Advanced traits'));
+
+    expect(screen.getByText('Custom')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('trait name')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('value')).toBeInTheDocument();
+    expect(screen.getByText('+ Add')).toBeInTheDocument();
   });
 });

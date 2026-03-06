@@ -39,6 +39,7 @@ import { MissionCardNode } from './widgets/MissionCardNode';
 import { ChatWidget } from './widgets/ChatWidget';
 import { ExcalidrawWidget } from './widgets/ExcalidrawWidget';
 import { TradingDashboardWidget } from '../finance/TradingDashboardWidget';
+import { EntityWidget } from '../EntityWidget';
 
 export interface CanvasWidgetConfig {
   worktreeId?: string;
@@ -71,6 +72,7 @@ const WIDGET_ICONS: Record<CanvasWidgetType, React.ReactNode> = {
   editor: <Code2 className="w-3.5 h-3.5" />,
   'frozen-output': <Pin className="w-3.5 h-3.5" />,
   'agent-world': <Globe2 className="w-3.5 h-3.5" />,
+  'the-entity': <Brain className="w-3.5 h-3.5" />,
   'training-live': <Brain className="w-3.5 h-3.5" />,
   'task-kanban': <Columns className="w-3.5 h-3.5" />,
   'git-panel': <GitBranch className="w-3.5 h-3.5" />,
@@ -118,6 +120,8 @@ function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: strin
       return <FrozenOutputWidget content={config.frozenContent} />;
     case 'agent-world':
       return <AgentWorldNode />;
+    case 'the-entity':
+      return <EntityWidget state="thinking" height={280} showLabel />;
     case 'training-live':
       return <TrainingLiveNode />;
     case 'task-kanban':

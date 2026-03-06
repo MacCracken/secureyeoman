@@ -26,6 +26,8 @@ import {
   ContentSuspense,
   LazyWorkflowsTab,
   LazySwarmTemplatesTab,
+  CategoryFilter,
+  CategoryGroupedGrid,
   COMMUNITY_PAGE_SIZE,
   type ContentType,
 } from './shared';
@@ -59,12 +61,13 @@ export function CommunityTab({
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
   const [previewSkill, setPreviewSkill] = useState<CatalogSkill | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [workflowQuery, setWorkflowQuery] = useState('');
   const [swarmQuery, setSwarmQuery] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['marketplace-community', query, selectedPersonalityId, page],
+    queryKey: ['marketplace-community', query, selectedPersonalityId, page, selectedCategory],
     queryFn: () =>
       fetchMarketplaceSkills(
         query || undefined,
@@ -72,7 +75,8 @@ export function CommunityTab({
         selectedPersonalityId,
         undefined,
         COMMUNITY_PAGE_SIZE,
-        page * COMMUNITY_PAGE_SIZE
+        page * COMMUNITY_PAGE_SIZE,
+        selectedCategory || undefined
       ),
   });
 
@@ -98,7 +102,7 @@ export function CommunityTab({
 
   useEffect(() => {
     setPage(0);
-  }, [query, selectedPersonalityId]);
+  }, [query, selectedPersonalityId, selectedCategory]);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['marketplace-community'] });
@@ -142,6 +146,13 @@ export function CommunityTab({
 
   const skills: CatalogSkill[] = data?.skills ?? [];
   const canInstall = !!selectedPersonalityId;
+
+  // Build category counts for filter pills
+  const categoryCounts = skills.reduce<Record<string, number>>((acc, s) => {
+    const cat = s.category || 'general';
+    acc[cat] = (acc[cat] ?? 0) + 1;
+    return acc;
+  }, {});
 
   const lastSynced = statusData?.lastSyncedAt
     ? new Date(statusData.lastSyncedAt).toLocaleString()
@@ -454,6 +465,13 @@ export function CommunityTab({
               </div>
             )}
 
+            {/* Category filter */}
+            <CategoryFilter
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              counts={categoryCounts}
+            />
+
             {/* Skills grid */}
             {isLoading ? (
               <div className="flex justify-center py-12">
@@ -483,8 +501,9 @@ export function CommunityTab({
                     ({data?.total ?? skills.length})
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {skills.map((skill) => (
+                <CategoryGroupedGrid
+                  skills={skills}
+                  renderCard={(skill) => (
                     <SkillCard
                       key={skill.id}
                       skill={skill}
@@ -512,8 +531,8 @@ export function CommunityTab({
                         });
                       }}
                     />
-                  ))}
-                </div>
+                  )}
+                />
                 {(data?.total ?? 0) > COMMUNITY_PAGE_SIZE && (
                   <div className="flex items-center justify-between pt-2">
                     <span className="text-xs text-muted-foreground">

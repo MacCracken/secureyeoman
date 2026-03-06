@@ -263,7 +263,9 @@ describe('SkillsPage', () => {
         undefined,
         expect.any(String), // personalityId
         'marketplace',
-        200
+        200,
+        undefined,
+        undefined
       );
     });
   });
@@ -358,7 +360,8 @@ describe('SkillsPage', () => {
         '', // no active personality → empty personalityId
         undefined,
         20,
-        0
+        0,
+        undefined
       );
     });
   });

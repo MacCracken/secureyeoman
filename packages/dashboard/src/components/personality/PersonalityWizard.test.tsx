@@ -131,7 +131,7 @@ describe('PersonalityWizard', () => {
       expect(api.createPersonality).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestBot',
-          traits: expect.objectContaining({ formality: 'balanced', humor: 'subtle' }),
+          traits: expect.objectContaining({ formality: 'balanced', humor: 'dry' }),
         })
       );
     });

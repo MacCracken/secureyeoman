@@ -85,7 +85,7 @@ export function KeybindingsEditor({ open, onClose }: KeybindingsEditorProps) {
   })).filter((g) => g.items.length > 0);
 
   const conflict = editingId && pendingShortcut ? findConflict(editingId, pendingShortcut) : null;
-  const conflictLabel = conflict ? bindings.find((b) => b.id === conflict)?.label : null;
+  const conflictLabel = conflict ? (bindings.find((b) => b.id === conflict)?.label ?? null) : null;
 
   return (
     <div

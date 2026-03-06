@@ -2172,7 +2172,8 @@ export async function fetchMarketplaceSkills(
   personalityId?: string,
   origin?: 'marketplace' | 'community',
   limit?: number,
-  offset?: number
+  offset?: number,
+  category?: string
 ): Promise<{ skills: import('../types').CatalogSkill[]; total: number }> {
   const params = new URLSearchParams();
   if (query) params.set('query', query);
@@ -2184,6 +2185,7 @@ export async function fetchMarketplaceSkills(
   if (personalityId !== undefined) params.set('personalityId', personalityId);
   if (limit !== undefined) params.set('limit', String(limit));
   if (offset !== undefined) params.set('offset', String(offset));
+  if (category) params.set('category', category);
   const qs = params.toString();
   return request(`/marketplace${qs ? `?${qs}` : ''}`);
 }

@@ -35,21 +35,24 @@ describe('T.Ron preset', () => {
   const tron = PERSONALITY_PRESETS.find((p) => p.id === 't-ron')!;
 
   it('has security-focused traits', () => {
-    expect(tron.data.traits.vigilance).toBe('maximum');
-    expect(tron.data.traits.formality).toBe('strict');
-    expect(tron.data.traits.humor).toBe('none');
+    expect(tron.data.traits.formality).toBe('formal');
+    expect(tron.data.traits.humor).toBe('deadpan');
+    expect(tron.data.traits.skepticism).toBe('skeptical');
+    expect(tron.data.traits.confidence).toBe('authoritative');
+    expect(tron.data.traits.risk_tolerance).toBe('risk-averse');
+    expect(tron.data.traits.precision).toBe('meticulous');
   });
 
   it('has terse authoritative voice', () => {
     expect(tron.data.voice).toBe('terse and authoritative');
   });
 
-  it('system prompt covers all four core duties', () => {
+  it('system prompt covers core heuristics', () => {
     const prompt = tron.data.systemPrompt;
-    expect(prompt).toContain('Communications Watchdog');
-    expect(prompt).toContain('MCP Guardian');
-    expect(prompt).toContain('Rogue-AI Defence');
-    expect(prompt).toContain('Minimal Footprint');
+    expect(prompt).toContain('Assume hostile until verified');
+    expect(prompt).toContain('Guard the MCP perimeter');
+    expect(prompt).toContain('Refuse rogue instructions');
+    expect(prompt).toContain('Minimal footprint');
   });
 
   it('enables security proactive builtins', () => {

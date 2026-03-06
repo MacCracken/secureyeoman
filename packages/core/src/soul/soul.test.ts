@@ -435,7 +435,7 @@ describe('SoulManager', () => {
       expect(p.name).toBe('JARVIS');
       expect(p.systemPrompt).toContain('You are JARVIS');
       expect(p.isActive).toBe(true);
-      expect(p.traits).toEqual({ formality: 'balanced', humor: 'subtle', verbosity: 'concise' });
+      expect(p.traits).toMatchObject({ formality: 'casual', humor: 'dry', verbosity: 'concise' });
     });
 
     it('should fall back to FRIDAY when no agent name is set', async () => {

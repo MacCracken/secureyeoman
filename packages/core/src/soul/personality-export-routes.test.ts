@@ -10,7 +10,7 @@ const PERSONALITY: Personality = {
   name: 'FRIDAY',
   description: 'A helpful assistant',
   systemPrompt: 'You are FRIDAY, a helpful assistant.',
-  traits: { formality: 'balanced', humor: 'subtle' },
+  traits: { formality: 'balanced', humor: 'dry' },
   sex: 'unspecified',
   voice: '',
   preferredLanguage: '',

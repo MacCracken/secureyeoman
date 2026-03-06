@@ -23,7 +23,7 @@ function createMockDeps(overrides: Partial<SchemaClusteringDeps> = {}): SchemaCl
     } as any,
     storage: {
       queryKnowledge: vi.fn().mockResolvedValue([]),
-      upsertKnowledge: vi.fn().mockResolvedValue(undefined),
+      createKnowledge: vi.fn().mockResolvedValue(undefined),
     } as any,
     logger: {
       info: vi.fn(),
@@ -136,7 +136,7 @@ describe('SchemaClusteringManager', () => {
     (deps.storage.queryKnowledge as any).mockResolvedValue(entries);
 
     await manager.runClustering();
-    expect(deps.storage.upsertKnowledge).toHaveBeenCalled();
+    expect(deps.storage.createKnowledge).toHaveBeenCalled();
   });
 
   it('falls back to keyword extraction when LLM fails', async () => {

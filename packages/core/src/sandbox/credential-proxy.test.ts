@@ -188,15 +188,21 @@ describe('CredentialProxy', () => {
   });
 
   it('CONNECT to an allowed host — returns 200 Connection Established', async () => {
+    // Start a local TCP server to act as the upstream (avoids real network)
+    const upstream = net.createServer((sock) => sock.end());
+    await new Promise<void>((resolve) => upstream.listen(0, '127.0.0.1', resolve));
+    const upstreamPort = (upstream.address() as net.AddressInfo).port;
+
     const proxy = new CredentialProxy({
-      allowedHosts: ['example.com'],
+      allowedHosts: ['127.0.0.1'],
       credentials: [],
     });
     const handle = await proxy.start();
     handles.push(handle);
 
-    const statusLine = await proxyConnect(handle.port, 'example.com:443');
+    const statusLine = await proxyConnect(handle.port, `127.0.0.1:${upstreamPort}`);
     expect(statusLine).toContain('200');
+    await new Promise<void>((resolve) => upstream.close(() => resolve()));
   });
 
   it('CONNECT to a blocked host — returns 403', async () => {

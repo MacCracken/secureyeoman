@@ -62,6 +62,7 @@ import { EditorToolbar } from './editor/EditorToolbar';
 import { KeybindingsEditor } from './editor/KeybindingsEditor';
 import { AiPlanPanel, type AiPlan, type PlanStep } from './editor/AiPlanPanel';
 import { useKeybindings, matchesShortcut } from '../hooks/useKeybindings';
+import { EntityWidget, type EntityState } from './EntityWidget';
 
 type MonacoEditor = Parameters<OnMount>[0];
 
@@ -1576,6 +1577,28 @@ function StandardEditorPage() {
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
+
+              {/* The Entity — AI consciousness visualization */}
+              <EntityWidget
+                state={
+                  isPending && activeToolCalls.length > 0
+                    ? 'active'
+                    : isPending
+                      ? 'thinking'
+                      : 'dormant' as EntityState
+                }
+                height={120}
+                compact
+                label={
+                  isPending && activeToolCalls.length > 0
+                    ? `EXECUTING ${activeToolCalls.length} TOOL${activeToolCalls.length > 1 ? 'S' : ''}`
+                    : isPending && streamingThinking
+                      ? 'REASONING'
+                      : isPending
+                        ? 'PROCESSING'
+                        : currentPersonality?.name?.toUpperCase() ?? 'STANDBY'
+                }
+              />
 
               {/* AI Plan Panel */}
               {aiPlan && (

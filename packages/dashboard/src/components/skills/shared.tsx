@@ -1,5 +1,18 @@
-import React, { lazy, Suspense, useEffect } from 'react';
-import { Loader2, Eye, Download, Trash2, Globe, Shield, GitBranch, X, User } from 'lucide-react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
+import {
+  Loader2,
+  Eye,
+  Download,
+  Trash2,
+  Globe,
+  Shield,
+  GitBranch,
+  X,
+  User,
+  FolderOpen,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
 import {
   installMarketplaceSkill,
   uninstallMarketplaceSkill,
@@ -497,6 +510,152 @@ export function PersonalitySelector({
 }
 
 export const COMMUNITY_PAGE_SIZE = 20;
+
+export const SKILL_CATEGORIES = [
+  'development',
+  'productivity',
+  'security',
+  'utilities',
+  'design',
+  'finance',
+  'science',
+  'general',
+  'trading',
+  'legal',
+  'marketing',
+  'education',
+  'healthcare',
+] as const;
+
+export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
+
+const CATEGORY_LABELS: Record<string, string> = {
+  development: 'Development',
+  productivity: 'Productivity',
+  security: 'Security',
+  utilities: 'Utilities',
+  design: 'Design',
+  finance: 'Finance',
+  science: 'Science',
+  general: 'General',
+  trading: 'Trading',
+  legal: 'Legal',
+  marketing: 'Marketing',
+  education: 'Education',
+  healthcare: 'Healthcare',
+};
+
+export function categoryLabel(cat: string): string {
+  return CATEGORY_LABELS[cat] ?? cat.charAt(0).toUpperCase() + cat.slice(1);
+}
+
+export function CategoryFilter({
+  value,
+  onChange,
+  counts,
+}: {
+  value: string;
+  onChange: (cat: string) => void;
+  counts?: Record<string, number>;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Category filter">
+      <button
+        role="tab"
+        aria-selected={value === ''}
+        onClick={() => onChange('')}
+        className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+          value === ''
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-foreground/20'
+        }`}
+      >
+        All{counts ? ` (${Object.values(counts).reduce((a, b) => a + b, 0)})` : ''}
+      </button>
+      {SKILL_CATEGORIES.map((cat) => {
+        const count = counts?.[cat];
+        if (counts && !count) return null;
+        return (
+          <button
+            key={cat}
+            role="tab"
+            aria-selected={value === cat}
+            onClick={() => onChange(cat)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+              value === cat
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-foreground/20'
+            }`}
+          >
+            {categoryLabel(cat)}{count !== undefined ? ` (${count})` : ''}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function CategoryGroupedGrid({
+  skills,
+  renderCard,
+}: {
+  skills: CatalogSkill[];
+  renderCard: (skill: CatalogSkill) => React.ReactNode;
+}) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  const grouped = skills.reduce<Record<string, CatalogSkill[]>>((acc, s) => {
+    const cat = s.category || 'general';
+    (acc[cat] ??= []).push(s);
+    return acc;
+  }, {});
+
+  const sortedCategories = Object.keys(grouped).sort((a, b) =>
+    categoryLabel(a).localeCompare(categoryLabel(b))
+  );
+
+  if (sortedCategories.length <= 1) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {skills.map(renderCard)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {sortedCategories.map((cat) => {
+        const catSkills = grouped[cat];
+        const isCollapsed = collapsed[cat] ?? false;
+        return (
+          <section key={cat}>
+            <button
+              onClick={() => setCollapsed((prev) => ({ ...prev, [cat]: !isCollapsed }))}
+              className="flex items-center gap-2 mb-3 group cursor-pointer"
+              aria-expanded={!isCollapsed}
+            >
+              {isCollapsed ? (
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              )}
+              <FolderOpen className="w-4 h-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                {categoryLabel(cat)}
+              </h3>
+              <span className="text-xs text-muted-foreground">({catSkills.length})</span>
+            </button>
+            {!isCollapsed && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {catSkills.map(renderCard)}
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
 
 // Re-export API functions and types used by multiple tabs so they can import
 // from a single shared location if needed. Tabs may also import directly.

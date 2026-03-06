@@ -9,7 +9,7 @@ function makePersonality(overrides: Record<string, unknown> = {}) {
     name: 'TestBot',
     description: 'A test personality',
     systemPrompt: 'You are TestBot, a helpful assistant.',
-    traits: { formality: 'balanced', humor: 'subtle', verbosity: 'concise' },
+    traits: { formality: 'balanced', humor: 'dry', verbosity: 'concise' },
     sex: 'unspecified' as const,
     voice: '',
     preferredLanguage: '',
@@ -34,7 +34,7 @@ describe('PersonalityMarkdownSerializer', () => {
       expect(md).toContain('You are TestBot, a helpful assistant.');
       expect(md).toContain('# Traits');
       expect(md).toContain('- **formality**: balanced');
-      expect(md).toContain('- **humor**: subtle');
+      expect(md).toContain('- **humor**: dry');
     });
 
     it('includes defaultModel in frontmatter', () => {

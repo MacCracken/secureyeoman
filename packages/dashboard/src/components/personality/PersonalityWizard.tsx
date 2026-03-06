@@ -36,7 +36,7 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
   const [systemPrompt, setSystemPrompt] = useState('');
   const [description, setDescription] = useState('');
   const [formality, setFormality] = useState<string>('balanced');
-  const [humor, setHumor] = useState<string>('subtle');
+  const [humor, setHumor] = useState<string>('dry');
   const [verbosity, setVerbosity] = useState<string>('concise');
   const [reasoning, setReasoning] = useState<string>('analytical');
   const [constraints, setConstraints] = useState('');

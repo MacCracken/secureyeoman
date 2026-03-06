@@ -26,8 +26,14 @@ A personality markdown file has this structure:
 name: My Personality
 description: A helpful assistant for security tasks
 traits:
-  - threat_detection
-  - code_review
+  formality: formal
+  humor: balanced
+  verbosity: concise
+  directness: candid
+  warmth: balanced
+  confidence: assertive
+  risk_tolerance: cautious
+  precision: precise
 defaultModel: claude-sonnet-4-6
 sex: neutral
 voice: professional
@@ -42,8 +48,13 @@ consider the security implications of recommendations.
 
 # Traits
 
-- **threat_detection**: Identifies and classifies potential security threats
-- **code_review**: Reviews code for security vulnerabilities and best practices
+- **formality: formal** — Professional, structured communication
+- **humor: balanced** — Neutral humor; neither suppressed nor emphasized
+- **verbosity: concise** — Direct, efficient responses
+- **directness: candid** — Honest assessments without excessive hedging
+- **confidence: assertive** — Stands behind recommendations with conviction
+- **risk_tolerance: cautious** — Conservative approach to security decisions
+- **precision: precise** — Specific references, exact details
 
 # Configuration
 
@@ -57,13 +68,37 @@ topP: 0.9
 - gemini-2.0-flash (gemini)
 ```
 
+### Disposition Traits
+
+Personalities use a disposition system with 15 standard trait keys, each on a 5-level scale with "balanced" as the center:
+
+| Category | Trait | Scale (left to right) |
+|----------|-------|-----------------------|
+| Communication | `formality` | street - casual - balanced - formal - ceremonial |
+| Communication | `humor` | deadpan - dry - balanced - witty - comedic |
+| Communication | `verbosity` | terse - concise - balanced - detailed - exhaustive |
+| Communication | `directness` | evasive - diplomatic - balanced - candid - blunt |
+| Emotional | `warmth` | cold - reserved - balanced - friendly - effusive |
+| Emotional | `empathy` | detached - analytical - balanced - empathetic - compassionate |
+| Emotional | `patience` | brisk - efficient - balanced - patient - nurturing |
+| Emotional | `confidence` | humble - modest - balanced - assertive - authoritative |
+| Cognitive | `creativity` | rigid - conventional - balanced - imaginative - avant-garde |
+| Cognitive | `risk_tolerance` | risk-averse - cautious - balanced - bold - reckless |
+| Cognitive | `curiosity` | narrow - focused - balanced - curious - exploratory |
+| Cognitive | `skepticism` | gullible - trusting - balanced - skeptical - contrarian |
+| Professional | `autonomy` | dependent - consultative - balanced - proactive - autonomous |
+| Professional | `pedagogy` | terse-answer - answer-focused - balanced - explanatory - socratic |
+| Professional | `precision` | approximate - loose - balanced - precise - meticulous |
+
+Custom traits beyond these 15 can be added as additional key-value pairs.
+
 ### Sections
 
 | Section | Required | Description |
 |---------|----------|-------------|
-| YAML frontmatter | Yes | Name, description, traits (as keys), model, voice settings |
+| YAML frontmatter | Yes | Name, description, traits (as key-value disposition pairs), model, voice settings |
 | `# Identity & Purpose` | Yes | The personality's system prompt |
-| `# Traits` | No | Detailed trait descriptions (`**key**: description` format) |
+| `# Traits` | No | Detailed trait descriptions (`**key: value** — description` format) |
 | `# Configuration` | No | Non-default body config values (temperature, maxTokens, etc.) |
 | `# Model Fallbacks` | No | Fallback models in `model (provider)` format |
 
@@ -170,7 +205,7 @@ Community personalities are distributed as `.md` files in the community repo's `
 
 1. Create a `.md` file following the format above.
 2. Place it in `personalities/` in the community skills repo.
-3. The YAML frontmatter must include at minimum: `name`, `description`, and `traits`.
+3. The YAML frontmatter must include at minimum: `name`. Traits should use key-value disposition pairs (e.g. `formality: formal`, `humor: dry`).
 4. Submit a pull request.
 
 The frontmatter is validated against `schema/personality.schema.json`.
