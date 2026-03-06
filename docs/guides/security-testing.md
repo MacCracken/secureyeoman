@@ -24,7 +24,7 @@ npx vitest run tests/security/
 
 ## PromptGuard Unit Tests
 
-`PromptGuard` (ADR 124) is the assembled-prompt injection scanner that runs before the LLM API call. Its unit tests live alongside the other security module tests:
+`PromptGuard` ([ADR 002 — Security Architecture](../adr/002-security-architecture.md)) is the assembled-prompt injection scanner that runs before the LLM API call. Its unit tests live alongside the other security module tests:
 
 ```bash
 npx vitest run packages/core/src/security/prompt-guard.test.ts
@@ -207,7 +207,7 @@ Environment variables: `CLUSTER_NAME`, `NAMESPACE`, `TIMEOUT`.
 
 ## Sandbox Credential Proxy
 
-The `CredentialProxy` (ADR 099) can be verified manually after enabling the
+The `CredentialProxy` ([ADR 002 — Security Architecture](../adr/002-security-architecture.md)) can be verified manually after enabling the
 `sandboxCredentialProxy` policy flag:
 
 ```bash

@@ -1,6 +1,6 @@
 # Functionality Audit: SecureYeoman vs Competitors
 
-> Comparative analysis as of **2026-03-05** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, Ironclaw, TrustClaw, Manus AI (Meta), Devin 2.0, OpenHands, OpenAI Frontier, ZeroClaw, and NanoBot.
+> Comparative analysis as of **2026-03-06** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, Ironclaw, TrustClaw, Manus AI (Meta), Devin 2.0, OpenHands, OpenAI Frontier, ZeroClaw, and NanoBot.
 
 ---
 
@@ -9,7 +9,7 @@
 | | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |---|---|---|---|---|---|
 | **Vendor** | Open source | Open source (→ foundation; creator joined OpenAI Feb 14) | agent0ai | Sipeed (sipeed/picoclaw) | NEAR AI |
-| **Latest version** | 2026.3.5 | 2026.3.1 | v0.9.8.2 | v0.2.0 (Feb 28) | **v0.13.1** (Mar 2) |
+| **Latest version** | 2026.3.6 | 2026.3.1 | v0.9.8.2 | v0.2.0 (Feb 28) | **v0.13.1** (Mar 2) |
 | **GitHub stars** | — | ~234K (1.36M npm/week) | ~15.7K | ~21.7K (launched Feb 9) | ~4K |
 | **Language** | TypeScript | TypeScript | Python | Go | **Rust** |
 | **Focus** | Enterprise self-hosted AI agent | Feature-rich personal AI | Personal assistant / agentic | Ultralight embedded AI | Privacy-first, TEE-backed runtime |
@@ -17,7 +17,7 @@
 | **RAM** | ~1 GB | ~1.5 GB baseline (2 GB min; 8 GB for browser skills) | 4 GB recommended | **10–20 MB** (v0.1.2) | Not published |
 | **Startup** | ~30 s | ~6 s | > 30 s | **< 1 s** | Not published |
 | **Security** | ✅ RBAC · encryption · audit chain · sandboxing · SecretsManager/Vault · TLS lifecycle · ResponseGuard · OPA/CEL governance | ⚠️ CVE-2026-25253 RCE (CVSS 8.8) + CVE-2026-25157, CVE-2026-24763 + 6 more; 1,184+ malicious ClawHub skills (ClawHavoc); Cline supply chain; Gartner: "unacceptable enterprise risk" | Basic (Docker isolation) | Experimental; network security issues (self-disclosed) | ✅ TEE · WASM sandbox · AES-256-GCM · credential vault |
-| **MCP** | ✅ Full server + client (274 tools) | Limited client integration | ✅ Client + server | ✅ (v0.2.0) | ✅ As tool implementation path |
+| **MCP** | ✅ Full server + client (330 tools) | Limited client integration | ✅ Client + server | ✅ (v0.2.0) | ✅ As tool implementation path |
 | **Enterprise-ready** | ✅ RBAC · SSO/OIDC/SAML · multi-tenancy · K8s · Prometheus | ❌ | ❌ | ❌ | ❌ |
 
 ---
@@ -96,7 +96,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | Language | TypeScript | TypeScript | Python | Go | **Rust** |
 | Database | PostgreSQL + SQLite | File-based (Markdown) | File-based | File-based | PostgreSQL + libSQL |
 | AI providers | 13 | Multiple | Multiple | 9+ | 5 (NEAR AI, Tinfoil TEE, OpenAI, Anthropic, Ollama) |
-| MCP server + client | ✅ **274** tools | Limited | ✅ | ✅ (v0.2.0 client) | ✅ |
+| MCP server + client | ✅ **330** tools | Limited | ✅ | ✅ (v0.2.0 client) | ✅ |
 | RAM footprint | ~1 GB | ~1.5 GB (8 GB for browser skills; peaks 6 GB under load) | 4 GB recommended | **10–20 MB** | Not published |
 | Startup time | ~30 s | ~6 s | > 30 s | **< 1 s** | Not published |
 | Enterprise-ready | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -117,7 +117,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | Output safety scanner | ✅ ResponseGuard — 6 injection patterns; block/warn/disabled modes | ❌ | ❌ | ❌ | ❌ |
 | Governance / OPA | ✅ OPA sidecar; CEL policy evaluator; hard boundaries + soft policies; output compliance | ❌ | ❌ | ❌ | ❌ |
 | LLM-as-Judge | ✅ Secondary LLM review for high-autonomy tool calls | ❌ | ❌ | ❌ | ❌ |
-| Sandboxing | ✅ Landlock / seccomp / namespaces (Linux); sandbox-exec (macOS); gVisor; WASM | Docker opt-in | Docker-only | Workspace restriction | ✅ WASM (wasmtime) + Docker + outbound proxy |
+| Sandboxing | ✅ Landlock / seccomp / namespaces (Linux); sandbox-exec (macOS); gVisor; WASM; **4 built-in profiles** (dev/staging/prod/high-security) | Docker opt-in | Docker-only | Workspace restriction | ✅ WASM (wasmtime) + Docker + outbound proxy |
 | Outbound credential proxy | ✅ `CredentialProxy` — injects `Authorization` for known hosts; HTTPS CONNECT allowlist | ❌ | ❌ | ❌ | ✅ Credential injection at proxy; endpoint allowlist |
 | Skill trust tiers | ✅ Community skills: read-only tool access; 26-prefix allow-list | ❌ | ❌ | ❌ | ✅ Trusted vs Installed tiers |
 | Rate limiting | ✅ Per-user / per-IP / global; login, refresh, password-reset buckets with Retry-After | Configurable | ❌ | ❌ | ✅ WASM fuel metering |
@@ -146,7 +146,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 
 | Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |---------|:---:|:---:|:---:|:---:|:---:|
-| MCP tool count | ✅ **274** | Limited | External via MCP | ✅ MCP client (v0.2.0) | Via MCP path |
+| MCP tool count | ✅ **330** | Limited | External via MCP | ✅ MCP client (v0.2.0) | Via MCP path |
 | Browser automation | ✅ Playwright | ✅ Built-in | ✅ browser-use (Playwright) | ❌ | ❌ |
 | Shell execution | ✅ Sandboxed; cd navigation fixed | ✅ | ✅ | ✅ Restricted | ✅ Sandboxed |
 | Code execution | ✅ Python / Node.js / shell, sandboxed | ✅ | ✅ | ❌ | ✅ Docker (3 isolation policies) |
@@ -200,12 +200,17 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | WebGL graph | ✅ Sigma.js + Graphology | ❌ | ❌ | ❌ | ❌ |
 | Voice (STT / TTS) | ✅ Push-to-talk; per-personality voice; streaming binary TTS; Whisper model selector | ✅ | ✅ | ❌ | ❌ |
 | Image generation | ✅ DALL-E | ✅ | ❌ | ❌ | ❌ |
-| Multi-theme system | ✅ 31 named themes; CSS variable overrides; floating theme picker | ❌ | ❌ | ❌ | ❌ |
+| Multi-theme system | ✅ 42 built-in themes; CSS variable overrides; floating theme picker | ❌ | ❌ | ❌ | ❌ |
 | Mission Control | ✅ Multi-panel command-center: KPI bar, topology, live feeds, resource monitoring, audit stream | ❌ | ❌ | ❌ | ❌ |
 | Accessibility | ✅ jsx-a11y; focus-visible ring; 44px touch targets; axe-core smoke tests | ❌ | ❌ | ❌ | ❌ |
 | Global navigate/create | ✅ Shortcut dialog — Chat / Skill / Workflow / Personality / Task | ❌ | ❌ | ❌ | ❌ |
 | Network mode badge | ✅ Live: Local Only / Network (No TLS) / Public (TLS Secured) | ❌ | ❌ | ❌ | ❌ |
 | Collaborative editing | ✅ Yjs CRDT; presence indicators; group chat | ❌ | ❌ | ❌ | ❌ |
+| Inline AI completion | ✅ Copilot-style ghost text; 500ms debounce; personality-aware | ❌ | ❌ | ❌ | ❌ |
+| Multi-file search & replace | ✅ Regex, glob filter, batch replace, path traversal protection | ❌ | ❌ | ❌ | ❌ |
+| Configurable keybindings | ✅ 12 bindings, conflict detection, per-user localStorage | ❌ | ❌ | ❌ | ❌ |
+| AI plan panel | ✅ Step-by-step approval, progress bar, token counter, context badges | ❌ | ❌ | ❌ | ❌ |
+| Training annotations | ✅ Right-click context menu, label+export as JSONL/CSV for fine-tuning | ❌ | ❌ | ❌ | ❌ |
 | Mobile | ❌ (roadmap Tier 3) | ✅ Android native (4-step onboarding, 5-tab interface; added v2026.2.23) | ❌ | ❌ | ❌ |
 
 ### 7 · Enterprise & Deployment
@@ -220,7 +225,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | Single binary | ✅ ~123 MB | ❌ | ❌ | ✅ 10–20 MB | ✅ Rust static |
 | Docker | ✅ ~123 MB | ✅ | ✅ | ❌ | ✅ |
 | Dual DB backend | ✅ PostgreSQL + SQLite | ❌ | ❌ | ❌ | ✅ PostgreSQL + libSQL |
-| CLI | ✅ 39 commands; completions; `--json`; 5-step init wizard | ✅ | ✅ | ✅ | ✅ REPL |
+| CLI | ✅ 41 commands; completions; `--json`; 5-step init wizard | ✅ | ✅ | ✅ | ✅ REPL |
 | Lite binary (edge/IoT) | ✅ SQLite tier | ❌ | ❌ | ✅ (standard binary is 10–20 MB) | ✅ libSQL backend |
 | Air-gap / offline | ✅ Full self-hosted | ✅ | ✅ | ✅ | ❌ Requires NEAR AI Cloud |
 | Backup & DR | ✅ Automated `pg_dump`/`pg_restore`; download + restore API | ❌ | ❌ | ❌ | ❌ |
@@ -232,8 +237,8 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 |--|--|--|--|--|--|
 | Test count | **~16,100** | Limited (community-driven) | Minimal | Minimal | Not published (Rust type safety provides baseline) |
 | Line coverage | **87.2%** | Not tracked | Not tracked | Not tracked | Not tracked |
-| Test files | **~720** | Unknown | Unknown | Unknown | Unknown |
-| ADR records | **19** | Unknown | Unknown | Unknown | Unknown |
+| Test files | **~752** | Unknown | Unknown | Unknown | Unknown |
+| ADR records | **29** | Unknown | Unknown | Unknown | Unknown |
 | CI/CD | ✅ lint · typecheck · test · build · security audit · docker-push · helm-lint | ✅ | Basic | Minimal | ✅ Cargo CI |
 | Security test suite | ✅ Dedicated security + chaos suites; vitest-axe a11y smoke tests | ❌ Multiple CVEs 2026 | ❌ | ❌ | ✅ Memory-safe by language; WASM sandbox tests |
 | Storybook | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -244,7 +249,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 
 No other framework in this competitive set offers the capabilities listed below. Grouped by domain:
 
-### Security & Governance (16 capabilities)
+### Security & Governance (18 capabilities)
 
 | Capability | Detail |
 |-----------|--------|
@@ -264,6 +269,8 @@ No other framework in this competitive set offers the capabilities listed below.
 | **Compliance Reporting** | Cross-reference audit chain, DLP egress, content classifications into unified reports. Multi-format (JSON, HTML, CSV, Markdown) |
 | **Event Subscription System** | 14 lifecycle event types, HMAC-SHA256 signed webhook delivery, exponential backoff retry, subscription CRUD |
 | **Outbound Credential Proxy** | `CredentialProxy` injects `Authorization` headers; HTTPS CONNECT allowlist — key material never leaves your perimeter |
+| **Sandbox Profiles** | 4 built-in profiles (dev/staging/prod/high-security) with configurable filesystem, resource limits, network policies, tool allow/blocklists |
+| **Chaos Engineering** | 8 fault types, 7 target types, scheduled experiments with auto-rollback, aggregate metrics (recovery rate, MTTR, circuit breaker trips) |
 
 ### Knowledge & Memory (4 capabilities)
 
@@ -286,6 +293,7 @@ No other framework in this competitive set offers the capabilities listed below.
 | **Kali Security Toolkit** | `sec_*` MCP tools + `secureyeoman security` CLI (nmap, nuclei, sqlmap, gobuster, hydra) |
 | **Agnostic QA Bridge** | 10 `agnostic_*` MCP tools + A2A delegation |
 | **Agent Evaluation Harness** | Structured eval scenarios with expected/forbidden tool calls, output assertions, budget constraints, multi-turn. Suites with concurrency. 8 MCP tools, 12 REST endpoints. No competitor offers this. |
+| **Chaos Engineering Toolkit** | 8 fault types (latency, error, timeout, resource exhaustion, dependency failure, data corruption, circuit breaker trip, rate limit), 7 target types, scheduled experiments, auto-rollback, aggregate metrics. 9 REST endpoints |
 | **Community Repository** | 87 community skills (13 categories); 7 workflows; 2 swarm + 2 council templates; 7 security templates; 3 personalities; 3 themes; 1,310 validation tests |
 
 ### Enterprise & Deployment (6 capabilities)
@@ -305,7 +313,7 @@ No other framework in this competitive set offers the capabilities listed below.
 |-----------|--------|
 | **32 messaging integrations** | vs ~2–3 for nearest competitor; fan-out dispatch with quiet hours and per-user prefs |
 | **Per-user notification preferences** | Quiet hours (UTC, overnight wrap), min level, fan-out across integrations; retention cleanup job |
-| **Multi-Theme System** | 31 named themes; CSS variable overrides; floating theme picker |
+| **Multi-Theme System** | 42 built-in themes; CSS variable overrides; floating theme picker |
 | **Accessibility compliance** | eslint-plugin-jsx-a11y; focus-visible ring; 44px touch targets; axe-core smoke tests |
 | **DAG visual builder** | ReactFlow editor with 19 step types — only framework in this category with this feature |
 | **Mission Control** | Multi-panel command-center: KPI bar, topology, live feeds, resource monitoring, audit stream |
@@ -407,7 +415,7 @@ ZeroClaw is a Rust implementation targeting the performance and edge market: tin
 | **RAM** | ~50 MB (estimated) | ~1 GB |
 | **RBAC / SSO** | ❌ | ✅ Full enterprise auth stack |
 | **Dashboard** | ❌ CLI only | ✅ React SPA |
-| **MCP tools** | Minimal set | 274 tools |
+| **MCP tools** | Minimal set | 330 tools |
 | **Database** | File-based | PostgreSQL + SQLite |
 | **Air-gap** | ✅ | ✅ |
 | **Multi-agent** | ❌ | ✅ Swarms, Teams, DAG, A2A |
@@ -430,7 +438,7 @@ NanoBot is a deliberately small (~3,000 line) Python codebase designed to be ful
 | **RBAC / SSO** | ❌ | ✅ |
 | **Audit trail** | Print-based logging | HMAC-SHA256 cryptographic chain |
 | **Enterprise auth** | ❌ | Okta / Azure AD / Auth0 / SAML 2.0 |
-| **MCP** | Basic client | 274 server tools |
+| **MCP** | Basic client | 330 server tools |
 | **Skill marketplace** | ❌ | 24 builtin + 87 community skills; Trust Tiers |
 | **Multi-agent** | ❌ | Swarms, Teams, DAG, A2A, Federation |
 | **Target user** | Researchers, educators | Enterprise security / ops teams |
@@ -455,7 +463,7 @@ Devin is Cognition Labs' autonomous AI software engineer. Devin 2.0 launched in 
 | **RBAC / SSO** | Teams workspace roles | Full 4-level RBAC + SSO/OIDC/SAML |
 | **IDE integration** | ✅ Windsurf (acquired) + VS Code | ✅ Monaco editor (Standard + Advanced) |
 | **Multi-agent** | Single-agent workflows | ✅ Swarms, Teams, DAG, A2A |
-| **MCP** | Limited | ✅ 274 tools |
+| **MCP** | Limited | ✅ 330 tools |
 | **Audit** | Activity log | HMAC-SHA256 cryptographic chain |
 
 **SecureYeoman positioning vs Devin**: Different target markets — Devin is a coding-specific autonomous agent; SecureYeoman is a general-purpose platform. Overlap occurs when DevSecOps teams evaluate both for CI/CD automation. SecureYeoman's code execution is sandboxed and policy-gated; Devin's is cloud-hosted. The $20/mo price point makes Devin extremely accessible but creates cloud dependency. The Windsurf acquisition suggests Cognition is building toward a platform play.
@@ -476,7 +484,7 @@ OpenHands (formerly OpenDevin) is an open-source autonomous AI software engineer
 | **Sandboxing** | Docker-based isolation | Landlock / seccomp / WASM / gVisor |
 | **RBAC / SSO** | Basic workspace auth | Full 4-level RBAC + SSO/OIDC/SAML |
 | **Multi-agent** | Task delegation | ✅ Swarms, Teams, DAG, A2A |
-| **MCP** | Limited integration | ✅ 274 tools |
+| **MCP** | Limited integration | ✅ 330 tools |
 | **Audit** | Structured logs | HMAC-SHA256 cryptographic chain |
 | **Enterprise features** | Minimal | Full stack (multi-tenancy, Vault, K8s Helm, backup & DR) |
 | **Open source** | ✅ MIT | ✅ AGPL-3.0 + Commercial |
@@ -518,7 +526,7 @@ OpenAI Frontier launched **February 5, 2026** as OpenAI's enterprise-focused aut
 | **Multi-tenancy** | ✅ RLS | ❌ | Per-account | Per-workspace | ❌ | Enterprise tier | ❌ | ❌ |
 | **Vault / SecretsManager** | ✅ env/keyring/Vault/OpenBao | Cloud vault | OAuth tokens | ❌ | ❌ | Enterprise vault | ❌ | ❌ |
 | **Multi-agent (swarms/teams)** | ✅ | ❌ | ❌ | Single-agent | Task delegation | Agent orchestration | ❌ | ❌ |
-| **274 MCP tools** | ✅ | Limited | Limited | Limited | Limited | Limited | Minimal | Basic |
+| **330 MCP tools** | ✅ | Limited | Limited | Limited | Limited | Limited | Minimal | Basic |
 | **Kubernetes / Helm** | ✅ | ❌ | N/A | N/A | ✅ | N/A | ❌ | ❌ |
 | **Open source** | ✅ AGPL-3.0 + Commercial | ✅ MIT fork | ❌ Proprietary (Meta) | ❌ Proprietary | ✅ MIT | ❌ Proprietary | ✅ | ✅ |
 | **Binary size** | ~123 MB | Unknown | N/A | N/A | N/A | N/A | ~12 MB | N/A |
@@ -543,9 +551,9 @@ OpenAI Frontier launched **February 5, 2026** as OpenAI's enterprise-focused aut
 - **Networking**: Twingate zero-trust proxy, 38 network security tools, 15 Kali tools, mTLS, credential proxy
 - **Knowledge**: Hybrid FTS+RRF vector memory, per-personality scoping, content chunking, context compaction
 - **Orchestration**: DAG workflows (19 step types, visual builder), swarms, teams, A2A federation, agent evaluation harness
-- **AI/ML**: 13 providers, training pipeline (distillation + LoRA + LLM-as-Judge), ML lifecycle (A/B testing, experiment registry)
+- **AI/ML**: 13 providers, training pipeline (distillation + LoRA + pre-training from scratch + LLM-as-Judge), federated learning (6 aggregation strategies, differential privacy), ML lifecycle (A/B testing, experiment registry), inline AI completion
 - **Operations**: Backup & DR, audit log export, compliance reporting, event subscriptions, Kubernetes Helm, multi-region HA
-- **Ecosystem**: 274 MCP tools, 32 integrations, 87 community skills, 31 themes, React dashboard with Mission Control
+- **Ecosystem**: 330 MCP tools, 32 integrations, 87 community skills, 42 themes, React dashboard with Mission Control
 
 Backed by ~16,100 tests across core, dashboard, and MCP packages.
 
@@ -553,4 +561,4 @@ Backed by ~16,100 tests across core, dashboard, and MCP packages.
 
 ---
 
-*Updated: 2026-03-05*
+*Updated: 2026-03-06*

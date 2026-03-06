@@ -118,6 +118,8 @@ export const McpFeaturesSchema = z
     exposeEval: z.boolean().default(false),
     /** DLP tools (dlp_*). Requires global exposeDlp. */
     exposeDlp: z.boolean().default(false),
+    /** Terminal tools (terminal_*). Requires global exposeTerminal. */
+    exposeTerminal: z.boolean().default(false),
   })
   .default({});
 

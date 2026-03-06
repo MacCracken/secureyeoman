@@ -1,5 +1,7 @@
 # Network Evaluation & Protection Tools
 
+> **WARNING:** Before enabling network tools, configure `MCP_ALLOWED_NETWORK_TARGETS` to restrict which hosts and subnets the tools can reach. Without an explicit allowlist, all active tools (SSH, ping, traceroute) are blocked by default. See [Scope Enforcement](#scope-enforcement) for details.
+
 YeomanMCP includes a network automation and evaluation toolkit (Phase 46) covering SSH device automation, topology discovery, routing/switching analysis, security auditing, NetBox source-of-truth integration, NVD CVE lookup, subnet utilities, and PCAP analysis.
 
 ---
@@ -57,12 +59,12 @@ MCP_ALLOWED_NETWORK_TARGETS=*
 
 # ── NetBox ─────────────────────────────────────────────────────────────────
 NETBOX_URL=https://netbox.example.com
-NETBOX_TOKEN=your_netbox_api_token_here
+NETBOX_TOKEN=<your-netbox-token>
 
 # ── NVD CVE Database ───────────────────────────────────────────────────────
 # Optional — without it, rate limited to 5 requests per 30 seconds.
 # Register at https://nvd.nist.gov/developers/request-an-api-key
-NVD_API_KEY=your_nvd_api_key_here
+NVD_API_KEY=<your-nvd-api-key>
 ```
 
 ---

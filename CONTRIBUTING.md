@@ -154,13 +154,18 @@ packages/
 ├── core/
 │   └── src/
 │       ├── *.test.ts          # Unit & storage tests (storage tests need secureyeoman_test DB)
+│       ├── __e2e__/           # Backend E2E tests (real HTTP + real DB, Vitest)
 │       └── __integration__/   # Full integration tests (need running server + DB)
-└── dashboard/
+├── dashboard/
+│   ├── src/
+│   │   └── *.test.ts          # React component tests (jsdom, no DB required)
+│   └── e2e/                   # Frontend E2E tests (Playwright + Chromium)
+└── mcp/
     └── src/
-        └── *.test.ts          # React component tests (jsdom, no DB required)
+        └── *.test.ts          # MCP tool tests
 ```
 
-**Current totals**: 400 test files · 8420 tests · 8419 passing · 1 intentionally skipped
+**Current totals**: ~16,200 tests across 768+ files (unit + DB + E2E + dashboard + MCP)
 
 ### Test Categories
 
@@ -169,7 +174,9 @@ packages/
 | Unit (shared types, utils) | No | `shared/src/types/*.test.ts` |
 | Unit (mocked storage) | No | `core/src/multimodal/*.test.ts` |
 | Storage (real SQL) | Yes — `secureyeoman_test` | `core/src/brain/brain.test.ts` |
+| Backend E2E (real HTTP + DB) | Yes — `secureyeoman_test` | `core/src/__e2e__/*.e2e.test.ts` |
 | Dashboard components | No (jsdom) | `dashboard/src/components/*.test.tsx` |
+| Frontend E2E (Playwright) | No (browser) | `dashboard/e2e/*.spec.ts` |
 | Integration | Yes — running server | `core/src/__integration__/*.test.ts` |
 
 ### Test Coverage

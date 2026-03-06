@@ -56,7 +56,7 @@ security:
 ```yaml
 model:
   provider: anthropic
-  model: claude-sonnet-4-20250514
+  model: claude-sonnet-4-6
   confidentialCompute: required  # Override for this model config
   fallbacks:
     - provider: ollama
@@ -290,7 +290,7 @@ For a personality handling healthcare data:
     "model": "gpt-4o"
   },
   "modelFallbacks": [
-    { "provider": "anthropic", "model": "claude-sonnet-4-20250514" }
+    { "provider": "anthropic", "model": "claude-sonnet-4-6" }
   ]
 }
 ```

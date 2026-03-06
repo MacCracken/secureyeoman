@@ -2532,6 +2532,7 @@ function McpTab({
                   return false;
                 if (t.name.startsWith('kb_') && !featureConfig?.exposeKnowledgeBase) return false;
                 if (t.name.startsWith('docker_') && !featureConfig?.exposeDockerTools) return false;
+                if (t.name.startsWith('terminal_') && !featureConfig?.exposeTerminal) return false;
                 if (t.name.startsWith('gha_') && !featureConfig?.exposeGithubActions) return false;
                 if (t.name.startsWith('jenkins_') && !featureConfig?.exposeJenkins) return false;
                 if (t.name.startsWith('gitlab_') && !featureConfig?.exposeGitlabCi) return false;
@@ -3239,6 +3240,28 @@ function LocalServerCard({
                   checked={featureConfig.exposeDockerTools ?? false}
                   onChange={(e) => {
                     onFeatureToggle({ exposeDockerTools: e.target.checked });
+                  }}
+                  disabled={isFeatureToggling}
+                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                />
+              </label>
+              {/* Terminal */}
+              <label
+                className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                title="Terminal tools — execute shell commands in workspace directories with security filtering (terminal_execute, terminal_tech_stack). Set MCP_EXPOSE_TERMINAL=true."
+              >
+                <Terminal className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-medium">Terminal</span>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    terminal_execute, terminal_tech_stack
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={featureConfig.exposeTerminal ?? false}
+                  onChange={(e) => {
+                    onFeatureToggle({ exposeTerminal: e.target.checked });
                   }}
                   disabled={isFeatureToggling}
                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"

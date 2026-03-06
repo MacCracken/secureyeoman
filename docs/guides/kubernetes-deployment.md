@@ -59,6 +59,8 @@ Images are published to GHCR on tagged releases:
 - `ghcr.io/maccracken/secureyeoman-mcp:<version>`
 - `ghcr.io/maccracken/secureyeoman-dashboard:<version>`
 
+> **Note:** GitHub Container Registry requires all-lowercase image names. The paths above are already lowercase — if you customize the image name, ensure it remains lowercase or `docker pull` will fail.
+
 For private repositories, create an image pull secret:
 
 ```bash

@@ -1065,6 +1065,20 @@ export function getToolManifest(): ToolManifestEntry[] {
       category: 'docker',
     },
 
+    // Terminal tools
+    {
+      name: 'terminal_execute',
+      description:
+        'Execute a shell command in a workspace directory. Commands are validated against a security allowlist and blocked-pattern filter. Returns stdout, stderr, exit code, and cwd.',
+      category: 'terminal',
+    },
+    {
+      name: 'terminal_tech_stack',
+      description:
+        'Detect the tech stack of a workspace directory. Returns detected stacks (node, python, rust, go, etc.) and the corresponding allowed commands.',
+      category: 'terminal',
+    },
+
     // Knowledge Base tools (Phase 82)
     {
       name: 'kb_search',

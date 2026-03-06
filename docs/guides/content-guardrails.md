@@ -61,7 +61,7 @@ security:
   contentGuardrails:
     toxicityEnabled: true
     toxicityMode: block      # block | warn | audit_only
-    toxicityClassifierUrl: "https://your-classifier.example.com/classify"
+    toxicityClassifierUrl: "https://your-classifier.example.com/classify"   # optional — system operates without it (fail-open)
     toxicityThreshold: 0.7
 ```
 

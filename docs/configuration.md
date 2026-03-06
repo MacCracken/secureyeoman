@@ -197,7 +197,7 @@ gateway:
 
 model:
   provider: anthropic            # anthropic | openai | gemini | ollama | opencode
-  model: claude-sonnet-4-20250514
+  model: claude-sonnet-4-6
   apiKeyEnv: ANTHROPIC_API_KEY
   baseUrl: ""                    # optional override
   maxTokens: 16384               # max 200000

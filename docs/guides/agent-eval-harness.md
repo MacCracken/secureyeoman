@@ -68,6 +68,8 @@ curl -X POST http://localhost:3000/api/v1/eval/suites/basic-suite/run
 | `not_contains` | Output must NOT contain substring | `{"type": "not_contains", "value": "error"}` |
 | `semantic` | Cosine similarity above threshold | `{"type": "semantic", "value": "greeting", "threshold": 0.8}` |
 
+> **Tip:** For LLM output testing, prefer `semantic` or `contains` assertions over `exact` assertions. LLM outputs are non-deterministic, so exact matching leads to flaky tests. Semantic assertions tolerate natural variation in wording while still verifying correctness.
+
 ### Expected Tool Calls
 
 Define which tools the agent should call:

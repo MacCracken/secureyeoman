@@ -198,6 +198,10 @@ export const McpServiceConfigSchema = z.object({
   exposeEval: z.boolean().default(false),
   /** Enable DLP tools (dlp_*). Off by default. */
   exposeDlp: z.boolean().default(false),
+  /** Enable terminal tools (terminal_execute, terminal_tech_stack). Off by default. Set MCP_EXPOSE_TERMINAL=true. */
+  exposeTerminal: z.boolean().default(false),
+  /** Allowlist of base commands the personality may run. Empty = use tech-stack auto-detection. */
+  terminalAllowedCommands: z.array(z.string()).default([]),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

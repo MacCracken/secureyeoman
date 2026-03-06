@@ -13,6 +13,8 @@
     "dev:dashboard": "npm run dev --workspace=@secureyeoman/dashboard",
     "dev:mcp": "npm run dev --workspace=@secureyeoman/mcp",
     "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npx vitest run --project core:e2e",
+    "test:e2e:fe": "npx playwright test --config packages/dashboard/playwright.config.ts",
     "bench": "npm run bench --workspace=@secureyeoman/core",
     "lint": "eslint packages/",
     "lint:fix": "eslint packages/ --fix",

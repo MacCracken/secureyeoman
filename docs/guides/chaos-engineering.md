@@ -17,7 +17,7 @@ security:
     maxConcurrentExperiments: 3
     maxExperimentDurationMs: 600000   # 10 minutes
     retainResults: 200
-    safeMode: true
+    safeMode: true          # limits fault injection to non-production targets and caps experiment duration
     allowedTargetTypes:
       - workflow_step
       - ai_provider

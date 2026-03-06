@@ -6,6 +6,29 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.6]
 
+### E2E Test Framework
+
+#### Backend E2E (Vitest + real HTTP + real DB)
+
+- **Framework** (`core/vitest.e2e.config.ts`): New Vitest project `core:e2e` — serial execution, 60s timeouts, `src/__e2e__/**/*.e2e.test.ts` glob.
+- **Test server** (`core/src/__e2e__/helpers.ts`): `startE2EServer()` boots real Fastify on OS-assigned port with real DB. Wires auth, RBAC, rate limiting, audit chain, and all domain managers (Soul, Brain, Workflow). Helpers: `login()`, `authHeaders()`, `authDeleteHeaders()`, `apiKeyHeaders()`.
+- **53 tests** across 7 files:
+  - `health.e2e.test.ts` (3): Health endpoint, version, uptime.
+  - `auth.e2e.test.ts` (12): Login, rejection, token refresh, API keys, RBAC viewer restrictions.
+  - `audit.e2e.test.ts` (3): Login audit entries, failed login audit, chain verification.
+  - `soul.e2e.test.ts` (11): Personality CRUD, activation, presets, pagination.
+  - `brain.e2e.test.ts` (11): Memory CRUD, type filtering, limits, knowledge CRUD, stats.
+  - `workflow.e2e.test.ts` (9): Workflow CRUD, export, import, pagination.
+  - `cross-domain.e2e.test.ts` (4): Personality + memory association, viewer RBAC across domains, multi-entity lifecycle, token isolation.
+
+#### Frontend E2E (Playwright + Chromium)
+
+- **Framework** (`dashboard/playwright.config.ts`): Playwright with Chromium, auto-starts Vite dev server on port 3000, `E2E_BASE_URL` override.
+- **Helpers** (`dashboard/e2e/helpers.ts`): `loginViaUI()`, `expectLoginRedirect()`, `waitForDashboard()`.
+- **36 tests** across 9 spec files:
+  - `login.spec.ts` (5), `navigation.spec.ts` (3), `health.spec.ts` (2), `metrics.spec.ts` (3), `personality.spec.ts` (4), `settings.spec.ts` (4), `security.spec.ts` (3), `auth-guard.spec.ts` (8), `sidebar.spec.ts` (4).
+- **Workspace**: Root `vitest.config.ts` updated with 5th project (`core:e2e`). Root `package.json` gains `test:e2e` and `test:e2e:fe` scripts.
+
 ### Phase 144: IDE Experience — Remaining Features
 
 #### Collaborative Editing (Yjs CRDT)

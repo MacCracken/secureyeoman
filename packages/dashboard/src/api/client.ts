@@ -2036,6 +2036,9 @@ export interface McpConfigResponse {
   gitlabToken?: string;
   exposeNorthflank: boolean;
   northflankApiKey?: string;
+  // Terminal tools
+  exposeTerminal: boolean;
+  terminalAllowedCommands?: string[];
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -2073,6 +2076,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeGitlabCi: false,
       gitlabUrl: 'https://gitlab.com',
       exposeNorthflank: false,
+      exposeTerminal: false,
     };
   }
 }

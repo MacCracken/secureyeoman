@@ -150,7 +150,7 @@ The `/health/deep` endpoint now includes HA-specific checks.
 ```json
 {
   "status": "ok",
-  "version": "2026.3.5",
+  "version": "2026.3.6",
   "uptime": 86400000,
   "components": {
     "database": { "ok": true, "detail": "3ms" },

@@ -149,6 +149,8 @@ const cached = await brain.getMemorySalience(memoryId);
 
 ## Future Features (Scaffolded)
 
+> **Note:** These features are scaffolded for future development and are not yet active.
+
 The following features have types and interfaces defined but are not yet active:
 
 ### LLM Reconsolidation

@@ -1,8 +1,8 @@
-# SecureYeoman — Your Personal AI Yeoman
+# SecureYeoman — Your AI. Your Rules. Your Infrastructure.
 
-Most AI assistants work for the platform that hosts them. SecureYeoman works for you — self-hosted, enterprise-hardened, and answerable only to you. Your data doesn't have to train their models. Your conversations and data don't have to be their product.
+Most AI assistants serve their platform. SecureYeoman serves you — self-hosted, enterprise-hardened, and answerable only to you. Keep it local. Go hybrid. Connect any provider. Your data only moves when you say so.
 
-**v2026.3.5** | AGPL-3.0 License | 274 MCP Tools | 39 CLI Commands
+**v2026.3.6** | AGPL-3.0 License | 330 MCP Tools | 41 CLI Commands
 
 ---
 
@@ -43,12 +43,12 @@ Injection detection scoring, PII scanning (SSN, credit card, email, phone), toxi
 - Toxicity & topic guardrails
 - ResponseGuard output scanner
 
-### 4. 274 MCP Tools & Integrations
+### 4. 330 MCP Tools & Integrations
 
-32 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, Gmail, GitHub, Jira, Linear, Notion, and more. 274 built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection, rate limiting, and audit logging.
+32 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, Gmail, GitHub, Jira, Linear, Notion, and more. 330 built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection, rate limiting, and audit logging.
 
 - 32 platform integrations
-- 274 tools, 9 resources, 4 prompts
+- 330 tools, 9 resources, 4 prompts
 - SSRF protection + rate limiting
 - Full audit trail on every tool call
 
@@ -135,7 +135,7 @@ Preference annotation, experiment registry, model versioning, A/B testing, and c
 | Data Residency | 100% local | Cloud default | Docker | Local | TEE cloud |
 | RBAC + SSO | Full | None | None | None | None |
 | Multi-tenancy | RLS-enforced | No | No | No | No |
-| MCP Tools | 274 | Limited | External | Client | Via path |
+| MCP Tools | 330 | Limited | External | Client | Via path |
 | Cryptographic Audit | HMAC-SHA256 | No | No | No | Local DB only |
 | Workflow Orchestration | DAG + Visual | No | No | No | No |
 | Integrations | 32 platforms | 23+ | CLI/Web | 11+ | ~4 |
@@ -160,7 +160,7 @@ cd secureyeoman && npm install && npm run build
 ## Community
 
 - **License**: AGPL-3.0
-- **ADRs**: 19
+- **ADRs**: 29
 - **GitHub**: [github.com/MacCracken/secureyeoman](https://github.com/MacCracken/secureyeoman)
 - **Discussions**: [GitHub Discussions](https://github.com/MacCracken/secureyeoman/discussions)
 

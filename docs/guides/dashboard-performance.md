@@ -1,6 +1,6 @@
 # Dashboard Performance Guide
 
-This guide describes the patterns established during the dashboard performance optimization pass (ADR 159). Follow these patterns when adding new components or pages.
+This guide describes the patterns established during the dashboard performance optimization pass ([ADR 007 — Dashboard & Editor](../adr/007-dashboard-and-editor.md)). Follow these patterns when adding new components or pages.
 
 ---
 

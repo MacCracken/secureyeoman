@@ -410,6 +410,7 @@ export function filterMcpTools(
     [(n) => n.startsWith('twingate_'), (_g, p) => !!(globalTwingateOk && p.exposeTwingate)],
     [(n) => n.startsWith('gmail_'), (g, p) => !!(g.exposeGmail && p.exposeGmail)],
     [(n) => n.startsWith('twitter_'), (g, p) => !!(g.exposeTwitter && p.exposeTwitter)],
+    [(n) => n.startsWith('terminal_'), (g, p) => !!(g.exposeTerminal && p.exposeTerminal)],
   ];
 
   for (const tool of allMcpTools) {

@@ -1,6 +1,6 @@
 # Teams — Dynamic Auto-Manager Agent Teams
 
-**Phase 83** | ADR 163
+**Phase 83** | [ADR 004 — Agents & Orchestration](../adr/004-agents-and-orchestration.md)
 
 A **Team** is a dynamic multi-agent coordinator: instead of a pre-wired delegation graph (like Swarms), a coordinator LLM reads team member descriptions and decides who to assign each task to at runtime.
 

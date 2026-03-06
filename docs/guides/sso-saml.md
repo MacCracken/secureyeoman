@@ -113,6 +113,8 @@ When a user logs in via SAML, SecureYeoman reads the `groupAttribute` from the S
 
 Group names are case-sensitive and must match the exact value sent by the IdP in the SAML assertion attribute.
 
+> **Note:** If a user's group does not match any key in `groupRoleMap`, they are assigned the `viewer` role by default.
+
 ---
 
 ## Listing and Managing Providers

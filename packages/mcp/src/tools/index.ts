@@ -50,6 +50,7 @@ import { registerTeeTools } from './tee-tools.js';
 import { registerTrainingTools } from './training-tools.js';
 import { registerEvalTools } from './eval-tools.js';
 import { registerDlpTools } from './dlp-tools.js';
+import { registerTerminalTools } from './terminal-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -121,4 +122,6 @@ export async function registerAllTools(
   registerEvalTools(server, client, middleware);
   // DLP tools (Phase 136-F)
   registerDlpTools(server, client, config, middleware);
+  // Terminal tools
+  registerTerminalTools(server, client, config, middleware);
 }

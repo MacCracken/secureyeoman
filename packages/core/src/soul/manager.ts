@@ -297,6 +297,7 @@ export class SoulManager {
             exposeTee: false,
             exposeEval: false,
             exposeDlp: false,
+            exposeTerminal: false,
           },
           proactiveConfig: {
             enabled: false,
@@ -730,6 +731,7 @@ export class SoulManager {
       exposeWebSearch: false,
       exposeBrowser: false,
       exposeDesktopControl: false,
+      exposeTerminal: false,
     };
     if (selectedServers.length > 0) {
       lines.push('');
@@ -745,7 +747,7 @@ export class SoulManager {
         webParts.push('disabled');
       }
       lines.push(
-        `Tool categories — Git: ${mcpFeatures.exposeGit ? 'enabled' : 'disabled'}, Filesystem: ${mcpFeatures.exposeFilesystem ? 'enabled' : 'disabled'}, Web: ${webParts[0]}, Browser: ${mcpFeatures.exposeBrowser ? 'enabled' : 'disabled'}`
+        `Tool categories — Git: ${mcpFeatures.exposeGit ? 'enabled' : 'disabled'}, Filesystem: ${mcpFeatures.exposeFilesystem ? 'enabled' : 'disabled'}, Web: ${webParts[0]}, Browser: ${mcpFeatures.exposeBrowser ? 'enabled' : 'disabled'}, Terminal: ${mcpFeatures.exposeTerminal ? 'enabled' : 'disabled'}`
       );
     }
 

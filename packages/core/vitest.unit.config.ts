@@ -18,8 +18,9 @@ const sqlRaw: Plugin = {
  * Keep in sync with vitest.db.config.ts include list.
  */
 const DB_TEST_EXCLUDE = [
-  // Explicit integration test directory
+  // Explicit integration / e2e test directories
   'src/__integration__/**',
+  'src/__e2e__/**',
   // Storage tests that use real DB (setupTestDb/initPool).
   // Mock-based *-storage.test.ts files are NOT excluded — they run here.
   'src/backup/backup-storage.test.ts',

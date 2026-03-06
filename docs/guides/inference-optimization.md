@@ -172,6 +172,8 @@ Each warmed model consumes VRAM for the keep-alive duration. Monitor GPU memory 
 
 ## Speculative Decoding (Roadmap)
 
+> **Note:** Speculative decoding is a planned feature and is not yet available. The configuration below is a scaffold for the future implementation.
+
 Phase 132 adds a `draftModel` configuration field but does not implement speculative decoding logic. This establishes the configuration path for Phase 132-B.
 
 ### Configuration (Scaffold Only)

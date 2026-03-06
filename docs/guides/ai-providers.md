@@ -110,8 +110,8 @@ LETTA_API_KEY=sk-letta-...
 Available models (Letta `provider/model-id` format):
 - `openai/gpt-4o` -- GPT-4o via Letta (requires OpenAI key in Letta settings)
 - `openai/gpt-4o-mini` -- Fast, cost-effective
-- `anthropic/claude-sonnet-4-20250514` -- Claude Sonnet via Letta
-- `anthropic/claude-haiku-3-5-20241022` -- Fast Claude via Letta
+- `anthropic/claude-sonnet-4-6` -- Claude Sonnet via Letta
+- `anthropic/claude-haiku-4-5-20251001` -- Fast Claude via Letta
 
 Cost: Letta charges for the underlying model's tokens plus any Letta platform fee.
 See [letta.com/pricing](https://letta.com/pricing) for current rates.

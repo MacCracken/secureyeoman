@@ -1,11 +1,11 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.3.5-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.3.5)
+[![Version](https://img.shields.io/badge/Version-2026.3.6-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.3.6)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: ~16,100](https://img.shields.io/badge/Tests-~16%2C100-brightgreen.svg)]()
+[![Tests: ~16,200](https://img.shields.io/badge/Tests-~16%2C200-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 
 > **Your AI. Your Rules. Your Infrastructure.**
@@ -54,7 +54,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 
 - **Self-hosted, not SaaS** — single binary, Docker, or Kubernetes. Your data stays on your machines.
 - **Governed by design** — RBAC, audit trails, cryptographic integrity, sandboxed execution, OPA/CEL governance.
-- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 274-tool MCP server.
+- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 330-tool MCP server.
 - **Full ML lifecycle** — distillation, LoRA fine-tuning, LLM-as-Judge evaluation, DPO, conversation analytics.
 
 ---
@@ -63,14 +63,14 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 
 | Area | Highlights |
 |------|-----------|
-| **Security** | JWT/OIDC/SAML auth, RBAC, AES-256-GCM encryption, mTLS, sandboxing (Landlock/seccomp/gVisor/WASM), prompt security, content guardrails, DLP (PII detection, classification, watermarking), secrets management (Vault/OpenBao) |
+| **Security** | JWT/OIDC/SAML auth, RBAC, AES-256-GCM encryption, mTLS, sandboxing (Landlock/seccomp/gVisor/WASM, 4 built-in profiles), prompt security, content guardrails, DLP (PII detection, classification, watermarking), secrets management (Vault/OpenBao), chaos engineering |
 | **AI Models** | 13 providers (Anthropic, OpenAI, Gemini, Ollama, DeepSeek, Mistral, Grok + more), multi-account cost tracking, automatic fallback, local-first routing |
 | **Agents** | Sub-agent delegation, swarms (3 strategies, 5 templates), teams, Council of AIs, A2A protocol, cross-instance federation |
 | **Workflows** | DAG orchestration (19 step types), visual ReactFlow builder, human approval gates, 10 built-in templates |
-| **Training** | Dataset export, distillation, LoRA fine-tuning, LLM-as-Judge eval, DPO/RLHF, conversation analytics, A/B experiments |
-| **Dashboard** | React + Vite + Tailwind (53 themes), mission control, real-time CRDT editing, conversation branching, canvas workspace |
+| **Training** | Dataset export, distillation, LoRA fine-tuning, pre-training from scratch, LLM-as-Judge eval, DPO/RLHF, federated learning, conversation analytics, A/B experiments |
+| **Dashboard** | React + Vite + Tailwind (42 themes), mission control, real-time CRDT editing, conversation branching, canvas workspace, inline AI completion |
 | **Integrations** | 32 platforms (Slack, Discord, GitHub, Gmail, Teams, WhatsApp + more), 21 CI/CD tools, security toolkits (Kali, network, Docker) |
-| **MCP** | 274 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
+| **MCP** | 330 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
 | **Enterprise** | Multi-tenancy (PostgreSQL RLS), multi-region HA, DLP, supply chain security (SBOM, SLSA, signed releases), OpenTelemetry, Prometheus/Grafana |
 | **Knowledge** | Document ingestion (PDF, HTML, MD, URL, GitHub Wiki), RAG with hybrid FTS+vector search, cognitive memory (ACT-R, Hebbian learning) |
 | **Deployment** | Single binary (~123 MB), Docker, Kubernetes Helm chart; Linux x64/arm64, macOS arm64, Windows x64 |
@@ -105,7 +105,7 @@ secureyeoman health                             # check server health
 secureyeoman status --profile                   # server status + memory profiling
 secureyeoman model switch anthropic claude-sonnet-4-6
 secureyeoman tui                                # full-screen terminal dashboard
-secureyeoman help                               # all 39 commands
+secureyeoman help                               # all 41 commands
 ```
 
 **MCP Integration** — Connect to any MCP-compatible client (Claude Desktop, etc.):
@@ -148,11 +148,11 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | **[Security Model](docs/security/security-model.md)** | Threat model and security controls |
 | **[White Paper](docs/white-paper.md)** | Architectural sovereignty & agentic governance |
 | **[Architecture](docs/development/architecture.md)** | System architecture overview |
-| **[ADRs](docs/adr/)** | 19 Architecture Decision Records |
+| **[ADRs](docs/adr/)** | 29 Architecture Decision Records |
 | **[Roadmap](docs/development/roadmap.md)** | Development roadmap |
 | **[Changelog](CHANGELOG.md)** | Release history |
 
-**Guides** — See [`docs/guides/`](docs/guides/) for 49 topic guides including [AI Providers](docs/guides/ai-providers.md), [Integrations](docs/guides/integrations.md), [Knowledge & Memory](docs/guides/knowledge-memory.md), [Workflows](docs/guides/workflows.md), [Swarms](docs/guides/swarms.md), [SSO/SAML](docs/guides/sso-saml.md), [DLP](docs/guides/data-loss-prevention.md), [Multi-Region HA](docs/guides/multi-region-ha.md), [Observability](docs/guides/observability.md), [Security Testing](docs/guides/security-testing.md), and more.
+**Guides** — See [`docs/guides/`](docs/guides/) for 65 topic guides including [AI Providers](docs/guides/ai-providers.md), [Integrations](docs/guides/integrations.md), [Knowledge & Memory](docs/guides/knowledge-memory.md), [Workflows](docs/guides/workflows.md), [Swarms](docs/guides/swarms.md), [SSO/SAML](docs/guides/sso-saml.md), [DLP](docs/guides/data-loss-prevention.md), [Multi-Region HA](docs/guides/multi-region-ha.md), [Observability](docs/guides/observability.md), [Security Testing](docs/guides/security-testing.md), and more.
 
 ---
 

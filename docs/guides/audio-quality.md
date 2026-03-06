@@ -51,6 +51,8 @@ curl -X POST http://localhost:4001/api/v1/multimodal/audio/speak/stream \
 file /tmp/hello.mp3  # → MPEG audio data
 ```
 
+> **Note:** Port 4001 in the examples above is a common local dev proxy port. The core API listens on port 18789 by default — the audio streaming endpoint is part of the core API at `/api/v1/multimodal/audio/speak/stream`. Adjust the port to match your deployment (e.g. `http://localhost:18789/...`).
+
 ---
 
 ## Audio Validation Before STT

@@ -84,6 +84,8 @@ curl -X POST /api/v1/training/pretrain/jobs/{jobId}/cancel
 curl -X DELETE /api/v1/training/pretrain/jobs/{jobId}
 ```
 
+> **GPU VRAM requirements** vary by model size: ~4 GB for 125M parameters, ~8 GB for 350M, ~24 GB for 1.3B, ~48 GB for 3B.
+
 ## Model Architectures
 
 | Architecture | Description | Typical Size |

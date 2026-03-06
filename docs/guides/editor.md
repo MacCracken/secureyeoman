@@ -387,7 +387,7 @@ If `override: true`: executes and logs a `terminal_override` audit event.
 
 # Notebook Mode -- Long Context Windowing
 
-> ADR 165 | NotebookLM-style source grounding
+> [ADR 007 — Dashboard & Editor](../adr/007-dashboard-and-editor.md) | NotebookLM-style source grounding
 
 Notebook Mode loads your entire Knowledge Base corpus into the AI's context window at inference time -- every document, every chunk, fully visible. No retrieval step; no missed context. Think of it as the AI reading all your notes before answering, rather than searching for relevant snippets.
 

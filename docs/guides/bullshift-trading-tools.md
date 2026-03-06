@@ -1,9 +1,11 @@
 # BullShift Trading Tools — MCP Integration Guide
 
 SecureYeoman's MCP service exposes 5 tools that connect to a
-[BullShift](https://github.com/yourusername/bullshift) REST API server, letting
+[BullShift](https://github.com/MacCracken/bullshift) REST API server, letting
 any MCP client (Claude Desktop, SecureYeoman agents, your own scripts) query
 positions and submit trades through natural language or tool calls.
+
+> **WARNING:** Setting `ALPACA_SANDBOX=false` executes real money trades. Always test in sandbox mode first.
 
 ---
 

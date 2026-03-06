@@ -68,7 +68,7 @@ Approximate Shapley values for input tokens using leave-one-out perturbation. Ea
 ```bash
 POST /api/v1/responsible-ai/shap
 {
-  "modelName": "claude-sonnet-4-20250514",
+  "modelName": "claude-sonnet-4-6",
   "prompt": "Explain quantum computing",
   "response": "Quantum computing uses...",
   "dimension": "groundedness"
@@ -112,7 +112,7 @@ Auto-generate structured model cards aligned with the Hugging Face Model Card fo
 POST /api/v1/responsible-ai/model-cards
 {
   "personalityId": "p-1",
-  "modelName": "claude-sonnet-4-20250514",
+  "modelName": "claude-sonnet-4-6",
   "intendedUse": "Customer support chatbot",
   "limitations": "May hallucinate product details",
   "riskClassification": "limited"

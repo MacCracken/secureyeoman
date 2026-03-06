@@ -917,6 +917,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeTee: false,
               exposeEval: false,
               exposeDlp: false,
+              exposeTerminal: false,
             },
             proactiveConfig: {
               enabled: false,

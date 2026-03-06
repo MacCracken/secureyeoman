@@ -93,7 +93,9 @@ registerMyTools(server, client, middleware);
 
 ## Step 3 — Add to `manifest.ts`
 
-**This is the most important step.** Open `packages/mcp/src/tools/manifest.ts` and add entries for each new tool:
+> **IMPORTANT:** Tools MUST be registered in `manifest.ts` to be visible. Tools in `index.ts` but missing from `manifest.ts` will be silently invisible.
+
+Open `packages/mcp/src/tools/manifest.ts` and add entries for each new tool:
 
 ```typescript
 export const TOOL_MANIFEST: ToolManifestEntry[] = [

@@ -133,7 +133,7 @@ Access is gated at **two levels**. Both must be enabled for the personality to u
 ### Level 1 — Global (Connections → MCP)
 
 1. Go to **Settings → Connections → MCP**.
-2. Click on **YEOMAN MCP** to expand it.
+2. Click on **SecureYeoman MCP** to expand it.
 3. Under **Connected Account Tools**, toggle on **Gmail** and/or **Twitter / X**.
 
 The tool count badge updates immediately. When the global toggle is off, personality-level toggles

@@ -180,6 +180,8 @@ The MCP service reaches the core gateway at `https://core:18789` (Docker-interna
 
 The MCP `CoreApiClient` handles this automatically: when `MCP_CORE_URL` starts with `https://`, it uses a per-connection undici `Agent` with `rejectUnauthorized: false` for all MCP→core calls. All other HTTPS calls made by the MCP process (web scraping, external APIs) still use the default agent and perform full certificate verification.
 
+> **WARNING:** Disabling TLS verification (`rejectUnauthorized: false`) bypasses certificate validation. Use only in development.
+
 No `NODE_TLS_REJECT_UNAUTHORIZED` env var is needed.
 
 ### DNS

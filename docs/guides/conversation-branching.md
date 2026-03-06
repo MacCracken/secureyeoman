@@ -19,7 +19,7 @@ When you fork a conversation from any message, SecureYeoman creates a branch tre
 The default view renders the branch hierarchy as a directed graph using ReactFlow. Each node shows:
 - Conversation title
 - Message count
-- Quality score (when available)
+- Quality score (when available) — computed from user feedback ratings and LLM-as-Judge evaluations on a 0–1 scale
 - Branch label
 
 Click any node to navigate to that conversation. The active conversation is highlighted with a primary-color ring.

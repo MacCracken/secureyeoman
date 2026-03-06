@@ -65,6 +65,9 @@ export interface McpFeatureConfig {
   gitlabToken?: string;
   exposeNorthflank: boolean;
   northflankApiKey?: string;
+  // Terminal tools
+  exposeTerminal: boolean;
+  terminalAllowedCommands: string[];
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -99,6 +102,8 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   exposeJenkins: false,
   exposeGitlabCi: false,
   exposeNorthflank: false,
+  exposeTerminal: false,
+  terminalAllowedCommands: [],
 };
 
 export class McpStorage extends PgBaseStorage {

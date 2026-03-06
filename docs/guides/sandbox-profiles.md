@@ -23,6 +23,8 @@ Locked-down for production. Credential proxy required for all external calls. To
 ### High Security
 Maximum isolation. Landlock enforcement, no network access, minimal filesystem (`/tmp` only), 512 MB memory cap, 15-second timeout. Extended tool blocklist covers shell, file write, Docker, and browser operations.
 
+> **`prod` vs `high-security`:** Use `prod` when the agent needs HTTPS outbound access for API calls (e.g., calling external services via the credential proxy). Use `high-security` when the agent must be fully air-gapped with no network access at all.
+
 ## Configuration
 
 Set the active profile in your config:

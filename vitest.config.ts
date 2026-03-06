@@ -14,6 +14,8 @@ export default defineConfig({
       'packages/dashboard/vitest.config.ts',
       // mcp — node tests, parallel
       'packages/mcp/vitest.config.ts',
+      // core:e2e — real HTTP + real DB, serial
+      'packages/core/vitest.e2e.config.ts',
     ],
   },
 });

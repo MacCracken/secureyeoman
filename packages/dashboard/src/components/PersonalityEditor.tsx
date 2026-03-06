@@ -43,6 +43,7 @@ import {
   Download,
   Upload,
   Sparkles,
+  Terminal,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -2837,6 +2838,7 @@ interface BodySectionProps {
     exposeTwitter: boolean;
     exposeGithub: boolean;
     exposeDocker: boolean;
+    exposeTerminal: boolean;
   };
   onMcpFeaturesChange: (features: {
     exposeGit: boolean;
@@ -2858,6 +2860,7 @@ interface BodySectionProps {
     exposeTwitter: boolean;
     exposeGithub: boolean;
     exposeDocker: boolean;
+    exposeTerminal: boolean;
   }) => void;
   creationConfig: {
     skills: boolean;
@@ -4240,6 +4243,36 @@ function BodySection({
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
+                              {/* Terminal */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeTerminal
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <Terminal className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-xs flex-1">
+                                  Terminal
+                                  {!globalMcpConfig?.exposeTerminal && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Terminal in Connections &gt; MCP first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeTerminal}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeTerminal: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeTerminal}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
                             </div>
                           </div>
                         )}
@@ -4654,6 +4687,7 @@ export function PersonalityEditor({
     exposeTwitter: boolean;
     exposeGithub: boolean;
     exposeDocker: boolean;
+    exposeTerminal: boolean;
   }>({
     exposeGit: false,
     exposeFilesystem: false,
@@ -4674,6 +4708,7 @@ export function PersonalityEditor({
     exposeTwitter: false,
     exposeGithub: false,
     exposeDocker: false,
+    exposeTerminal: false,
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
@@ -4972,6 +5007,7 @@ export function PersonalityEditor({
       exposeTwitter: body.mcpFeatures?.exposeTwitter ?? false,
       exposeGithub: body.mcpFeatures?.exposeGithub ?? false,
       exposeDocker: body.mcpFeatures?.exposeDocker ?? false,
+      exposeTerminal: body.mcpFeatures?.exposeTerminal ?? false,
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
@@ -5115,6 +5151,7 @@ export function PersonalityEditor({
       exposeTwitter: false,
       exposeGithub: false,
       exposeDocker: false,
+      exposeTerminal: false,
     });
     setProactiveConfig({
       enabled: false,
