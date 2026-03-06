@@ -11,6 +11,7 @@ export type MissionCardId =
   | 'system-topology'
   | 'cost-breakdown'
   | 'agent-world'
+  | 'the-entity'
   | 'financial-charts';
 
 export interface CardDef {
@@ -120,6 +121,14 @@ export const CARD_REGISTRY: readonly CardDef[] = [
     defaultVisible: false,
     minColSpan: 12,
     defaultColSpan: 12,
+  },
+  {
+    id: 'the-entity',
+    label: 'The Entity',
+    description: 'AI consciousness visualization — neural network reacting to AI state',
+    defaultVisible: false,
+    minColSpan: 6,
+    defaultColSpan: 6,
   },
   {
     id: 'financial-charts',

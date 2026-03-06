@@ -22,6 +22,7 @@ import { GuardrailPipelineConfigSchema } from './guardrail-pipeline.js';
 import { AgentReplayConfigSchema } from './agent-replay.js';
 import { PolicyAsCodeConfigSchema } from './policy-as-code.js';
 import { IacConfigSchema } from './iac.js';
+import { ChaosEngineeringConfigSchema } from './chaos-engineering.js';
 import { ExternalizationPolicySchema } from './sandbox-scanning.js';
 import { z as zz } from 'zod';
 
@@ -1122,6 +1123,8 @@ export const SecurityDomainConfigSchema = z.object({
   policyAsCode: PolicyAsCodeConfigSchema,
   /** Infrastructure-as-Code: Git-backed IaC template management with validation. */
   iac: IacConfigSchema,
+  /** Chaos Engineering: Fault injection for workflow resilience testing. */
+  chaos: ChaosEngineeringConfigSchema,
 });
 export type SecurityDomainConfig = z.infer<typeof SecurityDomainConfigSchema>;
 

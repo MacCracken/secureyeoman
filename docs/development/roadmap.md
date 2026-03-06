@@ -189,7 +189,7 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 - [ ] **WebAuthn/FIDO2 auth** — Hardware key authentication for admins.
 - [ ] **Agent sandboxing profiles** — Named sandbox configs (dev/prod/high-security).
 - [ ] **Offline-first PWA** — ServiceWorker + IndexedDB. Closes mobile gap without native apps.
-- [ ] **Chaos engineering toolkit** — Fault injection for workflow resilience testing.
+- [x] **Chaos engineering toolkit** — Fault injection for workflow resilience testing. *(Done — ADR 025, `chaos/` module with 8 fault types, 7 targets, 9 REST endpoints, 53 tests.)*
 - [ ] **Conversation branching visualization** — Visual tree with diff view.
 - [ ] **Federated learning** — Multi-instance model improvement with differential privacy.
 

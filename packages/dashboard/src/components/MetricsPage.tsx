@@ -69,6 +69,7 @@ import {
 import type { CostBreakdownResponse, CostHistoryParams, WorkflowDefinition } from '../api/client';
 import { ErrorBoundary } from './common/ErrorBoundary';
 import { AgentWorldWidget } from './AgentWorldWidget';
+import { EntityWidget } from './EntityWidget';
 import type {
   MetricsSnapshot,
   HealthStatus,
@@ -1123,6 +1124,19 @@ const CostBreakdownSection = memo(function CostBreakdownSection({
   );
 });
 
+const EntitySection = memo(function EntitySection() {
+  return (
+    <div className="rounded-lg border border-cyan-900/50 bg-gray-900/80 p-0 overflow-hidden">
+      <EntityWidget
+        state="active"
+        height={380}
+        showLabel
+        label="THE ENTITY"
+      />
+    </div>
+  );
+});
+
 const FinancialChartsSection = memo(function FinancialChartsSection(_props: SectionCommonProps) {
   return <FinancialChartsCard />;
 });
@@ -1244,6 +1258,8 @@ const MissionCardContent = memo(function MissionCardContent({
       return <SystemTopologySection {...sectionProps} />;
     case 'cost-breakdown':
       return <CostBreakdownSection {...sectionProps} />;
+    case 'the-entity':
+      return <EntitySection />;
     case 'financial-charts':
       return <FinancialChartsSection {...sectionProps} />;
   }
@@ -1402,7 +1418,18 @@ function MissionControlTab({
     ]
   );
 
-  const sorted = [...cardLayouts].sort((a, b) => a.order - b.order);
+  // Easter egg: auto-reveal The Entity card when "THE ENTITY" personality is active
+  const hasEntityPersonality = activePersonalities.some(
+    (p: Personality) => p.name.toLowerCase().replace(/\s+/g, '') === 'theentity'
+  );
+
+  const sorted = [...cardLayouts]
+    .map((c) =>
+      c.id === 'the-entity' && hasEntityPersonality && !c.visible
+        ? { ...c, visible: true }
+        : c
+    )
+    .sort((a, b) => a.order - b.order);
 
   return (
     <>

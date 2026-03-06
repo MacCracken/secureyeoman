@@ -750,6 +750,46 @@ export {
   type IacConfig,
 } from './iac.js';
 
+// Chaos Engineering types
+export {
+  FaultTypeSchema,
+  ChaosTargetTypeSchema,
+  ChaosExperimentStatusSchema,
+  LatencyFaultConfigSchema,
+  ErrorFaultConfigSchema,
+  TimeoutFaultConfigSchema,
+  ResourceExhaustionFaultConfigSchema,
+  DependencyFailureFaultConfigSchema,
+  DataCorruptionFaultConfigSchema,
+  CircuitBreakerTripFaultConfigSchema,
+  RateLimitFaultConfigSchema,
+  FaultConfigSchema,
+  FaultRuleSchema,
+  ChaosExperimentSchema,
+  ChaosExperimentCreateSchema,
+  FaultInjectionResultSchema,
+  ChaosExperimentResultSchema,
+  ChaosEngineeringConfigSchema,
+  type FaultType,
+  type ChaosTargetType,
+  type ChaosExperimentStatus,
+  type LatencyFaultConfig,
+  type ErrorFaultConfig,
+  type TimeoutFaultConfig,
+  type ResourceExhaustionFaultConfig,
+  type DependencyFailureFaultConfig,
+  type DataCorruptionFaultConfig,
+  type CircuitBreakerTripFaultConfig,
+  type RateLimitFaultConfig,
+  type FaultConfig,
+  type FaultRule,
+  type ChaosExperiment,
+  type ChaosExperimentCreate,
+  type FaultInjectionResult,
+  type ChaosExperimentResult,
+  type ChaosEngineeringConfig,
+} from './chaos-engineering.js';
+
 // Policy-as-Code types
 export {
   PolicyLanguageSchema,

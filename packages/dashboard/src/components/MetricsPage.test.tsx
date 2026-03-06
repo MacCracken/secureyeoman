@@ -31,6 +31,13 @@ vi.mock('recharts', () => ({
   Legend: () => null,
 }));
 
+// ── Mock EntityWidget (canvas + ResizeObserver not available in jsdom)
+vi.mock('./EntityWidget', () => ({
+  EntityWidget: (props: Record<string, unknown>) => (
+    <div data-testid="entity-widget" data-state={props.state ?? 'dormant'} />
+  ),
+}));
+
 // ── Capture navigate calls ────────────────────────────────────────────
 
 const mockNavigate = vi.fn();

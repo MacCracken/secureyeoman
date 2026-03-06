@@ -4,6 +4,21 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.8] — 2026-03-06
+
+### Chaos Engineering Toolkit (ADR 025)
+
+- **Shared types** (`shared/types/chaos-engineering.ts`): `ChaosExperiment`, `FaultRule`, `FaultConfig`, `ChaosExperimentResult`, `FaultInjectionResult`, `ChaosEngineeringConfig` Zod schemas. 8 fault types (latency, error, timeout, resource_exhaustion, dependency_failure, data_corruption, circuit_breaker_trip, rate_limit). 7 target types (workflow_step, ai_provider, integration, brain_storage, external_api, circuit_breaker, message_router). Discriminated union for typed fault configuration.
+- **Fault injector** (`chaos/fault-injector.ts`): Executes individual fault injections with probabilistic firing, abort capability, and active injection tracking. Latency injection supports uniform, normal (Box-Muller), and exponential distributions. Error injection throws `ChaosInjectedError` with configurable status code. Timeout, resource exhaustion, dependency failure, data corruption, circuit breaker trip, and rate limit simulations.
+- **Chaos manager** (`chaos/chaos-manager.ts`): Orchestrates experiment lifecycle (draft, scheduled, running, completed, failed, aborted). Concurrent experiment limit enforcement. Max duration validation. Allowed target type filtering. Scheduled experiment polling (10s interval). Automatic rollback on fault injection error. Aggregate metrics computation (total faults, recovery rate, mean recovery time, circuit breakers tripped).
+- **PostgreSQL store** (`chaos/chaos-store.ts`): `PgBaseStorage` with upsert for experiments, append-only results. List with status filtering and pagination. Status updates with timestamp tracking.
+- **9 REST endpoints** (`chaos/chaos-routes.ts`): GET list/get experiments, POST create, POST run/schedule/abort, DELETE experiment, GET results, GET system status. License-gated under `compliance_governance`.
+- **SQL migration** (`005_chaos_engineering.sql`): `chaos` schema with `experiments` (rules as JSONB, status lifecycle, scheduling) and `experiment_results` (fault results as JSONB, metrics, steady-state validation) tables. Indexes on status, created_at, tenant_id, experiment_id.
+- **Config** (`security.chaos`): `enabled` (default false), `maxConcurrentExperiments`, `maxExperimentDurationMs`, `retainResults`, `safeMode`, `allowedTargetTypes`.
+- **52 tests** across 4 files: fault-injector (15), chaos-manager (15), chaos-routes (13), chaos-store (9).
+
+---
+
 ## [2026.3.7] — 2026-03-05
 
 ### Bug Fix — Personality Delete Button

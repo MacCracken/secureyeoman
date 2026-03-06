@@ -39,4 +39,5 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '002_agent_replay', sql: readSql('002_agent_replay.sql') },
   { id: '003_policy_as_code', sql: readSql('003_policy_as_code.sql') },
   { id: '004_iac', sql: readSql('004_iac.sql') },
+  { id: '005_chaos_engineering', sql: readSql('005_chaos_engineering.sql') },
 ];
