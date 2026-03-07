@@ -30,7 +30,6 @@ const PERSONALITY = {
   avatarUrl: null,
   isActive: false,
   isDefault: false,
-  isArchetype: false,
   body: {},
   createdAt: 1000,
   updatedAt: 2000,

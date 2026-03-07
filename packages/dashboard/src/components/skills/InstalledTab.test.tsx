@@ -4,11 +4,20 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { InstalledTab } from './InstalledTab';
 
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+}));
+
 vi.mock('../../api/client', () => ({
   fetchSkills: vi.fn(),
   fetchPersonalities: vi.fn(),
   fetchWorkflows: vi.fn(),
   fetchSwarmTemplates: vi.fn(),
+  fetchMarketplaceSkills: vi.fn(),
+  uninstallMarketplaceSkill: vi.fn(),
+  enableSkill: vi.fn(),
+  disableSkill: vi.fn(),
+  deleteSkill: vi.fn(),
 }));
 
 import * as api from '../../api/client';
@@ -59,6 +68,7 @@ describe('InstalledTab', () => {
     } as never);
     vi.mocked(api.fetchWorkflows).mockResolvedValue({ definitions: [] } as never);
     vi.mocked(api.fetchSwarmTemplates).mockResolvedValue({ templates: [] } as never);
+    vi.mocked(api.fetchMarketplaceSkills).mockResolvedValue({ skills: [], total: 0 } as never);
   });
 
   it('should render skills grouped by source', async () => {
@@ -152,8 +162,9 @@ describe('InstalledTab', () => {
       expect(screen.getByText('Code Review')).toBeInTheDocument();
     });
 
-    // Should have content type dropdown
-    expect(screen.getByDisplayValue('Skills')).toBeInTheDocument();
+    // Should have content type buttons
+    expect(screen.getByRole('button', { name: 'Skills' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Workflows' })).toBeInTheDocument();
   });
 
   it('should switch to workflows view', async () => {
@@ -172,10 +183,10 @@ describe('InstalledTab', () => {
     renderWithProviders(<InstalledTab workflowsEnabled />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Skills')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Skills' })).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByDisplayValue('Skills'), { target: { value: 'workflows' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Workflows' }));
 
     await waitFor(() => {
       expect(screen.getByText('Deploy Flow')).toBeInTheDocument();
@@ -186,10 +197,10 @@ describe('InstalledTab', () => {
     renderWithProviders(<InstalledTab workflowsEnabled />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Skills')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Skills' })).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByDisplayValue('Skills'), { target: { value: 'workflows' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Workflows' }));
 
     await waitFor(() => {
       expect(screen.getByText(/No workflows installed yet/)).toBeInTheDocument();
@@ -200,10 +211,10 @@ describe('InstalledTab', () => {
     renderWithProviders(<InstalledTab subAgentsEnabled />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Skills')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Skills' })).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByDisplayValue('Skills'), { target: { value: 'swarms' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Swarm Templates' }));
 
     await waitFor(() => {
       expect(screen.getByText(/No swarm templates installed yet/)).toBeInTheDocument();
@@ -227,10 +238,10 @@ describe('InstalledTab', () => {
     renderWithProviders(<InstalledTab subAgentsEnabled />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Skills')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Skills' })).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByDisplayValue('Skills'), { target: { value: 'swarms' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Swarm Templates' }));
 
     await waitFor(() => {
       expect(screen.getByText('Research Swarm')).toBeInTheDocument();

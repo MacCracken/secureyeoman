@@ -19,9 +19,9 @@ function themeSkill(
   return {
     name,
     description,
-    category: 'design',
+    category: 'theme',
     author: 'YEOMAN',
-    version: '2026.3.1',
+    version: '2026.3.7',
     instructions: JSON.stringify({ themeId, name, isDark, preview }),
     tags: ['theme', isDark ? 'dark' : 'light', ...tags],
     triggerPatterns: [],

@@ -298,11 +298,6 @@ function SoulRow({ personality: p, globalMaxPromptTokens }: SoulRowProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-sm font-medium truncate">{p.name}</span>
-          {p.isArchetype && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
-              Preset
-            </span>
-          )}
           {p.isActive && (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-success/10 text-success font-medium">
               Active

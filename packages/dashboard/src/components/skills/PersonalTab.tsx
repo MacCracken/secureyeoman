@@ -56,6 +56,17 @@ const STATUS_BADGES: Record<string, string> = {
 
 const AI_SOURCES: ReadonlySet<string> = new Set(['ai_learned', 'ai_proposed']);
 
+/** Detect system items (themes/personalities installed from marketplace) that shouldn't appear in Personal view. */
+function isSystemSkill(s: Skill): boolean {
+  if (s.source !== 'marketplace' && s.source !== 'community') return false;
+  try {
+    const parsed = JSON.parse(s.instructions);
+    if (parsed.themeId) return true;
+  } catch { /* not theme JSON */ }
+  if (s.instructions?.startsWith('---\nname:')) return true;
+  return false;
+}
+
 export function PersonalTab() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -120,7 +131,7 @@ export function PersonalTab() {
 
   const selectedPersonality = personalities.find((p) => p.id === selectedPersonalityId) ?? null;
   const skills = selectedPersonalityId
-    ? (data?.skills ?? []).filter((s) => s.personalityId === selectedPersonalityId)
+    ? (data?.skills ?? []).filter((s) => s.personalityId === selectedPersonalityId && !isSystemSkill(s))
     : [];
   const pendingCount = skills.filter((s) => s.status === 'pending_approval').length;
 

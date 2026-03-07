@@ -446,18 +446,6 @@ describe('SoulStorage', () => {
     });
   });
 
-  describe('deletePersonality — archetype guard', () => {
-    it('throws when trying to delete an archetype personality', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ ...personalityRow, is_archetype: true }],
-        rowCount: 1,
-      });
-      await expect(storage.deletePersonality('per-1')).rejects.toThrow(
-        'Cannot delete a system archetype personality'
-      );
-    });
-  });
-
   describe('getEnabledPersonalities', () => {
     it('returns list of active personalities', async () => {
       mockQuery.mockResolvedValueOnce({
@@ -589,20 +577,6 @@ describe('SoulStorage', () => {
       await expect(storage.updatePersonality('per-1', { name: 'x' })).rejects.toThrow(
         'Failed to retrieve personality after update'
       );
-    });
-  });
-
-  describe('createPersonality — isArchetype option', () => {
-    it('passes isArchetype as true when specified', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ ...personalityRow, is_archetype: true }],
-        rowCount: 1,
-      });
-
-      const p = await storage.createPersonality({ name: 'Archetype' }, { isArchetype: true });
-      // The INSERT RETURNING params (index 15) should be true for is_archetype
-      const params = mockQuery.mock.calls[0][1] as unknown[];
-      expect(params[15]).toBe(true);
     });
   });
 
@@ -864,7 +838,6 @@ describe('SoulStorage', () => {
         inject_date_time: null,
         empathy_resonance: null,
         is_default: null,
-        is_archetype: null,
         avatar_url: null,
         default_model: null,
         body: null,
@@ -876,7 +849,6 @@ describe('SoulStorage', () => {
       expect(p!.injectDateTime).toBe(false);
       expect(p!.empathyResonance).toBe(false);
       expect(p!.isDefault).toBe(false);
-      expect(p!.isArchetype).toBe(false);
       expect(p!.avatarUrl).toBeNull();
       expect(p!.defaultModel).toBeNull();
       expect(p!.body).toBeDefined(); // Defaults to the hardcoded body object

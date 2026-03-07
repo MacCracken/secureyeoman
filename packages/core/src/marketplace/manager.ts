@@ -345,13 +345,13 @@ export class MarketplaceManager {
 
         // Parse author: string or object (backward compat)
         const rawAuthor = data.author;
-        let authorDisplay = 'community';
+        let authorDisplay = 'Community';
         let authorInfo: CatalogSkill['authorInfo'];
         if (typeof rawAuthor === 'string') {
           authorDisplay = rawAuthor;
         } else if (rawAuthor && typeof rawAuthor === 'object') {
           const a = rawAuthor as Record<string, unknown>;
-          authorDisplay = typeof a.name === 'string' ? a.name : 'community';
+          authorDisplay = typeof a.name === 'string' ? a.name : 'Community';
           authorInfo = {
             name: authorDisplay,
             github: typeof a.github === 'string' ? a.github : undefined,
@@ -845,13 +845,13 @@ export class MarketplaceManager {
 
             // Parse author
             const rawAuthor = metadata.author;
-            let authorDisplay = 'community';
+            let authorDisplay = 'Community';
             let authorInfo: CatalogSkill['authorInfo'];
             if (typeof rawAuthor === 'string') {
               authorDisplay = rawAuthor;
             } else if (rawAuthor && typeof rawAuthor === 'object') {
               const a = rawAuthor as Record<string, unknown>;
-              authorDisplay = typeof a.name === 'string' ? a.name : 'community';
+              authorDisplay = typeof a.name === 'string' ? a.name : 'Community';
               authorInfo = {
                 name: authorDisplay,
                 github: typeof a.github === 'string' ? a.github : undefined,
@@ -929,12 +929,24 @@ export class MarketplaceManager {
               });
             }
 
+            // Extract subdirectory as a subcategory tag (e.g., "professional", "sci-fi")
+            const relPath = path.relative(personalitiesDir, filePath);
+            const subDir = path.dirname(relPath);
             const tags = ['personality', 'community-personality'];
+            if (subDir && subDir !== '.') {
+              // Add the first-level subdirectory as a subcategory tag
+              const subCategory = subDir.split(path.sep)[0]!;
+              tags.push(`personality:${subCategory}`);
+            }
             const skillData: Partial<CatalogSkill> = {
               name: data.name ?? path.basename(filePath, '.md'),
               description: data.description ?? '',
               version: '1.0.0',
-              author: (data as Record<string, unknown>).author as string ?? 'community',
+              author: typeof (data as Record<string, unknown>).author === 'string'
+                ? ((data as Record<string, unknown>).author as string)
+                : typeof (data as Record<string, unknown>).author === 'object' && (data as Record<string, unknown>).author !== null
+                  ? (((data as Record<string, unknown>).author as Record<string, unknown>).name as string ?? 'Community')
+                  : 'Community',
               category: 'personality',
               tags,
               instructions: content,
@@ -999,8 +1011,12 @@ export class MarketplaceManager {
             name: data.name,
             description: typeof data.description === 'string' ? data.description : '',
             version: typeof data.version === 'string' ? data.version : '1.0.0',
-            author: typeof data.author === 'string' ? data.author : 'community',
-            category: 'design',
+            author: typeof data.author === 'string'
+              ? data.author
+              : typeof data.author === 'object' && data.author !== null
+                ? ((data.author as Record<string, unknown>).name as string ?? 'Community')
+                : 'Community',
+            category: 'theme',
             tags,
             instructions: JSON.stringify(data),
             triggerPatterns: [],

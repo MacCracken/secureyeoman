@@ -1150,7 +1150,7 @@ describe('MarketplaceManager', () => {
       expect(storage.addSkill).toHaveBeenCalledTimes(1);
       const callArgs = storage.addSkill.mock.calls[0][0];
       expect(callArgs.name).toBe('Ocean Breeze');
-      expect(callArgs.category).toBe('design');
+      expect(callArgs.category).toBe('theme');
       expect(callArgs.tags).toContain('theme');
       expect(callArgs.tags).toContain('community-theme');
       expect(callArgs.tags).toContain('dark');

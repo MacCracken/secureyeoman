@@ -45,7 +45,6 @@ function makePersonality(automationLevel: string = 'supervised_auto'): Personali
     avatarUrl: null,
     isActive: true,
     isDefault: false,
-    isArchetype: false,
     body: {
       enabled: true,
       capabilities: [],

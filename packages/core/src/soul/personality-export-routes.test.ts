@@ -22,7 +22,6 @@ const PERSONALITY: Personality = {
   avatarUrl: null,
   isActive: true,
   isDefault: false,
-  isArchetype: false,
   body: {
     enabled: false,
     capabilities: [],

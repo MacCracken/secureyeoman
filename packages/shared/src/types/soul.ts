@@ -370,7 +370,6 @@ export const PersonalitySchema = z.object({
   avatarUrl: z.string().nullable().default(null),
   isActive: z.boolean().default(false),
   isDefault: z.boolean().default(false),
-  isArchetype: z.boolean().default(false),
   isWithinActiveHours: z.boolean().optional(),
   body: BodyConfigSchema.default({}),
   createdAt: z.number().int().nonnegative(),
@@ -385,7 +384,6 @@ export const PersonalityCreateSchema = PersonalitySchema.omit({
   updatedAt: true,
   isActive: true,
   isDefault: true,
-  isArchetype: true,
   isWithinActiveHours: true,
 });
 

@@ -337,7 +337,6 @@ export class SoulManager {
           voiceAnnouncementEvents: [],
         },
       },
-      { isArchetype: true }
     );
 
     await this.storage.setActivePersonality(personality.id);
@@ -367,12 +366,12 @@ export class SoulManager {
         includeArchetypes: agentName === 'FRIDAY',
         injectDateTime: false,
       };
-      const personality = await this.storage.createPersonality(data, { isArchetype: true });
+      const personality = await this.storage.createPersonality(data);
       created.push(personality);
     }
 
     for (const preset of restPresets) {
-      const personality = await this.storage.createPersonality(preset.data, { isArchetype: true });
+      const personality = await this.storage.createPersonality(preset.data);
       created.push(personality);
     }
 
@@ -403,10 +402,9 @@ export class SoulManager {
   }
 
   async createPersonality(
-    data: PersonalityCreate,
-    opts?: { isArchetype?: boolean }
+    data: PersonalityCreate
   ): Promise<Personality> {
-    return this.storage.createPersonality(data, opts);
+    return this.storage.createPersonality(data);
   }
 
   async updatePersonality(id: string, data: PersonalityUpdate): Promise<Personality> {
@@ -420,9 +418,6 @@ export class SoulManager {
 
   async deletePersonality(id: string): Promise<void> {
     const personality = await this.storage.getPersonality(id);
-    if (personality?.isArchetype) {
-      throw new Error('Cannot delete a system archetype personality.');
-    }
     if (personality?.isActive) {
       throw new Error('Cannot delete the active personality');
     }

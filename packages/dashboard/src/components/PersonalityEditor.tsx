@@ -5823,14 +5823,6 @@ export function PersonalityEditor({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
-                          {p.isArchetype && (
-                            <span
-                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
-                              title="System preset — cannot be deleted"
-                            >
-                              Preset
-                            </span>
-                          )}
                           {p.isActive && (
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
                               Active
@@ -5951,38 +5943,28 @@ export function PersonalityEditor({
                         </button>
                         <button
                           onClick={() => {
-                            if (p.isArchetype) {
+                            const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
+                            if (mode === 'manual') {
                               setDeleteLockedMsg(
-                                `"${p.name}" is a system preset and cannot be deleted.`
+                                `"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`
                               );
                             } else {
-                              const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
-                              if (mode === 'manual') {
-                                setDeleteLockedMsg(
-                                  `"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`
-                                );
-                              } else {
-                                setDeleteTarget(p);
-                              }
+                              setDeleteTarget(p);
                             }
                           }}
-                          disabled={p.isActive || p.isArchetype || deleteMut.isPending}
+                          disabled={p.isActive || deleteMut.isPending}
                           className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
                           title={
-                            p.isArchetype
-                              ? 'System preset — cannot be deleted'
-                              : p.isActive
-                                ? 'Deactivate this personality before deleting'
-                                : p.body?.resourcePolicy?.deletionMode === 'manual'
-                                  ? 'Deletion locked — change mode in Body → Resources'
-                                  : `Delete ${p.name}`
+                            p.isActive
+                              ? 'Deactivate this personality before deleting'
+                              : p.body?.resourcePolicy?.deletionMode === 'manual'
+                                ? 'Deletion locked — change mode in Body → Resources'
+                                : `Delete ${p.name}`
                           }
                           aria-label={
-                            p.isArchetype
-                              ? 'Cannot delete system preset'
-                              : p.isActive
-                                ? 'Cannot delete active personality — deactivate first'
-                                : `Delete personality ${p.name}`
+                            p.isActive
+                              ? 'Cannot delete active personality — deactivate first'
+                              : `Delete personality ${p.name}`
                           }
                         >
                           <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -6264,14 +6246,6 @@ export function PersonalityView() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
-                        {p.isArchetype && (
-                          <span
-                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
-                            title="System preset — cannot be deleted"
-                          >
-                            Preset
-                          </span>
-                        )}
                         {p.isActive && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
                             Active
@@ -6362,29 +6336,21 @@ export function PersonalityView() {
                       </button>
                       <button
                         onClick={() => {
-                          if (p.isArchetype) {
+                          const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
+                          if (mode === 'manual') {
                             setDeleteLockedMsg(
-                              `"${p.name}" is a system preset and cannot be deleted.`
+                              `"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`
                             );
                           } else {
-                            const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
-                            if (mode === 'manual') {
-                              setDeleteLockedMsg(
-                                `"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`
-                              );
-                            } else {
-                              setDeleteTarget(p);
-                            }
+                            setDeleteTarget(p);
                           }
                         }}
-                        disabled={p.isActive || p.isArchetype || deleteMut.isPending}
+                        disabled={p.isActive || deleteMut.isPending}
                         className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
                         title={
-                          p.isArchetype
-                            ? 'System preset — cannot be deleted'
-                            : p.isActive
-                              ? 'Deactivate this personality before deleting'
-                              : `Delete ${p.name}`
+                          p.isActive
+                            ? 'Deactivate this personality before deleting'
+                            : `Delete ${p.name}`
                         }
                       >
                         <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />

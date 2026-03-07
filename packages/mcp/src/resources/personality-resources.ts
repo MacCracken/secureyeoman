@@ -65,7 +65,6 @@ export function registerPersonalityResources(server: McpServer, client: CoreApiC
         name: p.name as string,
         description: (p.description as string | undefined) ?? '',
         isDefault: String(p.isDefault ?? false),
-        isArchetype: String(p.isArchetype ?? false),
         model:
           ((p.defaultModel as Record<string, unknown> | undefined)?.model as string | undefined) ??
           'default',

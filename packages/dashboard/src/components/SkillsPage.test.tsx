@@ -107,7 +107,6 @@ const MOCK_PERSONALITY = {
   avatarUrl: null,
   isDefault: true,
   isActive: true,
-  isArchetype: false,
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };

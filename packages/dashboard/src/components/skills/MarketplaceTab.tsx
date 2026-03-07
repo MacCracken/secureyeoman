@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, Store, Search, Loader2 } from 'lucide-react';
+import { Shield, Store, Search, Loader2, Palette, UserCircle } from 'lucide-react';
 import {
   fetchMarketplaceSkills,
   installMarketplaceSkill,
@@ -24,13 +24,20 @@ import {
 export function MarketplaceTab({
   workflowsEnabled = false,
   subAgentsEnabled = false,
-}: { workflowsEnabled?: boolean; subAgentsEnabled?: boolean } = {}) {
+  initialContentType,
+}: { workflowsEnabled?: boolean; subAgentsEnabled?: boolean; initialContentType?: ContentType } = {}) {
   const queryClient = useQueryClient();
   const hiddenTypes: ContentType[] = [
     ...(!workflowsEnabled ? ['workflows' as const] : []),
     ...(!subAgentsEnabled ? ['swarms' as const] : []),
   ];
-  const [contentType, setContentType] = useState<ContentType>('skills');
+  const [contentType, setContentType] = useState<ContentType>(initialContentType ?? 'skills');
+
+  // Sync from parent when navigating with a specific content type
+  useEffect(() => {
+    if (initialContentType) setContentType(initialContentType);
+  }, [initialContentType]);
+
   const [query, setQuery] = useState('');
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
   const [installingId, setInstallingId] = useState<string | null>(null);
@@ -57,7 +64,7 @@ export function MarketplaceTab({
 
   // Fetch marketplace (builtin + published) skills — exclude community via origin filter
   const { data, isLoading } = useQuery({
-    queryKey: ['marketplace', query, selectedPersonalityId, selectedCategory],
+    queryKey: ['marketplace', query, selectedPersonalityId],
     queryFn: () =>
       fetchMarketplaceSkills(
         query || undefined,
@@ -66,7 +73,7 @@ export function MarketplaceTab({
         'marketplace',
         200,
         undefined,
-        selectedCategory || undefined
+        undefined
       ),
   });
 
@@ -100,16 +107,26 @@ export function MarketplaceTab({
   });
 
   // Separate builtin and published, exclude community
-  const allSkills = (data?.skills ?? []).filter((s: CatalogSkill) => s.source !== 'community');
-  const builtinSkills = allSkills.filter((s: CatalogSkill) => s.source === 'builtin');
-  const publishedSkills = allSkills.filter((s: CatalogSkill) => s.source === 'published');
-
-  // Build category counts for filter pills
+  const allRaw = (data?.skills ?? []).filter((s: CatalogSkill) => s.source !== 'community');
+  // Split out theme and personality items for their dedicated tabs
+  const themeSkills = allRaw.filter((s: CatalogSkill) => s.category === 'theme');
+  const personalitySkills = allRaw.filter((s: CatalogSkill) => s.category === 'personality');
+  const allSkills = contentType === 'skills'
+    ? allRaw.filter((s: CatalogSkill) => s.category !== 'theme' && s.category !== 'personality')
+    : allRaw;
+  // Build category counts from full set (before client-side category filter)
   const categoryCounts = allSkills.reduce<Record<string, number>>((acc, s) => {
     const cat = s.category || 'general';
     acc[cat] = (acc[cat] ?? 0) + 1;
     return acc;
   }, {});
+
+  // Apply client-side category filter
+  const filteredSkills = selectedCategory
+    ? allSkills.filter((s: CatalogSkill) => (s.category || 'general') === selectedCategory)
+    : allSkills;
+  const builtinSkills = filteredSkills.filter((s: CatalogSkill) => s.source === 'builtin');
+  const publishedSkills = filteredSkills.filter((s: CatalogSkill) => s.source === 'published');
 
   const renderCard = (skill: CatalogSkill, badgeFn?: (s: CatalogSkill) => React.ReactNode) => (
     <SkillCard
@@ -185,6 +202,92 @@ export function MarketplaceTab({
           </ContentSuspense>
         )}
 
+        {/* Themes view */}
+        {contentType === 'themes' && (
+          <>
+            <div className="relative max-w-2xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                placeholder="Search themes…"
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); }}
+              />
+            </div>
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : themeSkills.length === 0 ? (
+              <div className="card p-12 text-center">
+                <Palette className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">No themes found</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-semibold text-foreground">Themes</h3>
+                  <span className="text-xs text-muted-foreground">({themeSkills.length})</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {themeSkills.map((s) =>
+                    renderCard(s, () => (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                        <Palette className="w-2.5 h-2.5" />
+                        Theme
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Personalities view */}
+        {contentType === 'personalities' && (
+          <>
+            <div className="relative max-w-2xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                placeholder="Search personalities…"
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); }}
+              />
+            </div>
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : personalitySkills.length === 0 ? (
+              <div className="card p-12 text-center">
+                <UserCircle className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">No personalities found</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <UserCircle className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-semibold text-foreground">Personalities</h3>
+                  <span className="text-xs text-muted-foreground">({personalitySkills.length})</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {personalitySkills.map((s) =>
+                    renderCard(s, () => (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                        <UserCircle className="w-2.5 h-2.5" />
+                        Personality
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
         {/* Skills toolbar + grid */}
         {contentType === 'skills' && (
           <>
@@ -218,51 +321,12 @@ export function MarketplaceTab({
               <div className="flex justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
               </div>
-            ) : allSkills.length === 0 ? (
+            ) : filteredSkills.length === 0 ? (
               <div className="card p-12 text-center">
                 <Store className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
                 <p className="text-muted-foreground">
                   {query ? 'No skills found' : 'Marketplace is empty'}
                 </p>
-              </div>
-            ) : selectedCategory ? (
-              /* When filtering by category, show a flat grouped grid */
-              <div className="space-y-8">
-                {builtinSkills.length > 0 && (
-                  <section>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Shield className="w-4 h-4 text-primary" />
-                      <h3 className="text-sm font-semibold text-foreground">YEOMAN Skills</h3>
-                      <span className="text-xs text-muted-foreground">
-                        ({builtinSkills.length})
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {builtinSkills.map((s) =>
-                        renderCard(s, () => (
-                          <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                            <Shield className="w-2.5 h-2.5" />
-                            YEOMAN
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </section>
-                )}
-                {publishedSkills.length > 0 && (
-                  <section>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Store className="w-4 h-4 text-muted-foreground" />
-                      <h3 className="text-sm font-semibold text-foreground">Published</h3>
-                      <span className="text-xs text-muted-foreground">
-                        ({publishedSkills.length})
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {publishedSkills.map((s) => renderCard(s))}
-                    </div>
-                  </section>
-                )}
               </div>
             ) : (
               /* When showing all categories, group by category within each source section */
@@ -278,14 +342,8 @@ export function MarketplaceTab({
                     </div>
                     <CategoryGroupedGrid
                       skills={builtinSkills}
-                      renderCard={(s) =>
-                        renderCard(s, () => (
-                          <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                            <Shield className="w-2.5 h-2.5" />
-                            YEOMAN
-                          </span>
-                        ))
-                      }
+                      renderCard={(s) => renderCard(s)}
+
                     />
                   </section>
                 )}

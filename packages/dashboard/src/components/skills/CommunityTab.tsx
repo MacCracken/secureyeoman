@@ -8,6 +8,7 @@ import {
   AlertCircle,
   CheckCircle,
   Users,
+  X,
 } from 'lucide-react';
 import {
   fetchMarketplaceSkills,
@@ -43,6 +44,10 @@ interface SyncResult {
   workflowsUpdated?: number;
   swarmsAdded?: number;
   swarmsUpdated?: number;
+  themesAdded?: number;
+  themesUpdated?: number;
+  personalitiesAdded?: number;
+  personalitiesUpdated?: number;
 }
 
 export function CommunityTab({
@@ -70,6 +75,7 @@ export function CommunityTab({
   const [themePage, setThemePage] = useState(0);
   const [personalityQuery, setPersonalityQuery] = useState('');
   const [personalityPage, setPersonalityPage] = useState(0);
+  const [selectedPersonalityCategory, setSelectedPersonalityCategory] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace-community', query, selectedPersonalityId, page, selectedCategory],
@@ -95,7 +101,7 @@ export function CommunityTab({
         undefined,
         COMMUNITY_PAGE_SIZE,
         themePage * COMMUNITY_PAGE_SIZE,
-        'design'
+        'theme'
       ),
     enabled: contentType === 'themes',
   });
@@ -179,7 +185,10 @@ export function CommunityTab({
     },
   });
 
-  const skills: CatalogSkill[] = data?.skills ?? [];
+  // Exclude theme and personality items from the skills view — they have dedicated tabs
+  const skills: CatalogSkill[] = (data?.skills ?? []).filter(
+    (s) => s.category !== 'theme' && s.category !== 'personality'
+  );
   const canInstall = !!selectedPersonalityId;
 
   // Build category counts for filter pills
@@ -231,6 +240,82 @@ export function CommunityTab({
           hiddenTypes={hiddenTypes}
         />
 
+        {/* Sync result — visible on all tabs until dismissed */}
+        {syncResult && (
+          <div
+            className={`p-3 rounded-lg border text-xs space-y-1 ${
+              syncResult.errors.length > 0
+                ? 'bg-warning/10 border-warning/20'
+                : 'bg-success/10 border-success/20'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-medium">
+                {syncResult.errors.length > 0 ? (
+                  <AlertCircle className="w-4 h-4 text-warning" />
+                ) : (
+                  <CheckCircle className="w-4 h-4 text-success" />
+                )}
+                Sync complete
+              </div>
+              <button
+                onClick={() => { setSyncResult(null); }}
+                className="text-muted-foreground hover:text-foreground p-0.5"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="text-muted-foreground space-y-0.5">
+              <p>
+                Skills: {syncResult.added} added, {syncResult.updated} updated,{' '}
+                {syncResult.skipped} skipped
+                {syncResult.removed > 0 && `, ${syncResult.removed} removed`}
+                {syncResult.errors.length > 0 && `, ${syncResult.errors.length} error(s)`}
+              </p>
+              {(syncResult.themesAdded !== undefined ||
+                syncResult.themesUpdated !== undefined) && (
+                <p>
+                  Themes: {syncResult.themesAdded ?? 0} added,{' '}
+                  {syncResult.themesUpdated ?? 0} updated
+                </p>
+              )}
+              {(syncResult.personalitiesAdded !== undefined ||
+                syncResult.personalitiesUpdated !== undefined) && (
+                <p>
+                  Personalities: {syncResult.personalitiesAdded ?? 0} added,{' '}
+                  {syncResult.personalitiesUpdated ?? 0} updated
+                </p>
+              )}
+              {workflowsEnabled &&
+                (syncResult.workflowsAdded !== undefined ||
+                  syncResult.workflowsUpdated !== undefined) && (
+                <p>
+                  Workflows: {syncResult.workflowsAdded ?? 0} added,{' '}
+                  {syncResult.workflowsUpdated ?? 0} updated
+                </p>
+              )}
+              {subAgentsEnabled &&
+                (syncResult.swarmsAdded !== undefined ||
+                  syncResult.swarmsUpdated !== undefined) && (
+                <p>
+                  Swarm templates: {syncResult.swarmsAdded ?? 0} added,{' '}
+                  {syncResult.swarmsUpdated ?? 0} updated
+                </p>
+              )}
+              {syncResult.errors.length > 0 && (
+                <ul className="mt-1 space-y-0.5">
+                  {syncResult.errors.map((e, i) => (
+                    <li key={i} className="truncate">
+                      · {e}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Workflows — community-only */}
         {contentType === 'workflows' && (
           <>
@@ -270,38 +355,6 @@ export function CommunityTab({
                   {statusData.communityRepoPath ?? 'No path configured'}
                 </span>
                 {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
-              </div>
-            )}
-            {syncResult && (
-              <div
-                className={`p-3 rounded-lg border text-xs space-y-1 ${syncResult.errors.length > 0 ? 'bg-warning/10 border-warning/20' : 'bg-success/10 border-success/20'}`}
-              >
-                <div className="flex items-center gap-2 font-medium">
-                  {syncResult.errors.length > 0 ? (
-                    <AlertCircle className="w-4 h-4 text-warning" />
-                  ) : (
-                    <CheckCircle className="w-4 h-4 text-success" />
-                  )}
-                  Sync complete
-                </div>
-                <div className="text-muted-foreground space-y-0.5">
-                  {(syncResult.workflowsAdded !== undefined ||
-                    syncResult.workflowsUpdated !== undefined) && (
-                    <p>
-                      Workflows: {syncResult.workflowsAdded ?? 0} added,{' '}
-                      {syncResult.workflowsUpdated ?? 0} updated
-                    </p>
-                  )}
-                  {syncResult.errors.length > 0 && (
-                    <ul className="mt-1 space-y-0.5">
-                      {syncResult.errors.map((e, i) => (
-                        <li key={i} className="truncate">
-                          · {e}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
               </div>
             )}
             <ContentSuspense>
@@ -349,38 +402,6 @@ export function CommunityTab({
                   {statusData.communityRepoPath ?? 'No path configured'}
                 </span>
                 {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
-              </div>
-            )}
-            {syncResult && (
-              <div
-                className={`p-3 rounded-lg border text-xs space-y-1 ${syncResult.errors.length > 0 ? 'bg-warning/10 border-warning/20' : 'bg-success/10 border-success/20'}`}
-              >
-                <div className="flex items-center gap-2 font-medium">
-                  {syncResult.errors.length > 0 ? (
-                    <AlertCircle className="w-4 h-4 text-warning" />
-                  ) : (
-                    <CheckCircle className="w-4 h-4 text-success" />
-                  )}
-                  Sync complete
-                </div>
-                <div className="text-muted-foreground space-y-0.5">
-                  {(syncResult.swarmsAdded !== undefined ||
-                    syncResult.swarmsUpdated !== undefined) && (
-                    <p>
-                      Swarm templates: {syncResult.swarmsAdded ?? 0} added,{' '}
-                      {syncResult.swarmsUpdated ?? 0} updated
-                    </p>
-                  )}
-                  {syncResult.errors.length > 0 && (
-                    <ul className="mt-1 space-y-0.5">
-                      {syncResult.errors.map((e, i) => (
-                        <li key={i} className="truncate">
-                          · {e}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
               </div>
             )}
             <ContentSuspense>
@@ -444,7 +465,7 @@ export function CommunityTab({
                       key={skill.id}
                       skill={skill}
                       badge={
-                        <span className="inline-flex items-center gap-1 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                           <Palette className="w-2.5 h-2.5" />
                           Theme
                         </span>
@@ -544,7 +565,24 @@ export function CommunityTab({
                   Personalities are not auto-installed — browse and install the ones you want.
                 </p>
               </div>
-            ) : (
+            ) : (() => {
+              const allPersonalities = personalitiesSkillData?.skills ?? [];
+              // Extract subcategory from personality:xxx tags
+              const getSubCategory = (s: CatalogSkill) => {
+                const tag = s.tags?.find((t) => t.startsWith('personality:'));
+                return tag ? tag.replace('personality:', '') : 'general';
+              };
+              // Build subcategory counts
+              const subCategoryCounts = allPersonalities.reduce<Record<string, number>>((acc, s) => {
+                const cat = getSubCategory(s);
+                acc[cat] = (acc[cat] ?? 0) + 1;
+                return acc;
+              }, {});
+              const filtered = selectedPersonalityCategory
+                ? allPersonalities.filter((s) => getSubCategory(s) === selectedPersonalityCategory)
+                : allPersonalities;
+
+              return (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <UserCircle className="w-4 h-4 text-muted-foreground" />
@@ -553,13 +591,20 @@ export function CommunityTab({
                     ({personalitiesSkillData?.total ?? 0})
                   </span>
                 </div>
+                {Object.keys(subCategoryCounts).length > 1 && (
+                  <CategoryFilter
+                    value={selectedPersonalityCategory}
+                    onChange={setSelectedPersonalityCategory}
+                    counts={subCategoryCounts}
+                  />
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {(personalitiesSkillData?.skills ?? []).map((skill) => (
+                  {filtered.map((skill) => (
                     <SkillCard
                       key={skill.id}
                       skill={skill}
                       badge={
-                        <span className="inline-flex items-center gap-1 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                           <UserCircle className="w-2.5 h-2.5" />
                           Personality
                         </span>
@@ -620,7 +665,8 @@ export function CommunityTab({
                   </div>
                 )}
               </div>
-            )}
+              );
+            })()}
           </>
         )}
 
@@ -684,57 +730,6 @@ export function CommunityTab({
               </div>
             )}
 
-            {/* Sync result */}
-            {syncResult && (
-              <div
-                className={`p-3 rounded-lg border text-xs space-y-1 ${
-                  syncResult.errors.length > 0
-                    ? 'bg-warning/10 border-warning/20'
-                    : 'bg-success/10 border-success/20'
-                }`}
-              >
-                <div className="flex items-center gap-2 font-medium">
-                  {syncResult.errors.length > 0 ? (
-                    <AlertCircle className="w-4 h-4 text-warning" />
-                  ) : (
-                    <CheckCircle className="w-4 h-4 text-success" />
-                  )}
-                  Sync complete
-                </div>
-                <div className="text-muted-foreground space-y-0.5">
-                  <p>
-                    Skills: {syncResult.added} added, {syncResult.updated} updated,{' '}
-                    {syncResult.skipped} skipped
-                    {syncResult.removed > 0 && `, ${syncResult.removed} removed`}
-                    {syncResult.errors.length > 0 && `, ${syncResult.errors.length} error(s)`}
-                  </p>
-                  {(syncResult.workflowsAdded !== undefined ||
-                    syncResult.workflowsUpdated !== undefined) && (
-                    <p>
-                      Workflows: {syncResult.workflowsAdded ?? 0} added,{' '}
-                      {syncResult.workflowsUpdated ?? 0} updated
-                    </p>
-                  )}
-                  {(syncResult.swarmsAdded !== undefined ||
-                    syncResult.swarmsUpdated !== undefined) && (
-                    <p>
-                      Swarm templates: {syncResult.swarmsAdded ?? 0} added,{' '}
-                      {syncResult.swarmsUpdated ?? 0} updated
-                    </p>
-                  )}
-                  {syncResult.errors.length > 0 && (
-                    <ul className="mt-1 space-y-0.5">
-                      {syncResult.errors.map((e, i) => (
-                        <li key={i} className="truncate">
-                          · {e}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Category filter */}
             <CategoryFilter
               value={selectedCategory}
@@ -777,12 +772,6 @@ export function CommunityTab({
                     <SkillCard
                       key={skill.id}
                       skill={skill}
-                      badge={
-                        <span className="inline-flex items-center gap-1 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                          <GitBranch className="w-2.5 h-2.5" />
-                          Community
-                        </span>
-                      }
                       installing={installingId === skill.id && installMut.isPending}
                       uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
                       onPreview={() => {

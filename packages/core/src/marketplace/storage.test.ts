@@ -85,6 +85,26 @@ vi.mock('./skills/index.js', () => ({
     author: 'YEOMAN',
     version: '2026.3.5',
   },
+  tokyoNightThemeSkill: { name: 'Tokyo Night', author: 'YEOMAN', version: '2026.3.7' },
+  catppuccinMochaThemeSkill: { name: 'Catppuccin Mocha', author: 'YEOMAN', version: '2026.3.7' },
+  gruvboxThemeSkill: { name: 'Gruvbox', author: 'YEOMAN', version: '2026.3.7' },
+  draculaThemeSkill: { name: 'Dracula', author: 'YEOMAN', version: '2026.3.7' },
+  rosePineThemeSkill: { name: 'Rosé Pine', author: 'YEOMAN', version: '2026.3.7' },
+  catppuccinLatteThemeSkill: { name: 'Catppuccin Latte', author: 'YEOMAN', version: '2026.3.7' },
+  rosePineDawnThemeSkill: { name: 'Rosé Pine Dawn', author: 'YEOMAN', version: '2026.3.7' },
+  everforestLightThemeSkill: { name: 'Everforest Light', author: 'YEOMAN', version: '2026.3.7' },
+  ayuLightThemeSkill: { name: 'Ayu Light', author: 'YEOMAN', version: '2026.3.7' },
+  solarizedLightThemeSkill: { name: 'Solarized Light', author: 'YEOMAN', version: '2026.3.7' },
+  monokaiThemeSkill: { name: 'Monokai', author: 'YEOMAN', version: '2026.3.7' },
+  githubDarkThemeSkill: { name: 'GitHub Dark', author: 'YEOMAN', version: '2026.3.7' },
+  kanagawaThemeSkill: { name: 'Kanagawa', author: 'YEOMAN', version: '2026.3.7' },
+  palenightThemeSkill: { name: 'Palenight', author: 'YEOMAN', version: '2026.3.7' },
+  nightOwlThemeSkill: { name: 'Night Owl', author: 'YEOMAN', version: '2026.3.7' },
+  technicalWriterPersonality: { name: 'Meridian (Technical Writer)', author: 'YEOMAN', version: '2026.3.7' },
+  dataEngineerPersonality: { name: 'Conduit (Data Engineer)', author: 'YEOMAN', version: '2026.3.7' },
+  projectManagerPersonality: { name: 'Compass (Project Manager)', author: 'YEOMAN', version: '2026.3.7' },
+  devopsEngineerPersonality: { name: 'Anvil (DevOps Engineer)', author: 'YEOMAN', version: '2026.3.7' },
+  uxDesignerPersonality: { name: 'Prism (UX Designer)', author: 'YEOMAN', version: '2026.3.7' },
 }));
 
 // ─── Test Data ────────────────────────────────────────────────
@@ -424,11 +444,11 @@ describe('MarketplaceStorage', () => {
       );
       expect(batchSelect).toBeDefined();
 
-      // Should have INSERT calls for each of the 23 skills (11 original + 7 security + 1 ATHI + 1 SRA + 1 Excalidraw + 1 PDF Analysis + 1 Cognitive Memory Analyst)
+      // Should have INSERT calls for each builtin skill (25 original + 15 themes + 5 personalities)
       const insertCalls = mockQuery.mock.calls.filter(
         (c: any[]) => typeof c[0] === 'string' && c[0].includes('INSERT INTO marketplace.skills')
       );
-      expect(insertCalls).toHaveLength(25);
+      expect(insertCalls).toHaveLength(45);
     });
 
     it('uses batch SELECT for existing builtins check', async () => {

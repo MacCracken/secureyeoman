@@ -159,7 +159,6 @@ export interface Personality {
   avatarUrl: string | null;
   isActive: boolean;
   isDefault: boolean;
-  isArchetype: boolean;
   isWithinActiveHours?: boolean;
   body?: {
     enabled?: boolean;

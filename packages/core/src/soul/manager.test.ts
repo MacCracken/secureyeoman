@@ -328,15 +328,6 @@ describe('SoulManager', () => {
       expect(result.personalities).toHaveLength(1);
     });
 
-    it('deletePersonality throws when personality is archetype', async () => {
-      const { manager } = makeManager({
-        getPersonality: vi.fn().mockResolvedValue({ ...PERSONALITY, isArchetype: true }),
-      });
-      await expect(manager.deletePersonality('p-1')).rejects.toThrow(
-        'Cannot delete a system archetype personality'
-      );
-    });
-
     it('enablePersonality delegates to storage', async () => {
       const enablePersonality = vi.fn().mockResolvedValue(undefined);
       const { manager } = makeManager({ enablePersonality });
@@ -1890,7 +1881,7 @@ describe('SoulManager', () => {
       const personality = {
         ...PERSONALITY,
         isActive: false,
-        isArchetype: false,
+
         body: { ...PERSONALITY.body, resourcePolicy: undefined },
       };
       const { manager, storage } = makeManager({
@@ -1905,7 +1896,7 @@ describe('SoulManager', () => {
       const personality = {
         ...PERSONALITY,
         isActive: false,
-        isArchetype: false,
+
         body: { ...PERSONALITY.body, resourcePolicy: { deletionMode: 'request' } },
       };
       const { manager, storage } = makeManager({

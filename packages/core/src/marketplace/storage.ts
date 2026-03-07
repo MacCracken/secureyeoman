@@ -48,6 +48,11 @@ import {
   kanagawaThemeSkill,
   palenightThemeSkill,
   nightOwlThemeSkill,
+  technicalWriterPersonality,
+  dataEngineerPersonality,
+  projectManagerPersonality,
+  devopsEngineerPersonality,
+  uxDesignerPersonality,
 } from './skills/index.js';
 
 export class MarketplaceStorage extends PgBaseStorage {
@@ -413,6 +418,12 @@ export class MarketplaceStorage extends PgBaseStorage {
       kanagawaThemeSkill,
       palenightThemeSkill,
       nightOwlThemeSkill,
+      // Personalities
+      technicalWriterPersonality,
+      dataEngineerPersonality,
+      projectManagerPersonality,
+      devopsEngineerPersonality,
+      uxDesignerPersonality,
     ];
 
     // Batch-fetch all existing builtins in one query instead of N individual SELECTs

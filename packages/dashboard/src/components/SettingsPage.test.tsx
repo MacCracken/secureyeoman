@@ -416,10 +416,12 @@ describe('SettingsPage', () => {
         </QueryClientProvider>
       </MemoryRouter>
     );
-    // Security tab content should be active — look for the security-specific heading
-    // The SecuritySettings child renders the security panel; the tab button should be highlighted
-    const secBtn = await screen.findByRole('button', { name: /Security/ });
-    expect(secBtn.className).toContain('border-primary');
+    // Security tab content should be active — the tab button should be highlighted
+    // Multiple elements may match /Security/ so find the tab button specifically
+    const secBtns = await screen.findAllByRole('button', { name: /Security/ });
+    const tabBtn = secBtns.find((btn) => btn.className.includes('border-'));
+    expect(tabBtn).toBeDefined();
+    expect(tabBtn!.className).toContain('border-primary');
   });
 
   it('opens Keys tab when path includes /api-keys', async () => {
@@ -864,7 +866,7 @@ describe('SettingsPage', () => {
     renderComponent();
     await user.click(await screen.findByRole('button', { name: /Appearance/i }));
     expect(screen.getByText('Auto-Switch Schedule')).toBeInTheDocument();
-    expect(screen.getByText('Enable scheduled theme switching')).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: /Enable scheduled theme switching/ })).toBeInTheDocument();
   });
 
   it('shows "no custom themes" message on Appearance tab', async () => {
@@ -899,7 +901,7 @@ describe('SettingsPage', () => {
     renderComponent();
     await user.click(await screen.findByRole('button', { name: /Appearance/i }));
     await user.click(screen.getByText('Create'));
-    expect(screen.getByText('Theme Editor')).toBeInTheDocument();
+    expect(screen.getByText('Create Theme')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Theme name')).toBeInTheDocument();
     expect(screen.getByText('Dark theme')).toBeInTheDocument();
     expect(screen.getByText('Save & Apply')).toBeInTheDocument();
@@ -911,12 +913,12 @@ describe('SettingsPage', () => {
     renderComponent();
     await user.click(await screen.findByRole('button', { name: /Appearance/i }));
     await user.click(screen.getByText('Create'));
-    expect(screen.getByText('Theme Editor')).toBeInTheDocument();
-    // Close button is next to the "Theme Editor" heading
-    const editorHeader = screen.getByText('Theme Editor').closest('div')!;
+    expect(screen.getByText('Create Theme')).toBeInTheDocument();
+    // Close button is next to the "Create Theme" heading
+    const editorHeader = screen.getByText('Create Theme').closest('div')!;
     const closeBtn = editorHeader.querySelector('button')!;
     await user.click(closeBtn);
-    expect(screen.queryByText('Theme Editor')).not.toBeInTheDocument();
+    expect(screen.queryByText('Create Theme')).not.toBeInTheDocument();
   });
 
   it('saves a custom theme via Save & Apply', async () => {
@@ -935,8 +937,8 @@ describe('SettingsPage', () => {
     expect(mockValidateCustomThemeHook).toHaveBeenCalled();
     expect(mockAddCustomThemeHook).toHaveBeenCalled();
     expect(mockSetTheme).toHaveBeenCalledWith('custom:my-theme');
-    // Editor should close after save
-    expect(screen.queryByText('Theme Editor')).not.toBeInTheDocument();
+    // Editor dialog should close after save
+    expect(screen.queryByText('Create Theme')).not.toBeInTheDocument();
   });
 
   it('shows validation error when saving invalid custom theme', async () => {
@@ -1022,10 +1024,11 @@ describe('SettingsPage', () => {
     const user = userEvent.setup();
     renderComponent();
     await user.click(await screen.findByRole('button', { name: /Appearance/i }));
-    // Click a built-in theme card (e.g., "Tokyo Night")
-    const tokyoBtn = screen.getByText('Tokyo Night').closest('button')!;
-    await user.click(tokyoBtn);
-    expect(mockSetTheme).toHaveBeenCalledWith('tokyonight');
+    // Click the preview area of a built-in theme card (e.g., "Nord")
+    const nordCard = screen.getByText('Nord').closest('div[class*="rounded-lg"]')!;
+    const nordBtn = nordCard.querySelector('button')!;
+    await user.click(nordBtn);
+    expect(mockSetTheme).toHaveBeenCalledWith('nord');
   });
 
   // ── Appearance: Schedule controls ────────────────────────────────
@@ -1035,9 +1038,9 @@ describe('SettingsPage', () => {
     renderComponent();
     await user.click(await screen.findByRole('button', { name: /Appearance/i }));
 
-    // Enable schedule
-    const checkbox = screen.getByRole('checkbox', { name: /Enable scheduled theme switching/ });
-    await user.click(checkbox);
+    // Enable schedule via toggle switch
+    const toggle = screen.getByRole('switch', { name: /Enable scheduled theme switching/ });
+    await user.click(toggle);
     expect(mockSaveScheduleHook).toHaveBeenCalledWith(expect.objectContaining({ enabled: true }));
   });
 

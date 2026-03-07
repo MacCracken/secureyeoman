@@ -157,7 +157,6 @@ describe('SoulSystemTab', () => {
           name: 'Default Soul',
           isActive: true,
           isDefault: true,
-          isArchetype: false,
           description: 'Main',
         },
         {
@@ -165,7 +164,6 @@ describe('SoulSystemTab', () => {
           name: 'Creative Soul',
           isActive: false,
           isDefault: false,
-          isArchetype: true,
           description: '',
         },
       ],

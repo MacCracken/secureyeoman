@@ -45,3 +45,10 @@ export {
   palenightThemeSkill,
   nightOwlThemeSkill,
 } from './themes.js';
+export {
+  technicalWriterPersonality,
+  dataEngineerPersonality,
+  projectManagerPersonality,
+  devopsEngineerPersonality,
+  uxDesignerPersonality,
+} from './personalities.js';

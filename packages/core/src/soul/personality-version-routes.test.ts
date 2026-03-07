@@ -16,7 +16,6 @@ const PERSONALITY = {
   systemPrompt: 'You are helpful.',
   traits: {},
   isDefault: false,
-  isArchetype: false,
   body: {
     activeHours: { enabled: false, start: '09:00', end: '17:00', daysOfWeek: [], timezone: 'UTC' },
   },

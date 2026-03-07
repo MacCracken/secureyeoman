@@ -26,24 +26,24 @@ describe('useTheme — theme registry', () => {
   const enterprise = THEMES.filter((t) => t.enterprise);
   const system = THEMES.filter((t) => t.id === 'system');
 
-  it('has 10 dark free themes', () => {
-    expect(darkFree).toHaveLength(10);
+  it('has 5 dark free themes', () => {
+    expect(darkFree).toHaveLength(5);
   });
 
-  it('has 10 light free themes', () => {
-    expect(lightFree).toHaveLength(10);
+  it('has 5 light free themes', () => {
+    expect(lightFree).toHaveLength(5);
   });
 
-  it('has 10 enterprise themes', () => {
-    expect(enterprise).toHaveLength(10);
+  it('has 5 enterprise themes', () => {
+    expect(enterprise).toHaveLength(5);
   });
 
   it('has 1 system theme', () => {
     expect(system).toHaveLength(1);
   });
 
-  it('has 31 themes total', () => {
-    expect(THEMES).toHaveLength(31);
+  it('has 16 themes total', () => {
+    expect(THEMES).toHaveLength(16);
   });
 
   it('every theme has a unique id', () => {
@@ -65,9 +65,21 @@ describe('useTheme — theme registry', () => {
     }
   });
 
-  it('DARK_THEMES set contains exactly the dark theme ids', () => {
+  it('DARK_THEMES set contains all dark theme ids from THEMES array', () => {
     const darkIds = THEMES.filter((t) => t.isDark && t.id !== 'system').map((t) => t.id);
-    expect([...DARK_THEMES].sort()).toEqual(darkIds.sort());
+    for (const id of darkIds) {
+      expect(DARK_THEMES.has(id)).toBe(true);
+    }
+  });
+
+  it('DARK_THEMES includes marketplace-installable dark themes', () => {
+    const marketplaceDark: ThemeId[] = [
+      'tokyonight', 'catppuccin', 'gruvbox', 'dracula', 'rose-pine',
+      'monokai', 'github-dark', 'kanagawa', 'palenight', 'nightowl',
+    ];
+    for (const id of marketplaceDark) {
+      expect(DARK_THEMES.has(id)).toBe(true);
+    }
   });
 
   it('all dark free themes are in DARK_THEMES', () => {
@@ -87,14 +99,9 @@ describe('useTheme — theme registry', () => {
     expect(ids).toEqual(
       expect.arrayContaining([
         'dark',
-        'tokyonight',
-        'catppuccin',
-        'gruvbox',
         'nord',
         'one-dark',
-        'dracula',
         'solarized-dark',
-        'rose-pine',
         'horizon',
       ] satisfies ThemeId[])
     );
@@ -105,12 +112,7 @@ describe('useTheme — theme registry', () => {
     expect(ids).toEqual(
       expect.arrayContaining([
         'light',
-        'catppuccin-latte',
-        'rose-pine-dawn',
-        'everforest-light',
         'one-light',
-        'ayu-light',
-        'solarized-light',
         'github-light',
         'quiet-light',
         'winter-light',
@@ -122,16 +124,11 @@ describe('useTheme — theme registry', () => {
     const ids = enterprise.map((t) => t.id);
     expect(ids).toEqual(
       expect.arrayContaining([
-        'monokai',
-        'github-dark',
         'everforest',
         'ayu',
         'catppuccin-macchiato',
-        'kanagawa',
         'matrix',
         'synthwave',
-        'palenight',
-        'nightowl',
       ] satisfies ThemeId[])
     );
   });

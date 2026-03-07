@@ -125,7 +125,6 @@ const defaultPersonality = {
   avatarUrl: null,
   isActive: true,
   isDefault: true,
-  isArchetype: false,
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };
@@ -389,7 +388,6 @@ describe('ChatPage', () => {
           avatarUrl: null,
           isActive: false,
           isDefault: false,
-          isArchetype: false,
           createdAt: Date.now(),
           updatedAt: Date.now(),
         },

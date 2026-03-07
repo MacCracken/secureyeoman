@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Store,
   Loader2,
@@ -10,17 +11,31 @@ import {
   User,
   GitMerge,
   Network,
+  Palette,
+  UserCircle,
+  ToggleLeft,
+  ToggleRight,
+  Edit2,
+  Trash2,
+  Settings,
 } from 'lucide-react';
 import {
   fetchSkills,
   fetchPersonalities,
   fetchWorkflows,
   fetchSwarmTemplates,
+  fetchMarketplaceSkills,
+  uninstallMarketplaceSkill,
+  enableSkill,
+  disableSkill,
+  deleteSkill,
 } from '../../api/client';
 import type { WorkflowDefinition, SwarmTemplate } from '../../api/client';
 import type { Skill } from '../../types';
+import type { CatalogSkill } from '../../types';
 import { sanitizeText } from '../../utils/sanitize';
-import { type TabType } from './shared';
+import { ConfirmDialog } from '../common/ConfirmDialog';
+import { type TabType, type ContentType, ContentTypeSelector, categoryLabel } from './shared';
 
 const SOURCE_LABELS: Record<string, string> = {
   user: 'User',
@@ -66,17 +81,31 @@ const SOURCE_SECTIONS: {
   },
 ];
 
-type ContentType = 'skills' | 'workflows' | 'swarms';
+/** Detect system items (themes/personalities installed from marketplace). */
+function isSystemSkill(s: Skill): boolean {
+  if (s.source !== 'marketplace' && s.source !== 'community') return false;
+  try {
+    const parsed = JSON.parse(s.instructions);
+    if (parsed.themeId) return true;
+  } catch { /* not theme JSON */ }
+  if (s.instructions?.startsWith('---\nname:')) return true;
+  return false;
+}
 
-const CONTENT_TYPE_OPTIONS: { value: ContentType; label: string }[] = [
-  { value: 'skills', label: 'Skills' },
-  { value: 'workflows', label: 'Workflows' },
-  { value: 'swarms', label: 'Swarm Templates' },
-];
+/** Determine the system category of a brain skill. */
+function getSystemCategory(s: Skill): 'theme' | 'personality' {
+  try {
+    const parsed = JSON.parse(s.instructions);
+    if (parsed.themeId) return 'theme';
+  } catch { /* ignore */ }
+  return 'personality';
+}
+
+// ContentType and CONTENT_TYPES imported from ./shared for consistency
 
 // ── Installed Workflows view ──────────────────────────────────────────────────
 
-function InstalledWorkflows({ onNavigateTab }: { onNavigateTab?: (tab: TabType) => void }) {
+function InstalledWorkflows({ onNavigateTab }: { onNavigateTab?: (tab: TabType, contentType?: ContentType) => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ['installed-workflows'],
     queryFn: () => fetchWorkflows({ limit: 200 }),
@@ -166,7 +195,7 @@ function InstalledWorkflows({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
 
 // ── Installed Swarms view ─────────────────────────────────────────────────────
 
-function InstalledSwarms({ onNavigateTab }: { onNavigateTab?: (tab: TabType) => void }) {
+function InstalledSwarms({ onNavigateTab }: { onNavigateTab?: (tab: TabType, contentType?: ContentType) => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ['installed-swarm-templates'],
     queryFn: fetchSwarmTemplates,
@@ -260,6 +289,307 @@ function InstalledSwarms({ onNavigateTab }: { onNavigateTab?: (tab: TabType) => 
   );
 }
 
+// ── Installed System view (themes & personalities) ────────────────────────────
+
+function InstalledSystem({
+  onNavigateTab,
+  filter,
+}: {
+  onNavigateTab?: (tab: TabType, contentType?: ContentType) => void;
+  filter: 'theme' | 'personality';
+}) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
+
+  // Brain skills (to get enable/disable state)
+  const { data: skillsData, isLoading: skillsLoading } = useQuery({
+    queryKey: ['skills', '', ''],
+    queryFn: () => fetchSkills(),
+  });
+
+  // Marketplace catalog (to get category metadata)
+  const { data: marketplaceData, isLoading: marketplaceLoading } = useQuery({
+    queryKey: ['marketplace-system-items'],
+    queryFn: () => fetchMarketplaceSkills(undefined, undefined, undefined, undefined, 200, undefined, undefined),
+  });
+
+  // Personalities (for assignment labels)
+  const { data: personalitiesData } = useQuery({
+    queryKey: ['personalities'],
+    queryFn: fetchPersonalities,
+  });
+  const personalityMap = new Map<string, string>(
+    (personalitiesData?.personalities ?? []).map((p) => [p.id, p.name])
+  );
+
+  const isLoading = skillsLoading || marketplaceLoading;
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ['skills'] });
+    void queryClient.invalidateQueries({ queryKey: ['marketplace'] });
+    void queryClient.invalidateQueries({ queryKey: ['marketplace-themes'] });
+    void queryClient.invalidateQueries({ queryKey: ['marketplace-system-items'] });
+  };
+
+  const enableMut = useMutation({
+    mutationFn: (id: string) => enableSkill(id),
+    onSuccess: invalidate,
+  });
+  const disableMut = useMutation({
+    mutationFn: (id: string) => disableSkill(id),
+    onSuccess: invalidate,
+  });
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteSkill(id),
+    onSuccess: invalidate,
+  });
+  const uninstallMut = useMutation({
+    mutationFn: (id: string) => uninstallMarketplaceSkill(id),
+    onSuccess: invalidate,
+  });
+
+  // Filter brain skills to only system items (themes + personalities)
+  const allSkills = skillsData?.skills ?? [];
+  const systemSkills = allSkills.filter(isSystemSkill);
+
+  // Build a catalog lookup by name for category metadata
+  const catalogSkills = marketplaceData?.skills ?? [];
+  const catalogByName = new Map<string, CatalogSkill>();
+  for (const cs of catalogSkills) {
+    catalogByName.set(cs.name, cs);
+  }
+
+  // Filter to the requested type, then group by name
+  const filteredSystemSkills = systemSkills.filter((s) => getSystemCategory(s) === filter);
+  const groupedByName = new Map<string, Skill[]>();
+  for (const s of filteredSystemSkills) {
+    const existing = groupedByName.get(s.name);
+    if (existing) existing.push(s);
+    else groupedByName.set(s.name, [s]);
+  }
+  const itemGroups = Array.from(groupedByName.entries());
+
+  // Get marketplace category for a skill (from catalog lookup)
+  const getMarketplaceCategory = (s: Skill): string => {
+    const cat = catalogByName.get(s.name);
+    return cat?.category || getSystemCategory(s);
+  };
+
+  // Get marketplace catalog ID for uninstall
+  const getCatalogId = (s: Skill): string | null => {
+    const cat = catalogByName.get(s.name);
+    return cat?.id ?? null;
+  };
+
+  const handleEdit = (s: Skill) => {
+    const cat = getSystemCategory(s);
+    if (cat === 'theme') {
+      navigate('/settings/appearance');
+    } else {
+      navigate('/settings/souls');
+    }
+  };
+
+  const handleDelete = (s: Skill) => {
+    // Uninstall from marketplace catalog
+    const catalogId = getCatalogId(s);
+    if (catalogId) {
+      uninstallMut.mutate(catalogId);
+    }
+    // Delete all brain skill instances (all personalities)
+    const group = getGroupForSkill(s);
+    for (const skill of group) {
+      deleteMut.mutate(skill.id);
+    }
+  };
+
+  const agentLabel = (s: Skill) =>
+    s.personalityName ??
+    (s.personalityId ? (personalityMap.get(s.personalityId) ?? s.personalityId) : null) ??
+    'Global';
+
+  const renderSystemGroup = (group: Skill[]) => {
+    const primary = group[0];
+    const cat = getSystemCategory(primary);
+    const marketplaceCat = getMarketplaceCategory(primary);
+    const sourceLabel = SOURCE_LABELS[primary.source] || primary.source;
+    const allEnabled = group.every((s) => s.enabled);
+
+    // Theme preview
+    let themePreview: [string, string, string] | null = null;
+    if (cat === 'theme') {
+      try {
+        const parsed = JSON.parse(primary.instructions);
+        themePreview = parsed.preview || null;
+      } catch { /* ignore */ }
+    }
+
+    return (
+      <div key={primary.name} className="card p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              {cat === 'theme' ? (
+                <Palette className="w-4 h-4 text-primary shrink-0" />
+              ) : (
+                <UserCircle className="w-4 h-4 text-primary shrink-0" />
+              )}
+              <h3 className="font-medium">{primary.name}</h3>
+              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                allEnabled
+                  ? 'bg-success/10 text-success'
+                  : 'bg-muted text-muted-foreground'
+              }`}>
+                {allEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+              <span className="text-xs text-muted-foreground">{sourceLabel}</span>
+              {marketplaceCat && marketplaceCat !== cat && (
+                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                  {categoryLabel(marketplaceCat)}
+                </span>
+              )}
+            </div>
+            {primary.description && (
+              <p className="text-sm text-muted-foreground mt-1">{sanitizeText(primary.description)}</p>
+            )}
+            {/* Install scope */}
+            <div className="flex items-center flex-wrap gap-1.5 mt-2">
+              <span className="text-xs text-muted-foreground">Installed:</span>
+              <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                System
+              </span>
+            </div>
+            {/* Theme preview strip */}
+            {themePreview && (
+              <div className="h-6 rounded flex overflow-hidden border border-border mt-2 max-w-[200px]">
+                {themePreview.map((color, i) => (
+                  <div key={i} className="flex-1" style={{ backgroundColor: color }} />
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            {/* Enable/Disable toggle — toggles all instances */}
+            <button
+              onClick={() => {
+                for (const s of group) {
+                  if (allEnabled) {
+                    disableMut.mutate(s.id);
+                  } else {
+                    enableMut.mutate(s.id);
+                  }
+                }
+              }}
+              className="btn btn-ghost p-2"
+              title={allEnabled ? 'Disable' : 'Enable'}
+            >
+              {allEnabled ? (
+                <ToggleRight className="w-5 h-5 text-success" />
+              ) : (
+                <ToggleLeft className="w-5 h-5 text-muted-foreground" />
+              )}
+            </button>
+            {/* Edit — navigate to appropriate settings */}
+            <button
+              onClick={() => {
+                handleEdit(primary);
+              }}
+              className="btn btn-ghost p-2"
+              title={cat === 'theme' ? 'Edit in Appearance' : 'Edit in Souls'}
+            >
+              {cat === 'theme' ? (
+                <Settings className="w-4 h-4" />
+              ) : (
+                <Edit2 className="w-4 h-4" />
+              )}
+            </button>
+            {/* Delete — uninstalls all personality instances */}
+            <button
+              onClick={() => {
+                setDeleteTarget(primary);
+              }}
+              className="btn btn-ghost p-2"
+              title="Uninstall"
+            >
+              <Trash2 className="w-4 h-4 text-destructive" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // For deletion, find all brain skill instances with the same name
+  const getGroupForSkill = (s: Skill): Skill[] => groupedByName.get(s.name) ?? [s];
+
+  const filterLabel = filter === 'theme' ? 'themes' : 'personalities';
+  const FilterIcon = filter === 'theme' ? Palette : UserCircle;
+
+  if (filteredSystemSkills.length === 0) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          No {filterLabel} installed. Browse the Marketplace to install {filterLabel}.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div
+            className="card p-4 space-y-2 cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => onNavigateTab?.('marketplace', filter === 'theme' ? 'themes' : 'personalities')}
+          >
+            <div className="flex items-center gap-2">
+              <Store className="w-4 h-4 text-primary" />
+              <span className="font-medium text-sm">Marketplace</span>
+              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground ml-auto" />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Browse and install {filterLabel}.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <FilterIcon className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold capitalize">{filterLabel}</h3>
+          <span className="text-xs text-muted-foreground">({itemGroups.length})</span>
+        </div>
+        <div className="space-y-2">
+          {itemGroups.map(([, group]) => renderSystemGroup(group))}
+        </div>
+      </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Uninstall System Item"
+        message={`Are you sure you want to uninstall "${deleteTarget?.name}"? This will remove it from all personalities.`}
+        confirmLabel="Uninstall"
+        destructive
+        onConfirm={() => {
+          if (deleteTarget) handleDelete(deleteTarget);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
+      />
+    </>
+  );
+}
+
 // ── Main InstalledTab ─────────────────────────────────────────────────────────
 
 export function InstalledTab({
@@ -267,16 +597,15 @@ export function InstalledTab({
   workflowsEnabled = false,
   subAgentsEnabled = false,
 }: {
-  onNavigateTab?: (tab: TabType) => void;
+  onNavigateTab?: (tab: TabType, contentType?: ContentType) => void;
   workflowsEnabled?: boolean;
   subAgentsEnabled?: boolean;
 }) {
   const [filterPersonalityId, setFilterPersonalityId] = useState<string>('');
-  const visibleOptions = CONTENT_TYPE_OPTIONS.filter((o) => {
-    if (o.value === 'workflows' && !workflowsEnabled) return false;
-    if (o.value === 'swarms' && !subAgentsEnabled) return false;
-    return true;
-  });
+  const hiddenTypes: ContentType[] = [
+    ...(!workflowsEnabled ? ['workflows' as const] : []),
+    ...(!subAgentsEnabled ? ['swarms' as const] : []),
+  ];
   const [contentType, setContentType] = useState<ContentType>('skills');
 
   const { data, isLoading } = useQuery({
@@ -292,8 +621,8 @@ export function InstalledTab({
   const personalities = personalitiesData?.personalities ?? [];
   const personalityMap = new Map<string, string>(personalities.map((p) => [p.id, p.name]));
 
-  // All skills from every source are shown in Installed — not just marketplace/community.
-  const allSkills = data?.skills ?? [];
+  // All skills from every source — exclude system items from the Skills view
+  const allSkills = (data?.skills ?? []).filter((s: Skill) => !isSystemSkill(s));
 
   const filteredSkills = filterPersonalityId
     ? allSkills.filter((s: Skill) => s.personalityId === filterPersonalityId)
@@ -346,42 +675,15 @@ export function InstalledTab({
 
   return (
     <div className="space-y-6">
+      {/* Content type selector — shared with Marketplace & Community tabs */}
+      <ContentTypeSelector
+        value={contentType}
+        onChange={(v) => { setContentType(v); }}
+        hiddenTypes={hiddenTypes}
+      />
+
       {/* Filters row */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Content type dropdown — hidden when only skills available */}
-        {visibleOptions.length > 1 && (
-          <div className="relative">
-            <select
-              value={contentType}
-              onChange={(e) => {
-                setContentType(e.target.value as ContentType);
-              }}
-              className="bg-card border border-border rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
-            >
-              {visibleOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <svg
-                className="w-4 h-4 text-muted-foreground"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </div>
-          </div>
-        )}
-
         {/* Personality filter — only relevant for skills */}
         {contentType === 'skills' && (
           <div className="relative">
@@ -430,6 +732,12 @@ export function InstalledTab({
 
       {/* ── Swarm Templates ────────────────────────────────────────────── */}
       {contentType === 'swarms' && <InstalledSwarms onNavigateTab={onNavigateTab} />}
+
+      {/* ── Themes ───────────────────────────────────────────────────── */}
+      {contentType === 'themes' && <InstalledSystem onNavigateTab={onNavigateTab} filter="theme" />}
+
+      {/* ── Personalities ──────────────────────────────────────────────── */}
+      {contentType === 'personalities' && <InstalledSystem onNavigateTab={onNavigateTab} filter="personality" />}
 
       {/* ── Skills ─────────────────────────────────────────────────────── */}
       {contentType === 'skills' && (

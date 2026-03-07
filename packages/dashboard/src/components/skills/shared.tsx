@@ -12,6 +12,7 @@ import {
   FolderOpen,
   ChevronDown,
   ChevronRight,
+  Zap,
 } from 'lucide-react';
 import {
   installMarketplaceSkill,
@@ -151,8 +152,15 @@ export function SkillCard({
 
       {/* Badges row */}
       <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-[10px] text-muted-foreground">{skill.category}</span>
-        {badge}
+        {badge ?? (
+          <>
+            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+              <Zap className="w-2.5 h-2.5" />
+              Skill
+            </span>
+            <span className="text-[10px] text-muted-foreground capitalize">{skill.category}</span>
+          </>
+        )}
       </div>
 
       {/* Description */}
@@ -163,7 +171,14 @@ export function SkillCard({
       {/* Footer */}
       <div className="pt-3 border-t border-border mt-auto">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-medium text-foreground">{skill.author}</span>
+          {skill.author === 'YEOMAN' ? (
+            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+              <Shield className="w-2.5 h-2.5" />
+              YEOMAN
+            </span>
+          ) : (
+            <span className="text-xs font-medium text-foreground">{skill.author}</span>
+          )}
           <span className="text-[10px] text-muted-foreground">
             {skill.downloadCount.toLocaleString()} installs
           </span>
@@ -260,12 +275,6 @@ export function SkillPreviewModal({
               <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
                 v{skill.version}
               </span>
-              {skill.source === 'builtin' && (
-                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                  <Shield className="w-2.5 h-2.5" />
-                  YEOMAN
-                </span>
-              )}
               {skill.source === 'community' && (
                 <span className="inline-flex items-center gap-1 text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">
                   <GitBranch className="w-2.5 h-2.5" />
@@ -274,7 +283,14 @@ export function SkillPreviewModal({
               )}
             </div>
             <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
-              <span>{skill.author}</span>
+              {skill.author === 'YEOMAN' ? (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                  <Shield className="w-2.5 h-2.5" />
+                  YEOMAN
+                </span>
+              ) : (
+                <span>{skill.author}</span>
+              )}
               {skill.authorInfo?.github && (
                 <a
                   href={`https://github.com/${skill.authorInfo.github}`}

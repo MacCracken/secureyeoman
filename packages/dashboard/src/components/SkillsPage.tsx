@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Bot, Store, Users, Download } from 'lucide-react';
 import { fetchSecurityPolicy } from '../api/client';
-import { type TabType } from './skills/shared';
+import { type TabType, type ContentType } from './skills/shared';
 import { PersonalTab } from './skills/PersonalTab';
 import { MarketplaceTab } from './skills/MarketplaceTab';
 import { CommunityTab } from './skills/CommunityTab';
@@ -33,6 +33,16 @@ export function SkillsPage() {
   };
 
   const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
+  const [marketplaceContentType, setMarketplaceContentType] = useState<ContentType | undefined>();
+
+  const handleNavigateTab = (tab: TabType, contentType?: ContentType) => {
+    setActiveTab(tab);
+    if (tab === 'marketplace' && contentType) {
+      setMarketplaceContentType(contentType);
+    } else {
+      setMarketplaceContentType(undefined);
+    }
+  };
 
   // If community is disabled while on that tab, fall back to Personal
   useEffect(() => {
@@ -117,14 +127,18 @@ export function SkillsPage() {
 
       {activeTab === 'my-skills' && <PersonalTab />}
       {activeTab === 'marketplace' && (
-        <MarketplaceTab workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />
+        <MarketplaceTab
+          workflowsEnabled={workflowsEnabled}
+          subAgentsEnabled={subAgentsEnabled}
+          initialContentType={marketplaceContentType}
+        />
       )}
       {activeTab === 'community' && communityEnabled && (
         <CommunityTab workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />
       )}
       {activeTab === 'installed' && (
         <InstalledTab
-          onNavigateTab={setActiveTab}
+          onNavigateTab={handleNavigateTab}
           workflowsEnabled={workflowsEnabled}
           subAgentsEnabled={subAgentsEnabled}
         />

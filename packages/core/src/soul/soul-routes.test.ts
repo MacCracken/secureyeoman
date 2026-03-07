@@ -12,7 +12,6 @@ const PERSONALITY = {
   systemPrompt: 'You are helpful.',
   traits: {},
   isDefault: false,
-  isArchetype: false,
   body: {
     activeHours: {
       enabled: false,
@@ -795,7 +794,6 @@ describe('isPersonalityWithinActiveHours', () => {
     includeArchetypes: false,
     isActive: false,
     isDefault: false,
-    isArchetype: false,
     body: {
       enabled: false,
       capabilities: [],

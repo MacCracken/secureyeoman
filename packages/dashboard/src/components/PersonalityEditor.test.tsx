@@ -133,7 +133,6 @@ const MOCK_PERSONALITY = {
   avatarUrl: null,
   isActive: false,
   isDefault: false,
-  isArchetype: false,
   body: {
     enabled: false,
     capabilities: [],
@@ -888,7 +887,6 @@ describe('PersonalityEditor — delete button', () => {
       ...MOCK_PERSONALITY,
       isActive: false,
       isDefault: false,
-      isArchetype: false,
     };
     mockFetchPersonalities.mockResolvedValue({ personalities: [personality] });
     renderComponent();
@@ -901,7 +899,6 @@ describe('PersonalityEditor — delete button', () => {
       ...MOCK_PERSONALITY,
       isActive: false,
       isDefault: true,
-      isArchetype: false,
     };
     mockFetchPersonalities.mockResolvedValue({ personalities: [personality] });
     renderComponent();
@@ -914,7 +911,6 @@ describe('PersonalityEditor — delete button', () => {
       ...MOCK_PERSONALITY,
       isActive: true,
       isDefault: false,
-      isArchetype: false,
     };
     mockFetchPersonalities.mockResolvedValue({ personalities: [personality] });
     renderComponent();
@@ -924,18 +920,6 @@ describe('PersonalityEditor — delete button', () => {
     expect(deleteBtn).toBeDisabled();
   });
 
-  it('delete button is disabled for archetype personality', async () => {
-    const personality = {
-      ...MOCK_PERSONALITY,
-      isActive: false,
-      isDefault: false,
-      isArchetype: true,
-    };
-    mockFetchPersonalities.mockResolvedValue({ personalities: [personality] });
-    renderComponent();
-    const deleteBtn = await screen.findByLabelText('Cannot delete system preset');
-    expect(deleteBtn).toBeDisabled();
-  });
 });
 
 describe('PersonalityEditor — Disposition', () => {

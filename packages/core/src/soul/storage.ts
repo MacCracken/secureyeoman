@@ -38,7 +38,6 @@ interface PersonalityRow {
   avatar_url: string | null;
   is_active: boolean;
   is_default: boolean;
-  is_archetype: boolean;
   body: Personality['body'];
   created_at: number;
   updated_at: number;
@@ -99,7 +98,6 @@ function rowToPersonality(row: PersonalityRow): Personality {
     avatarUrl: row.avatar_url ?? null,
     isActive: row.is_active,
     isDefault: row.is_default ?? false,
-    isArchetype: row.is_archetype ?? false,
     body: row.body ?? {
       enabled: false,
       capabilities: [],
@@ -209,15 +207,14 @@ export class SoulStorage extends PgBaseStorage {
   // ── Personalities ─────────────────────────────────────────────
 
   async createPersonality(
-    data: PersonalityCreate,
-    opts?: { isArchetype?: boolean }
+    data: PersonalityCreate
   ): Promise<Personality> {
     const now = Date.now();
     const id = uuidv7();
 
     const row = await this.queryOne<PersonalityRow>(
-      `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, inject_date_time, empathy_resonance, is_active, is_default, is_archetype, avatar_url, body, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15, $16, $17, $18::jsonb, $19, $20)
+      `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, inject_date_time, empathy_resonance, is_active, is_default, avatar_url, body, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15, $16, $17::jsonb, $18, $19)
        RETURNING *`,
       [
         id,
@@ -235,7 +232,6 @@ export class SoulStorage extends PgBaseStorage {
         data.empathyResonance ?? false,
         false,
         false,
-        opts?.isArchetype ?? false,
         data.avatarUrl ?? null,
         JSON.stringify(
           data.body ?? {
@@ -418,10 +414,6 @@ export class SoulStorage extends PgBaseStorage {
   }
 
   async deletePersonality(id: string): Promise<boolean> {
-    const existing = await this.getPersonality(id);
-    if (existing?.isArchetype) {
-      throw new Error('Cannot delete a system archetype personality.');
-    }
     const count = await this.execute('DELETE FROM soul.personalities WHERE id = $1', [id]);
     return count > 0;
   }
