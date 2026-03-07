@@ -48,7 +48,7 @@ export class FederatedManager {
           this.log.error({ err }, 'Federated heartbeat check failed');
         });
       }, this.config.heartbeatIntervalMs);
-      this.log.info('Federated learning heartbeat started');
+      this.log.info({}, 'Federated learning heartbeat started');
     }
   }
 

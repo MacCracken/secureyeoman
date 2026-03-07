@@ -6,7 +6,7 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve as resolvePath, relative } from 'node:path';
@@ -14,7 +14,22 @@ import { sendError, toErrorMessage } from '../utils/errors.js';
 import { getLogger } from '../logging/logger.js';
 import { buildSafeEnv } from '../utils/process-env.js';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+const MAX_REGEX_LENGTH = 200;
+
+/** Validate a user-supplied regex won't cause catastrophic backtracking */
+function isSafeRegex(pattern: string): boolean {
+  if (pattern.length > MAX_REGEX_LENGTH) return false;
+  // Block nested quantifiers that cause ReDoS: (a+)+, (a*)*,  (a+)*, etc.
+  if (/(\([^)]*[+*][^)]*\))[+*{]/.test(pattern)) return false;
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 interface SearchMatch {
   file: string;
@@ -111,14 +126,10 @@ export function registerSearchRoutes(app: FastifyInstance): void {
           flags.push('--include', glob);
         }
 
-        // Use -- to prevent pattern from being interpreted as flags
-        const args = [...flags, '--', JSON.stringify(query).slice(1, -1)]
-          .map((a) => `'${a.replace(/'/g, "'\\''")}'`)
-          .join(' ');
+        // Use execFile to avoid shell injection — passes args as an array
+        const grepArgs = [...flags, '--', query, '.'];
 
-        const cmd = `grep ${args} . 2>/dev/null | head -n ${limit * 5}`;
-
-        const { stdout } = await execAsync(cmd, {
+        const { stdout: rawStdout } = await execFileAsync('grep', grepArgs, {
           cwd: resolvedCwd,
           maxBuffer: 2 * 1024 * 1024,
           timeout: 10_000,
@@ -129,6 +140,10 @@ export function registerSearchRoutes(app: FastifyInstance): void {
             return { stdout: '' };
           throw err;
         });
+
+        // Truncate output in-process instead of piping through head
+        const outputLines = rawStdout.split('\n');
+        const stdout = outputLines.slice(0, limit * 5).join('\n');
 
         const matches = parseGrepOutput(stdout, resolvedCwd, limit);
 
@@ -142,7 +157,7 @@ export function registerSearchRoutes(app: FastifyInstance): void {
 
         return result;
       } catch (err) {
-        log.error('Search failed', { error: toErrorMessage(err) });
+        log.error({ error: toErrorMessage(err) }, 'Search failed');
         return sendError(reply, 500, 'Search failed');
       }
     }
@@ -192,7 +207,13 @@ export function registerSearchRoutes(app: FastifyInstance): void {
 
       try {
         const flags = regex ? (caseSensitive ? 'g' : 'gi') : caseSensitive ? 'g' : 'gi';
-        const searchPattern = regex ? new RegExp(search, flags) : null;
+        let searchPattern: RegExp | null = null;
+        if (regex) {
+          if (!isSafeRegex(search)) {
+            return sendError(reply, 400, 'Regex pattern is too complex or too long');
+          }
+          searchPattern = new RegExp(search, flags);
+        }
 
         for (const file of files) {
           if (!isPathSafe(resolvedCwd, file)) {
@@ -230,7 +251,7 @@ export function registerSearchRoutes(app: FastifyInstance): void {
         const result: ReplaceResult = { files: results, totalReplacements };
         return result;
       } catch (err) {
-        log.error('Replace failed', { error: toErrorMessage(err) });
+        log.error({ error: toErrorMessage(err) }, 'Replace failed');
         return sendError(reply, 500, 'Replace failed');
       }
     }

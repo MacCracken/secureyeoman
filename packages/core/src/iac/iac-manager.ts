@@ -65,7 +65,7 @@ export class IacManager {
    * Sync templates from git — pull, discover, validate, and store.
    */
   async syncFromGit(): Promise<{ templates: IacTemplate[]; errors: string[] }> {
-    this.log.info('Starting IaC sync from git');
+    this.log.info({}, 'Starting IaC sync from git');
 
     let commitSha = '';
     try {

@@ -98,7 +98,7 @@ services:
   # Capabilities are restricted to block SSRF: http.send and net.lookup_ip_addr
   # are disabled before accepting user-authored Rego policies.
   opa:
-    image: openpolicyagent/opa:latest
+    image: openpolicyagent/opa:0.71.0
     command:
       - "run"
       - "--server"

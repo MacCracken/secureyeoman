@@ -167,7 +167,9 @@ export class DiscordIntegration implements Integration {
           await this.deps!.onMessage(unified);
         })();
       } else {
-        void this.deps!.onMessage(unified);
+        this.deps!.onMessage(unified).catch((err: unknown) => {
+          this.logger?.error('onMessage handler failed', { error: err instanceof Error ? err.message : String(err) });
+        });
       }
     });
 
@@ -198,7 +200,9 @@ export class DiscordIntegration implements Integration {
           timestamp: modal.createdTimestamp,
         };
 
-        void this.deps!.onMessage(unified);
+        this.deps!.onMessage(unified).catch((err: unknown) => {
+          this.logger?.error('onMessage handler failed', { error: err instanceof Error ? err.message : String(err) });
+        });
         return;
       }
 
@@ -282,7 +286,9 @@ export class DiscordIntegration implements Integration {
           timestamp: cmd.createdTimestamp,
         };
 
-        void this.deps!.onMessage(unified);
+        this.deps!.onMessage(unified).catch((err: unknown) => {
+          this.logger?.error('onMessage handler failed', { error: err instanceof Error ? err.message : String(err) });
+        });
       }
     });
 

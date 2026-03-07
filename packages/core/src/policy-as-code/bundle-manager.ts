@@ -72,7 +72,7 @@ export class BundleManager {
   async syncFromGit(
     deployedBy = 'system'
   ): Promise<{ bundles: PolicyBundle[]; deployments: PolicyDeployment[] }> {
-    this.log.info('Starting policy sync from git');
+    this.log.info({}, 'Starting policy sync from git');
 
     // Pull latest changes
     let commitSha = '';
@@ -80,7 +80,7 @@ export class BundleManager {
       const pullResult = await this.gitRepo.pull();
       commitSha = pullResult.commitSha;
       if (!pullResult.updated) {
-        this.log.info('No policy changes detected');
+        this.log.info({}, 'No policy changes detected');
       }
     } catch (err) {
       this.log.warn({ err }, 'Git pull failed, using existing state');

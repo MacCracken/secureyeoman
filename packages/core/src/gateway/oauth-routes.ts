@@ -4,8 +4,6 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AuthService } from '../security/auth.js';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { AuthError } from '../security/auth.js';
 import { generateSecureToken, sha256 } from '../utils/crypto.js';
 import type { OAuthTokenService } from './oauth-token-service.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';

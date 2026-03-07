@@ -13,7 +13,7 @@ vi.mock('../logging/logger.js', () => ({
 }));
 
 vi.mock('node:child_process', () => ({
-  exec: vi.fn(),
+  execFile: vi.fn(),
 }));
 vi.mock('node:util', () => ({
   promisify: (fn: any) => fn,
@@ -27,10 +27,10 @@ vi.mock('../utils/process-env.js', () => ({
   buildSafeEnv: () => ({}),
 }));
 
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
-const mockExec = vi.mocked(exec as unknown as (...args: any[]) => Promise<{ stdout: string }>);
+const mockExecFile = vi.mocked(execFile as unknown as (...args: any[]) => Promise<{ stdout: string }>);
 const mockExistsSync = vi.mocked(existsSync);
 const mockReadFileSync = vi.mocked(readFileSync);
 const mockWriteFileSync = vi.mocked(writeFileSync);
@@ -67,7 +67,7 @@ describe('search-routes', () => {
 
     it('returns search results', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockExec.mockResolvedValue({
+      mockExecFile.mockResolvedValue({
         stdout: './src/app.ts:10:const foo = 42;\n--\n./src/bar.ts:5:foo()\n',
       });
 
@@ -87,7 +87,7 @@ describe('search-routes', () => {
 
     it('returns empty results when grep finds nothing', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockExec.mockRejectedValue(Object.assign(new Error(''), { code: 1 }));
+      mockExecFile.mockRejectedValue(Object.assign(new Error(''), { code: 1 }));
 
       const res = await app.inject({
         method: 'POST',
@@ -103,7 +103,7 @@ describe('search-routes', () => {
 
     it('passes case-insensitive flag', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockExec.mockResolvedValue({ stdout: '' });
+      mockExecFile.mockResolvedValue({ stdout: '' });
 
       await app.inject({
         method: 'POST',
@@ -111,13 +111,13 @@ describe('search-routes', () => {
         payload: { query: 'test', cwd: '/tmp', caseSensitive: false },
       });
 
-      const cmd = mockExec.mock.calls[0]?.[0] as string;
-      expect(cmd).toContain('-i');
+      const args = mockExecFile.mock.calls[0]?.[1] as string[];
+      expect(args).toContain('-i');
     });
 
     it('passes glob include filter', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockExec.mockResolvedValue({ stdout: '' });
+      mockExecFile.mockResolvedValue({ stdout: '' });
 
       await app.inject({
         method: 'POST',
@@ -125,8 +125,8 @@ describe('search-routes', () => {
         payload: { query: 'test', cwd: '/tmp', glob: '*.ts' },
       });
 
-      const cmd = mockExec.mock.calls[0]?.[0] as string;
-      expect(cmd).toContain('--include');
+      const args = mockExecFile.mock.calls[0]?.[1] as string[];
+      expect(args).toContain('--include');
     });
   });
 

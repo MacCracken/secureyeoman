@@ -50,7 +50,7 @@ const BLOCKED_PATTERNS = [
 // Matches: $(), ${}, backticks, &&, ||, ;, |, >, <
 // Pipe (|) is allowed only for whitelisted patterns like `| grep`, `| head`, `| tail`, `| wc`, `| sort`
 const SHELL_INJECTION_PATTERN = /[;&`]|(\$\()|(\${)|&&|\|\||>>|<<|[><]/;
-const SAFE_PIPE_PATTERN = /\|\s*(grep|head|tail|wc|sort|uniq|less|more|cat|awk|sed|cut|tr)\b/;
+const SAFE_PIPE_PATTERN = /\|\s*(grep|head|tail|wc|sort|uniq|less|more|cat|cut|tr)\b/;
 
 function containsShellInjection(command: string): boolean {
   // Check for unsafe metacharacters
