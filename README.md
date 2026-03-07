@@ -5,7 +5,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: ~20,200](https://img.shields.io/badge/Tests-~20%2C200-brightgreen.svg)]()
+[![Tests: ~21,400](https://img.shields.io/badge/Tests-~21%2C400-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 
 > **Your AI. Your Rules. Your Infrastructure.**
@@ -54,7 +54,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 
 - **Self-hosted, not SaaS** — single binary, Docker, or Kubernetes. Your data stays on your machines.
 - **Governed by design** — RBAC, audit trails, cryptographic integrity, sandboxed execution, OPA/CEL governance.
-- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 330-tool MCP server.
+- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 351-tool MCP server.
 - **Full ML lifecycle** — distillation, LoRA fine-tuning, LLM-as-Judge evaluation, DPO, conversation analytics.
 
 ---
@@ -70,7 +70,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 | **Training** | Dataset export, distillation, LoRA fine-tuning, pre-training from scratch, LLM-as-Judge eval, DPO/RLHF, federated learning, conversation analytics, A/B experiments |
 | **Dashboard** | React + Vite + Tailwind (42 themes), mission control, real-time CRDT editing, conversation branching, canvas workspace, inline AI completion |
 | **Integrations** | 32 platforms (Slack, Discord, GitHub, Gmail, Teams, WhatsApp + more), 21 CI/CD tools, security toolkits (Kali, network, Docker) |
-| **MCP** | 330 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
+| **MCP** | 351 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
 | **Enterprise** | Multi-tenancy (PostgreSQL RLS), multi-region HA, DLP, supply chain security (SBOM, SLSA, signed releases), OpenTelemetry, Prometheus/Grafana |
 | **Knowledge** | Document ingestion (PDF, HTML, MD, URL, GitHub Wiki), RAG with hybrid FTS+vector search, cognitive memory (ACT-R, Hebbian learning) |
 | **Deployment** | Single binary (~123 MB), Docker, Kubernetes Helm chart; Linux x64/arm64, macOS arm64, Windows x64 |
@@ -105,7 +105,7 @@ secureyeoman health                             # check server health
 secureyeoman status --profile                   # server status + memory profiling
 secureyeoman model switch anthropic claude-sonnet-4-6
 secureyeoman tui                                # full-screen terminal dashboard
-secureyeoman help                               # all 41 commands
+secureyeoman help                               # all 40 commands
 ```
 
 **MCP Integration** — Connect to any MCP-compatible client (Claude Desktop, etc.):

@@ -2,7 +2,7 @@
 
 Most AI assistants serve their platform. SecureYeoman serves you — self-hosted, enterprise-hardened, and answerable only to you. Keep it local. Go hybrid. Connect any provider. Your data only moves when you say so.
 
-**v2026.3.6** | AGPL-3.0 License | 330 MCP Tools | 41 CLI Commands
+**v2026.3.6** | AGPL-3.0 License | 351 MCP Tools | 40 CLI Commands
 
 ---
 
@@ -43,12 +43,12 @@ Injection detection scoring, PII scanning (SSN, credit card, email, phone), toxi
 - Toxicity & topic guardrails
 - ResponseGuard output scanner
 
-### 4. 330 MCP Tools & Integrations
+### 4. 351 MCP Tools & Integrations
 
-32 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, Gmail, GitHub, Jira, Linear, Notion, and more. 330 built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection, rate limiting, and audit logging.
+32 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, Gmail, GitHub, Jira, Linear, Notion, and more. 351 built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection, rate limiting, and audit logging.
 
 - 32 platform integrations
-- 330 tools, 9 resources, 4 prompts
+- 351 tools, 9 resources, 4 prompts
 - SSRF protection + rate limiting
 - Full audit trail on every tool call
 
@@ -72,9 +72,9 @@ Vector semantic search (FAISS/Qdrant/ChromaDB) fused with tsvector full-text sea
 
 ### 7. Developer Experience
 
-39-command CLI with shell completions and `--json` scripting output. Full-screen TUI (`secureyeoman tui`). Rich lifecycle hook system with observe/transform/veto semantics. Sandboxed code execution (Python, Node.js, shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by explicit consent and audit trail.
+40-command CLI with shell completions and `--json` scripting output. Full-screen TUI (`secureyeoman tui`). Rich lifecycle hook system with observe/transform/veto semantics. Sandboxed code execution (Python, Node.js, shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by explicit consent and audit trail.
 
-- 39 CLI commands + full-screen TUI
+- 40 CLI commands + full-screen TUI
 - Rich lifecycle hooks
 - Sandboxed code execution
 - Desktop control (consent-gated)
@@ -135,7 +135,7 @@ Preference annotation, experiment registry, model versioning, A/B testing, and c
 | Data Residency | 100% local | Cloud default | Docker | Local | TEE cloud |
 | RBAC + SSO | Full | None | None | None | None |
 | Multi-tenancy | RLS-enforced | No | No | No | No |
-| MCP Tools | 330 | Limited | External | Client | Via path |
+| MCP Tools | 351 | Limited | External | Client | Via path |
 | Cryptographic Audit | HMAC-SHA256 | No | No | No | Local DB only |
 | Workflow Orchestration | DAG + Visual | No | No | No | No |
 | Integrations | 32 platforms | 23+ | CLI/Web | 11+ | ~4 |
