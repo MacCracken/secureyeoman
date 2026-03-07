@@ -1260,7 +1260,7 @@ export class SraManager {
             },
           };
           alertMgr.evaluate(snapshot as any).catch((e: unknown) => {
-            this.logger.debug('SRA alert evaluation failed', { error: String(e) });
+            this.logger.debug({ error: String(e) }, 'SRA alert evaluation failed');
           });
         }
       } catch {
@@ -1431,12 +1431,12 @@ export class SraManager {
     for (const bp of blueprints) {
       try {
         await this.storage.createBuiltinBlueprint(bp);
-        this.logger.debug('Seeded builtin SRA blueprint', { blueprintId: bp.id });
+        this.logger.debug({ blueprintId: bp.id }, 'Seeded builtin SRA blueprint');
       } catch (err) {
-        this.logger.error('Failed to seed builtin SRA blueprint', {
+        this.logger.error({
           blueprintId: bp.id,
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Failed to seed builtin SRA blueprint');
       }
     }
   }
@@ -1445,11 +1445,11 @@ export class SraManager {
     try {
       const mappings = makeBuiltinComplianceMappings();
       await this.storage.seedComplianceMappings(mappings);
-      this.logger.debug('Seeded SRA compliance mappings', { count: mappings.length });
+      this.logger.debug({ count: mappings.length }, 'Seeded SRA compliance mappings');
     } catch (err) {
-      this.logger.error('Failed to seed SRA compliance mappings', {
+      this.logger.error({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Failed to seed SRA compliance mappings');
     }
   }
 }

@@ -373,7 +373,7 @@ export class ScopeValidator {
    */
   setRoleLimits(roleId: string, limits: RoleScopeLimits): void {
     this.roleLimits.set(roleId, limits);
-    this.logger.info('Role limits updated', { roleId });
+    this.logger.info({ roleId }, 'Role limits updated');
   }
 
   /**

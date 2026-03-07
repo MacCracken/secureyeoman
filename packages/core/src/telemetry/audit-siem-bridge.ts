@@ -85,10 +85,10 @@ export class AuditSiemBridge {
       };
       this.forwarder.forward(siemEvent);
     } catch (err) {
-      this.logger.error('Failed to bridge audit event to SIEM', {
+      this.logger.error({
         event: entry.event,
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Failed to bridge audit event to SIEM');
     }
   }
 
@@ -124,10 +124,10 @@ export class AuditSiemBridge {
       };
       this.forwarder.forward(siemEvent);
     } catch (err) {
-      this.logger.error('Failed to bridge DLP event to SIEM', {
+      this.logger.error({
         action: entry.action,
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Failed to bridge DLP event to SIEM');
     }
   }
 }

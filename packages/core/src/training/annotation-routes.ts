@@ -140,7 +140,7 @@ export function registerAnnotationRoutes(
         reply.code(201);
         return { annotation };
       } catch (err) {
-        log.error('Failed to create annotation', { error: toErrorMessage(err) });
+        log.error({ error: toErrorMessage(err) }, 'Failed to create annotation');
         return sendError(reply, 500, 'Failed to create annotation');
       }
     }

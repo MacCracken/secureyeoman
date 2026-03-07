@@ -21,7 +21,7 @@ export class DashboardManager {
 
   async create(data: CustomDashboardCreate): Promise<CustomDashboard> {
     const dashboard = await this.storage.create(data);
-    this.logger.info('Custom dashboard created', { id: dashboard.id, name: dashboard.name });
+    this.logger.info({ id: dashboard.id, name: dashboard.name }, 'Custom dashboard created');
     return dashboard;
   }
 
@@ -38,13 +38,13 @@ export class DashboardManager {
 
   async update(id: string, data: Partial<CustomDashboardCreate>): Promise<CustomDashboard | null> {
     const updated = await this.storage.update(id, data);
-    if (updated) this.logger.info('Custom dashboard updated', { id });
+    if (updated) this.logger.info({ id }, 'Custom dashboard updated');
     return updated;
   }
 
   async delete(id: string): Promise<boolean> {
     const deleted = await this.storage.delete(id);
-    if (deleted) this.logger.info('Custom dashboard deleted', { id });
+    if (deleted) this.logger.info({ id }, 'Custom dashboard deleted');
     return deleted;
   }
 }

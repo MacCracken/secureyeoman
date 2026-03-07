@@ -34,13 +34,13 @@ export class CognitiveMemoryManager {
     if (this.timer) return;
     this.timer = setInterval(() => {
       void this.runMaintenance().catch((err: unknown) => {
-        this.logger.warn('Cognitive memory maintenance failed', { err: String(err) });
+        this.logger.warn({ err: String(err) }, 'Cognitive memory maintenance failed');
       });
     }, this.maintenanceIntervalMs);
     this.timer.unref?.();
-    this.logger.info('Cognitive memory manager started', {
+    this.logger.info({
       intervalMs: this.maintenanceIntervalMs,
-    });
+    }, 'Cognitive memory manager started');
   }
 
   stop(): void {
@@ -56,10 +56,10 @@ export class CognitiveMemoryManager {
    */
   async runMaintenance(): Promise<{ decayed: number }> {
     const deleted = await this.storage.decayAssociations(this.hebbianDecayFactor);
-    this.logger.info('Cognitive maintenance done', {
+    this.logger.info({
       deleted,
       decayFactor: this.hebbianDecayFactor,
-    });
+    }, 'Cognitive maintenance done');
     return { decayed: deleted };
   }
 

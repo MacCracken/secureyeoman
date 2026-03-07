@@ -32,10 +32,10 @@ export class RemoteDelegationTransport {
       });
       return response.ok;
     } catch (err) {
-      this.logger.warn('Failed to send A2A message', {
+      this.logger.warn({
         peerId: peer.id,
         error: err instanceof Error ? err.message : 'Unknown error',
-      });
+      }, 'Failed to send A2A message');
       return false;
     }
   }

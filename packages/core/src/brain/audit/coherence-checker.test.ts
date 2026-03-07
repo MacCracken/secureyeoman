@@ -255,8 +255,8 @@ describe('KnowledgeGraphCoherenceChecker', () => {
     expect(result.issuesFound).toBe(1);
     expect(result.details[0].type).toBe('orphaned_supersedes');
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Failed to fix orphaned supersedes',
-      expect.objectContaining({ knowledgeId: 'k-1' })
+      expect.objectContaining({ knowledgeId: 'k-1' }),
+      'Failed to fix orphaned supersedes'
     );
   });
 
@@ -318,11 +318,11 @@ describe('KnowledgeGraphCoherenceChecker', () => {
     await checker.check();
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Knowledge graph coherence check completed',
       expect.objectContaining({
         issuesFound: 1,
         issuesFixed: 1,
-      })
+      }),
+      'Knowledge graph coherence check completed'
     );
   });
 

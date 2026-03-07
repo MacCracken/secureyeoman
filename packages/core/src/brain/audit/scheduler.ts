@@ -57,16 +57,16 @@ export class MemoryAuditScheduler {
 
     // Load persisted schedules
     void this.loadSchedules().catch((e: unknown) => {
-      this.logger.warn('Failed to load audit schedules', { error: String(e) });
+      this.logger.warn({ error: String(e) }, 'Failed to load audit schedules');
     });
 
     this.schedulerTimer = setInterval(() => {
       this.checkSchedules();
     }, 60 * 1000);
 
-    this.logger.info('Memory audit scheduler started', {
+    this.logger.info({
       schedules: JSON.stringify(this.schedules),
-    });
+    }, 'Memory audit scheduler started');
   }
 
   stop(): void {
@@ -86,7 +86,7 @@ export class MemoryAuditScheduler {
   async setSchedule(scope: MemoryAuditScope, cron: string): Promise<void> {
     this.schedules[scope] = cron;
     await this.brainStorage.setMeta(`${META_PREFIX}${scope}`, cron);
-    this.logger.info('Audit schedule updated', { scope, cron });
+    this.logger.info({ scope, cron }, 'Audit schedule updated');
   }
 
   // ── Manual Audit ───────────────────────────────────────────
@@ -95,7 +95,7 @@ export class MemoryAuditScheduler {
     scope: MemoryAuditScope,
     personalityId?: string
   ): Promise<MemoryAuditReport> {
-    this.logger.info('Manual audit triggered', { scope, personalityId });
+    this.logger.info({ scope, personalityId }, 'Manual audit triggered');
     const report = await this.engine.runAudit(scope, personalityId);
     this.history.unshift(report);
     if (this.history.length > 50) this.history.length = 50;
@@ -147,7 +147,7 @@ export class MemoryAuditScheduler {
       this.history.unshift(report);
       if (this.history.length > 50) this.history.length = 50;
     } catch (err) {
-      this.logger.error('Scheduled audit failed', { error: String(err), scope });
+      this.logger.error({ error: String(err), scope }, 'Scheduled audit failed');
     } finally {
       this.running = false;
       await this.releaseLock();

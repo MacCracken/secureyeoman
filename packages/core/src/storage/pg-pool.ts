@@ -75,7 +75,7 @@ export function initPool(config: PgPoolConfig): pg.Pool {
   });
 
   pool.on('error', (err: Error) => {
-    getLogger().error('Unexpected PostgreSQL pool error', { error: err.message });
+    getLogger().error({ error: err.message }, 'Unexpected PostgreSQL pool error');
   });
 
   return pool;
@@ -146,10 +146,10 @@ export function initReplicaPools(
     });
 
     replicaPool.on('error', (err: Error) => {
-      getLogger().error('Unexpected PostgreSQL replica pool error', {
+      getLogger().error({
         error: err.message,
         host: replica.host,
-      });
+      }, 'Unexpected PostgreSQL replica pool error');
     });
 
     replicaPools.push(replicaPool);

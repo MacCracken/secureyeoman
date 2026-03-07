@@ -118,8 +118,8 @@ describe('VoiceAnnouncementManager', () => {
     await manager.announce('p1', 'workflow_complete', { name: 'Test' });
 
     expect(deps.logger.warn).toHaveBeenCalledWith(
-      'Voice announcement failed',
-      expect.objectContaining({ error: 'TTS failed' })
+      expect.objectContaining({ error: 'TTS failed' }),
+      'Voice announcement failed'
     );
   });
 

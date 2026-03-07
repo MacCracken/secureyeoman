@@ -95,8 +95,8 @@ describe('RemoteDelegationTransport.send', () => {
     const result = await transport.send(PEER, MESSAGE);
     expect(result).toBe(false);
     expect(logger.warn).toHaveBeenCalledWith(
-      'Failed to send A2A message',
-      expect.objectContaining({ error: 'Unknown error' })
+      expect.objectContaining({ error: 'Unknown error' }),
+      'Failed to send A2A message'
     );
   });
 });

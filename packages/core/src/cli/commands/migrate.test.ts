@@ -127,8 +127,8 @@ describe('migrateCommand', () => {
       expect(code).toBe(1);
       expect(ctx.err.join('')).toContain('DB connection failed');
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Database migration failed',
-        expect.objectContaining({ error: 'DB connection failed' })
+        expect.objectContaining({ error: 'DB connection failed' }),
+        'Database migration failed'
       );
     });
 

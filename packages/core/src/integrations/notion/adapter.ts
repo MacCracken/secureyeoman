@@ -205,7 +205,7 @@ export class NotionIntegration implements Integration {
       }
 
       if (!resp.ok) {
-        this.logger?.warn('Notion poll failed', { status: resp.status });
+        this.logger?.warn({ status: resp.status }, 'Notion poll failed');
         return;
       }
 
@@ -236,9 +236,9 @@ export class NotionIntegration implements Integration {
         await this.deps.onMessage(unified);
       }
     } catch (err) {
-      this.logger?.warn('Notion poll error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Notion poll error');
     }
   }
 

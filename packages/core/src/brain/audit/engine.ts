@@ -66,7 +66,7 @@ export class MemoryAuditEngine {
       personalityId: personalityId ?? null,
     });
 
-    this.logger.info('Memory audit started', { scope, personalityId, reportId: report.id });
+    this.logger.info({ scope, personalityId, reportId: report.id }, 'Memory audit started');
 
     try {
       // Pre-snapshot
@@ -116,13 +116,13 @@ export class MemoryAuditEngine {
         postSnapshot,
       });
 
-      this.logger.info('Memory audit completed', {
+      this.logger.info({
         reportId: report.id,
         scope,
         status: finalStatus,
         memoriesBefore: preSnapshot.totalMemories,
         memoriesAfter: postSnapshot.totalMemories,
-      });
+      }, 'Memory audit completed');
 
       // Alert: audit completed
       this.emitAlert('brain.audit_completed', 'info', 'Memory audit completed', {
@@ -152,7 +152,7 @@ export class MemoryAuditEngine {
       return updated!;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      this.logger.error('Memory audit failed', { reportId: report.id, error: errorMessage });
+      this.logger.error({ reportId: report.id, error: errorMessage }, 'Memory audit failed');
 
       this.emitAlert('brain.audit_failed', 'error', 'Memory audit failed', {
         scope,
@@ -228,7 +228,7 @@ export class MemoryAuditEngine {
     try {
       return await this.compressor.compress(scope, reportId, personalityId);
     } catch (err) {
-      this.logger.warn('Compression pass failed', { error: String(err) });
+      this.logger.warn({ error: String(err) }, 'Compression pass failed');
       return {
         candidatesFound: 0,
         memoriesCompressed: 0,
@@ -264,7 +264,7 @@ export class MemoryAuditEngine {
     try {
       return await this.reorganizer.reorganize(scope, reportId, personalityId);
     } catch (err) {
-      this.logger.warn('Reorganization pass failed', { error: String(err) });
+      this.logger.warn({ error: String(err) }, 'Reorganization pass failed');
       return {
         promoted: 0,
         demoted: 0,
@@ -289,7 +289,7 @@ export class MemoryAuditEngine {
         duplicatesRemoved: 0,
       };
     } catch (err) {
-      this.logger.warn('Maintenance pass failed', { error: String(err) });
+      this.logger.warn({ error: String(err) }, 'Maintenance pass failed');
       return { expiredPruned: 0, decayApplied: 0, duplicatesRemoved: 0 };
     }
   }

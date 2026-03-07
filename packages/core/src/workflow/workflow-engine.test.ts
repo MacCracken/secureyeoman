@@ -376,8 +376,8 @@ describe('WorkflowEngine.execute — step dispatch: resource', () => {
     await engine.execute(run, makeDefinition([step]));
 
     expect(logger.info).toHaveBeenCalledWith(
-      'Workflow resource step',
-      expect.objectContaining({ resourceType: 'memory' })
+      expect.objectContaining({ resourceType: 'memory' }),
+      'Workflow resource step'
     );
     expect(storage.updateRun).toHaveBeenCalledWith(
       run.id,
@@ -396,8 +396,8 @@ describe('WorkflowEngine.execute — step dispatch: mcp/tool', () => {
     await engine.execute(makeRun(), makeDefinition([step]));
 
     expect(logger.warn).toHaveBeenCalledWith(
-      'MCP tool step not wired to mcpClientManager',
-      expect.any(Object)
+      expect.any(Object),
+      'MCP tool step not wired to mcpClientManager'
     );
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
@@ -1355,7 +1355,7 @@ describe('WorkflowEngine.execute — outputSchemaMode', () => {
 
     await engine.execute(makeRun(), makeDefinition([makeSchemaStep()]));
 
-    expect(logger.warn).toHaveBeenCalledWith('Step output schema violation', expect.any(Object));
+    expect(logger.warn).toHaveBeenCalledWith(expect.any(Object), 'Step output schema violation');
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
       expect.objectContaining({ status: 'completed' })

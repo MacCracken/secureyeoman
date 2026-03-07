@@ -106,10 +106,10 @@ export class TeamManager {
 
     // Fire-and-forget: update run in background
     void this._executeRun(team, teamRun, params).catch((err: unknown) => {
-      this.logger.error('Team run execution failed', {
+      this.logger.error({
         runId: teamRun.id,
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Team run execution failed');
     });
 
     return teamRun;
@@ -268,7 +268,7 @@ Provide a unified, synthesized response:`;
         error,
         completedAt: Date.now(),
       });
-      this.logger.error('Team run failed', { runId: run.id, error });
+      this.logger.error({ runId: run.id, error }, 'Team run failed');
     }
   }
 }

@@ -122,15 +122,15 @@ export class DynamicToolManager {
         const fn = this.compile(tool.implementation);
         this.registry.set(tool.name, { tool, fn });
       } catch (err) {
-        this.deps.logger.warn('Failed to compile dynamic tool on startup — skipping', {
+        this.deps.logger.warn({
           name: tool.name,
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Failed to compile dynamic tool on startup — skipping');
       }
     }
-    this.deps.logger.debug('DynamicToolManager initialized', {
+    this.deps.logger.debug({
       toolCount: this.registry.size,
-    });
+    }, 'DynamicToolManager initialized');
   }
 
   // ── Registration ─────────────────────────────────────────────────────────
@@ -198,7 +198,7 @@ export class DynamicToolManager {
     // 6. Update in-memory registry
     this.registry.set(tool.name, { tool, fn });
 
-    this.deps.logger.info('Dynamic tool registered', { name: tool.name, id: tool.id });
+    this.deps.logger.info({ name: tool.name, id: tool.id }, 'Dynamic tool registered');
 
     void this.deps.auditChain?.record({
       event: 'dynamic_tool_registered',
@@ -318,7 +318,7 @@ export class DynamicToolManager {
     const deleted = await this.storage.deleteTool(name);
     if (deleted) {
       this.registry.delete(name);
-      this.deps.logger.info('Dynamic tool deleted', { name });
+      this.deps.logger.info({ name }, 'Dynamic tool deleted');
       void this.deps.auditChain?.record({
         event: 'dynamic_tool_deleted',
         level: 'info',
@@ -410,13 +410,13 @@ export class DynamicToolManager {
       // Limited console — routes to the structured logger, not stdout
       console: {
         log: (...args: unknown[]) => {
-          this.deps.logger.debug('[dynamic-tool]', { args: args.map(String) });
+          this.deps.logger.debug({ args: args.map(String) }, '[dynamic-tool]');
         },
         warn: (...args: unknown[]) => {
-          this.deps.logger.warn('[dynamic-tool]', { args: args.map(String) });
+          this.deps.logger.warn({ args: args.map(String) }, '[dynamic-tool]');
         },
         error: (...args: unknown[]) => {
-          this.deps.logger.error('[dynamic-tool]', { args: args.map(String) });
+          this.deps.logger.error({ args: args.map(String) }, '[dynamic-tool]');
         },
       },
     });

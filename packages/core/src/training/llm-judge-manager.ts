@@ -240,7 +240,7 @@ export class LlmJudgeManager {
 
           const parsed = this._parseJudgeScores(judgeResponse.content);
           if (!parsed) {
-            this.logger.warn('Failed to parse judge scores', { evalRunId, sampleIndex });
+            this.logger.warn({ evalRunId, sampleIndex }, 'Failed to parse judge scores');
             return null;
           }
 
@@ -321,7 +321,7 @@ export class LlmJudgeManager {
 
           const parsed = this._parsePairwiseResult(judgeResponse.content);
           if (!parsed) {
-            this.logger.warn('Failed to parse pairwise result', { comparisonId, sampleIndex });
+            this.logger.warn({ comparisonId, sampleIndex }, 'Failed to parse pairwise result');
             return null;
           }
 
@@ -409,9 +409,9 @@ export class LlmJudgeManager {
           level: 'warn',
         });
       } catch (err) {
-        this.logger.error('Failed to send auto-eval notification', {
+        this.logger.error({
           error: err instanceof Error ? err.message : 'unknown',
-        });
+        }, 'Failed to send auto-eval notification');
       }
     }
 

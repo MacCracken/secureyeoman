@@ -76,7 +76,7 @@ export class AthiManager {
             },
           };
           alertMgr.evaluate(snapshot as any).catch((e: unknown) => {
-            this.logger.debug('ATHI alert evaluation failed', { error: String(e) });
+            this.logger.debug({ error: String(e) }, 'ATHI alert evaluation failed');
           });
         }
       } catch {

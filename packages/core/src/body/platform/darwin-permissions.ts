@@ -136,7 +136,7 @@ export class DarwinPermissionManager implements PlatformPermissionManager {
   }
 
   async requestPermission(type: CapturePermissionType): Promise<PermissionStatus> {
-    this.logger.info('Requesting permission', { type });
+    this.logger.info({ type }, 'Requesting permission');
 
     if (type === 'screen') {
       await this.triggerScreenCapturePrompt();

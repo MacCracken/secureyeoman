@@ -134,13 +134,13 @@ export class LinuxCaptureSandbox {
       throw new Error('LinuxCaptureSandbox is only available on Linux');
     }
 
-    this.logger.info('Initializing Linux capture sandbox', {
+    this.logger.info({
       maxMemory: this.config.maxMemory,
       maxCpuPercent: this.config.maxCpuPercent,
       maxDuration: this.config.maxDuration,
       allowNetwork: this.config.allowNetwork,
       syscallPolicy: this.config.syscallPolicy,
-    });
+    }, 'Initializing Linux capture sandbox');
 
     this.initialized = true;
   }
@@ -170,7 +170,7 @@ export class LinuxCaptureSandbox {
         violations: this.violations,
       };
     } catch (error) {
-      this.logger.error('Capture sandbox error', { error });
+      this.logger.error({ error }, 'Capture sandbox error');
 
       return {
         success: false,
@@ -182,7 +182,7 @@ export class LinuxCaptureSandbox {
 
   recordViolation(violation: CaptureSandboxViolation): void {
     this.violations.push(violation);
-    this.logger.warn('Sandbox violation', { ...violation });
+    this.logger.warn({ ...violation }, 'Sandbox violation');
   }
 
   validatePath(path: string, mode: 'read' | 'write' | 'exec'): boolean {

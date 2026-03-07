@@ -111,10 +111,10 @@ export class GmailIntegration implements Integration {
     const profile = await this.fetchProfile();
     this.email = profile.emailAddress;
 
-    this.logger?.info('Gmail integration initialized', {
+    this.logger?.info({
       displayName: config.displayName,
       email: this.email,
-    });
+    }, 'Gmail integration initialized');
   }
 
   async start(): Promise<void> {
@@ -144,17 +144,17 @@ export class GmailIntegration implements Integration {
         void this.poll();
       }, interval);
 
-      this.logger?.info('Gmail polling started', {
+      this.logger?.info({
         email: this.email,
         intervalMs: interval,
         labelFilter: gc.labelFilter,
-      });
+      }, 'Gmail polling started');
     }
 
-    this.logger?.info('Gmail integration started', {
+    this.logger?.info({
       enableRead: gc.enableRead,
       enableSend: gc.enableSend,
-    });
+    }, 'Gmail integration started');
   }
 
   async stop(): Promise<void> {
@@ -253,7 +253,7 @@ export class GmailIntegration implements Integration {
 
       if (!resp.ok) {
         const err = await resp.text();
-        this.logger?.warn('Gmail history fetch failed', { error: err });
+        this.logger?.warn({ error: err }, 'Gmail history fetch failed');
         return;
       }
 
@@ -278,9 +278,9 @@ export class GmailIntegration implements Integration {
         await this.processMessage(msgId);
       }
     } catch (err) {
-      this.logger?.warn('Gmail poll error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : 'Unknown error',
-      });
+      }, 'Gmail poll error');
     }
   }
 
@@ -387,7 +387,7 @@ export class GmailIntegration implements Integration {
 
     if (!resp.ok) {
       const err = await resp.text();
-      this.logger?.warn('Gmail token refresh failed', { error: err });
+      this.logger?.warn({ error: err }, 'Gmail token refresh failed');
       return;
     }
 
@@ -440,7 +440,7 @@ export class GmailIntegration implements Integration {
     });
 
     if (!resp.ok) {
-      this.logger?.warn('Failed to create Gmail label', { labelName });
+      this.logger?.warn({ labelName }, 'Failed to create Gmail label');
       return null;
     }
 

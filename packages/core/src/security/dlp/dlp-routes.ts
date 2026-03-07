@@ -145,11 +145,13 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
         limit?: string;
         offset?: string;
       };
+      const parsedLimit = query.limit ? parseInt(query.limit, 10) : undefined;
+      const parsedOffset = query.offset ? parseInt(query.offset, 10) : undefined;
       const result = await classificationStore.list({
         level: query.level,
         contentType: query.contentType,
-        limit: query.limit ? parseInt(query.limit, 10) : undefined,
-        offset: query.offset ? parseInt(query.offset, 10) : undefined,
+        limit: parsedLimit && !Number.isNaN(parsedLimit) ? parsedLimit : undefined,
+        offset: parsedOffset && !Number.isNaN(parsedOffset) ? parsedOffset : undefined,
       });
       return reply.send(result);
     } catch (err) {

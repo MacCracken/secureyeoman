@@ -69,8 +69,8 @@ describe('CognitiveMemoryManager', () => {
     it('logs result', async () => {
       await manager.runMaintenance();
       expect(logger.info).toHaveBeenCalledWith(
-        'Cognitive maintenance done',
-        expect.objectContaining({ deleted: 5, decayFactor: 0.9 })
+        expect.objectContaining({ deleted: 5, decayFactor: 0.9 }),
+        'Cognitive maintenance done'
       );
     });
   });

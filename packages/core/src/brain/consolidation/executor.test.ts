@@ -144,8 +144,8 @@ describe('ConsolidationExecutor', () => {
 
       expect(mockStorage.createMemory).not.toHaveBeenCalled();
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'MERGE action missing mergedContent',
-        expect.any(Object)
+        expect.any(Object),
+        'MERGE action missing mergedContent'
       );
     });
 
@@ -282,8 +282,8 @@ describe('ConsolidationExecutor', () => {
       );
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Consolidation action failed',
-        expect.any(Object)
+        expect.any(Object),
+        'Consolidation action failed'
       );
       expect(summary.merged).toBe(0); // counter only increments after successful await
     });

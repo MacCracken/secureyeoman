@@ -50,7 +50,7 @@ describe('WorkspaceManager', () => {
       const { manager, logger } = makeManager();
       const ws = await manager.create({ name: 'New WS', description: '', settings: {} });
       expect(ws.id).toBe('ws-1');
-      expect(logger.info).toHaveBeenCalledWith('Workspace created', { id: 'ws-1' });
+      expect(logger.info).toHaveBeenCalledWith({ id: 'ws-1' }, 'Workspace created');
     });
   });
 
@@ -81,7 +81,7 @@ describe('WorkspaceManager', () => {
       const { manager, logger } = makeManager();
       const ok = await manager.delete('ws-1');
       expect(ok).toBe(true);
-      expect(logger.info).toHaveBeenCalledWith('Workspace deleted', { id: 'ws-1' });
+      expect(logger.info).toHaveBeenCalledWith({ id: 'ws-1' }, 'Workspace deleted');
     });
 
     it('returns false without logging when not found', async () => {
@@ -97,7 +97,7 @@ describe('WorkspaceManager', () => {
       const { manager, logger } = makeManager();
       const ws = await manager.update('ws-1', { name: 'Updated' });
       expect(ws?.id).toBe('ws-1');
-      expect(logger.info).toHaveBeenCalledWith('Workspace updated', { id: 'ws-1' });
+      expect(logger.info).toHaveBeenCalledWith({ id: 'ws-1' }, 'Workspace updated');
     });
 
     it('does not log when workspace not found', async () => {
@@ -112,10 +112,13 @@ describe('WorkspaceManager', () => {
       const { manager, logger } = makeManager();
       const member = await manager.addMember('ws-1', 'user-1', 'member');
       expect(member.role).toBe('member');
-      expect(logger.info).toHaveBeenCalledWith('Member added to workspace', {
+      expect(logger.info).toHaveBeenCalledWith(
+{
         workspaceId: 'ws-1',
         userId: 'user-1',
-      });
+      },
+'Member added to workspace'
+);
     });
   });
 
@@ -124,10 +127,13 @@ describe('WorkspaceManager', () => {
       const { manager, logger } = makeManager();
       const ok = await manager.removeMember('ws-1', 'user-1');
       expect(ok).toBe(true);
-      expect(logger.info).toHaveBeenCalledWith('Member removed from workspace', {
+      expect(logger.info).toHaveBeenCalledWith(
+{
         workspaceId: 'ws-1',
         userId: 'user-1',
-      });
+      },
+'Member removed from workspace'
+);
     });
   });
 
@@ -136,11 +142,14 @@ describe('WorkspaceManager', () => {
       const { manager, logger } = makeManager();
       const member = await manager.updateMemberRole('ws-1', 'user-1', 'admin');
       expect(member?.role).toBe('admin');
-      expect(logger.info).toHaveBeenCalledWith('Member role updated', {
+      expect(logger.info).toHaveBeenCalledWith(
+{
         workspaceId: 'ws-1',
         userId: 'user-1',
         role: 'admin',
-      });
+      },
+'Member role updated'
+);
     });
   });
 
@@ -177,7 +186,7 @@ describe('WorkspaceManager', () => {
       await manager.ensureDefaultWorkspace();
       expect(storage.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Default' }));
       expect(storage.addMember).toHaveBeenCalledWith('ws-1', 'admin', 'owner');
-      expect(logger.info).toHaveBeenCalledWith('Default workspace created', { id: 'ws-1' });
+      expect(logger.info).toHaveBeenCalledWith({ id: 'ws-1' }, 'Default workspace created');
     });
   });
 });

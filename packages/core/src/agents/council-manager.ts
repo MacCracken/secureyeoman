@@ -209,11 +209,11 @@ export class CouncilManager {
           );
           tokensUsed += converged.tokensUsed;
           if (converged.result) {
-            this.logger.debug('Council reached convergence', {
+            this.logger.debug({
               runId: run.id,
               round,
               reasoning: converged.reasoning,
-            });
+            }, 'Council reached convergence');
             break;
           }
         }
@@ -240,7 +240,7 @@ export class CouncilManager {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error('Council deliberation failed', { runId: run.id, error: msg });
+      this.logger.error({ runId: run.id, error: msg }, 'Council deliberation failed');
       await this.storage.updateRun(run.id, {
         status: 'failed',
         decision: `Error: ${msg}`,

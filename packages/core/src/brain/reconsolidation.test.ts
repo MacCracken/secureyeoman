@@ -130,8 +130,8 @@ describe('ReconsolidationManager', () => {
     const result = await manager.evaluate(makeMemory(), 'context', 0.8);
     expect(result).toBeNull();
     expect(deps.logger.warn).toHaveBeenCalledWith(
-      'Reconsolidation evaluation failed',
-      expect.objectContaining({ error: 'Error: LLM down' })
+      expect.objectContaining({ error: 'Error: LLM down' }),
+      'Reconsolidation evaluation failed'
     );
   });
 

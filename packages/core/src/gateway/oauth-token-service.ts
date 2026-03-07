@@ -118,18 +118,18 @@ export class OAuthTokenService {
 
   private async refreshAndStore(record: OAuthToken): Promise<string | null> {
     if (!record.refreshToken) {
-      this.logger.warn('OAuth token expired but no refresh token available', {
+      this.logger.warn({
         provider: record.provider,
         email: record.email,
-      });
+      }, 'OAuth token expired but no refresh token available');
       return record.accessToken; // return stale token; caller must handle 401
     }
 
     const creds = this.getCredentials(record.provider);
     if (!creds) {
-      this.logger.warn('Cannot refresh OAuth token: no client credentials configured', {
+      this.logger.warn({
         provider: record.provider,
-      });
+      }, 'Cannot refresh OAuth token: no client credentials configured');
       return record.accessToken;
     }
 
@@ -149,7 +149,7 @@ export class OAuthTokenService {
 
       if (!resp.ok) {
         const err = await resp.text();
-        this.logger.warn('OAuth token refresh failed', { provider: record.provider, error: err });
+        this.logger.warn({ provider: record.provider, error: err }, 'OAuth token refresh failed');
         return record.accessToken;
       }
 
@@ -158,16 +158,16 @@ export class OAuthTokenService {
       const expiresAt = Date.now() + data.expires_in * 1000;
 
       await this.storage.updateAccessToken(record.id, newAccessToken, expiresAt);
-      this.logger.debug('OAuth token refreshed', {
+      this.logger.debug({
         provider: record.provider,
         email: record.email,
-      });
+      }, 'OAuth token refreshed');
       return newAccessToken;
     } catch (err) {
-      this.logger.error('OAuth token refresh error', {
+      this.logger.error({
         provider: record.provider,
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'OAuth token refresh error');
       return record.accessToken;
     }
   }

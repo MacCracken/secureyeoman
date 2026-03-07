@@ -258,10 +258,10 @@ export class SecureYeoman {
 
       // Step 2: Initialize logger first (needed for other components)
       this.logger = initializeLogger(this.config.logging);
-      this.logger.info('SecureYeoman initializing', {
+      this.logger.info({
         environment: this.config.core.environment,
         version: this.config.version,
-      });
+      }, 'SecureYeoman initializing');
 
       // Step 2.05b: Initialize LicenseManager
       const licenseKey = getSecret(this.config.licensing.licenseKeyEnv);
@@ -272,9 +272,9 @@ export class SecureYeoman {
         org: this.licenseManager.getClaims()?.organization ?? null,
       });
       if (this.licenseManager.getParseError()) {
-        this.logger.warn('License key invalid, running as community tier', {
+        this.logger.warn({
           err: this.licenseManager.getParseError(),
-        });
+        }, 'License key invalid, running as community tier');
       }
 
       // Step 2.5–2.06: Initialize security early phase (keyring, secrets, TLS) via SecurityModule
@@ -375,9 +375,9 @@ export class SecureYeoman {
               persistedKey,
               this.config.licensing.enforcement
             );
-            this.logger.info('License key loaded from brain.meta', {
+            this.logger.info({
               tier: this.licenseManager.getTier(),
-            });
+            }, 'License key loaded from brain.meta');
           }
         } catch {
           // Non-fatal: license remains at community tier
@@ -419,10 +419,10 @@ export class SecureYeoman {
         auditChain: this.auditChain,
       });
       const sandboxCaps = this.sandboxManager.detect();
-      this.logger.debug('Sandbox manager initialized', {
+      this.logger.debug({
         enabled: this.sandboxManager.isEnabled(),
         capabilities: sandboxCaps,
-      });
+      }, 'Sandbox manager initialized');
 
       // Step 5.9: Initialize task storage
       this.taskStorage = new TaskStorage();
@@ -700,9 +700,9 @@ export class SecureYeoman {
           await this.multimodalManager.initialize();
           this.logger.debug('Multimodal manager initialized');
         } catch (error) {
-          this.logger.warn('Multimodal manager initialization failed (non-fatal)', {
+          this.logger.warn({
             error: error instanceof Error ? error.message : 'Unknown error',
-          });
+          }, 'Multimodal manager initialization failed (non-fatal)');
         }
       }
 
@@ -756,19 +756,19 @@ export class SecureYeoman {
 
       // Log startup timing table
       const totalMs = startupTimings.reduce((sum, t) => sum + t.ms, 0);
-      this.logger.info('Startup profiling complete', {
+      this.logger.info({
         totalMs,
         steps: startupTimings,
         top5: startupTimings
           .sort((a, b) => b.ms - a.ms)
           .slice(0, 5)
           .map((t) => `${t.step}: ${t.ms}ms`),
-      });
+      }, 'Startup profiling complete');
 
-      this.logger.info('SecureYeoman initialized successfully', {
+      this.logger.info({
         environment: this.config.core.environment,
         gatewayEnabled: this.options.enableGateway ?? false,
-      });
+      }, 'SecureYeoman initialized successfully');
     } catch (error) {
       if (this.logger) {
         this.logger.fatal('SecureYeoman initialization failed', {
@@ -936,9 +936,9 @@ export class SecureYeoman {
                 },
               };
             } catch (err) {
-              this.logger?.debug('getMetrics: scan history stats unavailable', {
+              this.logger?.debug({
                 error: err instanceof Error ? err.message : String(err),
-              });
+              }, 'getMetrics: scan history stats unavailable');
               return {};
             }
           })()
@@ -962,9 +962,9 @@ export class SecureYeoman {
                 },
               };
             } catch (err) {
-              this.logger?.debug('getMetrics: department risk summary unavailable', {
+              this.logger?.debug({
                 error: err instanceof Error ? err.message : String(err),
-              });
+              }, 'getMetrics: department risk summary unavailable');
               return {};
             }
           })()
@@ -1701,7 +1701,7 @@ export class SecureYeoman {
   reloadLicenseKey(key: string): void {
     this.ensureInitialized();
     this.licenseManager = new LicenseManager(key, this.config!.licensing.enforcement);
-    this.logger?.info('License key reloaded', { tier: this.licenseManager.getTier() });
+    this.logger?.info({ tier: this.licenseManager.getTier() }, 'License key reloaded');
   }
 
   // ------------------------------------------------------------------
@@ -1905,9 +1905,9 @@ export class SecureYeoman {
         );
       }
     } catch (err) {
-      this.logger?.error('Failed to persist security policy to DB', {
+      this.logger?.error({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Failed to persist security policy to DB');
     }
   }
 
@@ -1981,14 +1981,14 @@ export class SecureYeoman {
         }
       }
       if (result.rows.length > 0) {
-        this.logger?.debug('Loaded persisted security policy from DB', {
+        this.logger?.debug({
           keys: result.rows.map((r: { key: string }) => r.key),
-        });
+        }, 'Loaded persisted security policy from DB');
       }
     } catch (err) {
-      this.logger?.warn('Failed to load security policy from DB (table may not exist yet)', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Failed to load security policy from DB (table may not exist yet)');
     }
   }
 
@@ -2025,10 +2025,10 @@ export class SecureYeoman {
     });
     await this.gateway.start();
 
-    this.logger!.info('Gateway server started', {
+    this.logger!.info({
       host: this.config!.gateway.host,
       port: this.config!.gateway.port,
-    });
+    }, 'Gateway server started');
 
     await this.auditChain!.record({
       event: 'gateway_started',
@@ -2073,9 +2073,9 @@ export class SecureYeoman {
       await this.cleanup();
       this.logger?.info('SecureYeoman shutdown complete');
     } catch (error) {
-      this.logger?.error('Error during shutdown', {
+      this.logger?.error({
         error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      }, 'Error during shutdown');
     } finally {
       this.initialized = false;
     }

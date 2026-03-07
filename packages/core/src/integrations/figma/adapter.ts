@@ -111,7 +111,7 @@ export class FigmaIntegration implements Integration {
     try {
       const resp = await this.figmaFetch(`/files/${this.figmaConfig.fileKey}/comments`);
       if (!resp.ok) {
-        this.logger?.warn('Figma poll failed', { status: resp.status });
+        this.logger?.warn({ status: resp.status }, 'Figma poll failed');
         return;
       }
       const data = (await resp.json()) as { comments: FigmaComment[] };
@@ -139,9 +139,9 @@ export class FigmaIntegration implements Integration {
         await this.deps.onMessage(unified);
       }
     } catch (err) {
-      this.logger?.warn('Figma poll error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Figma poll error');
     }
   }
 

@@ -164,7 +164,7 @@ export class BrainManager {
       try {
         await this.deps.vectorMemoryManager!.indexMemory(memory);
       } catch (err) {
-        this.deps.logger.warn('Failed to index memory in vector store', { error: String(err) });
+        this.deps.logger.warn({ error: String(err) }, 'Failed to index memory in vector store');
       }
     }
 
@@ -180,7 +180,7 @@ export class BrainManager {
           );
         }
       } catch (err) {
-        this.deps.logger.warn('Failed to create content chunks for memory', { error: String(err) });
+        this.deps.logger.warn({ error: String(err) }, 'Failed to create content chunks for memory');
       }
     }
 
@@ -189,7 +189,7 @@ export class BrainManager {
       try {
         await this.deps.consolidationManager.onMemorySave(memory);
       } catch (err) {
-        this.deps.logger.warn('Consolidation quick check failed', { error: String(err) });
+        this.deps.logger.warn({ error: String(err) }, 'Consolidation quick check failed');
       }
     }
 
@@ -202,11 +202,11 @@ export class BrainManager {
           void this.storage
             .setMeta(`salience:${memory.id}`, JSON.stringify(scores))
             .catch((e: unknown) => {
-              this.deps.logger.debug('Salience meta write failed', { error: String(e) });
+              this.deps.logger.debug({ error: String(e) }, 'Salience meta write failed');
             });
         })
         .catch((e: unknown) => {
-          this.deps.logger.debug('Salience classification failed', { error: String(e) });
+          this.deps.logger.debug({ error: String(e) }, 'Salience classification failed');
         });
     }
 
@@ -232,14 +232,14 @@ export class BrainManager {
     // Feed context retriever with the query for trajectory tracking
     if (this.contextRetrievalEnabled && query.search) {
       void this.deps.contextRetriever!.addMessage(query.search).catch((e: unknown) => {
-        this.deps.logger.debug('Context retriever addMessage failed', { error: String(e) });
+        this.deps.logger.debug({ error: String(e) }, 'Context retriever addMessage failed');
       });
     }
 
     // Record query in working memory for predictive pre-fetch
     if (this.workingMemoryEnabled && query.search) {
       void this.deps.workingMemoryBuffer!.recordQuery(query.search).catch((e: unknown) => {
-        this.deps.logger.debug('Working memory recordQuery failed', { error: String(e) });
+        this.deps.logger.debug({ error: String(e) }, 'Working memory recordQuery failed');
       });
     }
 
@@ -356,9 +356,9 @@ export class BrainManager {
           }
         }
       } catch (err) {
-        this.deps.logger.warn('Hybrid memory search failed, falling back to text search', {
+        this.deps.logger.warn({
           error: String(err),
-        });
+        }, 'Hybrid memory search failed, falling back to text search');
       }
     }
 
@@ -385,7 +385,7 @@ export class BrainManager {
       );
       // Fire predictive pre-fetch in background
       void this.deps.workingMemoryBuffer!.predictAndPrefetch().catch((e: unknown) => {
-        this.deps.logger.debug('Working memory prefetch failed', { error: String(e) });
+        this.deps.logger.debug({ error: String(e) }, 'Working memory prefetch failed');
       });
     }
 
@@ -403,14 +403,14 @@ export class BrainManager {
     // Remove salience metadata (best-effort)
     if (this.salienceEnabled) {
       void this.storage.deleteMeta(`salience:${id}`).catch((e: unknown) => {
-        this.deps.logger.debug('Salience meta delete failed', { error: String(e) });
+        this.deps.logger.debug({ error: String(e) }, 'Salience meta delete failed');
       });
     }
     if (this.vectorEnabled) {
       try {
         await this.deps.vectorMemoryManager!.removeMemory(id);
       } catch (err) {
-        this.deps.logger.warn('Failed to remove memory from vector store', { error: String(err) });
+        this.deps.logger.warn({ error: String(err) }, 'Failed to remove memory from vector store');
       }
     }
   }
@@ -451,7 +451,7 @@ export class BrainManager {
       try {
         await this.deps.vectorMemoryManager!.indexKnowledge(entry);
       } catch (err) {
-        this.deps.logger.warn('Failed to index knowledge in vector store', { error: String(err) });
+        this.deps.logger.warn({ error: String(err) }, 'Failed to index knowledge in vector store');
       }
     }
 
@@ -467,9 +467,9 @@ export class BrainManager {
           );
         }
       } catch (err) {
-        this.deps.logger.warn('Failed to create content chunks for knowledge', {
+        this.deps.logger.warn({
           error: String(err),
-        });
+        }, 'Failed to create content chunks for knowledge');
       }
     }
 
@@ -506,9 +506,9 @@ export class BrainManager {
         await this.deps.vectorMemoryManager!.removeKnowledge(id);
         await this.deps.vectorMemoryManager!.indexKnowledge(entry);
       } catch (err) {
-        this.deps.logger.warn('Failed to re-index updated knowledge in vector store', {
+        this.deps.logger.warn({
           error: String(err),
-        });
+        }, 'Failed to re-index updated knowledge in vector store');
       }
     }
     return entry;
@@ -526,9 +526,9 @@ export class BrainManager {
       try {
         await this.deps.vectorMemoryManager!.removeKnowledge(id);
       } catch (err) {
-        this.deps.logger.warn('Failed to remove knowledge from vector store', {
+        this.deps.logger.warn({
           error: String(err),
-        });
+        }, 'Failed to remove knowledge from vector store');
       }
     }
   }
@@ -608,9 +608,9 @@ export class BrainManager {
           return header + '\n' + contentParts.join('\n\n');
         }
       } catch (err) {
-        this.deps.logger.warn('Semantic context search failed, falling back to text search', {
+        this.deps.logger.warn({
           error: String(err),
-        });
+        }, 'Semantic context search failed, falling back to text search');
       }
     }
 
@@ -783,7 +783,7 @@ export class BrainManager {
     await this.storage.incrementUsage(skillId);
     if (this.cognitiveEnabled) {
       void this.deps.cognitiveStorage!.recordSkillAccess(skillId).catch((e: unknown) => {
-        this.deps.logger.debug('Cognitive skill access recording failed', { error: String(e) });
+        this.deps.logger.debug({ error: String(e) }, 'Cognitive skill access recording failed');
       });
     }
   }
@@ -972,11 +972,11 @@ export class BrainManager {
       }
     }
 
-    this.deps.logger.debug('Brain maintenance completed', {
+    this.deps.logger.debug({
       decayed,
       pruned: allPrunedIds.length,
       vectorSynced,
-    });
+    }, 'Brain maintenance completed');
 
     return { decayed, pruned: allPrunedIds.length, vectorSynced };
   }

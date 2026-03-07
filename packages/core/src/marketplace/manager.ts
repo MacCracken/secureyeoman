@@ -145,17 +145,17 @@ export class MarketplaceManager {
               personalityId: personalityId ?? null,
             })
           );
-          this.logger.info('Brain skill created from marketplace', {
+          this.logger.info({
             id,
             name: skill.name,
             source: brainSource,
             personalityId: personalityId ?? null,
-          });
+          }, 'Brain skill created from marketplace');
         } catch (err) {
-          this.logger.error('Failed to create brain skill from marketplace', {
+          this.logger.error({
             id,
             error: err instanceof Error ? err.message : 'Unknown error',
-          });
+          }, 'Failed to create brain skill from marketplace');
         }
       }
     }
@@ -164,7 +164,7 @@ export class MarketplaceManager {
     if (!skill.installed) {
       await this.storage.setInstalled(id, true);
     }
-    this.logger.info('Marketplace skill installed', { id, personalityId: personalityId ?? null });
+    this.logger.info({ id, personalityId: personalityId ?? null }, 'Marketplace skill installed');
     return true;
   }
 
@@ -183,20 +183,20 @@ export class MarketplaceManager {
           const target = matches.find((s) => s.personalityId === personalityId);
           if (target) {
             await this.brainManager.deleteSkill(target.id);
-            this.logger.info('Brain skill removed (marketplace uninstall)', {
+            this.logger.info({
               id,
               brainSkillId: target.id,
               personalityId,
-            });
+            }, 'Brain skill removed (marketplace uninstall)');
           }
         } else {
           // No personality context: remove ALL brain skill records for this marketplace skill
           for (const match of matches) {
             await this.brainManager.deleteSkill(match.id);
-            this.logger.info('Brain skill removed (marketplace uninstall)', {
+            this.logger.info({
               id,
               brainSkillId: match.id,
-            });
+            }, 'Brain skill removed (marketplace uninstall)');
           }
         }
 
@@ -208,17 +208,17 @@ export class MarketplaceManager {
           await this.storage.setInstalled(id, false);
         }
       } catch (err) {
-        this.logger.error('Failed to remove brain skill on marketplace uninstall', {
+        this.logger.error({
           id,
           error: err instanceof Error ? err.message : 'Unknown error',
-        });
+        }, 'Failed to remove brain skill on marketplace uninstall');
         return false;
       }
     } else {
       await this.storage.setInstalled(id, false);
     }
 
-    this.logger.info('Marketplace skill uninstalled', { id, personalityId: personalityId ?? null });
+    this.logger.info({ id, personalityId: personalityId ?? null }, 'Marketplace skill uninstalled');
     return true;
   }
 
@@ -244,28 +244,28 @@ export class MarketplaceManager {
             (await this.storage.findByNameAndSource(skillName, 'builtin')));
       if (mpSkill?.installed) {
         await this.storage.setInstalled(mpSkill.id, false);
-        this.logger.info('Marketplace skill marked uninstalled (brain skill deleted)', {
+        this.logger.info({
           name: skillName,
           marketplaceId: mpSkill.id,
-        });
+        }, 'Marketplace skill marked uninstalled (brain skill deleted)');
       }
     } catch (err) {
-      this.logger.error('Failed to sync marketplace installed state after brain skill deletion', {
+      this.logger.error({
         skillName,
         error: err instanceof Error ? err.message : 'Unknown error',
-      });
+      }, 'Failed to sync marketplace installed state after brain skill deletion');
     }
   }
 
   async publish(data: Partial<CatalogSkill>): Promise<CatalogSkill> {
     const skill = await this.storage.addSkill(data);
-    this.logger.info('Skill published to marketplace', { id: skill.id, name: skill.name });
+    this.logger.info({ id: skill.id, name: skill.name }, 'Skill published to marketplace');
     return skill;
   }
 
   async delete(id: string): Promise<boolean> {
     const ok = await this.storage.delete(id);
-    if (ok) this.logger.info('Marketplace skill removed', { id });
+    if (ok) this.logger.info({ id }, 'Marketplace skill removed');
     return ok;
   }
 
@@ -923,10 +923,10 @@ export class MarketplaceManager {
             const { data, warnings } = serializer.fromMarkdown(content);
 
             if (warnings.length > 0) {
-              this.logger.debug('Community personality parse warnings', {
+              this.logger.debug({
                 file: filePath,
                 warnings,
-              });
+              }, 'Community personality parse warnings');
             }
 
             // Extract subdirectory as a subcategory tag (e.g., "professional", "sci-fi")
@@ -1049,7 +1049,7 @@ export class MarketplaceManager {
     }
 
     this.lastSyncedAt = Date.now();
-    this.logger.info('Community skill sync complete', {
+    this.logger.info({
       path: repoPath,
       added: result.added,
       updated: result.updated,
@@ -1067,7 +1067,7 @@ export class MarketplaceManager {
       personalitiesUpdated: result.personalitiesUpdated,
       themesAdded: result.themesAdded,
       themesUpdated: result.themesUpdated,
-    });
+    }, 'Community skill sync complete');
 
     return result;
   }

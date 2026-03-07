@@ -51,7 +51,7 @@ export class BranchingManager {
     messageIndex: number,
     opts?: { title?: string; branchLabel?: string }
   ): Promise<Conversation> {
-    this.logger.info('Creating branch from message', { sourceId, messageIndex });
+    this.logger.info({ sourceId, messageIndex }, 'Creating branch from message');
     return this.storage.branchFromMessage(sourceId, messageIndex, opts);
   }
 
@@ -99,7 +99,7 @@ export class BranchingManager {
     setImmediate(() => {
       void this._runReplay(job.id, sourceId, branch.id, userMessages, config).catch(
         (err: unknown) => {
-          this.logger.error('Replay failed', { jobId: job.id, error: String(err) });
+          this.logger.error({ jobId: job.id, error: String(err) }, 'Replay failed');
         }
       );
     });
@@ -128,7 +128,7 @@ export class BranchingManager {
 
     setImmediate(() => {
       void this._runBatchReplay(job.id, config).catch((err: unknown) => {
-        this.logger.error('Batch replay failed', { jobId: job.id, error: String(err) });
+        this.logger.error({ jobId: job.id, error: String(err) }, 'Batch replay failed');
       });
     });
 
@@ -198,10 +198,10 @@ export class BranchingManager {
               provider: config.provider,
             });
           } catch (err) {
-            this.logger.warn('Replay turn failed, continuing', {
+            this.logger.warn({
               jobId,
               error: String(err),
-            });
+            }, 'Replay turn failed, continuing');
             // Add a placeholder so history stays aligned
             history.push({ role: 'assistant', content: '[replay error]' });
             await this.storage.addMessage({
@@ -302,11 +302,11 @@ export class BranchingManager {
 
         completed++;
       } catch (err) {
-        this.logger.warn('Batch replay item failed', {
+        this.logger.warn({
           jobId,
           sourceId,
           error: String(err),
-        });
+        }, 'Batch replay item failed');
         failed++;
       }
 

@@ -136,14 +136,14 @@ export class OnlineUpdateManager {
       [containerId, id]
     );
 
-    this.deps.logger.info('Online update job started', { id, containerId });
+    this.deps.logger.info({ id, containerId }, 'Online update job started');
 
     // Watch container completion
     this._watchContainer(id, containerId).catch((err: unknown) => {
-      this.deps.logger.error('Online update watcher error', {
+      this.deps.logger.error({
         id,
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Online update watcher error');
     });
   }
 
@@ -182,7 +182,7 @@ export class OnlineUpdateManager {
              WHERE id=$1`,
             [jobId]
           );
-          this.deps.logger.info('Online update job completed', { jobId });
+          this.deps.logger.info({ jobId }, 'Online update job completed');
         } else {
           await this.deps.pool.query(
             `UPDATE training.online_update_jobs
@@ -190,7 +190,7 @@ export class OnlineUpdateManager {
              WHERE id=$2`,
             [`Container exited with code ${exitCode}`, jobId]
           );
-          this.deps.logger.error('Online update job failed', { jobId, exitCode });
+          this.deps.logger.error({ jobId, exitCode }, 'Online update job failed');
         }
         resolve();
       });

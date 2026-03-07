@@ -217,7 +217,7 @@ describe('ToolOutputScanner — logger', () => {
     const s = new ToolOutputScanner({ logger: mockLogger as never });
     s.scan('sk-aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456', 'test-source');
     expect(mockLogger.warn).toHaveBeenCalledOnce();
-    const [, meta] = mockLogger.warn.mock.calls[0] as [string, Record<string, unknown>];
+    const [meta] = mockLogger.warn.mock.calls[0] as [Record<string, unknown>, string];
     expect(meta.source).toBe('test-source');
   });
 

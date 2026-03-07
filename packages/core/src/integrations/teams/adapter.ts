@@ -31,7 +31,7 @@ export class TeamsIntegration implements Integration {
       throw new Error('Teams integration requires botId and botPassword in config');
     }
 
-    this.logger?.info('Teams integration initialized', { botId, hasPassword: !!botPassword });
+    this.logger?.info({ botId, hasPassword: !!botPassword }, 'Teams integration initialized');
   }
 
   async start(): Promise<void> {
@@ -60,7 +60,7 @@ export class TeamsIntegration implements Integration {
     const conversationId = chatId;
     const messageId = `teams_${Date.now()}`;
 
-    this.logger?.debug('Sending Teams message', { conversationId, textLength: text.length });
+    this.logger?.debug({ conversationId, textLength: text.length }, 'Sending Teams message');
 
     return messageId;
   }

@@ -151,9 +151,9 @@ export class StripeIntegration implements WebhookIntegration {
       };
       await this.deps.onMessage(unified);
     } catch (err) {
-      this.logger?.warn('Stripe webhook parse error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Stripe webhook parse error');
     }
   }
 

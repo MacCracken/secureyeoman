@@ -202,7 +202,7 @@ export class GoogleCalendarIntegration implements Integration {
       );
 
       if (!resp.ok) {
-        this.logger?.warn('Google Calendar poll failed', { status: resp.status });
+        this.logger?.warn({ status: resp.status }, 'Google Calendar poll failed');
         return;
       }
 
@@ -234,9 +234,9 @@ export class GoogleCalendarIntegration implements Integration {
         await this.deps.onMessage(unified);
       }
     } catch (err) {
-      this.logger?.warn('Google Calendar poll error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Google Calendar poll error');
     }
   }
 
@@ -286,7 +286,7 @@ export class GoogleCalendarIntegration implements Integration {
 
     if (!resp.ok) {
       const err = await resp.text();
-      this.logger?.warn('Google Calendar token refresh failed', { error: err });
+      this.logger?.warn({ error: err }, 'Google Calendar token refresh failed');
       return;
     }
 

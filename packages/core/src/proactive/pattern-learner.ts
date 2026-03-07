@@ -50,9 +50,9 @@ export class PatternLearner {
         0.3
       );
     } catch (err) {
-      this.logger.warn('Failed to record interaction for pattern learning', {
+      this.logger.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Failed to record interaction for pattern learning');
     }
   }
 
@@ -121,9 +121,9 @@ export class PatternLearner {
 
       return patterns.sort((a, b) => b.confidence - a.confidence);
     } catch (err) {
-      this.logger.error('Pattern detection failed', {
+      this.logger.error({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Pattern detection failed');
       return [];
     }
   }

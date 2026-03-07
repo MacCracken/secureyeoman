@@ -179,11 +179,11 @@ describe('emitJobCompletion', () => {
     await new Promise((r) => setTimeout(r, 10));
 
     expect(logger.error).toHaveBeenCalledWith(
-      'Job completion alert evaluation failed',
       expect.objectContaining({
         jobType: 'workflow',
         jobId: 'wf-1',
-      })
+      }),
+      'Job completion alert evaluation failed'
     );
   });
 

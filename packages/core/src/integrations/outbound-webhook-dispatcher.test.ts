@@ -131,8 +131,8 @@ describe('OutboundWebhookDispatcher', () => {
       await new Promise((r) => setTimeout(r, 50));
       expect(mockFetch).not.toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('SSRF'),
-        expect.objectContaining({ webhookId: 'wh-1' })
+        expect.objectContaining({ webhookId: 'wh-1' }),
+        expect.stringContaining('SSRF')
       );
     });
 

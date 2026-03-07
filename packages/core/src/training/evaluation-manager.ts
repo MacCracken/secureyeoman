@@ -259,7 +259,7 @@ export class EvaluationManager {
       throw new Error('EvaluationManager: either samples or datasetPath must be provided');
     }
 
-    this.logger.info('Evaluation: starting', { evalId, sampleCount: samples.length });
+    this.logger.info({ evalId, sampleCount: samples.length }, 'Evaluation: starting');
 
     let exactMatches = 0;
     let totalSimilarity = 0;
@@ -273,10 +273,10 @@ export class EvaluationManager {
       try {
         response = await config.modelFn(sample.prompt);
       } catch (err) {
-        this.logger.warn('Evaluation: model call failed for sample', {
+        this.logger.warn({
           evalId,
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Evaluation: model call failed for sample');
         continue;
       }
 
@@ -341,10 +341,10 @@ export class EvaluationManager {
       completedAt: Date.now(),
     };
 
-    this.logger.info('Evaluation: complete', {
+    this.logger.info({
       evalId,
       metrics: result.metrics,
-    });
+    }, 'Evaluation: complete');
 
     emitJobCompletion(
       this.getAlertManager?.() ?? null,

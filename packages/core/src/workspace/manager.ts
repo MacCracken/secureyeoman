@@ -21,7 +21,7 @@ export class WorkspaceManager {
 
   async create(data: WorkspaceCreate): Promise<Workspace> {
     const workspace = await this.storage.create(data);
-    this.logger.info('Workspace created', { id: workspace.id });
+    this.logger.info({ id: workspace.id }, 'Workspace created');
     return workspace;
   }
 
@@ -38,25 +38,25 @@ export class WorkspaceManager {
 
   async delete(id: string): Promise<boolean> {
     const removed = await this.storage.delete(id);
-    if (removed) this.logger.info('Workspace deleted', { id });
+    if (removed) this.logger.info({ id }, 'Workspace deleted');
     return removed;
   }
 
   async addMember(workspaceId: string, userId: string, role?: string): Promise<WorkspaceMember> {
     const member = await this.storage.addMember(workspaceId, userId, role);
-    this.logger.info('Member added to workspace', { workspaceId, userId });
+    this.logger.info({ workspaceId, userId }, 'Member added to workspace');
     return member;
   }
 
   async update(id: string, data: WorkspaceUpdate): Promise<Workspace | null> {
     const workspace = await this.storage.update(id, data);
-    if (workspace) this.logger.info('Workspace updated', { id });
+    if (workspace) this.logger.info({ id }, 'Workspace updated');
     return workspace;
   }
 
   async removeMember(workspaceId: string, userId: string): Promise<boolean> {
     const removed = await this.storage.removeMember(workspaceId, userId);
-    if (removed) this.logger.info('Member removed from workspace', { workspaceId, userId });
+    if (removed) this.logger.info({ workspaceId, userId }, 'Member removed from workspace');
     return removed;
   }
 
@@ -66,7 +66,7 @@ export class WorkspaceManager {
     role: string
   ): Promise<WorkspaceMember | null> {
     const member = await this.storage.updateMemberRole(workspaceId, userId, role);
-    if (member) this.logger.info('Member role updated', { workspaceId, userId, role });
+    if (member) this.logger.info({ workspaceId, userId, role }, 'Member role updated');
     return member;
   }
 
@@ -95,6 +95,6 @@ export class WorkspaceManager {
       settings: {},
     });
     await this.storage.addMember(workspace.id, 'admin', 'owner');
-    this.logger.info('Default workspace created', { id: workspace.id });
+    this.logger.info({ id: workspace.id }, 'Default workspace created');
   }
 }

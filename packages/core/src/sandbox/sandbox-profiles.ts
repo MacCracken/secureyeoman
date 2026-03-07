@@ -186,7 +186,7 @@ export class SandboxProfileRegistry {
       updatedAt: now,
     };
     this.customProfiles.set(input.label, profile);
-    this.log.info('Custom sandbox profile saved', { label: input.label });
+    this.log.info({ label: input.label }, 'Custom sandbox profile saved');
     return profile;
   }
 
@@ -194,7 +194,7 @@ export class SandboxProfileRegistry {
   deleteCustomProfile(label: string): boolean {
     const deleted = this.customProfiles.delete(label);
     if (deleted) {
-      this.log.info('Custom sandbox profile deleted', { label });
+      this.log.info({ label }, 'Custom sandbox profile deleted');
     }
     return deleted;
   }

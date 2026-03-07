@@ -91,7 +91,7 @@ export class CollabManager {
     };
     entry.clients.set(clientId, client);
 
-    getLogger().debug('Collab client joined', { docId, clientId, userId });
+    getLogger().debug({ docId, clientId, userId }, 'Collab client joined');
 
     // Send sync step 1: server state vector so client can compute what it's missing
     const sv = Y.encodeStateVector(entry.doc);
@@ -141,7 +141,7 @@ export class CollabManager {
         try {
           Y.applyUpdate(entry.doc, payload);
         } catch {
-          getLogger().warn('Failed to apply Yjs update', { docId, clientId });
+          getLogger().warn({ docId, clientId }, 'Failed to apply Yjs update');
           return;
         }
         // Relay the original message (with full header) to all other clients
@@ -162,7 +162,7 @@ export class CollabManager {
     if (!entry) return;
 
     entry.clients.delete(clientId);
-    getLogger().debug('Collab client left', { docId, clientId });
+    getLogger().debug({ docId, clientId }, 'Collab client left');
 
     if (entry.clients.size === 0) {
       // Persist immediately when the room empties
@@ -228,12 +228,12 @@ export class CollabManager {
     try {
       const stateBytes = Y.encodeStateAsUpdate(entry.doc);
       await this.storage.saveCollabDoc(docId, stateBytes);
-      getLogger().debug('Collab doc persisted', { docId });
+      getLogger().debug({ docId }, 'Collab doc persisted');
     } catch (err) {
-      getLogger().error('Failed to persist collab doc', {
+      getLogger().error({
         docId,
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Failed to persist collab doc');
     }
   }
 

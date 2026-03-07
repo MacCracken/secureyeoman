@@ -375,7 +375,7 @@ describe('DynamicToolManager', () => {
           parametersSchema: {},
           implementation: 'return 1;',
         });
-        expect(logger.info).toHaveBeenCalledWith('Dynamic tool registered', expect.any(Object));
+        expect(logger.info).toHaveBeenCalledWith(expect.any(Object), 'Dynamic tool registered');
       });
 
       it('re-registering the same name updates the tool (upsert)', async () => {

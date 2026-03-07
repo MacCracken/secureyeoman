@@ -275,13 +275,13 @@ export class SecretStore {
       this.secrets = new Map(Object.entries(data));
       this.loaded = true;
 
-      this.getLogger().info('Secret store loaded', {
+      this.getLogger().info({
         secretCount: this.secrets.size,
-      });
+      }, 'Secret store loaded');
     } catch (error) {
-      this.getLogger().error('Failed to load secret store', {
+      this.getLogger().error({
         error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      }, 'Failed to load secret store');
       throw new Error('Failed to decrypt secret store. Check master key.');
     }
   }
@@ -307,9 +307,9 @@ export class SecretStore {
     // Write with restricted permissions
     writeFileSync(this.storePath, serialized, { mode: 0o600 });
 
-    this.getLogger().info('Secret store saved', {
+    this.getLogger().info({
       secretCount: this.secrets.size,
-    });
+    }, 'Secret store saved');
   }
 
   /**
@@ -320,7 +320,7 @@ export class SecretStore {
       throw new Error('Secret store not loaded. Call load() first.');
     }
 
-    this.getLogger().debug('Secret accessed', { key });
+    this.getLogger().debug({ key }, 'Secret accessed');
     return this.secrets.get(key);
   }
 
@@ -335,7 +335,7 @@ export class SecretStore {
     this.secrets.set(key, value);
     await this.save();
 
-    this.getLogger().info('Secret stored', { key });
+    this.getLogger().info({ key }, 'Secret stored');
   }
 
   /**
@@ -349,7 +349,7 @@ export class SecretStore {
     const deleted = this.secrets.delete(key);
     if (deleted) {
       await this.save();
-      this.getLogger().info('Secret deleted', { key });
+      this.getLogger().info({ key }, 'Secret deleted');
     }
     return deleted;
   }

@@ -35,7 +35,7 @@ export class WhatsAppIntegration implements Integration {
       fs.mkdirSync(this.sessionPath, { recursive: true });
     }
 
-    this.logger?.info('WhatsApp integration initialized', { sessionPath: this.sessionPath });
+    this.logger?.info({ sessionPath: this.sessionPath }, 'WhatsApp integration initialized');
   }
 
   async start(): Promise<void> {
@@ -88,7 +88,7 @@ export class WhatsAppIntegration implements Integration {
           ?.statusCode;
         const shouldReconnect = reason !== (DisconnectReason.loggedOut as number);
 
-        this.logger?.warn('WhatsApp connection closed', { reason, shouldReconnect });
+        this.logger?.warn({ reason, shouldReconnect }, 'WhatsApp connection closed');
 
         if (shouldReconnect) {
           // Will auto-reconnect due to makeWASocket behavior

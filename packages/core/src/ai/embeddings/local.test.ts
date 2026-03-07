@@ -289,8 +289,8 @@ describe('LocalEmbeddingProvider.ensureProcess()', () => {
     await ensurePromise;
 
     expect(mockLogger.debug).toHaveBeenCalledWith(
-      'Local embedding process stderr',
-      expect.any(Object)
+      expect.any(Object),
+      'Local embedding process stderr'
     );
   });
 
@@ -318,8 +318,8 @@ describe('LocalEmbeddingProvider.ensureProcess()', () => {
     );
     expect((provider as any).process).toBeNull();
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Local embedding process exited',
-      expect.any(Object)
+      expect.any(Object),
+      'Local embedding process exited'
     );
   });
 });

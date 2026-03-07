@@ -97,11 +97,11 @@ export class EvalManager {
     const controller = new AbortController();
     this.activeRuns.set(runId, controller);
 
-    this.logger.info('Starting eval suite run', {
+    this.logger.info({
       suiteId,
       runId,
       scenarioCount: suite.scenarioIds.length,
-    });
+    }, 'Starting eval suite run');
 
     const startedAt = Date.now();
     const results: ScenarioRunResult[] = [];
@@ -116,7 +116,7 @@ export class EvalManager {
       if (scenario) {
         scenarios.push(scenario);
       } else {
-        this.logger.warn('Scenario not found, skipping', { scenarioId: sid, suiteId });
+        this.logger.warn({ scenarioId: sid, suiteId }, 'Scenario not found, skipping');
       }
     }
 
@@ -134,12 +134,12 @@ export class EvalManager {
           results.push(result);
           totalCostUsd += result.costUsd;
 
-          this.logger.info('Scenario completed', {
+          this.logger.info({
             scenarioId: scenario.id,
             passed: result.passed,
             status: result.status,
             durationMs: result.durationMs,
-          });
+          }, 'Scenario completed');
         }
       } else {
         // Concurrent execution in batches
@@ -195,7 +195,7 @@ export class EvalManager {
       await this.store.saveSuiteRun(suiteResult, tenantId);
     }
 
-    this.logger.info('Eval suite run completed', {
+    this.logger.info({
       runId,
       suiteId,
       passed: suiteResult.passed,
@@ -203,7 +203,7 @@ export class EvalManager {
       failedCount,
       errorCount,
       durationMs: suiteResult.totalDurationMs,
-    });
+    }, 'Eval suite run completed');
 
     return suiteResult;
   }
@@ -241,15 +241,15 @@ export class EvalManager {
       throw new Error(`Scenario not found: ${scenarioId}`);
     }
 
-    this.logger.info('Running single scenario evaluation', { scenarioId });
+    this.logger.info({ scenarioId }, 'Running single scenario evaluation');
     const result = await runScenario(scenario, this.agentDeps);
 
-    this.logger.info('Single scenario evaluation completed', {
+    this.logger.info({
       scenarioId,
       passed: result.passed,
       status: result.status,
       durationMs: result.durationMs,
-    });
+    }, 'Single scenario evaluation completed');
 
     return result;
   }
@@ -258,10 +258,10 @@ export class EvalManager {
   async cleanupOldRuns(tenantId = 'default'): Promise<number> {
     const deleted = await this.store.deleteOldRuns(this.config.retentionDays, tenantId);
     if (deleted > 0) {
-      this.logger.info('Cleaned up old eval runs', {
+      this.logger.info({
         deleted,
         retentionDays: this.config.retentionDays,
-      });
+      }, 'Cleaned up old eval runs');
     }
     return deleted;
   }

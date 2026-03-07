@@ -154,8 +154,8 @@ describe('executeMessageAction', () => {
     expect(result.success).toBe(true);
     expect(result.data?.sentCount).toBe(1);
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Failed to send proactive message via integration',
-      expect.objectContaining({ platform: 'telegram' })
+      expect.objectContaining({ platform: 'telegram' }),
+      'Failed to send proactive message via integration'
     );
   });
 
@@ -342,8 +342,8 @@ describe('executeWebhookAction', () => {
     await executeWebhookAction(action, makeDeps());
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Proactive webhook executed',
-      expect.objectContaining({ url: 'https://example.com/hook', attempt: 1 })
+      expect.objectContaining({ url: 'https://example.com/hook', attempt: 1 }),
+      'Proactive webhook executed'
     );
   });
 });
@@ -401,8 +401,8 @@ describe('executeRemindAction', () => {
     await executeRemindAction(action, makeDeps());
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Proactive reminder stored',
-      expect.objectContaining({ category: 'standup' })
+      expect.objectContaining({ category: 'standup' }),
+      'Proactive reminder stored'
     );
   });
 
@@ -461,10 +461,13 @@ describe('executeExecuteAction', () => {
     };
     await executeExecuteAction(action, makeDeps());
 
-    expect(mockLogger.info).toHaveBeenCalledWith('Proactive execute action requested', {
+    expect(mockLogger.info).toHaveBeenCalledWith(
+{
       taskName: 'analyze-logs',
       agentProfile: 'ops',
-    });
+    },
+'Proactive execute action requested'
+);
   });
 
   it('works without agentProfile', async () => {
@@ -587,8 +590,8 @@ describe('executeLearnAction', () => {
     await executeLearnAction(action, makeDeps());
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Proactive learn action stored',
-      expect.objectContaining({ category: 'test-cat', memoryType: 'episodic' })
+      expect.objectContaining({ category: 'test-cat', memoryType: 'episodic' }),
+      'Proactive learn action stored'
     );
   });
 

@@ -286,7 +286,7 @@ describe('PreferenceLearner', () => {
 
       const learnerWithLogger = new PreferenceLearner(brainManager as any, mockLogger);
       await learnerWithLogger.recordFeedback('conv-1', 'msg-1', 'positive');
-      expect(mockLogger.info).toHaveBeenCalledWith('Recorded user feedback', expect.any(Object));
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.any(Object), 'Recorded user feedback');
     });
   });
 

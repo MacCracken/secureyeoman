@@ -74,10 +74,10 @@ export class GoogleChatIntegration implements Integration {
       throw new Error('Google Chat integration requires a botToken in config');
     }
 
-    this.logger?.info('Google Chat integration initialized', {
+    this.logger?.info({
       displayName: config.displayName,
       spaceId: this.spaceId,
-    });
+    }, 'Google Chat integration initialized');
   }
 
   async start(): Promise<void> {

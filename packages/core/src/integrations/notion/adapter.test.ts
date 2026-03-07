@@ -367,8 +367,8 @@ describe('NotionIntegration', () => {
 
       expect(onMessage).not.toHaveBeenCalled();
       expect(warnLogger.warn).toHaveBeenCalledWith(
-        'Notion poll error',
-        expect.objectContaining({ error: 'Network timeout' })
+        expect.objectContaining({ error: 'Network timeout' }),
+        'Notion poll error'
       );
     });
 

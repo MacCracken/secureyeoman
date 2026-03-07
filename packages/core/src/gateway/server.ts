@@ -282,7 +282,7 @@ export class GatewayServer {
       const isLocalNetwork = isPrivateIP(ip);
 
       if (!isLocalNetwork) {
-        this.getLogger().warn('Access denied from non-local IP', { ip });
+        this.getLogger().warn({ ip }, 'Access denied from non-local IP');
         return sendError(reply, 403, 'Dashboard is only accessible from local network');
       }
     });
@@ -409,12 +409,12 @@ export class GatewayServer {
 
     // Request logging
     this.app.addHook('onResponse', async (request, reply) => {
-      this.getLogger().debug('Request completed', {
+      this.getLogger().debug({
         method: request.method,
         url: request.url,
         statusCode: reply.statusCode,
         responseTime: reply.elapsedTime,
-      });
+      }, 'Request completed');
     });
   }
 
@@ -831,9 +831,9 @@ export class GatewayServer {
         this.getLogger().warn('MCP routes skipped — MCP system not initialized');
       }
     } catch (err) {
-      this.getLogger().error('MCP routes failed to register', {
+      this.getLogger().error({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'MCP routes failed to register');
     }
 
     // Report routes
@@ -972,15 +972,15 @@ export class GatewayServer {
           registerCicdWebhookRoutes(this.app, { workflowManager, secureYeoman: this.secureYeoman });
           this.getLogger().info('CI/CD webhook routes registered');
         } catch (err) {
-          this.getLogger().debug('CI/CD webhook routes skipped', {
+          this.getLogger().debug({
             reason: err instanceof Error ? err.message : String(err),
-          });
+          }, 'CI/CD webhook routes skipped');
         }
       }
     } catch (err) {
-      this.getLogger().debug('Workflow routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Workflow routes skipped');
     }
 
     // Intent routes (org intent documents — Phase 48)
@@ -997,9 +997,9 @@ export class GatewayServer {
         this.getLogger().info('Intent routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Intent routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Intent routes skipped');
     }
 
     // Autonomy audit routes (Phase 49)
@@ -1020,9 +1020,9 @@ export class GatewayServer {
         this.getLogger().info('Autonomy audit routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Autonomy audit routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Autonomy audit routes skipped');
     }
 
     // Notification routes (Phase 51 + 55)
@@ -1039,9 +1039,9 @@ export class GatewayServer {
         this.getLogger().info('Notification routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Notification routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Notification routes skipped');
     }
 
     // User notification prefs routes (Phase 55)
@@ -1132,9 +1132,9 @@ export class GatewayServer {
       registerTeeRoutes(this.app, { teeVerifier, secureYeoman: this.secureYeoman });
       this.getLogger().info('TEE confidential computing routes registered');
     } catch (err) {
-      this.getLogger().debug('TEE routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'TEE routes skipped');
     }
 
     // DLP routes (Phase 136)
@@ -1162,9 +1162,9 @@ export class GatewayServer {
         this.getLogger().info('DLP routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('DLP routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'DLP routes skipped');
     }
 
     // Extension routes
@@ -1175,9 +1175,9 @@ export class GatewayServer {
         this.getLogger().info('Extension routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Extension routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Extension routes skipped');
     }
 
     // Code execution routes
@@ -1188,9 +1188,9 @@ export class GatewayServer {
         this.getLogger().info('Execution routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Execution routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Execution routes skipped');
     }
 
     // A2A protocol routes
@@ -1201,9 +1201,9 @@ export class GatewayServer {
         this.getLogger().info('A2A routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('A2A routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'A2A routes skipped');
     }
 
     // Proactive assistance routes
@@ -1215,9 +1215,9 @@ export class GatewayServer {
         this.getLogger().info('Proactive routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Proactive routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Proactive routes skipped');
     }
 
     // Multimodal I/O routes
@@ -1241,9 +1241,9 @@ export class GatewayServer {
         this.getLogger().info('Multimodal routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Multimodal routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Multimodal routes skipped');
     }
 
     // Desktop Control routes
@@ -1258,9 +1258,9 @@ export class GatewayServer {
       });
       this.getLogger().info('Desktop control routes registered');
     } catch (err) {
-      this.getLogger().debug('Desktop control routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Desktop control routes skipped');
     }
 
     // Capture Consent routes (Phase 108-D)
@@ -1277,9 +1277,9 @@ export class GatewayServer {
       });
       this.getLogger().info('Capture consent routes registered');
     } catch (err) {
-      this.getLogger().debug('Capture consent routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Capture consent routes skipped');
     }
 
     // Browser Automation Session routes
@@ -1305,9 +1305,9 @@ export class GatewayServer {
         this.getLogger().info('Browser automation routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Browser automation routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Browser automation routes skipped');
     }
 
     // Group Chat View routes
@@ -1325,9 +1325,9 @@ export class GatewayServer {
         this.getLogger().info('Group chat routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Group chat routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Group chat routes skipped');
     }
 
     // Routing Rules routes
@@ -1343,9 +1343,9 @@ export class GatewayServer {
         this.getLogger().info('Routing rules routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Routing rules routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Routing rules routes skipped');
     }
 
     // Audit Log Export routes (Phase 61)
@@ -1360,9 +1360,9 @@ export class GatewayServer {
         this.getLogger().info('Audit export routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Audit export routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Audit export routes skipped');
     }
 
     // Backup & DR routes (Phase 61)
@@ -1373,9 +1373,9 @@ export class GatewayServer {
         this.getLogger().info('Backup routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Backup routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Backup routes skipped');
     }
 
     // Tenant Management routes (Phase 61)
@@ -1386,9 +1386,9 @@ export class GatewayServer {
         this.getLogger().info('Tenant routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Tenant routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Tenant routes skipped');
     }
 
     // Training dataset export routes
@@ -1400,9 +1400,9 @@ export class GatewayServer {
       registerLicenseRoutes(this.app, { secureYeoman: this.secureYeoman });
       this.getLogger().info('Training routes registered');
     } catch (err) {
-      this.getLogger().debug('Training routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Training routes skipped');
     }
 
     // Federation routes (Phase 79)
@@ -1437,9 +1437,9 @@ export class GatewayServer {
         this.getLogger().info('Federation routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Federation routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Federation routes skipped');
     }
 
     // Gateway routes (Phase 80)
@@ -1451,9 +1451,9 @@ export class GatewayServer {
       });
       this.getLogger().info('Gateway routes registered');
     } catch (err) {
-      this.getLogger().debug('Gateway routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Gateway routes skipped');
     }
 
     // Alert rules routes (Phase 83)
@@ -1470,9 +1470,9 @@ export class GatewayServer {
       registerAnalyticsRoutes(this.app, { secureYeoman: this.secureYeoman });
       this.getLogger().debug('Analytics routes registered');
     } catch (err) {
-      this.getLogger().debug('Analytics routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Analytics routes skipped');
     }
 
     // Sandbox Scanning routes (Phase 116)
@@ -1512,9 +1512,9 @@ export class GatewayServer {
       });
       this.getLogger().info('Sandbox scanning routes registered');
     } catch (err) {
-      this.getLogger().debug('Sandbox scanning routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Sandbox scanning routes skipped');
     }
 
     // Event Subscription routes
@@ -1530,9 +1530,9 @@ export class GatewayServer {
         this.getLogger().info('Event subscription routes registered');
       }
     } catch (err) {
-      this.getLogger().debug('Event subscription routes skipped', {
+      this.getLogger().debug({
         reason: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Event subscription routes skipped');
     }
 
     // Standard Prometheus scrape endpoint /metrics (unauthenticated, public)
@@ -2040,7 +2040,7 @@ export class GatewayServer {
               );
               return reply.code(201).send(executorTask);
             } catch (err) {
-              this.getLogger().warn('Task execution failed', { error: String(err) });
+              this.getLogger().warn({ error: String(err) }, 'Task execution failed');
               return sendError(reply, 500, 'Task execution failed');
             }
           }
@@ -2062,7 +2062,7 @@ export class GatewayServer {
           taskStorage.storeTask(task);
           return reply.code(201).send(task);
         } catch (err) {
-          this.getLogger().error('Failed to create task', { error: String(err) });
+          this.getLogger().error({ error: String(err) }, 'Failed to create task');
           return sendError(reply, 500, 'Failed to create task');
         }
       }
@@ -2519,9 +2519,9 @@ export class GatewayServer {
               config.security.contentGuardrails?.groundingMode ?? 'flag',
           };
         } catch (err) {
-          this.getLogger().error('Failed to update security policy', {
+          this.getLogger().error({
             error: err instanceof Error ? err.message : String(err),
-          });
+          }, 'Failed to update security policy');
           return sendError(reply, 500, 'Failed to update security policy');
         }
       }
@@ -2783,9 +2783,9 @@ export class GatewayServer {
         const keys = await sm.keys();
         return { keys };
       } catch (err) {
-        this.getLogger().error('Failed to list secrets', {
+        this.getLogger().error({
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Failed to list secrets');
         return sendError(reply, 500, 'Failed to list secrets');
       }
     });
@@ -2805,10 +2805,10 @@ export class GatewayServer {
           if (!exists) return sendError(reply, 404, 'Secret not found');
           return { name, exists: true };
         } catch (err) {
-          this.getLogger().error('Failed to check secret', {
+          this.getLogger().error({
             name,
             error: err instanceof Error ? err.message : String(err),
-          });
+          }, 'Failed to check secret');
           return sendError(reply, 500, 'Failed to check secret');
         }
       }
@@ -2846,10 +2846,10 @@ export class GatewayServer {
           reply.code(204);
           return;
         } catch (err) {
-          this.getLogger().error('Failed to set secret', {
+          this.getLogger().error({
             name,
             error: err instanceof Error ? err.message : String(err),
-          });
+          }, 'Failed to set secret');
           return sendError(reply, 500, 'Failed to set secret');
         }
       }
@@ -2878,10 +2878,10 @@ export class GatewayServer {
           reply.code(204);
           return;
         } catch (err) {
-          this.getLogger().error('Failed to delete secret', {
+          this.getLogger().error({
             name,
             error: err instanceof Error ? err.message : String(err),
-          });
+          }, 'Failed to delete secret');
           return sendError(reply, 500, 'Failed to delete secret');
         }
       }
@@ -2904,9 +2904,9 @@ export class GatewayServer {
         }
         return { keys: entries };
       } catch (err) {
-        this.getLogger().error('Failed to list internal SSH keys', {
+        this.getLogger().error({
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Failed to list internal SSH keys');
         return sendError(reply, 500, 'Failed to list SSH keys');
       }
     });
@@ -2940,9 +2940,9 @@ export class GatewayServer {
           }
           return { secrets: resolved };
         } catch (err) {
-          this.getLogger().error('Failed to resolve secrets', {
+          this.getLogger().error({
             error: err instanceof Error ? err.message : String(err),
-          });
+          }, 'Failed to resolve secrets');
           return sendError(reply, 500, 'Failed to resolve secrets');
         }
       }
@@ -2958,9 +2958,9 @@ export class GatewayServer {
         const status = await tlsMgr.getCertStatus();
         return status;
       } catch (err) {
-        this.getLogger().error('Failed to get TLS status', {
+        this.getLogger().error({
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Failed to get TLS status');
         return sendError(reply, 500, 'Failed to get TLS status');
       }
     });
@@ -2977,9 +2977,9 @@ export class GatewayServer {
         const paths = await tlsMgr.ensureCerts();
         return { generated: true, paths };
       } catch (err) {
-        this.getLogger().error('Failed to generate TLS cert', {
+        this.getLogger().error({
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Failed to generate TLS cert');
         return sendError(reply, 500, 'Failed to generate TLS certificate');
       }
     });
@@ -3014,7 +3014,7 @@ export class GatewayServer {
         // All other routes are SPA routes — serve the app shell
         return reply.type('text/html').send(indexHtml);
       });
-      this.getLogger().info('Dashboard SPA serving enabled', { distPath });
+      this.getLogger().info({ distPath }, 'Dashboard SPA serving enabled');
     }
 
     // WebSocket endpoint — auth via Sec-WebSocket-Protocol header (preferred) or ?token= query param (fallback)
@@ -3071,10 +3071,10 @@ export class GatewayServer {
           const evicted = this.clients.get(oldestId);
           evicted?.ws.close(1008, 'Connection limit reached');
           this.clients.delete(oldestId);
-          this.getLogger().warn('WebSocket client evicted (cap reached)', {
+          this.getLogger().warn({
             evictedId: oldestId,
             cap: this.config.maxWsClients,
-          });
+          }, 'WebSocket client evicted (cap reached)');
         }
       }
 
@@ -3090,7 +3090,7 @@ export class GatewayServer {
 
       this.clients.set(clientId, client);
 
-      this.getLogger().debug('WebSocket client connected', { clientId, userId: authUser?.userId });
+      this.getLogger().debug({ clientId, userId: authUser?.userId }, 'WebSocket client connected');
 
       socket.on('pong', () => {
         client.lastPong = Date.now();
@@ -3136,23 +3136,23 @@ export class GatewayServer {
             }
           }
         } catch (error) {
-          this.getLogger().error('Failed to parse WebSocket message', {
+          this.getLogger().error({
             clientId,
             error: error instanceof Error ? error.message : 'Unknown',
-          });
+          }, 'Failed to parse WebSocket message');
         }
       });
 
       socket.on('close', () => {
         this.clients.delete(clientId);
-        this.getLogger().debug('WebSocket client disconnected', { clientId });
+        this.getLogger().debug({ clientId }, 'WebSocket client disconnected');
       });
 
       socket.on('error', (error: Error) => {
-        this.getLogger().error('WebSocket error', {
+        this.getLogger().error({
           clientId,
           error: error.message,
-        });
+        }, 'WebSocket error');
       });
     });
 
@@ -3259,15 +3259,15 @@ export class GatewayServer {
 
         socket.on('close', () => {
           this.collabManager.leave(docId, clientId);
-          this.getLogger().debug('Collab client disconnected', { clientId, docId });
+          this.getLogger().debug({ clientId, docId }, 'Collab client disconnected');
         });
 
         socket.on('error', (error: Error) => {
-          this.getLogger().error('Collab WebSocket error', {
+          this.getLogger().error({
             clientId,
             docId,
             error: error.message,
-          });
+          }, 'Collab WebSocket error');
         });
       }
     );
@@ -3310,11 +3310,11 @@ export class GatewayServer {
         try {
           client.ws.send(message);
         } catch (error) {
-          this.getLogger().error('Failed to send WebSocket message', {
+          this.getLogger().error({
             clientId,
             channel,
             error: error instanceof Error ? error.message : 'Unknown',
-          });
+          }, 'Failed to send WebSocket message');
         }
       }
     }
@@ -3363,9 +3363,9 @@ export class GatewayServer {
             void alertManager.evaluate(metrics as Record<string, unknown>);
           }
         } catch (error) {
-          this.getLogger().error('Failed to broadcast metrics', {
+          this.getLogger().error({
             error: error instanceof Error ? error.message : 'Unknown',
-          });
+          }, 'Failed to broadcast metrics');
         }
       })();
     }, intervalMs);
@@ -3387,13 +3387,13 @@ export class GatewayServer {
       await this.app.listen({ host, port });
 
       const scheme = this.config.tls.enabled ? 'https' : 'http';
-      this.getLogger().info('Gateway server started', {
+      this.getLogger().info({
         host,
         port,
         url: `${scheme}://${host}:${port}`,
         tls: this.config.tls.enabled,
         mtls: !!(this.config.tls.enabled && this.config.tls.caPath),
-      });
+      }, 'Gateway server started');
 
       // Start metrics broadcast
       this.startMetricsBroadcast();
@@ -3417,9 +3417,9 @@ export class GatewayServer {
       }, 30_000);
       this.heartbeatInterval.unref();
     } catch (error) {
-      this.getLogger().error('Failed to start gateway server', {
+      this.getLogger().error({
         error: error instanceof Error ? error.message : 'Unknown',
-      });
+      }, 'Failed to start gateway server');
       throw error;
     }
   }

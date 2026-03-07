@@ -609,8 +609,8 @@ describe('ExtensionManager', () => {
         })
       ).resolves.toBeDefined();
       expect(logger.warn).toHaveBeenCalledWith(
-        'Failed to load webhooks for dispatch',
-        expect.any(Object)
+        expect.any(Object),
+        'Failed to load webhooks for dispatch'
       );
     });
   });

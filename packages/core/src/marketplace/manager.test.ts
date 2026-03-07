@@ -113,10 +113,13 @@ describe('MarketplaceManager', () => {
       const ok = await manager.install('skill-1');
       expect(ok).toBe(true);
       expect(storage.setInstalled).toHaveBeenCalledWith('skill-1', true);
-      expect(logger.info).toHaveBeenCalledWith('Marketplace skill installed', {
+      expect(logger.info).toHaveBeenCalledWith(
+{
         id: 'skill-1',
         personalityId: null,
-      });
+      },
+'Marketplace skill installed'
+);
     });
 
     it('creates brain skill when brainManager provided', async () => {
@@ -181,8 +184,8 @@ describe('MarketplaceManager', () => {
       const ok = await manager.install('skill-1');
       expect(ok).toBe(true); // install still succeeds
       expect(logger.error).toHaveBeenCalledWith(
-        'Failed to create brain skill from marketplace',
-        expect.any(Object)
+        expect.any(Object),
+        'Failed to create brain skill from marketplace'
       );
     });
   });
@@ -195,10 +198,13 @@ describe('MarketplaceManager', () => {
       const ok = await manager.uninstall('skill-1');
       expect(ok).toBe(true);
       expect(storage.setInstalled).toHaveBeenCalledWith('skill-1', false);
-      expect(logger.info).toHaveBeenCalledWith('Marketplace skill uninstalled', {
+      expect(logger.info).toHaveBeenCalledWith(
+{
         id: 'skill-1',
         personalityId: null,
-      });
+      },
+'Marketplace skill uninstalled'
+);
     });
 
     it('removes matching brain skills when brainManager provided', async () => {
@@ -253,10 +259,13 @@ describe('MarketplaceManager', () => {
       const skill = await manager.publish({ name: 'New Skill', description: 'test' } as any);
       expect(skill.id).toBe('skill-1');
       expect(storage.addSkill).toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith('Skill published to marketplace', {
+      expect(logger.info).toHaveBeenCalledWith(
+{
         id: 'skill-1',
         name: 'Test Skill',
-      });
+      },
+'Skill published to marketplace'
+);
     });
   });
 
@@ -265,7 +274,7 @@ describe('MarketplaceManager', () => {
       const { manager, logger } = makeManager();
       const ok = await manager.delete('skill-1');
       expect(ok).toBe(true);
-      expect(logger.info).toHaveBeenCalledWith('Marketplace skill removed', { id: 'skill-1' });
+      expect(logger.info).toHaveBeenCalledWith({ id: 'skill-1' }, 'Marketplace skill removed');
     });
 
     it('does not log when skill not found', async () => {

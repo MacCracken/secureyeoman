@@ -130,7 +130,7 @@ export class BrainModule extends BaseModule {
         });
         this.logger.debug('Memory audit system initialized');
       } catch (error) {
-        this.logger.warn('Failed to initialize memory audit system', { error: String(error) });
+        this.logger.warn({ error: String(error) }, 'Failed to initialize memory audit system');
       }
     }
 
@@ -149,10 +149,10 @@ export class BrainModule extends BaseModule {
         this.logger.child({ component: 'ExternalBrainSync' })
       );
       this.externalBrainSync.start();
-      this.logger.debug('External brain sync initialized', {
+      this.logger.debug({
         provider: this.config.externalBrain.provider,
         path: this.config.externalBrain.path,
-      });
+      }, 'External brain sync initialized');
     }
 
     // Step 6.7.1: Start memory audit scheduler

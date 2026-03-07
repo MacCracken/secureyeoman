@@ -224,8 +224,8 @@ describe('DocumentManager', () => {
         })
       );
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'Document ingest failed',
-        expect.objectContaining({ docId: 'doc-1' })
+        expect.objectContaining({ docId: 'doc-1' }),
+        'Document ingest failed'
       );
     });
 
@@ -334,8 +334,8 @@ describe('DocumentManager', () => {
         })
       );
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'URL ingest failed',
-        expect.objectContaining({ url: 'https://unreachable.test' })
+        expect.objectContaining({ url: 'https://unreachable.test' }),
+        'URL ingest failed'
       );
     });
 
@@ -389,8 +389,8 @@ describe('DocumentManager', () => {
       const result = await dm.ingestText('some text', 'title', null);
 
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'Failed to learn chunk',
-        expect.objectContaining({ docId: 'doc-1' })
+        expect.objectContaining({ docId: 'doc-1' }),
+        'Failed to learn chunk'
       );
       // Still sets to ready because chunkAndLearn doesn't re-throw
       expect(result.status).toBe('ready');
@@ -402,8 +402,8 @@ describe('DocumentManager', () => {
       await dm.ingestText('text', 'title', null);
 
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'Failed to learn chunk',
-        expect.objectContaining({ error: 'string err' })
+        expect.objectContaining({ error: 'string err' }),
+        'Failed to learn chunk'
       );
     });
   });
@@ -516,10 +516,13 @@ describe('DocumentManager', () => {
       const results = await dm.ingestGithubWiki('org', 'repo', null);
 
       expect(results).toEqual([]);
-      expect(deps.logger.warn).toHaveBeenCalledWith('No markdown files found in repository', {
+      expect(deps.logger.warn).toHaveBeenCalledWith(
+{
         owner: 'org',
         repo: 'repo',
-      });
+      },
+'No markdown files found in repository'
+);
     });
 
     it('skips files with null download_url', async () => {
@@ -570,8 +573,8 @@ describe('DocumentManager', () => {
       const results = await dm.ingestGithubWiki('org', 'repo', null);
 
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'Failed to ingest GitHub wiki file',
-        expect.objectContaining({ file: 'a.md' })
+        expect.objectContaining({ file: 'a.md' }),
+        'Failed to ingest GitHub wiki file'
       );
       expect(results).toHaveLength(1);
     });
@@ -694,8 +697,8 @@ describe('DocumentManager', () => {
       const result = await dm.ingestExcalidraw({ elements: [] }, 'Fail', null);
 
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'Excalidraw ingest failed',
-        expect.objectContaining({ docId: 'doc-1' })
+        expect.objectContaining({ docId: 'doc-1' }),
+        'Excalidraw ingest failed'
       );
     });
   });
@@ -970,8 +973,8 @@ describe('DocumentManager', () => {
       await dm.generateSourceGuide('p1');
 
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'Source guide generation failed',
-        expect.objectContaining({ error: 'Error: db error' })
+        expect.objectContaining({ error: 'Error: db error' }),
+        'Source guide generation failed'
       );
     });
   });
@@ -1204,8 +1207,8 @@ describe('DocumentManager', () => {
       // All 3 chunks attempted
       expect(deps.brainManager.learn).toHaveBeenCalledTimes(3);
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'Failed to learn chunk',
-        expect.objectContaining({ chunk: 1 })
+        expect.objectContaining({ chunk: 1 }),
+        'Failed to learn chunk'
       );
     });
   });

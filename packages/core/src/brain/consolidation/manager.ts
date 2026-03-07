@@ -104,11 +104,11 @@ export class ConsolidationManager {
 
       // Auto-dedup: very high similarity
       if (topScore >= this.config.quickCheck.autoDedupThreshold) {
-        this.logger.debug('Auto-dedup: removing duplicate memory', {
+        this.logger.debug({
           memoryId: memory.id,
           duplicateOf: topResult.id,
           score: topScore,
-        });
+        }, 'Auto-dedup: removing duplicate memory');
 
         await this.storage.deleteMemory(memory.id);
         await this.vectorManager.removeMemory(memory.id);
@@ -124,7 +124,7 @@ export class ConsolidationManager {
 
       return 'clean';
     } catch (err) {
-      this.logger.warn('Quick check failed', { error: String(err) });
+      this.logger.warn({ error: String(err) }, 'Quick check failed');
       return 'clean';
     }
   }
@@ -153,7 +153,7 @@ export class ConsolidationManager {
     await this.loadFlaggedIds();
     const snapshotIds = new Set(this.flaggedIds);
 
-    this.logger.info('Starting deep consolidation', { dryRun, flaggedCount: snapshotIds.size });
+    this.logger.info({ dryRun, flaggedCount: snapshotIds.size }, 'Starting deep consolidation');
 
     const candidates: ConsolidationCandidate[] = [];
 
@@ -244,7 +244,7 @@ export class ConsolidationManager {
           durationMs: Date.now() - startTime,
         };
       } catch (err) {
-        this.logger.error('Deep consolidation LLM call failed', { error: String(err) });
+        this.logger.error({ error: String(err) }, 'Deep consolidation LLM call failed');
         report = {
           timestamp: Date.now(),
           totalCandidates: candidates.length,
@@ -296,11 +296,11 @@ export class ConsolidationManager {
       this.history = this.history.slice(-50);
     }
 
-    this.logger.info('Deep consolidation complete', {
+    this.logger.info({
       candidates: report.totalCandidates,
       ...report.summary,
       durationMs: report.durationMs,
-    });
+    }, 'Deep consolidation complete');
 
     return report;
   }
@@ -311,7 +311,7 @@ export class ConsolidationManager {
     try {
       await this.storage.setMeta(FLAGGED_IDS_META_KEY, JSON.stringify([...this.flaggedIds]));
     } catch (err) {
-      this.logger.warn('Failed to persist flaggedIds', { error: String(err) });
+      this.logger.warn({ error: String(err) }, 'Failed to persist flaggedIds');
     }
   }
 
@@ -325,7 +325,7 @@ export class ConsolidationManager {
         }
       }
     } catch (err) {
-      this.logger.warn('Failed to load flaggedIds', { error: String(err) });
+      this.logger.warn({ error: String(err) }, 'Failed to load flaggedIds');
     }
   }
 
@@ -336,7 +336,7 @@ export class ConsolidationManager {
 
     // Load persisted flagged IDs on start
     void this.loadFlaggedIds().catch((e: unknown) => {
-      this.logger.warn('Failed to load flagged IDs', { error: String(e) });
+      this.logger.warn({ error: String(e) }, 'Failed to load flagged IDs');
     });
 
     // Check every 60 seconds for cron match
@@ -347,7 +347,7 @@ export class ConsolidationManager {
       60 * 1000 // Check every minute
     );
 
-    this.logger.info('Consolidation scheduler started', { schedule: this.schedule });
+    this.logger.info({ schedule: this.schedule }, 'Consolidation scheduler started');
   }
 
   stop(): void {
@@ -364,7 +364,7 @@ export class ConsolidationManager {
 
   setSchedule(cron: string): void {
     this.schedule = cron;
-    this.logger.info('Consolidation schedule updated', { schedule: cron });
+    this.logger.info({ schedule: cron }, 'Consolidation schedule updated');
   }
 
   getHistory(): ConsolidationReport[] {
@@ -412,7 +412,7 @@ export class ConsolidationManager {
 
     if (matchesMinute && matchesHour && matchesDayOfMonth && matchesMonth && matchesDayOfWeek) {
       this.runDeepConsolidation().catch((err: unknown) => {
-        this.logger.error('Scheduled consolidation failed', { error: String(err) });
+        this.logger.error({ error: String(err) }, 'Scheduled consolidation failed');
       });
     }
   }

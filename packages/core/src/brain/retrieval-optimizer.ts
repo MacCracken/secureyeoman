@@ -156,13 +156,13 @@ export class RetrievalOptimizer {
       arm.beta += 1;
     }
 
-    this.logger?.debug('Retrieval optimizer feedback', {
+    this.logger?.debug({
       armIndex: this.currentArmIndex,
       positive,
       alpha: arm.alpha,
       beta: arm.beta,
       pulls: arm.pulls,
-    });
+    }, 'Retrieval optimizer feedback');
   }
 
   /**

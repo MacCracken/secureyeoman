@@ -104,13 +104,13 @@ export class TokenFederationService {
       .setJti(jti)
       .sign(this.secret);
 
-    this.logger?.info('Federation token issued', {
+    this.logger?.info({
       audience: request.audience,
       subject: request.subject,
       role: request.role,
       ttl,
       jti,
-    });
+    }, 'Federation token issued');
 
     return { token, expiresIn: ttl, expiresAt, audience: request.audience, jti };
   }

@@ -106,7 +106,7 @@ class NoopPermissionManager implements PlatformPermissionManager {
   }
 
   async checkPermission(type: CapturePermissionType): Promise<PermissionStatus> {
-    this.logger.warn('Platform permission check not available', { type });
+    this.logger.warn({ type }, 'Platform permission check not available');
     return {
       granted: false,
       state: 'not-determined',
@@ -115,7 +115,7 @@ class NoopPermissionManager implements PlatformPermissionManager {
   }
 
   async requestPermission(type: CapturePermissionType): Promise<PermissionStatus> {
-    this.logger.warn('Platform permission request not available', { type });
+    this.logger.warn({ type }, 'Platform permission request not available');
     return {
       granted: false,
       state: 'denied',
@@ -128,7 +128,7 @@ class NoopPermissionManager implements PlatformPermissionManager {
   }
 
   async openSystemPreferences(type: CapturePermissionType): Promise<void> {
-    this.logger.warn('System preferences not available', { type });
+    this.logger.warn({ type }, 'System preferences not available');
   }
 }
 

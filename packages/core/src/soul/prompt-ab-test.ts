@@ -104,7 +104,7 @@ export class PromptAbTestManager {
     };
 
     this.tests.set(id, test);
-    this.logger?.info('Prompt A/B test created', { testId: id, personalityId: data.personalityId });
+    this.logger?.info({ testId: id, personalityId: data.personalityId }, 'Prompt A/B test created');
     return test;
   }
 
@@ -226,7 +226,7 @@ export class PromptAbTestManager {
     test.status = 'completed';
     test.completedAt = Date.now();
 
-    this.logger?.info('Prompt A/B test completed', { testId, winnerVariantId });
+    this.logger?.info({ testId, winnerVariantId }, 'Prompt A/B test completed');
     return test;
   }
 

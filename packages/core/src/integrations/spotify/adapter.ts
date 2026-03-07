@@ -154,7 +154,7 @@ export class SpotifyIntegration implements Integration {
       await this.ensureToken();
       const resp = await this.spotifyFetch('/me/player/recently-played?limit=10');
       if (!resp.ok) {
-        this.logger?.warn('Spotify poll failed', { status: resp.status });
+        this.logger?.warn({ status: resp.status }, 'Spotify poll failed');
         return;
       }
 
@@ -182,9 +182,9 @@ export class SpotifyIntegration implements Integration {
         await this.deps.onMessage(unified);
       }
     } catch (err) {
-      this.logger?.warn('Spotify poll error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Spotify poll error');
     }
   }
 

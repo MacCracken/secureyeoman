@@ -1277,9 +1277,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             }
           } catch (compactErr) {
             const logger = getLogger().child({ component: 'chat-routes' });
-            logger.warn('Context compaction failed, proceeding with uncompacted context', {
+            logger.warn({
               error: String(compactErr),
-            });
+            }, 'Context compaction failed, proceeding with uncompacted context');
           }
         }
       }

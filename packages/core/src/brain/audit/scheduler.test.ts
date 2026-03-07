@@ -116,8 +116,8 @@ describe('MemoryAuditScheduler', () => {
     scheduler.start();
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Memory audit scheduler started',
-      expect.objectContaining({ schedules: expect.any(String) })
+      expect.objectContaining({ schedules: expect.any(String) }),
+      'Memory audit scheduler started'
     );
 
     scheduler.stop();
@@ -138,7 +138,7 @@ describe('MemoryAuditScheduler', () => {
 
     // Only one 'started' log
     const startedCalls = mockLogger.info.mock.calls.filter(
-      (c: unknown[]) => c[0] === 'Memory audit scheduler started'
+      (c: unknown[]) => c[1] === 'Memory audit scheduler started'
     );
     expect(startedCalls).toHaveLength(1);
 
@@ -193,10 +193,13 @@ describe('MemoryAuditScheduler', () => {
   it('setSchedule() logs the update', async () => {
     const scheduler = makeScheduler(mocks);
     await scheduler.setSchedule('monthly', '0 1 15 * *');
-    expect(mockLogger.info).toHaveBeenCalledWith('Audit schedule updated', {
+    expect(mockLogger.info).toHaveBeenCalledWith(
+{
       scope: 'monthly',
       cron: '0 1 15 * *',
-    });
+    },
+'Audit schedule updated'
+);
   });
 
   // ── runManualAudit ─────────────────────────────────────────
@@ -221,10 +224,13 @@ describe('MemoryAuditScheduler', () => {
   it('runManualAudit() logs the trigger', async () => {
     const scheduler = makeScheduler(mocks);
     await scheduler.runManualAudit('weekly', 'soul-7');
-    expect(mockLogger.info).toHaveBeenCalledWith('Manual audit triggered', {
+    expect(mockLogger.info).toHaveBeenCalledWith(
+{
       scope: 'weekly',
       personalityId: 'soul-7',
-    });
+    },
+'Manual audit triggered'
+);
   });
 
   // ── History ────────────────────────────────────────────────

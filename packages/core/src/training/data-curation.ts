@@ -59,7 +59,7 @@ export class DataCurationManager {
     const minTurns = config.minTurns ?? 1;
     const maxConversations = config.maxConversations ?? 5000;
 
-    this.logger.info('DataCuration: starting snapshot', { datasetId, config });
+    this.logger.info({ datasetId, config }, 'DataCuration: starting snapshot');
 
     // Use ConversationStorage.listConversations API.
     // We collect from all requested personalities (or all if none specified).
@@ -142,12 +142,12 @@ export class DataCurationManager {
       snapshotAt: Date.now(),
     };
 
-    this.logger.info('DataCuration: snapshot complete', {
+    this.logger.info({
       datasetId,
       conversationCount,
       sampleCount,
       path,
-    });
+    }, 'DataCuration: snapshot complete');
 
     return descriptor;
   }

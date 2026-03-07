@@ -106,7 +106,7 @@ export class FederationManager {
 
     // Fire-and-forget health check
     void this.checkHealth(peer.id).catch((e: unknown) => {
-      this.logger.debug('Initial peer health check failed', { peerId: peer.id, error: String(e) });
+      this.logger.debug({ peerId: peer.id, error: String(e) }, 'Initial peer health check failed');
     });
 
     return peer;
@@ -129,7 +129,7 @@ export class FederationManager {
     try {
       rawSecret = decryptSecret(peer.sharedSecretEnc, this.masterSecret);
     } catch (err) {
-      this.logger.error('Failed to decrypt federation peer secret', { peerId, err });
+      this.logger.error({ peerId, err }, 'Failed to decrypt federation peer secret');
       return 'offline';
     }
 
@@ -361,7 +361,7 @@ export class FederationManager {
         },
       })
       .catch((e: unknown) => {
-        this.logger.debug('Federation sync log failed', { error: String(e) });
+        this.logger.debug({ error: String(e) }, 'Federation sync log failed');
       });
 
     return created;

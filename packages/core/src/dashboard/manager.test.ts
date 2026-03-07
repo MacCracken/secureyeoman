@@ -44,10 +44,13 @@ describe('DashboardManager', () => {
       const { manager, logger } = makeManager();
       const d = await manager.create({ name: 'New Dashboard', widgets: [] } as any);
       expect(d.id).toBe('dash-1');
-      expect(logger.info).toHaveBeenCalledWith('Custom dashboard created', {
+      expect(logger.info).toHaveBeenCalledWith(
+{
         id: 'dash-1',
         name: 'My Dashboard',
-      });
+      },
+'Custom dashboard created'
+);
     });
   });
 
@@ -78,7 +81,7 @@ describe('DashboardManager', () => {
       const { manager, logger } = makeManager();
       const d = await manager.update('dash-1', { name: 'Updated' });
       expect(d?.id).toBe('dash-1');
-      expect(logger.info).toHaveBeenCalledWith('Custom dashboard updated', { id: 'dash-1' });
+      expect(logger.info).toHaveBeenCalledWith({ id: 'dash-1' }, 'Custom dashboard updated');
     });
 
     it('does not log when not found', async () => {
@@ -93,7 +96,7 @@ describe('DashboardManager', () => {
       const { manager, logger } = makeManager();
       const ok = await manager.delete('dash-1');
       expect(ok).toBe(true);
-      expect(logger.info).toHaveBeenCalledWith('Custom dashboard deleted', { id: 'dash-1' });
+      expect(logger.info).toHaveBeenCalledWith({ id: 'dash-1' }, 'Custom dashboard deleted');
     });
 
     it('returns false without logging when not found', async () => {

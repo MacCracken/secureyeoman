@@ -543,8 +543,8 @@ describe('HeartbeatManager', () => {
       await hb.beat();
 
       expect(logger.info).toHaveBeenCalledWith(
-        '[HEARTBEAT ALERT]',
-        expect.objectContaining({ message: expect.stringContaining('Error: failing_check') })
+        expect.objectContaining({ message: expect.stringContaining('Error: failing_check') }),
+        '[HEARTBEAT ALERT]'
       );
     });
 
@@ -607,8 +607,8 @@ describe('HeartbeatManager', () => {
       await hb.beat();
 
       expect(logger.info).toHaveBeenCalledWith(
-        '[HEARTBEAT ALERT]',
-        expect.objectContaining({ message: expect.stringContaining('Always triggered') })
+        expect.objectContaining({ message: expect.stringContaining('Always triggered') }),
+        '[HEARTBEAT ALERT]'
       );
     });
   });
@@ -677,12 +677,12 @@ describe('HeartbeatManager', () => {
       await hb.beat();
 
       expect(logger.info).toHaveBeenCalledWith(
-        '[HEARTBEAT ALERT]',
-        expect.objectContaining({ message: expect.stringContaining('Default action: check1') })
+        expect.objectContaining({ message: expect.stringContaining('Default action: check1') }),
+        '[HEARTBEAT ALERT]'
       );
       expect(logger.info).toHaveBeenCalledWith(
-        '[HEARTBEAT ALERT]',
-        expect.objectContaining({ message: expect.stringContaining('Default action: check2') })
+        expect.objectContaining({ message: expect.stringContaining('Default action: check2') }),
+        '[HEARTBEAT ALERT]'
       );
     });
 
@@ -723,12 +723,12 @@ describe('HeartbeatManager', () => {
       await hb.beat();
 
       expect(logger.info).toHaveBeenCalledWith(
-        '[HEARTBEAT ALERT]',
-        expect.objectContaining({ message: expect.stringContaining('Default') })
+        expect.objectContaining({ message: expect.stringContaining('Default') }),
+        '[HEARTBEAT ALERT]'
       );
       expect(logger.info).toHaveBeenCalledWith(
-        '[HEARTBEAT ALERT]',
-        expect.objectContaining({ message: expect.stringContaining('Specific') })
+        expect.objectContaining({ message: expect.stringContaining('Specific') }),
+        '[HEARTBEAT ALERT]'
       );
     });
   });
@@ -916,10 +916,10 @@ describe('HeartbeatManager', () => {
 
       // Second action should still have been called
       expect(logger.info).toHaveBeenCalledWith(
-        '[HEARTBEAT ALERT]',
         expect.objectContaining({
           message: expect.stringContaining('Second action should still run'),
-        })
+        }),
+        '[HEARTBEAT ALERT]'
       );
 
       errorSpy.mockRestore();
@@ -1033,8 +1033,8 @@ describe('HeartbeatManager', () => {
       // Should not throw — warns and continues
       await expect(hb.beat()).resolves.toBeDefined();
       expect(logger.warn).toHaveBeenCalledWith(
-        'Failed to persist heartbeat log entry',
-        expect.objectContaining({ check: 'system_health' })
+        expect.objectContaining({ check: 'system_health' }),
+        'Failed to persist heartbeat log entry'
       );
     });
 
@@ -1816,8 +1816,8 @@ describe('HeartbeatManager', () => {
       await new Promise((r) => setTimeout(r, 20));
       // The catch handler should log a warning
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to persist heartbeat notification'),
-        expect.objectContaining({ error: 'Notification service down' })
+        expect.objectContaining({ error: 'Notification service down' }),
+        expect.stringContaining('Failed to persist heartbeat notification')
       );
     });
 
@@ -1850,8 +1850,8 @@ describe('HeartbeatManager', () => {
       await hb.beat();
       await new Promise((r) => setTimeout(r, 20));
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to persist heartbeat notification'),
-        expect.objectContaining({ error: 'Unknown error' })
+        expect.objectContaining({ error: 'Unknown error' }),
+        expect.stringContaining('Failed to persist heartbeat notification')
       );
     });
   });
@@ -1958,8 +1958,8 @@ describe('HeartbeatManager', () => {
       await hb.beat();
 
       expect(logger.info).toHaveBeenCalledWith(
-        '[HEARTBEAT ALERT]',
-        expect.objectContaining({ message: expect.stringContaining('ok_triggered') })
+        expect.objectContaining({ message: expect.stringContaining('ok_triggered') }),
+        '[HEARTBEAT ALERT]'
       );
     });
 
@@ -1986,8 +1986,8 @@ describe('HeartbeatManager', () => {
       await hb.beat();
 
       expect(logger.info).toHaveBeenCalledWith(
-        '[HEARTBEAT ALERT]',
-        expect.objectContaining({ message: expect.stringContaining('warn_triggered') })
+        expect.objectContaining({ message: expect.stringContaining('warn_triggered') }),
+        '[HEARTBEAT ALERT]'
       );
     });
   });
@@ -2304,8 +2304,8 @@ describe('HeartbeatManager', () => {
       await hb.beat();
 
       expect(logger.warn).toHaveBeenCalledWith(
-        'No running adapters found for notification channel',
-        expect.objectContaining({ channel: 'slack' })
+        expect.objectContaining({ channel: 'slack' }),
+        'No running adapters found for notification channel'
       );
     });
   });

@@ -33,6 +33,7 @@ vi.mock('node:fs', async (importOriginal) => {
       (stream as any).pipe = vi.fn();
       return stream;
     }),
+    lstatSync: vi.fn(() => ({ isSymbolicLink: () => false })),
   };
 });
 

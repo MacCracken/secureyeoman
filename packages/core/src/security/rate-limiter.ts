@@ -110,7 +110,7 @@ export class RateLimiter {
    */
   addRule(rule: RateLimitRule): void {
     this.rules.set(rule.name, rule);
-    this.getLogger().debug('Rate limit rule added', { ruleName: rule.name });
+    this.getLogger().debug({ ruleName: rule.name }, 'Rate limit rule added');
   }
 
   /**
@@ -170,7 +170,7 @@ export class RateLimiter {
     const retryAfter = Math.ceil((resetAt - now) / 1000);
 
     // Log violation
-    this.getLogger().warn('Rate limit exceeded', {
+    this.getLogger().warn({
       rule: rule.name,
       key: rule.keyType === 'ip' ? key : '[redacted]',
       keyType: rule.keyType,
@@ -179,7 +179,7 @@ export class RateLimiter {
       currentCount: window.count,
       userId: context?.userId,
       ipAddress: context?.ipAddress,
-    });
+    }, 'Rate limit exceeded');
 
     // Handle based on rule action
     if (rule.onExceed === 'log_only') {
@@ -302,7 +302,7 @@ export class RateLimiter {
     }
 
     if (cleaned > 0) {
-      this.getLogger().debug('Rate limiter cleanup', { cleanedWindows: cleaned });
+      this.getLogger().debug({ cleanedWindows: cleaned }, 'Rate limiter cleanup');
     }
   }
 

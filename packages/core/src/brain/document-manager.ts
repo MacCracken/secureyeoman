@@ -74,7 +74,7 @@ export class DocumentManager {
         errorMessage: null,
       });
     } catch (err) {
-      this.logger.warn('Document ingest failed', { docId: doc.id, error: String(err) });
+      this.logger.warn({ docId: doc.id, error: String(err) }, 'Document ingest failed');
       return await this.storage.updateDocument(doc.id, {
         status: 'error',
         errorMessage: err instanceof Error ? err.message : String(err),
@@ -121,7 +121,7 @@ export class DocumentManager {
         errorMessage: null,
       });
     } catch (err) {
-      this.logger.warn('URL ingest failed', { docId: doc.id, url, error: String(err) });
+      this.logger.warn({ docId: doc.id, url, error: String(err) }, 'URL ingest failed');
       return await this.storage.updateDocument(doc.id, {
         status: 'error',
         errorMessage: err instanceof Error ? err.message : String(err),
@@ -155,7 +155,7 @@ export class DocumentManager {
         errorMessage: null,
       });
     } catch (err) {
-      this.logger.warn('Text ingest failed', { docId: doc.id, error: String(err) });
+      this.logger.warn({ docId: doc.id, error: String(err) }, 'Text ingest failed');
       return await this.storage.updateDocument(doc.id, {
         status: 'error',
         errorMessage: err instanceof Error ? err.message : String(err),
@@ -202,7 +202,7 @@ export class DocumentManager {
     );
 
     if (mdFiles.length === 0) {
-      this.logger.warn('No markdown files found in repository', { owner, repo });
+      this.logger.warn({ owner, repo }, 'No markdown files found in repository');
       return [];
     }
 
@@ -221,10 +221,10 @@ export class DocumentManager {
         const doc = await this.ingestText(content, title, personalityId, 'shared');
         results.push(doc);
       } catch (err) {
-        this.logger.warn('Failed to ingest GitHub wiki file', {
+        this.logger.warn({
           file: file.path,
           error: String(err),
-        });
+        }, 'Failed to ingest GitHub wiki file');
       }
     }
 
@@ -260,7 +260,7 @@ export class DocumentManager {
         errorMessage: null,
       });
     } catch (err) {
-      this.logger.warn('Excalidraw ingest failed', { docId: doc.id, error: String(err) });
+      this.logger.warn({ docId: doc.id, error: String(err) }, 'Excalidraw ingest failed');
       return await this.storage.updateDocument(doc.id, {
         status: 'error',
         errorMessage: err instanceof Error ? err.message : String(err),
@@ -353,7 +353,7 @@ export class DocumentManager {
         personalityId ?? undefined
       );
     } catch (err) {
-      this.logger.warn('Source guide generation failed', { error: String(err) });
+      this.logger.warn({ error: String(err) }, 'Source guide generation failed');
     }
   }
 
@@ -459,11 +459,11 @@ export class DocumentManager {
           await this.brainManager.learn(topic, piece, source, 0.9, personalityId ?? undefined);
         } catch (err) {
           // Log and continue — don't fail the whole ingest if one chunk fails
-          this.logger.warn('Failed to learn chunk', {
+          this.logger.warn({
             docId,
             chunk: storeIdx - 1,
             error: String(err),
-          });
+          }, 'Failed to learn chunk');
         }
       }
     }

@@ -110,7 +110,7 @@ export class IMessageIntegration implements Integration {
       );
     }
 
-    this.logger.info('iMessage integration initialized', { chatDbPath: this.chatDbPath });
+    this.logger.info({ chatDbPath: this.chatDbPath }, 'iMessage integration initialized');
   }
 
   async start(): Promise<void> {
@@ -120,13 +120,13 @@ export class IMessageIntegration implements Integration {
     this.running = true;
     this.pollTimer = setInterval(() => {
       void this.pollMessages().catch((err: unknown) => {
-        this.logger?.error('iMessage poll error', {
+        this.logger?.error({
           error: err instanceof Error ? err.message : 'Unknown error',
-        });
+        }, 'iMessage poll error');
       });
     }, this.pollIntervalMs);
 
-    this.logger?.info('iMessage polling started', { intervalMs: this.pollIntervalMs });
+    this.logger?.info({ intervalMs: this.pollIntervalMs }, 'iMessage polling started');
   }
 
   async stop(): Promise<void> {

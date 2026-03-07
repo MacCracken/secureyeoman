@@ -300,7 +300,7 @@ export class RBAC {
       await this.storage.saveRoleDefinition(role);
     }
 
-    this.getLogger().info('Role defined', { roleId: role.id, roleName: role.name });
+    this.getLogger().info({ roleId: role.id, roleName: role.name }, 'Role defined');
   }
 
   /**
@@ -321,7 +321,7 @@ export class RBAC {
         await this.storage.deleteRoleDefinition(roleId);
       }
 
-      this.getLogger().info('Role removed', { roleId });
+      this.getLogger().info({ roleId }, 'Role removed');
     }
     return removed;
   }
@@ -664,7 +664,7 @@ export class RBAC {
       await this.storage.assignRole(userId, roleId, assignedBy);
     }
 
-    this.getLogger().info('User role assigned', { userId, roleId, assignedBy });
+    this.getLogger().info({ userId, roleId, assignedBy }, 'User role assigned');
   }
 
   /**
@@ -685,7 +685,7 @@ export class RBAC {
         await this.storage.revokeRole(userId);
       }
 
-      this.getLogger().info('User role revoked', { userId });
+      this.getLogger().info({ userId }, 'User role revoked');
     }
 
     return had;

@@ -61,7 +61,7 @@ migrations before the core Deployment rolls out.
       return 0;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      logger.error('Database migration failed', { error: msg });
+      logger.error({ error: msg }, 'Database migration failed');
       ctx.stderr.write(`Migration failed: ${msg}\n`);
       return 1;
     } finally {

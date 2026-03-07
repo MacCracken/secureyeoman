@@ -113,7 +113,7 @@ export class WorkflowManager {
     if (result) {
       // Fire-and-forget version recording
       this.workflowVersionManager?.recordVersion(id).catch((err: unknown) => {
-        this.logger.error('Failed to record workflow version', { err });
+        this.logger.error({ err }, 'Failed to record workflow version');
       });
     }
     return result;
@@ -147,10 +147,10 @@ export class WorkflowManager {
 
     setImmediate(() => {
       this.engine.execute(run, definition).catch((err: unknown) => {
-        this.logger.error('Workflow engine execution error', {
+        this.logger.error({
           runId: run.id,
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Workflow engine execution error');
       });
     });
 

@@ -127,7 +127,7 @@ export class PromptTemplateEngine {
       if (!variable) {
         unresolved.push(name);
         if (this.config.warnOnUndefined) {
-          this.logger?.warn('Undefined template variable', { name });
+          this.logger?.warn({ name }, 'Undefined template variable');
         }
         return match; // Leave as-is
       }

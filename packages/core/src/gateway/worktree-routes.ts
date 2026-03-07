@@ -43,7 +43,7 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
         await execFileAsync('git', ['worktree', 'add', worktreePath, '-b', name], {
           cwd: process.cwd(),
         });
-        logger.info('Created worktree', { name, path: worktreePath });
+        logger.info({ name, path: worktreePath }, 'Created worktree');
         const info: WorktreeInfo = {
           id: name,
           path: worktreePath,
@@ -53,7 +53,7 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
         return reply.code(201).send(info);
       } catch (err) {
         const msg = toErrorMessage(err);
-        logger.warn('Failed to create worktree', { name, error: msg });
+        logger.warn({ name, error: msg }, 'Failed to create worktree');
         return sendError(reply, 500, `Failed to create worktree: ${msg}`);
       }
     }
@@ -91,7 +91,7 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
       return { worktrees };
     } catch (err) {
       const msg = toErrorMessage(err);
-      logger.warn('Failed to list worktrees', { error: msg });
+      logger.warn({ error: msg }, 'Failed to list worktrees');
       return { worktrees: [] };
     }
   });
@@ -115,11 +115,11 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
         } catch {
           // Branch may not exist or may be checked out — ignore
         }
-        logger.info('Removed worktree', { id, path: worktreePath });
+        logger.info({ id, path: worktreePath }, 'Removed worktree');
         return reply.code(204).send();
       } catch (err) {
         const msg = toErrorMessage(err);
-        logger.warn('Failed to remove worktree', { id, error: msg });
+        logger.warn({ id, error: msg }, 'Failed to remove worktree');
         return sendError(reply, 500, `Failed to remove worktree: ${msg}`);
       }
     }

@@ -100,8 +100,8 @@ describe('McpCredentialManager', () => {
       const result = await manager.getCredential('srv-1', 'CORRUPT');
       expect(result).toBeNull();
       expect(logger.error).toHaveBeenCalledWith(
-        'Failed to decrypt credential',
-        expect.objectContaining({ serverId: 'srv-1', key: 'CORRUPT' })
+        expect.objectContaining({ serverId: 'srv-1', key: 'CORRUPT' }),
+        'Failed to decrypt credential'
       );
     });
   });
@@ -125,8 +125,8 @@ describe('McpCredentialManager', () => {
       expect(result).toBe(true);
       expect(storage.deleteCredential).toHaveBeenCalledWith('srv-1', 'API_KEY');
       expect(logger.info).toHaveBeenCalledWith(
-        'Deleted credential',
-        expect.objectContaining({ serverId: 'srv-1', key: 'API_KEY' })
+        expect.objectContaining({ serverId: 'srv-1', key: 'API_KEY' }),
+        'Deleted credential'
       );
     });
 

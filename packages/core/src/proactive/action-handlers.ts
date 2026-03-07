@@ -35,10 +35,10 @@ export async function executeMessageAction(
         await adapter.sendMessage('proactive', action.content);
         sent++;
       } catch (err) {
-        logger.warn('Failed to send proactive message via integration', {
+        logger.warn({
           platform: config.platform,
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Failed to send proactive message via integration');
       }
     }
 
@@ -93,7 +93,7 @@ export async function executeWebhookAction(
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      logger.info('Proactive webhook executed', { url: action.url, attempt: attempt + 1 });
+      logger.info({ url: action.url, attempt: attempt + 1 }, 'Proactive webhook executed');
       return { success: true, message: `Webhook OK (${response.status})` };
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
@@ -125,7 +125,7 @@ export async function executeRemindAction(
       0.7
     );
 
-    logger.info('Proactive reminder stored', { category: action.category });
+    logger.info({ category: action.category }, 'Proactive reminder stored');
     return { success: true, message: 'Reminder stored in memory' };
   } catch (err) {
     return {
@@ -144,10 +144,10 @@ export async function executeExecuteAction(
 
   // Execute action delegates to sub-agent system
   // For safety, we log the request rather than auto-executing
-  logger.info('Proactive execute action requested', {
+  logger.info({
     taskName: action.taskName,
     agentProfile: action.agentProfile,
-  });
+  }, 'Proactive execute action requested');
 
   return {
     success: true,
@@ -171,10 +171,10 @@ export async function executeLearnAction(
       action.importance ?? 0.6
     );
 
-    logger.info('Proactive learn action stored', {
+    logger.info({
       category: action.category,
       memoryType: action.memoryType,
-    });
+    }, 'Proactive learn action stored');
     return { success: true, message: 'Knowledge stored in memory' };
   } catch (err) {
     return {

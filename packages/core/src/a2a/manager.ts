@@ -67,10 +67,10 @@ export class A2AManager {
       });
     }
 
-    this.deps.logger.debug('A2AManager initialized', {
+    this.deps.logger.debug({
       peerCount: peers.length,
       discoveryMethod: this.config.discoveryMethod,
-    });
+    }, 'A2AManager initialized');
   }
 
   // ── Peer management ────────────────────────────────────────────
@@ -232,10 +232,10 @@ export class A2AManager {
       }
     }
 
-    this.deps.logger.info('A2A discovery completed', {
+    this.deps.logger.info({
       method: this.config.discoveryMethod,
       newPeersFound: newPeers.length,
-    });
+    }, 'A2A discovery completed');
 
     return newPeers;
   }
@@ -245,7 +245,7 @@ export class A2AManager {
   async delegate(peerId: string, task: string): Promise<A2AMessage | null> {
     const peer = await this.deps.storage.getPeer(peerId);
     if (!peer) {
-      this.deps.logger.warn('Cannot delegate to unknown peer', { peerId });
+      this.deps.logger.warn({ peerId }, 'Cannot delegate to unknown peer');
       return null;
     }
 
@@ -260,10 +260,10 @@ export class A2AManager {
 
     const sent = await this.deps.transport.send(peer, message);
     if (!sent) {
-      this.deps.logger.warn('Failed to delegate task to peer', {
+      this.deps.logger.warn({
         peerId,
         messageId: message.id,
-      });
+      }, 'Failed to delegate task to peer');
       return null;
     }
 
@@ -380,11 +380,11 @@ export class A2AManager {
 
         if (missed >= MAX_MISSED_HEARTBEATS) {
           await this.deps.storage.updatePeer(peer.id, { status: 'offline' });
-          this.deps.logger.warn('Peer marked offline after missed heartbeats', {
+          this.deps.logger.warn({
             peerId: peer.id,
             peerName: peer.name,
             missedCount: missed,
-          });
+          }, 'Peer marked offline after missed heartbeats');
         }
       }
     }
@@ -399,7 +399,7 @@ export class A2AManager {
         metadata,
       });
     } catch {
-      this.deps.logger.warn('Failed to record A2A audit event', { event });
+      this.deps.logger.warn({ event }, 'Failed to record A2A audit event');
     }
   }
 }

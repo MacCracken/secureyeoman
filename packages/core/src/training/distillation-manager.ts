@@ -276,10 +276,10 @@ export class DistillationManager {
               });
               teacherResponse = resp.content;
             } catch (err) {
-              this.logger.warn('Teacher LLM call failed', {
+              this.logger.warn({
                 jobId,
                 error: err instanceof Error ? err.message : 'unknown',
-              });
+              }, 'Teacher LLM call failed');
               continue;
             }
 
@@ -325,7 +325,7 @@ export class DistillationManager {
          WHERE id=$3`,
         [samplesWritten, counterfactualCount, jobId]
       );
-      this.logger.info('Distillation job complete', { jobId, samplesWritten, counterfactualCount });
+      this.logger.info({ jobId, samplesWritten, counterfactualCount }, 'Distillation job complete');
 
       emitJobCompletion(
         this.getAlertManager?.() ?? null,
@@ -345,7 +345,7 @@ export class DistillationManager {
          WHERE id=$2`,
         [msg, jobId]
       );
-      this.logger.error('Distillation job failed', { jobId, error: msg });
+      this.logger.error({ jobId, error: msg }, 'Distillation job failed');
 
       emitJobCompletion(
         this.getAlertManager?.() ?? null,
@@ -552,7 +552,7 @@ export class DistillationManager {
       }
     }
 
-    this.logger.info('Distillation: counterfactuals generated', { jobId: job.id, generated });
+    this.logger.info({ jobId: job.id, generated }, 'Distillation: counterfactuals generated');
     return generated;
   }
 

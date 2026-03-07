@@ -55,7 +55,7 @@ export class QQIntegration implements Integration {
     const qc = config.config as unknown as QQConfig;
     this.qqConfig = qc;
     if (!qc.httpUrl) throw new Error('QQ integration requires httpUrl (CQ-HTTP endpoint)');
-    this.logger?.info('QQ integration initialized', { httpUrl: qc.httpUrl });
+    this.logger?.info({ httpUrl: qc.httpUrl }, 'QQ integration initialized');
   }
 
   async start(): Promise<void> {
@@ -123,9 +123,9 @@ export class QQIntegration implements Integration {
       // OneBot HTTP event push configured to point at our webhook endpoint.
       // This poll keeps the connection alive and logs health.
     } catch (err) {
-      this.logger?.warn('QQ poll error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'QQ poll error');
     }
   }
 

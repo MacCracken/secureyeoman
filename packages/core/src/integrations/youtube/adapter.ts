@@ -102,7 +102,7 @@ export class YouTubeIntegration implements Integration {
    * Returns the videoId/channelId passed in as text; no actual post is made.
    */
   async sendMessage(_chatId: string, text: string): Promise<string> {
-    this.logger?.warn('YouTube sendMessage is read-only; no action taken', { text });
+    this.logger?.warn({ text }, 'YouTube sendMessage is read-only; no action taken');
     return text;
   }
 
@@ -171,9 +171,9 @@ export class YouTubeIntegration implements Integration {
         await this.deps.onMessage(unified);
       }
     } catch (err) {
-      this.logger?.warn('YouTube poll error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'YouTube poll error');
     }
   }
 
@@ -184,7 +184,7 @@ export class YouTubeIntegration implements Integration {
       `&type=video&order=date&maxResults=${maxResults}&key=${this.youtubeConfig.apiKey}`;
     const resp = await fetch(url);
     if (!resp.ok) {
-      this.logger?.warn('YouTube search failed', { status: resp.status });
+      this.logger?.warn({ status: resp.status }, 'YouTube search failed');
       return [];
     }
     const data = (await resp.json()) as YouTubeSearchResponse;

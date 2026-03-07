@@ -129,7 +129,7 @@ export class TodoistIntegration implements Integration {
       const url = this.projectId ? `/tasks?project_id=${this.projectId}` : '/tasks';
       const resp = await this.todoistFetch(url);
       if (!resp.ok) {
-        this.logger?.warn('Todoist poll failed', { status: resp.status });
+        this.logger?.warn({ status: resp.status }, 'Todoist poll failed');
         return;
       }
 
@@ -155,9 +155,9 @@ export class TodoistIntegration implements Integration {
         await this.deps.onMessage(unified);
       }
     } catch (err) {
-      this.logger?.warn('Todoist poll error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Todoist poll error');
     }
   }
 

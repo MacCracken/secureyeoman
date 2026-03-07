@@ -99,9 +99,9 @@ export class DiscordIntegration implements Integration {
         await rest.put(route, { body: SLASH_COMMANDS });
         this.logger?.info('Discord slash commands registered');
       } catch (err) {
-        this.logger?.warn('Discord slash command registration failed', {
+        this.logger?.warn({
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Discord slash command registration failed');
       }
     });
 
@@ -168,7 +168,7 @@ export class DiscordIntegration implements Integration {
         })();
       } else {
         this.deps!.onMessage(unified).catch((err: unknown) => {
-          this.logger?.error('onMessage handler failed', { error: err instanceof Error ? err.message : String(err) });
+          this.logger?.error({ error: err instanceof Error ? err.message : String(err) }, 'onMessage handler failed');
         });
       }
     });
@@ -201,7 +201,7 @@ export class DiscordIntegration implements Integration {
         };
 
         this.deps!.onMessage(unified).catch((err: unknown) => {
-          this.logger?.error('onMessage handler failed', { error: err instanceof Error ? err.message : String(err) });
+          this.logger?.error({ error: err instanceof Error ? err.message : String(err) }, 'onMessage handler failed');
         });
         return;
       }
@@ -287,14 +287,14 @@ export class DiscordIntegration implements Integration {
         };
 
         this.deps!.onMessage(unified).catch((err: unknown) => {
-          this.logger?.error('onMessage handler failed', { error: err instanceof Error ? err.message : String(err) });
+          this.logger?.error({ error: err instanceof Error ? err.message : String(err) }, 'onMessage handler failed');
         });
       }
     });
 
     // Error handling
     this.client.on('error', (error) => {
-      this.logger?.error('Discord client error', { error: error.message });
+      this.logger?.error({ error: error.message }, 'Discord client error');
     });
 
     this.logger?.info('Discord integration initialized');

@@ -77,11 +77,11 @@ export class ConsolidationExecutor {
           });
         }
       } catch (err) {
-        this.logger.warn('Consolidation action failed', {
+        this.logger.warn({
           action: action.type,
           sourceIds: action.sourceIds,
           error: String(err),
-        });
+        }, 'Consolidation action failed');
       }
     }
 
@@ -90,7 +90,7 @@ export class ConsolidationExecutor {
 
   private async executeMerge(action: ConsolidationAction): Promise<void> {
     if (!action.mergedContent) {
-      this.logger.warn('MERGE action missing mergedContent', { sourceIds: action.sourceIds });
+      this.logger.warn({ sourceIds: action.sourceIds }, 'MERGE action missing mergedContent');
       return;
     }
 
@@ -98,7 +98,7 @@ export class ConsolidationExecutor {
     for (const id of action.sourceIds) {
       const memory = await this.storage.getMemory(id);
       if (!memory) {
-        this.logger.warn('Source memory no longer exists, skipping merge', { id });
+        this.logger.warn({ id }, 'Source memory no longer exists, skipping merge');
         return;
       }
     }
@@ -116,7 +116,7 @@ export class ConsolidationExecutor {
       try {
         await this.vectorManager.indexMemory(merged);
       } catch (err) {
-        this.logger.warn('Failed to index merged memory in vector store', { error: String(err) });
+        this.logger.warn({ error: String(err) }, 'Failed to index merged memory in vector store');
       }
     }
 
@@ -135,14 +135,14 @@ export class ConsolidationExecutor {
 
   private async executeReplace(action: ConsolidationAction): Promise<void> {
     if (!action.replaceTargetId) {
-      this.logger.warn('REPLACE action missing replaceTargetId', { sourceIds: action.sourceIds });
+      this.logger.warn({ sourceIds: action.sourceIds }, 'REPLACE action missing replaceTargetId');
       return;
     }
 
     // Verify target still exists
     const target = await this.storage.getMemory(action.replaceTargetId);
     if (!target) {
-      this.logger.warn('Replace target no longer exists', { id: action.replaceTargetId });
+      this.logger.warn({ id: action.replaceTargetId }, 'Replace target no longer exists');
       return;
     }
 
@@ -172,7 +172,7 @@ export class ConsolidationExecutor {
     const targetId = action.sourceIds[0]!;
     const memory = await this.storage.getMemory(targetId);
     if (!memory) {
-      this.logger.warn('Update target no longer exists', { id: targetId });
+      this.logger.warn({ id: targetId }, 'Update target no longer exists');
       return;
     }
 

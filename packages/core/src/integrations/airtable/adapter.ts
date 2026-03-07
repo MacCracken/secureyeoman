@@ -140,7 +140,7 @@ export class AirtableIntegration implements Integration {
     try {
       const resp = await this.airtableFetch(`/${this.baseId}/Tasks?maxRecords=50`);
       if (!resp.ok) {
-        this.logger?.warn('Airtable poll failed', { status: resp.status });
+        this.logger?.warn({ status: resp.status }, 'Airtable poll failed');
         return;
       }
 
@@ -168,9 +168,9 @@ export class AirtableIntegration implements Integration {
         await this.deps.onMessage(unified);
       }
     } catch (err) {
-      this.logger?.warn('Airtable poll error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Airtable poll error');
     }
   }
 

@@ -278,8 +278,8 @@ describe('MemoryAuditEngine', () => {
     // Should not throw — report still completes
     expect(report.status).not.toBe('failed');
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Compression pass failed',
-      expect.objectContaining({ error: expect.stringContaining('compression boom') })
+      expect.objectContaining({ error: expect.stringContaining('compression boom') }),
+      'Compression pass failed'
     );
   });
 
@@ -324,8 +324,8 @@ describe('MemoryAuditEngine', () => {
 
     expect(report.status).not.toBe('failed');
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Reorganization pass failed',
-      expect.objectContaining({ error: expect.stringContaining('reorg boom') })
+      expect.objectContaining({ error: expect.stringContaining('reorg boom') }),
+      'Reorganization pass failed'
     );
   });
 
@@ -407,8 +407,8 @@ describe('MemoryAuditEngine', () => {
 
     expect(report.status).not.toBe('failed');
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Maintenance pass failed',
-      expect.objectContaining({ error: expect.stringContaining('maint boom') })
+      expect.objectContaining({ error: expect.stringContaining('maint boom') }),
+      'Maintenance pass failed'
     );
   });
 
@@ -541,8 +541,8 @@ describe('MemoryAuditEngine', () => {
     await engine.runAudit('daily');
 
     expect(mockLogger.error).toHaveBeenCalledWith(
-      'Memory audit failed',
-      expect.objectContaining({ error: 'bad stats' })
+      expect.objectContaining({ error: 'bad stats' }),
+      'Memory audit failed'
     );
   });
 
@@ -589,8 +589,8 @@ describe('MemoryAuditEngine', () => {
     await engine.runAudit('weekly', 'soul-3');
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Memory audit started',
-      expect.objectContaining({ scope: 'weekly', personalityId: 'soul-3', reportId: 'report-1' })
+      expect.objectContaining({ scope: 'weekly', personalityId: 'soul-3', reportId: 'report-1' }),
+      'Memory audit started'
     );
   });
 
@@ -599,12 +599,12 @@ describe('MemoryAuditEngine', () => {
     await engine.runAudit('daily');
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Memory audit completed',
       expect.objectContaining({
         reportId: 'report-1',
         scope: 'daily',
         status: 'completed',
-      })
+      }),
+      'Memory audit completed'
     );
   });
 });

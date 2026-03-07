@@ -331,8 +331,8 @@ describe('AirtableIntegration', () => {
 
       await vi.advanceTimersByTimeAsync(1000);
       expect(warnFn).toHaveBeenCalledWith(
-        'Airtable poll failed',
-        expect.objectContaining({ status: 429 })
+        expect.objectContaining({ status: 429 }),
+        'Airtable poll failed'
       );
 
       await adapter.stop();

@@ -54,7 +54,7 @@ export class BackupReplicationManager {
     const connStr = dbConnectionString ?? this.buildConnectionString();
 
     // Create compressed dump
-    logger.info('Creating database backup', { filename });
+    logger.info({ filename }, 'Creating database backup');
     await execAsync(`pg_dump "${connStr}" | gzip > "${localPath}"`, { timeout: 300_000 });
 
     const stats = statSync(localPath);
@@ -79,11 +79,11 @@ export class BackupReplicationManager {
     };
 
     this.backupHistory.push(info);
-    logger.info('Backup shipped successfully', {
+    logger.info({
       filename,
       provider: this.config.provider,
       sizeBytes: stats.size,
-    });
+    }, 'Backup shipped successfully');
 
     // Enforce retention
     await this.enforceRetention();
@@ -161,7 +161,7 @@ export class BackupReplicationManager {
       for (const file of files.slice(this.config.retentionCount)) {
         try {
           unlinkSync(join(destDir, file));
-          getLogger().info('Removed old backup', { file });
+          getLogger().info({ file }, 'Removed old backup');
         } catch {
           /* ignore */
         }
@@ -193,15 +193,15 @@ export class BackupReplicationManager {
     const intervalMs = 24 * 60 * 60 * 1000;
     this.scheduleTimer = setInterval(() => {
       void this.createAndShipBackup().catch((err: unknown) => {
-        getLogger().error('Scheduled backup failed', {
+        getLogger().error({
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Scheduled backup failed');
       });
     }, intervalMs);
-    getLogger().info('Backup schedule started', {
+    getLogger().info({
       schedule: this.config.schedule,
       provider: this.config.provider,
-    });
+    }, 'Backup schedule started');
   }
 
   async cleanup(): Promise<void> {

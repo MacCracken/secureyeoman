@@ -747,8 +747,8 @@ describe('DistillationManager — Phase 92 extensions', () => {
       const failQuery = sqlCalls.find((s) => s.includes("status='failed'"));
       expect(failQuery).toBeDefined();
       expect(logger.error).toHaveBeenCalledWith(
-        'Distillation job failed',
-        expect.objectContaining({ error: 'Database connection lost' })
+        expect.objectContaining({ error: 'Database connection lost' }),
+        'Distillation job failed'
       );
     });
   });
@@ -801,11 +801,11 @@ describe('DistillationManager — Phase 92 extensions', () => {
 
       // Should have warned about the failed call
       expect(logger.warn).toHaveBeenCalledWith(
-        'Teacher LLM call failed',
-        expect.objectContaining({ error: 'Rate limited' })
+        expect.objectContaining({ error: 'Rate limited' }),
+        'Teacher LLM call failed'
       );
       // Should still have completed (not thrown)
-      expect(logger.info).toHaveBeenCalledWith('Distillation job complete', expect.any(Object));
+      expect(logger.info).toHaveBeenCalledWith(expect.any(Object), 'Distillation job complete');
     });
   });
 });

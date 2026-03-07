@@ -132,8 +132,8 @@ describe('TeeAttestationVerifier', () => {
       expect(second.result.attestationTime).toBe(first.result.attestationTime);
       expect(second.result.expiresAt).toBe(first.result.expiresAt);
       expect(logger.debug).toHaveBeenCalledWith(
-        'TEE attestation cache hit',
-        expect.objectContaining({ provider: 'anthropic' })
+        expect.objectContaining({ provider: 'anthropic' }),
+        'TEE attestation cache hit'
       );
     });
 
@@ -273,12 +273,12 @@ describe('TeeAttestationVerifier', () => {
       // Step 5 logs "TEE required but provider not supported" and applyFailureAction logs "warning only"
       expect(logger.warn).toHaveBeenCalledTimes(2);
       expect(logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('not supported'),
-        expect.objectContaining({ provider: 'mistral' })
+        expect.objectContaining({ provider: 'mistral' }),
+        expect.stringContaining('not supported')
       );
       expect(logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('warning only'),
-        expect.objectContaining({ provider: 'mistral' })
+        expect.objectContaining({ provider: 'mistral' }),
+        expect.stringContaining('warning only')
       );
     });
 
@@ -292,12 +292,12 @@ describe('TeeAttestationVerifier', () => {
       expect(allowed).toBe(true);
       // Step 5 logs warn, applyFailureAction logs info with "audit"
       expect(logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('not supported'),
-        expect.objectContaining({ provider: 'grok' })
+        expect.objectContaining({ provider: 'grok' }),
+        expect.stringContaining('not supported')
       );
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining('audit'),
-        expect.objectContaining({ provider: 'grok' })
+        expect.objectContaining({ provider: 'grok' }),
+        expect.stringContaining('audit')
       );
     });
   });
@@ -430,8 +430,8 @@ describe('TeeAttestationVerifier', () => {
       // Remote should be called once; second call hits cache
       expect(remote.verifyAsync).toHaveBeenCalledTimes(1);
       expect(logger.debug).toHaveBeenCalledWith(
-        'TEE attestation cache hit (async)',
-        expect.objectContaining({ provider: 'anthropic' })
+        expect.objectContaining({ provider: 'anthropic' }),
+        'TEE attestation cache hit (async)'
       );
     });
   });

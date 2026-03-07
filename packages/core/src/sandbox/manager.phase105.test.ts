@@ -213,8 +213,8 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
       const sb = mgr.createSandbox();
       expect(sb.constructor.name).toBe('NoopSandbox');
       expect(logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('No sandbox available'),
-        expect.any(Object)
+        expect.any(Object),
+        expect.stringContaining('No sandbox available')
       );
     });
   });
@@ -272,8 +272,8 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
       const sb = mgr.createSandbox();
       expect(sb.constructor.name).toBe('NoopSandbox');
       expect(logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('not implemented'),
-        expect.objectContaining({ technology: 'seccomp' })
+        expect.objectContaining({ technology: 'seccomp' }),
+        expect.stringContaining('not implemented')
       );
     });
   });

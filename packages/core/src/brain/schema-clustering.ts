@@ -214,7 +214,7 @@ export class SchemaClusteringManager {
 
     const entries = await this.deps.storage.queryKnowledge({ limit: 5000 });
     if (entries.length < this.config.minClusterSize) {
-      this.deps.logger.debug('Not enough entries for clustering', { count: entries.length });
+      this.deps.logger.debug({ count: entries.length }, 'Not enough entries for clustering');
       return this.schemas;
     }
 
@@ -223,10 +223,10 @@ export class SchemaClusteringManager {
     const embeddings = await this.deps.embeddingProvider.embed(texts);
 
     if (embeddings.length !== entries.length) {
-      this.deps.logger.warn('Embedding count mismatch', {
+      this.deps.logger.warn({
         entries: entries.length,
         embeddings: embeddings.length,
-      });
+      }, 'Embedding count mismatch');
       return this.schemas;
     }
 
@@ -281,18 +281,18 @@ export class SchemaClusteringManager {
           confidence: coherence,
         });
       } catch (err) {
-        this.deps.logger.warn('Failed to create schema knowledge', {
+        this.deps.logger.warn({
           label,
           error: String(err),
-        });
+        }, 'Failed to create schema knowledge');
       }
     }
 
     this.schemas = newSchemas;
-    this.deps.logger.info('Schema clustering complete', {
+    this.deps.logger.info({
       totalEntries: entries.length,
       clustersFormed: newSchemas.length,
-    });
+    }, 'Schema clustering complete');
 
     return newSchemas;
   }

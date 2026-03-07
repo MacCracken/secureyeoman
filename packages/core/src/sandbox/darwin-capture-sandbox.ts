@@ -52,13 +52,13 @@ export class DarwinCaptureSandbox {
       throw new Error('DarwinCaptureSandbox is only available on macOS');
     }
 
-    this.logger.info('Initializing Darwin capture sandbox', {
+    this.logger.info({
       maxMemory: this.config.maxMemory,
       maxCpuPercent: this.config.maxCpuPercent,
       maxDuration: this.config.maxDuration,
       allowNetwork: this.config.allowNetwork,
       syscallPolicy: this.config.syscallPolicy,
-    });
+    }, 'Initializing Darwin capture sandbox');
 
     this.initialized = true;
   }
@@ -88,7 +88,7 @@ export class DarwinCaptureSandbox {
         violations: this.violations,
       };
     } catch (error) {
-      this.logger.error('Capture sandbox error', { error });
+      this.logger.error({ error }, 'Capture sandbox error');
 
       return {
         success: false,
@@ -100,7 +100,7 @@ export class DarwinCaptureSandbox {
 
   recordViolation(violation: CaptureSandboxViolation): void {
     this.violations.push(violation);
-    this.logger.warn('Sandbox violation', { ...violation });
+    this.logger.warn({ ...violation }, 'Sandbox violation');
   }
 
   generateSeatbeltProfile(): string {

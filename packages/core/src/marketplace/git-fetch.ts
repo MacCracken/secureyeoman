@@ -57,9 +57,9 @@ async function cloneIntoExisting(
     fs.rmSync(tmpPath, { recursive: true, force: true });
   }
   try {
-    logger.info('Git cloning community repo to temp path', { repoUrl, tmpPath });
+    logger.info({ repoUrl, tmpPath }, 'Git cloning community repo to temp path');
     await execFileAsync('git', ['clone', '--depth=1', repoUrl, tmpPath], opts);
-    logger.info('Copying cloned repo into target path', { tmpPath, localPath });
+    logger.info({ tmpPath, localPath }, 'Copying cloned repo into target path');
     fs.cpSync(tmpPath, localPath, { recursive: true, force: true });
   } finally {
     if (fs.existsSync(tmpPath)) {
@@ -85,7 +85,7 @@ export async function gitCloneOrPull(
   const opts = { timeout: timeoutMs };
   if (fs.existsSync(localPath)) {
     if (await isGitRepo(localPath, timeoutMs)) {
-      logger.info('Git pulling community repo', { localPath });
+      logger.info({ localPath }, 'Git pulling community repo');
       await execFileAsync('git', ['-C', localPath, 'pull', '--ff-only'], opts);
     } else {
       logger.warn(
@@ -95,7 +95,7 @@ export async function gitCloneOrPull(
       await cloneIntoExisting(repoUrl, localPath, logger, opts);
     }
   } else {
-    logger.info('Git cloning community repo', { repoUrl, localPath });
+    logger.info({ repoUrl, localPath }, 'Git cloning community repo');
     await execFileAsync('git', ['clone', '--depth=1', repoUrl, localPath], opts);
   }
 }

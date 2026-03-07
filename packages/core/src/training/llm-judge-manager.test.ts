@@ -235,8 +235,8 @@ describe('LlmJudgeManager — Pointwise Eval', () => {
 
     expect(summary.sampleCount).toBe(0);
     expect(logger.warn).toHaveBeenCalledWith(
-      'Failed to parse judge scores',
-      expect.objectContaining({ sampleIndex: 0 })
+      expect.objectContaining({ sampleIndex: 0 }),
+      'Failed to parse judge scores'
     );
   });
 
@@ -535,7 +535,7 @@ describe('LlmJudgeManager — Pairwise Comparison', () => {
     });
 
     expect(summary.sampleCount).toBe(0);
-    expect(logger.warn).toHaveBeenCalledWith('Failed to parse pairwise result', expect.any(Object));
+    expect(logger.warn).toHaveBeenCalledWith(expect.any(Object), 'Failed to parse pairwise result');
   });
 
   it('calls both model functions per sample', async () => {

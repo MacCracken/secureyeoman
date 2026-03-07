@@ -1267,8 +1267,8 @@ describe('SubAgentManager', () => {
 
       await mgr.delegate({ profile: 'router-test', task: 'complex analysis' });
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        'ModelRouter selected model for delegation',
-        expect.objectContaining({ selectedModel: 'gpt-4-turbo' })
+        expect.objectContaining({ selectedModel: 'gpt-4-turbo' }),
+        'ModelRouter selected model for delegation'
       );
     });
 
@@ -1517,8 +1517,8 @@ describe('SubAgentManager', () => {
       const result = await manager.delegate({ profile: 'audit-err', task: 'test' });
       expect(result.status).toBe('completed');
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Failed to record delegation audit event',
-        expect.anything()
+        expect.anything(),
+        'Failed to record delegation audit event'
       );
     });
   });

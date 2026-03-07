@@ -92,6 +92,7 @@ export class ReconsolidationManager {
 
   /** Track last reconsolidation time per memory to enforce cooldown. */
   private readonly cooldowns = new Map<string, number>();
+  private static readonly MAX_COOLDOWN_ENTRIES = 10_000;
 
   /** Stats for monitoring. */
   private stats = { evaluated: 0, kept: 0, updated: 0, split: 0, errors: 0 };
@@ -99,6 +100,20 @@ export class ReconsolidationManager {
   constructor(config: Partial<ReconsolidationConfig>, deps: ReconsolidationManagerDeps) {
     this.config = { ...DEFAULT_RECONSOLIDATION_CONFIG, ...config };
     this.deps = deps;
+  }
+
+  /** Evict expired cooldown entries to prevent unbounded growth. */
+  private evictStaleCooldowns(): void {
+    const cutoff = Date.now() - this.config.cooldownMs * 2;
+    for (const [id, ts] of this.cooldowns) {
+      if (ts < cutoff) this.cooldowns.delete(id);
+    }
+    // Hard cap if still too large after TTL eviction
+    while (this.cooldowns.size > ReconsolidationManager.MAX_COOLDOWN_ENTRIES) {
+      const oldest = this.cooldowns.keys().next().value;
+      if (oldest !== undefined) this.cooldowns.delete(oldest);
+      else break;
+    }
   }
 
   /**
@@ -116,6 +131,9 @@ export class ReconsolidationManager {
     if (overlapScore < this.config.overlapThreshold || overlapScore > this.config.dedupThreshold) {
       return null;
     }
+
+    // Evict stale entries periodically (every 100 evaluations)
+    if (this.stats.evaluated % 100 === 0) this.evictStaleCooldowns();
 
     // Check cooldown
     const lastTime = this.cooldowns.get(memory.id);
@@ -155,10 +173,10 @@ export class ReconsolidationManager {
       return decision;
     } catch (err) {
       this.stats.errors++;
-      this.deps.logger.warn('Reconsolidation evaluation failed', {
+      this.deps.logger.warn({
         memoryId: memory.id,
         error: String(err),
-      });
+      }, 'Reconsolidation evaluation failed');
       return null;
     }
   }
@@ -174,10 +192,10 @@ export class ReconsolidationManager {
         await this.deps.storage.updateMemory(memoryId, {
           content: decision.updatedContent,
         });
-        this.deps.logger.info('Memory reconsolidated (update)', {
+        this.deps.logger.info({
           memoryId,
           reasoning: decision.reasoning,
-        });
+        }, 'Memory reconsolidated (update)');
       } else if (decision.action === 'split' && decision.splitContents?.length) {
         // Get the original memory to preserve metadata
         const original = await this.deps.storage.getMemory(memoryId);
@@ -199,18 +217,18 @@ export class ReconsolidationManager {
 
         // Delete the original
         await this.deps.storage.deleteMemory(memoryId);
-        this.deps.logger.info('Memory reconsolidated (split)', {
+        this.deps.logger.info({
           memoryId,
           splitCount: decision.splitContents.length,
           reasoning: decision.reasoning,
-        });
+        }, 'Memory reconsolidated (split)');
       }
     } catch (err) {
-      this.deps.logger.warn('Failed to apply reconsolidation', {
+      this.deps.logger.warn({
         memoryId,
         action: decision.action,
         error: String(err),
-      });
+      }, 'Failed to apply reconsolidation');
     }
   }
 

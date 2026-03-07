@@ -81,7 +81,7 @@ export class MediaHandler {
           'SIZE_LIMIT_EXCEEDED'
         );
       }
-      writeFileSync(filePath, buffer);
+      writeFileSync(filePath, buffer, { mode: 0o600 });
     } else if (attachment.url) {
       // Download from URL
       await this.downloadFile(attachment.url, filePath);
@@ -108,11 +108,11 @@ export class MediaHandler {
     }
 
     this.trackedFiles.add(filePath);
-    this.logger.debug('Media processed', {
+    this.logger.debug({
       fileName: filename,
       size: stat.size,
       mimeType: attachment.mimeType,
-    });
+    }, 'Media processed');
 
     return {
       filePath,
@@ -147,7 +147,7 @@ export class MediaHandler {
       );
     }
 
-    writeFileSync(destPath, buffer);
+    writeFileSync(destPath, buffer, { mode: 0o600 });
   }
 
   /**

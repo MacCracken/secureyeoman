@@ -95,7 +95,7 @@ export class ComputerUseManager {
         ep.done,
       ]
     );
-    this.logger.debug('ComputerUseManager: episode recorded', { id, skillName: ep.skillName });
+    this.logger.debug({ id, skillName: ep.skillName }, 'ComputerUseManager: episode recorded');
     return rowToEpisode(rows[0]!);
   }
 

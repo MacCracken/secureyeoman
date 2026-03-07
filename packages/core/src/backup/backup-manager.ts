@@ -2,7 +2,7 @@
  * BackupManager — orchestrates pg_dump / pg_restore and manages backup metadata.
  */
 
-import { promises as fs, createReadStream } from 'node:fs';
+import { promises as fs, createReadStream, lstatSync } from 'node:fs';
 import type { ReadStream } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -119,11 +119,11 @@ export class BackupManager {
         filePath,
         completedAt: Date.now(),
       });
-      this.logger.info('Backup completed', { id, sizeBytes: stat.size });
+      this.logger.info({ id, sizeBytes: stat.size }, 'Backup completed');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       await this.storage.update(id, { status: 'failed', error: msg });
-      this.logger.error('Backup failed', { id, error: msg });
+      this.logger.error({ id, error: msg }, 'Backup failed');
     }
   }
 
@@ -157,7 +157,7 @@ export class BackupManager {
       { env }
     );
 
-    this.logger.info('Restore completed', { id });
+    this.logger.info({ id }, 'Restore completed');
   }
 
   async getDownloadStream(id: string): Promise<{ stream: ReadStream; sizeBytes: number }> {
@@ -165,6 +165,8 @@ export class BackupManager {
     if (!rec) throw new Error('Backup not found');
     if (!rec.filePath) throw new Error('Backup file not found');
     if (rec.status !== 'completed') throw new Error('Backup is not complete');
+    const stat = lstatSync(rec.filePath);
+    if (stat.isSymbolicLink()) throw new Error('Backup file is a symlink');
     return {
       stream: createReadStream(rec.filePath),
       sizeBytes: rec.sizeBytes ?? 0,

@@ -131,12 +131,12 @@ describe('DlpManager', () => {
     );
     await manager.scanOutbound('Content', 'slack');
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'DLP outbound scan completed',
       expect.objectContaining({
         destination: 'slack',
         action: 'warned',
         findingsCount: 1,
-      })
+      }),
+      'DLP outbound scan completed'
     );
   });
 });

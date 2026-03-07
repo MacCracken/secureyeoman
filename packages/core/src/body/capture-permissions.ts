@@ -131,12 +131,12 @@ export async function checkCapturePermission(
   // Check cache
   const cached = permissionCache.get(cacheKey);
   if (cached) {
-    logger.debug('Capture permission cache hit', {
+    logger.debug({
       userId,
       roleId,
       resource,
       action,
-    });
+    }, 'Capture permission cache hit');
     return cached;
   }
 

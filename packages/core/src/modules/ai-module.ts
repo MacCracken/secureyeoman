@@ -87,7 +87,7 @@ export class AIModule extends BaseModule {
       const usageStorage = this.usageStorage;
       this.usagePruneTimer = setInterval(() => {
         void usageStorage.prune().catch((e: unknown) => {
-          this.logger.debug('Usage storage prune failed', { error: String(e) });
+          this.logger.debug({ error: String(e) }, 'Usage storage prune failed');
         });
       }, MS_PER_DAY);
       this.usagePruneTimer.unref();
@@ -118,9 +118,9 @@ export class AIModule extends BaseModule {
 
       // Background usage history init
       void this.aiClient.init().catch((err: unknown) => {
-        this.logger?.warn('AI usage history init failed', { err });
+        this.logger?.warn({ err }, 'AI usage history init failed');
       });
-      this.logger.debug('AI client initialized', { provider: this.config.model.provider });
+      this.logger.debug({ provider: this.config.model.provider }, 'AI client initialized');
 
       // Apply persisted model default
       if (this.systemPreferences) {
@@ -129,10 +129,10 @@ export class AIModule extends BaseModule {
         if (storedProvider && storedModel) {
           this.applyModelSwitch(storedProvider, storedModel);
           this.modelDefaultSet = true;
-          this.logger.debug('Applied persisted model default', {
+          this.logger.debug({
             provider: storedProvider,
             model: storedModel,
-          });
+          }, 'Applied persisted model default');
         }
 
         // Restore persisted localFirst setting
@@ -172,9 +172,9 @@ export class AIModule extends BaseModule {
         }
       }
     } catch (error) {
-      this.logger.warn('AI client initialization failed (non-fatal)', {
+      this.logger.warn({
         error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      }, 'AI client initialization failed (non-fatal)');
     }
   }
 
@@ -194,14 +194,14 @@ export class AIModule extends BaseModule {
 
         // Import API keys from environment (fire-and-forget)
         this.providerAccountManager.importFromEnv().catch((err: unknown) => {
-          this.logger?.warn('Provider account env import failed (non-fatal)', {
+          this.logger?.warn({
             error: err instanceof Error ? err.message : String(err),
-          });
+          }, 'Provider account env import failed (non-fatal)');
         });
       } catch (error) {
-        this.logger.warn('ProviderAccountManager initialization failed (non-fatal)', {
+        this.logger.warn({
           error: error instanceof Error ? error.message : 'Unknown error',
-        });
+        }, 'ProviderAccountManager initialization failed (non-fatal)');
       }
     }
 
@@ -274,7 +274,7 @@ export class AIModule extends BaseModule {
       // Propagate config change back to parent
       this.deps.onConfigUpdate((cfg) => ({ ...cfg, model: newModelConfig }));
 
-      this.logger?.info('AI model switched', { provider, model });
+      this.logger?.info({ provider, model }, 'AI model switched');
 
       void this.deps.auditChain?.record({
         event: 'model_switched',
@@ -283,11 +283,11 @@ export class AIModule extends BaseModule {
         metadata: { provider, model },
       });
     } catch (error) {
-      this.logger?.error('Failed to switch AI model', {
+      this.logger?.error({
         provider,
         model,
         error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      }, 'Failed to switch AI model');
       throw error;
     }
   }
@@ -300,7 +300,7 @@ export class AIModule extends BaseModule {
     await this.systemPreferences.set('model.provider', provider);
     await this.systemPreferences.set('model.model', model);
     this.modelDefaultSet = true;
-    this.logger?.info('AI model default persisted', { provider, model });
+    this.logger?.info({ provider, model }, 'AI model default persisted');
   }
 
   async clearModelDefault(): Promise<void> {
@@ -348,7 +348,7 @@ export class AIModule extends BaseModule {
     if (this.systemPreferences) {
       await this.systemPreferences.set('model.localFirst', String(enabled));
     }
-    this.logger?.info('Local-first routing updated', { enabled });
+    this.logger?.info({ enabled }, 'Local-first routing updated');
   }
 
   getLocalFirst(): boolean {

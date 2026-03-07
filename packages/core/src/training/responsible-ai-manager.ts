@@ -108,10 +108,10 @@ export class ResponsibleAiManager {
   // ── Cohort Error Analysis ───────────────────────────────────────
 
   async runCohortAnalysis(opts: CohortAnalysisCreate): Promise<CohortAnalysis> {
-    this.logger.info('Running cohort error analysis', {
+    this.logger.info({
       evalRunId: opts.evalRunId,
       dimension: opts.dimension,
-    });
+    }, 'Running cohort error analysis');
 
     const rows = await this.loadEvalScores(opts.evalRunId);
     if (rows.length === 0) {
@@ -162,7 +162,7 @@ export class ResponsibleAiManager {
     };
 
     await this.storage.insertCohortAnalysis(analysis);
-    this.logger.info('Cohort analysis complete', { id: analysis.id, sliceCount: slices.length });
+    this.logger.info({ id: analysis.id, sliceCount: slices.length }, 'Cohort analysis complete');
     return analysis;
   }
 
@@ -177,10 +177,10 @@ export class ResponsibleAiManager {
   // ── Fairness Metrics ────────────────────────────────────────────
 
   async computeFairnessReport(opts: FairnessReportCreate): Promise<FairnessReport> {
-    this.logger.info('Computing fairness metrics', {
+    this.logger.info({
       evalRunId: opts.evalRunId,
       protectedAttribute: opts.protectedAttribute,
-    });
+    }, 'Computing fairness metrics');
 
     const rows = await this.loadEvalScores(opts.evalRunId);
     if (rows.length === 0) {
@@ -248,11 +248,11 @@ export class ResponsibleAiManager {
     };
 
     await this.storage.insertFairnessReport(report);
-    this.logger.info('Fairness report complete', {
+    this.logger.info({
       id: report.id,
       disparateImpact: disparateImpactRatio,
       passes: report.passesThreshold,
-    });
+    }, 'Fairness report complete');
     return report;
   }
 
@@ -272,7 +272,7 @@ export class ResponsibleAiManager {
    * the token is masked. Approximates Shapley values via leave-one-out.
    */
   async computeShapExplanation(opts: ShapExplanationCreate): Promise<ShapExplanation> {
-    this.logger.info('Computing SHAP token attributions', { modelName: opts.modelName });
+    this.logger.info({ modelName: opts.modelName }, 'Computing SHAP token attributions');
 
     const tokens = tokenize(opts.prompt);
     const baselineScore = await this.scoreResponse(
@@ -321,10 +321,10 @@ export class ResponsibleAiManager {
     };
 
     await this.storage.insertShapExplanation(explanation);
-    this.logger.info('SHAP explanation complete', {
+    this.logger.info({
       id: explanation.id,
       tokenCount: attributions.length,
-    });
+    }, 'SHAP explanation complete');
     return explanation;
   }
 
@@ -344,7 +344,7 @@ export class ResponsibleAiManager {
 
   async recordProvenance(entries: ProvenanceEntry[]): Promise<void> {
     await this.storage.insertProvenanceBatch(entries);
-    this.logger.debug('Provenance entries recorded', { count: entries.length });
+    this.logger.debug({ count: entries.length }, 'Provenance entries recorded');
   }
 
   async queryProvenance(q: ProvenanceQuery): Promise<ProvenanceEntry[]> {
@@ -361,7 +361,7 @@ export class ResponsibleAiManager {
 
   /** GDPR right-to-erasure: mark all of a user's data as redacted. */
   async redactUserData(userId: string): Promise<number> {
-    this.logger.info('Redacting user data from provenance records', { userId });
+    this.logger.info({ userId }, 'Redacting user data from provenance records');
     return this.storage.redactUserData(userId);
   }
 
@@ -373,10 +373,10 @@ export class ResponsibleAiManager {
    * from existing records to populate the card.
    */
   async generateModelCard(opts: ModelCardCreate): Promise<ModelCard> {
-    this.logger.info('Generating model card', {
+    this.logger.info({
       personalityId: opts.personalityId,
       modelName: opts.modelName,
-    });
+    }, 'Generating model card');
 
     const now = Date.now();
     const card: ModelCard = {
@@ -398,7 +398,7 @@ export class ResponsibleAiManager {
     };
 
     await this.storage.insertModelCard(card);
-    this.logger.info('Model card generated', { id: card.id });
+    this.logger.info({ id: card.id }, 'Model card generated');
     return card;
   }
 

@@ -61,10 +61,10 @@ export function emitJobCompletion(
   };
 
   alertManager.evaluate(snapshot).catch((err: unknown) => {
-    logger?.error('Job completion alert evaluation failed', {
+    logger?.error({
       jobType: event.jobType,
       jobId: event.jobId,
       error: err instanceof Error ? err.message : String(err),
-    });
+    }, 'Job completion alert evaluation failed');
   });
 }

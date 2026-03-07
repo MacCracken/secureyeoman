@@ -129,9 +129,9 @@ export class LineIntegration implements WebhookIntegration {
         await this.processEvent(event, body.destination);
       }
     } catch (err) {
-      this.logger?.warn('Line webhook parse error', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Line webhook parse error');
     }
   }
 

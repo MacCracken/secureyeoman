@@ -225,8 +225,8 @@ describe('YouTubeIntegration', () => {
       await adapter.sendMessage('_', 'Test');
 
       expect(warnFn).toHaveBeenCalledWith(
-        'YouTube sendMessage is read-only; no action taken',
-        expect.objectContaining({ text: 'Test' })
+        expect.objectContaining({ text: 'Test' }),
+        'YouTube sendMessage is read-only; no action taken'
       );
     });
 
@@ -420,8 +420,8 @@ describe('YouTubeIntegration', () => {
       // The failed search returns [] but the poll completes without throwing
       // The warn here is within fetchLatestVideos which warns on non-OK
       expect(warnFn).toHaveBeenCalledWith(
-        'YouTube search failed',
-        expect.objectContaining({ status: 403 })
+        expect.objectContaining({ status: 403 }),
+        'YouTube search failed'
       );
 
       await adapter.stop();

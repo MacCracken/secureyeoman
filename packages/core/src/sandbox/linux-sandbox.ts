@@ -113,9 +113,9 @@ export class LinuxSandbox implements Sandbox {
 
         child.on('error', (err) => {
           clearTimeout(timer);
-          this.getLogger().warn('Landlock worker failed to start, falling back to V1', {
+          this.getLogger().warn({
             error: err.message,
-          });
+          }, 'Landlock worker failed to start, falling back to V1');
           void this.runV1(fn, opts).then(resolve);
         });
 
@@ -144,9 +144,9 @@ export class LinuxSandbox implements Sandbox {
         child.send(execMsg);
       } catch (err) {
         // Fork itself failed — fall back to V1
-        this.getLogger().warn('Failed to fork Landlock worker', {
+        this.getLogger().warn({
           error: err instanceof Error ? err.message : 'Unknown',
-        });
+        }, 'Failed to fork Landlock worker');
         void this.runV1(fn, opts).then(resolve);
       }
     });
@@ -208,10 +208,10 @@ export class LinuxSandbox implements Sandbox {
       }
 
       if (violations.length > 0) {
-        this.getLogger().warn('Sandbox violations detected during execution', {
+        this.getLogger().warn({
           violationCount: violations.length,
           violations: violations.map((v) => v.description),
-        });
+        }, 'Sandbox violations detected during execution');
       }
 
       return {

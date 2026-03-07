@@ -200,8 +200,8 @@ describe('DriftDetectionManager', () => {
 
       await manager.checkDrift(baselineObj);
       expect(logger.warn).toHaveBeenCalledWith(
-        'Quality drift detected',
-        expect.objectContaining({ personalityId: 'p-1' })
+        expect.objectContaining({ personalityId: 'p-1' }),
+        'Quality drift detected'
       );
     });
 
@@ -248,11 +248,11 @@ describe('DriftDetectionManager', () => {
 
       await manager.checkDrift(lowThresholdBaseline);
       expect(logger.warn).toHaveBeenCalledWith(
-        'Quality drift detected',
         expect.objectContaining({
           personalityId: 'p-1',
           threshold: 1.0,
-        })
+        }),
+        'Quality drift detected'
       );
     });
   });

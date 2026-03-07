@@ -86,8 +86,8 @@ describe('AgentComms', () => {
     it('initializes crypto and storage', async () => {
       await comms.init();
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Agent comms initialized',
-        expect.objectContaining({ publicKey: expect.stringContaining('pub-key') })
+        expect.objectContaining({ publicKey: expect.stringContaining('pub-key') }),
+        'Agent comms initialized'
       );
     });
   });

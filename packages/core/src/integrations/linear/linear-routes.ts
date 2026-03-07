@@ -83,7 +83,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
       `);
 
       if (result.errors?.length) {
-        return sendError(reply, 502, `Linear API error: ${result.errors![0]!.message}`);
+        return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
       }
 
       return reply.send(result.data?.teams);
@@ -121,7 +121,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
         `, { term: q, first: limit });
 
         if (result.errors?.length) {
-          return sendError(reply, 502, `Linear API error: ${result.errors![0]!.message}`);
+          return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
         }
 
         return reply.send(result.data?.issueSearch);
@@ -169,7 +169,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
         });
 
         if (result.errors?.length) {
-          return sendError(reply, 502, `Linear API error: ${result.errors![0]!.message}`);
+          return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
         }
 
         return reply.send(result.data?.issues);
@@ -207,7 +207,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
         `, { id: req.params.issueId });
 
         if (result.errors?.length) {
-          return sendError(reply, 502, `Linear API error: ${result.errors![0]!.message}`);
+          return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
         }
 
         return reply.send(result.data?.issue);
@@ -258,7 +258,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
       `, { input });
 
       if (result.errors?.length) {
-        return sendError(reply, 502, `Linear API error: ${result.errors![0]!.message}`);
+        return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
       }
 
       const createResult = result.data?.issueCreate as
@@ -318,7 +318,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
       `, { id: req.params.issueId, input });
 
       if (result.errors?.length) {
-        return sendError(reply, 502, `Linear API error: ${result.errors![0]!.message}`);
+        return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
       }
 
       const updateResult = result.data?.issueUpdate as
@@ -362,7 +362,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
       `, { input: { issueId: req.params.issueId, body } });
 
       if (result.errors?.length) {
-        return sendError(reply, 502, `Linear API error: ${result.errors![0]!.message}`);
+        return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
       }
 
       const createResult = result.data?.commentCreate as

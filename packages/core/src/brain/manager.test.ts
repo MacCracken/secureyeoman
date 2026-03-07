@@ -188,8 +188,8 @@ describe('BrainManager', () => {
       );
       await manager.remember('semantic', 'content', 'user');
       expect(logger.warn).toHaveBeenCalledWith(
-        'Failed to index memory in vector store',
-        expect.any(Object)
+        expect.any(Object),
+        'Failed to index memory in vector store'
       );
     });
 

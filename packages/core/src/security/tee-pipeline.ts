@@ -217,7 +217,7 @@ export class ConfidentialPipelineManager {
     try {
       await this.deps.auditFn?.(event, data);
     } catch {
-      this.deps.logger?.warn('Failed to audit TEE pipeline event', { event });
+      this.deps.logger?.warn({ event }, 'Failed to audit TEE pipeline event');
     }
   }
 }

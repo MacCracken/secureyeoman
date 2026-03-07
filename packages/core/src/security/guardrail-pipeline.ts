@@ -126,10 +126,10 @@ export class GuardrailPipeline {
       } catch (err) {
         action = 'error';
         const durationMs = performance.now() - startTime;
-        this.deps.logger?.error('Guardrail filter error', {
+        this.deps.logger?.error({
           filterId: filter.id,
           error: String(err),
-        });
+        }, 'Guardrail filter error');
 
         if (this.config.metricsEnabled) {
           const metric: FilterExecutionMetric = {

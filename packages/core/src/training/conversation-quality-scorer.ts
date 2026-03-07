@@ -81,14 +81,14 @@ export class ConversationQualityScorer {
         );
         scored++;
       } catch (err) {
-        this.logger.warn('ConversationQualityScorer: failed to score conversation', {
+        this.logger.warn({
           conversationId: row.id,
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'ConversationQualityScorer: failed to score conversation');
       }
     }
 
-    this.logger.info('ConversationQualityScorer: scored conversations', { scored });
+    this.logger.info({ scored }, 'ConversationQualityScorer: scored conversations');
     return scored;
   }
 
@@ -116,10 +116,10 @@ export class ConversationQualityScorer {
       [convIds]
     );
 
-    this.logger.info('ConversationQualityScorer: applied prefailure boost', {
+    this.logger.info({
       workflowRunId,
       conversationCount: convIds.length,
-    });
+    }, 'ConversationQualityScorer: applied prefailure boost');
   }
 
   /** Start the background scoring interval. */
@@ -127,9 +127,9 @@ export class ConversationQualityScorer {
     if (this.intervalHandle) return;
     this.intervalHandle = setInterval(() => {
       void this.scoreNewConversations(this.pool).catch((err: unknown) => {
-        this.logger.error('ConversationQualityScorer: interval error', {
+        this.logger.error({
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'ConversationQualityScorer: interval error');
       });
     }, SCORE_INTERVAL_MS);
   }

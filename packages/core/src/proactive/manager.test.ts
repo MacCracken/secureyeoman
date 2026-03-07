@@ -156,8 +156,8 @@ describe('ProactiveManager', () => {
     it('logs initialization with trigger count', async () => {
       await manager.initialize();
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'ProactiveManager initialized',
-        expect.objectContaining({ triggers: 0, builtins: BUILTIN_TRIGGERS.length })
+        expect.objectContaining({ triggers: 0, builtins: BUILTIN_TRIGGERS.length }),
+        'ProactiveManager initialized'
       );
     });
   });
@@ -403,8 +403,8 @@ describe('ProactiveManager', () => {
       const result = await manager.fireTrigger('trigger-1');
       expect(result).toEqual({});
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Trigger skipped (cooldown)',
-        expect.objectContaining({ triggerId: 'trigger-1' })
+        expect.objectContaining({ triggerId: 'trigger-1' }),
+        'Trigger skipped (cooldown)'
       );
     });
 
@@ -428,8 +428,8 @@ describe('ProactiveManager', () => {
       const result = await manager.fireTrigger('trigger-1');
       expect(result).toEqual({});
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Trigger skipped (daily limit)',
-        expect.objectContaining({ triggerId: 'trigger-1', dailyCount: 3 })
+        expect.objectContaining({ triggerId: 'trigger-1', dailyCount: 3 }),
+        'Trigger skipped (daily limit)'
       );
     });
 

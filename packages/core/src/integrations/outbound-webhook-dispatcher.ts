@@ -91,10 +91,10 @@ export class OutboundWebhookDispatcher {
   ): Promise<void> {
     // SSRF guard: block delivery to private/internal network addresses
     if (isPrivateUrl(wh.url)) {
-      this.logger.warn('OutboundWebhookDispatcher: blocked SSRF attempt', {
+      this.logger.warn({
         webhookId: wh.id,
         url: wh.url,
-      });
+      }, 'OutboundWebhookDispatcher: blocked SSRF attempt');
       return;
     }
 
@@ -127,7 +127,7 @@ export class OutboundWebhookDispatcher {
 
         if (response.ok) {
           await this.storage.recordSuccess(wh.id, lastStatus).catch((e: unknown) => {
-            this.logger.debug('Webhook success recording failed', { error: String(e) });
+            this.logger.debug({ error: String(e) }, 'Webhook success recording failed');
           });
           this.logger.debug(
             `OutboundWebhookDispatcher: delivered ${payload.event} to ${wh.url} (${lastStatus})`
@@ -150,7 +150,7 @@ export class OutboundWebhookDispatcher {
 
     // All retries exhausted
     await this.storage.recordFailure(wh.id, lastStatus).catch((e: unknown) => {
-      this.logger.debug('Webhook failure recording failed', { error: String(e) });
+      this.logger.debug({ error: String(e) }, 'Webhook failure recording failed');
     });
     this.logger.error(
       `OutboundWebhookDispatcher: all retries exhausted for ${wh.url} (event ${payload.event})`

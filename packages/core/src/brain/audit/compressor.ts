@@ -331,7 +331,7 @@ export class MemoryCompressor {
         const parsed = parseCompressionResponse(text);
         return parsed;
       } catch (err) {
-        this.logger.warn('AI compression failed, using fallback', { error: String(err) });
+        this.logger.warn({ error: String(err) }, 'AI compression failed, using fallback');
       }
     }
 

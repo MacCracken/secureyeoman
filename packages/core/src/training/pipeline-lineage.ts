@@ -177,10 +177,10 @@ export class PipelineLineageStorage {
         info.snapshotAt,
       ]
     );
-    this.logger.debug('PipelineLineage: recorded dataset', {
+    this.logger.debug({
       workflowRunId,
       datasetId: info.datasetId,
-    });
+    }, 'PipelineLineage: recorded dataset');
   }
 
   async recordTrainingJob(
@@ -198,10 +198,10 @@ export class PipelineLineageStorage {
        WHERE workflow_run_id = $1`,
       [workflowRunId, info.jobId, info.jobType, info.jobStatus]
     );
-    this.logger.debug('PipelineLineage: recorded training job', {
+    this.logger.debug({
       workflowRunId,
       jobId: info.jobId,
-    });
+    }, 'PipelineLineage: recorded training job');
   }
 
   async recordEvaluation(
@@ -219,10 +219,10 @@ export class PipelineLineageStorage {
        WHERE workflow_run_id = $1`,
       [workflowRunId, info.evalId, JSON.stringify(info.metrics), info.completedAt]
     );
-    this.logger.debug('PipelineLineage: recorded evaluation', {
+    this.logger.debug({
       workflowRunId,
       evalId: info.evalId,
-    });
+    }, 'PipelineLineage: recorded evaluation');
   }
 
   async recordDeployment(
@@ -240,10 +240,10 @@ export class PipelineLineageStorage {
        WHERE workflow_run_id = $1`,
       [workflowRunId, info.modelVersion, info.personalityId, info.deployedAt]
     );
-    this.logger.debug('PipelineLineage: recorded deployment', {
+    this.logger.debug({
       workflowRunId,
       modelVersion: info.modelVersion,
-    });
+    }, 'PipelineLineage: recorded deployment');
   }
 
   close(): void {

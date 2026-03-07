@@ -92,7 +92,7 @@ export class PgBaseStorage {
     } catch {
       logger = createNoopLogger();
     }
-    logger.warn('RLS bypass executed', { caller: callerLine, class: this.constructor.name });
+    logger.warn({ caller: callerLine, class: this.constructor.name }, 'RLS bypass executed');
 
     return this.withTransaction(async (client) => {
       await client.query('SET LOCAL row_security = off');

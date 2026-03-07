@@ -112,9 +112,9 @@ export class DelegationModule extends BaseModule {
         await this.swarmManager.initialize();
         this.logger.debug('Swarm manager initialized');
       } catch (swarmError) {
-        this.logger.warn('Swarm manager initialization failed (non-fatal)', {
+        this.logger.warn({
           error: swarmError instanceof Error ? swarmError.message : 'Unknown error',
-        });
+        }, 'Swarm manager initialization failed (non-fatal)');
       }
 
       // Team manager
@@ -143,9 +143,9 @@ export class DelegationModule extends BaseModule {
         await this.teamManager.initialize();
         this.logger.debug('Team manager initialized');
       } catch (teamError) {
-        this.logger.warn('Team manager initialization failed (non-fatal)', {
+        this.logger.warn({
           error: teamError instanceof Error ? teamError.message : 'Unknown error',
-        });
+        }, 'Team manager initialization failed (non-fatal)');
       }
 
       // Council manager
@@ -169,9 +169,9 @@ export class DelegationModule extends BaseModule {
         await this.councilManager.initialize();
         this.logger.debug('Council manager initialized');
       } catch (councilError) {
-        this.logger.warn('Council manager initialization failed (non-fatal)', {
+        this.logger.warn({
           error: councilError instanceof Error ? councilError.message : 'Unknown error',
-        });
+        }, 'Council manager initialization failed (non-fatal)');
       }
 
       // Workflow manager
@@ -218,14 +218,14 @@ export class DelegationModule extends BaseModule {
           soulManager: this.deps.getSoulManager() ?? undefined,
         });
       } catch (workflowError) {
-        this.logger.warn('Workflow manager initialization failed (non-fatal)', {
+        this.logger.warn({
           error: workflowError instanceof Error ? workflowError.message : 'Unknown error',
-        });
+        }, 'Workflow manager initialization failed (non-fatal)');
       }
     } catch (error) {
-      this.logger.warn('Sub-agent delegation initialization failed (non-fatal)', {
+      this.logger.warn({
         error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      }, 'Sub-agent delegation initialization failed (non-fatal)');
     }
   }
 

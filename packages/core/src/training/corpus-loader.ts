@@ -114,11 +114,11 @@ export class CorpusLoader {
   /** Register a validated corpus source. */
   registerSource(source: CorpusSource): void {
     this.sources.set(source.id, source);
-    this.log.info('Corpus source registered', {
+    this.log.info({
       sourceId: source.id,
       name: source.name,
       format: source.format,
-    });
+    }, 'Corpus source registered');
   }
 
   /** Get a registered source by ID. */
@@ -134,7 +134,7 @@ export class CorpusLoader {
   /** Remove a registered source. */
   removeSource(id: string): boolean {
     const deleted = this.sources.delete(id);
-    if (deleted) this.log.info('Corpus source removed', { sourceId: id });
+    if (deleted) this.log.info({ sourceId: id }, 'Corpus source removed');
     return deleted;
   }
 

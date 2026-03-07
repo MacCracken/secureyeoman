@@ -63,7 +63,7 @@ export class RedisRateLimiter {
 
   addRule(rule: RateLimitRule): void {
     this.rules.set(rule.name, rule);
-    this.getLogger().debug('Rate limit rule added', { ruleName: rule.name });
+    this.getLogger().debug({ ruleName: rule.name }, 'Rate limit rule added');
   }
 
   removeRule(name: string): boolean {
@@ -118,7 +118,7 @@ export class RedisRateLimiter {
 
       const retryAfter = Math.ceil(rule.windowMs / 1000);
 
-      this.getLogger().warn('Rate limit exceeded', {
+      this.getLogger().warn({
         rule: rule.name,
         key: rule.keyType === 'ip' ? key : '[redacted]',
         keyType: rule.keyType,
@@ -127,7 +127,7 @@ export class RedisRateLimiter {
         currentCount: count,
         userId: context?.userId,
         ipAddress: context?.ipAddress,
-      });
+      }, 'Rate limit exceeded');
 
       if (rule.onExceed === 'log_only') {
         return { allowed: true, remaining: 0, resetAt };
@@ -136,9 +136,9 @@ export class RedisRateLimiter {
       return { allowed: false, remaining: 0, resetAt, retryAfter };
     } catch (err) {
       // Redis unavailable — fail-open
-      this.getLogger().error('Redis rate limit check failed, allowing request', {
+      this.getLogger().error({
         error: err instanceof Error ? err.message : 'Unknown',
-      });
+      }, 'Redis rate limit check failed, allowing request');
       return { allowed: true, remaining: rule.maxRequests - 1, resetAt: now + rule.windowMs };
     }
   }

@@ -163,8 +163,8 @@ describe('PatternLearner', () => {
       await expect(learner.recordInteraction(event)).resolves.toBeUndefined();
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Failed to record interaction for pattern learning',
-        expect.objectContaining({ error: 'Brain offline' })
+        expect.objectContaining({ error: 'Brain offline' }),
+        'Failed to record interaction for pattern learning'
       );
     });
 
@@ -175,8 +175,8 @@ describe('PatternLearner', () => {
       await expect(learner.recordInteraction(event)).resolves.toBeUndefined();
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Failed to record interaction for pattern learning',
-        expect.objectContaining({ error: 'raw error string' })
+        expect.objectContaining({ error: 'raw error string' }),
+        'Failed to record interaction for pattern learning'
       );
     });
   });
@@ -305,8 +305,8 @@ describe('PatternLearner', () => {
       const patterns = await learner.detectPatterns();
       expect(patterns).toEqual([]);
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Pattern detection failed',
-        expect.objectContaining({ error: 'DB connection failed' })
+        expect.objectContaining({ error: 'DB connection failed' }),
+        'Pattern detection failed'
       );
     });
 

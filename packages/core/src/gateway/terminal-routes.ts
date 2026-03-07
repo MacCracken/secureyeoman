@@ -173,7 +173,7 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
 
       // Security: Check for blocked commands
       if (isBlockedCommand(command)) {
-        logger.warn('Blocked dangerous command', { command, ip: request.ip });
+        logger.warn({ command, ip: request.ip }, 'Blocked dangerous command');
         return sendError(reply, 403, 'Command is not allowed for security reasons');
       }
 
@@ -182,11 +182,11 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
 
       // Reject sensitive system path prefixes first (fast path, before allowlist check)
       if (SENSITIVE_PATH_PREFIXES.some((p) => workingDir === p || workingDir.startsWith(p + '/'))) {
-        logger.warn('Blocked command with sensitive working directory', {
+        logger.warn({
           command,
           cwd: workingDir,
           ip: request.ip,
-        });
+        }, 'Blocked command with sensitive working directory');
         return sendError(reply, 403, 'Working directory is not allowed.');
       }
 
@@ -199,11 +199,11 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
         ) || workingDir.startsWith(process.cwd() + '/');
 
       if (!isAllowedPath) {
-        logger.warn('Blocked command with disallowed working directory', {
+        logger.warn({
           command,
           cwd: workingDir,
           ip: request.ip,
-        });
+        }, 'Blocked command with disallowed working directory');
         return sendError(
           reply,
           403,
@@ -278,13 +278,13 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
           } satisfies ExecuteCommandResponse;
         }
 
-        logger.debug('cd resolved', { from: workingDir, to: target });
+        logger.debug({ from: workingDir, to: target }, 'cd resolved');
         return { output: '', error: '', exitCode: 0, cwd: target } satisfies ExecuteCommandResponse;
       }
       // ───────────────────────────────────────────────────────────────────────
 
       try {
-        logger.debug('Executing terminal command', { command, cwd: workingDir });
+        logger.debug({ command, cwd: workingDir }, 'Executing terminal command');
 
         const { stdout, stderr } = await execAsync(command, {
           cwd: workingDir,
@@ -300,11 +300,11 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
           cwd: workingDir,
         };
 
-        logger.debug('Command executed successfully', {
+        logger.debug({
           command,
           cwd: workingDir,
           outputLength: stdout.length,
-        });
+        }, 'Command executed successfully');
 
         return response;
       } catch (error) {
@@ -317,11 +317,11 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
           cwd: workingDir,
         };
 
-        logger.debug('Command executed with non-zero exit code', {
+        logger.debug({
           command,
           cwd: workingDir,
           exitCode: response.exitCode,
-        });
+        }, 'Command executed with non-zero exit code');
 
         // Return 200 with error details - this is expected for commands that fail
         return response;

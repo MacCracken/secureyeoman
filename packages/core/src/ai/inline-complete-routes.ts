@@ -77,7 +77,7 @@ export function registerInlineCompleteRoutes(
 
         return { completion: completion.trim() };
       } catch (err) {
-        log.error('Inline completion failed', { error: toErrorMessage(err) });
+        log.error({ error: toErrorMessage(err) }, 'Inline completion failed');
         return sendError(reply, 500, 'Completion failed');
       }
     }

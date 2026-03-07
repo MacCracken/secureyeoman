@@ -34,10 +34,10 @@ export class AgentComms {
   async init(opts: { keyStorePath?: string; dbPath?: string } = {}): Promise<void> {
     this.crypto = new AgentCrypto(opts.keyStorePath);
     this.storage = new CommsStorage();
-    this.deps.logger.debug('Agent comms initialized', {
+    this.deps.logger.debug({
       agentId: this.agentId,
       publicKey: this.crypto.publicKey.slice(0, 20) + '...',
-    });
+    }, 'Agent comms initialized');
   }
 
   getIdentity(): AgentIdentity {
@@ -61,7 +61,7 @@ export class AgentComms {
       throw new Error(`Maximum peer limit reached (${this.config.maxPeers})`);
     }
     await this.storage.addPeer(identity);
-    this.deps.logger.debug('Peer added', { peerId: identity.id, name: identity.name });
+    this.deps.logger.debug({ peerId: identity.id, name: identity.name }, 'Peer added');
   }
 
   async getPeer(id: string): Promise<AgentIdentity | null> {
@@ -111,10 +111,10 @@ export class AgentComms {
       timestamp: Date.now(),
     };
 
-    this.deps.logger.debug('Message encrypted', {
+    this.deps.logger.debug({
       toAgent: toAgentId,
       type: payload.type,
-    });
+    }, 'Message encrypted');
 
     return message;
   }
@@ -157,10 +157,10 @@ export class AgentComms {
     // 5. Update peer last seen
     await this.storage.updatePeerLastSeen(encrypted.fromAgentId);
 
-    this.deps.logger.debug('Message decrypted', {
+    this.deps.logger.debug({
       fromAgent: encrypted.fromAgentId,
       type: payload.type,
-    });
+    }, 'Message decrypted');
 
     return payload;
   }

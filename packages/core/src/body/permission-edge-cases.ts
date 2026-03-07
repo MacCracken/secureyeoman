@@ -95,7 +95,7 @@ export class PermissionEdgeCaseHandler {
         this.lastKnownStatus.set(type, currentStatus);
         this.emitEvent(event);
 
-        this.logger.warn('Permission changed', { ...event });
+        this.logger.warn({ ...event }, 'Permission changed');
       }
     }
   }
@@ -113,13 +113,13 @@ export class PermissionEdgeCaseHandler {
       try {
         handler(event);
       } catch (error) {
-        this.logger.error('Error in permission event handler', { error });
+        this.logger.error({ error }, 'Error in permission event handler');
       }
     }
   }
 
   async handlePermissionRevoked(type: CapturePermissionType): Promise<void> {
-    this.logger.warn('Permission revoked', { type });
+    this.logger.warn({ type }, 'Permission revoked');
 
     const event: PermissionEvent = {
       type: 'revoked',
@@ -144,7 +144,7 @@ export class PermissionEdgeCaseHandler {
       results[type] = status;
 
       if (!status.granted) {
-        this.logger.warn('Permission may have been reset after OS upgrade', { type });
+        this.logger.warn({ type }, 'Permission may have been reset after OS upgrade');
       }
 
       this.lastKnownStatus.set(type, status);
@@ -154,7 +154,7 @@ export class PermissionEdgeCaseHandler {
   }
 
   async checkEnterprisePolicy(type: CapturePermissionType): Promise<boolean> {
-    this.logger.debug('Checking enterprise policy', { type });
+    this.logger.debug({ type }, 'Checking enterprise policy');
     return true;
   }
 

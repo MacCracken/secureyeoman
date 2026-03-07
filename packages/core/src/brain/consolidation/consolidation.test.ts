@@ -201,8 +201,8 @@ describe('ConsolidationManager', () => {
       manager.start();
       manager.stop();
       expect(deps.logger.info).toHaveBeenCalledWith(
-        'Consolidation scheduler started',
-        expect.any(Object)
+        expect.any(Object),
+        'Consolidation scheduler started'
       );
     });
   });

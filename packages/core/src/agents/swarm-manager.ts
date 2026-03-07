@@ -228,7 +228,7 @@ export class SwarmManager {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error('Swarm execution failed', { runId: run.id, error: msg });
+      this.logger.error({ runId: run.id, error: msg }, 'Swarm execution failed');
       await this.storage.updateRun(run.id, {
         status: 'failed',
         error: msg,
@@ -275,13 +275,13 @@ export class SwarmManager {
         const roleTaskProfile = profileTask(params.task, context || undefined);
         const modelOverride = this.selectModelForRole(params.task, perBudget, context || undefined);
         if (modelOverride) {
-          this.logger.debug('Cost-aware swarm: selected model for role', {
+          this.logger.debug({
             runId: run.id,
             role: roleConfig.role,
             model: modelOverride,
             taskType: roleTaskProfile.taskType,
             complexity: roleTaskProfile.complexity,
-          });
+          }, 'Cost-aware swarm: selected model for role');
         }
 
         // Inject profile skills into context (Phase 89)

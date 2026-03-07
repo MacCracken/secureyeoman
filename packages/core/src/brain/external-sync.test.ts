@@ -124,8 +124,8 @@ describe('ExternalBrainSync', () => {
       );
       timedSync.start();
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'External brain sync started',
-        expect.any(Object)
+        expect.any(Object),
+        'External brain sync started'
       );
       timedSync.stop();
       vi.useRealTimers();

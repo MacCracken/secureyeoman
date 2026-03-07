@@ -66,7 +66,7 @@ export class PreferenceLearner {
       importance
     );
 
-    this.logger?.info('Recorded user feedback', { conversationId, messageId, feedback });
+    this.logger?.info({ conversationId, messageId, feedback }, 'Recorded user feedback');
     return memory;
   }
 

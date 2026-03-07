@@ -94,8 +94,8 @@ describe('agnostic-hooks', () => {
       const unregister = registerAgnosticHooks(config, deps);
       expect(deps.extensionManager.registerHook).toHaveBeenCalledTimes(3);
       expect(deps.logger.info).toHaveBeenCalledWith(
-        'AGNOSTIC hooks registered',
-        expect.objectContaining({ hookPoints: config.triggerHookPoints })
+        expect.objectContaining({ hookPoints: config.triggerHookPoints }),
+        'AGNOSTIC hooks registered'
       );
       unregister();
     });
@@ -150,8 +150,8 @@ describe('agnostic-hooks', () => {
       const result = await handler({ data: {} });
       expect(result.vetoed).toBe(false);
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'AGNOSTIC QA trigger failed',
-        expect.objectContaining({ error: 'ECONNREFUSED' })
+        expect.objectContaining({ error: 'ECONNREFUSED' }),
+        'AGNOSTIC QA trigger failed'
       );
     });
 
@@ -167,8 +167,8 @@ describe('agnostic-hooks', () => {
       const handler = [...deps.hookHandlers.values()][0];
       await handler({ data: { swarmId: 'swarm-42' } });
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'AGNOSTIC QA task submission failed',
-        expect.objectContaining({ status: 500 })
+        expect.objectContaining({ status: 500 }),
+        'AGNOSTIC QA task submission failed'
       );
     });
   });

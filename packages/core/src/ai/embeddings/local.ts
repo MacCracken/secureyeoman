@@ -103,11 +103,11 @@ export class LocalEmbeddingProvider extends BaseEmbeddingProvider {
     });
 
     this.process.stderr!.on('data', (data: Buffer) => {
-      this.logger?.debug('Local embedding process stderr', { message: data.toString().trim() });
+      this.logger?.debug({ message: data.toString().trim() }, 'Local embedding process stderr');
     });
 
     this.process.on('exit', (code) => {
-      this.logger?.warn('Local embedding process exited', { code });
+      this.logger?.warn({ code }, 'Local embedding process exited');
       this.process = null;
       // Reject pending requests
       for (const handler of this.responseQueue) {

@@ -95,9 +95,9 @@ export class SandboxManager {
       };
     }
 
-    this.getLogger().info('Sandbox capabilities detected', {
+    this.getLogger().info({
       ...this.capabilities,
-    });
+    }, 'Sandbox capabilities detected');
 
     return this.capabilities;
   }
@@ -133,9 +133,9 @@ export class SandboxManager {
         return this.sandbox;
       }
       // No sandbox available for this platform
-      this.getLogger().warn('No sandbox available for platform, falling back to NoopSandbox', {
+      this.getLogger().warn({
         platform: caps.platform,
-      });
+      }, 'No sandbox available for platform, falling back to NoopSandbox');
       this.sandbox = new NoopSandbox();
       return this.sandbox;
     }
@@ -196,10 +196,8 @@ export class SandboxManager {
 
     // seccomp or other — not yet implemented, fall back
     this.getLogger().warn(
-      'Requested sandbox technology not implemented, falling back to NoopSandbox',
-      {
-        technology: this.config.technology,
-      }
+      { technology: this.config.technology },
+      'Requested sandbox technology not implemented, falling back to NoopSandbox'
     );
     this.sandbox = new NoopSandbox();
     return this.sandbox;
@@ -240,7 +238,7 @@ export class SandboxManager {
     const proxy = new CredentialProxy({ credentials, allowedHosts });
     this.proxyHandle = await proxy.start();
 
-    this.getLogger().info('Credential proxy started', { url: this.proxyHandle.proxyUrl });
+    this.getLogger().info({ url: this.proxyHandle.proxyUrl }, 'Credential proxy started');
     return this.proxyHandle.proxyUrl;
   }
 

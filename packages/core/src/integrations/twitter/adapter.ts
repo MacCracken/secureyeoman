@@ -178,9 +178,9 @@ export class TwitterIntegration implements Integration {
         this.logger?.debug(`Twitter: delivered ${tweets.length} mention(s)`);
       }
     } catch (err) {
-      this.logger?.warn('Twitter: mention poll failed', {
+      this.logger?.warn({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Twitter: mention poll failed');
     }
   }
 

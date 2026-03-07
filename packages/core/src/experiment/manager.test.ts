@@ -51,7 +51,7 @@ describe('ExperimentManager', () => {
       const result = await manager.create({ name: 'Test', variants: [] } as any);
       expect(result.id).toBe('exp-1');
       expect(storage.create).toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith('Experiment created', { id: 'exp-1' });
+      expect(logger.info).toHaveBeenCalledWith({ id: 'exp-1' }, 'Experiment created');
     });
   });
 
@@ -83,7 +83,7 @@ describe('ExperimentManager', () => {
       const { manager, logger } = makeManager();
       const ok = await manager.delete('exp-1');
       expect(ok).toBe(true);
-      expect(logger.info).toHaveBeenCalledWith('Experiment deleted', { id: 'exp-1' });
+      expect(logger.info).toHaveBeenCalledWith({ id: 'exp-1' }, 'Experiment deleted');
     });
 
     it('returns false and does not log when not found', async () => {

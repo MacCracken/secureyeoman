@@ -51,7 +51,7 @@ export class McpCredentialManager {
   async storeCredential(serverId: string, key: string, value: string): Promise<void> {
     const encrypted = this.encrypt(value);
     await this.storage.saveCredential(serverId, key, encrypted);
-    this.logger.info('Stored credential', { serverId, key });
+    this.logger.info({ serverId, key }, 'Stored credential');
   }
 
   async getCredential(serverId: string, key: string): Promise<string | null> {
@@ -60,7 +60,7 @@ export class McpCredentialManager {
     try {
       return this.decrypt(encrypted);
     } catch (err) {
-      this.logger.error('Failed to decrypt credential', { serverId, key, error: String(err) });
+      this.logger.error({ serverId, key, error: String(err) }, 'Failed to decrypt credential');
       return null;
     }
   }
@@ -72,7 +72,7 @@ export class McpCredentialManager {
   async deleteCredential(serverId: string, key: string): Promise<boolean> {
     const deleted = await this.storage.deleteCredential(serverId, key);
     if (deleted) {
-      this.logger.info('Deleted credential', { serverId, key });
+      this.logger.info({ serverId, key }, 'Deleted credential');
     }
     return deleted;
   }

@@ -91,7 +91,7 @@ export class TlsManager {
       if (!existsSync(keyPath)) {
         throw new Error(`TLS keyPath not found: ${keyPath}`);
       }
-      this.getLogger().info('TLS using configured cert files', { certPath, keyPath });
+      this.getLogger().info({ certPath, keyPath }, 'TLS using configured cert files');
       return { certPath, keyPath, caPath };
     }
 
@@ -126,7 +126,7 @@ export class TlsManager {
     if (existsSync(expectedCert) && existsSync(expectedKey)) {
       const expiresAt = this.readCertExpiry(expectedCert);
       if (expiresAt === null || expiresAt > Date.now()) {
-        this.getLogger().info('TLS using cached generated certs', { certDir });
+        this.getLogger().info({ certDir }, 'TLS using cached generated certs');
         this.generatedPaths = {
           caKey: path.join(certDir, 'ca-key.pem'),
           caCert: expectedCa,
@@ -139,12 +139,12 @@ export class TlsManager {
           caPath: existsSync(expectedCa) ? expectedCa : undefined,
         };
       }
-      this.getLogger().info('Auto-generated TLS cert expired — regenerating', { certDir });
+      this.getLogger().info({ certDir }, 'Auto-generated TLS cert expired — regenerating');
     }
 
-    this.getLogger().warn('Generating self-signed TLS certificate — NOT suitable for production', {
+    this.getLogger().warn({
       certDir,
-    });
+    }, 'Generating self-signed TLS certificate — NOT suitable for production');
 
     this.generatedPaths = generateDevCerts(certDir);
     return {

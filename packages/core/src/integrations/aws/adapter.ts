@@ -48,7 +48,7 @@ export class AwsIntegration implements Integration {
       throw new Error('AWS integration requires accessKeyId and secretAccessKey');
     }
 
-    this.logger?.info('AWS integration initialized', { region: this.region });
+    this.logger?.info({ region: this.region }, 'AWS integration initialized');
   }
 
   async start(): Promise<void> {
@@ -145,8 +145,7 @@ export class AwsIntegration implements Integration {
     const canonicalHeaders = `host:${host}\nx-amz-date:${amzDate}\n`;
     const signedHeaders = 'host;x-amz-date';
 
-    const canonicalPath = path.split('?')[0]!;
-    const canonicalQuerystring = path.includes('?') ? path.split('?')[1]! : '';
+    const [canonicalPath, canonicalQuerystring = ''] = path.split('?');
 
     const canonicalRequest = [
       method,

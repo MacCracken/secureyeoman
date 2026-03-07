@@ -249,7 +249,7 @@ export class FinetuneManager {
 
     const jobDir = join(this.workDir, jobId);
     const adapterDir = join(jobDir, 'adapter');
-    mkdirSync(adapterDir, { recursive: true });
+    mkdirSync(adapterDir, { recursive: true, mode: 0o700 });
 
     const configPath = join(jobDir, 'config.json');
     const trainConfig: Record<string, unknown> = {
@@ -304,14 +304,14 @@ export class FinetuneManager {
       [containerId, jobId]
     );
 
-    this.logger.info('Finetune job started', { jobId, containerId, image: job.image });
+    this.logger.info({ jobId, containerId, image: job.image }, 'Finetune job started');
 
     // Watch container completion in background
     this._watchContainer(jobId, containerId, adapterDir).catch((err: unknown) => {
-      this.logger.error('Finetune watcher error', {
+      this.logger.error({
         jobId,
         error: err instanceof Error ? err.message : 'unknown',
-      });
+      }, 'Finetune watcher error');
     });
   }
 
@@ -337,7 +337,7 @@ export class FinetuneManager {
              WHERE id=$2`,
             [adapterDir, jobId]
           );
-          this.logger.info('Finetune job completed', { jobId });
+          this.logger.info({ jobId }, 'Finetune job completed');
 
           emitJobCompletion(
             this.getAlertManager?.() ?? null,
@@ -353,10 +353,10 @@ export class FinetuneManager {
             const updatedJob = await this.getJob(jobId);
             if (updatedJob) {
               this.onJobComplete(jobId, updatedJob).catch((err: unknown) => {
-                this.logger.error('onJobComplete callback failed', {
+                this.logger.error({
                   jobId,
                   error: err instanceof Error ? err.message : 'unknown',
-                });
+                }, 'onJobComplete callback failed');
               });
             }
           }
@@ -367,7 +367,7 @@ export class FinetuneManager {
              WHERE id=$2`,
             [`Container exited with code ${exitCode}`, jobId]
           );
-          this.logger.error('Finetune job failed', { jobId, exitCode });
+          this.logger.error({ jobId, exitCode }, 'Finetune job failed');
 
           emitJobCompletion(
             this.getAlertManager?.() ?? null,
@@ -483,7 +483,7 @@ export class FinetuneManager {
     // Write a minimal Modelfile
     const modelfile = `FROM ${job.baseModel}\nADAPTER ${job.adapterPath}\n`;
     const modelfilePath = join(job.adapterPath, 'Modelfile');
-    writeFileSync(modelfilePath, modelfile);
+    writeFileSync(modelfilePath, modelfile, { mode: 0o600 });
 
     if (!/^[a-zA-Z0-9_-]+$/.test(job.adapterName)) {
       throw new Error(`Invalid adapter name: ${job.adapterName}`);
@@ -492,9 +492,9 @@ export class FinetuneManager {
       env: { ...process.env, OLLAMA_HOST: ollamaBaseUrl },
     });
 
-    this.logger.info('Adapter registered with Ollama', {
+    this.logger.info({
       jobId,
       adapterName: job.adapterName,
-    });
+    }, 'Adapter registered with Ollama');
   }
 }

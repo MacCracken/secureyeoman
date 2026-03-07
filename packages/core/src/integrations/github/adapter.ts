@@ -205,9 +205,9 @@ export class GitHubIntegration implements WebhookIntegration {
               labels: labelsToAdd,
             });
           } catch (err) {
-            this.logger?.warn('Failed to auto-label issue', {
+            this.logger?.warn({
               error: err instanceof Error ? err.message : String(err),
-            });
+            }, 'Failed to auto-label issue');
           }
         }
       }

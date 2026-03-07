@@ -86,11 +86,11 @@ export class EventBridge {
         const client: SseClient = { id: clientId, source, reply, connectedAt: Date.now() };
         this.clients.set(clientId, client);
 
-        this.logger.info('Event bridge client connected', { clientId, source });
+        this.logger.info({ clientId, source }, 'Event bridge client connected');
 
         request.raw.on('close', () => {
           this.clients.delete(clientId);
-          this.logger.info('Event bridge client disconnected', { clientId, source });
+          this.logger.info({ clientId, source }, 'Event bridge client disconnected');
         });
       }
     );
@@ -151,7 +151,7 @@ export class EventBridge {
    */
   async subscribe(name: string, url: string, apiKey?: string): Promise<void> {
     if (this.subscriptionAborts.has(name)) {
-      this.logger.warn('Subscription already active', { name });
+      this.logger.warn({ name }, 'Subscription already active');
       return;
     }
 
@@ -177,7 +177,7 @@ export class EventBridge {
           throw new Error('No response body for SSE stream');
         }
 
-        this.logger.info('Event bridge subscribed', { name, url });
+        this.logger.info({ name, url }, 'Event bridge subscribed');
         attempts = 0; // Reset on successful connection
 
         const reader = res.body.getReader();
@@ -211,21 +211,21 @@ export class EventBridge {
       } catch (err) {
         if (abort.signal.aborted) return; // Intentional disconnect
 
-        this.logger.warn('Event bridge connection lost', {
+        this.logger.warn({
           name,
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Event bridge connection lost');
       }
 
       this.subscriptionAborts.delete(name);
 
       // Reconnect unless explicitly unsubscribed
       if (maxAttempts > 0 && ++attempts >= maxAttempts) {
-        this.logger.warn('Event bridge max reconnect attempts reached', { name, attempts });
+        this.logger.warn({ name, attempts }, 'Event bridge max reconnect attempts reached');
         return;
       }
 
-      this.logger.info('Event bridge reconnecting', { name, delay: reconnectDelay });
+      this.logger.info({ name, delay: reconnectDelay }, 'Event bridge reconnecting');
       await new Promise((r) => setTimeout(r, reconnectDelay));
       connect();
     };
@@ -253,7 +253,7 @@ export class EventBridge {
     if (abort) {
       abort.abort();
       this.subscriptionAborts.delete(name);
-      this.logger.info('Event bridge unsubscribed', { name });
+      this.logger.info({ name }, 'Event bridge unsubscribed');
     }
   }
 
@@ -263,7 +263,7 @@ export class EventBridge {
   shutdown(): void {
     for (const [name, abort] of this.subscriptionAborts) {
       abort.abort();
-      this.logger.info('Event bridge subscription stopped', { name });
+      this.logger.info({ name }, 'Event bridge subscription stopped');
     }
     this.subscriptionAborts.clear();
 

@@ -123,7 +123,7 @@ export class TeeAttestationVerifier {
     if (this.config.attestationStrategy === 'cached') {
       const cached = this.cache.get(provider);
       if (cached && cached.expiresAt > now) {
-        this.logger?.debug('TEE attestation cache hit', { component: 'tee', provider });
+        this.logger?.debug({ component: 'tee', provider }, 'TEE attestation cache hit');
         return { allowed: this.resolveAllowed(cached.verified), result: cached };
       }
     }
@@ -143,15 +143,15 @@ export class TeeAttestationVerifier {
     // 5/6. Evaluate against providerLevel
     if (!supported) {
       if (this.config.providerLevel === 'required') {
-        this.logger?.warn('TEE required but provider not supported', {
+        this.logger?.warn({
           component: 'tee',
           provider,
-        });
+        }, 'TEE required but provider not supported');
       } else if (this.config.providerLevel === 'optional') {
-        this.logger?.info('TEE optional — provider not supported, allowing', {
+        this.logger?.info({
           component: 'tee',
           provider,
-        });
+        }, 'TEE optional — provider not supported, allowing');
       }
     }
 
@@ -237,7 +237,7 @@ export class TeeAttestationVerifier {
     if (this.config.attestationStrategy === 'cached') {
       const cached = this.cache.get(provider);
       if (cached && cached.expiresAt > Date.now()) {
-        this.logger?.debug('TEE attestation cache hit (async)', { component: 'tee', provider });
+        this.logger?.debug({ component: 'tee', provider }, 'TEE attestation cache hit (async)');
         return { allowed: this.resolveAllowed(cached.verified), result: cached };
       }
     }
@@ -329,25 +329,25 @@ export class TeeAttestationVerifier {
   private applyFailureAction(provider: string, result: ProviderAttestationResult): void {
     switch (this.config.failureAction) {
       case 'block':
-        this.logger?.warn('TEE attestation failed — blocking provider', {
+        this.logger?.warn({
           component: 'tee',
           provider,
           details: result.details,
-        });
+        }, 'TEE attestation failed — blocking provider');
         break;
       case 'warn':
-        this.logger?.warn('TEE attestation failed — warning only', {
+        this.logger?.warn({
           component: 'tee',
           provider,
           details: result.details,
-        });
+        }, 'TEE attestation failed — warning only');
         break;
       case 'audit_only':
-        this.logger?.info('TEE attestation failed — audit record', {
+        this.logger?.info({
           component: 'tee',
           provider,
           details: result.details,
-        });
+        }, 'TEE attestation failed — audit record');
         break;
     }
   }

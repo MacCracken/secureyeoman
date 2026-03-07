@@ -61,7 +61,7 @@ export class McpServer {
   }
 
   async handleToolCall(toolName: string, args: Record<string, unknown>): Promise<unknown> {
-    this.logger.info('MCP tool call received', { toolName });
+    this.logger.info({ toolName }, 'MCP tool call received');
     return { status: 'ok', toolName, args };
   }
 }

@@ -144,7 +144,7 @@ export class WorkflowEngine {
   // ── Public API ────────────────────────────────────────────────
 
   async execute(run: WorkflowRun, definition: WorkflowDefinition): Promise<void> {
-    this.logger.info('Workflow run started', { runId: run.id, workflowId: definition.id });
+    this.logger.info({ runId: run.id, workflowId: definition.id }, 'Workflow run started');
 
     const startTime = Date.now();
     await this.storage.updateRun(run.id, { status: 'running', startedAt: startTime });
@@ -175,7 +175,7 @@ export class WorkflowEngine {
         completedAt: Date.now(),
       });
 
-      this.logger.info('Workflow run completed', { runId: run.id });
+      this.logger.info({ runId: run.id }, 'Workflow run completed');
 
       emitJobCompletion(
         this.alertManager,
@@ -195,7 +195,7 @@ export class WorkflowEngine {
         error,
         completedAt: Date.now(),
       });
-      this.logger.error('Workflow run failed', { runId: run.id, error });
+      this.logger.error({ runId: run.id, error }, 'Workflow run failed');
 
       emitJobCompletion(
         this.alertManager,
@@ -335,11 +335,11 @@ export class WorkflowEngine {
             stepOutputSchema as Record<string, unknown>
           );
           if (!schemaValidation.valid) {
-            this.logger.warn('Step output schema violation', {
+            this.logger.warn({
               stepId: step.id,
               stepName: step.name,
               errors: schemaValidation.errors,
-            });
+            }, 'Step output schema violation');
             void this.auditChain?.record({
               event: 'step_output_schema_violation',
               level: 'warn',
@@ -363,12 +363,12 @@ export class WorkflowEngine {
         break;
       } catch (err) {
         error = err instanceof Error ? err.message : String(err);
-        this.logger.warn('Step execution failed', {
+        this.logger.warn({
           stepId: step.id,
           attempt: attempt + 1,
           maxAttempts,
           error,
-        });
+        }, 'Step execution failed');
         if (attempt < maxAttempts - 1) {
           await new Promise((r) => setTimeout(r, backoffMs * (attempt + 1)));
         }
@@ -462,11 +462,11 @@ export class WorkflowEngine {
             });
             return stdout;
           } catch (err) {
-            this.logger.warn('Deterministic command failed, falling through to agent dispatch', {
+            this.logger.warn({
               stepId: step.id,
               command: String(cfg.command),
               error: err instanceof Error ? err.message : String(err),
-            });
+            }, 'Deterministic command failed, falling through to agent dispatch');
             // Fall through to normal agent dispatch
           }
         }
@@ -492,7 +492,7 @@ export class WorkflowEngine {
       case 'tool':
       case 'mcp': {
         // Fallback: log that MCP client not wired — return null
-        this.logger.warn('MCP tool step not wired to mcpClientManager', { stepId: step.id });
+        this.logger.warn({ stepId: step.id }, 'MCP tool step not wired to mcpClientManager');
         return null;
       }
 
@@ -510,11 +510,11 @@ export class WorkflowEngine {
         // Log resource write intent — actual BrainManager wiring is optional
         const resourceType = String(cfg.resourceType ?? 'memory');
         const data = this.resolveTemplate(String(cfg.dataTemplate ?? ''), ctx);
-        this.logger.info('Workflow resource step', {
+        this.logger.info({
           resourceType,
           stepId: step.id,
           dataLength: data.length,
-        });
+        }, 'Workflow resource step');
         return { resourceType, data };
       }
 
@@ -811,23 +811,23 @@ export class WorkflowEngine {
           : 'http://ollama:11434';
 
         const passes = !isNaN(metricValue) && metricValue >= threshold;
-        this.logger.info('conditional_deploy: evaluating threshold', {
+        this.logger.info({
           metricPath,
           metricValue,
           threshold,
           passes,
-        });
+        }, 'conditional_deploy: evaluating threshold');
 
         if (passes) {
           // Attempt to register fine-tuned adapter with Ollama if finetuneManager available
           if (this.finetuneManager && jobId) {
             try {
               await this.finetuneManager.registerWithOllama(jobId, ollamaUrl);
-              this.logger.info('conditional_deploy: registered adapter with Ollama', { jobId });
+              this.logger.info({ jobId }, 'conditional_deploy: registered adapter with Ollama');
             } catch (err) {
-              this.logger.warn('conditional_deploy: Ollama registration failed (non-fatal)', {
+              this.logger.warn({
                 error: err instanceof Error ? err.message : String(err),
-              });
+              }, 'conditional_deploy: Ollama registration failed (non-fatal)');
             }
           }
           if (this.lineageStorage && (modelVersion || jobId)) {
@@ -840,7 +840,7 @@ export class WorkflowEngine {
           return { deployed: true, metricValue, threshold, modelVersion, personalityId };
         } else {
           const reason = `Metric ${metricValue.toFixed(4)} < threshold ${threshold}`;
-          this.logger.info('conditional_deploy: threshold not met, skipping deploy', { reason });
+          this.logger.info({ reason }, 'conditional_deploy: threshold not met, skipping deploy');
           return { deployed: false, metricValue, threshold, reason };
         }
       }
@@ -868,11 +868,11 @@ export class WorkflowEngine {
           report,
           timeoutMs,
         });
-        this.logger.info('human_approval: approval request created, waiting for decision', {
+        this.logger.info({
           requestId: request.id,
           runId,
           timeoutMs,
-        });
+        }, 'human_approval: approval request created, waiting for decision');
         // Block until approved/rejected/timed-out
         await this.approvalManager.waitForDecision(request.id);
         return { approved: true, requestId: request.id };
@@ -888,13 +888,13 @@ export class WorkflowEngine {
         const inputsRaw = cfg.inputs ? this.resolveTemplate(JSON.stringify(cfg.inputs), ctx) : '{}';
         const inputs = JSON.parse(inputsRaw) as Record<string, string>;
 
-        this.logger.info('ci_trigger: dispatching CI job', {
+        this.logger.info({
           provider,
           owner,
           repo,
           ref,
           workflowId,
-        });
+        }, 'ci_trigger: dispatching CI job');
 
         if (provider === 'github-actions') {
           const token = this.cicdConfig?.githubToken;
@@ -972,7 +972,7 @@ export class WorkflowEngine {
         const pollMs = Number(cfg.pollIntervalMs ?? DEFAULT_CI_POLL_INTERVAL_MS);
         const timeoutMs = Number(cfg.timeoutMs ?? 1_800_000); // 30 min default
 
-        this.logger.info('ci_wait: polling CI run', { provider, runId, pollMs, timeoutMs });
+        this.logger.info({ provider, runId, pollMs, timeoutMs }, 'ci_wait: polling CI run');
 
         const deadline = Date.now() + timeoutMs;
         const startedAt = Date.now();
@@ -1166,10 +1166,10 @@ export class WorkflowEngine {
     try {
       return evaluateCondition(expr, { steps: ctx.steps, input: ctx.input });
     } catch (err) {
-      this.logger.warn('Workflow condition evaluation failed', {
+      this.logger.warn({
         expression: expr,
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Workflow condition evaluation failed');
       return false;
     }
   }

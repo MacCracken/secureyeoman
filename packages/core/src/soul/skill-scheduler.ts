@@ -467,7 +467,7 @@ export class SkillScheduler {
       try {
         handler(event);
       } catch (err) {
-        logger.error('Schedule event handler error', { err });
+        logger.error({ err }, 'Schedule event handler error');
       }
     }
   }

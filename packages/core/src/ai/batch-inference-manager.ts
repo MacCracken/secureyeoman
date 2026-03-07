@@ -186,6 +186,6 @@ export class BatchInferenceManager {
       [finalStatus, completed, failed, JSON.stringify(results), jobId]
     );
 
-    this.deps.logger.info('Batch inference job completed', { jobId, completed, failed });
+    this.deps.logger.info({ jobId, completed, failed }, 'Batch inference job completed');
   }
 }

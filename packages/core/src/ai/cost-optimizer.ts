@@ -166,7 +166,7 @@ export class CostOptimizer {
       });
     }
 
-    this.logger.debug('Cost analysis completed', { recommendationCount: recommendations.length });
+    this.logger.debug({ recommendationCount: recommendations.length }, 'Cost analysis completed');
 
     return {
       totalCostUsd: stats.costUsdMonth,
@@ -206,11 +206,11 @@ export class CostOptimizer {
         callCount: s.calls,
       }));
 
-    this.logger.info('Detailed cost analysis completed', {
+    this.logger.info({
       days,
       perModelCount: perModelStats.length,
       suggestionsCount: routingSuggestions.length,
-    });
+    }, 'Detailed cost analysis completed');
 
     return {
       ...base,

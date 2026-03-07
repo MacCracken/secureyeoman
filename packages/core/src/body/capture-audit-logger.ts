@@ -265,12 +265,12 @@ export class CaptureAuditLogger {
     });
 
     // Log
-    this.logger.info('Capture event logged', {
+    this.logger.info({
       eventId: fullEvent.id,
       eventType: params.eventType,
       userId: params.userId,
       anomalies: anomalies.length,
-    });
+    }, 'Capture event logged');
 
     return fullEvent;
   }
@@ -517,7 +517,7 @@ export class CaptureAuditLogger {
       }
     }
 
-    this.logger.info('Audit cleanup completed', { count, retentionDays });
+    this.logger.info({ count, retentionDays }, 'Audit cleanup completed');
     return count;
   }
 

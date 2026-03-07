@@ -14,6 +14,27 @@ import {
   type ConditionTrigger,
 } from '@secureyeoman/shared';
 
+/** Cache compiled regexes to avoid recompilation on every message */
+const regexCache = new Map<string, RegExp | null>();
+const REGEX_CACHE_MAX = 500;
+
+function getCachedRegex(pattern: string, flags: string): RegExp | null {
+  const key = `${pattern}:${flags}`;
+  if (regexCache.has(key)) return regexCache.get(key)!;
+  try {
+    const regex = new RegExp(pattern, flags);
+    if (regexCache.size >= REGEX_CACHE_MAX) {
+      const oldest = regexCache.keys().next().value;
+      if (oldest !== undefined) regexCache.delete(oldest);
+    }
+    regexCache.set(key, regex);
+    return regex;
+  } catch {
+    regexCache.set(key, null);
+    return null;
+  }
+}
+
 export interface TriggerContext {
   message?: {
     text: string;
@@ -118,14 +139,11 @@ export class SkillTriggerMatcher {
         case 'contains':
           if (searchText.includes(searchPattern)) return true;
           break;
-        case 'regex':
-          try {
-            const regex = new RegExp(searchPattern, trigger.caseSensitive ? '' : 'i');
-            if (regex.test(text)) return true;
-          } catch {
-            // Invalid regex, skip
-          }
+        case 'regex': {
+          const regex = getCachedRegex(searchPattern, trigger.caseSensitive ? '' : 'i');
+          if (regex?.test(text)) return true;
           break;
+        }
         case 'startsWith':
           if (searchText.startsWith(searchPattern)) return true;
           break;

@@ -86,7 +86,7 @@ export class PermissionOrchestrator {
     type: CapturePermissionType,
     context: CaptureContext
   ): Promise<PermissionResult> {
-    this.logger.info('Checking permission', { type, userId: context.userId });
+    this.logger.info({ type, userId: context.userId }, 'Checking permission');
 
     const platformStatus = await this.platformManager.checkPermission(type);
 
@@ -150,7 +150,7 @@ export class PermissionOrchestrator {
         details: { consentStatus: consent.status },
       };
     } catch (error) {
-      this.logger.error('Consent request failed', { error });
+      this.logger.error({ error }, 'Consent request failed');
       return {
         granted: false,
         reason: 'USER_DENIED',

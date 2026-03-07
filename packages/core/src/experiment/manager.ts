@@ -21,7 +21,7 @@ export class ExperimentManager {
 
   async create(data: ExperimentCreate): Promise<Experiment> {
     const exp = await this.storage.create(data);
-    this.logger.info('Experiment created', { id: exp.id });
+    this.logger.info({ id: exp.id }, 'Experiment created');
     return exp;
   }
 
@@ -38,7 +38,7 @@ export class ExperimentManager {
 
   async delete(id: string): Promise<boolean> {
     const ok = await this.storage.delete(id);
-    if (ok) this.logger.info('Experiment deleted', { id });
+    if (ok) this.logger.info({ id }, 'Experiment deleted');
     return ok;
   }
 
@@ -46,7 +46,7 @@ export class ExperimentManager {
     const exp = await this.storage.get(id);
     if (!exp || exp.status === 'running') return exp;
     const updated = await this.storage.update(id, { status: 'running', startedAt: Date.now() });
-    this.logger.info('Experiment started', { id });
+    this.logger.info({ id }, 'Experiment started');
     return updated;
   }
 
@@ -54,7 +54,7 @@ export class ExperimentManager {
     const exp = await this.storage.get(id);
     if (exp?.status !== 'running') return exp;
     const updated = await this.storage.update(id, { status: 'completed', completedAt: Date.now() });
-    this.logger.info('Experiment stopped', { id });
+    this.logger.info({ id }, 'Experiment stopped');
     return updated;
   }
 

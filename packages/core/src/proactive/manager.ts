@@ -63,18 +63,18 @@ export class ProactiveManager {
     // Start expired suggestion cleanup
     this.expiryTimer = setInterval(() => {
       void this.storage.deleteExpiredSuggestions().catch((err: unknown) => {
-        this.deps.logger.warn('Failed to clean expired suggestions', {
+        this.deps.logger.warn({
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Failed to clean expired suggestions');
       });
     }, 60000);
     this.expiryTimer.unref();
 
     this.initialized = true;
-    this.deps.logger.info('ProactiveManager initialized', {
+    this.deps.logger.info({
       triggers: triggers.length,
       builtins: BUILTIN_TRIGGERS.length,
-    });
+    }, 'ProactiveManager initialized');
   }
 
   // ── Trigger CRUD ────────────────────────────────────────────────
@@ -160,11 +160,11 @@ export class ProactiveManager {
     if (trigger.cooldownMs > 0 && trigger.lastFiredAt) {
       const elapsed = Date.now() - trigger.lastFiredAt;
       if (elapsed < trigger.cooldownMs) {
-        this.deps.logger.debug('Trigger skipped (cooldown)', {
+        this.deps.logger.debug({
           triggerId,
           elapsed,
           cooldownMs: trigger.cooldownMs,
-        });
+        }, 'Trigger skipped (cooldown)');
         return {};
       }
     }
@@ -173,11 +173,11 @@ export class ProactiveManager {
     if (trigger.limitPerDay > 0) {
       const dailyCount = await this.storage.getDailyFiringCount(triggerId);
       if (dailyCount >= trigger.limitPerDay) {
-        this.deps.logger.debug('Trigger skipped (daily limit)', {
+        this.deps.logger.debug({
           triggerId,
           dailyCount,
           limitPerDay: trigger.limitPerDay,
-        });
+        }, 'Trigger skipped (daily limit)');
         return {};
       }
     }
@@ -355,10 +355,10 @@ export class ProactiveManager {
     // For now, use a 60-second check interval and evaluate at each tick
     const timer = setInterval(() => {
       void this.evaluateScheduleTrigger(trigger).catch((err: unknown) => {
-        this.deps.logger.warn('Schedule trigger evaluation failed', {
+        this.deps.logger.warn({
           triggerId: trigger.id,
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Schedule trigger evaluation failed');
       });
     }, 60000);
     timer.unref();

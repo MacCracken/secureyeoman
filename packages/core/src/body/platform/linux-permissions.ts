@@ -43,7 +43,7 @@ export class LinuxPermissionManager implements PlatformPermissionManager {
     }
 
     this.usePortal = process.env.WAYLAND_DISPLAY !== undefined;
-    this.logger.info('Linux permission manager initialized', { usePortal: this.usePortal });
+    this.logger.info({ usePortal: this.usePortal }, 'Linux permission manager initialized');
   }
 
   isAvailable(): boolean {
@@ -155,7 +155,7 @@ export class LinuxPermissionManager implements PlatformPermissionManager {
   }
 
   async requestPermission(type: CapturePermissionType): Promise<PermissionStatus> {
-    this.logger.info('Requesting permission', { type, usePortal: this.usePortal });
+    this.logger.info({ type, usePortal: this.usePortal }, 'Requesting permission');
 
     if (type === 'screen') {
       if (!this.usePortal) {

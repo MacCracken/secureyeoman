@@ -212,6 +212,7 @@ export function getAvailableModels(onlyAvailable = false): Record<string, Availa
 // ── Dynamic model discovery (cached) ─────────────────────────────────
 
 let _dynamicCache: { result: Record<string, AvailableModel[]>; ts: number } | null = null;
+let _fetchInFlight: Promise<Record<string, AvailableModel[]>> | null = null;
 const CACHE_TTL_MS = 60 * 1000; // 60 seconds — faster refresh for local model discovery
 
 /**
@@ -228,6 +229,26 @@ export async function getAvailableModelsAsync(
     return filterByAvailability(_dynamicCache.result, onlyAvailable);
   }
 
+  // Deduplicate concurrent fetches — only one in-flight request at a time
+  if (_fetchInFlight) {
+    const result = await _fetchInFlight;
+    return filterByAvailability(result, onlyAvailable);
+  }
+
+  _fetchInFlight = (async () => {
+    try {
+      return await _fetchAvailableModels();
+    } finally {
+      _fetchInFlight = null;
+    }
+  })();
+
+  const result = await _fetchInFlight;
+  return filterByAvailability(result, onlyAvailable);
+}
+
+async function _fetchAvailableModels(): Promise<Record<string, AvailableModel[]>> {
+  const now = Date.now();
   // Start with the static table
   const grouped = getAvailableModels(false);
 
@@ -499,7 +520,7 @@ export async function getAvailableModelsAsync(
   }
 
   _dynamicCache = { result: grouped, ts: now };
-  return filterByAvailability(grouped, onlyAvailable);
+  return grouped;
 }
 
 function filterByAvailability(

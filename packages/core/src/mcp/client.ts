@@ -72,11 +72,11 @@ export class McpClientManager {
     }));
     this.discoveredTools.set(serverId, mcpTools);
     await this.storage.saveTools(serverId, serverName, tools);
-    this.logger.info('Registered tools from MCP server', {
+    this.logger.info({
       serverId,
       serverName,
       count: mcpTools.length,
-    });
+    }, 'Registered tools from MCP server');
   }
 
   async discoverTools(serverId: string): Promise<McpToolDef[]> {
@@ -93,14 +93,14 @@ export class McpClientManager {
     const persisted = await this.storage.loadTools(serverId);
     if (persisted.length > 0) {
       this.discoveredTools.set(serverId, persisted);
-      this.logger.info('Restored tools from storage for MCP server', {
+      this.logger.info({
         serverId,
         count: persisted.length,
-      });
+      }, 'Restored tools from storage for MCP server');
       return persisted;
     }
 
-    this.logger.debug('No pre-registered tools for MCP server', { serverId });
+    this.logger.debug({ serverId }, 'No pre-registered tools for MCP server');
     return [];
   }
 
@@ -110,10 +110,10 @@ export class McpClientManager {
 
     const resources: McpResourceDef[] = [];
     this.discoveredResources.set(serverId, resources);
-    this.logger.debug('Discovered resources from MCP server', {
+    this.logger.debug({
       serverId,
       count: resources.length,
-    });
+    }, 'Discovered resources from MCP server');
     return resources;
   }
 
@@ -167,11 +167,11 @@ export class McpClientManager {
         const token = await mintCallthruToken(this.tokenSecret);
         const endpoint = `${server.url}/api/v1/internal/tool-call`;
 
-        this.logger.info('Calling MCP tool via internal callthrough', {
+        this.logger.info({
           serverId,
           toolName,
           endpoint,
-        });
+        }, 'Calling MCP tool via internal callthrough');
 
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -228,10 +228,10 @@ export class McpClientManager {
     const persisted = await this.storage.loadTools(serverId);
     if (persisted.length > 0) {
       this.discoveredTools.set(serverId, persisted);
-      this.logger.info('Restored tools from storage for MCP server', {
+      this.logger.info({
         serverId,
         count: persisted.length,
-      });
+      }, 'Restored tools from storage for MCP server');
     }
     return persisted;
   }

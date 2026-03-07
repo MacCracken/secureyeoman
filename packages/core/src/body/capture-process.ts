@@ -117,7 +117,7 @@ export class CaptureProcess {
       this.startTimeout();
       this.startMonitoring();
 
-      this.logger.info('Capture process started', { pid: this.pid });
+      this.logger.info({ pid: this.pid }, 'Capture process started');
 
       return {
         pid: this.pid ?? 0,
@@ -206,7 +206,7 @@ export class CaptureProcess {
     this.status = 'terminated';
     this.emitEvent('sandbox.terminated', { reason });
 
-    this.logger.info('Capture process terminated', { reason, pid: this.pid });
+    this.logger.info({ reason, pid: this.pid }, 'Capture process terminated');
   }
 
   getStatus(): CaptureProcessStatus {
@@ -226,7 +226,7 @@ export class CaptureProcess {
 
     this.child.on('exit', (code, signal) => {
       if (this.status !== 'stopping' && this.status !== 'terminated') {
-        this.logger.error('Capture process exited unexpectedly', { code, signal });
+        this.logger.error({ code, signal }, 'Capture process exited unexpectedly');
         this.status = 'failed';
         this.emitEvent('capture.failed', { code, signal });
       }
@@ -235,7 +235,7 @@ export class CaptureProcess {
     this.child.stderr?.on('data', (data: Buffer) => {
       const message = data.toString().trim();
       if (message) {
-        this.logger.warn('Capture process stderr', { message });
+        this.logger.warn({ message }, 'Capture process stderr');
       }
     });
   }

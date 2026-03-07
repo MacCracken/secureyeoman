@@ -116,17 +116,17 @@ export class HyperparamSearchManager {
 
         await this.deps.finetuneManager.startJob(job.id);
       } catch (err) {
-        this.deps.logger.error('Failed to create trial job', {
+        this.deps.logger.error({
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Failed to create trial job');
       }
     }
 
     // Watch for completion in background
     this._watchCompletion(id).catch((err: unknown) => {
-      this.deps.logger.error('Search completion watch error', {
+      this.deps.logger.error({
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'Search completion watch error');
     });
   }
 
@@ -248,6 +248,6 @@ export class HyperparamSearchManager {
       [bestJobId, searchId]
     );
 
-    this.deps.logger.info('Hyperparameter search completed', { searchId, bestJobId });
+    this.deps.logger.info({ searchId, bestJobId }, 'Hyperparameter search completed');
   }
 }

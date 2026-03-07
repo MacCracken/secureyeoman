@@ -65,7 +65,7 @@ export class SandboxMonitor {
 
     if (!report.allPassed) {
       const failed = checks.filter((c) => !c.passed);
-      this.logger.error('Sandbox integrity check failed', { failed });
+      this.logger.error({ failed }, 'Sandbox integrity check failed');
     }
 
     return report;
@@ -210,10 +210,10 @@ export class SandboxMonitor {
       try {
         const report = await this.checkIntegrity();
         if (!report.allPassed) {
-          this.logger.error('Sandbox integrity check failed', { report });
+          this.logger.error({ report }, 'Sandbox integrity check failed');
         }
       } catch (error) {
-        this.logger.error('Error during sandbox integrity check', { error });
+        this.logger.error({ error }, 'Error during sandbox integrity check');
       }
     }, intervalMs);
   }

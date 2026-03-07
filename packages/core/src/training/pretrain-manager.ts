@@ -160,11 +160,11 @@ export class PretrainManager {
     );
 
     const job = rowToJob(rows[0]!);
-    this.logger.info('Pre-training job created', {
+    this.logger.info({
       jobId: id,
       name: input.name,
       architecture: input.architecture,
-    });
+    }, 'Pre-training job created');
     return job;
   }
 
@@ -247,7 +247,7 @@ export class PretrainManager {
       [Date.now(), id]
     );
     if ((rowCount ?? 0) > 0) {
-      this.logger.info('Pre-training job cancelled', { jobId: id });
+      this.logger.info({ jobId: id }, 'Pre-training job cancelled');
       return true;
     }
     return false;

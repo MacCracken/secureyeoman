@@ -85,10 +85,10 @@ export class PipelineApprovalManager {
       ]
     );
     const req = rowToRequest(result.rows[0]!);
-    this.logger.info('ApprovalManager: request created', {
+    this.logger.info({
       requestId: id,
       workflowRunId: config.workflowRunId,
-    });
+    }, 'ApprovalManager: request created');
     return req;
   }
 
@@ -134,7 +134,7 @@ export class PipelineApprovalManager {
     );
     const approved = (result.rowCount ?? 0) > 0;
     if (approved) {
-      this.logger.info('ApprovalManager: request approved', { requestId: id, decidedBy });
+      this.logger.info({ requestId: id, decidedBy }, 'ApprovalManager: request approved');
     }
     return approved;
   }
@@ -148,7 +148,7 @@ export class PipelineApprovalManager {
     );
     const rejected = (result.rowCount ?? 0) > 0;
     if (rejected) {
-      this.logger.info('ApprovalManager: request rejected', { requestId: id, decidedBy });
+      this.logger.info({ requestId: id, decidedBy }, 'ApprovalManager: request rejected');
     }
     return rejected;
   }

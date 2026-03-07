@@ -416,7 +416,7 @@ describe('GmailIntegration', () => {
       mockFetch.mockRejectedValueOnce(new Error('Connection reset'));
 
       await vi.advanceTimersByTimeAsync(1001);
-      expect(mockLogger.warn).toHaveBeenCalledWith('Gmail poll error', expect.any(Object));
+      expect(mockLogger.warn).toHaveBeenCalledWith(expect.any(Object), 'Gmail poll error');
     });
 
     it('handles non-Error poll error', async () => {
@@ -427,9 +427,12 @@ describe('GmailIntegration', () => {
       mockFetch.mockRejectedValueOnce('string error');
 
       await vi.advanceTimersByTimeAsync(1001);
-      expect(mockLogger.warn).toHaveBeenCalledWith('Gmail poll error', {
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+{
         error: 'Unknown error',
-      });
+      },
+'Gmail poll error'
+);
     });
 
     it('skips message when processMessage fetch fails', async () => {
@@ -744,8 +747,8 @@ describe('GmailIntegration', () => {
       await adapter.sendMessage('to@example.com', 'test');
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Gmail token refresh failed',
-        expect.any(Object)
+        expect.any(Object),
+        'Gmail token refresh failed'
       );
 
       delete process.env.GMAIL_OAUTH_CLIENT_ID;
@@ -839,9 +842,12 @@ describe('GmailIntegration', () => {
       );
       await adapter.start();
 
-      expect(mockLogger.warn).toHaveBeenCalledWith('Failed to create Gmail label', {
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+{
         labelName: 'fail-label',
-      });
+      },
+'Failed to create Gmail label'
+);
     });
 
     it('handles resolveLabelId failure gracefully', async () => {

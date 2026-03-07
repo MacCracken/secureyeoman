@@ -86,8 +86,8 @@ describe('McpClientManager', () => {
 
       expect(mockStorage.saveTools).toHaveBeenCalledWith('srv-1', 'Test Server', toolManifests);
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Registered tools from MCP server',
-        expect.objectContaining({ count: 2 })
+        expect.objectContaining({ count: 2 }),
+        'Registered tools from MCP server'
       );
     });
 
@@ -119,8 +119,8 @@ describe('McpClientManager', () => {
       const tools = await manager.discoverTools('srv-1');
       expect(tools).toEqual(toolDefs);
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Restored tools from storage for MCP server',
-        expect.any(Object)
+        expect.any(Object),
+        'Restored tools from storage for MCP server'
       );
     });
 
@@ -129,8 +129,8 @@ describe('McpClientManager', () => {
       const tools = await manager.discoverTools('srv-1');
       expect(tools).toEqual([]);
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        'No pre-registered tools for MCP server',
-        expect.any(Object)
+        expect.any(Object),
+        'No pre-registered tools for MCP server'
       );
     });
   });

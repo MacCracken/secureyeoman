@@ -824,7 +824,7 @@ export class AIClient {
           requestId: response.id,
         })
         .catch((e: unknown) => {
-          this.logger?.debug('Provider account cost recording failed', { error: String(e) });
+          this.logger?.debug({ error: String(e) }, 'Provider account cost recording failed');
         });
     }
   }
@@ -841,7 +841,7 @@ export class AIClient {
       });
     } catch {
       // Audit logging should never block AI operations
-      this.logger?.warn('Failed to record AI audit event', { event });
+      this.logger?.warn({ event }, 'Failed to record AI audit event');
     }
   }
 }

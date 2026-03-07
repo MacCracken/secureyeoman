@@ -34,10 +34,10 @@ export class McpHealthMonitor {
     if (this.timer) return;
     this.timer = setInterval(() => {
       this.checkAll().catch((err: unknown) => {
-        this.logger.error('Health check cycle failed', { error: String(err) });
+        this.logger.error({ error: String(err) }, 'Health check cycle failed');
       });
     }, this.config.checkIntervalMs);
-    this.logger.info('MCP health monitor started', { intervalMs: this.config.checkIntervalMs });
+    this.logger.info({ intervalMs: this.config.checkIntervalMs }, 'MCP health monitor started');
   }
 
   stop(): void {
@@ -123,20 +123,20 @@ export class McpHealthMonitor {
         lastError: errorMsg,
       };
 
-      this.logger.warn('MCP server health check failed', {
+      this.logger.warn({
         serverId,
         serverName: server.name,
         failures,
         error: errorMsg,
-      });
+      }, 'MCP server health check failed');
 
       // Auto-disable after threshold
       if (failures >= this.config.autoDisableThreshold) {
-        this.logger.error('MCP server auto-disabled due to consecutive failures', {
+        this.logger.error({
           serverId,
           serverName: server.name,
           failures,
-        });
+        }, 'MCP server auto-disabled due to consecutive failures');
         await this.storage.updateServer(serverId, { enabled: false });
       }
     }

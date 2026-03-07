@@ -411,7 +411,7 @@ export class SoulManager {
     const result = await this.storage.updatePersonality(id, data);
     // Fire-and-forget version recording
     this.personalityVersionManager?.recordVersion(id).catch((err: unknown) => {
-      this.deps.logger.error('Failed to record personality version', { err });
+      this.deps.logger.error({ err }, 'Failed to record personality version');
     });
     return result;
   }

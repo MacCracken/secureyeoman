@@ -123,7 +123,7 @@ export class DatasetRefreshManager {
         [samplesAdded, latestTs, id]
       );
 
-      this.deps.logger.info('Dataset refresh completed', { id, samplesAdded });
+      this.deps.logger.info({ id, samplesAdded }, 'Dataset refresh completed');
       return { samplesAdded };
     } catch (err) {
       await this.deps.pool.query(
@@ -142,10 +142,10 @@ export class DatasetRefreshManager {
     if (this.cronHandles.has(id)) return;
     const handle = setInterval(() => {
       void this.runRefresh(id).catch((err: unknown) => {
-        this.deps.logger.error('Dataset refresh cron error', {
+        this.deps.logger.error({
           id,
           error: err instanceof Error ? err.message : String(err),
-        });
+        }, 'Dataset refresh cron error');
       });
     }, intervalMs);
     this.cronHandles.set(id, handle);

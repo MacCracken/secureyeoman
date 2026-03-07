@@ -108,8 +108,8 @@ describe('McpServer', () => {
       const result = (await server.handleToolCall('my_tool', { foo: 'bar' })) as any;
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'MCP tool call received',
-        expect.objectContaining({ toolName: 'my_tool' })
+        expect.objectContaining({ toolName: 'my_tool' }),
+        'MCP tool call received'
       );
       expect(result.status).toBe('ok');
       expect(result.toolName).toBe('my_tool');

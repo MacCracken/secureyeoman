@@ -51,20 +51,20 @@ export class KvCacheWarmer {
       });
 
       if (!response.ok) {
-        this.deps.logger.warn('KV cache warmup request failed', { model, status: response.status });
+        this.deps.logger.warn({ model, status: response.status }, 'KV cache warmup request failed');
         return false;
       }
 
-      this.deps.logger.info('KV cache warmed successfully', {
+      this.deps.logger.info({
         model,
         keepAlive: this.deps.config.keepAlive,
-      });
+      }, 'KV cache warmed successfully');
       return true;
     } catch (err) {
-      this.deps.logger.warn('KV cache warmup error', {
+      this.deps.logger.warn({
         model,
         error: err instanceof Error ? err.message : String(err),
-      });
+      }, 'KV cache warmup error');
       return false;
     }
   }
