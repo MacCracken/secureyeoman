@@ -33,6 +33,21 @@ import {
   cognitiveMemoryAnalystSkill,
   financialChartingSkill,
   confidentialComputingSkill,
+  tokyoNightThemeSkill,
+  catppuccinMochaThemeSkill,
+  gruvboxThemeSkill,
+  draculaThemeSkill,
+  rosePineThemeSkill,
+  catppuccinLatteThemeSkill,
+  rosePineDawnThemeSkill,
+  everforestLightThemeSkill,
+  ayuLightThemeSkill,
+  solarizedLightThemeSkill,
+  monokaiThemeSkill,
+  githubDarkThemeSkill,
+  kanagawaThemeSkill,
+  palenightThemeSkill,
+  nightOwlThemeSkill,
 } from './skills/index.js';
 
 export class MarketplaceStorage extends PgBaseStorage {
@@ -382,6 +397,22 @@ export class MarketplaceStorage extends PgBaseStorage {
       cognitiveMemoryAnalystSkill,
       financialChartingSkill,
       confidentialComputingSkill,
+      // Themes
+      tokyoNightThemeSkill,
+      catppuccinMochaThemeSkill,
+      gruvboxThemeSkill,
+      draculaThemeSkill,
+      rosePineThemeSkill,
+      catppuccinLatteThemeSkill,
+      rosePineDawnThemeSkill,
+      everforestLightThemeSkill,
+      ayuLightThemeSkill,
+      solarizedLightThemeSkill,
+      monokaiThemeSkill,
+      githubDarkThemeSkill,
+      kanagawaThemeSkill,
+      palenightThemeSkill,
+      nightOwlThemeSkill,
     ];
 
     // Batch-fetch all existing builtins in one query instead of N individual SELECTs

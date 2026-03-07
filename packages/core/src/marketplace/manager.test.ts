@@ -982,7 +982,7 @@ describe('MarketplaceManager', () => {
 
   // ── Personality sync (Phase 107-D) ──────────────────────────────────
   describe('syncFromCommunity — personalities', () => {
-    it('syncs a new community personality from markdown', async () => {
+    it('syncs a new community personality as catalog skill (no auto-install)', async () => {
       const fs = (await import('fs')).default;
       vi.mocked(fs.existsSync).mockImplementation((p: any) => {
         const s = String(p);
@@ -1003,29 +1003,22 @@ describe('MarketplaceManager', () => {
         '---\nname: "Security Analyst"\ndescription: "Defensive sec"\n---\n\n# Identity & Purpose\n\nYou are a security analyst.\n'
       );
 
-      const mockSoulManager = {
-        listPersonalities: vi.fn().mockResolvedValue({ personalities: [], total: 0 }),
-        createPersonality: vi.fn().mockResolvedValue({ id: 'pers-new', name: 'Security Analyst' }),
-        updatePersonality: vi.fn(),
-      };
-
-      const { manager, storage } = makeManager(
-        {
-          findByNameAndSource: vi.fn().mockResolvedValue(null),
-          search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
-        },
-        { soulManager: mockSoulManager }
-      );
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
 
       const result = await manager.syncFromCommunity('/tmp/community');
       expect(result.personalitiesAdded).toBe(1);
-      expect(mockSoulManager.createPersonality).toHaveBeenCalledTimes(1);
-      const callArg = mockSoulManager.createPersonality.mock.calls[0][0];
+      expect(storage.addSkill).toHaveBeenCalledTimes(1);
+      const callArg = storage.addSkill.mock.calls[0][0];
       expect(callArg.name).toBe('Security Analyst');
-      expect(callArg.description).toContain('[community]');
+      expect(callArg.category).toBe('personality');
+      expect(callArg.tags).toContain('community-personality');
+      expect(callArg.source).toBe('community');
     });
 
-    it('updates an existing community personality', async () => {
+    it('updates an existing community personality catalog skill', async () => {
       const fs = (await import('fs')).default;
       vi.mocked(fs.existsSync).mockImplementation((p: any) => {
         const s = String(p);
@@ -1045,28 +1038,19 @@ describe('MarketplaceManager', () => {
         '---\nname: "Security Analyst"\ndescription: "Updated desc"\n---\n\n# Identity & Purpose\n\nUpdated prompt.\n'
       );
 
-      const mockSoulManager = {
-        listPersonalities: vi.fn().mockResolvedValue({
-          personalities: [
-            { id: 'pers-existing', name: 'Security Analyst', description: '[community] Old desc' },
-          ],
-          total: 1,
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue({
+          id: 'existing-skill',
+          name: 'Security Analyst',
+          source: 'community',
+          tags: ['personality', 'community-personality'],
         }),
-        createPersonality: vi.fn(),
-        updatePersonality: vi.fn().mockResolvedValue({ id: 'pers-existing' }),
-      };
-
-      const { manager } = makeManager(
-        {
-          findByNameAndSource: vi.fn().mockResolvedValue(null),
-          search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
-        },
-        { soulManager: mockSoulManager }
-      );
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
 
       const result = await manager.syncFromCommunity('/tmp/community');
       expect(result.personalitiesUpdated).toBe(1);
-      expect(mockSoulManager.updatePersonality).toHaveBeenCalledTimes(1);
+      expect(storage.updateSkill).toHaveBeenCalledTimes(1);
     });
 
     it('skips invalid personality markdown gracefully', async () => {
@@ -1087,33 +1071,6 @@ describe('MarketplaceManager', () => {
       });
       mockReadFile.mockResolvedValue('no frontmatter here');
 
-      const mockSoulManager = {
-        listPersonalities: vi.fn().mockResolvedValue({ personalities: [], total: 0 }),
-        createPersonality: vi.fn(),
-      };
-
-      const { manager } = makeManager(
-        {
-          findByNameAndSource: vi.fn().mockResolvedValue(null),
-          search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
-        },
-        { soulManager: mockSoulManager }
-      );
-
-      const result = await manager.syncFromCommunity('/tmp/community');
-      expect(result.personalitiesAdded).toBe(0);
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0]).toContain('personality');
-    });
-
-    it('does not sync personalities when soulManager is not set', async () => {
-      const fs = (await import('fs')).default;
-      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
-        const s = String(p);
-        return s === '/tmp/community' || s.includes('skills') || s.includes('personalities');
-      });
-      vi.mocked(fs.readdirSync).mockReturnValue([]);
-
       const { manager } = makeManager({
         findByNameAndSource: vi.fn().mockResolvedValue(null),
         search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
@@ -1121,7 +1078,38 @@ describe('MarketplaceManager', () => {
 
       const result = await manager.syncFromCommunity('/tmp/community');
       expect(result.personalitiesAdded).toBe(0);
-      expect(result.personalitiesUpdated).toBe(0);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0]).toContain('personality');
+    });
+
+    it('syncs personalities even when soulManager is not set', async () => {
+      const fs = (await import('fs')).default;
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        return s === '/tmp/community' || s.includes('skills') || s.includes('personalities');
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((p: any, opts: any) => {
+        const s = String(p);
+        if (s.endsWith('personalities')) {
+          if (opts?.withFileTypes) {
+            return [{ name: 'analyst.md', isDirectory: () => false, isFile: () => true }] as any;
+          }
+          return ['analyst.md'] as any;
+        }
+        return [];
+      });
+      mockReadFile.mockResolvedValue(
+        '---\nname: "Test"\ndescription: "Desc"\n---\n\n# Identity\n\nTest.\n'
+      );
+
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.personalitiesAdded).toBe(1);
+      expect(storage.addSkill).toHaveBeenCalled();
     });
   });
 

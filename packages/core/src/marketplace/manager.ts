@@ -910,8 +910,8 @@ export class MarketplaceManager {
       }
     }
 
-    // ── Sync community personalities ──────────────────────────────────────
-    if (this.soulManager) {
+    // ── Sync community personalities (catalog only — user must install manually) ─
+    {
       const personalitiesDir = path.join(repoPath, 'personalities');
       if (fs.existsSync(personalitiesDir)) {
         const serializer = new PersonalityMarkdownSerializer();
@@ -929,30 +929,37 @@ export class MarketplaceManager {
               });
             }
 
-            // Mark as community personality via description prefix
-            const communityDesc = data.description
-              ? `[community] ${data.description}`
-              : '[community]';
+            const tags = ['personality', 'community-personality'];
+            const skillData: Partial<CatalogSkill> = {
+              name: data.name ?? path.basename(filePath, '.md'),
+              description: data.description ?? '',
+              version: '1.0.0',
+              author: (data as Record<string, unknown>).author as string ?? 'community',
+              category: 'personality',
+              tags,
+              instructions: content,
+              triggerPatterns: [],
+              useWhen: '',
+              doNotUseWhen: '',
+              successCriteria: '',
+              mcpToolsAllowed: [],
+              routing: 'fuzzy',
+              autonomyLevel: 'L1',
+              source: 'community',
+            };
 
-            // Check for existing community personality with same name
-            const { personalities } = await this.soulManager.listPersonalities({ limit: 1000 });
-            const existing = personalities.find(
-              (p) => p.name === data.name && p.description?.startsWith('[community]')
-            );
-
-            if (existing) {
-              await this.soulManager.updatePersonality(existing.id, {
-                ...data,
-                description: communityDesc,
-              });
+            const existing = await this.storage.findByNameAndSource(skillData.name!, 'community');
+            if (existing && existing.tags?.includes('community-personality')) {
+              await this.storage.updateSkill(existing.id, skillData);
               result.personalitiesUpdated++;
-            } else {
-              await this.soulManager.createPersonality({
-                ...data,
-                description: communityDesc,
-              });
+            } else if (!existing) {
+              await this.storage.addSkill(skillData);
               result.personalitiesAdded++;
+            } else {
+              result.skipped++;
             }
+
+            syncedNames.add(skillData.name!);
           } catch (err) {
             result.errors.push(
               `Error processing personality ${filePath}: ${err instanceof Error ? err.message : String(err)}`

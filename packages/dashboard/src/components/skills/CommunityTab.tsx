@@ -31,6 +31,7 @@ import {
   COMMUNITY_PAGE_SIZE,
   type ContentType,
 } from './shared';
+import { Palette, UserCircle } from 'lucide-react';
 
 interface SyncResult {
   added: number;
@@ -65,6 +66,10 @@ export function CommunityTab({
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [workflowQuery, setWorkflowQuery] = useState('');
   const [swarmQuery, setSwarmQuery] = useState('');
+  const [themeQuery, setThemeQuery] = useState('');
+  const [themePage, setThemePage] = useState(0);
+  const [personalityQuery, setPersonalityQuery] = useState('');
+  const [personalityPage, setPersonalityPage] = useState(0);
 
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace-community', query, selectedPersonalityId, page, selectedCategory],
@@ -78,6 +83,36 @@ export function CommunityTab({
         page * COMMUNITY_PAGE_SIZE,
         selectedCategory || undefined
       ),
+  });
+
+  const { data: themesData, isLoading: themesLoading } = useQuery({
+    queryKey: ['marketplace-community-themes', themeQuery, themePage],
+    queryFn: () =>
+      fetchMarketplaceSkills(
+        themeQuery || undefined,
+        'community',
+        undefined,
+        undefined,
+        COMMUNITY_PAGE_SIZE,
+        themePage * COMMUNITY_PAGE_SIZE,
+        'design'
+      ),
+    enabled: contentType === 'themes',
+  });
+
+  const { data: personalitiesSkillData, isLoading: personalitiesSkillLoading } = useQuery({
+    queryKey: ['marketplace-community-personalities', personalityQuery, personalityPage],
+    queryFn: () =>
+      fetchMarketplaceSkills(
+        personalityQuery || undefined,
+        'community',
+        undefined,
+        undefined,
+        COMMUNITY_PAGE_SIZE,
+        personalityPage * COMMUNITY_PAGE_SIZE,
+        'personality'
+      ),
+    enabled: contentType === 'personalities',
   });
 
   const { data: statusData } = useQuery({
@@ -351,6 +386,241 @@ export function CommunityTab({
             <ContentSuspense>
               <LazySwarmTemplatesTab source="community" query={swarmQuery} />
             </ContentSuspense>
+          </>
+        )}
+
+        {/* Themes content */}
+        {contentType === 'themes' && (
+          <>
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1 max-w-2xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="Search community themes…"
+                  value={themeQuery}
+                  onChange={(e) => {
+                    setThemeQuery(e.target.value);
+                    setThemePage(0);
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => {
+                  setSyncResult(null);
+                  syncMut.mutate();
+                }}
+                disabled={syncMut.isPending}
+                className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
+              >
+                <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
+                {syncMut.isPending ? 'Syncing…' : 'Sync'}
+              </button>
+            </div>
+            {themesLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (themesData?.skills ?? []).length === 0 ? (
+              <div className="card p-12 text-center space-y-3">
+                <Palette className="w-12 h-12 mx-auto text-muted-foreground" />
+                <p className="text-muted-foreground font-medium">No community themes found</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  Click <strong>Sync</strong> to import themes from the community repo.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">Community Themes</h3>
+                  <span className="text-xs text-muted-foreground">
+                    ({themesData?.total ?? 0})
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {(themesData?.skills ?? []).map((skill) => (
+                    <SkillCard
+                      key={skill.id}
+                      skill={skill}
+                      badge={
+                        <span className="inline-flex items-center gap-1 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                          <Palette className="w-2.5 h-2.5" />
+                          Theme
+                        </span>
+                      }
+                      installing={installingId === skill.id && installMut.isPending}
+                      uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
+                      onPreview={() => {
+                        setPreviewSkill(skill);
+                      }}
+                      onInstall={() => {
+                        if (!canInstall) return;
+                        setInstallingId(skill.id);
+                        installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId });
+                      }}
+                      onUninstall={() => {
+                        setUninstallingId(skill.id);
+                        uninstallMut.mutate({
+                          id: skill.id,
+                          personalityId: selectedPersonalityId || undefined,
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+                {(themesData?.total ?? 0) > COMMUNITY_PAGE_SIZE && (
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-xs text-muted-foreground">
+                      Showing {themePage * COMMUNITY_PAGE_SIZE + 1}–
+                      {Math.min((themePage + 1) * COMMUNITY_PAGE_SIZE, themesData?.total ?? 0)} of{' '}
+                      {themesData?.total ?? 0}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        disabled={themePage === 0}
+                        onClick={() => {
+                          setThemePage((p) => p - 1);
+                        }}
+                      >
+                        ← Prev
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        disabled={(themePage + 1) * COMMUNITY_PAGE_SIZE >= (themesData?.total ?? 0)}
+                        onClick={() => {
+                          setThemePage((p) => p + 1);
+                        }}
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Personalities content */}
+        {contentType === 'personalities' && (
+          <>
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1 max-w-2xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="Search community personalities…"
+                  value={personalityQuery}
+                  onChange={(e) => {
+                    setPersonalityQuery(e.target.value);
+                    setPersonalityPage(0);
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => {
+                  setSyncResult(null);
+                  syncMut.mutate();
+                }}
+                disabled={syncMut.isPending}
+                className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
+              >
+                <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
+                {syncMut.isPending ? 'Syncing…' : 'Sync'}
+              </button>
+            </div>
+            {personalitiesSkillLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (personalitiesSkillData?.skills ?? []).length === 0 ? (
+              <div className="card p-12 text-center space-y-3">
+                <UserCircle className="w-12 h-12 mx-auto text-muted-foreground" />
+                <p className="text-muted-foreground font-medium">No community personalities found</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  Click <strong>Sync</strong> to import personalities from the community repo.
+                  Personalities are not auto-installed — browse and install the ones you want.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <UserCircle className="w-4 h-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">Community Personalities</h3>
+                  <span className="text-xs text-muted-foreground">
+                    ({personalitiesSkillData?.total ?? 0})
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {(personalitiesSkillData?.skills ?? []).map((skill) => (
+                    <SkillCard
+                      key={skill.id}
+                      skill={skill}
+                      badge={
+                        <span className="inline-flex items-center gap-1 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                          <UserCircle className="w-2.5 h-2.5" />
+                          Personality
+                        </span>
+                      }
+                      installing={installingId === skill.id && installMut.isPending}
+                      uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
+                      onPreview={() => {
+                        setPreviewSkill(skill);
+                      }}
+                      onInstall={() => {
+                        if (!canInstall) return;
+                        setInstallingId(skill.id);
+                        installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId });
+                      }}
+                      onUninstall={() => {
+                        setUninstallingId(skill.id);
+                        uninstallMut.mutate({
+                          id: skill.id,
+                          personalityId: selectedPersonalityId || undefined,
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+                {(personalitiesSkillData?.total ?? 0) > COMMUNITY_PAGE_SIZE && (
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-xs text-muted-foreground">
+                      Showing {personalityPage * COMMUNITY_PAGE_SIZE + 1}–
+                      {Math.min(
+                        (personalityPage + 1) * COMMUNITY_PAGE_SIZE,
+                        personalitiesSkillData?.total ?? 0
+                      )}{' '}
+                      of {personalitiesSkillData?.total ?? 0}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        disabled={personalityPage === 0}
+                        onClick={() => {
+                          setPersonalityPage((p) => p - 1);
+                        }}
+                      >
+                        ← Prev
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        disabled={
+                          (personalityPage + 1) * COMMUNITY_PAGE_SIZE >=
+                          (personalitiesSkillData?.total ?? 0)
+                        }
+                        onClick={() => {
+                          setPersonalityPage((p) => p + 1);
+                        }}
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 

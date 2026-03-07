@@ -28,3 +28,20 @@ export { pdfAnalysisSkill } from './pdf-analysis.js';
 export { cognitiveMemoryAnalystSkill } from './cognitive-memory-analyst.js';
 export { financialChartingSkill } from './financial-charting.js';
 export { confidentialComputingSkill } from './confidential-computing.js';
+export {
+  tokyoNightThemeSkill,
+  catppuccinMochaThemeSkill,
+  gruvboxThemeSkill,
+  draculaThemeSkill,
+  rosePineThemeSkill,
+  catppuccinLatteThemeSkill,
+  rosePineDawnThemeSkill,
+  everforestLightThemeSkill,
+  ayuLightThemeSkill,
+  solarizedLightThemeSkill,
+  monokaiThemeSkill,
+  githubDarkThemeSkill,
+  kanagawaThemeSkill,
+  palenightThemeSkill,
+  nightOwlThemeSkill,
+} from './themes.js';

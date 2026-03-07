@@ -29,12 +29,14 @@ export const LazySwarmTemplatesTab = lazy(() =>
 );
 
 export type TabType = 'my-skills' | 'marketplace' | 'community' | 'installed';
-export type ContentType = 'skills' | 'workflows' | 'swarms';
+export type ContentType = 'skills' | 'workflows' | 'swarms' | 'themes' | 'personalities';
 
 export const CONTENT_TYPES: { value: ContentType; label: string }[] = [
   { value: 'skills', label: 'Skills' },
   { value: 'workflows', label: 'Workflows' },
   { value: 'swarms', label: 'Swarm Templates' },
+  { value: 'themes', label: 'Themes' },
+  { value: 'personalities', label: 'Personalities' },
 ];
 
 export function ContentTypeSelector({
@@ -525,6 +527,7 @@ export const SKILL_CATEGORIES = [
   'marketing',
   'education',
   'healthcare',
+  'personality',
 ] as const;
 
 export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
@@ -543,6 +546,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   marketing: 'Marketing',
   education: 'Education',
   healthcare: 'Healthcare',
+  personality: 'Personality',
 };
 
 export function categoryLabel(cat: string): string {
