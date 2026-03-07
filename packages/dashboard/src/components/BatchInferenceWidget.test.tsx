@@ -177,7 +177,7 @@ describe('BatchInferenceWidget', () => {
       ok: true,
       json: () => Promise.resolve([]),
     } as Response);
-    renderWidget();
+    const { unmount } = renderWidget();
     await waitFor(() => {
       expect(screen.getByPlaceholderText('batch-eval-01')).toBeInTheDocument();
     });
@@ -186,9 +186,12 @@ describe('BatchInferenceWidget', () => {
     });
     const textarea = screen.getByPlaceholderText(/Explain quantum/);
     fireEvent.change(textarea, { target: { value: 'Hello\nWorld' } });
-    fetchSpy.mockResolvedValue({
+    fetchSpy.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ id: 'new' }),
+    } as Response).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
     } as Response);
     fireEvent.click(screen.getByText('Submit Batch'));
     await waitFor(() => {
@@ -198,5 +201,6 @@ describe('BatchInferenceWidget', () => {
       });
       expect(postCalls.length).toBeGreaterThanOrEqual(1);
     });
+    unmount();
   });
 });

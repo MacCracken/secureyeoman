@@ -2573,7 +2573,6 @@ CREATE TABLE IF NOT EXISTS soul.personalities (
     updated_at bigint NOT NULL,
     model_fallbacks jsonb DEFAULT '[]'::jsonb NOT NULL,
     is_default boolean DEFAULT false NOT NULL,
-    is_archetype boolean DEFAULT false NOT NULL,
     inject_date_time boolean DEFAULT false NOT NULL,
     empathy_resonance boolean DEFAULT false NOT NULL,
     avatar_url text,

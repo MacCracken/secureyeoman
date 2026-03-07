@@ -9,6 +9,7 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
+| Schema Tier Split | License-Gated Migration Schema | P1 — architecture | Planned |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Integration C (remaining) | AGNOS node22 Base Image | P2 | Blocked (AGNOS Alpha) |
 | 145 | Cross-Project MCP Expansion | P2 | In Progress (1 item remaining) |
@@ -54,11 +55,38 @@
 
 ---
 
+## Schema Tier Split: License-Gated Migration Schema
+
+**Priority**: P1 — Architecture. Must complete before enforcement activation.
+
+**Goal**: Split the monolithic `001_baseline.sql` into tier-separated baselines so the database schema matches the active license. Community installs only get community tables. Pro/Enterprise schemas are applied when a valid license is detected.
+
+### Migration Structure
+
+| File | Tier | Contents |
+|------|------|----------|
+| `001_community.sql` | Community | Core tables: conversations, messages, personalities, soul, brain (basic), marketplace, skills, settings, themes |
+| `002_pro.sql` | Pro | Workflows, analytics, advanced brain, RBAC, cognitive memory, prompt versioning, agent eval, guardrails |
+| `003_enterprise.sql` | Enterprise | DLP, TEE, federated learning, chaos engineering, multi-region, supply chain, SIEM/OTel, policy-as-code, IaC |
+| `011_*.sql` onwards | Incremental | Future migrations tagged with minimum tier (`-- tier: community|pro|enterprise`) |
+
+### Implementation
+
+- [ ] **Audit `001_baseline.sql`** — Classify every schema/table into community, pro, or enterprise tier. Document the mapping.
+- [ ] **Split baseline** — Extract `001_baseline.sql` into `001_community.sql`, `002_pro.sql`, `003_enterprise.sql`. Each file is idempotent (IF NOT EXISTS).
+- [ ] **Tier-aware migration runner** — Modify `MigrationManager` to read the current license tier and only apply migrations up to that tier. When a license upgrade is detected, run the next tier's baseline + any incremental migrations for that tier.
+- [ ] **Incremental migration tagging** — Add a `-- tier: <tier>` header comment convention to migrations 011+. Runner skips migrations above the active tier.
+- [ ] **Downgrade safety** — When a license expires/downgrades, do NOT drop tables. Data is preserved but feature routes return 402. Tables become dormant.
+- [ ] **Startup tier check** — On boot, compare `LicenseManager.currentTier` against applied migrations. If tier upgraded, auto-apply new tier migrations. Log clearly.
+- [ ] **Tests** — Unit tests for tier-aware runner: community-only apply, pro upgrade applies 002, enterprise upgrade applies 003. Verify skip logic for incremental migrations.
+
+---
+
 ## License Up: Tier Audit & Enforcement Activation
 
 **Priority**: P1 — Commercial. Must complete before public release.
 
-**Prerequisite**: Phase 106 (license gating infrastructure — ✅).
+**Prerequisites**: Phase 106 (license gating infrastructure — ✅), Schema Tier Split (above).
 
 - [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates.
 - [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.

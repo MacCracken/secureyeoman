@@ -1503,7 +1503,7 @@ describe('MarketplaceManager', () => {
       });
       await manager.syncFromCommunity('/tmp/community');
       const callArgs = storage.addSkill.mock.calls[0][0];
-      expect(callArgs.author).toBe('community'); // fallback
+      expect(callArgs.author).toBe('Community'); // fallback
     });
   });
 
