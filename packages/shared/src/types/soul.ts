@@ -120,6 +120,10 @@ export const McpFeaturesSchema = z
     exposeDlp: z.boolean().default(false),
     /** Terminal tools (terminal_*). Requires global exposeTerminal. */
     exposeTerminal: z.boolean().default(false),
+    /** BullShift trading tools (bullshift_*). Requires global exposeBullshiftTools. */
+    exposeBullshift: z.boolean().default(false),
+    /** Photisnadi task/ritual tools (photisnadi_*). Requires global exposePhotisnadiTools. */
+    exposePhotisnadi: z.boolean().default(false),
   })
   .default({});
 

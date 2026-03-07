@@ -1,7 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTradingTools } from './trading-tools.js';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
+
+function makeConfig(overrides?: Partial<McpServiceConfig>): McpServiceConfig {
+  return {
+    enabled: true,
+    port: 3001,
+    host: '127.0.0.1',
+    transport: 'streamable-http',
+    autoRegister: false,
+    coreUrl: 'http://127.0.0.1:18789',
+    exposeBullshiftTools: true,
+    ...overrides,
+  } as McpServiceConfig;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -33,7 +47,7 @@ function captureHandlers(): Record<string, ToolHandler> {
     }
   );
 
-  registerTradingTools(server, noopMiddleware());
+  registerTradingTools(server, makeConfig(), noopMiddleware());
   return handlers;
 }
 
@@ -63,12 +77,12 @@ function parseResult(result: { content: { text: string }[] }): unknown {
 // ── Registration ──────────────────────────────────────────────────────────────
 
 describe('trading-tools — registration', () => {
-  it('registers all 5 tools without throwing', () => {
+  it('registers all tools without throwing', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
-    expect(() => registerTradingTools(server, noopMiddleware())).not.toThrow();
+    expect(() => registerTradingTools(server, makeConfig(), noopMiddleware())).not.toThrow();
   });
 
-  it('registers exactly the 9 expected tool names', () => {
+  it('registers exactly the 13 expected tool names', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     const registered: string[] = [];
     vi.spyOn(server, 'registerTool').mockImplementation((name: string) => {
@@ -76,7 +90,7 @@ describe('trading-tools — registration', () => {
       return server;
     });
 
-    registerTradingTools(server, noopMiddleware());
+    registerTradingTools(server, makeConfig(), noopMiddleware());
 
     expect(registered).toEqual([
       'bullshift_health',
@@ -88,6 +102,10 @@ describe('trading-tools — registration', () => {
       'market_historical',
       'market_search',
       'trading_journal_log',
+      'bullshift_algo_strategies',
+      'bullshift_sentiment',
+      'bullshift_list_alerts',
+      'bullshift_create_alert',
     ]);
   });
 });
@@ -349,9 +367,118 @@ describe('rate limiter middleware', () => {
       },
     } as unknown as ToolMiddleware;
 
-    registerTradingTools(server, blockedMiddleware);
+    registerTradingTools(server, makeConfig(), blockedMiddleware);
     const result = await handlers['bullshift_health']({});
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('Rate limit');
+  });
+});
+
+// ── Feature gating ───────────────────────────────────────────────────────────
+
+describe('trading-tools — feature gating', () => {
+  it('registers only a stub when exposeBullshiftTools is false', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    const registered: string[] = [];
+    vi.spyOn(server, 'registerTool').mockImplementation((name: string) => {
+      registered.push(name);
+      return server;
+    });
+
+    registerTradingTools(server, makeConfig({ exposeBullshiftTools: false }), noopMiddleware());
+    expect(registered).toEqual(['bullshift_status']);
+  });
+
+  it('stub returns error content when disabled', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    let handler: ToolHandler | undefined;
+    vi.spyOn(server, 'registerTool').mockImplementation(
+      (_name: string, _schema: unknown, fn: unknown) => {
+        handler = fn as ToolHandler;
+        return server;
+      }
+    );
+    registerTradingTools(server, makeConfig({ exposeBullshiftTools: false }), noopMiddleware());
+    const result = await handler!({});
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('disabled');
+  });
+});
+
+// ── New Phase 145 tools ──────────────────────────────────────────────────────
+
+describe('bullshift_algo_strategies', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => { originalFetch = globalThis.fetch; });
+  afterEach(() => { globalThis.fetch = originalFetch; });
+
+  it('calls GET /v1/algo/strategies', async () => {
+    mockFetchOk([{ id: '1', name: 'Grid', state: 'Running' }]);
+    const handlers = captureHandlers();
+    const result = await handlers.bullshift_algo_strategies({});
+    expect(result.isError).toBeFalsy();
+    expect(parseResult(result)).toEqual([{ id: '1', name: 'Grid', state: 'Running' }]);
+    const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[0]).toMatch(/\/v1\/algo\/strategies$/);
+  });
+});
+
+describe('bullshift_sentiment', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => { originalFetch = globalThis.fetch; });
+  afterEach(() => { globalThis.fetch = originalFetch; });
+
+  it('calls /v1/sentiment/aggregate/:symbol when symbol provided', async () => {
+    mockFetchOk({ symbol: 'AAPL', overall_score: 0.8 });
+    const handlers = captureHandlers();
+    await handlers.bullshift_sentiment({ symbol: 'AAPL' });
+    const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[0]).toMatch(/\/v1\/sentiment\/aggregate\/AAPL$/);
+  });
+
+  it('calls /v1/sentiment/signals when no symbol', async () => {
+    mockFetchOk([]);
+    const handlers = captureHandlers();
+    await handlers.bullshift_sentiment({});
+    const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[0]).toMatch(/\/v1\/sentiment\/signals$/);
+  });
+});
+
+describe('bullshift_list_alerts', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => { originalFetch = globalThis.fetch; });
+  afterEach(() => { globalThis.fetch = originalFetch; });
+
+  it('calls GET /v1/webhooks', async () => {
+    mockFetchOk([]);
+    const handlers = captureHandlers();
+    await handlers.bullshift_list_alerts({});
+    const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[0]).toMatch(/\/v1\/webhooks$/);
+  });
+});
+
+describe('bullshift_create_alert', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => { originalFetch = globalThis.fetch; });
+  afterEach(() => { globalThis.fetch = originalFetch; });
+
+  it('sends POST /v1/webhooks with webhook config', async () => {
+    mockFetchOk({ id: 'wh-1' });
+    const handlers = captureHandlers();
+    await handlers.bullshift_create_alert({
+      name: 'Slack',
+      url: 'https://hooks.slack.com/test',
+      format: 'slack',
+      triggers: ['order.filled'],
+    });
+    const [url, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toMatch(/\/v1\/webhooks$/);
+    expect(init.method).toBe('POST');
+    const body = JSON.parse(init.body as string);
+    expect(body.name).toBe('Slack');
+    expect(body.triggers).toContain('order.filled');
+    expect(body.format).toBe('slack');
   });
 });

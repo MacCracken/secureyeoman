@@ -54,7 +54,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 
 - **Self-hosted, not SaaS** — single binary, Docker, or Kubernetes. Your data stays on your machines.
 - **Governed by design** — RBAC, audit trails, cryptographic integrity, sandboxed execution, OPA/CEL governance.
-- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 351-tool MCP server.
+- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 363-tool MCP server.
 - **Full ML lifecycle** — distillation, LoRA fine-tuning, LLM-as-Judge evaluation, DPO, conversation analytics.
 
 ---
@@ -70,7 +70,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 | **Training** | Dataset export, distillation, LoRA fine-tuning, pre-training from scratch, LLM-as-Judge eval, DPO/RLHF, federated learning, conversation analytics, A/B experiments |
 | **Dashboard** | React + Vite + Tailwind (42 themes), mission control, real-time CRDT editing, conversation branching, canvas workspace, inline AI completion |
 | **Integrations** | 32 platforms (Slack, Discord, GitHub, Gmail, Teams, WhatsApp + more), 21 CI/CD tools, security toolkits (Kali, network, Docker) |
-| **MCP** | 351 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
+| **MCP** | 363 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
 | **Enterprise** | Multi-tenancy (PostgreSQL RLS), multi-region HA, DLP, supply chain security (SBOM, SLSA, signed releases), OpenTelemetry, Prometheus/Grafana |
 | **Knowledge** | Document ingestion (PDF, HTML, MD, URL, GitHub Wiki), RAG with hybrid FTS+vector search, cognitive memory (ACT-R, Hebbian learning) |
 | **Deployment** | Single binary (~123 MB), Docker, Kubernetes Helm chart; Linux x64/arm64, macOS arm64, Windows x64 |

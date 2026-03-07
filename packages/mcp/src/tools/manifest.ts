@@ -1431,6 +1431,70 @@ export function getToolManifest(): ToolManifestEntry[] {
       category: 'trading',
     },
 
+    // Trading tools — BullShift expansion (Phase 145)
+    {
+      name: 'bullshift_status',
+      description: 'BullShift trading tools status (shows enabled/disabled)',
+      category: 'trading',
+    },
+    {
+      name: 'bullshift_algo_strategies',
+      description: 'List algorithmic trading strategies with state and performance metrics',
+      category: 'trading',
+    },
+    {
+      name: 'bullshift_sentiment',
+      description: 'Get aggregated sentiment signals with scores and source breakdown',
+      category: 'trading',
+    },
+    {
+      name: 'bullshift_list_alerts',
+      description: 'List configured alert webhooks and delivery status',
+      category: 'trading',
+    },
+    {
+      name: 'bullshift_create_alert',
+      description: 'Create a new alert webhook for order, position, or price events',
+      category: 'trading',
+    },
+
+    // Photisnadi task/ritual tools (Phase 145)
+    {
+      name: 'photisnadi_status',
+      description: 'Photisnadi tools status (shows enabled/disabled)',
+      category: 'photisnadi',
+    },
+    {
+      name: 'photisnadi_list_tasks',
+      description: 'List tasks from Photisnadi with optional status/priority/project filters',
+      category: 'photisnadi',
+    },
+    {
+      name: 'photisnadi_create_task',
+      description: 'Create a new task in Photisnadi with title, priority, status, and tags',
+      category: 'photisnadi',
+    },
+    {
+      name: 'photisnadi_update_task',
+      description: 'Update an existing Photisnadi task (status, priority, title, etc.)',
+      category: 'photisnadi',
+    },
+    {
+      name: 'photisnadi_get_rituals',
+      description: 'List rituals/habits with completion status and streak counts',
+      category: 'photisnadi',
+    },
+    {
+      name: 'photisnadi_analytics',
+      description: 'Get task analytics: status distribution, overdue, blocked, completed this week',
+      category: 'photisnadi',
+    },
+    {
+      name: 'photisnadi_sync',
+      description: 'Check Photisnadi connection status and task/ritual summary',
+      category: 'photisnadi',
+    },
+
     // Financial charting tools (Phase 125)
     {
       name: 'chart_candlestick',

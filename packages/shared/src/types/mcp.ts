@@ -212,6 +212,10 @@ export const McpServiceConfigSchema = z.object({
   exposeTerminal: z.boolean().default(false),
   /** Allowlist of base commands the personality may run. Empty = use tech-stack auto-detection. */
   terminalAllowedCommands: z.array(z.string()).default([]),
+  /** Enable BullShift trading tools (bullshift_*). Off by default. Set MCP_EXPOSE_BULLSHIFT_TOOLS=true. */
+  exposeBullshiftTools: z.boolean().default(false),
+  /** Enable Photisnadi task/ritual tools (photisnadi_*). Off by default. Set MCP_EXPOSE_PHOTISNADI_TOOLS=true. */
+  exposePhotisnadiTools: z.boolean().default(false),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

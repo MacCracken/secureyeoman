@@ -24,6 +24,7 @@ import { registerSecurityTools } from './security-tools.js';
 import { registerAgnosticTools } from './agnostic-tools.js';
 import { registerAgnosTools } from './agnos-tools.js';
 import { registerTradingTools } from './trading-tools.js';
+import { registerPhotisnadiTools } from './photisnadi-tools.js';
 import { registerWorkflowTools } from './workflow-tools.js';
 import { registerQuickBooksTools } from './quickbooks-tools.js';
 import { registerDiagnosticTools } from './diagnostic-tools.js';
@@ -85,7 +86,8 @@ export async function registerAllTools(
   await registerSecurityTools(server, config, middleware);
   registerAgnosticTools(server, config, middleware);
   registerAgnosTools(server, config, middleware);
-  registerTradingTools(server, middleware);
+  registerTradingTools(server, config, middleware);
+  registerPhotisnadiTools(server, config, middleware);
   registerWorkflowTools(server, client, middleware);
   registerQuickBooksTools(server, config, middleware);
   registerDiagnosticTools(server, client, middleware);

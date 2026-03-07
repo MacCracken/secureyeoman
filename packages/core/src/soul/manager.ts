@@ -298,6 +298,8 @@ export class SoulManager {
             exposeEval: false,
             exposeDlp: false,
             exposeTerminal: false,
+            exposeBullshift: false,
+            exposePhotisnadi: false,
           },
           proactiveConfig: {
             enabled: false,

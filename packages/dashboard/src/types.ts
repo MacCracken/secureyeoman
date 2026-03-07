@@ -913,6 +913,8 @@ export interface McpFeatureConfig {
   // Cross-project integration tools
   exposeAgnosticTools: boolean;
   exposeAgnosTools: boolean;
+  exposeBullshiftTools: boolean;
+  exposePhotisnadiTools: boolean;
 }
 
 export interface CicdPlatformConfig {

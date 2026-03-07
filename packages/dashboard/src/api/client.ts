@@ -2042,6 +2042,8 @@ export interface McpConfigResponse {
   // Cross-project integration tools
   exposeAgnosticTools: boolean;
   exposeAgnosTools: boolean;
+  exposeBullshiftTools: boolean;
+  exposePhotisnadiTools: boolean;
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -2082,6 +2084,8 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeTerminal: false,
       exposeAgnosticTools: false,
       exposeAgnosTools: false,
+      exposeBullshiftTools: false,
+      exposePhotisnadiTools: false,
     };
   }
 }

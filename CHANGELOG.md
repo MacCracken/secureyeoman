@@ -6,6 +6,27 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.6]
 
+### Phase 145: Cross-Project MCP Expansion
+
+#### BullShift Trading — Feature Gating & New Tools
+- **Feature gate** (`exposeBullshiftTools`): All BullShift and market data tools now gated behind `MCP_EXPOSE_BULLSHIFT_TOOLS=true`. Registers a `bullshift_status` stub when disabled.
+- **4 new tools**: `bullshift_algo_strategies` (GET `/v1/algo/strategies`), `bullshift_sentiment` (GET `/v1/sentiment/signals` or `/v1/sentiment/aggregate/:symbol`), `bullshift_list_alerts` (GET `/v1/webhooks`), `bullshift_create_alert` (POST `/v1/webhooks` with trigger selection and Slack/Discord/JSON format).
+- **Tests**: 29 tests in `trading-tools.test.ts` — feature gating, all new tools, existing tools, rate limiter.
+
+#### Photisnadi Task Manager Integration
+- **6 tools** (`photisnadi-tools.ts`): `photisnadi_list_tasks` (filter by project/status/priority), `photisnadi_create_task`, `photisnadi_update_task`, `photisnadi_get_rituals` (with frequency filter), `photisnadi_analytics` (status distribution, overdue, blocked, completed this week), `photisnadi_sync` (connection status and counts).
+- **Feature gate** (`exposePhotisnadiTools`): All tools gated behind `MCP_EXPOSE_PHOTISNADI_TOOLS=true`. Requires `PHOTISNADI_SUPABASE_URL`, `PHOTISNADI_SUPABASE_KEY`, `PHOTISNADI_USER_ID`. Registers a `photisnadi_status` stub when disabled.
+- **Tests**: 8 tests in `photisnadi-tools.test.ts` — feature gating, CRUD operations, analytics computation, sync, missing config handling.
+
+| File | Purpose |
+|------|---------|
+| `packages/mcp/src/tools/trading-tools.ts` | BullShift tools (feature-gated, 4 new) |
+| `packages/mcp/src/tools/photisnadi-tools.ts` | Photisnadi task/ritual tools (new) |
+| `packages/shared/src/types/mcp.ts` | `exposeBullshiftTools`, `exposePhotisnadiTools` config flags |
+| `packages/shared/src/types/soul.ts` | `exposeBullshift`, `exposePhotisnadi` personality flags |
+| `packages/mcp/src/tools/manifest.ts` | 12 new manifest entries (363 total) |
+| Tests (2 files, 37 tests) | Full coverage for both tool sets |
+
 ### Cross-Project Integration — Phase B (AGNOSTIC Plugin) & Phase C (AGNOS Runtime)
 
 #### Phase B — AGNOSTIC as SecureYeoman Plugin

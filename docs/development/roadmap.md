@@ -117,7 +117,7 @@ Photisnadi already exposes a MCP server with 6 tools via `YeomanService`. Secure
 
 | Item | Effort | Status | Description |
 |------|--------|--------|-------------|
-| Register Photisnadi MCP tools | 1 day | Planned | Register 6 tools (`photisnadi_list_tasks`, `photisnadi_create_task`, `photisnadi_update_task`, `photisnadi_get_rituals`, `photisnadi_analytics`, `photisnadi_sync`) via `registerApiProxyTool()`. Feature-gated via `exposePhotisnadiTools` |
+| Register Photisnadi MCP tools | 1 day | Done | 6 tools (`photisnadi_list_tasks`, `photisnadi_create_task`, `photisnadi_update_task`, `photisnadi_get_rituals`, `photisnadi_analytics`, `photisnadi_sync`) + stub. Feature-gated via `exposePhotisnadiTools`. Supabase-direct queries |
 | Photisnadi dashboard widget | 0.5 day | Planned | `PhotosnadiWidget.tsx` showing task counts by status, ritual streaks, recent activity. Proxy route at `/api/v1/integrations/photisnadi/widget` |
 
 ### BullShift Trading — Additional Tools
@@ -126,17 +126,11 @@ SecureYeoman has 5 BullShift MCP tools (health, account, positions, submit_order
 
 | Item | Effort | Status | Description |
 |------|--------|--------|-------------|
-| Register `bullshift_market_data` | 0.5 day | Planned | Price quotes and candles via GET `/api/market/:symbol` |
-| Register `bullshift_algo_status` | 0.5 day | Planned | Active algo strategies and performance via GET `/api/algo/strategies` |
-| Register `bullshift_sentiment` | 0.5 day | Planned | Aggregated sentiment signals via GET `/api/sentiment` (from `SentimentRouter`) |
-| Register `bullshift_alerts` | 0.5 day | Planned | Price/trade alert CRUD via GET/POST `/api/alerts` |
+| Register `bullshift_algo_strategies` | 0.5 day | Done | Algo strategies listing via GET `/v1/algo/strategies` |
+| Register `bullshift_sentiment` | 0.5 day | Done | Aggregated sentiment signals via GET `/v1/sentiment/signals` and `/v1/sentiment/aggregate/:symbol` |
+| Register `bullshift_list_alerts` / `bullshift_create_alert` | 0.5 day | Done | Alert webhook CRUD via GET/POST `/v1/webhooks` |
+| Feature-gate all BullShift tools | 0.5 day | Done | `exposeBullshiftTools` flag gates all bullshift_* and market_* tools. Disabled stub when off |
 | BullShift streaming widget | 1 day | Planned | Real-time price/trade events from BullShift WebSocket server (5 channels) displayed in a dashboard card |
-
-### Cross-Project Health Aggregate
-
-| Item | Effort | Status | Description |
-|------|--------|--------|-------------|
-| Health dashboard endpoint | 1 day | Planned | `GET /api/v1/platform/health` aggregates health from AGNOSTIC (port 8000), AGNOS (ports 8088/8090), BullShift (port 8787), and Photisnadi. Dashboard widget shows system-wide status |
 
 ---
 
@@ -228,7 +222,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 *Ambitious unification of SecureYeoman, AGNOSTIC, and AGNOS. Depends on Phases B–C being stable.*
 
 - [ ] **Unified dev environment** — Shared `docker-compose.unified.yml` with networking across all three projects. Single `.env.unified` for common secrets.
-- [ ] **Cross-project health dashboard** — `/api/v1/platform/health` aggregates health from all three services. Dashboard widget shows system-wide status.
 - [ ] **Unified SSO across all three projects** — OAuth2/OIDC federation: single identity provider, shared sessions. SecureYeoman as IdP or external OIDC provider.
 - [ ] **Cryptographic audit chain bridge** — SecureYeoman audit events forwarded to AGNOS cryptographic audit chain. Shared correlation IDs, immutable cross-project audit trail.
 - [ ] **Cross-project agent delegation** — SecureYeoman brain delegates to AGNOSTIC QA agents running on AGNOS. Full chain: task → brain → A2A → QA agent → AGNOS sandbox → results → brain.

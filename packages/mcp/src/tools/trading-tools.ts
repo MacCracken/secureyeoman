@@ -16,8 +16,12 @@
 
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler } from './tool-utils.js';
+
+const DISABLED_MSG =
+  'BullShift trading tools are disabled. Set MCP_EXPOSE_BULLSHIFT_TOOLS=true to enable.';
 
 const BULLSHIFT_URL = (process.env.BULLSHIFT_API_URL ?? 'http://localhost:8787').replace(/\/$/, '');
 
@@ -94,7 +98,23 @@ async function marketDataFetch(
   return body;
 }
 
-export function registerTradingTools(server: McpServer, middleware: ToolMiddleware): void {
+export function registerTradingTools(
+  server: McpServer,
+  config: McpServiceConfig,
+  middleware: ToolMiddleware
+): void {
+  if (!config.exposeBullshiftTools) {
+    server.registerTool(
+      'bullshift_status',
+      { description: `BullShift trading tools (disabled). ${DISABLED_MSG}`, inputSchema: {} },
+      wrapToolHandler('bullshift_status', middleware, async () => ({
+        content: [{ type: 'text' as const, text: DISABLED_MSG }],
+        isError: true,
+      }))
+    );
+    return;
+  }
+
   // ── Health ────────────────────────────────────────────────────────────────
 
   server.registerTool(
@@ -394,6 +414,113 @@ export function registerTradingTools(server: McpServer, middleware: ToolMiddlewa
           },
         ],
       };
+    })
+  );
+
+  // ── Algo Strategies ───────────────────────────────────────────────────────
+
+  server.registerTool(
+    'bullshift_algo_strategies',
+    {
+      description:
+        'List all algorithmic trading strategies configured in BullShift. ' +
+        'Shows strategy type, state (running/paused/idle), parameters, and performance metrics ' +
+        '(total trades, win rate, P&L, Sharpe ratio, max drawdown).',
+      inputSchema: {},
+    },
+    wrapToolHandler('bullshift_algo_strategies', middleware, async () => {
+      const result = await bullshiftFetch('/v1/algo/strategies');
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  // ── Sentiment ─────────────────────────────────────────────────────────────
+
+  server.registerTool(
+    'bullshift_sentiment',
+    {
+      description:
+        'Get aggregated sentiment signals from BullShift. Shows sentiment scores, ' +
+        'confidence levels, and source breakdown across RSS, social media, and webhooks. ' +
+        'Optionally filter by ticker symbol.',
+      inputSchema: {
+        symbol: z
+          .string()
+          .max(32)
+          .optional()
+          .describe('Filter by ticker symbol, e.g. "AAPL". Omit for all symbols.'),
+      },
+    },
+    wrapToolHandler('bullshift_sentiment', middleware, async (args) => {
+      const path = args.symbol
+        ? `/v1/sentiment/aggregate/${encodeURIComponent(args.symbol)}`
+        : '/v1/sentiment/signals';
+      const result = await bullshiftFetch(path);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  // ── Alerts List ───────────────────────────────────────────────────────────
+
+  server.registerTool(
+    'bullshift_list_alerts',
+    {
+      description:
+        'List all configured alert webhooks in BullShift. Shows webhook URLs, ' +
+        'trigger types (order filled, stop loss, price alert, sentiment), and delivery status.',
+      inputSchema: {},
+    },
+    wrapToolHandler('bullshift_list_alerts', middleware, async () => {
+      const result = await bullshiftFetch('/v1/webhooks');
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  // ── Create Alert ──────────────────────────────────────────────────────────
+
+  server.registerTool(
+    'bullshift_create_alert',
+    {
+      description:
+        'Create a new alert webhook in BullShift. Triggers include order events, ' +
+        'position changes, price alerts, sentiment signals, and system errors. ' +
+        'Supports JSON, Slack, and Discord webhook formats.',
+      inputSchema: {
+        name: z.string().min(1).max(200).describe('Alert name'),
+        url: z.string().url().describe('Webhook URL to receive alerts'),
+        format: z
+          .enum(['json', 'slack', 'discord'])
+          .optional()
+          .describe('Webhook payload format (default: json)'),
+        triggers: z
+          .array(
+            z.enum([
+              'order.filled',
+              'order.cancelled',
+              'position.opened',
+              'position.closed',
+              'stop_loss.triggered',
+              'take_profit.triggered',
+              'sentiment.alert',
+              'price.alert',
+              'system.error',
+            ])
+          )
+          .min(1)
+          .describe('Events that trigger this webhook'),
+      },
+    },
+    wrapToolHandler('bullshift_create_alert', middleware, async (args) => {
+      const result = await bullshiftFetch('/v1/webhooks', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: args.name,
+          url: args.url,
+          format: args.format ?? 'json',
+          triggers: args.triggers,
+        }),
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );
 }
