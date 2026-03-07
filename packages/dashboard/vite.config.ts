@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 /**
  * Vite plugin: resolve micromark deep imports (e.g. micromark/lib/parse.js)
@@ -47,6 +48,17 @@ export default defineConfig(({ mode }) => {
         define: {
           global: 'global',
         },
+        plugins: [
+          {
+            name: 'micromark-deep-resolve',
+            setup(build) {
+              build.onResolve({ filter: /^micromark\/lib\// }, (args) => {
+                const subpath = args.path.slice('micromark'.length);
+                return { path: resolve(__dirname, `../../node_modules/micromark${subpath}`) };
+              });
+            },
+          } satisfies EsbuildPlugin,
+        ],
       },
     },
     server: {

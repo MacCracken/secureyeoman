@@ -12,6 +12,7 @@
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Integration B | AGNOSTIC as SecureYeoman Plugin | P1 | Done |
 | Integration C | AGNOS as Runtime Layer | P2 | Done (except node22 base image) |
+| 145 | Cross-Project MCP Expansion | P2 | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -122,6 +123,39 @@ SecureYeoman, [AGNOSTIC](../../../agnostic/) (QA automation), and [AGNOS](../../
 | Sandbox profile → Landlock policy mapping | 2 days | Done | `sandbox/landlock-mapper.ts` — converts SandboxProfile to AGNOS Landlock policies with filesystem rules, network port rules, cgroup limits |
 | Unified OpenTelemetry pipeline | 2 days | Done | `telemetry/otel-bridge.ts` — W3C trace context propagation, `tracedFetch()` for cross-project spans, `OtelBridge` class for AGNOSTIC/AGNOS calls |
 | AGNOS `node22` base image migration | 2 days | Blocked (AGNOS Alpha) | Migrate SecureYeoman Docker image from `node:22-slim` to `agnos:node22`. Gains: Landlock sandbox, cryptographic audit chain, agent-runtime sidecar |
+
+---
+
+## Phase 145: Cross-Project MCP Expansion
+
+**Priority**: P2 — Wires remaining consumer projects into SecureYeoman's MCP layer.
+
+### Photisnadi Task Manager Integration
+
+Photisnadi already exposes a MCP server with 6 tools via `YeomanService`. SecureYeoman needs to register them.
+
+| Item | Effort | Status | Description |
+|------|--------|--------|-------------|
+| Register Photisnadi MCP tools | 1 day | Planned | Register 6 tools (`photisnadi_list_tasks`, `photisnadi_create_task`, `photisnadi_update_task`, `photisnadi_get_rituals`, `photisnadi_analytics`, `photisnadi_sync`) via `registerApiProxyTool()`. Feature-gated via `exposePhotisnadiTools` |
+| Photisnadi dashboard widget | 0.5 day | Planned | `PhotosnadiWidget.tsx` showing task counts by status, ritual streaks, recent activity. Proxy route at `/api/v1/integrations/photisnadi/widget` |
+
+### BullShift Trading — Additional Tools
+
+SecureYeoman has 5 BullShift MCP tools (health, account, positions, submit_order, cancel_order). BullShift's API server exposes additional endpoints not yet registered.
+
+| Item | Effort | Status | Description |
+|------|--------|--------|-------------|
+| Register `bullshift_market_data` | 0.5 day | Planned | Price quotes and candles via GET `/api/market/:symbol` |
+| Register `bullshift_algo_status` | 0.5 day | Planned | Active algo strategies and performance via GET `/api/algo/strategies` |
+| Register `bullshift_sentiment` | 0.5 day | Planned | Aggregated sentiment signals via GET `/api/sentiment` (from `SentimentRouter`) |
+| Register `bullshift_alerts` | 0.5 day | Planned | Price/trade alert CRUD via GET/POST `/api/alerts` |
+| BullShift streaming widget | 1 day | Planned | Real-time price/trade events from BullShift WebSocket server (5 channels) displayed in a dashboard card |
+
+### Cross-Project Health Aggregate
+
+| Item | Effort | Status | Description |
+|------|--------|--------|-------------|
+| Health dashboard endpoint | 1 day | Planned | `GET /api/v1/platform/health` aggregates health from AGNOSTIC (port 8000), AGNOS (ports 8088/8090), BullShift (port 8787), and Photisnadi. Dashboard widget shows system-wide status |
 
 ---
 
@@ -248,4 +282,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-06 (Phase 144 complete, completed items pruned). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-06 (Phase 145 added, integration audit complete). See [Changelog](../../CHANGELOG.md) for full history.*

@@ -2039,6 +2039,9 @@ export interface McpConfigResponse {
   // Terminal tools
   exposeTerminal: boolean;
   terminalAllowedCommands?: string[];
+  // Cross-project integration tools
+  exposeAgnosticTools: boolean;
+  exposeAgnosTools: boolean;
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -2077,6 +2080,8 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       gitlabUrl: 'https://gitlab.com',
       exposeNorthflank: false,
       exposeTerminal: false,
+      exposeAgnosticTools: false,
+      exposeAgnosTools: false,
     };
   }
 }
