@@ -6,6 +6,22 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.6]
 
+### Cross-Project Integration — Phase B (AGNOSTIC Plugin) & Phase C (AGNOS Runtime)
+
+#### Phase B — AGNOSTIC as SecureYeoman Plugin
+- **MCP tools** (`mcp/tools/agnostic-tools.ts`): 25 AGNOSTIC QA tools registered via MCP. Feature-gated by `exposeAgnosticTools`. McpPrebuilts entry for one-click setup.
+- **Extension hooks** (`integrations/agnostic-hooks.ts`): Observe-semantics hooks on configurable hook points (`agent:after-delegate`, `swarm:after-execute`) auto-submit AGNOSTIC QA tasks. HMAC-signed webhook dispatch via `dispatchToAgnostic()`.
+- **Token federation** (`integrations/token-federation.ts`): `TokenFederationService` issues scoped, short-lived JWTs (aud, iss, scopes, 5 min default / 1 hr max). Routes: `POST /api/v1/auth/federation/token`, `POST /api/v1/auth/federation/verify`.
+- **Metrics widget** (`dashboard/AgnosticMetricsWidget.tsx`): Dashboard card showing AGNOSTIC task counts, agent status, recent activity. Proxied via `GET /api/v1/integrations/agnostic/widget`.
+- **Event bridge** (`integrations/event-bridge.ts`): Bidirectional SSE channel. Outbound: `GET /api/v1/events/bridge/stream` (SSE). Inbound: subscribes to remote SSE streams with auto-reconnect. `POST /api/v1/events/bridge/publish` broadcasts to connected clients.
+
+#### Phase C — AGNOS as Runtime Layer
+- **MCP tools** (`mcp/tools/agnos-tools.ts`): 20 AGNOS tools (runtime health, gateway health, agents CRUD, memory KV, metrics, models, chat completion, audit forwarding/query, traces submit/query, webhook registration, unified overview). Feature-gated by `exposeAgnosTools`.
+- **LLM gateway provider** (`ai/providers/agnos.ts`): `AGNOSProvider` extends `BaseProvider`. OpenAI-compatible `/v1/chat/completions` with streaming support, tool calls, Bearer auth. `provider: 'agnos'` added to `AIProviderNameSchema`, `ModelConfigSchema`, `FallbackModelConfigSchema`.
+- **Landlock mapper** (`sandbox/landlock-mapper.ts`): `profileToLandlockPolicy()` converts `SandboxProfile` to AGNOS Landlock policy (filesystem rules with granular access flags, network port rules, cgroup resource limits, tool restrictions). `syncProfilesToAgnos()` bulk-syncs all enabled profiles.
+- **OTEL bridge** (`telemetry/otel-bridge.ts`): W3C trace context propagation (`traceparent`/`tracestate`) for cross-project distributed tracing. `tracedFetch()` wraps HTTP calls with automatic spans. `OtelBridge` class provides `fetchAgnostic()`, `fetchAgnosRuntime()`, `fetchAgnosGateway()` convenience methods.
+- **Shared config**: `McpFeatureConfig` gains `exposeAgnosticTools`, `exposeAgnosTools` toggles. MCP config gains `agnosRuntimeUrl`, `agnosGatewayUrl`, API key fields. Dashboard `McpPrebuilts` entries for both platforms.
+
 ### E2E Test Framework
 
 #### Backend E2E (Vitest + real HTTP + real DB)
