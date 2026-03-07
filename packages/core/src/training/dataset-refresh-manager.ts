@@ -139,7 +139,10 @@ export class DatasetRefreshManager {
    * Uses setInterval as a simple scheduler (node-cron deferred to avoid dependency).
    */
   startCron(id: string, intervalMs: number): void {
-    if (this.cronHandles.has(id)) return;
+    // Stop existing cron if running (prevents orphaned timers on interval change)
+    if (this.cronHandles.has(id)) {
+      this.stopCron(id);
+    }
     const handle = setInterval(() => {
       void this.runRefresh(id).catch((err: unknown) => {
         this.deps.logger.error({

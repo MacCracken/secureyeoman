@@ -82,6 +82,14 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const workspace = await workspaceManager.get(request.params.id);
       if (!workspace) return sendError(reply, 404, 'Workspace not found');
+      // Verify the requesting user is a member of this workspace
+      const authUser = (request as any).authUser;
+      if (authUser?.userId) {
+        const { members } = await workspaceManager.listMembers(request.params.id);
+        if (!members.some((m: any) => m.userId === authUser.userId)) {
+          return sendError(reply, 403, 'Not a member of this workspace');
+        }
+      }
       return { workspace };
     }
   );
@@ -115,6 +123,13 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
   app.delete(
     '/api/v1/workspaces/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const denied = await requireWorkspaceAdmin(
+        workspaceManager,
+        request.params.id,
+        request,
+        reply
+      );
+      if (denied) return;
       if (!(await workspaceManager.delete(request.params.id)))
         return sendError(reply, 404, 'Workspace not found');
       return reply.code(204).send();

@@ -93,12 +93,14 @@ export class WorkingMemoryBuffer {
 
     // Return pre-fetched items that scored above threshold (already filtered at fetch time)
     // Drain the cache — items not consumed here expire
+    // Snapshot entries before iterating to prevent concurrent Map mutation corruption
     const hits: WorkingMemoryItem[] = [];
-    for (const [id, item] of this.prefetchCache) {
+    const entries = Array.from(this.prefetchCache.entries());
+    this.prefetchCache.clear();
+    for (const [, item] of entries) {
       if (item.score >= this.config.prefetchThreshold) {
         hits.push(item);
       }
-      this.prefetchCache.delete(id);
     }
 
     return hits;

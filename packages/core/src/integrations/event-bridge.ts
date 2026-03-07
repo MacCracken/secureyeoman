@@ -88,7 +88,7 @@ export class EventBridge {
 
         this.logger.info({ clientId, source }, 'Event bridge client connected');
 
-        request.raw.on('close', () => {
+        request.raw.once('close', () => {
           this.clients.delete(clientId);
           this.logger.info({ clientId, source }, 'Event bridge client disconnected');
         });
@@ -238,10 +238,12 @@ export class EventBridge {
    */
   startSubscriptions(): void {
     if (this.config.agnosticSseUrl) {
-      this.subscribe('agnostic', this.config.agnosticSseUrl, this.config.agnosticApiKey);
+      this.subscribe('agnostic', this.config.agnosticSseUrl, this.config.agnosticApiKey)
+        .catch((err) => this.logger.warn({ error: err instanceof Error ? err.message : String(err) }, 'Agnostic SSE subscription failed'));
     }
     if (this.config.agnosSseUrl) {
-      this.subscribe('agnos', this.config.agnosSseUrl, this.config.agnosApiKey);
+      this.subscribe('agnos', this.config.agnosSseUrl, this.config.agnosApiKey)
+        .catch((err) => this.logger.warn({ error: err instanceof Error ? err.message : String(err) }, 'Agnos SSE subscription failed'));
     }
   }
 

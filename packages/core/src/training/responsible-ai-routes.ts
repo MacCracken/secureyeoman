@@ -178,6 +178,11 @@ export function registerResponsibleAiRoutes(
   app.get('/api/v1/responsible-ai/provenance/user/:userId', async (request, reply) => {
     try {
       const { userId } = request.params as { userId: string };
+      // Only allow users to query their own data, or admins to query any
+      const authUser = (request as any).authUser;
+      if (authUser?.userId && authUser.userId !== userId && authUser.role !== 'admin') {
+        return sendError(reply, 403, 'Not authorized to view this user\'s provenance data');
+      }
       const entries = await getManager().findUserProvenance(userId);
       return reply.send({ items: entries });
     } catch (err) {
@@ -188,6 +193,11 @@ export function registerResponsibleAiRoutes(
   app.post('/api/v1/responsible-ai/provenance/redact/:userId', async (request, reply) => {
     try {
       const { userId } = request.params as { userId: string };
+      // Only allow users to redact their own data, or admins to redact any
+      const authUser = (request as any).authUser;
+      if (authUser?.userId && authUser.userId !== userId && authUser.role !== 'admin') {
+        return sendError(reply, 403, 'Not authorized to redact this user\'s data');
+      }
       const count = await getManager().redactUserData(userId);
       return reply.send({ redacted: count });
     } catch (err) {

@@ -77,7 +77,7 @@ export class LinuxSandbox implements Sandbox {
       return this.runV1(fn, opts);
     }
 
-    return new Promise<SandboxResult<T>>((resolve) => {
+    return new Promise<SandboxResult<T>>((resolve, reject) => {
       try {
         const child = fork(workerPath, [], {
           stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
@@ -116,7 +116,7 @@ export class LinuxSandbox implements Sandbox {
           this.getLogger().warn({
             error: err.message,
           }, 'Landlock worker failed to start, falling back to V1');
-          void this.runV1(fn, opts).then(resolve);
+          void this.runV1(fn, opts).then(resolve).catch(reject);
         });
 
         child.on('exit', (code) => {
@@ -147,7 +147,7 @@ export class LinuxSandbox implements Sandbox {
         this.getLogger().warn({
           error: err instanceof Error ? err.message : 'Unknown',
         }, 'Failed to fork Landlock worker');
-        void this.runV1(fn, opts).then(resolve);
+        void this.runV1(fn, opts).then(resolve).catch(reject);
       }
     });
   }

@@ -71,6 +71,9 @@ export class IntegrationManager {
   private static readonly MAX_RECONNECT_ENTRIES = 1_000;
   private readonly rateBuckets = new Map<string, RateLimitBucket>();
 
+  // Track integrations currently in the process of starting to prevent TOCTOU races
+  private readonly starting = new Set<string>();
+
   // Plugin loader (optional — enables listing dynamically loaded external plugins)
   private pluginLoader: PluginLoader | null = null;
 
@@ -211,16 +214,23 @@ export class IntegrationManager {
     if (!config) throw new Error(`Integration ${id} not found`);
     if (!config.enabled) throw new Error(`Integration ${id} is disabled`);
 
-    // Already running?
-    if (this.registry.has(id)) {
-      this.deps.logger.warn(`Integration ${id} is already running`);
+    // Already running or starting?
+    if (this.registry.has(id) || this.starting.has(id)) {
+      this.deps.logger.warn(`Integration ${id} is already running or starting`);
       return;
     }
 
     const factory = this.factories.get(config.platform);
     if (!factory) throw new Error(`No adapter registered for platform "${config.platform}"`);
 
-    const integration = await factory();
+    this.starting.add(id);
+    let integration: Integration;
+    try {
+      integration = await factory();
+    } catch (err) {
+      this.starting.delete(id);
+      throw err;
+    }
     const entry: IntegrationRegistryEntry = {
       integration,
       config,
@@ -240,6 +250,7 @@ export class IntegrationManager {
       entry.healthy = true;
       entry.startedAt = Date.now();
       this.registry.set(id, entry);
+      this.starting.delete(id);
       await this.storage.updateStatus(id, 'connected');
       this.reconnectState.delete(id);
       this.deps.circuitBreakerRegistry?.get(`integration:${id}`)?.reset();
@@ -252,6 +263,7 @@ export class IntegrationManager {
         displayName: config.displayName,
       });
     } catch (err) {
+      this.starting.delete(id);
       const message = err instanceof Error ? err.message : String(err);
       await this.storage.updateStatus(id, 'error', message);
       this.deps.logger.error(`Failed to start integration ${id}: ${message}`);

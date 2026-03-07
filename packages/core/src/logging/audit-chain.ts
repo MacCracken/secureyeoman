@@ -213,11 +213,25 @@ export class AuditChain {
   /**
    * Initialize the chain by loading the last entry
    */
+  private _initPromise: Promise<void> | null = null;
+
   async initialize(): Promise<void> {
     if (this.initialized) {
       return;
     }
+    // Deduplicate concurrent initialization calls
+    if (this._initPromise) {
+      return this._initPromise;
+    }
+    this._initPromise = this._doInitialize();
+    try {
+      await this._initPromise;
+    } finally {
+      this._initPromise = null;
+    }
+  }
 
+  private async _doInitialize(): Promise<void> {
     try {
       this.logger = getLogger().child({ component: 'AuditChain' });
     } catch {
@@ -244,8 +258,8 @@ export class AuditChain {
           }, 'Audit chain integrity check failed — running automatic repair');
           const { repairedCount, entriesTotal } = await this.repair();
           this.logger?.info({ repairedCount, entriesTotal }, 'Audit chain auto-repair complete');
-          return;
         }
+        return;
       } else {
         // Fast path: only verify the last entry's signature before accepting the chain.
         const expectedSig = computeSignature(

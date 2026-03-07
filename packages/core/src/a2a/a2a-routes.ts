@@ -57,7 +57,7 @@ export function registerA2ARoutes(
     }
   );
 
-  // Register a pre-configured local/internal peer (bypasses SSRF guard).
+  // Register a pre-configured local/internal peer — restricted to localhost URLs only.
   // Use this for trusted services like Agnostic that run on localhost.
   app.post(
     '/api/v1/a2a/peers/local',
@@ -68,6 +68,18 @@ export function registerA2ARoutes(
       reply: FastifyReply
     ) => {
       try {
+        // Validate that the URL actually points to localhost
+        let parsed: URL;
+        try {
+          parsed = new URL(request.body.url);
+        } catch {
+          return sendError(reply, 400, 'Invalid URL');
+        }
+        const hostname = parsed.hostname;
+        if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '::1') {
+          return sendError(reply, 400, 'Local peer registration requires a localhost URL');
+        }
+
         const peer = await a2aManager.addTrustedLocalPeer({
           id: request.body.id,
           name: request.body.name,

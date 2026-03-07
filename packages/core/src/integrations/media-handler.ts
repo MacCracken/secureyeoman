@@ -69,8 +69,16 @@ export class MediaHandler {
       );
     }
 
-    const filename = attachment.fileName ?? randomBytes(8).toString('hex');
+    const rawFilename = attachment.fileName ?? randomBytes(8).toString('hex');
+    // Sanitize filename: strip path separators and traversal characters
+    const filename = rawFilename.replace(/[/\\]/g, '_').replace(/\.\./g, '_');
     const filePath = join(this.tempDir, filename);
+    // Verify the resolved path stays within tempDir
+    const resolvedPath = resolve(filePath);
+    const resolvedTemp = resolve(this.tempDir);
+    if (!resolvedPath.startsWith(resolvedTemp + sep)) {
+      throw new MediaError('Invalid filename: path traversal detected', 'PATH_TRAVERSAL');
+    }
 
     if (attachment.data) {
       // Inline base64 data
@@ -125,6 +133,26 @@ export class MediaHandler {
    * Download a file from URL to local path
    */
   private async downloadFile(url: string, destPath: string): Promise<void> {
+    // Validate URL is not targeting private/internal addresses
+    try {
+      const parsed = new URL(url);
+      const hostname = parsed.hostname;
+      if (
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '::1' ||
+        hostname.startsWith('10.') ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('169.254.') ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+      ) {
+        throw new MediaError('URL targets a private address', 'SSRF_BLOCKED');
+      }
+    } catch (err) {
+      if (err instanceof MediaError) throw err;
+      throw new MediaError('Invalid URL', 'INVALID_URL');
+    }
+
     const response = await fetch(url);
     if (!response.ok) {
       throw new MediaError(`Failed to download: HTTP ${response.status}`, 'DOWNLOAD_FAILED');

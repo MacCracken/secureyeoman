@@ -314,16 +314,19 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       if (!personality) return sendError(reply, 404, 'Personality not found');
 
       const format = request.query.format ?? 'md';
+      // Sanitize filename to prevent header injection
+      const safeName = personality.name.replace(/[\r\n"\\]/g, '_');
+
       if (format === 'json') {
         return reply
-          .header('Content-Disposition', `attachment; filename="${personality.name}.json"`)
+          .header('Content-Disposition', `attachment; filename="${safeName}.json"`)
           .send(personality);
       }
 
       const md = personalitySerializer.toMarkdown(personality);
       return reply
         .header('Content-Type', 'text/markdown; charset=utf-8')
-        .header('Content-Disposition', `attachment; filename="${personality.name}.md"`)
+        .header('Content-Disposition', `attachment; filename="${safeName}.md"`)
         .send(md);
     }
   );

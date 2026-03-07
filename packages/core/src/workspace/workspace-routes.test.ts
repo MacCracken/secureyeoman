@@ -182,15 +182,21 @@ describe('Workspace Routes — workspaces', () => {
   });
 
   it('DELETE /api/v1/workspaces/:id returns 204', async () => {
-    const res = await app.inject({ method: 'DELETE', url: '/api/v1/workspaces/ws-1' });
+    const a = buildApp(undefined, undefined, { userId: 'admin', role: 'admin' });
+    const res = await a.inject({ method: 'DELETE', url: '/api/v1/workspaces/ws-1' });
     expect(res.statusCode).toBe(204);
   });
 
   it('DELETE /api/v1/workspaces/:id returns 404 when not found', async () => {
     const wm = makeMockWorkspaceManager({ delete: vi.fn().mockResolvedValue(false) });
-    const a = buildApp(wm);
+    const a = buildApp(wm, undefined, { userId: 'admin', role: 'admin' });
     const res = await a.inject({ method: 'DELETE', url: '/api/v1/workspaces/missing' });
     expect(res.statusCode).toBe(404);
+  });
+
+  it('DELETE /api/v1/workspaces/:id returns 401 without auth', async () => {
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/workspaces/ws-1' });
+    expect(res.statusCode).toBe(401);
   });
 });
 

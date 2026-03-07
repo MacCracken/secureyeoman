@@ -84,9 +84,11 @@ export class QQIntegration implements Integration {
     const isGroup = metadata?.group === true || chatId.startsWith('group_');
     const id = chatId.replace(/^group_/, '');
     const endpoint = isGroup ? '/send_group_msg' : '/send_private_msg';
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId)) throw new Error(`Invalid QQ chat ID: ${chatId}`);
     const body = isGroup
-      ? { group_id: parseInt(id), message: text }
-      : { user_id: parseInt(id), message: text };
+      ? { group_id: numericId, message: text }
+      : { user_id: numericId, message: text };
     const resp = await this.oneBotFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
     if (!resp.ok) throw new Error(`QQ send failed: ${resp.status}`);
     const result = (await resp.json()) as OneBotResponse<{ message_id: number }>;

@@ -119,11 +119,20 @@ export function registerNotionRoutes(
         return sendError(reply, 400, 'parentDatabaseId and title are required');
       }
 
+      // Filter out prototype pollution keys from user-supplied properties
+      const safeProperties: Record<string, unknown> = {};
+      if (properties && typeof properties === 'object') {
+        for (const key of Object.keys(properties)) {
+          if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+          safeProperties[key] = properties[key];
+        }
+      }
+
       const body: Record<string, unknown> = {
         parent: { database_id: parentDatabaseId },
         properties: {
           title: { title: [{ text: { content: title } }] },
-          ...properties,
+          ...safeProperties,
         },
       };
 

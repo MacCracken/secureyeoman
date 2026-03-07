@@ -28,7 +28,7 @@ export async function loadCustomFilters(opts: FilterLoaderOptions): Promise<Guar
   const absDir = resolve(filterDir);
 
   if (!existsSync(absDir)) {
-    logger?.info({ dir: absDir }, 'Custom guardrail filter directory does not exist, skipping');
+    logger?.info('Custom guardrail filter directory does not exist, skipping', { dir: absDir });
     return [];
   }
 
@@ -36,13 +36,13 @@ export async function loadCustomFilters(opts: FilterLoaderOptions): Promise<Guar
   try {
     entries = await readdir(absDir);
   } catch (err) {
-    logger?.warn({ dir: absDir, error: String(err) }, 'Failed to read custom filter directory');
+    logger?.warn('Failed to read custom filter directory', { dir: absDir, error: String(err) });
     return [];
   }
 
   const filterFiles = entries.filter((f) => VALID_EXTENSIONS.has(extname(f)));
   if (filterFiles.length === 0) {
-    logger?.info({ dir: absDir }, 'No custom filter files found');
+    logger?.info('No custom filter files found', { dir: absDir });
     return [];
   }
 
@@ -56,7 +56,7 @@ export async function loadCustomFilters(opts: FilterLoaderOptions): Promise<Guar
       const filterModule = mod.default;
 
       if (!filterModule?.createFilter || typeof filterModule.createFilter !== 'function') {
-        logger?.warn({ file }, 'Custom filter module missing createFilter export, skipping');
+        logger?.warn('Custom filter module missing createFilter export, skipping', { file });
         continue;
       }
 
@@ -64,9 +64,9 @@ export async function loadCustomFilters(opts: FilterLoaderOptions): Promise<Guar
 
       // Validate required fields
       if (!filter.id || !filter.name || typeof filter.priority !== 'number') {
-        logger?.warn({
+        logger?.warn('Custom filter missing required fields (id, name, priority), skipping', {
           file,
-        }, 'Custom filter missing required fields (id, name, priority), skipping');
+        });
         continue;
       }
 
@@ -81,7 +81,7 @@ export async function loadCustomFilters(opts: FilterLoaderOptions): Promise<Guar
         priority: filter.priority,
       });
     } catch (err) {
-      logger?.error({ file, error: String(err) }, 'Failed to load custom guardrail filter');
+      logger?.error('Failed to load custom guardrail filter', { file, error: String(err) });
     }
   }
 

@@ -120,6 +120,7 @@ export class CircuitBreaker {
  * each get their own breaker keyed by name (e.g. "ai:anthropic", "integration:slack").
  */
 export class CircuitBreakerRegistry {
+  private static readonly MAX_BREAKERS = 500;
   private readonly breakers = new Map<string, CircuitBreaker>();
   private readonly defaults: CircuitBreakerOptions;
 
@@ -131,6 +132,11 @@ export class CircuitBreakerRegistry {
   get(key: string, opts?: CircuitBreakerOptions): CircuitBreaker {
     let breaker = this.breakers.get(key);
     if (!breaker) {
+      // Evict oldest entry if at capacity
+      if (this.breakers.size >= CircuitBreakerRegistry.MAX_BREAKERS) {
+        const oldest = this.breakers.keys().next().value;
+        if (oldest !== undefined) this.breakers.delete(oldest);
+      }
       breaker = new CircuitBreaker({ ...this.defaults, name: key, ...opts });
       this.breakers.set(key, breaker);
     }

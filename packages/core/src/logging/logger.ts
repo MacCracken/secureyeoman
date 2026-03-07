@@ -27,11 +27,17 @@ export interface LogContext {
 
 export interface SecureLogger {
   trace(msg: string, context?: LogContext): void;
+  trace(context: LogContext, msg: string): void;
   debug(msg: string, context?: LogContext): void;
+  debug(context: LogContext, msg: string): void;
   info(msg: string, context?: LogContext): void;
+  info(context: LogContext, msg: string): void;
   warn(msg: string, context?: LogContext): void;
+  warn(context: LogContext, msg: string): void;
   error(msg: string, context?: LogContext): void;
+  error(context: LogContext, msg: string): void;
   fatal(msg: string, context?: LogContext): void;
+  fatal(context: LogContext, msg: string): void;
   child(context: LogContext): SecureLogger;
   level: LogLevel;
 }
@@ -172,6 +178,22 @@ function createTransport(
 }
 
 /**
+ * Resolve log arguments to (context, message) regardless of call order.
+ * Supports both: logger.info('msg', {ctx}) and logger.info({ctx}, 'msg')
+ */
+function resolveLogArgs(
+  a: string | LogContext,
+  b?: LogContext | string
+): [LogContext | undefined, string] {
+  if (typeof a === 'string') {
+    // Old pattern: logger.info('msg', {ctx})
+    return [b as LogContext | undefined, a];
+  }
+  // Pino pattern: logger.info({ctx}, 'msg')
+  return [a, typeof b === 'string' ? b : ''];
+}
+
+/**
  * Wrapper around pino that adds security features
  */
 class SecureLoggerImpl implements SecureLogger {
@@ -192,32 +214,38 @@ class SecureLoggerImpl implements SecureLogger {
     return sanitizeForLogging(merged) as Record<string, unknown>;
   }
 
-  trace(msg: string, context?: LogContext): void {
+  trace(msgOrCtx: string | LogContext, ctxOrMsg?: LogContext | string): void {
     if (this.pino.isLevelEnabled('trace')) {
-      this.pino.trace(this.sanitizeContext(context), msg);
+      const [ctx, msg] = resolveLogArgs(msgOrCtx, ctxOrMsg);
+      this.pino.trace(this.sanitizeContext(ctx), msg);
     }
   }
 
-  debug(msg: string, context?: LogContext): void {
+  debug(msgOrCtx: string | LogContext, ctxOrMsg?: LogContext | string): void {
     if (this.pino.isLevelEnabled('debug')) {
-      this.pino.debug(this.sanitizeContext(context), msg);
+      const [ctx, msg] = resolveLogArgs(msgOrCtx, ctxOrMsg);
+      this.pino.debug(this.sanitizeContext(ctx), msg);
     }
   }
 
-  info(msg: string, context?: LogContext): void {
-    this.pino.info(this.sanitizeContext(context), msg);
+  info(msgOrCtx: string | LogContext, ctxOrMsg?: LogContext | string): void {
+    const [ctx, msg] = resolveLogArgs(msgOrCtx, ctxOrMsg);
+    this.pino.info(this.sanitizeContext(ctx), msg);
   }
 
-  warn(msg: string, context?: LogContext): void {
-    this.pino.warn(this.sanitizeContext(context), msg);
+  warn(msgOrCtx: string | LogContext, ctxOrMsg?: LogContext | string): void {
+    const [ctx, msg] = resolveLogArgs(msgOrCtx, ctxOrMsg);
+    this.pino.warn(this.sanitizeContext(ctx), msg);
   }
 
-  error(msg: string, context?: LogContext): void {
-    this.pino.error(this.sanitizeContext(context), msg);
+  error(msgOrCtx: string | LogContext, ctxOrMsg?: LogContext | string): void {
+    const [ctx, msg] = resolveLogArgs(msgOrCtx, ctxOrMsg);
+    this.pino.error(this.sanitizeContext(ctx), msg);
   }
 
-  fatal(msg: string, context?: LogContext): void {
-    this.pino.fatal(this.sanitizeContext(context), msg);
+  fatal(msgOrCtx: string | LogContext, ctxOrMsg?: LogContext | string): void {
+    const [ctx, msg] = resolveLogArgs(msgOrCtx, ctxOrMsg);
+    this.pino.fatal(this.sanitizeContext(ctx), msg);
   }
 
   child(context: LogContext): SecureLogger {

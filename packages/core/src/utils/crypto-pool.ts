@@ -8,6 +8,7 @@
 import { Worker } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { sha256 as syncSha256, hmacSha256 as syncHmacSha256 } from './crypto.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,8 +27,7 @@ interface PendingRequest {
 export class CryptoPool {
   private workers: Worker[] = [];
   private nextWorker = 0;
-  private nextId = 0;
-  private pending = new Map<number, PendingRequest>();
+  private pending = new Map<string, PendingRequest>();
   private closed = false;
 
   constructor(opts: CryptoPoolOptions = {}) {
@@ -47,7 +47,7 @@ export class CryptoPool {
 
     for (let i = 0; i < poolSize; i++) {
       const worker = new Worker(workerPath, workerOpts);
-      worker.on('message', (msg: { id: number; result?: string; error?: string }) => {
+      worker.on('message', (msg: { id: string; result?: string; error?: string }) => {
         const req = this.pending.get(msg.id);
         if (!req) return;
         this.pending.delete(msg.id);
@@ -75,7 +75,7 @@ export class CryptoPool {
       return Promise.resolve(op === 'sha256' ? syncSha256(data) : syncHmacSha256(data, key!));
     }
 
-    const id = this.nextId++;
+    const id = randomUUID();
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker++;
 

@@ -68,7 +68,9 @@ export async function truncateAllTables(): Promise<void> {
   if (res.rows.length > 0) {
     const tableList = res.rows.map((r) => {
       // full_name is "schema"."table" — validate both parts
-      const [schema, table] = r.full_name.replace(/"/g, '').split('.');
+      const parts = r.full_name.replace(/"/g, '').split('.');
+      const schema = parts[0] ?? '';
+      const table = parts[1] ?? '';
       assertSafeIdentifier(schema);
       assertSafeIdentifier(table);
       return r.full_name;

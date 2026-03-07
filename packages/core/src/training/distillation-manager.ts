@@ -10,7 +10,8 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
+import { appendFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { Pool } from 'pg';
 import type { ConversationStorage } from '../chat/conversation-storage.js';
@@ -290,7 +291,7 @@ export class DistillationManager {
 
             // Write to JSONL
             const line = this._formatLine(job.exportFormat, userContent, teacherResponse);
-            appendFileSync(job.outputPath, line, 'utf-8');
+            await appendFile(job.outputPath, line, 'utf-8');
             samplesWritten++;
 
             // Emit stream events every 10 samples
@@ -545,7 +546,7 @@ export class DistillationManager {
           synthetic: true,
           source_conversation: convId,
         });
-        appendFileSync(job.outputPath, line, 'utf-8');
+        await appendFile(job.outputPath, line, 'utf-8');
         generated++;
       } catch {
         // skip individual failures
