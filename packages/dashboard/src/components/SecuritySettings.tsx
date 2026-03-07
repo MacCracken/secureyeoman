@@ -43,6 +43,8 @@ import {
   LayoutPanelLeft,
   Key,
   Search,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -253,6 +255,10 @@ export function SecuritySettings() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // ── Collapse states ───────────────────────────────────────────────
+  const [promptSecurityOpen, setPromptSecurityOpen] = useState(false);
+  const [contentGuardrailsOpen, setContentGuardrailsOpen] = useState(false);
+
   // ── Queries ─────────────────────────────────────────────────────
   const { data: rolesData, isLoading: rolesLoading } = useQuery({
     queryKey: ['auth-roles'],
@@ -420,28 +426,30 @@ export function SecuritySettings() {
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
   const orgIntentAllowed = securityPolicy?.allowOrgIntent ?? false;
+  const intentAllowed = securityPolicy?.allowIntent ?? false;
   const intentEditorAllowed = securityPolicy?.allowIntentEditor ?? false;
+  const knowledgeBaseAllowed = securityPolicy?.allowKnowledgeBase ?? false;
   const codeEditorAllowed = securityPolicy?.allowCodeEditor ?? false;
   const advancedEditorAllowed = securityPolicy?.allowAdvancedEditor ?? false;
   const dtcAllowed = securityPolicy?.allowDynamicTools ?? false;
   const sandboxDtcAllowed = securityPolicy?.sandboxDynamicTools ?? true;
   const anomalyDetectionAllowed = securityPolicy?.allowAnomalyDetection ?? false;
-  const promptGuardMode = securityPolicy?.promptGuardMode ?? 'warn';
-  const responseGuardMode = securityPolicy?.responseGuardMode ?? 'warn';
+  const promptGuardMode = securityPolicy?.promptGuardMode ?? 'block';
+  const responseGuardMode = securityPolicy?.responseGuardMode ?? 'block';
   const jailbreakThreshold = securityPolicy?.jailbreakThreshold ?? 0.5;
-  const jailbreakAction = securityPolicy?.jailbreakAction ?? 'warn';
+  const jailbreakAction = securityPolicy?.jailbreakAction ?? 'block';
   const strictSystemPromptConf = securityPolicy?.strictSystemPromptConfidentiality ?? false;
   const abuseDetectionEnabled = securityPolicy?.abuseDetectionEnabled ?? true;
-  const cgEnabled = securityPolicy?.contentGuardrailsEnabled ?? false;
-  const cgPiiMode = securityPolicy?.contentGuardrailsPiiMode ?? 'disabled';
-  const cgToxicityEnabled = securityPolicy?.contentGuardrailsToxicityEnabled ?? false;
-  const cgToxicityMode = securityPolicy?.contentGuardrailsToxicityMode ?? 'warn';
+  const cgEnabled = securityPolicy?.contentGuardrailsEnabled ?? true;
+  const cgPiiMode = securityPolicy?.contentGuardrailsPiiMode ?? 'redact';
+  const cgToxicityEnabled = securityPolicy?.contentGuardrailsToxicityEnabled ?? true;
+  const cgToxicityMode = securityPolicy?.contentGuardrailsToxicityMode ?? 'block';
   const cgToxicityUrl = securityPolicy?.contentGuardrailsToxicityClassifierUrl ?? '';
   const cgToxicityThreshold = securityPolicy?.contentGuardrailsToxicityThreshold ?? 0.7;
   const cgBlockList = securityPolicy?.contentGuardrailsBlockList ?? [];
   const cgBlockedTopics = securityPolicy?.contentGuardrailsBlockedTopics ?? [];
-  const cgGroundingEnabled = securityPolicy?.contentGuardrailsGroundingEnabled ?? false;
-  const cgGroundingMode = securityPolicy?.contentGuardrailsGroundingMode ?? 'flag';
+  const cgGroundingEnabled = securityPolicy?.contentGuardrailsGroundingEnabled ?? true;
+  const cgGroundingMode = securityPolicy?.contentGuardrailsGroundingMode ?? 'block';
   const gvisorAllowed = securityPolicy?.sandboxGvisor ?? false;
   const wasmAllowed = securityPolicy?.sandboxWasm ?? false;
   const credentialProxyAllowed = securityPolicy?.sandboxCredentialProxy ?? false;
@@ -629,11 +637,16 @@ export function SecuritySettings() {
 
       {/* Prompt Security */}
       <div className="card">
-        <div className="p-4 border-b flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setPromptSecurityOpen(!promptSecurityOpen)}
+          className="w-full p-4 border-b flex items-center gap-2 text-left"
+        >
+          {promptSecurityOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           <Shield className="w-5 h-5 text-primary" />
           <h3 className="font-medium">Prompt Security</h3>
-        </div>
-        <div className="p-4 space-y-5">
+        </button>
+        {promptSecurityOpen && <div className="p-4 space-y-5">
           {/* Prompt Guard mode */}
           <div className="space-y-1">
             <label className="text-sm font-medium">Prompt Guard Mode</label>
@@ -752,16 +765,21 @@ export function SecuritySettings() {
             }}
             description="Track blocked-message retries, topic pivoting, and tool-call anomalies per session. Triggered sessions enter a cool-down period and emit suspicious_pattern audit events."
           />
-        </div>
+        </div>}
       </div>
 
       {/* Content Guardrails (Phase 95) */}
       <div className="card">
-        <div className="p-4 border-b flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setContentGuardrailsOpen(!contentGuardrailsOpen)}
+          className="w-full p-4 border-b flex items-center gap-2 text-left"
+        >
+          {contentGuardrailsOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           <Shield className="w-5 h-5 text-primary" />
           <h3 className="font-medium">Content Guardrails</h3>
-        </div>
-        <div className="p-4 space-y-5">
+        </button>
+        {contentGuardrailsOpen && <div className="p-4 space-y-5">
           <PolicyToggle
             label="Enable Content Guardrails"
             enabled={cgEnabled}
@@ -947,7 +965,7 @@ export function SecuritySettings() {
               </div>
             </>
           )}
-        </div>
+        </div>}
       </div>
 
       {/* Proactive Assistance Policy */}
@@ -973,15 +991,15 @@ export function SecuritySettings() {
         </div>
       </div>
 
-      {/* Organizational Intent */}
+      {/* Organization */}
       <div className="card">
         <div className="p-4 border-b flex items-center gap-2">
           <Target className="w-5 h-5 text-primary" />
-          <h3 className="font-medium">Organizational Intent</h3>
+          <h3 className="font-medium">Organization</h3>
         </div>
         <div className="p-4 space-y-4">
           <PolicyToggle
-            label="Organizational Intent"
+            label="Organization"
             icon={<Target className="w-4 h-4 text-muted-foreground" />}
             enabled={orgIntentAllowed}
             isPending={policyMutation.isPending}
@@ -990,28 +1008,64 @@ export function SecuritySettings() {
             }}
             description={
               orgIntentAllowed
-                ? 'Organizational intent is enabled. The Intent sidebar entry is visible and agents can access intent signals.'
-                : 'Organizational intent is disabled. Enable to allow machine-readable goals, signals, boundaries, and context for agent guidance.'
+                ? 'Organization is enabled. The Organization sidebar entry is visible with access to intent, risk, workspaces, and users.'
+                : 'Organization is disabled. Enable to access organizational intent, departmental risk, workspaces, and user management.'
             }
           />
-          <div
-            className={`border-t border-border pt-4 ${!orgIntentAllowed ? 'opacity-40 pointer-events-none' : ''}`}
-          >
-            <PolicyToggle
-              label="Intent Document Editor"
-              icon={<Target className="w-4 h-4 text-muted-foreground" />}
-              enabled={intentEditorAllowed}
-              isPending={policyMutation.isPending}
-              onToggle={() => {
-                policyMutation.mutate({ allowIntentEditor: !intentEditorAllowed });
-              }}
-              description={
-                intentEditorAllowed
-                  ? 'Full field-level intent editor is enabled. Edit organizational intent documents directly from the Settings → Intent tab. Developer mode — not ready for production use.'
-                  : 'Intent editor is disabled. Enable to access the structured editor for goals, signals, boundaries, policies, and delegation framework. Requires Organizational Intent to be enabled above.'
-              }
-            />
-          </div>
+          {orgIntentAllowed && (
+            <>
+              <div className="border-t border-border pt-4">
+                <PolicyToggle
+                  label="Knowledge Base"
+                  icon={<BookOpen className="w-4 h-4 text-muted-foreground" />}
+                  enabled={knowledgeBaseAllowed}
+                  isPending={policyMutation.isPending}
+                  onToggle={() => {
+                    policyMutation.mutate({ allowKnowledgeBase: !knowledgeBaseAllowed });
+                  }}
+                  description={
+                    knowledgeBaseAllowed
+                      ? 'Knowledge Base access is enabled for personalities. Personalities can query and retrieve organization knowledge base content during conversations.'
+                      : 'Knowledge Base access is disabled for personalities. Enable to allow personalities to query and retrieve organization knowledge base content.'
+                  }
+                />
+              </div>
+              <div className="border-t border-border pt-4">
+                <PolicyToggle
+                  label="Intent"
+                  icon={<Target className="w-4 h-4 text-muted-foreground" />}
+                  enabled={intentAllowed}
+                  isPending={policyMutation.isPending}
+                  onToggle={() => {
+                    policyMutation.mutate({ allowIntent: !intentAllowed });
+                  }}
+                  description={
+                    intentAllowed
+                      ? 'Intent tab is visible under Organization. Users can view and manage organizational intent documents.'
+                      : 'Intent tab is hidden. Enable to show the Intent tab under Organization.'
+                  }
+                />
+              </div>
+              {intentAllowed && (
+                <div className="border-t border-border pt-4">
+                  <PolicyToggle
+                    label="Intent Document Editor"
+                    icon={<Target className="w-4 h-4 text-muted-foreground" />}
+                    enabled={intentEditorAllowed}
+                    isPending={policyMutation.isPending}
+                    onToggle={() => {
+                      policyMutation.mutate({ allowIntentEditor: !intentEditorAllowed });
+                    }}
+                    description={
+                      intentEditorAllowed
+                        ? 'Full field-level intent editor is enabled. Edit organizational intent documents directly from the Organization → Intent tab. Developer mode — not ready for production use.'
+                        : 'Intent editor is disabled. Enable to access the structured editor for goals, signals, boundaries, policies, and delegation framework.'
+                    }
+                  />
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -1493,14 +1547,7 @@ export function RolesSettings() {
     queryFn: fetchRoles,
   });
 
-  const { data: assignmentsData, isLoading: assignmentsLoading } = useQuery({
-    queryKey: ['auth-assignments'],
-    queryFn: fetchAssignments,
-  });
-
   const invalidateRoles = () => queryClient.invalidateQueries({ queryKey: ['auth-roles'] });
-  const invalidateAssignments = () =>
-    queryClient.invalidateQueries({ queryKey: ['auth-assignments'] });
 
   const createRoleMutation = useMutation({
     mutationFn: (data: {
@@ -1541,31 +1588,11 @@ export function RolesSettings() {
     },
   });
 
-  const assignRoleMutation = useMutation({
-    mutationFn: assignRole,
-    onSuccess: () => {
-      void invalidateAssignments();
-      setShowAssignForm(false);
-    },
-  });
-
-  const revokeAssignmentMutation = useMutation({
-    mutationFn: revokeAssignment,
-    onSuccess: () => {
-      void invalidateAssignments();
-    },
-  });
-
   const [showRoleForm, setShowRoleForm] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleInfo | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<RoleInfo | null>(null);
-  const [showAssignForm, setShowAssignForm] = useState(false);
-  const [assignUserId, setAssignUserId] = useState('');
-  const [assignRoleId, setAssignRoleId] = useState('');
-  const [confirmRevoke, setConfirmRevoke] = useState<AssignmentInfo | null>(null);
 
   const roles = rolesData?.roles ?? [];
-  const assignments = assignmentsData?.assignments ?? [];
   const roleIds = roles.map((r) => r.id);
 
   const handleCreateRole = (form: RoleFormData) => {
@@ -1714,129 +1741,6 @@ export function RolesSettings() {
         </div>
       </div>
 
-      <div className="card">
-        <div className="p-4 border-b flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-primary" />
-            <h3 className="font-medium">User Role Assignments</h3>
-          </div>
-          {!showAssignForm && (
-            <button
-              className="btn btn-ghost text-sm flex items-center gap-1"
-              onClick={() => {
-                setShowAssignForm(true);
-              }}
-            >
-              <Plus className="w-4 h-4" /> Assign Role
-            </button>
-          )}
-        </div>
-        <div className="p-4 space-y-3">
-          {showAssignForm && (
-            <div className="border rounded-md p-4 space-y-3 bg-muted/30">
-              <div>
-                <label className="block text-sm font-medium mb-1">User ID</label>
-                <input
-                  type="text"
-                  className="input w-full"
-                  placeholder="e.g. admin"
-                  value={assignUserId}
-                  onChange={(e) => {
-                    setAssignUserId(e.target.value);
-                  }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Role</label>
-                <select
-                  className="input w-full"
-                  value={assignRoleId}
-                  onChange={(e) => {
-                    setAssignRoleId(e.target.value);
-                  }}
-                >
-                  <option value="">Select a role...</option>
-                  {roles.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} ({r.id})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <button
-                  className="btn btn-ghost text-sm"
-                  disabled={assignRoleMutation.isPending || !assignUserId.trim() || !assignRoleId}
-                  onClick={() => {
-                    assignRoleMutation.mutate({
-                      userId: assignUserId.trim(),
-                      roleId: assignRoleId,
-                    });
-                  }}
-                >
-                  {assignRoleMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    'Assign'
-                  )}
-                </button>
-                <button
-                  className="btn btn-ghost text-sm"
-                  onClick={() => {
-                    setShowAssignForm(false);
-                    setAssignUserId('');
-                    setAssignRoleId('');
-                  }}
-                  disabled={assignRoleMutation.isPending}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
-          {assignmentsLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" /> Loading assignments...
-            </div>
-          ) : assignments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No active user role assignments.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 pr-4 font-medium">User</th>
-                  <th className="text-left py-2 pr-4 font-medium">Role</th>
-                  <th className="text-right py-2 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assignments.map((a) => {
-                  const roleName = roles.find((r) => r.id === a.roleId)?.name ?? a.roleId;
-                  return (
-                    <tr key={a.userId} className="border-b last:border-0">
-                      <td className="py-2 pr-4">{a.userId}</td>
-                      <td className="py-2 pr-4">{roleName}</td>
-                      <td className="py-2 text-right">
-                        <button
-                          className="btn btn-ghost p-1 text-destructive text-xs"
-                          title="Revoke assignment"
-                          onClick={() => {
-                            setConfirmRevoke(a);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-
       <ConfirmDialog
         open={!!confirmDelete}
         title="Delete Role"
@@ -1853,7 +1757,53 @@ export function RolesSettings() {
           setConfirmDelete(null);
         }}
       />
+    </div>
+  );
+}
 
+// ── User Role Assignments (used in Organization > Users) ─────────────────────
+
+export function UserRoleAssignments() {
+  const queryClient = useQueryClient();
+
+  const { data: rolesData } = useQuery({
+    queryKey: ['auth-roles'],
+    queryFn: fetchRoles,
+  });
+
+  const { data: assignmentsData, isLoading: assignmentsLoading } = useQuery({
+    queryKey: ['auth-assignments'],
+    queryFn: fetchAssignments,
+  });
+
+  const invalidateAssignments = () =>
+    queryClient.invalidateQueries({ queryKey: ['auth-assignments'] });
+
+  const assignRoleMutation = useMutation({
+    mutationFn: assignRole,
+    onSuccess: () => {
+      void invalidateAssignments();
+      setShowAssignForm(false);
+    },
+  });
+
+  const revokeAssignmentMutation = useMutation({
+    mutationFn: revokeAssignment,
+    onSuccess: () => {
+      void invalidateAssignments();
+    },
+  });
+
+  const [showAssignForm, setShowAssignForm] = useState(false);
+  const [assignUserId, setAssignUserId] = useState('');
+  const [assignRoleId, setAssignRoleId] = useState('');
+  const [confirmRevoke, setConfirmRevoke] = useState<AssignmentInfo | null>(null);
+
+  const roles = rolesData?.roles ?? [];
+  const assignments = assignmentsData?.assignments ?? [];
+
+  return (
+    <div className="card">
       <ConfirmDialog
         open={!!confirmRevoke}
         title="Revoke Assignment"
@@ -1870,137 +1820,80 @@ export function RolesSettings() {
           setConfirmRevoke(null);
         }}
       />
-    </div>
-  );
-}
 
-// ── SecretsPanel ─────────────────────────────────────────────────────────────
-// Manage named secrets stored in the configured backend (env / keyring / vault).
-// Values are write-only: only key names are displayed.
-
-export function SecretsPanel() {
-  const queryClient = useQueryClient();
-  const [adding, setAdding] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newValue, setNewValue] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['secret-keys'],
-    queryFn: fetchSecretKeys,
-    refetchOnWindowFocus: false,
-  });
-
-  const setMutation = useMutation({
-    mutationFn: ({ name, value }: { name: string; value: string }) => setSecret(name, value),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['secret-keys'] });
-      setAdding(false);
-      setNewName('');
-      setNewValue('');
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (name: string) => deleteSecret(name),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['secret-keys'] });
-      setConfirmDelete(null);
-    },
-  });
-
-  const keys = data?.keys ?? [];
-
-  return (
-    <div className="space-y-6">
-      <ConfirmDialog
-        open={!!confirmDelete}
-        title="Delete Secret"
-        message={`Delete secret "${confirmDelete}"? This cannot be undone.`}
-        confirmLabel="Delete"
-        destructive
-        onConfirm={() => {
-          if (confirmDelete) deleteMutation.mutate(confirmDelete);
-        }}
-        onCancel={() => {
-          setConfirmDelete(null);
-        }}
-      />
-
-      <div>
-        <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
-          <Lock className="w-5 h-5" />
-          Secrets
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Stored in the configured backend (env / keyring / file / vault). Values are write-only.
-        </p>
-      </div>
-
-      <div className="card p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-medium text-sm flex items-center gap-2">
-            <Lock className="w-4 h-4" />
-            Stored Secrets
-          </h3>
+      <div className="p-4 border-b flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <UserPlus className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Role Assignments</h3>
+        </div>
+        {!showAssignForm && (
           <button
             className="btn btn-ghost text-sm flex items-center gap-1"
             onClick={() => {
-              setAdding((v) => !v);
+              setShowAssignForm(true);
             }}
           >
-            <Plus className="w-4 h-4" />
-            Add Secret
+            <Plus className="w-4 h-4" /> Assign Role
           </button>
-        </div>
-
-        {adding && (
-          <div className="p-3 rounded-lg bg-muted/30 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">Name (uppercase)</label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => {
-                    setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''));
-                  }}
-                  placeholder="MY_SECRET_KEY"
-                  className="px-2 py-1 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">Value</label>
-                <input
-                  type="password"
-                  value={newValue}
-                  onChange={(e) => {
-                    setNewValue(e.target.value);
-                  }}
-                  placeholder="••••••••"
-                  className="px-2 py-1 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                className="btn btn-ghost text-sm px-3 py-1 flex items-center gap-1"
-                onClick={() => {
-                  if (newName && newValue) setMutation.mutate({ name: newName, value: newValue });
+        )}
+      </div>
+      <div className="p-4 space-y-3">
+        {showAssignForm && (
+          <div className="border rounded-md p-4 space-y-3 bg-muted/30">
+            <div>
+              <label className="block text-sm font-medium mb-1">User ID</label>
+              <input
+                type="text"
+                className="input w-full"
+                placeholder="e.g. admin"
+                value={assignUserId}
+                onChange={(e) => {
+                  setAssignUserId(e.target.value);
                 }}
-                disabled={!newName || !newValue || setMutation.isPending}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Role</label>
+              <select
+                className="input w-full"
+                value={assignRoleId}
+                onChange={(e) => {
+                  setAssignRoleId(e.target.value);
+                }}
               >
-                {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
-                Save
+                <option value="">Select a role...</option>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.id})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                className="btn btn-ghost text-sm"
+                disabled={assignRoleMutation.isPending || !assignUserId.trim() || !assignRoleId}
+                onClick={() => {
+                  assignRoleMutation.mutate({
+                    userId: assignUserId.trim(),
+                    roleId: assignRoleId,
+                  });
+                }}
+              >
+                {assignRoleMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Assign'
+                )}
               </button>
               <button
-                className="btn btn-ghost text-sm px-3 py-1"
+                className="btn btn-ghost text-sm"
                 onClick={() => {
-                  setAdding(false);
-                  setNewName('');
-                  setNewValue('');
+                  setShowAssignForm(false);
+                  setAssignUserId('');
+                  setAssignRoleId('');
                 }}
+                disabled={assignRoleMutation.isPending}
               >
                 Cancel
               </button>
@@ -2008,35 +1901,44 @@ export function SecretsPanel() {
           </div>
         )}
 
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        ) : error ? (
-          <div className="text-sm text-destructive">Failed to load secrets</div>
-        ) : keys.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No secrets stored yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {keys.map((key) => (
-              <div
-                key={key}
-                className="flex items-center justify-between p-2 rounded bg-muted/30 text-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <Lock className="w-3 h-3 text-muted-foreground" />
-                  <span className="font-mono font-medium">{key}</span>
-                </div>
-                <button
-                  className="text-destructive hover:text-destructive/80"
-                  onClick={() => {
-                    setConfirmDelete(key);
-                  }}
-                  aria-label={`Delete secret ${key}`}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+        {assignmentsLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading assignments...
           </div>
+        ) : assignments.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No active user role assignments.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 pr-4 font-medium">User</th>
+                <th className="text-left py-2 pr-4 font-medium">Role</th>
+                <th className="text-right py-2 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assignments.map((a) => {
+                const roleName = roles.find((r) => r.id === a.roleId)?.name ?? a.roleId;
+                return (
+                  <tr key={a.userId} className="border-b last:border-0">
+                    <td className="py-2 pr-4">{a.userId}</td>
+                    <td className="py-2 pr-4">{roleName}</td>
+                    <td className="py-2 text-right">
+                      <button
+                        className="btn btn-ghost p-1 text-destructive text-xs"
+                        title="Revoke assignment"
+                        onClick={() => {
+                          setConfirmRevoke(a);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
@@ -2053,6 +1955,19 @@ interface ServiceKeyDef {
 }
 
 const SERVICE_KEYS: ServiceKeyDef[] = [
+  // SecureYeoman — core platform keys
+  { name: 'SECUREYEOMAN_TOKEN_SECRET', label: 'Token Secret (JWT signing)', category: 'SecureYeoman' },
+  { name: 'SECUREYEOMAN_ADMIN_PASSWORD', label: 'Admin Password', category: 'SecureYeoman' },
+  { name: 'SECUREYEOMAN_SIGNING_KEY', label: 'Signing Key', category: 'SecureYeoman' },
+  { name: 'SECUREYEOMAN_ENCRYPTION_KEY', label: 'Encryption Key', category: 'SecureYeoman' },
+  // Yeoman MCP — ecosystem services & MCP tool integrations
+  { name: 'AGNOSTIC_API_KEY', label: 'Agnostic QA Platform API Key', category: 'Yeoman MCP' },
+  { name: 'AGNOS_RUNTIME_API_KEY', label: 'AGNOS Agent Runtime API Key', category: 'Yeoman MCP' },
+  { name: 'AGNOS_GATEWAY_API_KEY', label: 'AGNOS LLM Gateway API Key', category: 'Yeoman MCP' },
+  { name: 'BULLSHIFT_API_URL', label: 'BullShift Trading API URL', category: 'Yeoman MCP', isUrl: true },
+  { name: 'PHOTISNADI_SUPABASE_URL', label: 'Photisnadi Supabase URL', category: 'Yeoman MCP', isUrl: true },
+  { name: 'PHOTISNADI_SUPABASE_KEY', label: 'Photisnadi Supabase Service Key', category: 'Yeoman MCP' },
+  { name: 'PHOTISNADI_USER_ID', label: 'Photisnadi User ID', category: 'Yeoman MCP' },
   // Search
   { name: 'MCP_WEB_SEARCH_API_KEY', label: 'Web Search API Key (SerpAPI / Tavily)', category: 'Search' },
   { name: 'BRAVE_SEARCH_API_KEY', label: 'Brave Search API Key', category: 'Search' },
@@ -2061,14 +1976,13 @@ const SERVICE_KEYS: ServiceKeyDef[] = [
   { name: 'SEARXNG_URL', label: 'SearXNG Instance URL', category: 'Search', isUrl: true },
   // Security
   { name: 'SHODAN_API_KEY', label: 'Shodan API Key', category: 'Security' },
+  // Market Data
+  { name: 'ALPHAVANTAGE_API_KEY', label: 'AlphaVantage Market Data Key', category: 'Market Data' },
+  { name: 'FINNHUB_API_KEY', label: 'Finnhub Market Data Key', category: 'Market Data' },
   // Proxy
   { name: 'PROXY_BRIGHTDATA_URL', label: 'Bright Data Proxy URL', category: 'Proxy', isUrl: true },
   { name: 'PROXY_SCRAPINGBEE_KEY', label: 'ScrapingBee API Key', category: 'Proxy' },
   { name: 'PROXY_SCRAPERAPI_KEY', label: 'ScraperAPI Key', category: 'Proxy' },
-  // External services
-  { name: 'AGNOSTIC_API_KEY', label: 'Agnostic QA API Key', category: 'Services' },
-  { name: 'AGNOS_RUNTIME_API_KEY', label: 'AGNOS Runtime API Key', category: 'Services' },
-  { name: 'AGNOS_GATEWAY_API_KEY', label: 'AGNOS Gateway API Key', category: 'Services' },
   // QuickBooks
   { name: 'QUICKBOOKS_CLIENT_ID', label: 'QuickBooks Client ID', category: 'QuickBooks' },
   { name: 'QUICKBOOKS_CLIENT_SECRET', label: 'QuickBooks Client Secret', category: 'QuickBooks' },
@@ -2077,26 +1991,33 @@ const SERVICE_KEYS: ServiceKeyDef[] = [
 ];
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  SecureYeoman: <Shield className="w-4 h-4" />,
+  'Yeoman MCP': <Puzzle className="w-4 h-4" />,
   Search: <Search className="w-4 h-4" />,
-  Security: <Shield className="w-4 h-4" />,
+  Security: <Lock className="w-4 h-4" />,
+  'Market Data': <Target className="w-4 h-4" />,
   Proxy: <Globe className="w-4 h-4" />,
-  Services: <Puzzle className="w-4 h-4" />,
   QuickBooks: <Code2 className="w-4 h-4" />,
+  'Custom Secrets': <Lock className="w-4 h-4" />,
 };
 
+const SERVICE_KEY_NAMES = new Set(SERVICE_KEYS.map((k) => k.name));
+
 /**
- * ServiceKeysPanel — categorized management of well-known MCP API keys.
- * Shows which keys are set, lets users add/update/remove them.
- * Values are stored via the global SecretsManager (same as SecretsPanel).
+ * ServiceKeysPanel — collapsible categorized management of well-known MCP API keys
+ * and custom secrets. Shows per-category configuration status at a glance.
  */
 export function ServiceKeysPanel() {
   const queryClient = useQueryClient();
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [addingCustom, setAddingCustom] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newValue, setNewValue] = useState('');
 
-  // Fetch all stored secret names to determine which service keys are set
-  const { data: secretsData } = useQuery({
+  const { data: secretsData, isLoading } = useQuery({
     queryKey: ['secret-keys'],
     queryFn: fetchSecretKeys,
     refetchOnWindowFocus: false,
@@ -2108,6 +2029,9 @@ export function ServiceKeysPanel() {
       void queryClient.invalidateQueries({ queryKey: ['secret-keys'] });
       setEditingKey(null);
       setEditValue('');
+      setAddingCustom(false);
+      setNewName('');
+      setNewValue('');
     },
   });
 
@@ -2120,16 +2044,27 @@ export function ServiceKeysPanel() {
   });
 
   const storedKeys = new Set(secretsData?.keys ?? []);
+  const customKeys = (secretsData?.keys ?? []).filter((k) => !SERVICE_KEY_NAMES.has(k));
 
-  // Group by category
+  const toggleCategory = (category: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  };
+
   const categories = [...new Set(SERVICE_KEYS.map((k) => k.category))];
+
+  const totalConfigured = SERVICE_KEYS.filter((k) => storedKeys.has(k.name)).length;
 
   return (
     <div className="space-y-6">
       <ConfirmDialog
         open={!!confirmDelete}
-        title="Remove Service Key"
-        message={`Remove "${confirmDelete}"? The MCP service will fall back to .env if set.`}
+        title="Remove Key"
+        message={`Remove "${confirmDelete}"? This cannot be undone.`}
         confirmLabel="Remove"
         destructive
         onConfirm={() => {
@@ -2146,106 +2081,307 @@ export function ServiceKeysPanel() {
           Service API Keys
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          API keys for MCP search providers, security tools, and external services.
+          API keys for MCP search, security, proxy, and external services.
           Stored encrypted in the secrets backend. Env vars take precedence if set.
         </p>
+        {!isLoading && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {totalConfigured} of {SERVICE_KEYS.length} service keys configured
+            {customKeys.length > 0 && ` · ${customKeys.length} custom secret${customKeys.length !== 1 ? 's' : ''}`}
+          </p>
+        )}
       </div>
 
-      {categories.map((category) => {
-        const keys = SERVICE_KEYS.filter((k) => k.category === category);
-        return (
-          <div key={category} className="card p-4 space-y-3">
-            <h3 className="font-medium text-sm flex items-center gap-2">
-              {CATEGORY_ICONS[category] ?? <Key className="w-4 h-4" />}
-              {category}
-            </h3>
+      <div className="card overflow-hidden">
+        {/* Service key categories */}
+        {categories.map((category) => {
+          const keys = SERVICE_KEYS.filter((k) => k.category === category);
+          const configuredInCategory = keys.filter((k) => storedKeys.has(k.name)).length;
+          const isExpanded = expandedCategories.has(category);
 
-            <div className="space-y-2">
-              {keys.map((keyDef) => {
-                const isSet = storedKeys.has(keyDef.name);
-                const isEditing = editingKey === keyDef.name;
+          return (
+            <div key={category} className="border-b border-border last:border-0">
+              <button
+                onClick={() => { toggleCategory(category); }}
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+                aria-expanded={isExpanded}
+                data-testid={`category-${category}`}
+              >
+                <div className="flex items-center gap-2.5">
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  )}
+                  {CATEGORY_ICONS[category] ?? <Key className="w-4 h-4" />}
+                  <span className="font-medium text-sm">{category}</span>
+                </div>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  configuredInCategory === keys.length
+                    ? 'bg-success/10 text-success'
+                    : configuredInCategory > 0
+                      ? 'bg-primary/10 text-primary'
+                      : 'bg-muted text-muted-foreground'
+                }`}>
+                  {configuredInCategory}/{keys.length}
+                </span>
+              </button>
 
-                return (
-                  <div key={keyDef.name} className="space-y-2">
-                    <div className="flex items-center justify-between p-2 rounded bg-muted/30 text-sm">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {isSet ? (
-                          <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                        ) : (
-                          <XCircle className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                        )}
-                        <div className="min-w-0">
-                          <span className="font-mono text-xs block truncate">{keyDef.name}</span>
-                          <span className="text-xs text-muted-foreground block">{keyDef.label}</span>
+              {isExpanded && (
+                <div className="px-4 pb-3 space-y-1.5">
+                  {keys.map((keyDef) => {
+                    const isSet = storedKeys.has(keyDef.name);
+                    const isEditing = editingKey === keyDef.name;
+
+                    return (
+                      <div key={keyDef.name}>
+                        <div className="flex items-center justify-between p-2 rounded bg-muted/20 text-sm">
+                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                            {isSet ? (
+                              <CheckCircle className="w-3.5 h-3.5 text-success flex-shrink-0" />
+                            ) : (
+                              <XCircle className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
+                            )}
+                            <div className="min-w-0">
+                              <span className="text-xs block truncate">{keyDef.label}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground block truncate">{keyDef.name}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              className="text-primary hover:text-primary/80 p-1 rounded hover:bg-muted/50"
+                              onClick={() => {
+                                setEditingKey(isEditing ? null : keyDef.name);
+                                setEditValue('');
+                              }}
+                              aria-label={isSet ? `Update ${keyDef.name}` : `Set ${keyDef.name}`}
+                              title={isSet ? 'Update' : 'Set key'}
+                            >
+                              <Pen className="w-3.5 h-3.5" />
+                            </button>
+                            {isSet && (
+                              <button
+                                className="text-destructive hover:text-destructive/80 p-1 rounded hover:bg-destructive/10"
+                                onClick={() => { setConfirmDelete(keyDef.name); }}
+                                aria-label={`Remove ${keyDef.name}`}
+                                title="Remove"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <button
-                          className="text-primary hover:text-primary/80 p-1"
-                          onClick={() => {
-                            setEditingKey(isEditing ? null : keyDef.name);
-                            setEditValue('');
-                          }}
-                          aria-label={isSet ? `Update ${keyDef.name}` : `Set ${keyDef.name}`}
-                        >
-                          <Pen className="w-3.5 h-3.5" />
-                        </button>
-                        {isSet && (
-                          <button
-                            className="text-destructive hover:text-destructive/80 p-1"
-                            onClick={() => {
-                              setConfirmDelete(keyDef.name);
-                            }}
-                            aria-label={`Remove ${keyDef.name}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+
+                        {isEditing && (
+                          <div className="p-3 rounded-lg bg-muted/10 border border-border/50 space-y-2 mt-1 ml-6">
+                            <input
+                              type={keyDef.isUrl ? 'text' : 'password'}
+                              value={editValue}
+                              onChange={(e) => { setEditValue(e.target.value); }}
+                              placeholder={keyDef.isUrl ? 'https://...' : 'Paste key...'}
+                              className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                className="btn btn-ghost text-sm px-3 py-1 flex items-center gap-1"
+                                onClick={() => {
+                                  if (editValue) setMutation.mutate({ name: keyDef.name, value: editValue });
+                                }}
+                                disabled={!editValue || setMutation.isPending}
+                              >
+                                {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                                {isSet ? 'Update' : 'Save'}
+                              </button>
+                              <button
+                                className="btn btn-ghost text-sm px-3 py-1"
+                                onClick={() => { setEditingKey(null); setEditValue(''); }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-
-                    {isEditing && (
-                      <div className="p-3 rounded-lg bg-muted/20 space-y-2 ml-6">
-                        <input
-                          type={keyDef.isUrl ? 'text' : 'password'}
-                          value={editValue}
-                          onChange={(e) => {
-                            setEditValue(e.target.value);
-                          }}
-                          placeholder={keyDef.isUrl ? 'https://...' : '••••••••'}
-                          className="px-2 py-1 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
-                          autoFocus
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            className="btn btn-ghost text-sm px-3 py-1 flex items-center gap-1"
-                            onClick={() => {
-                              if (editValue) setMutation.mutate({ name: keyDef.name, value: editValue });
-                            }}
-                            disabled={!editValue || setMutation.isPending}
-                          >
-                            {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
-                            {isSet ? 'Update' : 'Save'}
-                          </button>
-                          <button
-                            className="btn btn-ghost text-sm px-3 py-1"
-                            onClick={() => {
-                              setEditingKey(null);
-                              setEditValue('');
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+
+        {/* Custom Secrets category */}
+        <div className="border-b border-border last:border-0">
+          <button
+            onClick={() => { toggleCategory('Custom Secrets'); }}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+            aria-expanded={expandedCategories.has('Custom Secrets')}
+            data-testid="category-Custom Secrets"
+          >
+            <div className="flex items-center gap-2.5">
+              {expandedCategories.has('Custom Secrets') ? (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              )}
+              <Lock className="w-4 h-4" />
+              <span className="font-medium text-sm">Custom Secrets</span>
+            </div>
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+              customKeys.length > 0
+                ? 'bg-primary/10 text-primary'
+                : 'bg-muted text-muted-foreground'
+            }`}>
+              {customKeys.length}
+            </span>
+          </button>
+
+          {expandedCategories.has('Custom Secrets') && (
+            <div className="px-4 pb-3 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Write-only secrets stored in the configured backend (env / keyring / vault).
+              </p>
+
+              {customKeys.length > 0 && (
+                <div className="space-y-1.5">
+                  {customKeys.map((key) => {
+                    const isEditing = editingKey === key;
+                    return (
+                      <div key={key}>
+                        <div className="flex items-center justify-between p-2 rounded bg-muted/20 text-sm">
+                          <div className="flex items-center gap-2.5">
+                            <Lock className="w-3 h-3 text-muted-foreground" />
+                            <span className="font-mono text-xs">{key}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              className="text-primary hover:text-primary/80 p-1 rounded hover:bg-muted/50"
+                              onClick={() => {
+                                setEditingKey(isEditing ? null : key);
+                                setEditValue('');
+                              }}
+                              aria-label={`Update secret ${key}`}
+                              title="Update value"
+                            >
+                              <Pen className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              className="text-destructive hover:text-destructive/80 p-1 rounded hover:bg-destructive/10"
+                              onClick={() => { setConfirmDelete(key); }}
+                              aria-label={`Delete secret ${key}`}
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {isEditing && (
+                          <div className="p-3 rounded-lg bg-muted/10 border border-border/50 space-y-2 mt-1 ml-6">
+                            <input
+                              type="password"
+                              value={editValue}
+                              onChange={(e) => { setEditValue(e.target.value); }}
+                              placeholder="New value..."
+                              className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                className="btn btn-ghost text-sm px-3 py-1 flex items-center gap-1"
+                                onClick={() => {
+                                  if (editValue) setMutation.mutate({ name: key, value: editValue });
+                                }}
+                                disabled={!editValue || setMutation.isPending}
+                              >
+                                {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                                Update
+                              </button>
+                              <button
+                                className="btn btn-ghost text-sm px-3 py-1"
+                                onClick={() => { setEditingKey(null); setEditValue(''); }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Add custom secret */}
+              {addingCustom ? (
+                <div className="p-3 rounded-lg bg-muted/10 border border-border/50 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Name (uppercase)</label>
+                      <input
+                        type="text"
+                        value={newName}
+                        onChange={(e) => {
+                          setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''));
+                        }}
+                        placeholder="MY_SECRET_KEY"
+                        className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Value</label>
+                      <input
+                        type="password"
+                        value={newValue}
+                        onChange={(e) => { setNewValue(e.target.value); }}
+                        placeholder="••••••••"
+                        className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      className="btn btn-ghost text-sm px-3 py-1 flex items-center gap-1"
+                      onClick={() => {
+                        if (newName && newValue) setMutation.mutate({ name: newName, value: newValue });
+                      }}
+                      disabled={!newName || !newValue || setMutation.isPending}
+                    >
+                      {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                      Save
+                    </button>
+                    <button
+                      className="btn btn-ghost text-sm px-3 py-1"
+                      onClick={() => { setAddingCustom(false); setNewName(''); setNewValue(''); }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 px-2 py-1.5"
+                  onClick={() => { setAddingCustom(true); }}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Custom Secret
+                </button>
+              )}
+
+              {customKeys.length === 0 && !addingCustom && (
+                <p className="text-xs text-muted-foreground pl-2">No custom secrets stored.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
     </div>
   );
 }
+
+/** @deprecated Use ServiceKeysPanel which now includes custom secrets */
+export const SecretsPanel = ServiceKeysPanel;

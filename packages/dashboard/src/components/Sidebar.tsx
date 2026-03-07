@@ -196,8 +196,14 @@ export function Sidebar({
         label: 'Organization',
         icon: <Building2 className="w-5 h-5" />,
       });
-    if (proactiveEnabled)
-      top.push({ to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" /> });
+    if (proactiveEnabled) {
+      const personalityIdx = top.findIndex((i) => i.to === '/personality');
+      top.splice(personalityIdx + 1, 0, {
+        to: '/proactive',
+        label: 'Proactive',
+        icon: <Sparkles className="w-5 h-5" />,
+      });
+    }
     if (hasAgents)
       top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
     return top;

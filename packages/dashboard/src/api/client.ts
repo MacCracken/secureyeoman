@@ -2122,6 +2122,48 @@ export async function updateMcpConfig(
   });
 }
 
+// ─── Trading & Market Data ──────────────────────────────────
+
+export interface MarketQuoteResponse {
+  provider: string;
+  data: Record<string, unknown>;
+}
+
+export interface MarketHistoricalResponse {
+  provider: string;
+  symbol: string;
+  data: Record<string, unknown>;
+}
+
+export async function fetchMarketQuote(symbol: string): Promise<MarketQuoteResponse> {
+  return request(`/trading/quote?symbol=${encodeURIComponent(symbol)}`);
+}
+
+export async function fetchMarketHistorical(
+  symbol: string,
+  days = 100,
+): Promise<MarketHistoricalResponse> {
+  return request(`/trading/historical?symbol=${encodeURIComponent(symbol)}&days=${days}`);
+}
+
+export async function fetchMarketSearch(
+  keywords: string,
+): Promise<MarketQuoteResponse> {
+  return request(`/trading/search?keywords=${encodeURIComponent(keywords)}`);
+}
+
+export async function fetchBullshiftPositions(): Promise<unknown> {
+  return request('/trading/bullshift/positions');
+}
+
+export async function fetchBullshiftAccount(): Promise<unknown> {
+  return request('/trading/bullshift/account');
+}
+
+export async function fetchBullshiftHealth(): Promise<{ status: string }> {
+  return request('/trading/bullshift/health');
+}
+
 // ─── MCP Health ─────────────────────────────────────────────
 
 export async function fetchMcpHealth(): Promise<{
@@ -2852,7 +2894,9 @@ export interface SecurityPolicy {
   allowNetBoxWrite: boolean;
   allowTwingate: boolean;
   allowOrgIntent: boolean;
+  allowIntent: boolean;
   allowIntentEditor: boolean;
+  allowKnowledgeBase: boolean;
   allowCodeEditor: boolean;
   allowAdvancedEditor: boolean;
   allowTrainingExport: boolean;
@@ -2902,25 +2946,27 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowNetBoxWrite: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntent: false,
       allowIntentEditor: false,
+      allowKnowledgeBase: false,
       allowCodeEditor: false,
       allowAdvancedEditor: false,
       allowTrainingExport: false,
-      promptGuardMode: 'warn',
-      responseGuardMode: 'warn',
+      promptGuardMode: 'block',
+      responseGuardMode: 'block',
       jailbreakThreshold: 0.5,
-      jailbreakAction: 'warn',
+      jailbreakAction: 'block',
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
-      contentGuardrailsEnabled: false,
-      contentGuardrailsPiiMode: 'disabled',
-      contentGuardrailsToxicityEnabled: false,
-      contentGuardrailsToxicityMode: 'warn',
+      contentGuardrailsEnabled: true,
+      contentGuardrailsPiiMode: 'redact',
+      contentGuardrailsToxicityEnabled: true,
+      contentGuardrailsToxicityMode: 'block',
       contentGuardrailsToxicityThreshold: 0.7,
       contentGuardrailsBlockList: [],
       contentGuardrailsBlockedTopics: [],
-      contentGuardrailsGroundingEnabled: false,
-      contentGuardrailsGroundingMode: 'flag',
+      contentGuardrailsGroundingEnabled: true,
+      contentGuardrailsGroundingMode: 'block',
     };
   }
 }
@@ -5085,13 +5131,14 @@ export async function fetchApiKeyUsageSummary(): Promise<{ summary: ApiKeyUsageS
 
 export async function uploadDocument(
   file: File,
-  opts?: { personalityId?: string; visibility?: string; title?: string }
+  opts?: { personalityId?: string; visibility?: string; title?: string; scope?: string }
 ): Promise<{ document: KbDocument }> {
   const formData = new FormData();
   formData.append('file', file, file.name);
   if (opts?.personalityId) formData.append('personalityId', opts.personalityId);
   if (opts?.visibility) formData.append('visibility', opts.visibility);
   if (opts?.title) formData.append('title', opts.title);
+  if (opts?.scope) formData.append('scope', opts.scope);
 
   const token = getAccessToken();
   const res = await fetch(`${API_BASE}/brain/documents/upload`, {
@@ -5109,7 +5156,7 @@ export async function uploadDocument(
 
 export async function ingestUrl(
   url: string,
-  opts?: { personalityId?: string; visibility?: string }
+  opts?: { personalityId?: string; visibility?: string; scope?: string }
 ): Promise<{ document: KbDocument }> {
   return request('/brain/documents/ingest-url', {
     method: 'POST',
@@ -5120,7 +5167,7 @@ export async function ingestUrl(
 export async function ingestText(
   text: string,
   title: string,
-  opts?: { personalityId?: string; visibility?: string }
+  opts?: { personalityId?: string; visibility?: string; scope?: string }
 ): Promise<{ document: KbDocument }> {
   return request('/brain/documents/ingest-text', {
     method: 'POST',
@@ -5131,21 +5178,24 @@ export async function ingestText(
 export async function ingestGithubWiki(
   owner: string,
   repo: string,
-  personalityId?: string
+  personalityId?: string,
+  scope?: string
 ): Promise<{ documents: KbDocument[] }> {
   return request('/brain/documents/connectors/github-wiki', {
     method: 'POST',
-    body: JSON.stringify({ owner, repo, personalityId }),
+    body: JSON.stringify({ owner, repo, personalityId, scope }),
   });
 }
 
 export async function listDocuments(opts?: {
   personalityId?: string;
   visibility?: string;
+  scope?: string;
 }): Promise<{ documents: KbDocument[]; total: number }> {
   const params = new URLSearchParams();
   if (opts?.personalityId) params.set('personalityId', opts.personalityId);
   if (opts?.visibility) params.set('visibility', opts.visibility);
+  if (opts?.scope) params.set('scope', opts.scope);
   const qs = params.toString() ? `?${params.toString()}` : '';
   return request(`/brain/documents${qs}`);
 }

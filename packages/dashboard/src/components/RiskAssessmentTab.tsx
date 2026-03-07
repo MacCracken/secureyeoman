@@ -25,7 +25,6 @@ import {
   Upload,
   Loader2,
   TrendingUp,
-  Building,
   Target,
   ScanSearch,
 } from 'lucide-react';
@@ -42,7 +41,6 @@ import {
   acknowledgeRiskFinding,
   resolveRiskFinding,
 } from '../api/client';
-import { DepartmentalRiskTab as DepartmentsSection } from './DepartmentalRiskTab';
 import type {
   RiskAssessment,
   RiskFinding,
@@ -70,7 +68,6 @@ type SubTab =
   | 'assessments'
   | 'findings'
   | 'feeds'
-  | 'departments'
   | 'athi'
   | 'sandbox';
 
@@ -887,7 +884,6 @@ export function RiskAssessmentTab() {
     { id: 'assessments', label: 'Assessments', icon: <Shield className="w-4 h-4" /> },
     { id: 'findings', label: 'Findings', icon: <AlertTriangle className="w-4 h-4" /> },
     { id: 'feeds', label: 'External Feeds', icon: <Database className="w-4 h-4" /> },
-    { id: 'departments', label: 'Departments', icon: <Building className="w-4 h-4" /> },
     { id: 'athi', label: 'ATHI Threats', icon: <Target className="w-4 h-4" /> },
     { id: 'sandbox', label: 'Sandbox Scanning', icon: <ScanSearch className="w-4 h-4" /> },
   ];
@@ -921,7 +917,6 @@ export function RiskAssessmentTab() {
       {subTab === 'assessments' && <AssessmentsSection />}
       {subTab === 'findings' && <FindingsSection />}
       {subTab === 'feeds' && <FeedsSection />}
-      {subTab === 'departments' && <DepartmentsSection />}
       {subTab === 'athi' && (
         <Suspense fallback={<Loader2 className="w-5 h-5 animate-spin" />}>
           <ATHITab />

@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useRef, lazy, Suspense, useCallback, useMemo, memo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AreaChart,
   Area,
@@ -65,6 +65,7 @@ import {
   fetchSecurityEvents,
   fetchAuditEntries,
   fetchWorkflows,
+  fetchMcpConfig,
 } from '../api/client';
 import type { CostBreakdownResponse, CostHistoryParams, WorkflowDefinition } from '../api/client';
 import { ErrorBoundary } from './common/ErrorBoundary';
@@ -100,6 +101,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { CARD_REGISTRY, type MissionCardId } from './MissionControl/registry';
 import { FinancialChartsCard } from './finance/FinancialChartsCard';
+import { BullShiftStreamWidget } from './finance/BullShiftStreamWidget';
 import { loadLayout, saveLayout, defaultLayout, type CardLayout } from './MissionControl/layout';
 
 // Lazy-load ReactFlow graph — keeps it out of the initial MetricsPage chunk
@@ -168,7 +170,21 @@ interface MetricsPageProps {
 }
 
 export function MetricsPage({ metrics, health }: MetricsPageProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('control');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (['control', 'costs', 'full', 'analytics'] as Tab[]).includes(
+    searchParams.get('tab') as Tab,
+  )
+    ? (searchParams.get('tab') as Tab)
+    : 'control';
+  const [activeTab, setActiveTabState] = useState<Tab>(initialTab);
+  const setActiveTab = (tab: Tab) => {
+    setActiveTabState(tab);
+    if (tab === 'control') {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ tab }, { replace: true });
+    }
+  };
   const [editMode, setEditMode] = useState(false);
   const [catalogueOpen, setCatalogueOpen] = useState(false);
   const navigate = useNavigate();
@@ -200,6 +216,12 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
     queryFn: fetchPersonalities,
     refetchInterval: 30_000,
     staleTime: 0,
+  });
+
+  const { data: mcpConfig } = useQuery({
+    queryKey: ['mcpConfig'],
+    queryFn: fetchMcpConfig,
+    refetchInterval: 60_000,
   });
 
   // Accumulate CPU + memory for time-series charts
@@ -304,6 +326,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           enabledHb={enabledHb}
           totalHbTasks={totalHbTasks}
           activeDelegations={activeDelegations}
+          personalities={personalities}
           activePersonalities={activePersonalities}
           defaultPersonality={defaultPersonality}
           navigate={navigate}
@@ -312,6 +335,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           setEditMode={setEditMode}
           catalogueOpen={catalogueOpen}
           setCatalogueOpen={setCatalogueOpen}
+          bullshiftEnabled={mcpConfig?.exposeBullshiftTools ?? false}
         />
       )}
       {activeTab === 'costs' && <CostsTab />}
@@ -1136,6 +1160,10 @@ const FinancialChartsSection = memo(function FinancialChartsSection(_props: Sect
   return <FinancialChartsCard />;
 });
 
+const BullShiftStreamSection = memo(function BullShiftStreamSection(_props: SectionCommonProps) {
+  return <BullShiftStreamWidget />;
+});
+
 // ── SortableCardWrapper ───────────────────────────────────────────────
 
 interface SortableCardWrapperProps {
@@ -1257,6 +1285,8 @@ const MissionCardContent = memo(function MissionCardContent({
       return <EntitySection />;
     case 'financial-charts':
       return <FinancialChartsSection {...sectionProps} />;
+    case 'bullshift-stream':
+      return <BullShiftStreamSection {...sectionProps} />;
   }
 });
 
@@ -1272,6 +1302,7 @@ interface MissionControlTabProps {
   enabledHb: number;
   totalHbTasks: number;
   activeDelegations: { delegations?: { depth: number }[] } | undefined;
+  personalities: Personality[];
   activePersonalities: Personality[];
   defaultPersonality: Personality | undefined;
   navigate: ReturnType<typeof useNavigate>;
@@ -1280,6 +1311,7 @@ interface MissionControlTabProps {
   setEditMode: React.Dispatch<React.SetStateAction<boolean>>;
   catalogueOpen: boolean;
   setCatalogueOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  bullshiftEnabled: boolean;
 }
 
 function MissionControlTab({
@@ -1292,6 +1324,7 @@ function MissionControlTab({
   enabledHb,
   totalHbTasks,
   activeDelegations,
+  personalities,
   activePersonalities,
   defaultPersonality,
   navigate,
@@ -1300,6 +1333,7 @@ function MissionControlTab({
   setEditMode,
   catalogueOpen,
   setCatalogueOpen,
+  bullshiftEnabled,
 }: MissionControlTabProps) {
   const heartbeatRunning = heartbeatStatus?.running ?? false;
 
@@ -1413,15 +1447,25 @@ function MissionControlTab({
     ]
   );
 
-  // Easter egg: auto-reveal The Entity card when "THE ENTITY" personality is active
-  const hasEntityPersonality = activePersonalities.some(
+  // Show The Entity card toggle only when the personality is installed (any state)
+  const hasEntityPersonality = personalities.some(
+    (p: Personality) => p.name.toLowerCase().replace(/\s+/g, '') === 'theentity'
+  );
+  // Auto-reveal when personality is active (not just installed)
+  const entityPersonalityActive = activePersonalities.some(
     (p: Personality) => p.name.toLowerCase().replace(/\s+/g, '') === 'theentity'
   );
 
   const sorted = [...cardLayouts]
-    .map((c) =>
-      c.id === 'the-entity' && hasEntityPersonality && !c.visible ? { ...c, visible: true } : c
-    )
+    .map((c) => {
+      // Auto-reveal The Entity when personality is active
+      if (c.id === 'the-entity' && entityPersonalityActive && !c.visible) return { ...c, visible: true };
+      // Hide The Entity when personality is not installed
+      if (c.id === 'the-entity' && !hasEntityPersonality && c.visible) return { ...c, visible: false };
+      // Hide BullShift when tools are disabled
+      if (c.id === 'bullshift-stream' && !bullshiftEnabled && c.visible) return { ...c, visible: false };
+      return c;
+    })
     .sort((a, b) => a.order - b.order);
 
   return (
@@ -1574,7 +1618,11 @@ function MissionControlTab({
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-0.5">
-            {CARD_REGISTRY.map((def) => {
+            {CARD_REGISTRY.filter(
+              (def) =>
+                (def.id !== 'the-entity' || hasEntityPersonality) &&
+                (def.id !== 'bullshift-stream' || bullshiftEnabled)
+            ).map((def) => {
               const cl = cardLayouts.find((c) => c.id === def.id);
               const isVisible = cl?.visible ?? def.defaultVisible;
               return (

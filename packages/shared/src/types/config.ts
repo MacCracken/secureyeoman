@@ -272,7 +272,7 @@ const InputValidationConfigSchema = z
      * warn       — log to audit trail and allow request to proceed
      * audit_only — record score on message, no warning emitted
      */
-    jailbreakAction: z.enum(['block', 'warn', 'audit_only']).default('warn'),
+    jailbreakAction: z.enum(['block', 'warn', 'audit_only']).default('block'),
   })
   .default({});
 
@@ -284,9 +284,9 @@ const PromptGuardConfigSchema = z
      * block — high-severity findings abort the request (HTTP 400 / SSE error).
      * warn  — findings are audit-logged but the request proceeds.
      * disabled — scanning is skipped entirely.
-     * Default: warn. Raise to block once you have confidence in the pattern set.
+     * Default: block.
      */
-    mode: z.enum(['block', 'warn', 'disabled']).default('warn'),
+    mode: z.enum(['block', 'warn', 'disabled']).default('block'),
   })
   .default({});
 
@@ -295,7 +295,7 @@ export type PromptGuardConfig = z.infer<typeof PromptGuardConfigSchema>;
 // ResponseGuard configuration (Phase 54)
 const ResponseGuardConfigSchema = z
   .object({
-    mode: z.enum(['block', 'warn', 'disabled']).default('warn'),
+    mode: z.enum(['block', 'warn', 'disabled']).default('block'),
     /**
      * Trigram overlap ratio threshold [0, 1] that triggers a system prompt leak finding.
      * 0.3 = flag when ≥30% of the system prompt's trigrams appear in the response.
@@ -534,8 +534,12 @@ export const SecurityConfigSchema = z.object({
   allowTwingate: z.boolean().default(false),
   /** Allow organizational intent documents (goals, signals, hard boundaries, trade-off profiles). */
   allowOrgIntent: z.boolean().default(false),
+  /** Allow the Intent tab under Organization. Controls tab visibility. */
+  allowIntent: z.boolean().default(false),
   /** Allow full field-level intent document editor in dashboard (developer/testing mode). */
   allowIntentEditor: z.boolean().default(false),
+  /** Allow personality access to organization knowledge base content. */
+  allowKnowledgeBase: z.boolean().default(false),
   /** Allow the code editor in the dashboard sidebar. Disabled by default. */
   allowCodeEditor: z.boolean().default(false),
   /** Replace the standard editor with the advanced three-panel workspace. */

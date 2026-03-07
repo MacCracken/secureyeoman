@@ -52,6 +52,8 @@ export interface McpFeatureConfig {
   exposeOrgIntentTools: boolean;
   // Knowledge Base tools (Phase 82)
   exposeKnowledgeBase: boolean;
+  // Organization Knowledge Base access
+  exposeOrgKnowledgeBase: boolean;
   // Docker management tools (Phase 74)
   exposeDockerTools: boolean;
   // CI/CD tools (Phase 90)
@@ -99,6 +101,7 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   alwaysSendFullSchemas: false,
   exposeOrgIntentTools: false,
   exposeKnowledgeBase: false,
+  exposeOrgKnowledgeBase: false,
   exposeDockerTools: false,
   // CI/CD tools (Phase 90)
   exposeGithubActions: false,

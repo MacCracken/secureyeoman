@@ -227,7 +227,7 @@ describe('KnowledgeBaseTab', () => {
     await user.click(screen.getByRole('button', { name: /sync wiki/i }));
 
     await waitFor(() => {
-      expect(ingestGithubWiki).toHaveBeenCalledWith('myorg', 'myrepo', undefined);
+      expect(ingestGithubWiki).toHaveBeenCalledWith('myorg', 'myrepo', undefined, undefined);
     });
   });
 });

@@ -98,6 +98,13 @@ import { registerGatewayRoutes } from './gateway-routes.js';
 import { registerGmailRoutes } from '../integrations/gmail/gmail-routes.js';
 import { registerTwitterRoutes } from '../integrations/twitter/twitter-routes.js';
 import { registerGithubApiRoutes } from '../integrations/github/github-api-routes.js';
+import { registerGoogleCalendarRoutes } from '../integrations/googlecalendar/googlecalendar-routes.js';
+import { registerLinearRoutes } from '../integrations/linear/linear-routes.js';
+import { registerTodoistRoutes } from '../integrations/todoist/todoist-routes.js';
+import { registerJiraRoutes } from '../integrations/jira/jira-routes.js';
+import { registerNotionRoutes } from '../integrations/notion/notion-routes.js';
+import { registerGoogleWorkspaceRoutes } from '../integrations/google-workspace-routes.js';
+import { registerTradingRoutes } from '../integrations/trading/trading-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -519,6 +526,26 @@ export class GatewayServer {
       } catch {
         // GitHub routes are optional — skip on error
       }
+
+      // Google Calendar API proxy routes — uses stored OAuth tokens
+      try {
+        let gcalSoulManager;
+        try {
+          gcalSoulManager = this.secureYeoman.getSoulManager();
+        } catch {
+          /* optional */
+        }
+        registerGoogleCalendarRoutes(this.app, { oauthTokenService, soulManager: gcalSoulManager });
+      } catch {
+        // Google Calendar routes are optional — skip on error
+      }
+
+      // Google Workspace (Drive, Sheets, Docs) API proxy routes — uses stored OAuth tokens
+      try {
+        registerGoogleWorkspaceRoutes(this.app, { oauthTokenService });
+      } catch {
+        // Google Workspace routes are optional — skip on error
+      }
     }
 
     // Soul routes
@@ -695,6 +722,45 @@ export class GatewayServer {
       });
     } catch {
       // Twitter routes are optional — skip on error
+    }
+
+    // Linear API proxy routes — uses stored integration credentials
+    try {
+      const linearIm = this.secureYeoman.getIntegrationManager();
+      registerLinearRoutes(this.app, { integrationManager: linearIm });
+    } catch {
+      // Linear routes are optional — skip on error
+    }
+
+    // Todoist API proxy routes — uses stored integration credentials
+    try {
+      const todoistIm = this.secureYeoman.getIntegrationManager();
+      registerTodoistRoutes(this.app, { integrationManager: todoistIm });
+    } catch {
+      // Todoist routes are optional — skip on error
+    }
+
+    // Jira API proxy routes — uses stored integration credentials
+    try {
+      const jiraIm = this.secureYeoman.getIntegrationManager();
+      registerJiraRoutes(this.app, { integrationManager: jiraIm });
+    } catch {
+      // Jira routes are optional — skip on error
+    }
+
+    // Notion API proxy routes — uses stored integration credentials
+    try {
+      const notionIm = this.secureYeoman.getIntegrationManager();
+      registerNotionRoutes(this.app, { integrationManager: notionIm });
+    } catch {
+      // Notion routes are optional — skip on error
+    }
+
+    // Trading & market data proxy routes
+    try {
+      registerTradingRoutes(this.app);
+    } catch {
+      // Trading routes are optional — skip on error
     }
 
     // Diagnostic routes (Phase 39 — Channel B: sub-agent reporting + integration ping)
@@ -2151,7 +2217,9 @@ export class GatewayServer {
         allowNetBoxWrite: config.security.allowNetBoxWrite,
         allowTwingate: config.security.allowTwingate,
         allowOrgIntent: config.security.allowOrgIntent,
+        allowIntent: config.security.allowIntent,
         allowIntentEditor: config.security.allowIntentEditor,
+        allowKnowledgeBase: config.security.allowKnowledgeBase,
         allowCodeEditor: config.security.allowCodeEditor,
         allowAdvancedEditor: config.security.allowAdvancedEditor,
         allowTrainingExport: config.security.allowTrainingExport,
@@ -2208,7 +2276,9 @@ export class GatewayServer {
             allowNetBoxWrite?: boolean;
             allowTwingate?: boolean;
             allowOrgIntent?: boolean;
+            allowIntent?: boolean;
             allowIntentEditor?: boolean;
+            allowKnowledgeBase?: boolean;
             allowCodeEditor?: boolean;
             allowAdvancedEditor?: boolean;
             allowTrainingExport?: boolean;
@@ -2258,7 +2328,9 @@ export class GatewayServer {
             allowNetBoxWrite,
             allowTwingate,
             allowOrgIntent,
+            allowIntent,
             allowIntentEditor,
+            allowKnowledgeBase,
             allowCodeEditor,
             allowAdvancedEditor,
             allowTrainingExport,
@@ -2304,7 +2376,9 @@ export class GatewayServer {
             allowNetBoxWrite === undefined &&
             allowTwingate === undefined &&
             allowOrgIntent === undefined &&
+            allowIntent === undefined &&
             allowIntentEditor === undefined &&
+            allowKnowledgeBase === undefined &&
             allowCodeEditor === undefined &&
             allowAdvancedEditor === undefined &&
             allowTrainingExport === undefined &&
@@ -2352,7 +2426,9 @@ export class GatewayServer {
             allowNetBoxWrite,
             allowTwingate,
             allowOrgIntent,
+            allowIntent,
             allowIntentEditor,
+            allowKnowledgeBase,
             allowCodeEditor,
             allowAdvancedEditor,
             allowTrainingExport,

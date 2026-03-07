@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import {
   Settings,
   Shield,
@@ -23,6 +23,8 @@ import {
   Copy,
   Sun,
   Moon,
+  DollarSign,
+  ArrowRight,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -36,11 +38,10 @@ import type { BackupRecord } from '../types';
 import { useLicense, ALL_LICENSED_FEATURES } from '../hooks/useLicense';
 import { NotificationSettings } from './NotificationSettings';
 import { LogRetentionSettings } from './LogRetentionSettings';
-import { SecuritySettings, RolesSettings, SecretsPanel, ServiceKeysPanel } from './SecuritySettings';
+import { SecuritySettings, RolesSettings, ServiceKeysPanel } from './SecuritySettings';
 import { ApiKeysSettings } from './ApiKeysSettings';
 import { ProviderKeysSettings } from './ProviderKeysSettings';
 import { NotificationPrefsPanel } from './NotificationPrefsPanel';
-import { CostDashboard } from './telemetry/CostDashboard';
 import {
   useTheme,
   THEMES,
@@ -112,16 +113,16 @@ export function SettingsPage() {
         </button>
         <button
           onClick={() => {
-            setActiveTab('appearance');
+            setActiveTab('souls');
           }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'appearance'
+            activeTab === 'souls'
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Palette className="w-4 h-4" />
-          Appearance
+          <Sparkles className="w-4 h-4" />
+          Souls
         </button>
         <button
           onClick={() => {
@@ -164,19 +165,6 @@ export function SettingsPage() {
         </button>
         <button
           onClick={() => {
-            setActiveTab('souls');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'souls'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          Souls
-        </button>
-        <button
-          onClick={() => {
             setActiveTab('notifications');
           }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -187,6 +175,19 @@ export function SettingsPage() {
         >
           <Bell className="w-4 h-4" />
           Notifications
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('appearance');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'appearance'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Palette className="w-4 h-4" />
+          Appearance
         </button>
         <button
           onClick={() => {
@@ -209,10 +210,19 @@ export function SettingsPage() {
       {activeTab === 'keys' && (
         <div className="space-y-8">
           <ProviderKeysSettings />
-          <CostDashboard />
+          <Link
+            to="/metrics?tab=costs"
+            className="flex items-center gap-2 px-4 py-3 rounded-lg border border-border bg-muted/20 hover:bg-muted/40 transition-colors group"
+          >
+            <DollarSign className="w-4 h-4 text-success" />
+            <span className="text-sm font-medium">Provider Cost Analytics</span>
+            <span className="text-xs text-muted-foreground flex-1">
+              View cost trends, provider breakdown, and optimization recommendations
+            </span>
+            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </Link>
           <ApiKeysSettings />
           <ServiceKeysPanel />
-          <SecretsPanel />
         </div>
       )}
       {activeTab === 'roles' && <RolesSettings />}

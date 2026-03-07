@@ -32,10 +32,6 @@ vi.mock('./security/SecurityATHITab', () => ({
 vi.mock('./security/SecuritySandboxTab', () => ({
   SandboxTab: () => <div data-testid="sandbox-tab">Sandbox Tab</div>,
 }));
-vi.mock('./DepartmentalRiskTab', () => ({
-  DepartmentalRiskTab: () => <div data-testid="dept-tab">Departments Tab</div>,
-}));
-
 import * as api from '../api/client';
 
 const mockFetchRiskAssessments = vi.mocked(api.fetchRiskAssessments);
@@ -80,7 +76,6 @@ describe('RiskAssessmentTab', () => {
     expect(screen.getByText('Assessments')).toBeInTheDocument();
     expect(screen.getByText('Findings')).toBeInTheDocument();
     expect(screen.getByText('External Feeds')).toBeInTheDocument();
-    expect(screen.getByText('Departments')).toBeInTheDocument();
     expect(screen.getByText('ATHI Threats')).toBeInTheDocument();
     expect(screen.getByText('Sandbox Scanning')).toBeInTheDocument();
   });
@@ -164,17 +159,6 @@ describe('RiskAssessmentTab', () => {
     });
     await waitFor(() => {
       expect(screen.getByText('No external feeds configured.')).toBeInTheDocument();
-    });
-  });
-
-  it('switches to Departments tab', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    await user.click(screen.getByText('Departments'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('dept-tab')).toBeInTheDocument();
     });
   });
 

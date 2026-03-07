@@ -11,6 +11,47 @@ vi.mock('../api/client', () => ({
   createUser: vi.fn(),
   updateUser: vi.fn(),
   deleteUser: vi.fn(),
+  // SecuritySettings module-level imports (needed for UserRoleAssignments)
+  fetchRoles: vi.fn(),
+  fetchAssignments: vi.fn(),
+  assignRole: vi.fn(),
+  revokeAssignment: vi.fn(),
+  createRole: vi.fn(),
+  updateRole: vi.fn(),
+  deleteRole: vi.fn(),
+  fetchAuditStats: vi.fn(),
+  fetchMetrics: vi.fn(),
+  fetchSecurityPolicy: vi.fn(),
+  updateSecurityPolicy: vi.fn(),
+  fetchAgentConfig: vi.fn(),
+  updateAgentConfig: vi.fn(),
+  fetchMcpServers: vi.fn(),
+  fetchModelDefault: vi.fn(),
+  setModelDefault: vi.fn(),
+  clearModelDefault: vi.fn(),
+  fetchModelInfo: vi.fn(),
+  fetchSecretKeys: vi.fn(),
+  setSecret: vi.fn(),
+  deleteSecret: vi.fn(),
+  checkSecret: vi.fn(),
+  // IntentEditor imports
+  fetchIntents: vi.fn(),
+  fetchActiveIntent: vi.fn(),
+  activateIntent: vi.fn(),
+  deleteIntent: vi.fn(),
+  fetchEnforcementLog: vi.fn(),
+  createIntent: vi.fn(),
+  readSignal: vi.fn(),
+  fetchGoalTimeline: vi.fn(),
+  // WorkspacesSettings imports
+  fetchWorkspaces: vi.fn(),
+  createWorkspace: vi.fn(),
+  updateWorkspace: vi.fn(),
+  deleteWorkspace: vi.fn(),
+  fetchWorkspaceMembers: vi.fn(),
+  addWorkspaceMember: vi.fn(),
+  updateWorkspaceMemberRole: vi.fn(),
+  removeWorkspaceMember: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -64,6 +105,10 @@ describe('UsersSettings', () => {
     mockCreateUser.mockResolvedValue({ user: SAMPLE_USERS[0] });
     mockUpdateUser.mockResolvedValue({ user: SAMPLE_USERS[0] });
     mockDeleteUser.mockResolvedValue({ message: 'deleted' });
+    // UserRoleAssignments queries
+    vi.mocked(api.fetchRoles).mockResolvedValue({ roles: [] });
+    vi.mocked(api.fetchAssignments).mockResolvedValue({ assignments: [] });
+    vi.mocked(api.fetchSecretKeys).mockResolvedValue({ keys: [] });
   });
 
   // ── Renders ──────────────────────────────────────────────────────

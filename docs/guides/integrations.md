@@ -48,6 +48,47 @@ Integrations are grouped into sub-tabs in the Connections view:
 | **OAuth** | Google OAuth, GitHub OAuth |
 | **MCP** | Home Assistant, Coolify (MetaMCP), Device Control, ElevenLabs, Meilisearch, Qdrant, Bright Data, Exa, E2B, Supabase, Figma, Stripe, Zapier, Linear |
 
+## Native MCP Integration Tools
+
+In addition to bidirectional messaging, six productivity platforms expose native MCP tools that let agents proactively interact with external APIs — creating issues, managing events, querying databases, and more.
+
+### Available tools by platform
+
+| Platform | Tools | Auth method | Core route prefix |
+|----------|-------|-------------|-------------------|
+| Google Calendar | 7 (`gcal_*`) | OAuth2 | `/api/v1/integrations/googlecalendar/` |
+| Linear | 7 (`linear_*`) | API key | `/api/v1/integrations/linear/` |
+| Todoist | 6 (`todoist_*`) | Bearer token | `/api/v1/integrations/todoist/` |
+| Jira | 8 (`jira_*`) | Basic auth (email + API token) | `/api/v1/integrations/jira/` |
+| Notion | 7 (`notion_*`) | Internal integration token | `/api/v1/integrations/notion/` |
+| Google Workspace | 14 (`gdrive_*`, `gsheets_*`, `gdocs_*`) | OAuth2 | `/api/v1/integrations/gdrive/`, `gsheets/`, `gdocs/` |
+
+### How credentials are resolved
+
+**OAuth-based** (Google Calendar, Google Workspace): Tokens are stored by the OAuth flow in Settings > Connections > OAuth. The `OAuthTokenService` automatically refreshes expired tokens. Google Workspace shares the same token as Gmail (provider `google` or `gdrive`).
+
+**Integration-config-based** (Linear, Todoist, Jira, Notion): Credentials are stored in the connection config when you create the integration in Settings > Connections. The route handler finds the first enabled integration for the platform and extracts the API key/token.
+
+### Multi-Search Aggregation
+
+The `web_search_multi` MCP tool fans out a query to all available search providers simultaneously:
+
+- **Built-in backends**: DuckDuckGo (no key needed), SerpAPI, Tavily, Brave Search, Bing, Exa, SearxNG
+- **MCP bridge**: Discovers connected MCP search servers (e.g., Brave Search, Exa prebuilts) and includes their results
+- **Deduplication**: Results from multiple providers are deduplicated by URL (domain + path)
+- **Ranking**: Results seen by more providers rank higher
+
+Configure API keys via the **Service Keys** panel in Settings > Security, or via environment variables.
+
+### Secrets Management
+
+Service API keys can be managed in two ways:
+
+1. **Dashboard** (recommended): Settings > Security > Service Keys — categorized UI with inline edit/remove
+2. **Environment variables**: `MCP_BRAVE_SEARCH_API_KEY`, `MCP_EXA_API_KEY`, etc. (env vars take precedence over stored secrets)
+
+The MCP service resolves secrets at startup via `enrichConfigWithSecrets()`, which calls the core's SecretsManager.
+
 ## Device Control
 
 ### Overview
@@ -277,8 +318,8 @@ Gmail integration uses OAuth2 for secure access to your Gmail account. SecureYeo
 ### Prerequisites
 Set these in your `.env` file (or Docker environment):
 ```bash
-GMAIL_OAUTH_CLIENT_ID=your-google-client-id
-GMAIL_OAUTH_CLIENT_SECRET=your-google-client-secret
+GMAIL_OAUTH_CLIENT_ID=<YOUR_GOOGLE_CLIENT_ID>
+GMAIL_OAUTH_CLIENT_SECRET=<YOUR_GOOGLE_CLIENT_SECRET>
 # Can reuse GOOGLE_OAUTH_CLIENT_ID/SECRET if same GCP project
 ```
 

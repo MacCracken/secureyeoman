@@ -11,12 +11,12 @@ import { z } from 'zod';
 // ── Config schemas ────────────────────────────────────────────────────
 
 export const ContentGuardrailConfigSchema = z.object({
-  enabled: z.boolean().default(false),
+  enabled: z.boolean().default(true),
   /** PII detection mode: disabled = off, detect_only = flag without modifying, redact = replace with placeholders */
-  piiMode: z.enum(['disabled', 'detect_only', 'redact']).default('disabled'),
+  piiMode: z.enum(['disabled', 'detect_only', 'redact']).default('redact'),
   /** Toxicity classification */
-  toxicityEnabled: z.boolean().default(false),
-  toxicityMode: z.enum(['block', 'warn', 'audit_only']).default('warn'),
+  toxicityEnabled: z.boolean().default(true),
+  toxicityMode: z.enum(['block', 'warn', 'audit_only']).default('block'),
   toxicityClassifierUrl: z.string().optional(),
   toxicityThreshold: z.number().min(0).max(1).default(0.7),
   /** Custom block list — plain strings or regex: prefixed patterns */
@@ -26,8 +26,8 @@ export const ContentGuardrailConfigSchema = z.object({
   /** Topic similarity threshold for embedding-based check */
   topicThreshold: z.number().min(0).max(1).default(0.75),
   /** Grounding verification against knowledge base */
-  groundingEnabled: z.boolean().default(false),
-  groundingMode: z.enum(['flag', 'block']).default('flag'),
+  groundingEnabled: z.boolean().default(true),
+  groundingMode: z.enum(['flag', 'block']).default('block'),
 });
 
 export type ContentGuardrailConfig = z.infer<typeof ContentGuardrailConfigSchema>;

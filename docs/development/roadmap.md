@@ -11,7 +11,7 @@
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Integration C (remaining) | AGNOS node22 Base Image | P2 | Blocked (AGNOS Alpha) |
-| 145 | Cross-Project MCP Expansion | P2 | Planned |
+| 145 | Cross-Project MCP Expansion | P2 | In Progress (1 item remaining) |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -130,13 +130,28 @@ SecureYeoman has 5 BullShift MCP tools (health, account, positions, submit_order
 | Register `bullshift_sentiment` | 0.5 day | Done | Aggregated sentiment signals via GET `/v1/sentiment/signals` and `/v1/sentiment/aggregate/:symbol` |
 | Register `bullshift_list_alerts` / `bullshift_create_alert` | 0.5 day | Done | Alert webhook CRUD via GET/POST `/v1/webhooks` |
 | Feature-gate all BullShift tools | 0.5 day | Done | `exposeBullshiftTools` flag gates all bullshift_* and market_* tools. Disabled stub when off |
-| BullShift streaming widget | 1 day | Planned | Real-time price/trade events from BullShift WebSocket server (5 channels) displayed in a dashboard card |
+| BullShift streaming widget | 1 day | Done | `BullShiftStreamWidget.tsx` Mission Control card — live trade stream, ticker bar, volume stats. Gated behind `exposeBullshiftTools`. Registered as `bullshift-stream` card |
 
 ---
 
 ## Future Features — Demand-Gated
 
 Items below are planned but demand-gated or lower priority. Grouped by theme. Implementation order will be determined by adoption signals and user demand.
+
+---
+
+### Trading Dashboard Enhancements
+
+*Improve the financial widgets and live trading experience. Builds on the existing market data proxy, BullShift integration, and chart components.*
+
+- [ ] **BullShift WebSocket streaming** — Replace simulated trade events with real WebSocket feed from BullShift server. Connect to 5 channels (trades, quotes, order updates, positions, account). Requires BullShift WebSocket endpoint implementation.
+- [ ] **Multi-symbol watchlist** — Persistent watchlist with configurable symbols. Sparkline mini-charts per symbol. Drag-to-reorder. Saved in localStorage.
+- [ ] **Order execution panel** — Place market/limit orders directly from the trading widget. Confirmation dialog, position size calculator, risk/reward preview. Wired to `bullshift_submit_order` MCP tool.
+- [ ] **Portfolio P&L chart** — Time-series portfolio value chart using WaterfallChart and RiskReturnScatter components. Unrealized vs realized P&L breakdown.
+- [ ] **Intraday charts** — Sub-daily candlestick resolution (1m, 5m, 15m, 1h). Requires intraday market data provider support (Finnhub WebSocket or AlphaVantage intraday endpoints).
+- [ ] **Technical indicators** — EMA, RSI, MACD, Bollinger Bands overlay on candlestick chart. Configurable indicator panel below the main chart.
+- [ ] **Alert integration** — Visual alert markers on chart (price levels, triggered alerts from `bullshift_create_alert`). Toast notifications when alerts fire.
+- [ ] **Entity Eye state from trading** — Wire Entity Eye state to trading activity: active when orders executing, thinking when analyzing, training when backtesting.
 
 ---
 

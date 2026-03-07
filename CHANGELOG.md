@@ -6,6 +6,101 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.6]
 
+### Native Integration MCP Tools, Multi-Search & Secrets Management
+
+#### Multi-Search Aggregation
+- **`web_search_multi` tool**: Fan-out to all available search providers (DuckDuckGo, SerpAPI, Tavily, Brave, Bing, Exa, SearxNG) plus connected MCP search servers. Cross-source deduplication by URL, relevance ranking by provider agreement count.
+- **4 new search backends**: Brave Search, Bing Web Search, Exa semantic search, SearxNG metasearch. Each backend gracefully skipped when API key is absent.
+- **MCP server bridge**: Discovers well-known MCP search servers (Brave, Exa) and includes their results in aggregation.
+
+#### 49 Native Integration MCP Tools (6 platforms)
+- **Google Calendar** (7 tools): `gcal_list_events`, `gcal_get_event`, `gcal_create_event`, `gcal_quick_add`, `gcal_update_event`, `gcal_delete_event`, `gcal_list_calendars`. OAuth2 via OAuthTokenService.
+- **Linear** (7 tools): `linear_list_issues`, `linear_get_issue`, `linear_create_issue`, `linear_update_issue`, `linear_create_comment`, `linear_list_teams`, `linear_search_issues`. GraphQL API with API key auth.
+- **Todoist** (6 tools): `todoist_list_tasks`, `todoist_get_task`, `todoist_create_task`, `todoist_update_task`, `todoist_complete_task`, `todoist_list_projects`. REST API v2 with bearer token.
+- **Jira** (8 tools): `jira_search_issues` (JQL), `jira_get_issue`, `jira_create_issue`, `jira_update_issue`, `jira_create_comment`, `jira_list_projects`, `jira_get_transitions`, `jira_transition_issue`. REST API v3 with Basic auth.
+- **Notion** (7 tools): `notion_search`, `notion_get_page`, `notion_create_page`, `notion_update_page`, `notion_get_page_blocks`, `notion_append_blocks`, `notion_query_database`. API v1 with bearer token.
+- **Google Workspace** (14 tools): Drive — `gdrive_list_files`, `gdrive_get_file`, `gdrive_search`, `gdrive_create_folder`, `gdrive_upload_file`, `gdrive_delete_file`, `gdrive_share_file`. Sheets — `gsheets_get_spreadsheet`, `gsheets_get_values`, `gsheets_update_values`, `gsheets_append_values`, `gsheets_create_spreadsheet`. Docs — `gdocs_get_document`, `gdocs_create_document`. OAuth2.
+
+#### Core REST Route Handlers (49 endpoints)
+- **6 new route files** serving the MCP tools: `googlecalendar-routes.ts` (7), `linear-routes.ts` (7), `todoist-routes.ts` (6), `jira-routes.ts` (8), `notion-routes.ts` (7), `google-workspace-routes.ts` (14).
+- Each resolves credentials from existing connection infrastructure (OAuthTokenService or IntegrationManager) and proxies to external APIs.
+- All routes registered under `/api/v1/integrations/` — inherits `integrations` RBAC resource via convention.
+
+#### Secrets Management Pipeline
+- **Core endpoint** `POST /api/v1/internal/secrets/resolve`: Returns decrypted values from SecretsManager for a list of secret names.
+- **MCP enrichment** (`enrichConfigWithSecrets()`): Resolves 16 service keys at MCP startup, merging into config (env vars take precedence).
+- **Dashboard `ServiceKeysPanel`**: Categorized UI showing which service keys are set, with inline edit/remove. Categories: Search, Integration, Infrastructure, AI.
+- **`MCP_SECRET_MAPPINGS`**: Declarative mapping of 16 secret names to McpServiceConfig fields.
+
+#### Manifest & Registration
+- **50 new manifest entries** in `manifest.ts` (364 → 414 total MCP tools).
+- All tool and route registrations wired in `index.ts` and `server.ts` with try-catch guards.
+
+| File | Purpose |
+|------|---------|
+| `packages/mcp/src/tools/web-tools.ts` | Multi-search aggregation |
+| `packages/mcp/src/tools/{googlecalendar,linear,todoist,jira,notion,google-workspace}-tools.ts` | 49 MCP tools |
+| `packages/core/src/integrations/{googlecalendar,linear,todoist,jira,notion}/*-routes.ts` | 35 REST endpoints |
+| `packages/core/src/integrations/google-workspace-routes.ts` | 14 REST endpoints |
+| `packages/mcp/src/config/config.ts` | Secrets pipeline |
+| `packages/dashboard/src/components/SecuritySettings.tsx` | ServiceKeysPanel |
+| `docs/adr/030-native-integration-tools.md` | ADR |
+| Tests (13+ files) | Full coverage |
+
+### BullShift Streaming Widget, Entity Eye Redesign & UI Polish
+
+#### BullShift Streaming Widget (Phase 145)
+- **`BullShiftStreamWidget`** (`finance/BullShiftStreamWidget.tsx`): Real-time trading stream card for Mission Control. Live/pause toggle, scrolling ticker bar, trade event stream (buy/sell with symbol, qty, price), footer stats (buy volume, sell volume, spread).
+- **Live data with demo fallback**: Polls `fetchBullshiftHealth()` to detect BullShift connectivity. When up, fetches positions every 10s via `fetchBullshiftPositions()` and parses to real ticker data; simulated trades use position symbols. When down, falls back to demo tickers and demo symbols with "DEMO" badge + WifiOff icon.
+- **Mission Control registration**: `bullshift-stream` card (default hidden, `minColSpan: 4`).
+- **Feature gating**: Card hidden from Customize panel and auto-hidden from dashboard when `exposeBullshiftTools` is disabled in MCP config. Uses `fetchMcpConfig` query.
+
+#### Entity Eye Redesign
+- **Complete visual rewrite** of `EntityWidget.tsx` — transformed from particle network to a digital EYE:
+  - Almond-shaped eye with bezier-curve eyelids that open/close based on state (dormant=35%, thinking=70%, active=100%).
+  - Iris with 5 concentric data rings, 48 radial filaments that wave and pulse with individual phase offsets.
+  - Data stream particles orbiting within the iris, pulled inward during ingesting state.
+  - Pupil that dilates/constricts per state with dual specular highlights for realism.
+  - Organic breathing (scale oscillation via `breathAmp`/`breathSpeed`) + micro-saccades (tiny positional jitter) — the eye is never perfectly still.
+  - Smooth lid transitions (lerped at 0.03/frame), eyelid edge glow (lash lines), CRT scan line overlay, deep vignette.
+- All 5 states preserved: dormant (half-closed, dim blue), thinking (opens wider, cyan/purple), active (fully open, emerald surge), training (amber warmth), ingesting (green absorption pull).
+- Backward-compatible: same `EntityWidgetProps` interface, same `data-testid` attributes, all 31 existing tests still pass.
+
+#### Entity Toggle Gating
+- "The Entity" card now **hidden from Customize panel** when the personality is not installed (checks all personalities, not just active).
+- Auto-reveal only triggers when the personality is **active** (not just installed).
+- Auto-hides from dashboard when personality is uninstalled.
+
+#### Administration Tab Reorder
+- Settings page tab order changed: General → Souls → Security → Secrets → Roles → Notifications → Appearance → Backup (was: General → Appearance → Security → ... → Souls → Notifications → Backup).
+
+#### Secrets Tab Redesign
+- **Removed `CostDashboard`** from Administration > Secrets — cost analytics is already in Mission Control > Costs tab.
+- **Cost Analytics link**: Quick-access link in Secrets tab navigates to Mission Control > Costs (`/metrics?tab=costs`).
+- **URL-driven tab switching**: Mission Control tabs now support `?tab=costs|full|analytics` query params for deep linking.
+- **Collapsible Service Keys**: `ServiceKeysPanel` redesigned with collapsible category accordions (Search, Security, Proxy, Services, QuickBooks, Market Data). Each category shows a configuration status badge (e.g., "2/5") — green when all configured, blue when partially configured, grey when none set. Expand a category to see individual keys with set/unset status, inline edit, and remove actions.
+- **Custom Secrets merged**: `SecretsPanel` merged into `ServiceKeysPanel` as a "Custom Secrets" collapsible section. Add, update, and delete custom write-only secrets without leaving the unified panel.
+- **Market Data keys added**: `ALPHAVANTAGE_API_KEY` and `FINNHUB_API_KEY` added to the service key registry under "Market Data" category.
+
+#### Live Market Data Integration
+- **Core trading routes** (`integrations/trading/trading-routes.ts`): 6 REST proxy endpoints — `GET /api/v1/trading/quote`, `/historical`, `/search` (AlphaVantage or Finnhub), `/bullshift/positions`, `/bullshift/account`, `/bullshift/health`.
+- **Dashboard API client**: `fetchMarketQuote()`, `fetchMarketHistorical()`, `fetchMarketSearch()`, `fetchBullshiftPositions()`, `fetchBullshiftAccount()`, `fetchBullshiftHealth()`.
+- **`FinancialChartsCard`** wired to live data: Fetches SPY OHLCV from market data proxy; allocation view fetches BullShift positions. Falls back to demo data with "DEMO" badge when APIs unavailable.
+- **`TradingDashboardWidget`** wired to live data: Symbol search fetches real OHLCV data via `fetchMarketHistorical()`. Parses both AlphaVantage (`Time Series (Daily)`) and Finnhub (`{c,h,l,o,t,v,s}`) response formats. Falls back to demo data with "DEMO" badge.
+
+| File | Purpose |
+|------|---------|
+| `packages/core/src/integrations/trading/trading-routes.ts` | Market data + BullShift proxy (new) |
+| `packages/dashboard/src/api/client.ts` | Trading API client functions (new) |
+| `packages/dashboard/src/components/EntityWidget.tsx` | Eye visualization (full rewrite) |
+| `packages/dashboard/src/components/finance/FinancialChartsCard.tsx` | Live market data + demo fallback |
+| `packages/dashboard/src/components/finance/TradingDashboardWidget.tsx` | Live OHLCV + demo fallback |
+| `packages/dashboard/src/components/finance/BullShiftStreamWidget.tsx` | Trading stream widget (new) |
+| `packages/dashboard/src/components/MissionControl/registry.ts` | `bullshift-stream` card registration |
+| `packages/dashboard/src/components/MetricsPage.tsx` | Widget wiring, Entity/BullShift gating, MCP config query, URL tab params |
+| `packages/dashboard/src/components/SettingsPage.tsx` | Tab reorder, removed CostDashboard, cost link |
+| `packages/dashboard/src/components/SecuritySettings.tsx` | Collapsible ServiceKeysPanel, SecretsPanel merged |
+
 ### Phase 145: Cross-Project MCP Expansion
 
 #### BullShift Trading — Feature Gating & New Tools

@@ -1,6 +1,8 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Target, TrendingUp, Building2, UserCircle, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Target, TrendingUp, Building2, UserCircle, BookOpen, Loader2 } from 'lucide-react';
+import { fetchSecurityPolicy } from '../api/client';
 
 const IntentEditor = lazy(() =>
   import('./IntentEditor').then((m) => ({ default: m.IntentEditor }))
@@ -14,8 +16,11 @@ const WorkspacesSettings = lazy(() =>
 const UsersSettings = lazy(() =>
   import('./UsersSettings').then((m) => ({ default: m.UsersSettings }))
 );
+const OrgKnowledgeBaseTab = lazy(() =>
+  import('./knowledge/OrgKnowledgeBaseTab').then((m) => ({ default: m.OrgKnowledgeBaseTab }))
+);
 
-type TabType = 'intent' | 'risk' | 'workspaces' | 'users';
+type TabType = 'intent' | 'risk' | 'knowledge' | 'workspaces' | 'users';
 
 function TabSkeleton() {
   return (
@@ -27,30 +32,49 @@ function TabSkeleton() {
 
 export function OrganizationPage() {
   const location = useLocation();
+
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['securityPolicy'],
+    queryFn: fetchSecurityPolicy,
+  });
+
+  const intentAllowed = securityPolicy?.allowIntent ?? false;
+
+  const TABS = useMemo(() => {
+    const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [];
+    tabs.push({ id: 'knowledge', label: 'Knowledge Base', icon: <BookOpen className="w-4 h-4" /> });
+    if (intentAllowed) {
+      tabs.push({ id: 'intent', label: 'Intent', icon: <Target className="w-4 h-4" /> });
+    }
+    tabs.push({ id: 'risk', label: 'Risk', icon: <TrendingUp className="w-4 h-4" /> });
+    tabs.push({ id: 'workspaces', label: 'Workspaces', icon: <Building2 className="w-4 h-4" /> });
+    tabs.push({ id: 'users', label: 'Users', icon: <UserCircle className="w-4 h-4" /> });
+    return tabs;
+  }, [intentAllowed]);
+
   const getInitialTab = (): TabType => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
+    if (tab === 'knowledge') return 'knowledge';
+    if (tab === 'intent' && intentAllowed) return 'intent';
     if (tab === 'risk') return 'risk';
     if (tab === 'workspaces') return 'workspaces';
     if (tab === 'users') return 'users';
-    return 'intent';
+    // Default to first available tab
+    return TABS[0]?.id ?? 'knowledge';
   };
 
   const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
 
-  const TABS: { id: TabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'intent', label: 'Intent', icon: <Target className="w-4 h-4" /> },
-    { id: 'risk', label: 'Risk', icon: <TrendingUp className="w-4 h-4" /> },
-    { id: 'workspaces', label: 'Workspaces', icon: <Building2 className="w-4 h-4" /> },
-    { id: 'users', label: 'Users', icon: <UserCircle className="w-4 h-4" /> },
-  ];
+  // If the active tab gets disabled, fall back
+  const effectiveTab = TABS.some((t) => t.id === activeTab) ? activeTab : (TABS[0]?.id ?? 'risk');
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Organization</h1>
         <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Manage organizational intent, risk, workspaces, and users
+          Manage organizational intent, risk, knowledge, workspaces, and users
         </p>
       </div>
 
@@ -62,7 +86,7 @@ export function OrganizationPage() {
               setActiveTab(tab.id);
             }}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === tab.id
+              effectiveTab === tab.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
@@ -74,10 +98,11 @@ export function OrganizationPage() {
       </div>
 
       <Suspense fallback={<TabSkeleton />}>
-        {activeTab === 'intent' && <IntentEditor />}
-        {activeTab === 'risk' && <DepartmentalRiskTab />}
-        {activeTab === 'workspaces' && <WorkspacesSettings />}
-        {activeTab === 'users' && <UsersSettings />}
+        {effectiveTab === 'intent' && <IntentEditor />}
+        {effectiveTab === 'risk' && <DepartmentalRiskTab />}
+        {effectiveTab === 'knowledge' && <OrgKnowledgeBaseTab />}
+        {effectiveTab === 'workspaces' && <WorkspacesSettings />}
+        {effectiveTab === 'users' && <UsersSettings />}
       </Suspense>
     </div>
   );

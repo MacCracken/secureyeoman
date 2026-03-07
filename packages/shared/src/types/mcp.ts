@@ -162,6 +162,8 @@ export const McpServiceConfigSchema = z.object({
   twingateApiKey: z.string().optional(),
   /** Enable organizational intent tools (signal read). Off by default — requires allowOrgIntent in Security Settings. */
   exposeOrgIntentTools: z.boolean().default(false),
+  /** Enable organizational knowledge base access for this personality. Off by default. */
+  exposeOrgKnowledgeBase: z.boolean().default(false),
   /** When true (default), honour Content-Signal: ai-input=no and refuse to feed blocked content to the agent. Set MCP_RESPECT_CONTENT_SIGNAL=false to override. */
   respectContentSignal: z.boolean().default(true),
   allowBruteForce: z.boolean().default(false),

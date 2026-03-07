@@ -2688,6 +2688,7 @@ function LocalServerCard({
       ]),
   });
 
+  const [expanded, setExpanded] = useState(false);
   const [mcpToken, setMcpToken] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -2746,51 +2747,66 @@ function LocalServerCard({
   );
 
   return (
-    <div className={`card p-3 sm:p-4 ${!server.enabled ? 'opacity-60' : ''}`}>
-      <div className="flex items-start gap-2 sm:gap-3">
-        <div
-          className={`p-1.5 sm:p-2 rounded-lg shrink-0 transition-colors ${isRestarting ? 'bg-yellow-500/20 text-yellow-400 animate-pulse' : 'bg-surface text-muted-foreground'}`}
+    <div className={`card ${!server.enabled ? 'opacity-60' : ''}`}>
+      {/* Collapsible header — always visible */}
+      <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4">
+        <button
+          onClick={() => {
+            setExpanded((v) => !v);
+          }}
+          className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 text-left"
         >
-          <Wrench className="w-5 h-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
+          <div
+            className={`p-1.5 sm:p-2 rounded-lg shrink-0 transition-colors ${isRestarting ? 'bg-yellow-500/20 text-yellow-400 animate-pulse' : 'bg-surface text-muted-foreground'}`}
+          >
+            <Wrench className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
             <h3 className="font-medium text-sm truncate">{server.name}</h3>
-            <button
-              onClick={() => {
-                onToggle(!server.enabled);
-              }}
-              disabled={isToggling}
-              className={`text-xs flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full transition-colors ${
-                server.enabled
-                  ? 'text-green-400 hover:bg-green-400/10'
-                  : 'text-muted-foreground hover:bg-muted/50'
-              }`}
-            >
-              {server.enabled ? (
-                <>
-                  <Power className="w-3 h-3" /> Enabled
-                </>
-              ) : (
-                <>
-                  <PowerOff className="w-3 h-3" /> Disabled
-                </>
-              )}
-            </button>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1 text-xs text-muted-foreground">
+              <span className="px-1.5 py-0.5 rounded bg-muted/50">{server.transport}</span>
+              <span className="shrink-0">{toolCount} tools</span>
+              {isRestarting && <span className="text-yellow-400 animate-pulse">Reloading...</span>}
+            </div>
           </div>
-          {server.description && (
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{server.description}</p>
+          {expanded ? (
+            <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
           )}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-xs text-muted-foreground">
-            <span className="px-1.5 py-0.5 rounded bg-muted/50">{server.transport}</span>
-            <span className="shrink-0">{toolCount} tools</span>
-            {isRestarting && <span className="text-yellow-400 animate-pulse">Reloading...</span>}
-          </div>
-        </div>
+        </button>
+        <button
+          onClick={() => {
+            onToggle(!server.enabled);
+          }}
+          disabled={isToggling}
+          className={`text-xs flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full transition-colors ${
+            server.enabled
+              ? 'text-green-400 hover:bg-green-400/10'
+              : 'text-muted-foreground hover:bg-muted/50'
+          }`}
+        >
+          {server.enabled ? (
+            <>
+              <Power className="w-3 h-3" /> Enabled
+            </>
+          ) : (
+            <>
+              <PowerOff className="w-3 h-3" /> Disabled
+            </>
+          )}
+        </button>
       </div>
 
+      {/* Expanded content */}
+      {expanded && (
+        <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-0">
+          {server.description && (
+            <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{server.description}</p>
+          )}
+
       {/* Connection Setup */}
-      <div className="mt-3 pt-3 border-t border-border">
+      <div className="pt-3 border-t border-border">
         <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
           <Key className="w-3 h-3" />
           Connect your MCP client
@@ -3464,6 +3480,8 @@ function LocalServerCard({
           Remove
         </button>
       </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserCircle, Plus, Pencil, Trash2, ShieldCheck, Loader2 } from 'lucide-react';
 import { fetchUsers, createUser, updateUser, deleteUser } from '../api/client';
 import type { UserInfo } from '../api/client';
+import { UserRoleAssignments } from './SecuritySettings';
 
 function formatDate(ts: number) {
   return new Date(ts).toLocaleDateString(undefined, {
@@ -74,6 +75,8 @@ export function UsersSettings() {
 
   return (
     <div className="space-y-6">
+      <UserRoleAssignments />
+
       <div className="card">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">

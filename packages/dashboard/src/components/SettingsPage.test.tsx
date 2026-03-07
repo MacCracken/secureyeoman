@@ -244,7 +244,7 @@ describe('SettingsPage', () => {
     const securityIdx = labels.findIndex((l) => l?.includes('Security'));
     expect(appearanceIdx).toBeGreaterThanOrEqual(0);
     expect(securityIdx).toBeGreaterThanOrEqual(0);
-    expect(appearanceIdx).toBeLessThan(securityIdx);
+    expect(appearanceIdx).toBeGreaterThan(securityIdx);
   });
 
   it('renders the Backup tab button', async () => {
@@ -433,7 +433,7 @@ describe('SettingsPage', () => {
         </QueryClientProvider>
       </MemoryRouter>
     );
-    const keysBtn = await screen.findByRole('button', { name: /Secrets/ });
+    const keysBtn = await screen.findByRole('button', { name: /^Secrets$/ });
     expect(keysBtn.className).toContain('border-primary');
   });
 
@@ -472,10 +472,11 @@ describe('SettingsPage', () => {
   it('switches to Secrets tab and renders all sub-panels', async () => {
     const user = userEvent.setup();
     renderComponent();
-    await user.click(await screen.findByRole('button', { name: /Secrets/ }));
-    // ProviderKeysSettings, CostDashboard, ApiKeysSettings, SecretsPanel are all children
+    // Use exact match to avoid matching "Custom Secrets" category button
+    await user.click(await screen.findByRole('button', { name: /^Secrets$/ }));
+    // ProviderKeysSettings, ApiKeysSettings, ServiceKeysPanel are all children
     // We can verify the Keys tab heading appears (provider keys renders)
-    const secretsBtn = screen.getByRole('button', { name: /Secrets/ });
+    const secretsBtn = screen.getByRole('button', { name: /^Secrets$/ });
     expect(secretsBtn.className).toContain('border-primary');
   });
 

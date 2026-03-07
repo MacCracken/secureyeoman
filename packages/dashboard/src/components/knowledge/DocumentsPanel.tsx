@@ -8,6 +8,7 @@ import {
   fetchPersonalities,
 } from '../../api/client';
 import type { KbDocument } from '../../types';
+import { useKbScope } from './KnowledgeBaseContext';
 
 const ALL_PERSONALITIES = '__all__';
 
@@ -58,6 +59,8 @@ function FormatBadge({ format }: { format: KbDocument['format'] }) {
 export function DocumentsPanel() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const kbScope = useKbScope();
+  const isOrg = kbScope === 'organization';
 
   const [selectedPersonalityId, setSelectedPersonalityId] = useState(ALL_PERSONALITIES);
   const [uploadPersonalityId, setUploadPersonalityId] = useState('');
@@ -70,15 +73,16 @@ export function DocumentsPanel() {
     queryKey: ['personalities'],
     queryFn: fetchPersonalities,
     staleTime: 30000,
+    enabled: !isOrg,
   });
   const personalities = personalitiesData?.personalities ?? [];
 
   const filterPersonalityId =
-    selectedPersonalityId === ALL_PERSONALITIES ? undefined : selectedPersonalityId;
+    isOrg ? undefined : (selectedPersonalityId === ALL_PERSONALITIES ? undefined : selectedPersonalityId);
 
   const { data: docsData, isLoading } = useQuery({
-    queryKey: ['kb-documents', filterPersonalityId],
-    queryFn: () => listDocuments({ personalityId: filterPersonalityId }),
+    queryKey: ['kb-documents', kbScope, filterPersonalityId],
+    queryFn: () => listDocuments({ personalityId: filterPersonalityId, scope: isOrg ? 'organization' : undefined }),
     staleTime: 5000,
   });
   const documents = docsData?.documents ?? [];
@@ -86,9 +90,10 @@ export function DocumentsPanel() {
   const uploadMutation = useMutation({
     mutationFn: (file: File) =>
       uploadDocument(file, {
-        personalityId: uploadPersonalityId || undefined,
-        visibility: uploadVisibility,
+        personalityId: isOrg ? undefined : (uploadPersonalityId || undefined),
+        visibility: isOrg ? 'shared' : uploadVisibility,
         title: uploadTitle || undefined,
+        scope: isOrg ? 'organization' : undefined,
       }),
     onSuccess: () => {
       setUploadError(null);
@@ -131,24 +136,26 @@ export function DocumentsPanel() {
       <div className="card">
         <div className="card-header p-3 sm:p-4 flex items-center gap-2">
           <FileText className="w-4 h-4 text-muted-foreground" />
-          <h3 className="card-title text-sm">Documents</h3>
-          <div className="ml-auto flex items-center gap-2">
-            <label className="text-xs text-muted-foreground">Personality:</label>
-            <select
-              value={selectedPersonalityId}
-              onChange={(e) => {
-                setSelectedPersonalityId(e.target.value);
-              }}
-              className="bg-card border border-border rounded text-xs py-1 px-2"
-            >
-              <option value={ALL_PERSONALITIES}>All</option>
-              {personalities.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <h3 className="card-title text-sm">{isOrg ? 'Organization Documents' : 'Documents'}</h3>
+          {!isOrg && (
+            <div className="ml-auto flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">Personality:</label>
+              <select
+                value={selectedPersonalityId}
+                onChange={(e) => {
+                  setSelectedPersonalityId(e.target.value);
+                }}
+                className="bg-card border border-border rounded text-xs py-1 px-2"
+              >
+                <option value={ALL_PERSONALITIES}>All</option>
+                {personalities.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         <div className="card-content p-0">
           {isLoading ? (
@@ -212,38 +219,40 @@ export function DocumentsPanel() {
         </div>
         <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
           {/* Upload options */}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Personality</label>
-              <select
-                value={uploadPersonalityId}
-                onChange={(e) => {
-                  setUploadPersonalityId(e.target.value);
-                }}
-                className="w-full bg-card border border-border rounded text-xs py-1.5 px-2"
-              >
-                <option value="">Global (All Personalities)</option>
-                {personalities.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+          {!isOrg && (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Personality</label>
+                <select
+                  value={uploadPersonalityId}
+                  onChange={(e) => {
+                    setUploadPersonalityId(e.target.value);
+                  }}
+                  className="w-full bg-card border border-border rounded text-xs py-1.5 px-2"
+                >
+                  <option value="">Global (All Personalities)</option>
+                  {personalities.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Visibility</label>
+                <select
+                  value={uploadVisibility}
+                  onChange={(e) => {
+                    setUploadVisibility(e.target.value as 'private' | 'shared');
+                  }}
+                  className="w-full bg-card border border-border rounded text-xs py-1.5 px-2"
+                >
+                  <option value="private">Private</option>
+                  <option value="shared">Shared</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Visibility</label>
-              <select
-                value={uploadVisibility}
-                onChange={(e) => {
-                  setUploadVisibility(e.target.value as 'private' | 'shared');
-                }}
-                className="w-full bg-card border border-border rounded text-xs py-1.5 px-2"
-              >
-                <option value="private">Private</option>
-                <option value="shared">Shared</option>
-              </select>
-            </div>
-          </div>
+          )}
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Title (optional)</label>
             <input

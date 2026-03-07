@@ -44,6 +44,7 @@ import {
   Upload,
   Sparkles,
   Terminal,
+  BookOpen,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -1539,6 +1540,9 @@ function BrainSection({
   exposeOrgIntentTools,
   onExposeOrgIntentToolsChange,
   orgIntentMcpEnabled,
+  orgKnowledgeBase,
+  onOrgKnowledgeBaseChange,
+  orgEnabled,
   omnipresentMind,
   onOmnipresentMindChange,
   strictSystemPromptConfidentiality,
@@ -1588,6 +1592,9 @@ function BrainSection({
   exposeOrgIntentTools: boolean;
   onExposeOrgIntentToolsChange: (v: boolean) => void;
   orgIntentMcpEnabled: boolean;
+  orgKnowledgeBase: boolean;
+  onOrgKnowledgeBaseChange: (v: boolean) => void;
+  orgEnabled: boolean;
   omnipresentMind: boolean;
   onOmnipresentMindChange: (v: boolean) => void;
   strictSystemPromptConfidentiality: boolean;
@@ -1710,55 +1717,7 @@ function BrainSection({
   return (
     <CollapsibleSection title="Brain - Intellect">
       <CollapsibleSection title="Thinking" defaultOpen={true}>
-        {/* Organizational Intent Signal */}
-        {orgIntentMcpEnabled ? (
-          <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Target className="w-4 h-4 text-primary shrink-0" />
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-sm font-medium">Organizational Intent</span>
-                <span className="text-xs text-muted-foreground">
-                  Allow this personality to read live org intent signals
-                </span>
-              </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer shrink-0">
-              <input
-                type="checkbox"
-                checked={exposeOrgIntentTools}
-                onChange={(e) => {
-                  onExposeOrgIntentToolsChange(e.target.checked);
-                }}
-                aria-label="Organizational Intent Signal"
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-            </label>
-          </div>
-        ) : (
-          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
-            <Lock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-            <div className="flex flex-col gap-1 min-w-0">
-              <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                Organizational Intent — Not Enabled
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Intent Document Editor must be active before assigning org intent access to a
-                personality.
-              </span>
-              <button
-                type="button"
-                onClick={() => navigate('/security-settings')}
-                className="mt-1 inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline self-start"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Security → Developers → Intent Document Editor
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Omnipresent Mind toggle */}
+        {/* Omnipresent Mind toggle — always first */}
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
           <div className="flex items-center gap-2.5 min-w-0">
             <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -1783,6 +1742,83 @@ function BrainSection({
             <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
           </label>
         </div>
+
+        {/* Organizational Knowledge Base toggle — only when org is enabled */}
+        {orgEnabled && (
+          <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <BookOpen className="w-4 h-4 text-primary shrink-0" />
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-sm font-medium">Organizational Knowledge Base</span>
+                <span className="text-xs text-muted-foreground">
+                  Allow this personality to query and retrieve organization knowledge base content
+                </span>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={orgKnowledgeBase}
+                onChange={(e) => {
+                  onOrgKnowledgeBaseChange(e.target.checked);
+                }}
+                aria-label="Organizational Knowledge Base"
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+            </label>
+          </div>
+        )}
+
+        {/* Organizational Intent Signal — only when org is enabled */}
+        {orgEnabled && (
+          orgIntentMcpEnabled ? (
+            <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Target className="w-4 h-4 text-primary shrink-0" />
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-sm font-medium">Organizational Intent</span>
+                  <span className="text-xs text-muted-foreground">
+                    Allow this personality to read live org intent signals
+                  </span>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={exposeOrgIntentTools}
+                  onChange={(e) => {
+                    onExposeOrgIntentToolsChange(e.target.checked);
+                  }}
+                  aria-label="Organizational Intent Signal"
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+              </label>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+              <Lock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className="flex flex-col gap-1 min-w-0">
+                <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                  Organizational Intent — Not Enabled
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Intent must be active in Security → Organization before assigning org intent
+                  access to a personality.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/security-settings')}
+                  className="mt-1 inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline self-start"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Security → Organization → Intent
+                </button>
+              </div>
+            </div>
+          )
+        )}
 
         {/* System Prompt Confidentiality override */}
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
@@ -2930,6 +2966,7 @@ interface BodySectionProps {
     exposeNetworkUtils: boolean;
     exposeTwingateTools: boolean;
     exposeOrgIntentTools: boolean;
+    exposeOrgKnowledgeBase: boolean;
     exposeGmail: boolean;
     exposeTwitter: boolean;
     exposeGithub: boolean;
@@ -2952,6 +2989,7 @@ interface BodySectionProps {
     exposeNetworkUtils: boolean;
     exposeTwingateTools: boolean;
     exposeOrgIntentTools: boolean;
+    exposeOrgKnowledgeBase: boolean;
     exposeGmail: boolean;
     exposeTwitter: boolean;
     exposeGithub: boolean;
@@ -4779,6 +4817,7 @@ export function PersonalityEditor({
     exposeNetworkUtils: boolean;
     exposeTwingateTools: boolean;
     exposeOrgIntentTools: boolean;
+    exposeOrgKnowledgeBase: boolean;
     exposeGmail: boolean;
     exposeTwitter: boolean;
     exposeGithub: boolean;
@@ -4800,6 +4839,7 @@ export function PersonalityEditor({
     exposeNetworkUtils: false,
     exposeTwingateTools: false,
     exposeOrgIntentTools: false,
+    exposeOrgKnowledgeBase: false,
     exposeGmail: false,
     exposeTwitter: false,
     exposeGithub: false,
@@ -5099,6 +5139,7 @@ export function PersonalityEditor({
       exposeNetworkUtils: body.mcpFeatures?.exposeNetworkUtils ?? false,
       exposeTwingateTools: body.mcpFeatures?.exposeTwingateTools ?? false,
       exposeOrgIntentTools: body.mcpFeatures?.exposeOrgIntentTools ?? false,
+      exposeOrgKnowledgeBase: (body.mcpFeatures as any)?.exposeOrgKnowledgeBase ?? false,
       exposeGmail: body.mcpFeatures?.exposeGmail ?? false,
       exposeTwitter: body.mcpFeatures?.exposeTwitter ?? false,
       exposeGithub: body.mcpFeatures?.exposeGithub ?? false,
@@ -5243,6 +5284,7 @@ export function PersonalityEditor({
       exposeNetworkUtils: false,
       exposeTwingateTools: false,
       exposeOrgIntentTools: false,
+      exposeOrgKnowledgeBase: false,
       exposeGmail: false,
       exposeTwitter: false,
       exposeGithub: false,
@@ -5654,6 +5696,11 @@ export function PersonalityEditor({
               setMcpFeatures((f) => ({ ...f, exposeOrgIntentTools: v }));
             }}
             orgIntentMcpEnabled={securityPolicy?.allowIntentEditor ?? false}
+            orgKnowledgeBase={mcpFeatures.exposeOrgKnowledgeBase ?? false}
+            onOrgKnowledgeBaseChange={(v) => {
+              setMcpFeatures((f) => ({ ...f, exposeOrgKnowledgeBase: v }));
+            }}
+            orgEnabled={securityPolicy?.allowOrgIntent ?? false}
             omnipresentMind={omnipresentMind}
             onOmnipresentMindChange={setOmnipresentMind}
             strictSystemPromptConfidentiality={strictSystemPromptConfidentiality ?? false}

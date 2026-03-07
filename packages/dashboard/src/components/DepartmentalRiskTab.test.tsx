@@ -56,35 +56,75 @@ describe('DepartmentalRiskTab', () => {
     mockFetchRiskSummary.mockResolvedValue(null as any);
   });
 
-  it('renders departments header', async () => {
+  // ── Sub-tab navigation ──────────────────────────────────────────
+
+  it('renders Business Risks and Department Risks sub-tabs', () => {
     renderComponent();
+    expect(screen.getByText('Business Risks')).toBeInTheDocument();
+    expect(screen.getByText('Department Risks')).toBeInTheDocument();
+  });
+
+  it('defaults to Business Risks view', () => {
+    renderComponent();
+    expect(screen.getByText('No risk summary data available yet.')).toBeInTheDocument();
+  });
+
+  it('switches to Department Risks view on click', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(screen.getByText('Department Risks'));
     await waitFor(() => {
       expect(screen.getByText('Departments')).toBeInTheDocument();
     });
   });
 
-  it('renders New department button', async () => {
+  // ── Business Risks (C-Suite) ────────────────────────────────────
+
+  it('shows empty state when no risk summary', () => {
     renderComponent();
+    expect(screen.getByText('No risk summary data available yet.')).toBeInTheDocument();
+  });
+
+  // ── Department Risks ────────────────────────────────────────────
+
+  it('renders departments header on Department Risks tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(screen.getByText('Department Risks'));
+    await waitFor(() => {
+      expect(screen.getByText('Departments')).toBeInTheDocument();
+    });
+  });
+
+  it('renders New department button on Department Risks tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(screen.getByText('Department Risks'));
     await waitFor(() => {
       expect(screen.getByText('New')).toBeInTheDocument();
     });
   });
 
   it('shows empty state when no departments', async () => {
+    const user = userEvent.setup();
     renderComponent();
+    await user.click(screen.getByText('Department Risks'));
     await waitFor(() => {
       expect(screen.getByText('No departments configured.')).toBeInTheDocument();
     });
   });
 
   it('shows "Select a department" prompt when none selected', async () => {
+    const user = userEvent.setup();
     renderComponent();
+    await user.click(screen.getByText('Department Risks'));
     await waitFor(() => {
       expect(screen.getByText('Select a department to view details')).toBeInTheDocument();
     });
   });
 
   it('renders department list', async () => {
+    const user = userEvent.setup();
     mockFetchDepartments.mockResolvedValue({
       items: [
         { id: 'd1', name: 'Engineering' },
@@ -92,6 +132,7 @@ describe('DepartmentalRiskTab', () => {
       ],
     } as any);
     renderComponent();
+    await user.click(screen.getByText('Department Risks'));
     await waitFor(() => {
       expect(screen.getByText('Engineering')).toBeInTheDocument();
       expect(screen.getByText('Finance')).toBeInTheDocument();
@@ -108,6 +149,7 @@ describe('DepartmentalRiskTab', () => {
     } as any);
     vi.mocked(api.fetchRegisterEntries).mockResolvedValue({ items: [] } as any);
     renderComponent();
+    await user.click(screen.getByText('Department Risks'));
     await waitFor(() => {
       expect(screen.getByText('Engineering')).toBeInTheDocument();
     });

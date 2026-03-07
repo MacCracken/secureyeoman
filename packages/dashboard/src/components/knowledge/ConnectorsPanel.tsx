@@ -3,16 +3,21 @@ import { useQuery } from '@tanstack/react-query';
 import { Globe, GitBranch, FileText, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { ingestUrl, ingestText, ingestGithubWiki, fetchPersonalities } from '../../api/client';
 import type { KbDocument } from '../../types';
+import { useKbScope } from './KnowledgeBaseContext';
 
 function ResultMessage({ doc }: { doc: KbDocument | null; error: string | null }) {
   return null;
 }
 
 export function ConnectorsPanel() {
+  const kbScope = useKbScope();
+  const isOrg = kbScope === 'organization';
+
   const { data: personalitiesData } = useQuery({
     queryKey: ['personalities'],
     queryFn: fetchPersonalities,
     staleTime: 30000,
+    enabled: !isOrg,
   });
   const personalities = personalitiesData?.personalities ?? [];
 
@@ -42,7 +47,8 @@ export function ConnectorsPanel() {
     setCrawlResult(null);
     try {
       const res = await ingestUrl(crawlUrl.trim(), {
-        personalityId: crawlPersonality || undefined,
+        personalityId: isOrg ? undefined : (crawlPersonality || undefined),
+        scope: isOrg ? 'organization' : undefined,
       });
       setCrawlResult({ ok: true, msg: `Ingested: ${res.document.title} (${res.document.status})` });
     } catch (err) {
@@ -60,7 +66,8 @@ export function ConnectorsPanel() {
       const res = await ingestGithubWiki(
         wikiOwner.trim(),
         wikiRepo.trim(),
-        wikiPersonality || undefined
+        isOrg ? undefined : (wikiPersonality || undefined),
+        isOrg ? 'organization' : undefined
       );
       setWikiResult({
         ok: true,
@@ -79,7 +86,8 @@ export function ConnectorsPanel() {
     setPasteResult(null);
     try {
       const res = await ingestText(pasteText.trim(), pasteTitle.trim(), {
-        personalityId: pastePersonality || undefined,
+        personalityId: isOrg ? undefined : (pastePersonality || undefined),
+        scope: isOrg ? 'organization' : undefined,
       });
       setPasteResult({ ok: true, msg: `Added: ${res.document.title}` });
       setPasteText('');
@@ -145,7 +153,7 @@ export function ConnectorsPanel() {
             placeholder="https://example.com/docs/page"
             className="w-full bg-card border border-border rounded text-sm py-1.5 px-2"
           />
-          <div>{personalitySelector(crawlPersonality, setCrawlPersonality)}</div>
+          {!isOrg && <div>{personalitySelector(crawlPersonality, setCrawlPersonality)}</div>}
           <button
             className="btn btn-primary text-xs h-8 px-3 disabled:opacity-50"
             onClick={() => void handleCrawl()}
@@ -191,7 +199,7 @@ export function ConnectorsPanel() {
               className="flex-1 bg-card border border-border rounded text-sm py-1.5 px-2"
             />
           </div>
-          <div>{personalitySelector(wikiPersonality, setWikiPersonality)}</div>
+          {!isOrg && <div>{personalitySelector(wikiPersonality, setWikiPersonality)}</div>}
           <button
             className="btn btn-primary text-xs h-8 px-3 disabled:opacity-50"
             onClick={() => void handleWiki()}
@@ -234,7 +242,7 @@ export function ConnectorsPanel() {
             rows={6}
             className="w-full bg-card border border-border rounded text-sm py-1.5 px-2 font-mono resize-y"
           />
-          <div>{personalitySelector(pastePersonality, setPastePersonality)}</div>
+          {!isOrg && <div>{personalitySelector(pastePersonality, setPastePersonality)}</div>}
           <button
             className="btn btn-primary text-xs h-8 px-3 disabled:opacity-50"
             onClick={() => void handlePaste()}

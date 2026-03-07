@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySettings';
+import { SecuritySettings, RolesSettings, SecretsPanel, UserRoleAssignments } from './SecuritySettings';
 import { createMetricsSnapshot } from '../test/mocks';
 
 vi.mock('../api/client', () => ({
@@ -55,6 +55,16 @@ function renderComponent() {
       </QueryClientProvider>
     </MemoryRouter>
   );
+}
+
+async function expandPromptSecurity() {
+  const heading = await screen.findByText('Prompt Security');
+  fireEvent.click(heading.closest('button')!);
+}
+
+async function expandContentGuardrails() {
+  const heading = await screen.findByText('Content Guardrails');
+  fireEvent.click(heading.closest('button')!);
 }
 
 describe('SecuritySettings', () => {
@@ -133,21 +143,23 @@ describe('SecuritySettings', () => {
       allowCodeEditor: false,
       allowAdvancedEditor: false,
       allowTrainingExport: false,
-      promptGuardMode: 'warn' as const,
-      responseGuardMode: 'warn' as const,
+      allowIntent: false,
+      allowKnowledgeBase: false,
+      promptGuardMode: 'block' as const,
+      responseGuardMode: 'block' as const,
       jailbreakThreshold: 0.5,
-      jailbreakAction: 'warn' as const,
+      jailbreakAction: 'block' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
-      contentGuardrailsEnabled: false,
-      contentGuardrailsPiiMode: 'disabled' as const,
-      contentGuardrailsToxicityEnabled: false,
-      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsEnabled: true,
+      contentGuardrailsPiiMode: 'redact' as const,
+      contentGuardrailsToxicityEnabled: true,
+      contentGuardrailsToxicityMode: 'block' as const,
       contentGuardrailsToxicityThreshold: 0.7,
       contentGuardrailsBlockList: [],
       contentGuardrailsBlockedTopics: [],
-      contentGuardrailsGroundingEnabled: false,
-      contentGuardrailsGroundingMode: 'flag' as const,
+      contentGuardrailsGroundingEnabled: true,
+      contentGuardrailsGroundingMode: 'block' as const,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
@@ -1054,44 +1066,50 @@ describe('SecuritySettings', () => {
 
   it('renders Prompt Guard Mode select', async () => {
     renderComponent();
+    await expandPromptSecurity();
     expect(await screen.findByText('Prompt Guard Mode')).toBeInTheDocument();
   });
 
   it('renders Response Guard Mode select', async () => {
     renderComponent();
+    await expandPromptSecurity();
     expect(await screen.findByText('Response Guard Mode')).toBeInTheDocument();
   });
 
   it('renders Jailbreak Score Threshold slider', async () => {
     renderComponent();
+    await expandPromptSecurity();
     expect(await screen.findByText('Jailbreak Score Threshold')).toBeInTheDocument();
     expect(screen.getByText('0.50')).toBeInTheDocument();
   });
 
   it('renders System Prompt Confidentiality toggle', async () => {
     renderComponent();
+    await expandPromptSecurity();
     const toggle = await screen.findByLabelText('Toggle System Prompt Confidentiality');
     expect(toggle.getAttribute('aria-checked')).toBe('false');
   });
 
   it('renders Rate-Aware Abuse Detection toggle (on by default)', async () => {
     renderComponent();
+    await expandPromptSecurity();
     const toggle = await screen.findByLabelText('Toggle Rate-Aware Abuse Detection');
     expect(toggle.getAttribute('aria-checked')).toBe('true');
   });
 
   // ── Content Guardrails ──────────────────────────────────────────────
 
-  it('renders Content Guardrails toggle (off by default)', async () => {
+  it('renders Content Guardrails toggle (on by default)', async () => {
     renderComponent();
+    await expandContentGuardrails();
     const toggle = await screen.findByLabelText('Toggle Enable Content Guardrails');
-    expect(toggle.getAttribute('aria-checked')).toBe('false');
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
   });
 
-  it('does not show PII mode when guardrails disabled', async () => {
+  it('shows PII mode when guardrails enabled by default', async () => {
     renderComponent();
-    await screen.findByText('Content Guardrails');
-    expect(screen.queryByText('PII Detection Mode')).not.toBeInTheDocument();
+    await expandContentGuardrails();
+    expect(await screen.findByText('PII Detection Mode')).toBeInTheDocument();
   });
 
   it('shows content guardrail sub-settings when enabled', async () => {
@@ -1140,6 +1158,7 @@ describe('SecuritySettings', () => {
       contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
+    await expandContentGuardrails();
     expect(await screen.findByText('PII Detection Mode')).toBeInTheDocument();
     expect(screen.getByLabelText('Toggle Toxicity Filtering')).toBeInTheDocument();
     expect(screen.getByText('Block List')).toBeInTheDocument();
@@ -1204,11 +1223,11 @@ describe('SecuritySettings', () => {
     expect(await screen.findByLabelText('Toggle Camera Capture')).toBeInTheDocument();
   });
 
-  // ── Organizational Intent sub-toggles ──────────────────────────────
+  // ── Organization sub-toggles ──────────────────────────────
 
-  it('renders Organizational Intent section', async () => {
+  it('renders Organization section', async () => {
     renderComponent();
-    const headings = await screen.findAllByText('Organizational Intent');
+    const headings = await screen.findAllByText('Organization');
     expect(headings.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -1385,22 +1404,10 @@ describe('RolesSettings', () => {
     expect(await screen.findByText(/Are you sure you want to delete/)).toBeInTheDocument();
   });
 
-  it('renders User Role Assignments table', async () => {
+  it('no longer renders User Role Assignments (moved to Organization > Users)', async () => {
     renderRolesSettings();
-    expect(await screen.findByText('User Role Assignments')).toBeInTheDocument();
-    expect(await screen.findByText('alice')).toBeInTheDocument();
-  });
-
-  it('shows loading state for assignments', () => {
-    mockFetchAssignments.mockReturnValue(new Promise(() => {}));
-    renderRolesSettings();
-    expect(screen.getByText('Loading assignments...')).toBeInTheDocument();
-  });
-
-  it('shows empty assignments message when no assignments', async () => {
-    mockFetchAssignments.mockResolvedValue({ assignments: [] });
-    renderRolesSettings();
-    expect(await screen.findByText('No active user role assignments.')).toBeInTheDocument();
+    await screen.findByText('Custom Ops');
+    expect(screen.queryByText('User Role Assignments')).not.toBeInTheDocument();
   });
 
   it('shows empty roles message when no roles', async () => {
@@ -1417,10 +1424,55 @@ describe('RolesSettings', () => {
     expect(await screen.findByText('No permissions')).toBeInTheDocument();
   });
 
+});
+
+// ── UserRoleAssignments (moved from RolesSettings) ──────────────────────
+
+function renderUserRoleAssignments() {
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={createQueryClient()}>
+        <UserRoleAssignments />
+      </QueryClientProvider>
+    </MemoryRouter>
+  );
+}
+
+describe('UserRoleAssignments', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mockFetchRoles.mockResolvedValue({
+      roles: [
+        { id: 'r-ops', name: 'Custom Ops', permissions: [{ resource: 'tasks', action: 'read' }], isBuiltin: false, inheritFrom: [] },
+      ],
+    });
+    mockFetchAssignments.mockResolvedValue({
+      assignments: [{ userId: 'alice', roleId: 'r-ops' }],
+    });
+  });
+
+  it('renders Role Assignments table', async () => {
+    renderUserRoleAssignments();
+    expect(await screen.findByText('Role Assignments')).toBeInTheDocument();
+    expect(await screen.findByText('alice')).toBeInTheDocument();
+  });
+
+  it('shows loading state for assignments', () => {
+    mockFetchAssignments.mockReturnValue(new Promise(() => {}));
+    renderUserRoleAssignments();
+    expect(screen.getByText('Loading assignments...')).toBeInTheDocument();
+  });
+
+  it('shows empty assignments message when no assignments', async () => {
+    mockFetchAssignments.mockResolvedValue({ assignments: [] });
+    renderUserRoleAssignments();
+    expect(await screen.findByText('No active user role assignments.')).toBeInTheDocument();
+  });
+
   it('opens assignment form and shows role select', async () => {
     const user = userEvent.setup();
-    renderRolesSettings();
-    await screen.findByText('Custom Ops');
+    renderUserRoleAssignments();
+    await screen.findByText('alice');
     await user.click(screen.getByText(/Assign Role/));
     expect(screen.getByPlaceholderText('e.g. admin')).toBeInTheDocument();
     expect(screen.getByText('Select a role...')).toBeInTheDocument();
@@ -1428,7 +1480,7 @@ describe('RolesSettings', () => {
 
   it('shows revoke confirmation dialog', async () => {
     const user = userEvent.setup();
-    renderRolesSettings();
+    renderUserRoleAssignments();
     await screen.findByText('alice');
     const revokeBtn = screen.getByTitle('Revoke assignment');
     await user.click(revokeBtn);
@@ -1436,9 +1488,9 @@ describe('RolesSettings', () => {
   });
 });
 
-// ── SecretsPanel ──────────────────────────────────────────────────────
+// ── ServiceKeysPanel (formerly SecretsPanel) ─────────────────────────────
 
-function renderSecretsPanel() {
+function renderServiceKeysPanel() {
   return render(
     <MemoryRouter>
       <QueryClientProvider client={createQueryClient()}>
@@ -1450,86 +1502,101 @@ function renderSecretsPanel() {
 
 const mockFetchSecretKeys = vi.mocked(api.fetchSecretKeys);
 
-describe('SecretsPanel', () => {
+describe('ServiceKeysPanel (SecretsPanel alias)', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockFetchSecretKeys.mockResolvedValue({ keys: ['API_KEY', 'DB_PASS'] });
     vi.mocked(api.setSecret).mockResolvedValue(undefined as never);
     vi.mocked(api.deleteSecret).mockResolvedValue(undefined as never);
-    // Reset SecuritySettings mocks too since they share the module mock
     mockFetchRoles.mockResolvedValue({ roles: [] });
     mockFetchAssignments.mockResolvedValue({ assignments: [] });
   });
 
-  it('renders Secrets heading and description', async () => {
-    renderSecretsPanel();
-    expect(screen.getByText('Secrets')).toBeInTheDocument();
-    expect(screen.getByText(/write-only/)).toBeInTheDocument();
+  it('renders Service API Keys heading', async () => {
+    renderServiceKeysPanel();
+    expect(screen.getByText('Service API Keys')).toBeInTheDocument();
   });
 
   it('shows loading state', () => {
     mockFetchSecretKeys.mockReturnValue(new Promise(() => {}));
-    renderSecretsPanel();
+    renderServiceKeysPanel();
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
-  it('shows error state', async () => {
-    mockFetchSecretKeys.mockRejectedValue(new Error('fail'));
-    renderSecretsPanel();
-    expect(await screen.findByText('Failed to load secrets')).toBeInTheDocument();
+  it('shows collapsible categories', async () => {
+    renderServiceKeysPanel();
+    // Wait for data to load
+    await screen.findByText('Service API Keys');
+    expect(screen.getByText('SecureYeoman')).toBeInTheDocument();
+    expect(screen.getByText('Search')).toBeInTheDocument();
+    expect(screen.getByText('Custom Secrets')).toBeInTheDocument();
   });
 
-  it('shows empty state', async () => {
-    mockFetchSecretKeys.mockResolvedValue({ keys: [] });
-    renderSecretsPanel();
-    expect(await screen.findByText('No secrets stored yet.')).toBeInTheDocument();
+  it('shows category status badges', async () => {
+    renderServiceKeysPanel();
+    await screen.findByText('Service API Keys');
+    // All badges should show counts like "0/N"
+    const badges = screen.getAllByText(/^\d+\/\d+$/);
+    expect(badges.length).toBeGreaterThan(0);
   });
 
-  it('renders secret keys', async () => {
-    renderSecretsPanel();
+  it('renders custom secrets in Custom Secrets category', async () => {
+    const user = userEvent.setup();
+    renderServiceKeysPanel();
+    await screen.findByText('Service API Keys');
+    // Expand Custom Secrets
+    await user.click(screen.getByText('Custom Secrets'));
     expect(await screen.findByText('API_KEY')).toBeInTheDocument();
     expect(screen.getByText('DB_PASS')).toBeInTheDocument();
   });
 
-  it('has delete button per secret', async () => {
-    renderSecretsPanel();
+  it('has delete button per custom secret', async () => {
+    const user = userEvent.setup();
+    renderServiceKeysPanel();
+    await screen.findByText('Service API Keys');
+    await user.click(screen.getByText('Custom Secrets'));
     expect(await screen.findByLabelText('Delete secret API_KEY')).toBeInTheDocument();
     expect(screen.getByLabelText('Delete secret DB_PASS')).toBeInTheDocument();
   });
 
   it('shows delete confirmation dialog', async () => {
     const user = userEvent.setup();
-    renderSecretsPanel();
+    renderServiceKeysPanel();
+    await screen.findByText('Service API Keys');
+    await user.click(screen.getByText('Custom Secrets'));
     await screen.findByText('API_KEY');
     await user.click(screen.getByLabelText('Delete secret API_KEY'));
-    expect(await screen.findByText(/Delete secret "API_KEY"/)).toBeInTheDocument();
+    expect(await screen.findByText(/Remove "API_KEY"/)).toBeInTheDocument();
   });
 
-  it('opens add form when Add Secret clicked', async () => {
+  it('opens add form when Add Custom Secret clicked', async () => {
     const user = userEvent.setup();
-    renderSecretsPanel();
-    await screen.findByText('API_KEY');
-    await user.click(screen.getByText('Add Secret'));
+    renderServiceKeysPanel();
+    await screen.findByText('Service API Keys');
+    await user.click(screen.getByText('Custom Secrets'));
+    await screen.findByText('Add Custom Secret');
+    await user.click(screen.getByText('Add Custom Secret'));
     expect(screen.getByPlaceholderText('MY_SECRET_KEY')).toBeInTheDocument();
-  });
-
-  it('add form has name and value inputs', async () => {
-    const user = userEvent.setup();
-    renderSecretsPanel();
-    await screen.findByText('API_KEY');
-    await user.click(screen.getByText('Add Secret'));
-    expect(screen.getByPlaceholderText('MY_SECRET_KEY')).toBeInTheDocument();
-    const valueInputs = screen.getAllByDisplayValue('');
-    expect(valueInputs.length).toBeGreaterThan(0);
   });
 
   it('cancel button in add form hides the form', async () => {
     const user = userEvent.setup();
-    renderSecretsPanel();
-    await screen.findByText('API_KEY');
-    await user.click(screen.getByText('Add Secret'));
+    renderServiceKeysPanel();
+    await screen.findByText('Service API Keys');
+    await user.click(screen.getByText('Custom Secrets'));
+    await screen.findByText('Add Custom Secret');
+    await user.click(screen.getByText('Add Custom Secret'));
     expect(screen.getByPlaceholderText('MY_SECRET_KEY')).toBeInTheDocument();
     await user.click(screen.getByText('Cancel'));
     expect(screen.queryByPlaceholderText('MY_SECRET_KEY')).not.toBeInTheDocument();
+  });
+
+  it('shows empty custom secrets message', async () => {
+    mockFetchSecretKeys.mockResolvedValue({ keys: [] });
+    const user = userEvent.setup();
+    renderServiceKeysPanel();
+    await screen.findByText('Service API Keys');
+    await user.click(screen.getByText('Custom Secrets'));
+    expect(await screen.findByText('No custom secrets stored.')).toBeInTheDocument();
   });
 });

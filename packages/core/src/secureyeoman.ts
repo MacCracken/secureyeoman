@@ -1743,7 +1743,9 @@ export class SecureYeoman {
     allowNetBoxWrite?: boolean;
     allowTwingate?: boolean;
     allowOrgIntent?: boolean;
+    allowIntent?: boolean;
     allowIntentEditor?: boolean;
+    allowKnowledgeBase?: boolean;
     allowCodeEditor?: boolean;
     allowAdvancedEditor?: boolean;
     allowTrainingExport?: boolean;
@@ -1825,8 +1827,12 @@ export class SecureYeoman {
       this.config!.security.allowTwingate = updates.allowTwingate;
     if (updates.allowOrgIntent !== undefined)
       this.config!.security.allowOrgIntent = updates.allowOrgIntent;
+    if (updates.allowIntent !== undefined)
+      this.config!.security.allowIntent = updates.allowIntent;
     if (updates.allowIntentEditor !== undefined)
       this.config!.security.allowIntentEditor = updates.allowIntentEditor;
+    if (updates.allowKnowledgeBase !== undefined)
+      this.config!.security.allowKnowledgeBase = updates.allowKnowledgeBase;
     if (updates.allowCodeEditor !== undefined)
       this.config!.security.allowCodeEditor = updates.allowCodeEditor;
     if (updates.allowAdvancedEditor !== undefined)
@@ -1933,7 +1939,9 @@ export class SecureYeoman {
         'allowNetBoxWrite',
         'allowTwingate',
         'allowOrgIntent',
+        'allowIntent',
         'allowIntentEditor',
+        'allowKnowledgeBase',
         'allowCodeEditor',
         'allowAdvancedEditor',
         'allowTrainingExport',

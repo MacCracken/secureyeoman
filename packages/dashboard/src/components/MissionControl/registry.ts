@@ -12,7 +12,8 @@ export type MissionCardId =
   | 'cost-breakdown'
   | 'agent-world'
   | 'the-entity'
-  | 'financial-charts';
+  | 'financial-charts'
+  | 'bullshift-stream';
 
 export interface CardDef {
   id: MissionCardId;
@@ -136,6 +137,14 @@ export const CARD_REGISTRY: readonly CardDef[] = [
     description: 'Candlestick and portfolio allocation charts',
     defaultVisible: false,
     minColSpan: 6,
+    defaultColSpan: 6,
+  },
+  {
+    id: 'bullshift-stream',
+    label: 'Trading Stream',
+    description: 'Real-time trade events, price ticks, and volume from BullShift',
+    defaultVisible: false,
+    minColSpan: 4,
     defaultColSpan: 6,
   },
 ];

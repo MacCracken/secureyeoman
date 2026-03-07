@@ -103,6 +103,13 @@ function renderComponent(initialEntries = ['/connections']) {
   );
 }
 
+/** Click the YEOMAN MCP header to expand the collapsible card */
+async function expandYeomanCard() {
+  const user = userEvent.setup();
+  const header = await screen.findByText('YEOMAN MCP');
+  await user.click(header);
+}
+
 const DEFAULT_MCP_CONFIG = {
   exposeGit: false,
   exposeFilesystem: false,
@@ -758,6 +765,7 @@ describe('ConnectionsPage', () => {
     } as never);
 
     renderComponent();
+    await expandYeomanCard();
     expect(
       await screen.findByText('Enable Twingate in Security settings first')
     ).toBeInTheDocument();
@@ -780,6 +788,7 @@ describe('ConnectionsPage', () => {
     } as never);
 
     renderComponent();
+    await expandYeomanCard();
     expect(
       await screen.findByText('Agents can reach private MCP servers and resources via Twingate')
     ).toBeInTheDocument();
@@ -790,6 +799,7 @@ describe('ConnectionsPage', () => {
   it('shows Connect your MCP client section for LocalServerCard', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText('Connect your MCP client')).toBeInTheDocument();
     expect(screen.getByText('http://localhost:18789/mcp/v1')).toBeInTheDocument();
   });
@@ -797,12 +807,12 @@ describe('ConnectionsPage', () => {
   it('auto-generates a key on mount and shows new key banner', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText(/New key generated/)).toBeInTheDocument();
     expect(mockCreateApiKey).toHaveBeenCalledWith({ name: 'YEOMAN MCP', role: 'operator' });
   });
 
   it('shows existing keys listing with revoke button', async () => {
-    const user = userEvent.setup();
     mockFetchApiKeys.mockResolvedValue({
       keys: [
         {
@@ -817,7 +827,9 @@ describe('ConnectionsPage', () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
 
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText(/sck_abcd/)).toBeInTheDocument();
+    const user = userEvent.setup();
     const revokeBtn = screen.getByTitle('Revoke key');
     await user.click(revokeBtn);
     expect(mockRevokeApiKey).toHaveBeenCalledWith('key-1');
@@ -828,6 +840,7 @@ describe('ConnectionsPage', () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
 
     renderComponent();
+    await expandYeomanCard();
     await screen.findByText(/New key generated/);
     const revealBtn = screen.getByTitle('Reveal token');
     await user.click(revealBtn);
@@ -1046,6 +1059,7 @@ describe('ConnectionsPage', () => {
   it('shows Feature Toggles section for local server', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText('Feature Toggles')).toBeInTheDocument();
     expect(screen.getByText('Git & GitHub')).toBeInTheDocument();
     expect(screen.getByText('Filesystem')).toBeInTheDocument();
@@ -1056,6 +1070,7 @@ describe('ConnectionsPage', () => {
   it('shows Connected Account Tools section', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText('Connected Account Tools')).toBeInTheDocument();
     expect(screen.getByText('Gmail')).toBeInTheDocument();
     expect(screen.getByText('Twitter / X')).toBeInTheDocument();
@@ -1065,6 +1080,7 @@ describe('ConnectionsPage', () => {
   it('shows Infrastructure Tools section with Docker and Terminal', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText('Infrastructure Tools')).toBeInTheDocument();
     expect(screen.getByText('Docker')).toBeInTheDocument();
     expect(screen.getByText('Terminal')).toBeInTheDocument();
@@ -1073,6 +1089,7 @@ describe('ConnectionsPage', () => {
   it('shows Knowledge & Intent section', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     const headings = await screen.findAllByText(/Knowledge/);
     expect(headings.length).toBeGreaterThan(0);
     expect(screen.getByText('Knowledge Base Access')).toBeInTheDocument();
@@ -1082,6 +1099,7 @@ describe('ConnectionsPage', () => {
   it('shows Content Negotiation section with Respect Content-Signal', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText('Content Negotiation')).toBeInTheDocument();
     expect(screen.getByText('Respect Content-Signal')).toBeInTheDocument();
   });
@@ -1093,6 +1111,7 @@ describe('ConnectionsPage', () => {
       allowDesktopControl: false,
     } as never);
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText('Remote Desktop Control')).toBeInTheDocument();
     const hints = screen.getAllByText('Enable in Security Settings first');
     expect(hints.length).toBeGreaterThanOrEqual(1);
@@ -1105,6 +1124,7 @@ describe('ConnectionsPage', () => {
       allowNetworkTools: false,
     } as never);
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText('Network Tools')).toBeInTheDocument();
     // "Enable in Security Settings first" appears for both desktop and network
     const hints = screen.getAllByText('Enable in Security Settings first');
@@ -1574,7 +1594,7 @@ describe('ConnectionsPage', () => {
       total: 1,
     });
     renderComponent();
-    await screen.findByText('YEOMAN MCP');
+    await expandYeomanCard();
     expect(screen.queryByText('Feature Toggles')).not.toBeInTheDocument();
   });
 
@@ -1609,6 +1629,7 @@ describe('ConnectionsPage', () => {
   it('shows CI/CD Platforms section with GitHub Actions, Jenkins, GitLab CI, Northflank', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText('CI/CD Platforms')).toBeInTheDocument();
     expect(screen.getByText('GitHub Actions')).toBeInTheDocument();
     expect(screen.getByText('Jenkins')).toBeInTheDocument();
@@ -1716,6 +1737,7 @@ describe('ConnectionsPage', () => {
       exposeNetworkTools: false,
     });
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText('NetBox Write')).toBeInTheDocument();
     expect(screen.getByText('Enable Network Tools first')).toBeInTheDocument();
   });
@@ -1746,6 +1768,7 @@ describe('ConnectionsPage', () => {
   it('shows Twingate Remote Access heading', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     expect(await screen.findByText('Twingate Remote Access')).toBeInTheDocument();
     expect(screen.getByText('Twingate Zero-Trust Tunnel')).toBeInTheDocument();
   });
@@ -1755,6 +1778,7 @@ describe('ConnectionsPage', () => {
   it('shows feature toggle info note', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     expect(
       await screen.findByText(/Feature toggles control which tool categories/)
     ).toBeInTheDocument();
@@ -1765,6 +1789,7 @@ describe('ConnectionsPage', () => {
   it('shows config snippet after key generation', async () => {
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
+    await expandYeomanCard();
     await screen.findByText(/New key generated/);
     expect(screen.getByText('Config snippet')).toBeInTheDocument();
     // Should show the mcpServers JSON config

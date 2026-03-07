@@ -77,6 +77,7 @@ vi.mock('../api/client', () => ({
   fetchSecurityEvents: vi.fn(),
   fetchAuditEntries: vi.fn(),
   fetchWorkflows: vi.fn(),
+  fetchMcpConfig: vi.fn().mockResolvedValue({ exposeBullshiftTools: false }),
   getAccessToken: vi.fn(() => null),
 }));
 
