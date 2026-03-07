@@ -10,8 +10,10 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
+| Integration B | AGNOSTIC as SecureYeoman Plugin | P1 | Done |
+| Integration C | AGNOS as Runtime Layer | P2 | Done (except node22 base image) |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
-| Future | LLM Providers, Voice, Infrastructure, Dev Ecosystem | Future / Demand-Gated | — |
+| Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -90,6 +92,36 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Dashboard | All components | 44% stmt coverage — unit test sweep in progress |
 | MCP | Tool handlers, manifest | 58% stmt coverage — unit test sweep in progress |
 | Core E2E | Expand coverage | Currently 7 files / 53 tests; add training, delegation, analytics flows |
+
+---
+
+## Cross-Project Integration — AGNOSTIC & AGNOS (Q2–Q3 2026)
+
+SecureYeoman, [AGNOSTIC](../../../agnostic/) (QA automation), and [AGNOS](../../../agnosticos/) (AI-native OS) are converging into a unified agent platform. These items wire the three projects together.
+
+### Phase B: AGNOSTIC as SecureYeoman Plugin (Q2 2026)
+
+**Priority**: P1 — AGNOSTIC A2A and MCP bridge already exist; these items complete the integration.
+
+| Item | Effort | Status | Description |
+|------|--------|--------|-------------|
+| Register AGNOSTIC as MCP server | 1 day | Done | HTTP transport MCP server registration for AGNOSTIC's 25 tools. Auto-discovery via `/api/v1/a2a/capabilities`. Featured in Connections > MCP tab |
+| Extension hooks → AGNOSTIC triggers | 2 days | Done | `integrations/agnostic-hooks.ts` — wires extension hooks to auto-submit AGNOSTIC QA tasks. Configurable per-personality and per-workflow |
+| SSO/OAuth2 token federation | 3 days | Done | `integrations/token-federation.ts` + `POST /api/v1/auth/federation/token`. Issues scoped JWTs (aud, iss, scopes) with configurable TTL |
+| AGNOSTIC metrics dashboard widget | 1 day | Done | `AgnosticMetricsWidget.tsx` + proxy route `GET /api/v1/integrations/agnostic/widget`. Shows task counts, agent status, recent activity |
+| Bidirectional event streaming | 2 days | Done | `integrations/event-bridge.ts` — SSE-based bidirectional channel. Outbound broadcast + inbound subscription with auto-reconnect |
+
+### Phase C: AGNOS as Runtime Layer (Q3 2026, post-AGNOS Alpha)
+
+**Priority**: P2 — Depends on AGNOS Alpha release (Q2 2026).
+
+| Item | Effort | Status | Description |
+|------|--------|--------|-------------|
+| AGNOS agent runtime as MCP server | 2 days | Done | 20 MCP tools in `mcp/tools/agnos-tools.ts` wrapping AGNOS `/v1/agents`, `/v1/audit`, `/v1/traces`, `/v1/webhooks`, and LLM gateway APIs |
+| Route LLM calls through AGNOS gateway | 3 days | Done | `ai/providers/agnos.ts` — OpenAI-compatible provider. `provider: 'agnos'` in ModelConfig routes through AGNOS gateway with token accounting |
+| Sandbox profile → Landlock policy mapping | 2 days | Done | `sandbox/landlock-mapper.ts` — converts SandboxProfile to AGNOS Landlock policies with filesystem rules, network port rules, cgroup limits |
+| Unified OpenTelemetry pipeline | 2 days | Done | `telemetry/otel-bridge.ts` — W3C trace context propagation, `tracedFetch()` for cross-project spans, `OtelBridge` class for AGNOSTIC/AGNOS calls |
+| AGNOS `node22` base image migration | 2 days | Blocked (AGNOS Alpha) | Migrate SecureYeoman Docker image from `node:22-slim` to `agnos:node22`. Gains: Landlock sandbox, cryptographic audit chain, agent-runtime sidecar |
 
 ---
 
@@ -173,6 +205,20 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 - [ ] **Responsive / mobile layout** — Adaptive layout for smaller screens.
 - [ ] **Plugin / extension system** — Third-party editor extensions.
+
+---
+
+### Cross-Project — Full Triangle Convergence
+
+*Ambitious unification of SecureYeoman, AGNOSTIC, and AGNOS. Depends on Phases B–C being stable.*
+
+- [ ] **Unified dev environment** — Shared `docker-compose.unified.yml` with networking across all three projects. Single `.env.unified` for common secrets.
+- [ ] **Cross-project health dashboard** — `/api/v1/platform/health` aggregates health from all three services. Dashboard widget shows system-wide status.
+- [ ] **Unified SSO across all three projects** — OAuth2/OIDC federation: single identity provider, shared sessions. SecureYeoman as IdP or external OIDC provider.
+- [ ] **Cryptographic audit chain bridge** — SecureYeoman audit events forwarded to AGNOS cryptographic audit chain. Shared correlation IDs, immutable cross-project audit trail.
+- [ ] **Cross-project agent delegation** — SecureYeoman brain delegates to AGNOSTIC QA agents running on AGNOS. Full chain: task → brain → A2A → QA agent → AGNOS sandbox → results → brain.
+- [ ] **Shared vector store / RAG pipeline** — AGNOS embedded vector store accessible from SecureYeoman and AGNOSTIC. Shared knowledge base: code, docs, QA findings, audit logs.
+- [ ] **Unified agent marketplace** — Single marketplace spanning SecureYeoman skills, AGNOSTIC QA capabilities, and AGNOS native agents. Cross-project discovery and installation.
 
 ---
 

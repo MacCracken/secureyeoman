@@ -52,6 +52,7 @@ const PROVIDER_KEY_ENV: Record<string, string> = {
   grok: 'XAI_API_KEY',
   groq: 'GROQ_API_KEY',
   openrouter: 'OPENROUTER_API_KEY',
+  agnos: 'AGNOS_GATEWAY_API_KEY',
 };
 
 function resolvePersonalityFallbacks(

@@ -49,7 +49,7 @@ export class BundleManager {
     const interval = this.config.repo.syncIntervalSec;
     if (interval > 0) {
       this.syncTimer = setInterval(() => {
-        this.syncFromGit().catch((err) => {
+        this.syncFromGit().catch((err: unknown) => {
           this.log.error({ err }, 'Policy auto-sync failed');
         });
       }, interval * 1000);

@@ -39,7 +39,7 @@ export class IacManager {
     const interval = this.config.repo.syncIntervalSec;
     if (interval > 0) {
       this.syncTimer = setInterval(() => {
-        this.syncFromGit().catch((err) => {
+        this.syncFromGit().catch((err: unknown) => {
           this.log.error({ err }, 'IaC auto-sync failed');
         });
       }, interval * 1000);
@@ -48,7 +48,7 @@ export class IacManager {
 
     // Seed built-in templates
     if (this.config.enableBuiltinTemplates) {
-      this.seedBuiltinTemplates().catch((err) => {
+      this.seedBuiltinTemplates().catch((err: unknown) => {
         this.log.warn({ err }, 'Failed to seed built-in IaC templates');
       });
     }

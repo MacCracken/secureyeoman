@@ -177,7 +177,7 @@ describe('EditorToolbar', () => {
       );
     // Click the close button next to app.tsx (second tab)
     const appTab = screen.getByText('app.tsx').closest('div')!;
-    const closeBtn = appTab.querySelector('button.hover\\:text-destructive') as HTMLElement;
+    const closeBtn = appTab.querySelector('button.hover\\:text-destructive')!;
     if (closeBtn) {
       await user.click(closeBtn);
       expect(props.onTabClose).toHaveBeenCalledWith('2');

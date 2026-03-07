@@ -38,6 +38,7 @@ import { GrokProvider } from './providers/grok.js';
 import { LettaProvider } from './providers/letta.js';
 import { GroqProvider } from './providers/groq.js';
 import { OpenRouterProvider } from './providers/openrouter.js';
+import { AGNOSProvider } from './providers/agnos.js';
 import { CostCalculator } from './cost-calculator.js';
 import { UsageTracker, type UsageStats } from './usage-tracker.js';
 import type { UsageStorage } from './usage-storage.js';
@@ -781,6 +782,8 @@ export class AIClient {
         return new GroqProvider(providerConfig, this.logger ?? undefined);
       case 'openrouter':
         return new OpenRouterProvider(providerConfig, this.logger ?? undefined);
+      case 'agnos':
+        return new AGNOSProvider(providerConfig, this.logger ?? undefined);
       default:
         throw new Error(`Unknown AI provider: ${config.model.provider}`);
     }

@@ -200,8 +200,7 @@ export function useKeybindings() {
 
   const resetBinding = useCallback((id: string) => {
     setOverrides((prev) => {
-      const next = { ...prev };
-      delete next[id];
+      const { [id]: _, ...next } = prev;
       saveOverrides(next);
       return next;
     });

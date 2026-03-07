@@ -41,7 +41,7 @@ export class ChaosManager {
   /** Start the scheduler that checks for scheduled experiments. */
   start(): void {
     this.schedulerTimer = setInterval(() => {
-      this.checkScheduledExperiments().catch((err) => {
+      this.checkScheduledExperiments().catch((err: unknown) => {
         this.log.error({ err }, 'Chaos scheduler check failed');
       });
     }, 10_000);
@@ -260,7 +260,7 @@ export class ChaosManager {
 
     for (const exp of items) {
       if (exp.scheduledAt > 0 && exp.scheduledAt <= now) {
-        this.runExperiment(exp.id).catch((err) => {
+        this.runExperiment(exp.id).catch((err: unknown) => {
           this.log.error({ err, experimentId: exp.id }, 'Scheduled experiment failed to start');
         });
       }

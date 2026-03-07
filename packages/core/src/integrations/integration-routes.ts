@@ -604,4 +604,33 @@ export function registerIntegrationRoutes(
       }
     );
   }
+
+  // ─── AGNOSTIC Widget Proxy (Phase B) ───────────────────────────
+
+  app.get('/api/v1/integrations/agnostic/widget', async (_request, reply: FastifyReply) => {
+    const agnosticUrl = process.env.AGNOSTIC_URL;
+    if (!agnosticUrl) {
+      return sendError(reply, 503, 'AGNOSTIC_URL not configured');
+    }
+
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const apiKey = process.env.AGNOSTIC_API_KEY;
+      if (apiKey) headers['X-API-Key'] = apiKey;
+
+      const res = await fetch(`${agnosticUrl}/api/dashboard/widget`, {
+        headers,
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!res.ok) {
+        return sendError(reply, res.status, `AGNOSTIC widget returned ${res.status}`);
+      }
+
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      return sendError(reply, 502, `AGNOSTIC unreachable: ${toErrorMessage(err)}`);
+    }
+  });
 }

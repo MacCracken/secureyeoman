@@ -67,12 +67,8 @@ export function registerTerminalTools(
         body.allowedCommands = configAllowedCommands;
       }
 
-      const result = (await client.post('/api/v1/terminal/execute', body)) as {
-        output?: string;
-        error?: string;
-        exitCode?: number;
-        cwd?: string;
-      };
+      const result: { output?: string; error?: string; exitCode?: number; cwd?: string } =
+        await client.post('/api/v1/terminal/execute', body);
 
       const parts: string[] = [];
       if (result.output) parts.push(result.output);

@@ -44,7 +44,7 @@ export class FederatedManager {
   start(): void {
     if (this.config.heartbeatIntervalMs > 0) {
       this.heartbeatTimer = setInterval(() => {
-        this.checkParticipantHeartbeats().catch((err) => {
+        this.checkParticipantHeartbeats().catch((err: unknown) => {
           this.log.error({ err }, 'Federated heartbeat check failed');
         });
       }, this.config.heartbeatIntervalMs);

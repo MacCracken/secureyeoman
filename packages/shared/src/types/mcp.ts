@@ -122,6 +122,16 @@ export const McpServiceConfigSchema = z.object({
   agnosticEmail: z.string().optional(),
   agnosticPassword: z.string().optional(),
   agnosticApiKey: z.string().optional(),
+  /** Enable AGNOS (AI-Native OS) agent runtime and LLM gateway tools. Off by default. Set MCP_EXPOSE_AGNOS_TOOLS=true. */
+  exposeAgnosTools: z.boolean().default(false),
+  /** AGNOS agent runtime API URL (default: http://127.0.0.1:8090). */
+  agnosRuntimeUrl: z.string().url().default('http://127.0.0.1:8090'),
+  /** AGNOS LLM gateway API URL (default: http://127.0.0.1:8088). */
+  agnosGatewayUrl: z.string().url().default('http://127.0.0.1:8088'),
+  /** AGNOS agent runtime API key. From env AGNOS_RUNTIME_API_KEY. */
+  agnosRuntimeApiKey: z.string().optional(),
+  /** AGNOS LLM gateway API key. From env AGNOS_GATEWAY_API_KEY. */
+  agnosGatewayApiKey: z.string().optional(),
   exposeQuickBooksTools: z.boolean().default(false),
   quickBooksEnvironment: z.enum(['sandbox', 'production']).default('sandbox'),
   quickBooksClientId: z.string().optional(),

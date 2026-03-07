@@ -113,6 +113,7 @@ export class GuardrailPipeline {
     let blocked = false;
 
     for (const filter of activeFilters) {
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       const hook = ctx.direction === 'input' ? filter.onInput : filter.onOutput;
       if (!hook) continue;
 

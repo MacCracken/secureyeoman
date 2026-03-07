@@ -910,6 +910,9 @@ export interface McpFeatureConfig {
   exposeJenkins: boolean;
   exposeGitlabCi: boolean;
   exposeNorthflank: boolean;
+  // Cross-project integration tools
+  exposeAgnosticTools: boolean;
+  exposeAgnosTools: boolean;
 }
 
 export interface CicdPlatformConfig {

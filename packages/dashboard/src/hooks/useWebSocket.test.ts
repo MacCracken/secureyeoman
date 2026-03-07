@@ -75,6 +75,7 @@ describe('useWebSocket', () => {
     (globalThis as unknown as Record<string, unknown>).WebSocket = class extends OrigMock {
       constructor(url: string) {
         super(url);
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         wsInstance = this;
       }
     };
@@ -104,6 +105,7 @@ describe('useWebSocket', () => {
     (globalThis as unknown as Record<string, unknown>).WebSocket = class extends OrigMock {
       constructor(url: string) {
         super(url);
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         wsInstance = this;
       }
     };
@@ -160,6 +162,7 @@ describe('useWebSocket', () => {
     (globalThis as unknown as Record<string, unknown>).WebSocket = class extends OrigMock {
       constructor(url: string) {
         super(url);
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         wsInstance = this;
       }
     };

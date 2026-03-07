@@ -1340,7 +1340,7 @@ describe('NewEntityDialog', () => {
     });
     await user.click(screen.getByText('Import JSON'));
     expect(screen.getByText(/Paste a full intent JSON document/)).toBeInTheDocument();
-    const textarea = screen.getByPlaceholderText(/\"name\": \"\.\.\.\"/);
+    const textarea = screen.getByPlaceholderText(/"name": "\.\.\."/);
     const validJson = JSON.stringify({
       name: 'Imported Intent',
       goals: [{ name: 'G1', description: 'Goal 1', priority: 3 }],
@@ -1367,7 +1367,7 @@ describe('NewEntityDialog', () => {
       expect(screen.getByText('New Intent')).toBeInTheDocument();
     });
     await user.click(screen.getByText('Import JSON'));
-    const textarea = screen.getByPlaceholderText(/\"name\": \"\.\.\.\"/);
+    const textarea = screen.getByPlaceholderText(/"name": "\.\.\."/);
     await user.type(textarea, 'not valid json{{');
     const parseBtn = screen.getByRole('button', { name: /Parse/ });
     await user.click(parseBtn);

@@ -241,7 +241,7 @@ describe('ProjectExplorer', () => {
       expect(screen.getByTestId('context-menu')).toBeInTheDocument();
     });
     // Click the fixed overlay to close context menu
-    const overlay = document.querySelector('.fixed.inset-0.z-50') as HTMLElement;
+    const overlay = document.querySelector('.fixed.inset-0.z-50')!;
     if (overlay) {
       await user.click(overlay);
       await waitFor(() => {

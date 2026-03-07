@@ -123,9 +123,10 @@ export function registerSearchRoutes(app: FastifyInstance): void {
           maxBuffer: 2 * 1024 * 1024,
           timeout: 10_000,
           env: buildSafeEnv(),
-        }).catch((err) => {
+        }).catch((err: unknown) => {
           // grep returns exit code 1 when no matches found
-          if (err.code === 1) return { stdout: '' };
+          if (err instanceof Error && 'code' in err && (err as { code: unknown }).code === 1)
+            return { stdout: '' };
           throw err;
         });
 

@@ -43,6 +43,7 @@ function builtin(
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class IacSraPopulator {
   static getBuiltinTemplates(): IacTemplate[] {
     return [

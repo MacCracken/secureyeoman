@@ -46,6 +46,7 @@ beforeEach(() => {
     this.onmessage = null;
     this.onclose = null;
     this.onerror = null;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     lastWsInstance = this;
     return this;
   }

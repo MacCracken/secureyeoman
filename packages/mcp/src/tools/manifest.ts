@@ -1905,5 +1905,107 @@ export function getToolManifest(): ToolManifestEntry[] {
       description: 'Query recent system alerts with optional severity filter (proxy)',
       category: 'qa',
     },
+
+    // AGNOS (AI-Native OS) tools — agent runtime + LLM gateway
+    {
+      name: 'agnos_runtime_health',
+      description: 'Check AGNOS agent runtime health, component status, and system info',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_gateway_health',
+      description: 'Check AGNOS LLM gateway health and provider availability',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_agents_list',
+      description: 'List all agents registered with the AGNOS runtime (native + external)',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_agent_detail',
+      description: 'Get details of a specific AGNOS agent (status, capabilities, memory, heartbeat)',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_agent_register',
+      description: 'Register a new agent with the AGNOS runtime',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_agent_deregister',
+      description: 'Deregister (remove) an agent from the AGNOS runtime',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_agent_memory_list',
+      description: 'List all memory keys for an AGNOS agent (persistent KV store)',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_agent_memory_get',
+      description: 'Retrieve a specific memory entry from an AGNOS agent KV store',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_agent_memory_set',
+      description: 'Store a value in an AGNOS agent persistent KV store',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_agent_memory_delete',
+      description: 'Delete a memory entry from an AGNOS agent KV store',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_runtime_metrics',
+      description: 'Get AGNOS agent runtime aggregate metrics (agent counts, CPU, memory usage)',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_gateway_metrics',
+      description: 'Get AGNOS LLM gateway metrics (cache stats, token accounting, provider health)',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_gateway_models',
+      description: 'List available models on the AGNOS LLM gateway (Ollama, llama.cpp, OpenAI, Anthropic)',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_gateway_chat',
+      description: 'Send a chat completion through the AGNOS LLM gateway (OpenAI-compatible)',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_audit_forward',
+      description: 'Forward audit events to the AGNOS cryptographic audit chain',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_audit_query',
+      description: 'Query the AGNOS audit log with optional filters by agent or action',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_traces_submit',
+      description: 'Submit reasoning traces to AGNOS for cross-project visibility',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_traces_query',
+      description: 'Query submitted reasoning traces from the AGNOS runtime',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_webhooks_register',
+      description: 'Register a webhook with the AGNOS runtime to receive agent events',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_overview',
+      description: 'Get a unified AGNOS platform overview: runtime health, gateway health, agents, metrics, models',
+      category: 'agnos',
+    },
   ];
 }

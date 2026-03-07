@@ -37,6 +37,7 @@ Check these whenever running `npm update` or when the relevant packages release 
 | `fastify` 5.7.2-5.8.0 | GHSA-573f-x89g-hqp9 | 2026-03-06 | Fixed by `npm audit fix`. Missing end anchor in `subtypeNameReg` allowed malformed Content-Types to pass validation. |
 | `tar` <=7.5.9 | GHSA-qffp-2rhf-9h96 | 2026-03-06 | Fixed by `npm audit fix`. Hardlink path traversal via drive-relative linkpath. |
 | `dompurify` (direct) 3.2.4→3.3.2 | GHSA-vhxf-7vqr-mrjg, GHSA-v8jm-5vwx-cfxm, GHSA-v2wj-7wpq-c8vv | 2026-03-06 | Upgraded direct dep from `^3.2.4` to `^3.3.2`. Dashboard and top-level mermaid imports now resolve to 3.3.2. Root `package.json` also declares `dompurify@^3.3.2` to ensure hoisted version is patched. |
+| `express-rate-limit` 8.2.0-8.2.1 | GHSA-46wh-pxpv-q5gq | 2026-03-06 | Fixed by `npm audit fix`. IPv4-mapped IPv6 addresses bypass per-client rate limiting on servers with dual-stack network. |
 
 ---
 
@@ -48,4 +49,4 @@ Check these whenever running `npm update` or when the relevant packages release 
 
 ---
 
-*Last updated: 2026-03-06 — Security audit: `npm audit fix` resolved 4 HIGH vulns (hono, @hono/node-server, fastify, tar). Direct `dompurify` upgraded to 3.3.2. Remaining 6 moderate vulns are bundled inside `@excalidraw/*` and `monaco-editor` — awaiting upstream releases. Active tracked items: minimatch ReDoS (dev-only), excalidraw bundled dompurify/nanoid (moderate, mitigated).*
+*Last updated: 2026-03-06 — Security audit: `npm audit fix` resolved 5 vulns (hono, @hono/node-server, fastify, tar, express-rate-limit). Direct `dompurify` upgraded to 3.3.2. Remaining 6 moderate vulns are bundled inside `@excalidraw/*` and `monaco-editor` — awaiting upstream releases. Active tracked items: minimatch ReDoS (dev-only), excalidraw bundled dompurify/nanoid (moderate, mitigated).*

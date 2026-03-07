@@ -263,8 +263,7 @@ function DispositionEditor({
   };
 
   const clearTrait = (key: string) => {
-    const next = { ...traits };
-    delete next[key];
+    const { [key]: _, ...next } = traits;
     onChange(next);
   };
 

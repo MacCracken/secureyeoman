@@ -9,6 +9,7 @@ import type { RateLimiterLike } from '../security/rate-limiter.js';
 import type { Role } from '@secureyeoman/shared';
 import { RoleDefinitionSchema } from '@secureyeoman/shared';
 import type { RBAC } from '../security/rbac.js';
+import type { TokenFederationService } from '../integrations/token-federation.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 
 /** Built-in role IDs that cannot be mutated or deleted via the API. */
@@ -26,10 +27,11 @@ export interface AuthRoutesOptions {
   authService: AuthService;
   rateLimiter: RateLimiterLike;
   rbac: RBAC;
+  tokenFederation?: TokenFederationService;
 }
 
 export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions): void {
-  const { authService, rateLimiter, rbac } = opts;
+  const { authService, rateLimiter, rbac, tokenFederation } = opts;
 
   // ── POST /api/v1/auth/login ───────────────────────────────────────
   app.post(
@@ -464,6 +466,67 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         return sendError(reply, 404, 'No active assignment for this user');
       }
       return { message: 'Assignment revoked' };
+    }
+  );
+
+  // ── POST /api/v1/auth/federation/token — Issue cross-project JWT ──
+  app.post(
+    '/api/v1/auth/federation/token',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          audience: string;
+          scopes?: string[];
+          ttlSeconds?: number;
+          metadata?: Record<string, unknown>;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      if (!tokenFederation) {
+        return sendError(reply, 503, 'Token federation not configured');
+      }
+      try {
+        const authUser = (request as any).authUser;
+        if (!authUser) {
+          return sendError(reply, 401, 'Authentication required');
+        }
+        const result = await tokenFederation.issueToken({
+          audience: request.body.audience,
+          subject: authUser.userId,
+          role: authUser.role,
+          scopes: request.body.scopes,
+          ttlSeconds: request.body.ttlSeconds,
+          metadata: request.body.metadata,
+        });
+        return result;
+      } catch (err) {
+        return sendError(reply, 400, toErrorMessage(err));
+      }
+    }
+  );
+
+  // ── POST /api/v1/auth/federation/verify — Verify inbound federation token ──
+  app.post(
+    '/api/v1/auth/federation/verify',
+    async (
+      request: FastifyRequest<{
+        Body: { token: string; expectedAudience?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      if (!tokenFederation) {
+        return sendError(reply, 503, 'Token federation not configured');
+      }
+      try {
+        const payload = await tokenFederation.verifyToken(
+          request.body.token,
+          request.body.expectedAudience
+        );
+        return { valid: true, payload };
+      } catch (err) {
+        return sendError(reply, 401, toErrorMessage(err));
+      }
     }
   );
 }

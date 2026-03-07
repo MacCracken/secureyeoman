@@ -90,11 +90,11 @@ function renderSceneSvg(scene: ExcalidrawScene): string {
     const y = (el.y ?? 0) - minY + pad;
     const w = el.width ?? 100;
     const h = el.height ?? 50;
-    const stroke = sanitizeSvgColor(String(el.strokeColor ?? '#1e1e1e'));
+    const stroke = sanitizeSvgColor(el.strokeColor ?? '#1e1e1e');
     const fill =
       el.backgroundColor === 'transparent' || !el.backgroundColor
         ? 'none'
-        : sanitizeSvgColor(String(el.backgroundColor));
+        : sanitizeSvgColor(el.backgroundColor);
 
     switch (el.type) {
       case 'rectangle':

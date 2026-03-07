@@ -47,6 +47,8 @@ const GHA_TOOL_PREFIXES = ['gha_'];
 const JENKINS_TOOL_PREFIXES = ['jenkins_'];
 const GITLAB_TOOL_PREFIXES = ['gitlab_'];
 const NORTHFLANK_TOOL_PREFIXES = ['northflank_'];
+const AGNOSTIC_TOOL_PREFIXES = ['agnostic_'];
+const AGNOS_TOOL_PREFIXES = ['agnos_'];
 
 export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions): void {
   const {
@@ -232,6 +234,10 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       if (!config.exposeGitlabCi && GITLAB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
       if (!config.exposeNorthflank && NORTHFLANK_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeAgnosticTools && AGNOSTIC_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeAgnosTools && AGNOS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
       return true;
     });

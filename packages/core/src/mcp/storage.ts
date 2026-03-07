@@ -68,6 +68,9 @@ export interface McpFeatureConfig {
   // Terminal tools
   exposeTerminal: boolean;
   terminalAllowedCommands: string[];
+  // Cross-project integration tools
+  exposeAgnosticTools: boolean;
+  exposeAgnosTools: boolean;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -104,6 +107,8 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   exposeNorthflank: false,
   exposeTerminal: false,
   terminalAllowedCommands: [],
+  exposeAgnosticTools: false,
+  exposeAgnosTools: false,
 };
 
 export class McpStorage extends PgBaseStorage {

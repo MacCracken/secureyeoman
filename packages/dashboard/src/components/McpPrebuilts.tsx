@@ -236,6 +236,40 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
     ],
     note: 'Requires Docker. Image: ghcr.io/secureyeoman/mcp-security-toolkit:latest. Use the Scope tab in Security settings to manage targets.',
   },
+  {
+    icon: <Shield className="w-5 h-5" />,
+    name: 'Agnostic QA Platform',
+    description:
+      'Multi-agent QA orchestration (6 AI agents): security audit, performance testing, regression, compliance (OWASP, GDPR, PCI DSS)',
+    transport: 'streamable-http',
+    urlTemplate: '{AGNOSTIC_URL}',
+    urlKeys: ['AGNOSTIC_URL'],
+    requiredEnvVars: [
+      { key: 'AGNOSTIC_URL', label: 'Agnostic Platform URL (default: http://127.0.0.1:8000)' },
+      { key: 'AGNOSTIC_API_KEY', label: 'API Key' },
+    ],
+    note:
+      'Requires the Agnostic QA platform running (Docker Compose or native). ' +
+      'Alternatively, enable the built-in agnostic_* tools with MCP_EXPOSE_AGNOSTIC_TOOLS=true.',
+  },
+  {
+    icon: <Server className="w-5 h-5" />,
+    name: 'AGNOS Runtime',
+    description:
+      'AI-Native OS: agent lifecycle management, LLM gateway with token accounting, sandboxed execution, persistent memory, cryptographic audit chain',
+    transport: 'streamable-http',
+    urlTemplate: '{AGNOS_RUNTIME_URL}',
+    urlKeys: ['AGNOS_RUNTIME_URL'],
+    requiredEnvVars: [
+      { key: 'AGNOS_RUNTIME_URL', label: 'AGNOS Runtime URL (default: http://127.0.0.1:8090)' },
+      { key: 'AGNOS_RUNTIME_API_KEY', label: 'Runtime API Key (optional)' },
+      { key: 'AGNOS_GATEWAY_URL', label: 'LLM Gateway URL (default: http://127.0.0.1:8088)' },
+      { key: 'AGNOS_GATEWAY_API_KEY', label: 'Gateway API Key (optional)' },
+    ],
+    note:
+      'Requires the AGNOS agent runtime and LLM gateway running. ' +
+      'Alternatively, enable built-in agnos_* tools with MCP_EXPOSE_AGNOS_TOOLS=true.',
+  },
 ];
 
 export function McpPrebuilts() {

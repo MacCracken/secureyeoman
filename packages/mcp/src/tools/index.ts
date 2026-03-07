@@ -22,6 +22,7 @@ import { registerBrowserTools, type OnBrowserSessionEvent } from './browser-tool
 import { registerMultimodalTools } from './multimodal-tools.js';
 import { registerSecurityTools } from './security-tools.js';
 import { registerAgnosticTools } from './agnostic-tools.js';
+import { registerAgnosTools } from './agnos-tools.js';
 import { registerTradingTools } from './trading-tools.js';
 import { registerWorkflowTools } from './workflow-tools.js';
 import { registerQuickBooksTools } from './quickbooks-tools.js';
@@ -83,6 +84,7 @@ export async function registerAllTools(
   registerMultimodalTools(server, client, middleware);
   await registerSecurityTools(server, config, middleware);
   registerAgnosticTools(server, config, middleware);
+  registerAgnosTools(server, config, middleware);
   registerTradingTools(server, middleware);
   registerWorkflowTools(server, client, middleware);
   registerQuickBooksTools(server, config, middleware);
