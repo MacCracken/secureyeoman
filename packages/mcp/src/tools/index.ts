@@ -53,6 +53,12 @@ import { registerTrainingTools } from './training-tools.js';
 import { registerEvalTools } from './eval-tools.js';
 import { registerDlpTools } from './dlp-tools.js';
 import { registerTerminalTools } from './terminal-tools.js';
+import { registerGoogleCalendarTools } from './googlecalendar-tools.js';
+import { registerLinearTools } from './linear-tools.js';
+import { registerTodoistTools } from './todoist-tools.js';
+import { registerJiraTools } from './jira-tools.js';
+import { registerNotionTools } from './notion-tools.js';
+import { registerGoogleWorkspaceTools } from './google-workspace-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -80,7 +86,7 @@ export async function registerAllTools(
   // core API response, not whether the tools exist on the MCP server.
   registerGitTools(server, config, middleware);
   registerFilesystemTools(server, config, middleware);
-  registerWebTools(server, config, middleware);
+  registerWebTools(server, config, middleware, client);
   registerBrowserTools(server, config, middleware, onBrowserSessionEvent);
   registerMultimodalTools(server, client, middleware);
   await registerSecurityTools(server, config, middleware);
@@ -128,4 +134,12 @@ export async function registerAllTools(
   registerDlpTools(server, client, config, middleware);
   // Terminal tools
   registerTerminalTools(server, client, config, middleware);
+  // Integration adapter tools (Google Calendar, Linear, Todoist, Jira, Notion)
+  registerGoogleCalendarTools(server, client, middleware);
+  registerLinearTools(server, client, middleware);
+  registerTodoistTools(server, client, middleware);
+  registerJiraTools(server, client, middleware);
+  registerNotionTools(server, client, middleware);
+  // Google Workspace tools (Drive, Sheets, Docs)
+  registerGoogleWorkspaceTools(server, client, middleware);
 }

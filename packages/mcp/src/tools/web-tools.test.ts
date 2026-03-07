@@ -13,7 +13,16 @@ import {
   buildFrontMatter,
   ContentSignalBlockedError,
   estimateTokens,
+  getAvailableProviders,
+  aggregateResults,
+  searchBrave,
+  searchBing,
+  searchExa,
+  searchSearxng,
+  searchViaMcpServer,
+  MCP_SEARCH_SERVERS,
 } from './web-tools.js';
+import type { SearchProviderName } from './web-tools.js';
 import { registerWebTools } from './web-tools.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ProxyManager } from './proxy-manager.js';
@@ -363,5 +372,359 @@ describe('safeFetch proxy integration', () => {
     const result = pm.buildFetchOptions('https://example.com', { country: 'US' });
     expect(result).not.toBeNull();
     expect(result!.url).toContain('country_code=US');
+  });
+});
+
+// ─── Multi-Search Tests ─────────────────────────────────────
+
+describe('getAvailableProviders', () => {
+  it('always includes duckduckgo', () => {
+    const config = makeConfig();
+    const providers = getAvailableProviders(config);
+    expect(providers).toContain('duckduckgo');
+  });
+
+  it('includes brave when braveSearchApiKey is set', () => {
+    const config = makeConfig({ braveSearchApiKey: 'test-key' } as Partial<McpServiceConfig>);
+    const providers = getAvailableProviders(config);
+    expect(providers).toContain('brave');
+  });
+
+  it('includes bing when bingSearchApiKey is set', () => {
+    const config = makeConfig({ bingSearchApiKey: 'test-key' } as Partial<McpServiceConfig>);
+    const providers = getAvailableProviders(config);
+    expect(providers).toContain('bing');
+  });
+
+  it('includes exa when exaApiKey is set', () => {
+    const config = makeConfig({ exaApiKey: 'test-key' } as Partial<McpServiceConfig>);
+    const providers = getAvailableProviders(config);
+    expect(providers).toContain('exa');
+  });
+
+  it('includes searxng when searxngUrl is set', () => {
+    const config = makeConfig({ searxngUrl: 'http://localhost:8080' } as Partial<McpServiceConfig>);
+    const providers = getAvailableProviders(config);
+    expect(providers).toContain('searxng');
+  });
+
+  it('includes serpapi when webSearchProvider is serpapi and key set', () => {
+    const config = makeConfig({
+      webSearchProvider: 'serpapi',
+      webSearchApiKey: 'test-key',
+    } as Partial<McpServiceConfig>);
+    const providers = getAvailableProviders(config);
+    expect(providers).toContain('serpapi');
+  });
+
+  it('does not include brave without key', () => {
+    const config = makeConfig();
+    const providers = getAvailableProviders(config);
+    expect(providers).not.toContain('brave');
+  });
+});
+
+describe('aggregateResults', () => {
+  it('deduplicates results by URL and merges sources', () => {
+    const providerResults = [
+      {
+        provider: 'duckduckgo' as SearchProviderName,
+        results: [
+          { title: 'Example', url: 'https://example.com', snippet: 'Short' },
+          { title: 'Other', url: 'https://other.com', snippet: 'Other snippet' },
+        ],
+      },
+      {
+        provider: 'brave' as SearchProviderName,
+        results: [
+          { title: 'Example Page', url: 'https://example.com/', snippet: 'A longer snippet from Brave search' },
+        ],
+      },
+    ];
+
+    const aggregated = aggregateResults(providerResults);
+
+    // example.com appears in both providers — should be merged
+    const example = aggregated.find((r) => r.url.includes('example.com'));
+    expect(example).toBeDefined();
+    expect(example!.sources).toContain('duckduckgo');
+    expect(example!.sources).toContain('brave');
+    expect(example!.score).toBe(2);
+    // Keeps the longer snippet
+    expect(example!.snippet).toBe('A longer snippet from Brave search');
+  });
+
+  it('ranks cross-referenced results higher', () => {
+    const providerResults = [
+      {
+        provider: 'duckduckgo' as SearchProviderName,
+        results: [
+          { title: 'Unique DDG', url: 'https://unique.com', snippet: 'Only DDG' },
+          { title: 'Shared', url: 'https://shared.com', snippet: 'DDG version' },
+        ],
+      },
+      {
+        provider: 'tavily' as SearchProviderName,
+        results: [
+          { title: 'Shared', url: 'https://shared.com', snippet: 'Tavily version' },
+        ],
+      },
+    ];
+
+    const aggregated = aggregateResults(providerResults);
+    // Shared result (score 2) should come before unique (score 1)
+    expect(aggregated[0]!.url).toContain('shared.com');
+    expect(aggregated[0]!.score).toBe(2);
+  });
+
+  it('handles empty provider results', () => {
+    const aggregated = aggregateResults([]);
+    expect(aggregated).toEqual([]);
+  });
+});
+
+describe('searchBrave', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('throws without API key', async () => {
+    await expect(searchBrave('test', '', 5)).rejects.toThrow('braveSearchApiKey');
+  });
+
+  it('parses Brave API response', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        web: {
+          results: [
+            { title: 'Brave Result', url: 'https://brave.com', description: 'Found via Brave' },
+          ],
+        },
+      }),
+    } as unknown as Response);
+
+    const results = await searchBrave('test query', 'brave-key', 5);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.title).toBe('Brave Result');
+    expect(results[0]!.snippet).toBe('Found via Brave');
+
+    // Verify correct headers
+    const fetchCall = vi.mocked(fetch).mock.calls[0]!;
+    expect(fetchCall[1]?.headers).toHaveProperty('X-Subscription-Token', 'brave-key');
+  });
+});
+
+describe('searchBing', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('throws without API key', async () => {
+    await expect(searchBing('test', '', 5)).rejects.toThrow('bingSearchApiKey');
+  });
+
+  it('parses Bing API response', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        webPages: {
+          value: [
+            { name: 'Bing Result', url: 'https://bing.com', snippet: 'Found via Bing' },
+          ],
+        },
+      }),
+    } as unknown as Response);
+
+    const results = await searchBing('test query', 'bing-key', 5);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.title).toBe('Bing Result');
+
+    const fetchCall = vi.mocked(fetch).mock.calls[0]!;
+    expect(fetchCall[1]?.headers).toHaveProperty('Ocp-Apim-Subscription-Key', 'bing-key');
+  });
+});
+
+describe('searchExa', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('throws without API key', async () => {
+    await expect(searchExa('test', '', 5)).rejects.toThrow('exaApiKey');
+  });
+
+  it('parses Exa API response', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        results: [
+          { title: 'Exa Result', url: 'https://exa.ai', text: 'Neural search result' },
+        ],
+      }),
+    } as unknown as Response);
+
+    const results = await searchExa('test query', 'exa-key', 5);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.title).toBe('Exa Result');
+    expect(results[0]!.snippet).toBe('Neural search result');
+
+    const fetchCall = vi.mocked(fetch).mock.calls[0]!;
+    expect(fetchCall[1]?.headers).toHaveProperty('x-api-key', 'exa-key');
+    // Verify POST body
+    const body = JSON.parse(fetchCall[1]?.body as string);
+    expect(body.type).toBe('neural');
+    expect(body.useAutoprompt).toBe(true);
+  });
+});
+
+describe('searchSearxng', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('throws without URL', async () => {
+    await expect(searchSearxng('test', '', 5)).rejects.toThrow('searxngUrl');
+  });
+
+  it('parses SearXNG JSON response', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        results: [
+          { title: 'SearXNG Result', url: 'https://searxng.local', content: 'Self-hosted search' },
+        ],
+      }),
+    } as unknown as Response);
+
+    const results = await searchSearxng('test query', 'http://localhost:8080', 5);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.title).toBe('SearXNG Result');
+    expect(results[0]!.snippet).toBe('Self-hosted search');
+
+    const fetchCall = vi.mocked(fetch).mock.calls[0]!;
+    expect((fetchCall[0] as string)).toContain('localhost:8080/search');
+    expect((fetchCall[0] as string)).toContain('format=json');
+  });
+
+  it('strips trailing slash from base URL', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ results: [] }),
+    } as unknown as Response);
+
+    await searchSearxng('test', 'http://localhost:8080/', 5);
+    const fetchCall = vi.mocked(fetch).mock.calls[0]!;
+    expect((fetchCall[0] as string)).not.toContain('//search');
+  });
+});
+
+describe('searchViaMcpServer', () => {
+  it('returns empty array when client is null', async () => {
+    const results = await searchViaMcpServer(null, 'Brave Search', 'brave_web_search', 'test', 5);
+    expect(results).toEqual([]);
+  });
+
+  it('returns empty array when MCP call fails', async () => {
+    const client = { post: vi.fn().mockRejectedValue(new Error('Server unavailable')) };
+    const results = await searchViaMcpServer(client, 'Brave Search', 'brave_web_search', 'test', 5);
+    expect(results).toEqual([]);
+  });
+
+  it('parses JSON array response from MCP server', async () => {
+    const client = {
+      post: vi.fn().mockResolvedValue({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify([
+              { title: 'MCP Brave', url: 'https://example.com', snippet: 'via MCP' },
+            ]),
+          },
+        ],
+      }),
+    };
+
+    const results = await searchViaMcpServer(client, 'Brave Search', 'brave_web_search', 'test', 5);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.title).toBe('MCP Brave');
+  });
+
+  it('parses nested { results: [] } response from MCP server', async () => {
+    const client = {
+      post: vi.fn().mockResolvedValue({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              results: [
+                { title: 'Nested', url: 'https://nested.com', snippet: 'Nested result' },
+              ],
+            }),
+          },
+        ],
+      }),
+    };
+
+    const results = await searchViaMcpServer(client, 'Exa', 'search', 'test', 5);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.title).toBe('Nested');
+  });
+
+  it('falls back to raw text snippet when response is not JSON', async () => {
+    const client = {
+      post: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Plain text result from MCP' }],
+      }),
+    };
+
+    const results = await searchViaMcpServer(client, 'Exa', 'search', 'test', 5);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.snippet).toBe('Plain text result from MCP');
+  });
+});
+
+describe('MCP_SEARCH_SERVERS', () => {
+  it('contains Brave Search and Exa entries', () => {
+    expect(MCP_SEARCH_SERVERS.find((s) => s.name === 'Brave Search')).toBeDefined();
+    expect(MCP_SEARCH_SERVERS.find((s) => s.name === 'Exa')).toBeDefined();
+  });
+
+  it('each entry has name, tool, and label', () => {
+    for (const srv of MCP_SEARCH_SERVERS) {
+      expect(srv.name).toBeTruthy();
+      expect(srv.tool).toBeTruthy();
+      expect(srv.label).toBeTruthy();
+    }
+  });
+});
+
+describe('web_search_multi registration', () => {
+  it('registers web_search_multi tool without error', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    const config = makeConfig();
+    const middleware = {
+      rateLimiter: { check: vi.fn().mockReturnValue({ allowed: true, retryAfterMs: 0 }) },
+      inputValidator: { validate: vi.fn().mockReturnValue({ blocked: false }) },
+      auditLogger: { wrap: vi.fn().mockImplementation((_n, _a, fn) => fn()) },
+      secretRedactor: { redact: vi.fn().mockImplementation((r) => r) },
+    } as unknown as import('./index.js').ToolMiddleware;
+    expect(() => registerWebTools(server, config, middleware)).not.toThrow();
   });
 });

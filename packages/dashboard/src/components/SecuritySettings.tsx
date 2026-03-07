@@ -41,6 +41,8 @@ import {
   Target,
   Code,
   LayoutPanelLeft,
+  Key,
+  Search,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -64,6 +66,7 @@ import {
   fetchSecretKeys,
   setSecret,
   deleteSecret,
+  checkSecret,
 } from '../api/client';
 import type { RoleInfo, AssignmentInfo } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
@@ -2036,6 +2039,213 @@ export function SecretsPanel() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Well-known MCP service keys ─────────────────────────────────────────────
+
+interface ServiceKeyDef {
+  name: string;
+  label: string;
+  category: string;
+  isUrl?: boolean;
+}
+
+const SERVICE_KEYS: ServiceKeyDef[] = [
+  // Search
+  { name: 'MCP_WEB_SEARCH_API_KEY', label: 'Web Search API Key (SerpAPI / Tavily)', category: 'Search' },
+  { name: 'BRAVE_SEARCH_API_KEY', label: 'Brave Search API Key', category: 'Search' },
+  { name: 'BING_SEARCH_API_KEY', label: 'Bing Search API Key', category: 'Search' },
+  { name: 'EXA_API_KEY', label: 'Exa Neural Search API Key', category: 'Search' },
+  { name: 'SEARXNG_URL', label: 'SearXNG Instance URL', category: 'Search', isUrl: true },
+  // Security
+  { name: 'SHODAN_API_KEY', label: 'Shodan API Key', category: 'Security' },
+  // Proxy
+  { name: 'PROXY_BRIGHTDATA_URL', label: 'Bright Data Proxy URL', category: 'Proxy', isUrl: true },
+  { name: 'PROXY_SCRAPINGBEE_KEY', label: 'ScrapingBee API Key', category: 'Proxy' },
+  { name: 'PROXY_SCRAPERAPI_KEY', label: 'ScraperAPI Key', category: 'Proxy' },
+  // External services
+  { name: 'AGNOSTIC_API_KEY', label: 'Agnostic QA API Key', category: 'Services' },
+  { name: 'AGNOS_RUNTIME_API_KEY', label: 'AGNOS Runtime API Key', category: 'Services' },
+  { name: 'AGNOS_GATEWAY_API_KEY', label: 'AGNOS Gateway API Key', category: 'Services' },
+  // QuickBooks
+  { name: 'QUICKBOOKS_CLIENT_ID', label: 'QuickBooks Client ID', category: 'QuickBooks' },
+  { name: 'QUICKBOOKS_CLIENT_SECRET', label: 'QuickBooks Client Secret', category: 'QuickBooks' },
+  { name: 'QUICKBOOKS_REALM_ID', label: 'QuickBooks Realm ID', category: 'QuickBooks' },
+  { name: 'QUICKBOOKS_REFRESH_TOKEN', label: 'QuickBooks Refresh Token', category: 'QuickBooks' },
+];
+
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  Search: <Search className="w-4 h-4" />,
+  Security: <Shield className="w-4 h-4" />,
+  Proxy: <Globe className="w-4 h-4" />,
+  Services: <Puzzle className="w-4 h-4" />,
+  QuickBooks: <Code2 className="w-4 h-4" />,
+};
+
+/**
+ * ServiceKeysPanel — categorized management of well-known MCP API keys.
+ * Shows which keys are set, lets users add/update/remove them.
+ * Values are stored via the global SecretsManager (same as SecretsPanel).
+ */
+export function ServiceKeysPanel() {
+  const queryClient = useQueryClient();
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  // Fetch all stored secret names to determine which service keys are set
+  const { data: secretsData } = useQuery({
+    queryKey: ['secret-keys'],
+    queryFn: fetchSecretKeys,
+    refetchOnWindowFocus: false,
+  });
+
+  const setMutation = useMutation({
+    mutationFn: ({ name, value }: { name: string; value: string }) => setSecret(name, value),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['secret-keys'] });
+      setEditingKey(null);
+      setEditValue('');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (name: string) => deleteSecret(name),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['secret-keys'] });
+      setConfirmDelete(null);
+    },
+  });
+
+  const storedKeys = new Set(secretsData?.keys ?? []);
+
+  // Group by category
+  const categories = [...new Set(SERVICE_KEYS.map((k) => k.category))];
+
+  return (
+    <div className="space-y-6">
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Remove Service Key"
+        message={`Remove "${confirmDelete}"? The MCP service will fall back to .env if set.`}
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => {
+          if (confirmDelete) deleteMutation.mutate(confirmDelete);
+        }}
+        onCancel={() => {
+          setConfirmDelete(null);
+        }}
+      />
+
+      <div>
+        <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
+          <Key className="w-5 h-5" />
+          Service API Keys
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          API keys for MCP search providers, security tools, and external services.
+          Stored encrypted in the secrets backend. Env vars take precedence if set.
+        </p>
+      </div>
+
+      {categories.map((category) => {
+        const keys = SERVICE_KEYS.filter((k) => k.category === category);
+        return (
+          <div key={category} className="card p-4 space-y-3">
+            <h3 className="font-medium text-sm flex items-center gap-2">
+              {CATEGORY_ICONS[category] ?? <Key className="w-4 h-4" />}
+              {category}
+            </h3>
+
+            <div className="space-y-2">
+              {keys.map((keyDef) => {
+                const isSet = storedKeys.has(keyDef.name);
+                const isEditing = editingKey === keyDef.name;
+
+                return (
+                  <div key={keyDef.name} className="space-y-2">
+                    <div className="flex items-center justify-between p-2 rounded bg-muted/30 text-sm">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {isSet ? (
+                          <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                        ) : (
+                          <XCircle className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <span className="font-mono text-xs block truncate">{keyDef.name}</span>
+                          <span className="text-xs text-muted-foreground block">{keyDef.label}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          className="text-primary hover:text-primary/80 p-1"
+                          onClick={() => {
+                            setEditingKey(isEditing ? null : keyDef.name);
+                            setEditValue('');
+                          }}
+                          aria-label={isSet ? `Update ${keyDef.name}` : `Set ${keyDef.name}`}
+                        >
+                          <Pen className="w-3.5 h-3.5" />
+                        </button>
+                        {isSet && (
+                          <button
+                            className="text-destructive hover:text-destructive/80 p-1"
+                            onClick={() => {
+                              setConfirmDelete(keyDef.name);
+                            }}
+                            aria-label={`Remove ${keyDef.name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {isEditing && (
+                      <div className="p-3 rounded-lg bg-muted/20 space-y-2 ml-6">
+                        <input
+                          type={keyDef.isUrl ? 'text' : 'password'}
+                          value={editValue}
+                          onChange={(e) => {
+                            setEditValue(e.target.value);
+                          }}
+                          placeholder={keyDef.isUrl ? 'https://...' : '••••••••'}
+                          className="px-2 py-1 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            className="btn btn-ghost text-sm px-3 py-1 flex items-center gap-1"
+                            onClick={() => {
+                              if (editValue) setMutation.mutate({ name: keyDef.name, value: editValue });
+                            }}
+                            disabled={!editValue || setMutation.isPending}
+                          >
+                            {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                            {isSet ? 'Update' : 'Save'}
+                          </button>
+                          <button
+                            className="btn btn-ghost text-sm px-3 py-1"
+                            onClick={() => {
+                              setEditingKey(null);
+                              setEditValue('');
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

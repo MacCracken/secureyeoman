@@ -2835,6 +2835,43 @@ export class GatewayServer {
       }
     });
 
+    // ── Internal secrets resolve — MCP service fetches decrypted values at startup ──
+    // POST /api/v1/internal/secrets/resolve — resolve a list of secret names to values.
+    // Returns only secrets that exist; missing keys are omitted.
+    // Service-JWT authenticated (same as /api/v1/internal/ssh-keys).
+    this.app.post(
+      '/api/v1/internal/secrets/resolve',
+      async (
+        request: FastifyRequest<{ Body: { names: string[] } }>,
+        reply
+      ) => {
+        const sm = this.secureYeoman.getSecretsManager();
+        if (!sm) return sendError(reply, 503, 'Secrets manager not available');
+        const { names } = request.body ?? {};
+        if (!Array.isArray(names) || names.length === 0) {
+          return sendError(reply, 400, 'names array is required');
+        }
+        // Cap at 100 to prevent abuse
+        if (names.length > 100) {
+          return sendError(reply, 400, 'Too many names (max 100)');
+        }
+        try {
+          const resolved: Record<string, string> = {};
+          for (const name of names) {
+            if (typeof name !== 'string' || !/^[A-Z0-9_]+$/.test(name)) continue;
+            const val = await sm.get(name);
+            if (val) resolved[name] = val;
+          }
+          return { secrets: resolved };
+        } catch (err) {
+          this.getLogger().error('Failed to resolve secrets', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return sendError(reply, 500, 'Failed to resolve secrets');
+        }
+      }
+    );
+
     // ── Phase 42: TLS Certificate Routes ────────────────────────────────────
 
     // GET /api/v1/security/tls — TLS cert status for dashboard display

@@ -93,8 +93,14 @@ export const McpServiceConfigSchema = z.object({
   webRateLimitPerMinute: z.number().int().min(1).max(100).default(10),
   exposeWebScraping: z.boolean().default(true),
   exposeWebSearch: z.boolean().default(true),
-  webSearchProvider: z.enum(['duckduckgo', 'serpapi', 'tavily']).default('duckduckgo'),
+  webSearchProvider: z.enum(['duckduckgo', 'serpapi', 'tavily', 'brave', 'bing', 'exa', 'searxng']).default('duckduckgo'),
   webSearchApiKey: z.string().optional(),
+  /** Additional provider-specific API keys for multi-search aggregation. */
+  braveSearchApiKey: z.string().optional(),
+  bingSearchApiKey: z.string().optional(),
+  exaApiKey: z.string().optional(),
+  /** Self-hosted SearXNG instance URL (e.g. http://localhost:8080). */
+  searxngUrl: z.string().optional(),
   exposeBrowser: z.boolean().default(false),
   browserEngine: z.enum(['playwright', 'puppeteer']).default('playwright'),
   exposeDesktopControl: z.boolean().default(false),

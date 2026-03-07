@@ -7,7 +7,7 @@
  * from the core `secureyeoman mcp-server` CLI (Phase 22 single binary).
  */
 
-import { loadConfig } from './config/config.js';
+import { loadConfig, enrichConfigWithSecrets } from './config/config.js';
 import { McpServiceServer } from './server.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -26,7 +26,7 @@ import { createSecretRedactor } from './middleware/secret-redactor.js';
  * Can be called programmatically from the core CLI's `mcp-server` subcommand.
  */
 export async function runMcpServer(_argv: string[] = []): Promise<number> {
-  const config = loadConfig();
+  let config = loadConfig();
 
   if (!config.enabled) {
     console.log('[secureyeoman-mcp] MCP service is disabled (MCP_ENABLED=false)');
@@ -45,6 +45,9 @@ export async function runMcpServer(_argv: string[] = []): Promise<number> {
       coreUrl: config.coreUrl,
       coreToken,
     });
+
+    // Enrich config with secrets from core's SecretsManager (env vars take precedence)
+    config = await enrichConfigWithSecrets(config, coreClient);
 
     const mcpServer = new McpServer({
       name: 'secureyeoman-mcp',
@@ -87,6 +90,10 @@ export async function runMcpServer(_argv: string[] = []): Promise<number> {
     coreUrl: config.coreUrl,
     coreToken,
   });
+
+  // Enrich config with secrets from core's SecretsManager (env vars take precedence)
+  config = await enrichConfigWithSecrets(config, coreClient);
+
   const server = new McpServiceServer({ config, coreClient });
 
   // Graceful shutdown

@@ -378,6 +378,14 @@ async function performSearch(
       return searchSerpApi(query, config.webSearchApiKey ?? '', maxResults);
     case 'tavily':
       return searchTavily(query, config.webSearchApiKey ?? '', maxResults);
+    case 'brave':
+      return searchBrave(query, config.braveSearchApiKey ?? config.webSearchApiKey ?? '', maxResults);
+    case 'bing':
+      return searchBing(query, config.bingSearchApiKey ?? config.webSearchApiKey ?? '', maxResults);
+    case 'exa':
+      return searchExa(query, config.exaApiKey ?? config.webSearchApiKey ?? '', maxResults);
+    case 'searxng':
+      return searchSearxng(query, config.searxngUrl ?? '', maxResults);
     case 'duckduckgo':
     default:
       return searchDuckDuckGo(query, maxResults);
@@ -483,12 +491,298 @@ async function searchTavily(
   }));
 }
 
+// ─── Additional Search Backends ─────────────────────────────
+
+async function searchBrave(
+  query: string,
+  apiKey: string,
+  maxResults: number
+): Promise<SearchResult[]> {
+  if (!apiKey) throw new Error('Brave Search requires braveSearchApiKey or MCP_BRAVE_SEARCH_API_KEY');
+
+  const params = new URLSearchParams({
+    q: query,
+    count: String(maxResults),
+  });
+
+  const response = await fetch(`https://api.search.brave.com/res/v1/web/search?${params}`, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: {
+      Accept: 'application/json',
+      'Accept-Encoding': 'gzip',
+      'X-Subscription-Token': apiKey,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Brave Search failed: HTTP ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    web?: { results?: { title: string; url: string; description: string }[] };
+  };
+
+  return (data.web?.results ?? []).slice(0, maxResults).map((r) => ({
+    title: r.title,
+    url: r.url,
+    snippet: r.description,
+  }));
+}
+
+async function searchBing(
+  query: string,
+  apiKey: string,
+  maxResults: number
+): Promise<SearchResult[]> {
+  if (!apiKey) throw new Error('Bing Search requires bingSearchApiKey or MCP_BING_SEARCH_API_KEY');
+
+  const params = new URLSearchParams({
+    q: query,
+    count: String(maxResults),
+    responseFilter: 'Webpages',
+  });
+
+  const response = await fetch(`https://api.bing.microsoft.com/v7.0/search?${params}`, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: {
+      'Ocp-Apim-Subscription-Key': apiKey,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Bing Search failed: HTTP ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    webPages?: { value?: { name: string; url: string; snippet: string }[] };
+  };
+
+  return (data.webPages?.value ?? []).slice(0, maxResults).map((r) => ({
+    title: r.name,
+    url: r.url,
+    snippet: r.snippet,
+  }));
+}
+
+async function searchExa(
+  query: string,
+  apiKey: string,
+  maxResults: number
+): Promise<SearchResult[]> {
+  if (!apiKey) throw new Error('Exa Search requires exaApiKey or MCP_EXA_API_KEY');
+
+  const response = await fetch('https://api.exa.ai/search', {
+    method: 'POST',
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      query,
+      numResults: maxResults,
+      type: 'neural',
+      useAutoprompt: true,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Exa Search failed: HTTP ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    results?: { title: string; url: string; text?: string; publishedDate?: string }[];
+  };
+
+  return (data.results ?? []).slice(0, maxResults).map((r) => ({
+    title: r.title ?? '',
+    url: r.url,
+    snippet: r.text?.slice(0, 300) ?? '',
+  }));
+}
+
+async function searchSearxng(
+  query: string,
+  baseUrl: string,
+  maxResults: number
+): Promise<SearchResult[]> {
+  if (!baseUrl) throw new Error('SearXNG requires searxngUrl or MCP_SEARXNG_URL');
+
+  const params = new URLSearchParams({
+    q: query,
+    format: 'json',
+    pageno: '1',
+  });
+
+  const response = await fetch(`${baseUrl.replace(/\/+$/, '')}/search?${params}`, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: { Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`SearXNG search failed: HTTP ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    results?: { title: string; url: string; content: string }[];
+  };
+
+  return (data.results ?? []).slice(0, maxResults).map((r) => ({
+    title: r.title,
+    url: r.url,
+    snippet: r.content,
+  }));
+}
+
+// ─── Multi-Search Aggregation ───────────────────────────────
+
+type SearchProviderName = 'duckduckgo' | 'serpapi' | 'tavily' | 'brave' | 'bing' | 'exa' | 'searxng';
+
+interface MultiSearchResultItem extends SearchResult {
+  sources: SearchProviderName[];
+  score: number;
+}
+
+function getAvailableProviders(config: McpServiceConfig): SearchProviderName[] {
+  const available: SearchProviderName[] = ['duckduckgo']; // always available (no key)
+
+  if (config.webSearchApiKey) {
+    // The shared key works for whichever single-provider is configured
+    if (config.webSearchProvider === 'serpapi') available.push('serpapi');
+    if (config.webSearchProvider === 'tavily') available.push('tavily');
+  }
+  if (config.braveSearchApiKey) available.push('brave');
+  if (config.bingSearchApiKey) available.push('bing');
+  if (config.exaApiKey) available.push('exa');
+  if (config.searxngUrl) available.push('searxng');
+
+  return available;
+}
+
+async function searchByProvider(
+  provider: SearchProviderName,
+  query: string,
+  config: McpServiceConfig,
+  maxResults: number
+): Promise<{ provider: SearchProviderName; results: SearchResult[] }> {
+  let results: SearchResult[];
+  switch (provider) {
+    case 'duckduckgo':
+      results = await searchDuckDuckGo(query, maxResults);
+      break;
+    case 'serpapi':
+      results = await searchSerpApi(query, config.webSearchApiKey ?? '', maxResults);
+      break;
+    case 'tavily':
+      results = await searchTavily(query, config.webSearchApiKey ?? '', maxResults);
+      break;
+    case 'brave':
+      results = await searchBrave(query, config.braveSearchApiKey ?? '', maxResults);
+      break;
+    case 'bing':
+      results = await searchBing(query, config.bingSearchApiKey ?? '', maxResults);
+      break;
+    case 'exa':
+      results = await searchExa(query, config.exaApiKey ?? '', maxResults);
+      break;
+    case 'searxng':
+      results = await searchSearxng(query, config.searxngUrl ?? '', maxResults);
+      break;
+    default:
+      results = [];
+  }
+  return { provider, results };
+}
+
+/** Deduplicate results by URL, merge sources, rank by cross-source agreement. */
+function aggregateResults(
+  providerResults: { provider: SearchProviderName; results: SearchResult[] }[]
+): MultiSearchResultItem[] {
+  const byUrl = new Map<string, MultiSearchResultItem>();
+
+  for (const { provider, results } of providerResults) {
+    for (const r of results) {
+      const key = r.url.replace(/\/$/, '').toLowerCase();
+      const existing = byUrl.get(key);
+      if (existing) {
+        existing.sources.push(provider);
+        existing.score += 1;
+        // Keep the longer snippet
+        if (r.snippet.length > existing.snippet.length) {
+          existing.snippet = r.snippet;
+        }
+      } else {
+        byUrl.set(key, { ...r, sources: [provider], score: 1 });
+      }
+    }
+  }
+
+  // Sort: cross-source agreement first, then alphabetical by title for stability
+  return [...byUrl.values()].sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
+}
+
+/** Try to call a connected MCP search server (e.g. Brave Search, Exa) via the core API. */
+async function searchViaMcpServer(
+  client: { post: <T>(path: string, body?: unknown) => Promise<T> } | null,
+  serverName: string,
+  toolName: string,
+  query: string,
+  maxResults: number
+): Promise<SearchResult[]> {
+  if (!client) return [];
+  try {
+    const res = await client.post<{
+      content?: { type: string; text: string }[];
+    }>('/api/v1/mcp/tools/call', {
+      serverName,
+      toolName,
+      arguments: { query, count: maxResults, max_results: maxResults },
+    });
+    // Parse MCP tool response — most search MCP servers return JSON in text content
+    const text = res.content?.[0]?.text;
+    if (!text) return [];
+    try {
+      const parsed = JSON.parse(text) as
+        | SearchResult[]
+        | { results?: SearchResult[]; web?: { results?: SearchResult[] } };
+      if (Array.isArray(parsed)) {
+        return parsed.slice(0, maxResults).map((r) => ({
+          title: r.title ?? '',
+          url: r.url ?? '',
+          snippet: r.snippet ?? '',
+        }));
+      }
+      const arr =
+        (parsed as { results?: SearchResult[] }).results ??
+        (parsed as { web?: { results?: SearchResult[] } }).web?.results ??
+        [];
+      return arr.slice(0, maxResults).map((r) => ({
+        title: r.title ?? '',
+        url: r.url ?? '',
+        snippet: r.snippet ?? (r as unknown as Record<string, string>).description ?? '',
+      }));
+    } catch {
+      // Not JSON — return as a single snippet
+      return [{ title: 'MCP result', url: '', snippet: text.slice(0, 500) }];
+    }
+  } catch {
+    return []; // Server unavailable — skip silently
+  }
+}
+
+/** Well-known MCP search server names and their primary search tool. */
+const MCP_SEARCH_SERVERS: { name: string; tool: string; label: SearchProviderName | string }[] = [
+  { name: 'Brave Search', tool: 'brave_web_search', label: 'brave' },
+  { name: 'Exa', tool: 'search', label: 'exa' },
+];
+
 // ─── Tool Registration ──────────────────────────────────────
 
 export function registerWebTools(
   server: McpServer,
   config: McpServiceConfig,
-  middleware: ToolMiddleware
+  middleware: ToolMiddleware,
+  client?: { post: <T>(path: string, body?: unknown) => Promise<T> } | null
 ): void {
   const webLimiter = new WebRateLimiter(config.webRateLimitPerMinute);
   const proxyManager = config.proxyEnabled ? new ProxyManager(config) : null;
@@ -783,6 +1077,123 @@ export function registerWebTools(
       return { content: [{ type: 'text' as const, text: truncateOutput(output) }] };
     })
   );
+
+  // 8. web_search_multi — aggregated multi-provider search
+  server.registerTool(
+    'web_search_multi',
+    {
+      description:
+        'Search across multiple search engines simultaneously and return deduplicated, ranked results. ' +
+        'Fans out to all configured providers (DuckDuckGo, Brave, Bing, Exa, SerpAPI, Tavily, SearXNG) ' +
+        'plus any connected MCP search servers. Results are ranked by cross-source agreement. ' +
+        '(requires MCP_EXPOSE_WEB=true)',
+      inputSchema: {
+        query: z.string().min(1).max(500).describe('Search query'),
+        maxResultsPerProvider: z
+          .number()
+          .int()
+          .min(1)
+          .max(10)
+          .default(5)
+          .describe('Maximum results per provider'),
+        providers: z
+          .array(
+            z.enum(['duckduckgo', 'serpapi', 'tavily', 'brave', 'bing', 'exa', 'searxng'])
+          )
+          .optional()
+          .describe(
+            'Specific providers to query (defaults to all configured). ' +
+            'Connected MCP search servers (Brave Search, Exa) are always included when available.'
+          ),
+      },
+    },
+    wrapToolHandler('web_search_multi', middleware, async (args) => {
+      const rate = webLimiter.check();
+      if (!rate.allowed) {
+        throw new Error(`Web rate limit exceeded. Retry after ${rate.retryAfterMs}ms.`);
+      }
+
+      const allAvailable = getAvailableProviders(config);
+      const requested: SearchProviderName[] = args.providers ?? allAvailable;
+      // Only query providers that are actually configured
+      const providers = requested.filter((p) => allAvailable.includes(p));
+
+      // Fan out to all native providers in parallel
+      const nativePromises = providers.map((p) =>
+        searchByProvider(p, args.query, config, args.maxResultsPerProvider).catch((err) => ({
+          provider: p,
+          results: [] as SearchResult[],
+          error: err instanceof Error ? err.message : String(err),
+        }))
+      );
+
+      // Also query connected MCP search servers (Brave Search, Exa prebuilts)
+      const mcpPromises = MCP_SEARCH_SERVERS.map(async (srv) => {
+        const results = await searchViaMcpServer(
+          client ?? null,
+          srv.name,
+          srv.tool,
+          args.query,
+          args.maxResultsPerProvider
+        );
+        if (results.length === 0) return null;
+        return { provider: srv.label as SearchProviderName, results };
+      });
+
+      const [nativeResults, ...mcpResults] = await Promise.all([
+        Promise.all(nativePromises),
+        ...mcpPromises,
+      ]);
+
+      // Merge native + MCP results
+      const allResults: { provider: SearchProviderName; results: SearchResult[] }[] = [];
+      const errors: string[] = [];
+
+      for (const r of nativeResults) {
+        if ('error' in r) {
+          errors.push(`${r.provider}: ${r.error}`);
+        } else {
+          allResults.push(r);
+        }
+      }
+
+      for (const r of mcpResults) {
+        if (r) {
+          // Avoid duplicating if we already have native results from this provider
+          if (!allResults.some((nr) => nr.provider === r.provider)) {
+            allResults.push(r);
+          }
+        }
+      }
+
+      const aggregated = aggregateResults(allResults);
+      const providerNames = allResults.map((r) => r.provider);
+
+      let output = `## Multi-Search: "${args.query}"\n\n`;
+      output += `**Providers queried:** ${providerNames.join(', ') || 'none'}\n`;
+      output += `**Total unique results:** ${aggregated.length}\n`;
+      if (errors.length > 0) {
+        output += `**Errors:** ${errors.join('; ')}\n`;
+      }
+      output += '\n';
+
+      if (aggregated.length === 0) {
+        output += 'No results found across any provider.';
+      } else {
+        output += aggregated
+          .map(
+            (r, i) =>
+              `${i + 1}. **${r.title}**\n` +
+              `   ${r.url}\n` +
+              `   ${r.snippet}\n` +
+              `   _Sources: ${r.sources.join(', ')}${r.score > 1 ? ` (${r.score}× cross-referenced)` : ''}_`
+          )
+          .join('\n\n');
+      }
+
+      return { content: [{ type: 'text' as const, text: truncateOutput(output) }] };
+    })
+  );
 }
 
 // Exported for testing
@@ -796,4 +1207,14 @@ export {
   parseFrontMatter,
   ContentSignalBlockedError,
   estimateTokens,
+  searchBrave,
+  searchBing,
+  searchExa,
+  searchSearxng,
+  getAvailableProviders,
+  aggregateResults,
+  searchByProvider,
+  searchViaMcpServer,
+  MCP_SEARCH_SERVERS,
 };
+export type { SearchResult, MultiSearchResultItem, SearchProviderName };
