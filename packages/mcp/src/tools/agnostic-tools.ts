@@ -879,24 +879,34 @@ export function registerAgnosticTools(
     'agnostic_provision_credentials',
     {
       description:
-        'Provision API credentials for a service or integration. ' +
-        'SecureYeoman/AGNOS pushes credentials at runtime when CREDENTIAL_PROVISIONING_ENABLED=true on the Agnostic side. ' +
-        'Sends an a2a:provision_credentials message to Agnostic.',
+        'Provision LLM API credentials for Agnostic at runtime. ' +
+        'SecureYeoman/AGNOS pushes credentials via A2A when CREDENTIAL_PROVISIONING_ENABLED=true on the Agnostic side. ' +
+        'Valid providers: openai, anthropic, google, ollama, lm_studio, custom_local, agnos_gateway.',
       inputSchema: {
-        service_name: z
+        provider: z
+          .enum(['openai', 'anthropic', 'google', 'ollama', 'lm_studio', 'custom_local', 'agnos_gateway'])
+          .describe('LLM provider name'),
+        api_key: z
           .string()
-          .describe('Target service or integration name (e.g. "openai", "github", "jira")'),
-        credential_type: z
-          .enum(['api_key', 'oauth_token', 'service_account', 'bearer_token'])
-          .default('api_key')
-          .describe('Type of credential being provisioned'),
-        credential_value: z
+          .describe('The API key or token'),
+        base_url: z
           .string()
-          .describe('The credential value (API key, token, etc.)'),
+          .optional()
+          .describe('Override base URL for the provider (e.g. custom endpoint)'),
+        model: z
+          .string()
+          .optional()
+          .describe('Default model to use with this credential'),
+        expires_in_seconds: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe('Optional TTL — credential auto-expires after this many seconds'),
         metadata: z
           .record(z.string(), z.string())
           .default({})
-          .describe('Optional metadata — e.g. { "scope": "read", "expires_at": "2026-12-31" }'),
+          .describe('Optional metadata — e.g. { "scope": "read", "note": "rotated key" }'),
         from_peer_id: z
           .string()
           .default('yeoman')
@@ -905,17 +915,21 @@ export function registerAgnosticTools(
     },
     wrapToolHandler('agnostic_provision_credentials', middleware, async (args) => {
       const messageId = randomUUID();
+      const payload: Record<string, unknown> = {
+        provider: args.provider,
+        api_key: args.api_key,
+        metadata: args.metadata,
+      };
+      if (args.base_url) payload.base_url = args.base_url;
+      if (args.model) payload.model = args.model;
+      if (args.expires_in_seconds) payload.expires_in_seconds = args.expires_in_seconds;
+
       const message = {
         id: messageId,
         type: 'a2a:provision_credentials',
         fromPeerId: args.from_peer_id,
         toPeerId: 'agnostic',
-        payload: {
-          service_name: args.service_name,
-          credential_type: args.credential_type,
-          credential_value: args.credential_value,
-          metadata: args.metadata,
-        },
+        payload,
         timestamp: Date.now(),
       };
 
@@ -938,7 +952,7 @@ export function registerAgnosticTools(
           {
             type: 'text' as const,
             text: formatResponse(
-              `Credentials provisioned for "${args.service_name}" (message_id: ${messageId})`,
+              `Credentials provisioned for "${args.provider}" (message_id: ${messageId})`,
               body
             ),
           },
@@ -953,16 +967,13 @@ export function registerAgnosticTools(
     'agnostic_revoke_credentials',
     {
       description:
-        'Revoke previously provisioned API credentials for a service. ' +
-        'Sends an a2a:revoke_credentials message to Agnostic.',
+        'Revoke previously provisioned LLM credentials for a provider. ' +
+        'Use provider="*" to revoke all. Sends an a2a:revoke_credentials message to Agnostic.',
       inputSchema: {
-        service_name: z
+        provider: z
           .string()
-          .describe('Target service whose credentials should be revoked'),
-        credential_type: z
-          .enum(['api_key', 'oauth_token', 'service_account', 'bearer_token'])
-          .default('api_key')
-          .describe('Type of credential to revoke'),
+          .default('*')
+          .describe('Provider to revoke (e.g. "openai", "anthropic"), or "*" to revoke all'),
         reason: z
           .string()
           .default('rotation')
@@ -981,8 +992,7 @@ export function registerAgnosticTools(
         fromPeerId: args.from_peer_id,
         toPeerId: 'agnostic',
         payload: {
-          service_name: args.service_name,
-          credential_type: args.credential_type,
+          provider: args.provider,
           reason: args.reason,
         },
         timestamp: Date.now(),
@@ -1007,7 +1017,7 @@ export function registerAgnosticTools(
           {
             type: 'text' as const,
             text: formatResponse(
-              `Credentials revoked for "${args.service_name}" (message_id: ${messageId})`,
+              `Credentials revoked for "${args.provider}" (message_id: ${messageId})`,
               body
             ),
           },

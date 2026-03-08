@@ -36,15 +36,25 @@ export function registerStreamableHttpTransport(opts: StreamableHttpOptions): vo
     if (sessionId && transports.has(sessionId)) {
       transport = transports.get(sessionId)!;
     } else {
+      // Generate session ID upfront so we can store the transport in the map
+      // before handleRequest runs (handleRequest sets the response header).
+      const newSessionId = crypto.randomUUID();
+
       const httpTransport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => crypto.randomUUID(),
+        sessionIdGenerator: () => newSessionId,
       });
 
-      await mcpServer.server.connect(httpTransport);
+      // The MCP SDK's Server allows only one transport at a time.
+      // If a previous transport's SSE stream ended without a clean close,
+      // the server may still hold a stale reference. Close it before
+      // connecting the new transport.
+      try {
+        await mcpServer.server.connect(httpTransport);
+      } catch {
+        await mcpServer.server.close();
+        await mcpServer.server.connect(httpTransport);
+      }
 
-      const newSessionId =
-        (httpTransport as StreamableHTTPServerTransport & { sessionId?: string }).sessionId ??
-        crypto.randomUUID();
       transports.set(newSessionId, httpTransport);
       transport = httpTransport;
 
