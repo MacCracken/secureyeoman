@@ -352,14 +352,14 @@ export class SecurityModule implements AppModule {
       const scanPolicy = this.config.security.sandboxArtifactScanning ?? {};
       const pipeline = new ScannerPipeline(
         [new CodeScanner(), new SecretsScanner(), new DataScanner()],
-        { policy: scanPolicy as import('@secureyeoman/shared').ExternalizationPolicy }
+        { policy: scanPolicy }
       );
       this.externalizationGate = new ExternalizationGate({
         pipeline,
         quarantineStorage: this.quarantineStorage,
         scanHistoryStore: this.scanHistoryStore,
         secretsScanner: new SecretsScanner(),
-        policy: scanPolicy as import('@secureyeoman/shared').ExternalizationPolicy,
+        policy: scanPolicy,
         getAlertManager: () =>
           deps.getAlertManager()
             ? {

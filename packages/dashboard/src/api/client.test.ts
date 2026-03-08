@@ -797,7 +797,9 @@ describe('exportPersonality', () => {
       )
     );
     const result = await exportPersonality('p1', 'md');
-    expect(result).toBeInstanceOf(Blob);
+    // Check duck-type rather than instanceof — jsdom's Blob differs from Node's on Node 22
+    expect(result).toHaveProperty('size');
+    expect(result).toHaveProperty('type');
     expect(mockFetch.mock.calls[0][0]).toBe('/api/v1/soul/personalities/p1/export?format=md');
   });
 
