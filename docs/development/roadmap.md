@@ -9,12 +9,8 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| Schema Tier Split | License-Gated Migration Schema | P1 — architecture | Done (2026-03-07) |
-| CI/Release | CI Pipeline & Release Workflow | P1 — infrastructure | Done (2026-03-08) |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| Integration C (remaining) | AGNOS node22 Base Image | P2 | Unblocked (AGNOS Alpha available) |
-| Integration — AGNOSTIC | QA Platform Dev Stack & MCP Tools | P2 | Done (2026-03-08) — 3 upstream bugs tracked |
-| 145 | Cross-Project MCP Expansion | P2 | In Progress (1 item remaining) |
+| 145 | Cross-Project MCP Expansion (Photisnadi widget) | P2 | 1 item remaining |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -57,34 +53,6 @@
 
 ---
 
-## Schema Tier Split: License-Gated Migration Schema
-
-**Priority**: P1 — Architecture. Must complete before enforcement activation.
-
-**Status**: Done (2026-03-07).
-
-**Goal**: Split the monolithic `001_baseline.sql` into tier-separated baselines so the database schema matches the active license. Community installs only get community tables. Pro/Enterprise schemas are applied when a valid license is detected.
-
-### Migration Structure
-
-| File | Tier | Tables | Contents |
-|------|------|--------|----------|
-| `001_community.sql` | Community | 55 | Core: chat, soul, brain, marketplace, auth (basic), audit, mcp, dashboard, task, integration, comms, spirit, workspace |
-| `002_pro.sql` | Pro | 65 | Workflows, analytics, agents, RBAC, eval, events, execution, extensions, browser, capture, multimodal, risk, security, telemetry, admin |
-| `003_enterprise.sql` | Enterprise | 51 | DLP, A2A, federation, training (advanced), auth (SSO/tenants), chaos, federated learning, policy-as-code, IaC, agent replay, pretrain |
-| `011_*.sql` onwards | Incremental | — | Future migrations tagged with `-- tier:` header |
-
-### Implementation
-
-- [x] **Audit `001_baseline.sql`** — 181 tables classified into community (55), pro (65), enterprise (51+squashed).
-- [x] **Split baseline** — `001_community.sql`, `002_pro.sql`, `003_enterprise.sql`. All idempotent (IF NOT EXISTS).
-- [x] **Squash incrementals** — 002-007 (agent_replay, policy_as_code, iac, chaos, federated_learning, pretrain_jobs) absorbed into `003_enterprise.sql`.
-- [x] **Tier-aware migration runner** — `runMigrations(tier)` always applies all three baselines (001–003) regardless of tier. Only incremental migrations (011+) are tier-filtered. Feature gating is at the route level via `requiresLicense()`, not at the schema level.
-- [x] **Incremental migration tagging** — `MigrationEntry` gains `tier` field. Manifest entries sorted by id, filtered by tier rank at runtime.
-- [x] **Downgrade safety** — No tables dropped on downgrade. Feature routes return 402 via existing `requiresLicense()`.
-- [x] **Legacy compatibility** — Old monolithic IDs (001_baseline, 002-007) detected and mapped to new tier-split IDs via compatibility shim.
-- [x] **Tests** — 14 unit tests (manifest structure, tier ordering, runner fast-path, tier filtering, legacy compat). 8 integration tests (community-only, pro, enterprise, upgrade, idempotency, partial recovery, timestamps, legacy shim).
-
 ---
 
 ## License Up: Tier Audit & Enforcement Activation
@@ -104,13 +72,13 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### Test Coverage — Current Status (2026-03-07)
+### Test Coverage — Current Status (2026-03-08)
 
 **Core unit: 89.31% stmt / 79.10% branches** (target 88% / 77% — exceeded).
 
 | Suite | Files | Tests | Stmts % | Branch % | Status |
 |-------|-------|-------|---------|----------|--------|
-| Core Unit | 619 | 15,339 | 89.31 | 79.10 | All passing |
+| Core Unit | 620 | 15,364 | 89.31 | 79.10 | All passing |
 | Dashboard | 164 | 3,201 | 62.37 | 61.98 | All passing |
 | MCP | 72 | 1,066 | 61.80 | 48.51 | All passing |
 | Core E2E | 7 | 53 | — | — | All passing |
@@ -128,56 +96,20 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ---
 
-## Cross-Project Integration — Remaining
+## Phase 145: Cross-Project MCP Expansion — Remaining
 
-### AGNOS Integration & Base Image Migration
-
-**Priority**: P2 — Unblocked. AGNOS Alpha available at `ghcr.io/maccracken/agnosticos:alpha`.
+### Photisnadi Dashboard Widget
 
 | Item | Effort | Status | Description |
 |------|--------|--------|-------------|
-| Add agnosticos to dev stack | 0.5 day | Done (2026-03-07) | `agnosticos` service in `docker-compose.yml` (profile: `agnos`). LLM Gateway :8088, Agent Runtime :8090. Env wired to core + MCP |
-| AGNOS `node22` base image migration | 2 days | Planned | Migrate SecureYeoman Docker image from `node:22-slim` to `agnos:node22`. Gains: Landlock sandbox, cryptographic audit chain, agent-runtime sidecar |
-| Smoke-test AGNOS MCP tools | 0.5 day | Planned | Verify 20 `agnos_*` MCP tools against live agnosticos container (health, agents, gateway chat, audit, traces) |
-
-### AGNOSTIC QA Platform Integration
-
-**Priority**: P2 — Unblocked. Packages available at `ghcr.io/maccracken/agnostic-webgui` and `ghcr.io/maccracken/agnostic-agent`.
-
-| Item | Effort | Status | Description |
-|------|--------|--------|-------------|
-| Add agnostic to dev stack | 0.5 day | Done (2026-03-08) | `agnostic-webgui` + `agnostic-redis` + `agnostic-postgres` in `docker-compose.yml` (profiles: `agnostic`, `full-dev`). Port 8000. API key auth |
-| MCP tool connectivity verified | 0.5 day | Done (2026-03-08) | 25 `agnostic_*` MCP tools registered. `agnostic_health`, `agnostic_agents_status`, `agnostic_agents_queues`, `agnostic_dashboard`, `agnostic_session_list` confirmed working via internal tool-call endpoint |
-| Merge agnostic into agnosticos | — | Future | Agnostic becomes a package within agnosticos — collapses to single service |
-
-**Blocked**: Further MCP tool testing (task submission, session workflows) blocked until upstream bugs are fixed in the agnostic repo. Read-only tools (`agnostic_health`, `agnostic_dashboard`, `agnostic_agents_status`, `agnostic_session_list`, `agnostic_agents_queues`) all work.
-
----
-
-## Phase 145: Cross-Project MCP Expansion
-
-**Priority**: P2 — Wires remaining consumer projects into SecureYeoman's MCP layer.
-
-### Photisnadi Task Manager Integration
-
-Photisnadi already exposes a MCP server with 6 tools via `YeomanService`. SecureYeoman needs to register them.
-
-| Item | Effort | Status | Description |
-|------|--------|--------|-------------|
-| Register Photisnadi MCP tools | 1 day | Done | 6 tools (`photisnadi_list_tasks`, `photisnadi_create_task`, `photisnadi_update_task`, `photisnadi_get_rituals`, `photisnadi_analytics`, `photisnadi_sync`) + stub. Feature-gated via `exposePhotisnadiTools`. Supabase-direct queries |
 | Photisnadi dashboard widget | 0.5 day | Planned | `PhotosnadiWidget.tsx` showing task counts by status, ritual streaks, recent activity. Proxy route at `/api/v1/integrations/photisnadi/widget` |
 
-### BullShift Trading — Additional Tools
+### Cross-Project — Future
 
-SecureYeoman has 5 BullShift MCP tools (health, account, positions, submit_order, cancel_order). BullShift's API server exposes additional endpoints not yet registered.
-
-| Item | Effort | Status | Description |
-|------|--------|--------|-------------|
-| Register `bullshift_algo_strategies` | 0.5 day | Done | Algo strategies listing via GET `/v1/algo/strategies` |
-| Register `bullshift_sentiment` | 0.5 day | Done | Aggregated sentiment signals via GET `/v1/sentiment/signals` and `/v1/sentiment/aggregate/:symbol` |
-| Register `bullshift_list_alerts` / `bullshift_create_alert` | 0.5 day | Done | Alert webhook CRUD via GET/POST `/v1/webhooks` |
-| Feature-gate all BullShift tools | 0.5 day | Done | `exposeBullshiftTools` flag gates all bullshift_* and market_* tools. Disabled stub when off |
-| BullShift streaming widget | 1 day | Done | `BullShiftStreamWidget.tsx` Mission Control card — live trade stream, ticker bar, volume stats. Gated behind `exposeBullshiftTools`. Registered as `bullshift-stream` card |
+| Item | Status | Description |
+|------|--------|-------------|
+| Smoke-test AGNOS MCP tools | Planned | Verify 20 `agnos_*` MCP tools against live agnosticos container |
+| Merge agnostic into agnosticos | Future | Agnostic becomes a package within agnosticos — collapses to single service |
 
 ---
 
@@ -318,4 +250,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-08 (AGNOSTIC QA integration done, CI/Release pipeline done, Schema Tier Split done). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-08 (AGNOS base image migration done, completed items moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*

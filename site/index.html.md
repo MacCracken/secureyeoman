@@ -2,7 +2,7 @@
 
 Most AI assistants serve their platform. SecureYeoman serves you — self-hosted, enterprise-hardened, and answerable only to you. Keep it local. Go hybrid. Connect any provider. Your data only moves when you say so.
 
-**v2026.3.7** | AGPL-3.0 License | 400+ MCP Tools | 40 CLI Commands
+**v2026.3.8** | AGPL-3.0 License | 400+ MCP Tools | 40 CLI Commands
 
 ---
 

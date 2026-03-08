@@ -1,11 +1,11 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.3.7-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/2026.3.7)
+[![Version](https://img.shields.io/badge/Version-2026.3.8-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/2026.3.8)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: ~21,400](https://img.shields.io/badge/Tests-~21%2C400-brightgreen.svg)]()
+[![Tests: ~20,600](https://img.shields.io/badge/Tests-~20%2C600-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 
 > **Your AI. Your Rules. Your Infrastructure.**
@@ -54,7 +54,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 
 - **Self-hosted, not SaaS** — single binary, Docker, or Kubernetes. Your data stays on your machines.
 - **Governed by design** — RBAC, audit trails, cryptographic integrity, sandboxed execution, OPA/CEL governance.
-- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 363-tool MCP server.
+- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 400+-tool MCP server.
 - **Full ML lifecycle** — distillation, LoRA fine-tuning, LLM-as-Judge evaluation, DPO, conversation analytics.
 
 ---
@@ -148,7 +148,7 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | **[Security Model](docs/security/security-model.md)** | Threat model and security controls |
 | **[White Paper](docs/white-paper.md)** | Architectural sovereignty & agentic governance |
 | **[Architecture](docs/development/architecture.md)** | System architecture overview |
-| **[ADRs](docs/adr/)** | 29 Architecture Decision Records |
+| **[ADRs](docs/adr/)** | 31 Architecture Decision Records |
 | **[Roadmap](docs/development/roadmap.md)** | Development roadmap |
 | **[Changelog](CHANGELOG.md)** | Release history |
 

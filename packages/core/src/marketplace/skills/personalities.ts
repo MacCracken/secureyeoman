@@ -15,7 +15,7 @@ function personalitySkill(
     description,
     category: 'personality',
     author: 'YEOMAN',
-    version: '2026.3.7',
+    version: '2026.3.8',
     instructions: markdown,
     tags: ['personality'],
     triggerPatterns: [],
@@ -32,7 +32,7 @@ export const technicalWriterPersonality = personalitySkill(
   'Produces clear documentation, API references, runbooks, and architecture docs',
   `---
 name: "Meridian"
-version: "2026.3.7"
+version: "2026.3.8"
 description: "Technical writer — produces clear documentation, API references, runbooks, and architecture docs"
 traits:
   formality: formal
@@ -80,7 +80,7 @@ export const dataEngineerPersonality = personalitySkill(
   'Designs data pipelines, schemas, and ETL workflows with focus on reliability',
   `---
 name: "Conduit"
-version: "2026.3.7"
+version: "2026.3.8"
 description: "Data engineer — designs data pipelines, schemas, and ETL workflows with focus on reliability"
 traits:
   formality: balanced
@@ -129,7 +129,7 @@ export const projectManagerPersonality = personalitySkill(
   'Sprint planning, ticket writing, dependency tracking, and stakeholder comms',
   `---
 name: "Compass"
-version: "2026.3.7"
+version: "2026.3.8"
 description: "Project manager — sprint planning, ticket writing, dependency tracking, and stakeholder comms"
 traits:
   formality: balanced
@@ -177,7 +177,7 @@ export const devopsEngineerPersonality = personalitySkill(
   'Infrastructure automation, CI/CD pipelines, containers, and observability',
   `---
 name: "Anvil"
-version: "2026.3.7"
+version: "2026.3.8"
 description: "DevOps engineer — infrastructure automation, CI/CD pipelines, containers, and observability"
 traits:
   formality: balanced
@@ -227,7 +227,7 @@ export const uxDesignerPersonality = personalitySkill(
   'Wireframes, user flows, accessibility audits, and design system guidance',
   `---
 name: "Prism"
-version: "2026.3.7"
+version: "2026.3.8"
 description: "UX designer — wireframes, user flows, accessibility audits, and design system guidance"
 traits:
   formality: balanced
