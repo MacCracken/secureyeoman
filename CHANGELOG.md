@@ -62,17 +62,20 @@ Split the monolithic `001_baseline.sql` into tier-separated baselines so the dat
 - **Tests**: 14 unit tests (manifest structure, tier ordering, runner fast-path, tier filtering, legacy compat) + 8 integration tests (community-only, pro, enterprise, upgrade, idempotency, partial recovery, timestamps, legacy shim).
 - **ADR 031** (`docs/adr/031-license-gated-schema.md`): Architecture decision record.
 
-### AGNOS Dev Stack Integration
+### AGNOS & AGNOSTIC Dev Stack Integration
 
 - **`agnosticos` service** (`docker-compose.yml`): Added agnosticos container under `agnos` profile. LLM Gateway on :8088 (OpenAI-compatible), Agent Runtime on :8090. Environment variables wired to core and MCP services.
-- **Dev workflow**: `docker compose --env-file .env.dev --profile dev --profile agnos up -d` brings up the full stack including AGNOS.
+- **`agnostic-webgui` service** (`docker-compose.yml`): Added Agnostic QA platform (webgui + redis + postgres) under `agnostic` and `full-dev` profiles. Port 8000, API key auth, isolated backing stores.
+- **AGNOSTIC env config** (`.env.dev`): `AGNOSTIC_API_KEY` and `MCP_EXPOSE_AGNOSTIC_TOOLS` for authenticated MCP tool access.
+- **Core → AGNOSTIC wiring**: `AGNOSTIC_URL` and `AGNOSTIC_API_KEY` forwarded to core and MCP containers via docker-compose environment.
+- **Dev workflow**: `docker compose --env-file .env.dev --profile full-dev up -d` brings up the full stack including AGNOS and AGNOSTIC.
 
 ### CI & Release Pipeline
 
 - **CI workflow slimmed** (`.github/workflows/ci.yml`): Removed build, docker-build, and docker-push jobs — CI is now lint, typecheck, tests, security audit, and Helm lint only. Build and Docker are handled by the release workflow.
 - **Release workflow** (`.github/workflows/release-binary.yml`): Added `workflow_dispatch` with version/prerelease inputs, CI gate via `workflow_call`, concurrency group, auto-generated release notes with binary table and verification instructions, Sigstore cosign signing, SLSA provenance attestations.
 - **CI gate permissions fix**: Removed `docker-push` job (with `packages: write`) from CI to unblock `workflow_call` reuse — nested job permissions must be subset of caller permissions.
-- **Workspace package resolution**: All workspace packages (`@secureyeoman/shared`, `@secureyeoman/mcp`, `@secureyeoman/core`) now export source `.ts` files instead of `dist/`. Eliminates build-before-test requirement in CI.
+- **Workspace package conditional exports**: All workspace packages use conditional `exports` — `"types"` points to source `.ts` (for TypeScript tooling) and `"default"` points to `dist/` `.js` (for Node runtime). Eliminates build-before-test in CI while keeping Docker and production working.
 - **npm audit overrides**: Scoped `undici@6.23.0` override to `@discordjs/rest` and `discord.js` only (prevents breaking jsdom). Added `dompurify@3.3.2` and `nanoid@5.1.6` overrides for audit compliance.
 
 ### Type & Lint Fixes
@@ -87,6 +90,8 @@ Split the monolithic `001_baseline.sql` into tier-separated baselines so the dat
 - **Dashboard Blob test**: `exportPersonality` test uses duck-type check instead of `toBeInstanceOf(Blob)` to avoid jsdom/Node 22 Blob class mismatch.
 - **Personality storage** (`soul/storage.ts`, `soul/manager.ts`): Fixes to personality CRUD operations and default personality handling.
 - **Marketplace manager** (`marketplace/manager.ts`, `marketplace/storage.ts`): Fixes to community sync result reporting and skill counting.
+- **`agnostic_session_list` MCP tool**: Fixed `undefined` limit/offset query params when defaults not applied by MCP SDK — now uses `?? 20` / `?? 0` fallbacks.
+- **Integration/E2E lint errors**: Removed unused imports (`AuthServiceConfig`, `AuthServiceDeps`, `AuditChainStorage`, `TEST_ADMIN_PASSWORD`), prefixed unused vars (`_user`, `_before`), added `void` to fire-and-forget `rateLimiter.stop()`, suppressed `noop` arrow return type lint.
 - **Test stability**: Fixed ~20 test files across core and dashboard for assertion accuracy, mock correctness, and flaky test elimination.
 - **`test-setup.ts`**: Fixed `string | undefined` type errors in table name destructuring for atomic TRUNCATE.
 

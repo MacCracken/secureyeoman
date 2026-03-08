@@ -13,6 +13,7 @@
 | CI/Release | CI Pipeline & Release Workflow | P1 — infrastructure | Done (2026-03-08) |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Integration C (remaining) | AGNOS node22 Base Image | P2 | Unblocked (AGNOS Alpha available) |
+| Integration — AGNOSTIC | QA Platform Dev Stack & MCP Tools | P2 | Done (2026-03-08) — 3 upstream bugs tracked |
 | 145 | Cross-Project MCP Expansion | P2 | In Progress (1 item remaining) |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
@@ -138,6 +139,18 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Add agnosticos to dev stack | 0.5 day | Done (2026-03-07) | `agnosticos` service in `docker-compose.yml` (profile: `agnos`). LLM Gateway :8088, Agent Runtime :8090. Env wired to core + MCP |
 | AGNOS `node22` base image migration | 2 days | Planned | Migrate SecureYeoman Docker image from `node:22-slim` to `agnos:node22`. Gains: Landlock sandbox, cryptographic audit chain, agent-runtime sidecar |
 | Smoke-test AGNOS MCP tools | 0.5 day | Planned | Verify 20 `agnos_*` MCP tools against live agnosticos container (health, agents, gateway chat, audit, traces) |
+
+### AGNOSTIC QA Platform Integration
+
+**Priority**: P2 — Unblocked. Packages available at `ghcr.io/maccracken/agnostic-webgui` and `ghcr.io/maccracken/agnostic-agent`.
+
+| Item | Effort | Status | Description |
+|------|--------|--------|-------------|
+| Add agnostic to dev stack | 0.5 day | Done (2026-03-08) | `agnostic-webgui` + `agnostic-redis` + `agnostic-postgres` in `docker-compose.yml` (profiles: `agnostic`, `full-dev`). Port 8000. API key auth |
+| MCP tool connectivity verified | 0.5 day | Done (2026-03-08) | 25 `agnostic_*` MCP tools registered. `agnostic_health`, `agnostic_agents_status`, `agnostic_agents_queues`, `agnostic_dashboard`, `agnostic_session_list` confirmed working via internal tool-call endpoint |
+| Merge agnostic into agnosticos | — | Future | Agnostic becomes a package within agnosticos — collapses to single service |
+
+**Blocked**: Further MCP tool testing (task submission, session workflows) blocked until upstream bugs are fixed in the agnostic repo. Read-only tools (`agnostic_health`, `agnostic_dashboard`, `agnostic_agents_status`, `agnostic_session_list`, `agnostic_agents_queues`) all work.
 
 ---
 
@@ -305,4 +318,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-08 (CI/Release pipeline done, Schema Tier Split done, timeline table synced). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-08 (AGNOSTIC QA integration done, CI/Release pipeline done, Schema Tier Split done). See [Changelog](../../CHANGELOG.md) for full history.*
