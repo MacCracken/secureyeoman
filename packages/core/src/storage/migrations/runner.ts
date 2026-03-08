@@ -1,9 +1,14 @@
 /**
  * Migration Runner — Applies numbered SQL migrations in order.
  *
- * Tier-aware: filters migrations by the active license tier.
- * Community always runs. Pro runs if tier is pro or enterprise.
- * Enterprise runs only if tier is enterprise.
+ * All baseline migrations (001_community, 002_pro, 003_enterprise) are
+ * always applied regardless of tier. The full schema must be present
+ * because application code references tables across all tiers during
+ * startup (RBAC, risk, telemetry, etc.). Feature gating is handled at
+ * the route/API level by `requiresLicense()`, not at the schema level.
+ *
+ * Incremental migrations (011+) are tier-filtered: they only run if the
+ * active license tier permits them.
  *
  * Tracks applied migrations in a `schema_migrations` table.
  *
@@ -47,11 +52,23 @@ const TIER_SPLIT_IDS = [
 ];
 
 /**
+ * IDs of baseline migrations that must always run regardless of tier.
+ * The full schema must be present for the application to start — tier
+ * gating is handled at the feature/route level via requiresLicense().
+ */
+const ALWAYS_RUN_IDS = new Set(TIER_SPLIT_IDS);
+
+/**
  * Filter manifest entries to those that should run for the given tier.
+ *
+ * Baseline migrations (001_community, 002_pro, 003_enterprise) always
+ * run. Incremental migrations (011+) are tier-filtered.
  */
 function filterByTier(migrations: MigrationEntry[], tier: LicenseTier): MigrationEntry[] {
   const maxRank = TIER_RANK[tier];
-  return migrations.filter((m) => TIER_RANK[m.tier] <= maxRank);
+  return migrations.filter((m) =>
+    ALWAYS_RUN_IDS.has(m.id) || TIER_RANK[m.tier] <= maxRank
+  );
 }
 
 export async function runMigrations(tier: LicenseTier = 'enterprise'): Promise<void> {

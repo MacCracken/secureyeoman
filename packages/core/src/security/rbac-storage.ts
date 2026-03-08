@@ -82,6 +82,14 @@ export class RBACStorage extends PgBaseStorage {
     super();
   }
 
+  /**
+   * Returns true if the error indicates a missing relation (PostgreSQL 42P01).
+   * This happens on community tier where rbac.* tables are not created.
+   */
+  private isRelationMissing(err: unknown): boolean {
+    return (err as { code?: string })?.code === '42P01';
+  }
+
   // ── Role definitions ─────────────────────────────────────────────────
 
   /**
@@ -157,11 +165,16 @@ export class RBACStorage extends PgBaseStorage {
    * @returns An array of RoleDefinition objects, ordered by creation time.
    */
   async getAllRoleDefinitions(): Promise<RoleDefinition[]> {
-    const rows = await this.queryMany<RoleDefinitionRow>(
-      'SELECT * FROM rbac.role_definitions ORDER BY created_at ASC LIMIT 500'
-    );
+    try {
+      const rows = await this.queryMany<RoleDefinitionRow>(
+        'SELECT * FROM rbac.role_definitions ORDER BY created_at ASC LIMIT 500'
+      );
 
-    return rows.map((row) => this.rowToRoleDefinition(row));
+      return rows.map((row) => this.rowToRoleDefinition(row));
+    } catch (err) {
+      if (this.isRelationMissing(err)) return [];
+      throw err;
+    }
   }
 
   // ── User-role assignments ────────────────────────────────────────────
@@ -244,18 +257,23 @@ export class RBACStorage extends PgBaseStorage {
    * @returns An array of {userId, roleId} pairs for all active assignments.
    */
   async listActiveAssignments(): Promise<{ userId: string; roleId: string; assignedAt: number }[]> {
-    const rows = await this.queryMany<{ user_id: string; role_id: string; assigned_at: number }>(
-      `SELECT user_id, role_id, assigned_at
-       FROM rbac.user_role_assignments
-       WHERE revoked_at IS NULL
-       ORDER BY assigned_at ASC`
-    );
+    try {
+      const rows = await this.queryMany<{ user_id: string; role_id: string; assigned_at: number }>(
+        `SELECT user_id, role_id, assigned_at
+         FROM rbac.user_role_assignments
+         WHERE revoked_at IS NULL
+         ORDER BY assigned_at ASC`
+      );
 
-    return rows.map((r) => ({
-      userId: r.user_id,
-      roleId: r.role_id,
-      assignedAt: r.assigned_at,
-    }));
+      return rows.map((r) => ({
+        userId: r.user_id,
+        roleId: r.role_id,
+        assignedAt: r.assigned_at,
+      }));
+    } catch (err) {
+      if (this.isRelationMissing(err)) return [];
+      throw err;
+    }
   }
 
   /**

@@ -3,17 +3,42 @@ name: Release Binary
 on:
   push:
     tags:
-      - '[0-9][0-9][0-9][0-9].[0-9]*'   # e.g. 2026.2.19
+      - '[0-9][0-9][0-9][0-9].[0-9]*'   # e.g. 2026.3.8
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 2026.3.8). Creates tag + release.'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as prerelease'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write       # creating GitHub releases and uploading assets
   id-token: write       # Sigstore OIDC token for keyless signing
   attestations: write   # SLSA provenance attestations
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  # Quality gate — run CI checks before building release
+  ci-gate:
+    name: CI Gate
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      actions: read
+
   build:
     name: Build binaries
+    needs: ci-gate
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -33,11 +58,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for release notes generation
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create tag (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git tag "${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: ".nvmrc"
           cache: 'npm'
 
       - name: Setup Bun
@@ -94,9 +136,58 @@ jobs:
             dist/secureyeoman-lite-linux-arm64
             dist/secureyeoman-lite-windows-x64.exe
 
+      - name: Generate release notes
+        id: notes
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          {
+            echo "notes<<EOF"
+            echo "## SecureYeoman ${VERSION}"
+            echo ""
+            if [ -n "$PREV_TAG" ]; then
+              echo "### Changes since ${PREV_TAG}"
+              echo ""
+              git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" | head -50
+            else
+              echo "### Recent Changes"
+              echo ""
+              git log --pretty=format:"- %s" -20
+            fi
+            echo ""
+            echo ""
+            echo "**Full Changelog**: See [CHANGELOG.md](CHANGELOG.md)"
+            echo ""
+            echo "### Binaries"
+            echo ""
+            echo "| Binary | Platform | Description |"
+            echo "|--------|----------|-------------|"
+            echo "| \`secureyeoman-linux-x64\` | Linux x86_64 | Full binary (PostgreSQL) |"
+            echo "| \`secureyeoman-linux-arm64\` | Linux ARM64 | Full binary (PostgreSQL) |"
+            echo "| \`secureyeoman-darwin-arm64\` | macOS ARM64 | Full binary (PostgreSQL) |"
+            echo "| \`secureyeoman-windows-x64.exe\` | Windows x64 | Full binary (PostgreSQL) |"
+            echo "| \`secureyeoman-lite-*\` | Various | SQLite fallback (no PostgreSQL required) |"
+            echo ""
+            echo "### Verification"
+            echo ""
+            echo "Each binary is signed with Sigstore cosign (keyless) and includes SLSA provenance attestations."
+            echo "\`\`\`bash"
+            echo "# Verify signature"
+            echo "cosign verify-blob --certificate secureyeoman-linux-x64.cert --signature secureyeoman-linux-x64.sig secureyeoman-linux-x64"
+            echo ""
+            echo "# Verify checksum"
+            echo "sha256sum -c SHA256SUMS"
+            echo "\`\`\`"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: SecureYeoman ${{ steps.version.outputs.version }}
+          body: ${{ steps.notes.outputs.notes }}
+          prerelease: ${{ github.event.inputs.prerelease || false }}
           files: |
             dist/secureyeoman-linux-x64
             dist/secureyeoman-linux-arm64
@@ -109,6 +200,5 @@ jobs:
             dist/secureyeoman-sbom.cdx.json
             dist/*.sig
             dist/*.cert
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

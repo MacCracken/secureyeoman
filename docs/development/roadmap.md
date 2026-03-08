@@ -77,10 +77,9 @@
 - [x] **Audit `001_baseline.sql`** — 181 tables classified into community (55), pro (65), enterprise (51+squashed).
 - [x] **Split baseline** — `001_community.sql`, `002_pro.sql`, `003_enterprise.sql`. All idempotent (IF NOT EXISTS).
 - [x] **Squash incrementals** — 002-007 (agent_replay, policy_as_code, iac, chaos, federated_learning, pretrain_jobs) absorbed into `003_enterprise.sql`.
-- [x] **Tier-aware migration runner** — `runMigrations(tier)` filters manifest by `TIER_RANK`. Default `'enterprise'` for backwards compat. `secureyeoman.ts` passes `licenseManager.getTier()`.
+- [x] **Tier-aware migration runner** — `runMigrations(tier)` always applies all three baselines (001–003) regardless of tier. Only incremental migrations (011+) are tier-filtered. Feature gating is at the route level via `requiresLicense()`, not at the schema level.
 - [x] **Incremental migration tagging** — `MigrationEntry` gains `tier` field. Manifest entries sorted by id, filtered by tier rank at runtime.
 - [x] **Downgrade safety** — No tables dropped on downgrade. Feature routes return 402 via existing `requiresLicense()`.
-- [x] **Startup tier check** — Runner applies all migrations up to active tier. License upgrade auto-applies missing tier baselines.
 - [x] **Legacy compatibility** — Old monolithic IDs (001_baseline, 002-007) detected and mapped to new tier-split IDs via compatibility shim.
 - [x] **Tests** — 14 unit tests (manifest structure, tier ordering, runner fast-path, tier filtering, legacy compat). 8 integration tests (community-only, pro, enterprise, upgrade, idempotency, partial recovery, timestamps, legacy shim).
 
