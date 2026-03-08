@@ -78,7 +78,7 @@ describe('Auth Flow Integration', () => {
     expect(refreshBody.refreshToken).toBeDefined();
 
     // 4. Logout with new token
-    const user = await stack.authService.validateToken(refreshBody.accessToken);
+    const _user = await stack.authService.validateToken(refreshBody.accessToken);
     const logoutRes = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/logout',

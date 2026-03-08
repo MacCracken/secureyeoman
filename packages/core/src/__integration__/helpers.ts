@@ -6,12 +6,11 @@
  */
 
 import Fastify, { type FastifyInstance } from 'fastify';
-import { AuthService, type AuthServiceConfig, type AuthServiceDeps } from '../security/auth.js';
+import { AuthService } from '../security/auth.js';
 import { AuthStorage } from '../security/auth-storage.js';
 import {
   AuditChain,
   InMemoryAuditStorage,
-  type AuditChainStorage,
 } from '../logging/audit-chain.js';
 import { RBAC, initializeRBAC } from '../security/rbac.js';
 import { type RateLimiterLike, createRateLimiter } from '../security/rate-limiter.js';
@@ -34,6 +33,7 @@ export const TEST_ADMIN_PASSWORD_HASH = sha256(TEST_ADMIN_PASSWORD);
 // ── Noop Logger ────────────────────────────────────────────────────
 
 export function noopLogger(): SecureLogger {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const noop = () => {};
   return {
     trace: noop,
@@ -108,7 +108,7 @@ export async function createTestStack(): Promise<TestStack> {
     rateLimiter,
     logger,
     cleanup: () => {
-      rateLimiter.stop();
+      void rateLimiter.stop();
       authStorage.close();
     },
   };

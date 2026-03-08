@@ -13,7 +13,6 @@ import {
   setupTestDb,
   teardownTestDb,
   truncateAllTables,
-  TEST_ADMIN_PASSWORD,
   type E2EServer,
 } from './helpers.js';
 

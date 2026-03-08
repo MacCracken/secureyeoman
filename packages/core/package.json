@@ -1,6 +1,6 @@
 {
   "name": "@secureyeoman/core",
-  "version": "2026.3.6",
+  "version": "2026.3.8",
   "description": "SecureYeoman Core Agent Engine",
   "type": "module",
   "main": "./src/index.ts",

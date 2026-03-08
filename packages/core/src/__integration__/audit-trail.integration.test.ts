@@ -147,7 +147,7 @@ describe('Audit Trail Integration', () => {
   it('query filters by time range', async () => {
     const chain = stack.auditChain;
 
-    const before = Date.now();
+    const _before = Date.now();
     await chain.record({ event: 'early', level: 'info', message: 'Early' });
 
     // Small delay to ensure different timestamps
