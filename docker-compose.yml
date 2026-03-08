@@ -44,6 +44,11 @@ services:
       # OPA sidecar for Rego policy evaluation (Phase 50).
       # Unset to disable OPA; core falls back to natural-language rule matching.
       OPA_ADDR: ${OPA_ADDR:-}
+      # AGNOS integration — points to agnosticos service when --profile agnos is active.
+      AGNOS_GATEWAY_URL: ${AGNOS_GATEWAY_URL:-http://agnosticos:8088}
+      AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://agnosticos:8090}
+      AGNOS_GATEWAY_API_KEY: ${AGNOS_GATEWAY_API_KEY:-}
+      AGNOS_RUNTIME_API_KEY: ${AGNOS_RUNTIME_API_KEY:-}
     healthcheck:
       test: ["CMD-SHELL", "NODE_TLS_REJECT_UNAUTHORIZED=0 node /app/packages/core/dist/cli.js health --url https://127.0.0.1:18789 --json 2>/dev/null || node /app/packages/core/dist/cli.js health --url http://127.0.0.1:18789 --json"]
       interval: 30s
@@ -78,6 +83,11 @@ services:
       MCP_ALLOWED_PATHS: "${MCP_ALLOWED_PATHS:-}"
       MCP_RATE_LIMIT_PER_TOOL: "${MCP_RATE_LIMIT_PER_TOOL:-30}"
       MCP_LOG_LEVEL: "${MCP_LOG_LEVEL:-info}"
+      MCP_EXPOSE_AGNOS_TOOLS: "${MCP_EXPOSE_AGNOS_TOOLS:-false}"
+      AGNOS_GATEWAY_URL: ${AGNOS_GATEWAY_URL:-http://agnosticos:8088}
+      AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://agnosticos:8090}
+      AGNOS_GATEWAY_API_KEY: ${AGNOS_GATEWAY_API_KEY:-}
+      AGNOS_RUNTIME_API_KEY: ${AGNOS_RUNTIME_API_KEY:-}
       NODE_ENV: production
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3001/health"]
@@ -92,6 +102,32 @@ services:
       - mcp
       - full
       - dev
+    restart: unless-stopped
+
+  # AGNOS (agnosticos) — AI-Native General Operating System.
+  # Provides LLM Gateway (port 8088, OpenAI-compatible) and Agent Runtime (port 8090).
+  # Enable with: docker compose --profile agnos up
+  agnosticos:
+    image: ghcr.io/maccracken/agnosticos:alpha
+    ports:
+      - "8088:8088"
+      - "8090:8090"
+    environment:
+      AGNOS_LOG_FORMAT: "${AGNOS_LOG_FORMAT:-json}"
+      RUST_LOG: "${RUST_LOG:-info}"
+      AGNOS_RUNTIME_BIND: "0.0.0.0"
+      AGNOS_GATEWAY_BIND: "0.0.0.0"
+      AGNOS_RUNTIME_API_KEY: "${AGNOS_RUNTIME_API_KEY:-}"
+      AGNOS_GATEWAY_API_KEY: "${AGNOS_GATEWAY_API_KEY:-}"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8088/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - agnos
+      - full
     restart: unless-stopped
 
   # OPA sidecar — used by IntentManager for Rego policy evaluation (Phase 50).

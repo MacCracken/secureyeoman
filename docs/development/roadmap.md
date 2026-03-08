@@ -11,7 +11,7 @@
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | Schema Tier Split | License-Gated Migration Schema | P1 — architecture | Planned |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| Integration C (remaining) | AGNOS node22 Base Image | P2 | Blocked (AGNOS Alpha) |
+| Integration C (remaining) | AGNOS node22 Base Image | P2 | Unblocked (AGNOS Alpha available) |
 | 145 | Cross-Project MCP Expansion | P2 | In Progress (1 item remaining) |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
@@ -129,13 +129,15 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ## Cross-Project Integration — Remaining
 
-### AGNOS node22 Base Image Migration
+### AGNOS Integration & Base Image Migration
 
-**Priority**: P2 — Blocked on AGNOS Alpha release.
+**Priority**: P2 — Unblocked. AGNOS Alpha available at `ghcr.io/maccracken/agnosticos:alpha`.
 
 | Item | Effort | Status | Description |
 |------|--------|--------|-------------|
-| AGNOS `node22` base image migration | 2 days | Blocked (AGNOS Alpha) | Migrate SecureYeoman Docker image from `node:22-slim` to `agnos:node22`. Gains: Landlock sandbox, cryptographic audit chain, agent-runtime sidecar |
+| Add agnosticos to dev stack | 0.5 day | Done (2026-03-07) | `agnosticos` service in `docker-compose.yml` (profile: `agnos`). LLM Gateway :8088, Agent Runtime :8090. Env wired to core + MCP |
+| AGNOS `node22` base image migration | 2 days | Planned | Migrate SecureYeoman Docker image from `node:22-slim` to `agnos:node22`. Gains: Landlock sandbox, cryptographic audit chain, agent-runtime sidecar |
+| Smoke-test AGNOS MCP tools | 0.5 day | Planned | Verify 20 `agnos_*` MCP tools against live agnosticos container (health, agents, gateway chat, audit, traces) |
 
 ---
 
