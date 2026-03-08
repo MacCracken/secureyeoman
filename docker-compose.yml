@@ -86,14 +86,12 @@ services:
       MCP_ALLOWED_PATHS: "${MCP_ALLOWED_PATHS:-}"
       MCP_RATE_LIMIT_PER_TOOL: "${MCP_RATE_LIMIT_PER_TOOL:-30}"
       MCP_LOG_LEVEL: "${MCP_LOG_LEVEL:-info}"
-      MCP_EXPOSE_AGNOS_TOOLS: "${MCP_EXPOSE_AGNOS_TOOLS:-false}"
-      MCP_EXPOSE_AGNOSTIC_TOOLS: "${MCP_EXPOSE_AGNOSTIC_TOOLS:-false}"
+      # Agnostic / AGNOS tool flags and URLs are loaded from env_file (.env.dev).
+      # Do NOT re-declare them here — environment: overrides env_file values,
+      # and the ${VAR:-default} pattern would replace .env.dev's true with false.
       AGNOSTIC_URL: ${AGNOSTIC_URL:-http://agnostic-webgui:8000}
-      AGNOSTIC_API_KEY: ${AGNOSTIC_API_KEY:-}
       AGNOS_GATEWAY_URL: ${AGNOS_GATEWAY_URL:-http://agnosticos:8088}
       AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://agnosticos:8090}
-      AGNOS_GATEWAY_API_KEY: ${AGNOS_GATEWAY_API_KEY:-}
-      AGNOS_RUNTIME_API_KEY: ${AGNOS_RUNTIME_API_KEY:-}
       NODE_ENV: production
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3001/health"]
