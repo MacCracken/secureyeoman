@@ -63,13 +63,7 @@ const SandboxTab = lazy(() =>
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-type SubTab =
-  | 'overview'
-  | 'assessments'
-  | 'findings'
-  | 'feeds'
-  | 'athi'
-  | 'sandbox';
+type SubTab = 'overview' | 'assessments' | 'findings' | 'feeds' | 'athi' | 'sandbox';
 
 const LEVEL_COLORS: Record<string, string> = {
   critical: 'text-red-600 bg-red-50 border-red-200',

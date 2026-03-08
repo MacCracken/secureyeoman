@@ -171,9 +171,12 @@ export class YouTubeIntegration implements Integration {
         await this.deps.onMessage(unified);
       }
     } catch (err) {
-      this.logger?.warn({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'YouTube poll error');
+      this.logger?.warn(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'YouTube poll error'
+      );
     }
   }
 

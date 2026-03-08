@@ -66,10 +66,13 @@ export class ExtensionManager {
       }
     }
 
-    this.deps.logger.debug({
-      extensionCount: extensions.length,
-      hookCount: this.hooks.size,
-    }, 'ExtensionManager initialized');
+    this.deps.logger.debug(
+      {
+        extensionCount: extensions.length,
+        hookCount: this.hooks.size,
+      },
+      'ExtensionManager initialized'
+    );
   }
 
   registerHook(
@@ -90,12 +93,15 @@ export class ExtensionManager {
     this.hooks.set(id, registration);
     this.addToPointIndex(registration);
 
-    this.deps.logger.debug({
-      hookId: id,
-      hookPoint,
-      semantics: registration.semantics,
-      priority: registration.priority,
-    }, 'Hook registered');
+    this.deps.logger.debug(
+      {
+        hookId: id,
+        hookPoint,
+        semantics: registration.semantics,
+        priority: registration.priority,
+      },
+      'Hook registered'
+    );
 
     return id;
   }
@@ -185,12 +191,15 @@ export class ExtensionManager {
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Hook execution failed';
         result.errors.push(`Hook ${registration.id} (${registration.extensionId}): ${errorMsg}`);
-        this.deps.logger.warn({
-          hookId: registration.id,
-          hookPoint,
-          extensionId: registration.extensionId,
-          error: errorMsg,
-        }, 'Hook execution error');
+        this.deps.logger.warn(
+          {
+            hookId: registration.id,
+            hookPoint,
+            extensionId: registration.extensionId,
+            error: errorMsg,
+          },
+          'Hook execution error'
+        );
       }
     }
 
@@ -256,10 +265,13 @@ export class ExtensionManager {
     const dir = directory ?? this.config.directory;
     const manifests = await discoverPlugins(dir);
 
-    this.deps.logger.info({
-      directory: dir,
-      found: manifests.length,
-    }, 'Extension discovery completed');
+    this.deps.logger.info(
+      {
+        directory: dir,
+        found: manifests.length,
+      },
+      'Extension discovery completed'
+    );
 
     return manifests;
   }
@@ -386,9 +398,12 @@ export class ExtensionManager {
     try {
       webhooks = await this.deps.storage.listWebhooks();
     } catch (err) {
-      this.deps.logger.warn({
-        error: err instanceof Error ? err.message : 'Unknown error',
-      }, 'Failed to load webhooks for dispatch');
+      this.deps.logger.warn(
+        {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        },
+        'Failed to load webhooks for dispatch'
+      );
       return;
     }
 
@@ -434,18 +449,24 @@ export class ExtensionManager {
       });
 
       if (!response.ok) {
-        this.deps.logger.warn({
-          webhookId: webhook.id,
-          url: webhook.url,
-          status: response.status,
-        }, 'Webhook delivery failed');
+        this.deps.logger.warn(
+          {
+            webhookId: webhook.id,
+            url: webhook.url,
+            status: response.status,
+          },
+          'Webhook delivery failed'
+        );
       }
     } catch (err) {
-      this.deps.logger.warn({
-        webhookId: webhook.id,
-        url: webhook.url,
-        error: err instanceof Error ? err.message : 'Unknown error',
-      }, 'Webhook delivery error');
+      this.deps.logger.warn(
+        {
+          webhookId: webhook.id,
+          url: webhook.url,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        },
+        'Webhook delivery error'
+      );
     } finally {
       clearTimeout(timeout);
     }

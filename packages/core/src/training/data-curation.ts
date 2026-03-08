@@ -142,12 +142,15 @@ export class DataCurationManager {
       snapshotAt: Date.now(),
     };
 
-    this.logger.info({
-      datasetId,
-      conversationCount,
-      sampleCount,
-      path,
-    }, 'DataCuration: snapshot complete');
+    this.logger.info(
+      {
+        datasetId,
+        conversationCount,
+        sampleCount,
+        path,
+      },
+      'DataCuration: snapshot complete'
+    );
 
     return descriptor;
   }

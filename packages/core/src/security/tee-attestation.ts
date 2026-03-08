@@ -143,15 +143,21 @@ export class TeeAttestationVerifier {
     // 5/6. Evaluate against providerLevel
     if (!supported) {
       if (this.config.providerLevel === 'required') {
-        this.logger?.warn({
-          component: 'tee',
-          provider,
-        }, 'TEE required but provider not supported');
+        this.logger?.warn(
+          {
+            component: 'tee',
+            provider,
+          },
+          'TEE required but provider not supported'
+        );
       } else if (this.config.providerLevel === 'optional') {
-        this.logger?.info({
-          component: 'tee',
-          provider,
-        }, 'TEE optional — provider not supported, allowing');
+        this.logger?.info(
+          {
+            component: 'tee',
+            provider,
+          },
+          'TEE optional — provider not supported, allowing'
+        );
       }
     }
 
@@ -329,25 +335,34 @@ export class TeeAttestationVerifier {
   private applyFailureAction(provider: string, result: ProviderAttestationResult): void {
     switch (this.config.failureAction) {
       case 'block':
-        this.logger?.warn({
-          component: 'tee',
-          provider,
-          details: result.details,
-        }, 'TEE attestation failed — blocking provider');
+        this.logger?.warn(
+          {
+            component: 'tee',
+            provider,
+            details: result.details,
+          },
+          'TEE attestation failed — blocking provider'
+        );
         break;
       case 'warn':
-        this.logger?.warn({
-          component: 'tee',
-          provider,
-          details: result.details,
-        }, 'TEE attestation failed — warning only');
+        this.logger?.warn(
+          {
+            component: 'tee',
+            provider,
+            details: result.details,
+          },
+          'TEE attestation failed — warning only'
+        );
         break;
       case 'audit_only':
-        this.logger?.info({
-          component: 'tee',
-          provider,
-          details: result.details,
-        }, 'TEE attestation failed — audit record');
+        this.logger?.info(
+          {
+            component: 'tee',
+            provider,
+            details: result.details,
+          },
+          'TEE attestation failed — audit record'
+        );
         break;
     }
   }

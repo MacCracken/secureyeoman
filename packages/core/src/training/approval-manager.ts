@@ -85,10 +85,13 @@ export class PipelineApprovalManager {
       ]
     );
     const req = rowToRequest(result.rows[0]!);
-    this.logger.info({
-      requestId: id,
-      workflowRunId: config.workflowRunId,
-    }, 'ApprovalManager: request created');
+    this.logger.info(
+      {
+        requestId: id,
+        workflowRunId: config.workflowRunId,
+      },
+      'ApprovalManager: request created'
+    );
     return req;
   }
 

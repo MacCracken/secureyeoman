@@ -146,10 +146,13 @@ export function initReplicaPools(
     });
 
     replicaPool.on('error', (err: Error) => {
-      getLogger().error({
-        error: err.message,
-        host: replica.host,
-      }, 'Unexpected PostgreSQL replica pool error');
+      getLogger().error(
+        {
+          error: err.message,
+          host: replica.host,
+        },
+        'Unexpected PostgreSQL replica pool error'
+      );
     });
 
     replicaPools.push(replicaPool);

@@ -436,14 +436,17 @@ export class SubAgentManager {
 
         if (routingDecision.selectedModel && routingDecision.confidence >= 0.5) {
           resolvedModel = routingDecision.selectedModel;
-          this.deps.logger.debug({
-            delegationId,
-            selectedModel: routingDecision.selectedModel,
-            tier: routingDecision.tier,
-            confidence: routingDecision.confidence,
-            taskType: routingDecision.taskProfile.taskType,
-            complexity: routingDecision.taskProfile.complexity,
-          }, 'ModelRouter selected model for delegation');
+          this.deps.logger.debug(
+            {
+              delegationId,
+              selectedModel: routingDecision.selectedModel,
+              tier: routingDecision.tier,
+              confidence: routingDecision.confidence,
+              taskType: routingDecision.taskProfile.taskType,
+              complexity: routingDecision.taskProfile.complexity,
+            },
+            'ModelRouter selected model for delegation'
+          );
         } else {
           resolvedModel = profile.defaultModel ?? undefined;
         }
@@ -957,12 +960,15 @@ export class SubAgentManager {
         `mcp-bridge profile "${profile.name}" mcpToolInput produced invalid JSON after interpolation. ` +
         `Check the template for unescaped characters. ` +
         `Template: ${templateStr}`;
-      this.deps.logger.warn({
-        mcpTool,
-        template: templateStr,
-        interpolated,
-        error: String(parseErr),
-      }, 'MCP bridge template interpolation failed');
+      this.deps.logger.warn(
+        {
+          mcpTool,
+          template: templateStr,
+          interpolated,
+          error: String(parseErr),
+        },
+        'MCP bridge template interpolation failed'
+      );
       await this.storage.updateDelegation(delegationId, {
         status: 'failed',
         error: err,

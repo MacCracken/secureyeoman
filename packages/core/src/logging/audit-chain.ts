@@ -252,10 +252,13 @@ export class AuditChain {
         this.initialized = true;
         const verification = await this.verify();
         if (!verification.valid) {
-          this.logger?.warn({
-            brokenAt: verification.brokenAt,
-            error: verification.error,
-          }, 'Audit chain integrity check failed — running automatic repair');
+          this.logger?.warn(
+            {
+              brokenAt: verification.brokenAt,
+              error: verification.error,
+            },
+            'Audit chain integrity check failed — running automatic repair'
+          );
           const { repairedCount, entriesTotal } = await this.repair();
           this.logger?.info({ repairedCount, entriesTotal }, 'Audit chain auto-repair complete');
         }
@@ -273,10 +276,13 @@ export class AuditChain {
         this.initialized = true;
       }
 
-      this.logger?.info({
-        entriesCount: await this.storage.count(),
-        lastEntryId: lastEntry.id,
-      }, 'Audit chain initialized');
+      this.logger?.info(
+        {
+          entriesCount: await this.storage.count(),
+          lastEntryId: lastEntry.id,
+        },
+        'Audit chain initialized'
+      );
     } else {
       this.logger?.info('Audit chain initialized (empty chain)');
       this.initialized = true;

@@ -129,10 +129,13 @@ export class AIModule extends BaseModule {
         if (storedProvider && storedModel) {
           this.applyModelSwitch(storedProvider, storedModel);
           this.modelDefaultSet = true;
-          this.logger.debug({
-            provider: storedProvider,
-            model: storedModel,
-          }, 'Applied persisted model default');
+          this.logger.debug(
+            {
+              provider: storedProvider,
+              model: storedModel,
+            },
+            'Applied persisted model default'
+          );
         }
 
         // Restore persisted localFirst setting
@@ -172,9 +175,12 @@ export class AIModule extends BaseModule {
         }
       }
     } catch (error) {
-      this.logger.warn({
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }, 'AI client initialization failed (non-fatal)');
+      this.logger.warn(
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        'AI client initialization failed (non-fatal)'
+      );
     }
   }
 
@@ -194,14 +200,20 @@ export class AIModule extends BaseModule {
 
         // Import API keys from environment (fire-and-forget)
         this.providerAccountManager.importFromEnv().catch((err: unknown) => {
-          this.logger?.warn({
-            error: err instanceof Error ? err.message : String(err),
-          }, 'Provider account env import failed (non-fatal)');
+          this.logger?.warn(
+            {
+              error: err instanceof Error ? err.message : String(err),
+            },
+            'Provider account env import failed (non-fatal)'
+          );
         });
       } catch (error) {
-        this.logger.warn({
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }, 'ProviderAccountManager initialization failed (non-fatal)');
+        this.logger.warn(
+          {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+          'ProviderAccountManager initialization failed (non-fatal)'
+        );
       }
     }
 
@@ -283,11 +295,14 @@ export class AIModule extends BaseModule {
         metadata: { provider, model },
       });
     } catch (error) {
-      this.logger?.error({
-        provider,
-        model,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }, 'Failed to switch AI model');
+      this.logger?.error(
+        {
+          provider,
+          model,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        'Failed to switch AI model'
+      );
       throw error;
     }
   }

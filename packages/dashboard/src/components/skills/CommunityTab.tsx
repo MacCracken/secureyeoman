@@ -259,7 +259,9 @@ export function CommunityTab({
                 Sync complete
               </div>
               <button
-                onClick={() => { setSyncResult(null); }}
+                onClick={() => {
+                  setSyncResult(null);
+                }}
                 className="text-muted-foreground hover:text-foreground p-0.5"
                 title="Dismiss"
               >
@@ -268,16 +270,15 @@ export function CommunityTab({
             </div>
             <div className="text-muted-foreground space-y-0.5">
               <p>
-                Skills: {syncResult.added} added, {syncResult.updated} updated,{' '}
-                {syncResult.skipped} skipped
+                Skills: {syncResult.added} added, {syncResult.updated} updated, {syncResult.skipped}{' '}
+                skipped
                 {syncResult.removed > 0 && `, ${syncResult.removed} removed`}
                 {syncResult.errors.length > 0 && `, ${syncResult.errors.length} error(s)`}
               </p>
-              {(syncResult.themesAdded !== undefined ||
-                syncResult.themesUpdated !== undefined) && (
+              {(syncResult.themesAdded !== undefined || syncResult.themesUpdated !== undefined) && (
                 <p>
-                  Themes: {syncResult.themesAdded ?? 0} added,{' '}
-                  {syncResult.themesUpdated ?? 0} updated
+                  Themes: {syncResult.themesAdded ?? 0} added, {syncResult.themesUpdated ?? 0}{' '}
+                  updated
                 </p>
               )}
               {(syncResult.personalitiesAdded !== undefined ||
@@ -290,19 +291,19 @@ export function CommunityTab({
               {workflowsEnabled &&
                 (syncResult.workflowsAdded !== undefined ||
                   syncResult.workflowsUpdated !== undefined) && (
-                <p>
-                  Workflows: {syncResult.workflowsAdded ?? 0} added,{' '}
-                  {syncResult.workflowsUpdated ?? 0} updated
-                </p>
-              )}
+                  <p>
+                    Workflows: {syncResult.workflowsAdded ?? 0} added,{' '}
+                    {syncResult.workflowsUpdated ?? 0} updated
+                  </p>
+                )}
               {subAgentsEnabled &&
                 (syncResult.swarmsAdded !== undefined ||
                   syncResult.swarmsUpdated !== undefined) && (
-                <p>
-                  Swarm templates: {syncResult.swarmsAdded ?? 0} added,{' '}
-                  {syncResult.swarmsUpdated ?? 0} updated
-                </p>
-              )}
+                  <p>
+                    Swarm templates: {syncResult.swarmsAdded ?? 0} added,{' '}
+                    {syncResult.swarmsUpdated ?? 0} updated
+                  </p>
+                )}
               {syncResult.errors.length > 0 && (
                 <ul className="mt-1 space-y-0.5">
                   {syncResult.errors.map((e, i) => (
@@ -455,9 +456,7 @@ export function CommunityTab({
                 <div className="flex items-center gap-2">
                   <Palette className="w-4 h-4 text-muted-foreground" />
                   <h3 className="text-sm font-semibold text-foreground">Community Themes</h3>
-                  <span className="text-xs text-muted-foreground">
-                    ({themesData?.total ?? 0})
-                  </span>
+                  <span className="text-xs text-muted-foreground">({themesData?.total ?? 0})</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {(themesData?.skills ?? []).map((skill) => (
@@ -559,114 +558,128 @@ export function CommunityTab({
             ) : (personalitiesSkillData?.skills ?? []).length === 0 ? (
               <div className="card p-12 text-center space-y-3">
                 <UserCircle className="w-12 h-12 mx-auto text-muted-foreground" />
-                <p className="text-muted-foreground font-medium">No community personalities found</p>
+                <p className="text-muted-foreground font-medium">
+                  No community personalities found
+                </p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                   Click <strong>Sync</strong> to import personalities from the community repo.
                   Personalities are not auto-installed — browse and install the ones you want.
                 </p>
               </div>
-            ) : (() => {
-              const allPersonalities = personalitiesSkillData?.skills ?? [];
-              // Extract subcategory from personality:xxx tags
-              const getSubCategory = (s: CatalogSkill) => {
-                const tag = s.tags?.find((t) => t.startsWith('personality:'));
-                return tag ? tag.replace('personality:', '') : 'general';
-              };
-              // Build subcategory counts
-              const subCategoryCounts = allPersonalities.reduce<Record<string, number>>((acc, s) => {
-                const cat = getSubCategory(s);
-                acc[cat] = (acc[cat] ?? 0) + 1;
-                return acc;
-              }, {});
-              const filtered = selectedPersonalityCategory
-                ? allPersonalities.filter((s) => getSubCategory(s) === selectedPersonalityCategory)
-                : allPersonalities;
+            ) : (
+              (() => {
+                const allPersonalities = personalitiesSkillData?.skills ?? [];
+                // Extract subcategory from personality:xxx tags
+                const getSubCategory = (s: CatalogSkill) => {
+                  const tag = s.tags?.find((t) => t.startsWith('personality:'));
+                  return tag ? tag.replace('personality:', '') : 'general';
+                };
+                // Build subcategory counts
+                const subCategoryCounts = allPersonalities.reduce<Record<string, number>>(
+                  (acc, s) => {
+                    const cat = getSubCategory(s);
+                    acc[cat] = (acc[cat] ?? 0) + 1;
+                    return acc;
+                  },
+                  {}
+                );
+                const filtered = selectedPersonalityCategory
+                  ? allPersonalities.filter(
+                      (s) => getSubCategory(s) === selectedPersonalityCategory
+                    )
+                  : allPersonalities;
 
-              return (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <UserCircle className="w-4 h-4 text-muted-foreground" />
-                  <h3 className="text-sm font-semibold text-foreground">Community Personalities</h3>
-                  <span className="text-xs text-muted-foreground">
-                    ({personalitiesSkillData?.total ?? 0})
-                  </span>
-                </div>
-                {Object.keys(subCategoryCounts).length > 1 && (
-                  <CategoryFilter
-                    value={selectedPersonalityCategory}
-                    onChange={setSelectedPersonalityCategory}
-                    counts={subCategoryCounts}
-                  />
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {filtered.map((skill) => (
-                    <SkillCard
-                      key={skill.id}
-                      skill={skill}
-                      badge={
-                        <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                          <UserCircle className="w-2.5 h-2.5" />
-                          Personality
-                        </span>
-                      }
-                      installing={installingId === skill.id && installMut.isPending}
-                      uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
-                      onPreview={() => {
-                        setPreviewSkill(skill);
-                      }}
-                      onInstall={() => {
-                        if (!canInstall) return;
-                        setInstallingId(skill.id);
-                        installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId });
-                      }}
-                      onUninstall={() => {
-                        setUninstallingId(skill.id);
-                        uninstallMut.mutate({
-                          id: skill.id,
-                          personalityId: selectedPersonalityId || undefined,
-                        });
-                      }}
-                    />
-                  ))}
-                </div>
-                {(personalitiesSkillData?.total ?? 0) > COMMUNITY_PAGE_SIZE && (
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-muted-foreground">
-                      Showing {personalityPage * COMMUNITY_PAGE_SIZE + 1}–
-                      {Math.min(
-                        (personalityPage + 1) * COMMUNITY_PAGE_SIZE,
-                        personalitiesSkillData?.total ?? 0
-                      )}{' '}
-                      of {personalitiesSkillData?.total ?? 0}
-                    </span>
+                return (
+                  <div className="space-y-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        disabled={personalityPage === 0}
-                        onClick={() => {
-                          setPersonalityPage((p) => p - 1);
-                        }}
-                      >
-                        ← Prev
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        disabled={
-                          (personalityPage + 1) * COMMUNITY_PAGE_SIZE >=
-                          (personalitiesSkillData?.total ?? 0)
-                        }
-                        onClick={() => {
-                          setPersonalityPage((p) => p + 1);
-                        }}
-                      >
-                        Next →
-                      </button>
+                      <UserCircle className="w-4 h-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-foreground">
+                        Community Personalities
+                      </h3>
+                      <span className="text-xs text-muted-foreground">
+                        ({personalitiesSkillData?.total ?? 0})
+                      </span>
                     </div>
+                    {Object.keys(subCategoryCounts).length > 1 && (
+                      <CategoryFilter
+                        value={selectedPersonalityCategory}
+                        onChange={setSelectedPersonalityCategory}
+                        counts={subCategoryCounts}
+                      />
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {filtered.map((skill) => (
+                        <SkillCard
+                          key={skill.id}
+                          skill={skill}
+                          badge={
+                            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                              <UserCircle className="w-2.5 h-2.5" />
+                              Personality
+                            </span>
+                          }
+                          installing={installingId === skill.id && installMut.isPending}
+                          uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
+                          onPreview={() => {
+                            setPreviewSkill(skill);
+                          }}
+                          onInstall={() => {
+                            if (!canInstall) return;
+                            setInstallingId(skill.id);
+                            installMut.mutate({
+                              id: skill.id,
+                              personalityId: selectedPersonalityId,
+                            });
+                          }}
+                          onUninstall={() => {
+                            setUninstallingId(skill.id);
+                            uninstallMut.mutate({
+                              id: skill.id,
+                              personalityId: selectedPersonalityId || undefined,
+                            });
+                          }}
+                        />
+                      ))}
+                    </div>
+                    {(personalitiesSkillData?.total ?? 0) > COMMUNITY_PAGE_SIZE && (
+                      <div className="flex items-center justify-between pt-2">
+                        <span className="text-xs text-muted-foreground">
+                          Showing {personalityPage * COMMUNITY_PAGE_SIZE + 1}–
+                          {Math.min(
+                            (personalityPage + 1) * COMMUNITY_PAGE_SIZE,
+                            personalitiesSkillData?.total ?? 0
+                          )}{' '}
+                          of {personalitiesSkillData?.total ?? 0}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            disabled={personalityPage === 0}
+                            onClick={() => {
+                              setPersonalityPage((p) => p - 1);
+                            }}
+                          >
+                            ← Prev
+                          </button>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            disabled={
+                              (personalityPage + 1) * COMMUNITY_PAGE_SIZE >=
+                              (personalitiesSkillData?.total ?? 0)
+                            }
+                            onClick={() => {
+                              setPersonalityPage((p) => p + 1);
+                            }}
+                          >
+                            Next →
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              );
-            })()}
+                );
+              })()
+            )}
           </>
         )}
 

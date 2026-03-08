@@ -133,9 +133,7 @@ describe('google-workspace-tools', () => {
   it('applies middleware to all tools', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     const mw = noopMiddleware();
-    expect(() =>
-      registerGoogleWorkspaceTools(server, mockClient(), mw)
-    ).not.toThrow();
+    expect(() => registerGoogleWorkspaceTools(server, mockClient(), mw)).not.toThrow();
   });
 
   it('gdrive_list_files calls GET /api/v1/integrations/gdrive/files', async () => {
@@ -168,12 +166,8 @@ describe('google-workspace-tools', () => {
 
   it('handles core API errors gracefully', () => {
     const client = mockClient();
-    (client.get as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('Network error')
-    );
+    (client.get as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
     const server = new McpServer({ name: 'test', version: '1.0.0' });
-    expect(() =>
-      registerGoogleWorkspaceTools(server, client, noopMiddleware())
-    ).not.toThrow();
+    expect(() => registerGoogleWorkspaceTools(server, client, noopMiddleware())).not.toThrow();
   });
 });

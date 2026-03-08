@@ -77,11 +77,14 @@ export class ConsolidationExecutor {
           });
         }
       } catch (err) {
-        this.logger.warn({
-          action: action.type,
-          sourceIds: action.sourceIds,
-          error: String(err),
-        }, 'Consolidation action failed');
+        this.logger.warn(
+          {
+            action: action.type,
+            sourceIds: action.sourceIds,
+            error: String(err),
+          },
+          'Consolidation action failed'
+        );
       }
     }
 

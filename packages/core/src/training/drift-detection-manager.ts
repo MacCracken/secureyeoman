@@ -123,10 +123,13 @@ export class DriftDetectionManager {
         const snapshot = await this.checkDrift(baseline);
         if (snapshot) snapshots.push(snapshot);
       } catch (err) {
-        this.deps.logger.warn({
-          baselineId: baseline.id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Drift check failed for baseline');
+        this.deps.logger.warn(
+          {
+            baselineId: baseline.id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Drift check failed for baseline'
+        );
       }
     }
 
@@ -181,11 +184,14 @@ export class DriftDetectionManager {
     const snapshot = rowToSnapshot(rows[0]!);
 
     if (alertTriggered) {
-      this.deps.logger.warn({
-        personalityId: baseline.personalityId,
-        driftMagnitude,
-        threshold: baseline.threshold,
-      }, 'Quality drift detected');
+      this.deps.logger.warn(
+        {
+          personalityId: baseline.personalityId,
+          driftMagnitude,
+          threshold: baseline.threshold,
+        },
+        'Quality drift detected'
+      );
     }
 
     return snapshot;
@@ -195,9 +201,12 @@ export class DriftDetectionManager {
     if (this.checkInterval) return;
     this.checkInterval = setInterval(() => {
       void this.checkAllDrift().catch((err: unknown) => {
-        this.deps.logger.error({
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Periodic drift check error');
+        this.deps.logger.error(
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Periodic drift check error'
+        );
       });
     }, intervalMs);
   }

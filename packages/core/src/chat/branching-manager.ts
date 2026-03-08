@@ -198,10 +198,13 @@ export class BranchingManager {
               provider: config.provider,
             });
           } catch (err) {
-            this.logger.warn({
-              jobId,
-              error: String(err),
-            }, 'Replay turn failed, continuing');
+            this.logger.warn(
+              {
+                jobId,
+                error: String(err),
+              },
+              'Replay turn failed, continuing'
+            );
             // Add a placeholder so history stays aligned
             history.push({ role: 'assistant', content: '[replay error]' });
             await this.storage.addMessage({
@@ -302,11 +305,14 @@ export class BranchingManager {
 
         completed++;
       } catch (err) {
-        this.logger.warn({
-          jobId,
-          sourceId,
-          error: String(err),
-        }, 'Batch replay item failed');
+        this.logger.warn(
+          {
+            jobId,
+            sourceId,
+            error: String(err),
+          },
+          'Batch replay item failed'
+        );
         failed++;
       }
 

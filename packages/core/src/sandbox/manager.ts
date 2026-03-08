@@ -95,9 +95,12 @@ export class SandboxManager {
       };
     }
 
-    this.getLogger().info({
-      ...this.capabilities,
-    }, 'Sandbox capabilities detected');
+    this.getLogger().info(
+      {
+        ...this.capabilities,
+      },
+      'Sandbox capabilities detected'
+    );
 
     return this.capabilities;
   }
@@ -133,9 +136,12 @@ export class SandboxManager {
         return this.sandbox;
       }
       // No sandbox available for this platform
-      this.getLogger().warn({
-        platform: caps.platform,
-      }, 'No sandbox available for platform, falling back to NoopSandbox');
+      this.getLogger().warn(
+        {
+          platform: caps.platform,
+        },
+        'No sandbox available for platform, falling back to NoopSandbox'
+      );
       this.sandbox = new NoopSandbox();
       return this.sandbox;
     }

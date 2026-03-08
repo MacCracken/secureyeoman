@@ -206,11 +206,14 @@ export class CostOptimizer {
         callCount: s.calls,
       }));
 
-    this.logger.info({
-      days,
-      perModelCount: perModelStats.length,
-      suggestionsCount: routingSuggestions.length,
-    }, 'Detailed cost analysis completed');
+    this.logger.info(
+      {
+        days,
+        perModelCount: perModelStats.length,
+        suggestionsCount: routingSuggestions.length,
+      },
+      'Detailed cost analysis completed'
+    );
 
     return {
       ...base,

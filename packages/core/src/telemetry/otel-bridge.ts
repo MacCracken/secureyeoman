@@ -45,7 +45,9 @@ export function injectTraceContext(headers: Record<string, string>): Record<stri
  * Extracts W3C trace context from inbound request headers.
  * Call when receiving cross-project requests to continue the trace.
  */
-export function extractTraceContext(headers: Record<string, string>): ReturnType<typeof context.active> {
+export function extractTraceContext(
+  headers: Record<string, string>
+): ReturnType<typeof context.active> {
   return propagation.extract(context.active(), headers, {
     get(carrier, key) {
       return carrier[key];
@@ -97,7 +99,7 @@ export async function tracedFetch(
   url: string,
   init?: RequestInit
 ): Promise<Response> {
-  const headers = { ...(init?.headers as Record<string, string> ?? {}) };
+  const headers = { ...((init?.headers as Record<string, string>) ?? {}) };
   const { span, headers: enrichedHeaders } = startCrossServiceSpan(
     tracerName,
     operationName,
@@ -145,11 +147,7 @@ export class OtelBridge {
   /**
    * Make a traced HTTP request to AGNOSTIC.
    */
-  async fetchAgnostic(
-    path: string,
-    agnosticUrl: string,
-    init?: RequestInit
-  ): Promise<Response> {
+  async fetchAgnostic(path: string, agnosticUrl: string, init?: RequestInit): Promise<Response> {
     return tracedFetch(
       this.config.serviceName ?? 'secureyeoman',
       `agnostic:${path}`,
@@ -162,11 +160,7 @@ export class OtelBridge {
   /**
    * Make a traced HTTP request to AGNOS runtime.
    */
-  async fetchAgnosRuntime(
-    path: string,
-    runtimeUrl: string,
-    init?: RequestInit
-  ): Promise<Response> {
+  async fetchAgnosRuntime(path: string, runtimeUrl: string, init?: RequestInit): Promise<Response> {
     return tracedFetch(
       this.config.serviceName ?? 'secureyeoman',
       `agnos-runtime:${path}`,
@@ -179,11 +173,7 @@ export class OtelBridge {
   /**
    * Make a traced HTTP request to AGNOS gateway.
    */
-  async fetchAgnosGateway(
-    path: string,
-    gatewayUrl: string,
-    init?: RequestInit
-  ): Promise<Response> {
+  async fetchAgnosGateway(path: string, gatewayUrl: string, init?: RequestInit): Promise<Response> {
     return tracedFetch(
       this.config.serviceName ?? 'secureyeoman',
       `agnos-gateway:${path}`,

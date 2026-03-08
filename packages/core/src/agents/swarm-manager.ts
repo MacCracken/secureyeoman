@@ -275,13 +275,16 @@ export class SwarmManager {
         const roleTaskProfile = profileTask(params.task, context || undefined);
         const modelOverride = this.selectModelForRole(params.task, perBudget, context || undefined);
         if (modelOverride) {
-          this.logger.debug({
-            runId: run.id,
-            role: roleConfig.role,
-            model: modelOverride,
-            taskType: roleTaskProfile.taskType,
-            complexity: roleTaskProfile.complexity,
-          }, 'Cost-aware swarm: selected model for role');
+          this.logger.debug(
+            {
+              runId: run.id,
+              role: roleConfig.role,
+              model: modelOverride,
+              taskType: roleTaskProfile.taskType,
+              complexity: roleTaskProfile.complexity,
+            },
+            'Cost-aware swarm: selected model for role'
+          );
         }
 
         // Inject profile skills into context (Phase 89)

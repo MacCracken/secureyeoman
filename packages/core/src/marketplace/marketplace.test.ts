@@ -159,9 +159,7 @@ describe('MarketplaceStorage', () => {
     await storage.seedBuiltinSkills();
     const { skills } = await storage.search();
     // Themes and personality skills may not have routing fields — only check core skills
-    const coreSkills = skills.filter(
-      (s) => s.category !== 'theme' && s.category !== 'personality'
-    );
+    const coreSkills = skills.filter((s) => s.category !== 'theme' && s.category !== 'personality');
     expect(coreSkills.length).toBeGreaterThan(0);
     for (const skill of coreSkills) {
       expect(typeof skill.useWhen).toBe('string');

@@ -10,28 +10,130 @@ import { McpServiceConfigSchema, type McpServiceConfig } from '@secureyeoman/sha
  * instead of .env.  Each maps a SecretsManager key → the McpServiceConfig field
  * it populates (env var takes precedence if set).
  */
-export const MCP_SECRET_MAPPINGS: { secretName: string; configKey: string; envVar: string; label: string; category: string }[] = [
+export const MCP_SECRET_MAPPINGS: {
+  secretName: string;
+  configKey: string;
+  envVar: string;
+  label: string;
+  category: string;
+}[] = [
   // Search providers
-  { secretName: 'MCP_WEB_SEARCH_API_KEY', configKey: 'webSearchApiKey', envVar: 'MCP_WEB_SEARCH_API_KEY', label: 'Web Search API Key (SerpAPI / Tavily)', category: 'Search' },
-  { secretName: 'BRAVE_SEARCH_API_KEY', configKey: 'braveSearchApiKey', envVar: 'MCP_BRAVE_SEARCH_API_KEY', label: 'Brave Search API Key', category: 'Search' },
-  { secretName: 'BING_SEARCH_API_KEY', configKey: 'bingSearchApiKey', envVar: 'MCP_BING_SEARCH_API_KEY', label: 'Bing Search API Key', category: 'Search' },
-  { secretName: 'EXA_API_KEY', configKey: 'exaApiKey', envVar: 'MCP_EXA_API_KEY', label: 'Exa Neural Search API Key', category: 'Search' },
-  { secretName: 'SEARXNG_URL', configKey: 'searxngUrl', envVar: 'MCP_SEARXNG_URL', label: 'SearXNG Instance URL', category: 'Search' },
+  {
+    secretName: 'MCP_WEB_SEARCH_API_KEY',
+    configKey: 'webSearchApiKey',
+    envVar: 'MCP_WEB_SEARCH_API_KEY',
+    label: 'Web Search API Key (SerpAPI / Tavily)',
+    category: 'Search',
+  },
+  {
+    secretName: 'BRAVE_SEARCH_API_KEY',
+    configKey: 'braveSearchApiKey',
+    envVar: 'MCP_BRAVE_SEARCH_API_KEY',
+    label: 'Brave Search API Key',
+    category: 'Search',
+  },
+  {
+    secretName: 'BING_SEARCH_API_KEY',
+    configKey: 'bingSearchApiKey',
+    envVar: 'MCP_BING_SEARCH_API_KEY',
+    label: 'Bing Search API Key',
+    category: 'Search',
+  },
+  {
+    secretName: 'EXA_API_KEY',
+    configKey: 'exaApiKey',
+    envVar: 'MCP_EXA_API_KEY',
+    label: 'Exa Neural Search API Key',
+    category: 'Search',
+  },
+  {
+    secretName: 'SEARXNG_URL',
+    configKey: 'searxngUrl',
+    envVar: 'MCP_SEARXNG_URL',
+    label: 'SearXNG Instance URL',
+    category: 'Search',
+  },
   // Security
-  { secretName: 'SHODAN_API_KEY', configKey: 'shodanApiKey', envVar: 'SHODAN_API_KEY', label: 'Shodan API Key', category: 'Security' },
+  {
+    secretName: 'SHODAN_API_KEY',
+    configKey: 'shodanApiKey',
+    envVar: 'SHODAN_API_KEY',
+    label: 'Shodan API Key',
+    category: 'Security',
+  },
   // Proxy providers
-  { secretName: 'PROXY_BRIGHTDATA_URL', configKey: 'proxyBrightdataUrl', envVar: 'MCP_PROXY_BRIGHTDATA_URL', label: 'Bright Data Proxy URL', category: 'Proxy' },
-  { secretName: 'PROXY_SCRAPINGBEE_KEY', configKey: 'proxyScrapingbeeKey', envVar: 'MCP_PROXY_SCRAPINGBEE_KEY', label: 'ScrapingBee API Key', category: 'Proxy' },
-  { secretName: 'PROXY_SCRAPERAPI_KEY', configKey: 'proxyScraperapiKey', envVar: 'MCP_PROXY_SCRAPERAPI_KEY', label: 'ScraperAPI Key', category: 'Proxy' },
+  {
+    secretName: 'PROXY_BRIGHTDATA_URL',
+    configKey: 'proxyBrightdataUrl',
+    envVar: 'MCP_PROXY_BRIGHTDATA_URL',
+    label: 'Bright Data Proxy URL',
+    category: 'Proxy',
+  },
+  {
+    secretName: 'PROXY_SCRAPINGBEE_KEY',
+    configKey: 'proxyScrapingbeeKey',
+    envVar: 'MCP_PROXY_SCRAPINGBEE_KEY',
+    label: 'ScrapingBee API Key',
+    category: 'Proxy',
+  },
+  {
+    secretName: 'PROXY_SCRAPERAPI_KEY',
+    configKey: 'proxyScraperapiKey',
+    envVar: 'MCP_PROXY_SCRAPERAPI_KEY',
+    label: 'ScraperAPI Key',
+    category: 'Proxy',
+  },
   // External services
-  { secretName: 'AGNOSTIC_API_KEY', configKey: 'agnosticApiKey', envVar: 'AGNOSTIC_API_KEY', label: 'Agnostic QA API Key', category: 'Services' },
-  { secretName: 'AGNOS_RUNTIME_API_KEY', configKey: 'agnosRuntimeApiKey', envVar: 'AGNOS_RUNTIME_API_KEY', label: 'AGNOS Runtime API Key', category: 'Services' },
-  { secretName: 'AGNOS_GATEWAY_API_KEY', configKey: 'agnosGatewayApiKey', envVar: 'AGNOS_GATEWAY_API_KEY', label: 'AGNOS Gateway API Key', category: 'Services' },
+  {
+    secretName: 'AGNOSTIC_API_KEY',
+    configKey: 'agnosticApiKey',
+    envVar: 'AGNOSTIC_API_KEY',
+    label: 'Agnostic QA API Key',
+    category: 'Services',
+  },
+  {
+    secretName: 'AGNOS_RUNTIME_API_KEY',
+    configKey: 'agnosRuntimeApiKey',
+    envVar: 'AGNOS_RUNTIME_API_KEY',
+    label: 'AGNOS Runtime API Key',
+    category: 'Services',
+  },
+  {
+    secretName: 'AGNOS_GATEWAY_API_KEY',
+    configKey: 'agnosGatewayApiKey',
+    envVar: 'AGNOS_GATEWAY_API_KEY',
+    label: 'AGNOS Gateway API Key',
+    category: 'Services',
+  },
   // QuickBooks
-  { secretName: 'QUICKBOOKS_CLIENT_ID', configKey: 'quickBooksClientId', envVar: 'QUICKBOOKS_CLIENT_ID', label: 'QuickBooks Client ID', category: 'QuickBooks' },
-  { secretName: 'QUICKBOOKS_CLIENT_SECRET', configKey: 'quickBooksClientSecret', envVar: 'QUICKBOOKS_CLIENT_SECRET', label: 'QuickBooks Client Secret', category: 'QuickBooks' },
-  { secretName: 'QUICKBOOKS_REALM_ID', configKey: 'quickBooksRealmId', envVar: 'QUICKBOOKS_REALM_ID', label: 'QuickBooks Realm ID', category: 'QuickBooks' },
-  { secretName: 'QUICKBOOKS_REFRESH_TOKEN', configKey: 'quickBooksRefreshToken', envVar: 'QUICKBOOKS_REFRESH_TOKEN', label: 'QuickBooks Refresh Token', category: 'QuickBooks' },
+  {
+    secretName: 'QUICKBOOKS_CLIENT_ID',
+    configKey: 'quickBooksClientId',
+    envVar: 'QUICKBOOKS_CLIENT_ID',
+    label: 'QuickBooks Client ID',
+    category: 'QuickBooks',
+  },
+  {
+    secretName: 'QUICKBOOKS_CLIENT_SECRET',
+    configKey: 'quickBooksClientSecret',
+    envVar: 'QUICKBOOKS_CLIENT_SECRET',
+    label: 'QuickBooks Client Secret',
+    category: 'QuickBooks',
+  },
+  {
+    secretName: 'QUICKBOOKS_REALM_ID',
+    configKey: 'quickBooksRealmId',
+    envVar: 'QUICKBOOKS_REALM_ID',
+    label: 'QuickBooks Realm ID',
+    category: 'QuickBooks',
+  },
+  {
+    secretName: 'QUICKBOOKS_REFRESH_TOKEN',
+    configKey: 'quickBooksRefreshToken',
+    envVar: 'QUICKBOOKS_REFRESH_TOKEN',
+    label: 'QuickBooks Refresh Token',
+    category: 'QuickBooks',
+  },
 ];
 
 export function loadConfig(

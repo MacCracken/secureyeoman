@@ -46,10 +46,13 @@ export class EgressMonitor {
       byClassification[cls] = (byClassification[cls] ?? 0) + 1;
     }
 
-    this.logger.debug({
-      totalEvents: events.length,
-      period: { from, to },
-    }, 'Egress stats computed');
+    this.logger.debug(
+      {
+        totalEvents: events.length,
+        period: { from, to },
+      },
+      'Egress stats computed'
+    );
 
     return {
       totalEvents: events.length,

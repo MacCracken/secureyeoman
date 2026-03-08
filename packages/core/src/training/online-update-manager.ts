@@ -140,10 +140,13 @@ export class OnlineUpdateManager {
 
     // Watch container completion
     this._watchContainer(id, containerId).catch((err: unknown) => {
-      this.deps.logger.error({
-        id,
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Online update watcher error');
+      this.deps.logger.error(
+        {
+          id,
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Online update watcher error'
+      );
     });
   }
 

@@ -21,18 +21,9 @@ export function registerLinearTools(
     description:
       'List Linear issues with optional filters for team, status, and assignee. Returns up to `limit` issue stubs.',
     inputSchema: {
-      teamId: z
-        .string()
-        .optional()
-        .describe('Filter by Linear team ID'),
-      status: z
-        .string()
-        .optional()
-        .describe('Filter by issue status (e.g. "In Progress", "Done")'),
-      assigneeId: z
-        .string()
-        .optional()
-        .describe('Filter by assignee user ID'),
+      teamId: z.string().optional().describe('Filter by Linear team ID'),
+      status: z.string().optional().describe('Filter by issue status (e.g. "In Progress", "Done")'),
+      assigneeId: z.string().optional().describe('Filter by assignee user ID'),
       limit: z
         .number()
         .int()
@@ -60,7 +51,8 @@ export function registerLinearTools(
     inputSchema: {
       issueId: z.string().describe('Linear issue ID (e.g. "ABC-123")'),
     },
-    buildPath: (args) => `/api/v1/integrations/linear/issues/${encodeURIComponent(args.issueId as string)}`,
+    buildPath: (args) =>
+      `/api/v1/integrations/linear/issues/${encodeURIComponent(args.issueId as string)}`,
   });
 
   // ── linear_create_issue ─────────────────────────────────────────
@@ -70,10 +62,7 @@ export function registerLinearTools(
       'Create a new Linear issue in the specified team. Returns the created issue with its ID and URL.',
     inputSchema: {
       title: z.string().describe('Issue title'),
-      description: z
-        .string()
-        .optional()
-        .describe('Issue description (supports markdown)'),
+      description: z.string().optional().describe('Issue description (supports markdown)'),
       teamId: z.string().describe('Team ID to create the issue in'),
       priority: z
         .number()
@@ -82,14 +71,8 @@ export function registerLinearTools(
         .max(4)
         .optional()
         .describe('Priority level: 0=No priority, 1=Urgent, 2=High, 3=Medium, 4=Low'),
-      assigneeId: z
-        .string()
-        .optional()
-        .describe('User ID to assign the issue to'),
-      labelIds: z
-        .array(z.string())
-        .optional()
-        .describe('Array of label IDs to apply to the issue'),
+      assigneeId: z.string().optional().describe('User ID to assign the issue to'),
+      labelIds: z.array(z.string()).optional().describe('Array of label IDs to apply to the issue'),
     },
     method: 'post',
     buildPath: () => '/api/v1/integrations/linear/issues',
@@ -110,14 +93,8 @@ export function registerLinearTools(
       'Update an existing Linear issue. Only provided fields are changed; omitted fields remain unchanged. Returns the updated issue.',
     inputSchema: {
       issueId: z.string().describe('Linear issue ID to update (e.g. "ABC-123")'),
-      title: z
-        .string()
-        .optional()
-        .describe('New issue title'),
-      description: z
-        .string()
-        .optional()
-        .describe('New issue description (supports markdown)'),
+      title: z.string().optional().describe('New issue title'),
+      description: z.string().optional().describe('New issue description (supports markdown)'),
       stateId: z
         .string()
         .optional()
@@ -129,13 +106,11 @@ export function registerLinearTools(
         .max(4)
         .optional()
         .describe('New priority level: 0=No priority, 1=Urgent, 2=High, 3=Medium, 4=Low'),
-      assigneeId: z
-        .string()
-        .optional()
-        .describe('New assignee user ID'),
+      assigneeId: z.string().optional().describe('New assignee user ID'),
     },
     method: 'put',
-    buildPath: (args) => `/api/v1/integrations/linear/issues/${encodeURIComponent(args.issueId as string)}`,
+    buildPath: (args) =>
+      `/api/v1/integrations/linear/issues/${encodeURIComponent(args.issueId as string)}`,
     buildBody: (args) => {
       const body: Record<string, unknown> = {};
       if (args.title !== undefined) body.title = args.title;
@@ -157,7 +132,8 @@ export function registerLinearTools(
       body: z.string().describe('Comment text (supports markdown)'),
     },
     method: 'post',
-    buildPath: (args) => `/api/v1/integrations/linear/issues/${encodeURIComponent(args.issueId as string)}/comments`,
+    buildPath: (args) =>
+      `/api/v1/integrations/linear/issues/${encodeURIComponent(args.issueId as string)}/comments`,
     buildBody: (args) => ({
       body: args.body,
     }),

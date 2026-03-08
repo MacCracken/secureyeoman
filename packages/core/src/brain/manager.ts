@@ -356,9 +356,12 @@ export class BrainManager {
           }
         }
       } catch (err) {
-        this.deps.logger.warn({
-          error: String(err),
-        }, 'Hybrid memory search failed, falling back to text search');
+        this.deps.logger.warn(
+          {
+            error: String(err),
+          },
+          'Hybrid memory search failed, falling back to text search'
+        );
       }
     }
 
@@ -467,9 +470,12 @@ export class BrainManager {
           );
         }
       } catch (err) {
-        this.deps.logger.warn({
-          error: String(err),
-        }, 'Failed to create content chunks for knowledge');
+        this.deps.logger.warn(
+          {
+            error: String(err),
+          },
+          'Failed to create content chunks for knowledge'
+        );
       }
     }
 
@@ -506,9 +512,12 @@ export class BrainManager {
         await this.deps.vectorMemoryManager!.removeKnowledge(id);
         await this.deps.vectorMemoryManager!.indexKnowledge(entry);
       } catch (err) {
-        this.deps.logger.warn({
-          error: String(err),
-        }, 'Failed to re-index updated knowledge in vector store');
+        this.deps.logger.warn(
+          {
+            error: String(err),
+          },
+          'Failed to re-index updated knowledge in vector store'
+        );
       }
     }
     return entry;
@@ -526,9 +535,12 @@ export class BrainManager {
       try {
         await this.deps.vectorMemoryManager!.removeKnowledge(id);
       } catch (err) {
-        this.deps.logger.warn({
-          error: String(err),
-        }, 'Failed to remove knowledge from vector store');
+        this.deps.logger.warn(
+          {
+            error: String(err),
+          },
+          'Failed to remove knowledge from vector store'
+        );
       }
     }
   }
@@ -608,9 +620,12 @@ export class BrainManager {
           return header + '\n' + contentParts.join('\n\n');
         }
       } catch (err) {
-        this.deps.logger.warn({
-          error: String(err),
-        }, 'Semantic context search failed, falling back to text search');
+        this.deps.logger.warn(
+          {
+            error: String(err),
+          },
+          'Semantic context search failed, falling back to text search'
+        );
       }
     }
 
@@ -972,11 +987,14 @@ export class BrainManager {
       }
     }
 
-    this.deps.logger.debug({
-      decayed,
-      pruned: allPrunedIds.length,
-      vectorSynced,
-    }, 'Brain maintenance completed');
+    this.deps.logger.debug(
+      {
+        decayed,
+        pruned: allPrunedIds.length,
+        vectorSynced,
+      },
+      'Brain maintenance completed'
+    );
 
     return { decayed, pruned: allPrunedIds.length, vectorSynced };
   }

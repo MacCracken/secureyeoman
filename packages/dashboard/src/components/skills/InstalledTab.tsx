@@ -87,7 +87,9 @@ function isSystemSkill(s: Skill): boolean {
   try {
     const parsed = JSON.parse(s.instructions);
     if (parsed.themeId) return true;
-  } catch { /* not theme JSON */ }
+  } catch {
+    /* not theme JSON */
+  }
   if (s.instructions?.startsWith('---\nname:')) return true;
   return false;
 }
@@ -97,7 +99,9 @@ function getSystemCategory(s: Skill): 'theme' | 'personality' {
   try {
     const parsed = JSON.parse(s.instructions);
     if (parsed.themeId) return 'theme';
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return 'personality';
 }
 
@@ -105,7 +109,11 @@ function getSystemCategory(s: Skill): 'theme' | 'personality' {
 
 // ── Installed Workflows view ──────────────────────────────────────────────────
 
-function InstalledWorkflows({ onNavigateTab }: { onNavigateTab?: (tab: TabType, contentType?: ContentType) => void }) {
+function InstalledWorkflows({
+  onNavigateTab,
+}: {
+  onNavigateTab?: (tab: TabType, contentType?: ContentType) => void;
+}) {
   const { data, isLoading } = useQuery({
     queryKey: ['installed-workflows'],
     queryFn: () => fetchWorkflows({ limit: 200 }),
@@ -195,7 +203,11 @@ function InstalledWorkflows({ onNavigateTab }: { onNavigateTab?: (tab: TabType, 
 
 // ── Installed Swarms view ─────────────────────────────────────────────────────
 
-function InstalledSwarms({ onNavigateTab }: { onNavigateTab?: (tab: TabType, contentType?: ContentType) => void }) {
+function InstalledSwarms({
+  onNavigateTab,
+}: {
+  onNavigateTab?: (tab: TabType, contentType?: ContentType) => void;
+}) {
   const { data, isLoading } = useQuery({
     queryKey: ['installed-swarm-templates'],
     queryFn: fetchSwarmTemplates,
@@ -311,7 +323,8 @@ function InstalledSystem({
   // Marketplace catalog (to get category metadata)
   const { data: marketplaceData, isLoading: marketplaceLoading } = useQuery({
     queryKey: ['marketplace-system-items'],
-    queryFn: () => fetchMarketplaceSkills(undefined, undefined, undefined, undefined, 200, undefined, undefined),
+    queryFn: () =>
+      fetchMarketplaceSkills(undefined, undefined, undefined, undefined, 200, undefined, undefined),
   });
 
   // Personalities (for assignment labels)
@@ -422,7 +435,9 @@ function InstalledSystem({
       try {
         const parsed = JSON.parse(primary.instructions);
         themePreview = parsed.preview || null;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     return (
@@ -436,11 +451,11 @@ function InstalledSystem({
                 <UserCircle className="w-4 h-4 text-primary shrink-0" />
               )}
               <h3 className="font-medium">{primary.name}</h3>
-              <span className={`text-xs px-1.5 py-0.5 rounded ${
-                allEnabled
-                  ? 'bg-success/10 text-success'
-                  : 'bg-muted text-muted-foreground'
-              }`}>
+              <span
+                className={`text-xs px-1.5 py-0.5 rounded ${
+                  allEnabled ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
+                }`}
+              >
                 {allEnabled ? 'Enabled' : 'Disabled'}
               </span>
               <span className="text-xs text-muted-foreground">{sourceLabel}</span>
@@ -451,7 +466,9 @@ function InstalledSystem({
               )}
             </div>
             {primary.description && (
-              <p className="text-sm text-muted-foreground mt-1">{sanitizeText(primary.description)}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {sanitizeText(primary.description)}
+              </p>
             )}
             {/* Install scope */}
             <div className="flex items-center flex-wrap gap-1.5 mt-2">
@@ -498,11 +515,7 @@ function InstalledSystem({
               className="btn btn-ghost p-2"
               title={cat === 'theme' ? 'Edit in Appearance' : 'Edit in Souls'}
             >
-              {cat === 'theme' ? (
-                <Settings className="w-4 h-4" />
-              ) : (
-                <Edit2 className="w-4 h-4" />
-              )}
+              {cat === 'theme' ? <Settings className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
             </button>
             {/* Delete — uninstalls all personality instances */}
             <button
@@ -543,16 +556,16 @@ function InstalledSystem({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div
             className="card p-4 space-y-2 cursor-pointer hover:border-primary/50 transition-colors"
-            onClick={() => onNavigateTab?.('marketplace', filter === 'theme' ? 'themes' : 'personalities')}
+            onClick={() =>
+              onNavigateTab?.('marketplace', filter === 'theme' ? 'themes' : 'personalities')
+            }
           >
             <div className="flex items-center gap-2">
               <Store className="w-4 h-4 text-primary" />
               <span className="font-medium text-sm">Marketplace</span>
               <ArrowRight className="w-3.5 h-3.5 text-muted-foreground ml-auto" />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Browse and install {filterLabel}.
-            </p>
+            <p className="text-xs text-muted-foreground">Browse and install {filterLabel}.</p>
           </div>
         </div>
       </div>
@@ -567,9 +580,7 @@ function InstalledSystem({
           <h3 className="text-sm font-semibold capitalize">{filterLabel}</h3>
           <span className="text-xs text-muted-foreground">({itemGroups.length})</span>
         </div>
-        <div className="space-y-2">
-          {itemGroups.map(([, group]) => renderSystemGroup(group))}
-        </div>
+        <div className="space-y-2">{itemGroups.map(([, group]) => renderSystemGroup(group))}</div>
       </div>
 
       <ConfirmDialog
@@ -678,7 +689,9 @@ export function InstalledTab({
       {/* Content type selector — shared with Marketplace & Community tabs */}
       <ContentTypeSelector
         value={contentType}
-        onChange={(v) => { setContentType(v); }}
+        onChange={(v) => {
+          setContentType(v);
+        }}
         hiddenTypes={hiddenTypes}
       />
 
@@ -737,7 +750,9 @@ export function InstalledTab({
       {contentType === 'themes' && <InstalledSystem onNavigateTab={onNavigateTab} filter="theme" />}
 
       {/* ── Personalities ──────────────────────────────────────────────── */}
-      {contentType === 'personalities' && <InstalledSystem onNavigateTab={onNavigateTab} filter="personality" />}
+      {contentType === 'personalities' && (
+        <InstalledSystem onNavigateTab={onNavigateTab} filter="personality" />
+      )}
 
       {/* ── Skills ─────────────────────────────────────────────────────── */}
       {contentType === 'skills' && (

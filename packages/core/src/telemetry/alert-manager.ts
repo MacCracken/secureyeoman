@@ -86,11 +86,14 @@ export class AlertManager {
         // Fire!
         await this._fire(rule, value, now);
       } catch (err) {
-        this.logger.error({
-          ruleId: rule.id,
-          ruleName: rule.name,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Alert rule evaluation error');
+        this.logger.error(
+          {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Alert rule evaluation error'
+        );
       }
     }
   }
@@ -160,20 +163,26 @@ export class AlertManager {
         },
       });
     } catch (err) {
-      this.logger.error({
-        ruleId: rule.id,
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Failed to create alert notification');
+      this.logger.error(
+        {
+          ruleId: rule.id,
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Failed to create alert notification'
+      );
     }
 
     // External channel fan-out (fire-and-forget)
     for (const channel of rule.channels) {
       void this._dispatchChannel(channel, rule, value).catch((err: unknown) => {
-        this.logger.error({
-          ruleId: rule.id,
-          channelType: channel.type,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Alert channel dispatch error');
+        this.logger.error(
+          {
+            ruleId: rule.id,
+            channelType: channel.type,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Alert channel dispatch error'
+        );
       });
     }
   }

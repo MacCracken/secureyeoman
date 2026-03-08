@@ -173,11 +173,14 @@ export class WorkingMemoryBuffer {
         cached++;
       }
 
-      this.logger?.debug({
-        trajectorySize: this.queryTrajectory.length,
-        fetched: results.length,
-        cached,
-      }, 'Predictive pre-fetch completed');
+      this.logger?.debug(
+        {
+          trajectorySize: this.queryTrajectory.length,
+          fetched: results.length,
+          cached,
+        },
+        'Predictive pre-fetch completed'
+      );
 
       return cached;
     } catch (err) {

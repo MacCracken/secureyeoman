@@ -95,11 +95,14 @@ export class VoiceAnnouncementManager {
       this.deps.broadcastAudio?.(personalityId, audioBase64, format);
       this.deps.logger.debug({ personalityId, event }, 'Voice announcement sent');
     } catch (error) {
-      this.deps.logger.warn({
-        error: error instanceof Error ? error.message : String(error),
-        personalityId,
-        event,
-      }, 'Voice announcement failed');
+      this.deps.logger.warn(
+        {
+          error: error instanceof Error ? error.message : String(error),
+          personalityId,
+          event,
+        },
+        'Voice announcement failed'
+      );
     } finally {
       this.pending.delete(key);
     }

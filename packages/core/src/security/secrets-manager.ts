@@ -65,10 +65,13 @@ export class SecretsManager {
       } else {
         throw new Error('SecretsManager: vault config required when backend is "vault"');
       }
-      this.getLogger().info({
-        address: this.config.vault?.address,
-        mount: this.config.vault?.mount,
-      }, 'SecretsManager initialized with Vault backend');
+      this.getLogger().info(
+        {
+          address: this.config.vault?.address,
+          mount: this.config.vault?.mount,
+        },
+        'SecretsManager initialized with Vault backend'
+      );
       return;
     }
 
@@ -81,9 +84,12 @@ export class SecretsManager {
         masterKey: this.config.masterKey,
       });
       await this.fileStore.load();
-      this.getLogger().info({
-        path: this.config.storePath,
-      }, 'SecretsManager initialized with file backend');
+      this.getLogger().info(
+        {
+          path: this.config.storePath,
+        },
+        'SecretsManager initialized with file backend'
+      );
       return;
     }
 
@@ -100,10 +106,13 @@ export class SecretsManager {
         return await this.vaultBackend.get(name);
       } catch (err) {
         if (this.config.vaultFallback !== false) {
-          this.getLogger().warn({
-            name,
-            error: err instanceof Error ? err.message : String(err),
-          }, 'Vault get failed, falling back to env');
+          this.getLogger().warn(
+            {
+              name,
+              error: err instanceof Error ? err.message : String(err),
+            },
+            'Vault get failed, falling back to env'
+          );
           return process.env[name];
         }
         throw err;
@@ -134,10 +143,13 @@ export class SecretsManager {
         return;
       } catch (err) {
         if (this.config.vaultFallback !== false) {
-          this.getLogger().warn({
-            name,
-            error: err instanceof Error ? err.message : String(err),
-          }, 'Vault set failed, falling back to env');
+          this.getLogger().warn(
+            {
+              name,
+              error: err instanceof Error ? err.message : String(err),
+            },
+            'Vault set failed, falling back to env'
+          );
           process.env[name] = value;
           return;
         }
@@ -173,10 +185,13 @@ export class SecretsManager {
         return deleted;
       } catch (err) {
         if (this.config.vaultFallback !== false) {
-          this.getLogger().warn({
-            name,
-            error: err instanceof Error ? err.message : String(err),
-          }, 'Vault delete failed');
+          this.getLogger().warn(
+            {
+              name,
+              error: err instanceof Error ? err.message : String(err),
+            },
+            'Vault delete failed'
+          );
           const had = name in process.env;
           delete process.env[name];
           return had;

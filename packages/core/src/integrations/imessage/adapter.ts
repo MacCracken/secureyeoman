@@ -120,9 +120,12 @@ export class IMessageIntegration implements Integration {
     this.running = true;
     this.pollTimer = setInterval(() => {
       void this.pollMessages().catch((err: unknown) => {
-        this.logger?.error({
-          error: err instanceof Error ? err.message : 'Unknown error',
-        }, 'iMessage poll error');
+        this.logger?.error(
+          {
+            error: err instanceof Error ? err.message : 'Unknown error',
+          },
+          'iMessage poll error'
+        );
       });
     }, this.pollIntervalMs);
 

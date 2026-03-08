@@ -116,13 +116,16 @@ export class MemoryAuditEngine {
         postSnapshot,
       });
 
-      this.logger.info({
-        reportId: report.id,
-        scope,
-        status: finalStatus,
-        memoriesBefore: preSnapshot.totalMemories,
-        memoriesAfter: postSnapshot.totalMemories,
-      }, 'Memory audit completed');
+      this.logger.info(
+        {
+          reportId: report.id,
+          scope,
+          status: finalStatus,
+          memoriesBefore: preSnapshot.totalMemories,
+          memoriesAfter: postSnapshot.totalMemories,
+        },
+        'Memory audit completed'
+      );
 
       // Alert: audit completed
       this.emitAlert('brain.audit_completed', 'info', 'Memory audit completed', {

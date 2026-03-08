@@ -192,14 +192,17 @@ export class ConsentManager {
     // Audit log
     await this.audit('consent:requested', 'Consent requested', consent);
 
-    this.logger.info({
-      consentId: consent.id,
-      userId,
-      requestedBy,
-      resource: scope.resource,
-      duration: scope.duration,
-      expiresAt: consent.expiresAt,
-    }, 'Consent requested');
+    this.logger.info(
+      {
+        consentId: consent.id,
+        userId,
+        requestedBy,
+        resource: scope.resource,
+        duration: scope.duration,
+        expiresAt: consent.expiresAt,
+      },
+      'Consent requested'
+    );
 
     return consent;
   }
@@ -254,11 +257,14 @@ export class ConsentManager {
     // Audit log
     await this.audit('consent:granted', 'Consent granted', consent);
 
-    this.logger.info({
-      consentId: consent.id,
-      grantedBy,
-      userId: consent.userId,
-    }, 'Consent granted');
+    this.logger.info(
+      {
+        consentId: consent.id,
+        grantedBy,
+        userId: consent.userId,
+      },
+      'Consent granted'
+    );
 
     return { success: true, consent };
   }
@@ -311,12 +317,15 @@ export class ConsentManager {
     // Audit log
     await this.audit('consent:denied', `Consent denied: ${reason}`, consent);
 
-    this.logger.info({
-      consentId: consent.id,
-      deniedBy,
-      userId: consent.userId,
-      reason,
-    }, 'Consent denied');
+    this.logger.info(
+      {
+        consentId: consent.id,
+        deniedBy,
+        userId: consent.userId,
+        reason,
+      },
+      'Consent denied'
+    );
 
     return { success: true, consent };
   }
@@ -361,11 +370,14 @@ export class ConsentManager {
     // Audit log
     await this.audit('consent:revoked', 'Consent revoked', consent);
 
-    this.logger.info({
-      consentId: consent.id,
-      revokedBy,
-      userId: consent.userId,
-    }, 'Consent revoked');
+    this.logger.info(
+      {
+        consentId: consent.id,
+        revokedBy,
+        userId: consent.userId,
+      },
+      'Consent revoked'
+    );
 
     return { success: true, consent };
   }
@@ -475,10 +487,13 @@ export class ConsentManager {
 
     await this.audit('consent:expired', 'Consent expired (timeout)', consent);
 
-    this.logger.info({
-      consentId: consent.id,
-      userId: consent.userId,
-    }, 'Consent expired');
+    this.logger.info(
+      {
+        consentId: consent.id,
+        userId: consent.userId,
+      },
+      'Consent expired'
+    );
   }
 
   /**
@@ -546,11 +561,14 @@ export class ConsentManager {
         },
       });
     } catch (error) {
-      this.logger.error({
-        event,
-        consentId: consent.id,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Failed to write audit log');
+      this.logger.error(
+        {
+          event,
+          consentId: consent.id,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to write audit log'
+      );
     }
   }
 }

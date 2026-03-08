@@ -145,11 +145,14 @@ export class SsoManager {
       localUser.role as import('@secureyeoman/shared').Role
     );
 
-    this.logger.info({
-      providerId,
-      externalSubject,
-      userId: localUser.userId,
-    }, 'SSO login successful');
+    this.logger.info(
+      {
+        providerId,
+        externalSubject,
+        userId: localUser.userId,
+      },
+      'SSO login successful'
+    );
 
     return { result, redirectUri: storedState.redirectUri };
   }
@@ -222,11 +225,14 @@ export class SsoManager {
       provider.defaultRole) as import('@secureyeoman/shared').Role;
     const result = await this.authService.createUserSession(localUser.userId, roleToUse);
 
-    this.logger.info({
-      providerId,
-      nameId: callback.nameId,
-      userId: localUser.userId,
-    }, 'SAML login successful');
+    this.logger.info(
+      {
+        providerId,
+        nameId: callback.nameId,
+        userId: localUser.userId,
+      },
+      'SAML login successful'
+    );
 
     return { result, redirectUri: storedState.redirectUri };
   }

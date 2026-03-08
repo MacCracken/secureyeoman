@@ -106,10 +106,13 @@ export class TeamManager {
 
     // Fire-and-forget: update run in background
     void this._executeRun(team, teamRun, params).catch((err: unknown) => {
-      this.logger.error({
-        runId: teamRun.id,
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Team run execution failed');
+      this.logger.error(
+        {
+          runId: teamRun.id,
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Team run execution failed'
+      );
     });
 
     return teamRun;

@@ -38,9 +38,12 @@ export class CognitiveMemoryManager {
       });
     }, this.maintenanceIntervalMs);
     this.timer.unref?.();
-    this.logger.info({
-      intervalMs: this.maintenanceIntervalMs,
-    }, 'Cognitive memory manager started');
+    this.logger.info(
+      {
+        intervalMs: this.maintenanceIntervalMs,
+      },
+      'Cognitive memory manager started'
+    );
   }
 
   stop(): void {
@@ -56,10 +59,13 @@ export class CognitiveMemoryManager {
    */
   async runMaintenance(): Promise<{ decayed: number }> {
     const deleted = await this.storage.decayAssociations(this.hebbianDecayFactor);
-    this.logger.info({
-      deleted,
-      decayFactor: this.hebbianDecayFactor,
-    }, 'Cognitive maintenance done');
+    this.logger.info(
+      {
+        deleted,
+        decayFactor: this.hebbianDecayFactor,
+      },
+      'Cognitive maintenance done'
+    );
     return { decayed: deleted };
   }
 

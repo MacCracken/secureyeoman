@@ -62,11 +62,13 @@ describe('AGNOSProvider', () => {
       const fetchSpy = mockFetchResponse({
         id: 'chatcmpl-123',
         model: 'llama3',
-        choices: [{
-          index: 0,
-          message: { role: 'assistant', content: 'Hello!' },
-          finish_reason: 'stop',
-        }],
+        choices: [
+          {
+            index: 0,
+            message: { role: 'assistant', content: 'Hello!' },
+            finish_reason: 'stop',
+          },
+        ],
         usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
       });
       vi.stubGlobal('fetch', fetchSpy);
@@ -106,32 +108,41 @@ describe('AGNOSProvider', () => {
     });
 
     it('maps tool_calls finish reason correctly', async () => {
-      vi.stubGlobal('fetch', mockFetchResponse({
-        id: 'x',
-        model: 'llama3',
-        choices: [{
-          index: 0,
-          message: {
-            role: 'assistant',
-            content: null,
-            tool_calls: [{
-              id: 'call-1',
-              type: 'function',
-              function: { name: 'get_weather', arguments: '{"city":"NYC"}' },
-            }],
-          },
-          finish_reason: 'tool_calls',
-        }],
-        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
-      }));
+      vi.stubGlobal(
+        'fetch',
+        mockFetchResponse({
+          id: 'x',
+          model: 'llama3',
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: 'assistant',
+                content: null,
+                tool_calls: [
+                  {
+                    id: 'call-1',
+                    type: 'function',
+                    function: { name: 'get_weather', arguments: '{"city":"NYC"}' },
+                  },
+                ],
+              },
+              finish_reason: 'tool_calls',
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        })
+      );
 
       const provider = new AGNOSProvider(makeProviderConfig());
       const response = await provider.chat({
         messages: [{ role: 'user', content: 'weather' }],
-        tools: [{
-          name: 'get_weather',
-          parameters: { type: 'object', properties: { city: { type: 'string' } } },
-        }],
+        tools: [
+          {
+            name: 'get_weather',
+            parameters: { type: 'object', properties: { city: { type: 'string' } } },
+          },
+        ],
       });
 
       expect(response.stopReason).toBe('tool_use');
@@ -168,11 +179,16 @@ describe('AGNOSProvider', () => {
     });
 
     it('handles response with no usage field', async () => {
-      vi.stubGlobal('fetch', mockFetchResponse({
-        id: 'x',
-        model: 'llama3',
-        choices: [{ index: 0, message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
-      }));
+      vi.stubGlobal(
+        'fetch',
+        mockFetchResponse({
+          id: 'x',
+          model: 'llama3',
+          choices: [
+            { index: 0, message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' },
+          ],
+        })
+      );
 
       const provider = new AGNOSProvider(makeProviderConfig());
       const response = await provider.chat({

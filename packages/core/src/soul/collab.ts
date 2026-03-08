@@ -230,10 +230,13 @@ export class CollabManager {
       await this.storage.saveCollabDoc(docId, stateBytes);
       getLogger().debug({ docId }, 'Collab doc persisted');
     } catch (err) {
-      getLogger().error({
-        docId,
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Failed to persist collab doc');
+      getLogger().error(
+        {
+          docId,
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Failed to persist collab doc'
+      );
     }
   }
 

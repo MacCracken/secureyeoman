@@ -17,9 +17,7 @@ function makeQueryClient() {
 
 function renderWithProvider(ui: React.ReactElement) {
   const client = makeQueryClient();
-  return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
 }
 
 describe('AgnosticMetricsWidget', () => {
@@ -53,7 +51,12 @@ describe('AgnosticMetricsWidget', () => {
             tasks: { pending: 2, running: 1, completed: 10, failed: 0 },
             agents: { total: 5, active: 3 },
             recentTasks: [
-              { id: '1', title: 'QA Check', status: 'completed', createdAt: '2026-03-06T00:00:00Z' },
+              {
+                id: '1',
+                title: 'QA Check',
+                status: 'completed',
+                createdAt: '2026-03-06T00:00:00Z',
+              },
             ],
           }),
       })

@@ -131,7 +131,7 @@ export const monokaiThemeSkill = themeSkill(
 export const githubDarkThemeSkill = themeSkill(
   'github-dark',
   'GitHub Dark',
-  'GitHub\'s official dark theme with familiar blue accents',
+  "GitHub's official dark theme with familiar blue accents",
   true,
   ['#0d1117', '#e6edf3', '#2f81f7'],
   ['enterprise']

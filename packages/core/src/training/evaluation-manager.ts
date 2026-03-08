@@ -273,10 +273,13 @@ export class EvaluationManager {
       try {
         response = await config.modelFn(sample.prompt);
       } catch (err) {
-        this.logger.warn({
-          evalId,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Evaluation: model call failed for sample');
+        this.logger.warn(
+          {
+            evalId,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Evaluation: model call failed for sample'
+        );
         continue;
       }
 
@@ -341,10 +344,13 @@ export class EvaluationManager {
       completedAt: Date.now(),
     };
 
-    this.logger.info({
-      evalId,
-      metrics: result.metrics,
-    }, 'Evaluation: complete');
+    this.logger.info(
+      {
+        evalId,
+        metrics: result.metrics,
+      },
+      'Evaluation: complete'
+    );
 
     emitJobCompletion(
       this.getAlertManager?.() ?? null,

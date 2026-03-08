@@ -47,16 +47,22 @@ export class ExternalBrainSync {
     if (this.config.syncIntervalMs > 0) {
       this.syncTimer = setInterval(() => {
         void this.sync().catch((err: unknown) => {
-          this.logger.error({
-            error: err instanceof Error ? err.message : 'Unknown error',
-          }, 'External brain sync failed');
+          this.logger.error(
+            {
+              error: err instanceof Error ? err.message : 'Unknown error',
+            },
+            'External brain sync failed'
+          );
         });
       }, this.config.syncIntervalMs);
-      this.logger.info({
-        provider: this.config.provider,
-        path: this.config.path,
-        intervalMs: this.config.syncIntervalMs,
-      }, 'External brain sync started');
+      this.logger.info(
+        {
+          provider: this.config.provider,
+          path: this.config.path,
+          intervalMs: this.config.syncIntervalMs,
+        },
+        'External brain sync started'
+      );
     }
   }
 
@@ -182,13 +188,16 @@ export class ExternalBrainSync {
     };
 
     this.lastSync = result;
-    this.logger.info({
-      memoriesWritten: result.memoriesWritten,
-      memoriesRemoved: result.memoriesRemoved,
-      knowledgeWritten: result.knowledgeWritten,
-      knowledgeRemoved: result.knowledgeRemoved,
-      durationMs: result.durationMs,
-    }, 'External brain sync completed');
+    this.logger.info(
+      {
+        memoriesWritten: result.memoriesWritten,
+        memoriesRemoved: result.memoriesRemoved,
+        knowledgeWritten: result.knowledgeWritten,
+        knowledgeRemoved: result.knowledgeRemoved,
+        durationMs: result.durationMs,
+      },
+      'External brain sync completed'
+    );
     return result;
   }
 

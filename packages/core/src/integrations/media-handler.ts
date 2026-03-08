@@ -116,11 +116,14 @@ export class MediaHandler {
     }
 
     this.trackedFiles.add(filePath);
-    this.logger.debug({
-      fileName: filename,
-      size: stat.size,
-      mimeType: attachment.mimeType,
-    }, 'Media processed');
+    this.logger.debug(
+      {
+        fileName: filename,
+        size: stat.size,
+        mimeType: attachment.mimeType,
+      },
+      'Media processed'
+    );
 
     return {
       filePath,

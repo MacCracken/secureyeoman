@@ -335,11 +335,14 @@ export class WorkflowEngine {
             stepOutputSchema as Record<string, unknown>
           );
           if (!schemaValidation.valid) {
-            this.logger.warn({
-              stepId: step.id,
-              stepName: step.name,
-              errors: schemaValidation.errors,
-            }, 'Step output schema violation');
+            this.logger.warn(
+              {
+                stepId: step.id,
+                stepName: step.name,
+                errors: schemaValidation.errors,
+              },
+              'Step output schema violation'
+            );
             void this.auditChain?.record({
               event: 'step_output_schema_violation',
               level: 'warn',
@@ -363,12 +366,15 @@ export class WorkflowEngine {
         break;
       } catch (err) {
         error = err instanceof Error ? err.message : String(err);
-        this.logger.warn({
-          stepId: step.id,
-          attempt: attempt + 1,
-          maxAttempts,
-          error,
-        }, 'Step execution failed');
+        this.logger.warn(
+          {
+            stepId: step.id,
+            attempt: attempt + 1,
+            maxAttempts,
+            error,
+          },
+          'Step execution failed'
+        );
         if (attempt < maxAttempts - 1) {
           await new Promise((r) => setTimeout(r, backoffMs * (attempt + 1)));
         }
@@ -462,11 +468,14 @@ export class WorkflowEngine {
             });
             return stdout;
           } catch (err) {
-            this.logger.warn({
-              stepId: step.id,
-              command: String(cfg.command),
-              error: err instanceof Error ? err.message : String(err),
-            }, 'Deterministic command failed, falling through to agent dispatch');
+            this.logger.warn(
+              {
+                stepId: step.id,
+                command: String(cfg.command),
+                error: err instanceof Error ? err.message : String(err),
+              },
+              'Deterministic command failed, falling through to agent dispatch'
+            );
             // Fall through to normal agent dispatch
           }
         }
@@ -510,11 +519,14 @@ export class WorkflowEngine {
         // Log resource write intent — actual BrainManager wiring is optional
         const resourceType = String(cfg.resourceType ?? 'memory');
         const data = this.resolveTemplate(String(cfg.dataTemplate ?? ''), ctx);
-        this.logger.info({
-          resourceType,
-          stepId: step.id,
-          dataLength: data.length,
-        }, 'Workflow resource step');
+        this.logger.info(
+          {
+            resourceType,
+            stepId: step.id,
+            dataLength: data.length,
+          },
+          'Workflow resource step'
+        );
         return { resourceType, data };
       }
 
@@ -811,12 +823,15 @@ export class WorkflowEngine {
           : 'http://ollama:11434';
 
         const passes = !isNaN(metricValue) && metricValue >= threshold;
-        this.logger.info({
-          metricPath,
-          metricValue,
-          threshold,
-          passes,
-        }, 'conditional_deploy: evaluating threshold');
+        this.logger.info(
+          {
+            metricPath,
+            metricValue,
+            threshold,
+            passes,
+          },
+          'conditional_deploy: evaluating threshold'
+        );
 
         if (passes) {
           // Attempt to register fine-tuned adapter with Ollama if finetuneManager available
@@ -825,9 +840,12 @@ export class WorkflowEngine {
               await this.finetuneManager.registerWithOllama(jobId, ollamaUrl);
               this.logger.info({ jobId }, 'conditional_deploy: registered adapter with Ollama');
             } catch (err) {
-              this.logger.warn({
-                error: err instanceof Error ? err.message : String(err),
-              }, 'conditional_deploy: Ollama registration failed (non-fatal)');
+              this.logger.warn(
+                {
+                  error: err instanceof Error ? err.message : String(err),
+                },
+                'conditional_deploy: Ollama registration failed (non-fatal)'
+              );
             }
           }
           if (this.lineageStorage && (modelVersion || jobId)) {
@@ -868,11 +886,14 @@ export class WorkflowEngine {
           report,
           timeoutMs,
         });
-        this.logger.info({
-          requestId: request.id,
-          runId,
-          timeoutMs,
-        }, 'human_approval: approval request created, waiting for decision');
+        this.logger.info(
+          {
+            requestId: request.id,
+            runId,
+            timeoutMs,
+          },
+          'human_approval: approval request created, waiting for decision'
+        );
         // Block until approved/rejected/timed-out
         await this.approvalManager.waitForDecision(request.id);
         return { approved: true, requestId: request.id };
@@ -888,13 +909,16 @@ export class WorkflowEngine {
         const inputsRaw = cfg.inputs ? this.resolveTemplate(JSON.stringify(cfg.inputs), ctx) : '{}';
         const inputs = JSON.parse(inputsRaw) as Record<string, string>;
 
-        this.logger.info({
-          provider,
-          owner,
-          repo,
-          ref,
-          workflowId,
-        }, 'ci_trigger: dispatching CI job');
+        this.logger.info(
+          {
+            provider,
+            owner,
+            repo,
+            ref,
+            workflowId,
+          },
+          'ci_trigger: dispatching CI job'
+        );
 
         if (provider === 'github-actions') {
           const token = this.cicdConfig?.githubToken;
@@ -1166,10 +1190,13 @@ export class WorkflowEngine {
     try {
       return evaluateCondition(expr, { steps: ctx.steps, input: ctx.input });
     } catch (err) {
-      this.logger.warn({
-        expression: expr,
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Workflow condition evaluation failed');
+      this.logger.warn(
+        {
+          expression: expr,
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Workflow condition evaluation failed'
+      );
       return false;
     }
   }

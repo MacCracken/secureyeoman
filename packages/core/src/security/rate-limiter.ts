@@ -170,16 +170,19 @@ export class RateLimiter {
     const retryAfter = Math.ceil((resetAt - now) / 1000);
 
     // Log violation
-    this.getLogger().warn({
-      rule: rule.name,
-      key: rule.keyType === 'ip' ? key : '[redacted]',
-      keyType: rule.keyType,
-      windowMs: rule.windowMs,
-      maxRequests: rule.maxRequests,
-      currentCount: window.count,
-      userId: context?.userId,
-      ipAddress: context?.ipAddress,
-    }, 'Rate limit exceeded');
+    this.getLogger().warn(
+      {
+        rule: rule.name,
+        key: rule.keyType === 'ip' ? key : '[redacted]',
+        keyType: rule.keyType,
+        windowMs: rule.windowMs,
+        maxRequests: rule.maxRequests,
+        currentCount: window.count,
+        userId: context?.userId,
+        ipAddress: context?.ipAddress,
+      },
+      'Rate limit exceeded'
+    );
 
     // Handle based on rule action
     if (rule.onExceed === 'log_only') {

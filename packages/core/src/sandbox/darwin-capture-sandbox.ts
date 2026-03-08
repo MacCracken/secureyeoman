@@ -52,13 +52,16 @@ export class DarwinCaptureSandbox {
       throw new Error('DarwinCaptureSandbox is only available on macOS');
     }
 
-    this.logger.info({
-      maxMemory: this.config.maxMemory,
-      maxCpuPercent: this.config.maxCpuPercent,
-      maxDuration: this.config.maxDuration,
-      allowNetwork: this.config.allowNetwork,
-      syscallPolicy: this.config.syscallPolicy,
-    }, 'Initializing Darwin capture sandbox');
+    this.logger.info(
+      {
+        maxMemory: this.config.maxMemory,
+        maxCpuPercent: this.config.maxCpuPercent,
+        maxDuration: this.config.maxDuration,
+        allowNetwork: this.config.allowNetwork,
+        syscallPolicy: this.config.syscallPolicy,
+      },
+      'Initializing Darwin capture sandbox'
+    );
 
     this.initialized = true;
   }

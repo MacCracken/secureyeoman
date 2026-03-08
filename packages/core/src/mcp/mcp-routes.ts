@@ -235,7 +235,10 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         return false;
       if (!config.exposeNorthflank && NORTHFLANK_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
-      if (!config.exposeAgnosticTools && AGNOSTIC_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+      if (
+        !config.exposeAgnosticTools &&
+        AGNOSTIC_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+      )
         return false;
       if (!config.exposeAgnosTools && AGNOS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;

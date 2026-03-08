@@ -212,14 +212,17 @@ export class PromptGuard {
             snippet: snippet.replace(/\n/g, '↵').slice(0, 120),
           });
 
-          this.getLogger().warn({
-            ...context,
-            messageIndex: idx,
-            messageRole: role,
-            patternName: name,
-            severity,
-            snippet: snippet.slice(0, 60),
-          }, 'PromptGuard finding');
+          this.getLogger().warn(
+            {
+              ...context,
+              messageIndex: idx,
+              messageRole: role,
+              patternName: name,
+              severity,
+              snippet: snippet.slice(0, 60),
+            },
+            'PromptGuard finding'
+          );
         }
       }
     }

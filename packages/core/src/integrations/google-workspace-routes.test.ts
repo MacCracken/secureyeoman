@@ -217,10 +217,7 @@ describe('Google Workspace Routes', () => {
 
       it('forwards upstream 403 error', async () => {
         const app = await buildApp(mockOAuthTokenService());
-        vi.stubGlobal(
-          'fetch',
-          mockFetch({ error: { message: 'insufficientPermissions' } }, 403)
-        );
+        vi.stubGlobal('fetch', mockFetch({ error: { message: 'insufficientPermissions' } }, 403));
         const content = Buffer.from('test').toString('base64');
         const res = await app.inject({
           method: 'POST',
@@ -291,7 +288,13 @@ describe('Google Workspace Routes', () => {
     describe('GET /api/v1/integrations/gsheets/spreadsheets/:spreadsheetId/values', () => {
       it('returns cell values for a range', async () => {
         const app = await buildApp(mockOAuthTokenService());
-        const data = { range: 'Sheet1!A1:B2', values: [['a', 'b'], ['1', '2']] };
+        const data = {
+          range: 'Sheet1!A1:B2',
+          values: [
+            ['a', 'b'],
+            ['1', '2'],
+          ],
+        };
         vi.stubGlobal('fetch', mockFetch(data));
         const res = await app.inject({
           method: 'GET',

@@ -108,10 +108,13 @@ export class LLMJudge {
 
       return this._parseVerdict(response.content);
     } catch (err) {
-      this.getLogger().warn({
-        tool: input.toolName,
-        error: String(err),
-      }, 'LLMJudge: AI call failed, defaulting to allow');
+      this.getLogger().warn(
+        {
+          tool: input.toolName,
+          error: String(err),
+        },
+        'LLMJudge: AI call failed, defaulting to allow'
+      );
       return { decision: 'allow', reason: 'Judge unavailable — fail-open', concerns: [] };
     }
   }

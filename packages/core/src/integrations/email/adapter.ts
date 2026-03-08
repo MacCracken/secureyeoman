@@ -91,12 +91,15 @@ export class EmailIntegration implements Integration {
       tls: { rejectUnauthorized },
     });
 
-    this.logger?.info({
-      displayName: config.displayName,
-      imapHost: ec.imapHost,
-      smtpHost: ec.smtpHost,
-      fromAddress: this.fromAddress,
-    }, 'Email integration initialized');
+    this.logger?.info(
+      {
+        displayName: config.displayName,
+        imapHost: ec.imapHost,
+        smtpHost: ec.smtpHost,
+        fromAddress: this.fromAddress,
+      },
+      'Email integration initialized'
+    );
   }
 
   async start(): Promise<void> {
@@ -132,17 +135,23 @@ export class EmailIntegration implements Integration {
         void this.poll();
       }, interval);
 
-      this.logger?.info({
-        mailbox,
-        intervalMs: interval,
-        fromAddress: this.fromAddress,
-      }, 'Email IMAP polling started');
+      this.logger?.info(
+        {
+          mailbox,
+          intervalMs: interval,
+          fromAddress: this.fromAddress,
+        },
+        'Email IMAP polling started'
+      );
     }
 
-    this.logger?.info({
-      enableRead: ec.enableRead,
-      enableSend: ec.enableSend,
-    }, 'Email integration started');
+    this.logger?.info(
+      {
+        enableRead: ec.enableRead,
+        enableSend: ec.enableSend,
+      },
+      'Email integration started'
+    );
   }
 
   async stop(): Promise<void> {
@@ -215,9 +224,12 @@ export class EmailIntegration implements Integration {
     try {
       lock = await this.imapClient.getMailboxLock(mailbox);
     } catch (err) {
-      this.logger?.warn({
-        error: err instanceof Error ? err.message : 'Unknown error',
-      }, 'Email IMAP lock failed');
+      this.logger?.warn(
+        {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        },
+        'Email IMAP lock failed'
+      );
       return;
     }
 
@@ -238,9 +250,12 @@ export class EmailIntegration implements Integration {
         await this.processMessage(msg);
       }
     } catch (err) {
-      this.logger?.warn({
-        error: err instanceof Error ? err.message : 'Unknown error',
-      }, 'Email poll error');
+      this.logger?.warn(
+        {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        },
+        'Email poll error'
+      );
     } finally {
       lock.release();
     }

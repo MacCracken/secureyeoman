@@ -122,15 +122,21 @@ export class DynamicToolManager {
         const fn = this.compile(tool.implementation);
         this.registry.set(tool.name, { tool, fn });
       } catch (err) {
-        this.deps.logger.warn({
-          name: tool.name,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Failed to compile dynamic tool on startup — skipping');
+        this.deps.logger.warn(
+          {
+            name: tool.name,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Failed to compile dynamic tool on startup — skipping'
+        );
       }
     }
-    this.deps.logger.debug({
-      toolCount: this.registry.size,
-    }, 'DynamicToolManager initialized');
+    this.deps.logger.debug(
+      {
+        toolCount: this.registry.size,
+      },
+      'DynamicToolManager initialized'
+    );
   }
 
   // ── Registration ─────────────────────────────────────────────────────────

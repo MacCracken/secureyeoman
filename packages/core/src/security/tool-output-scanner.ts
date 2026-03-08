@@ -170,10 +170,13 @@ export class ToolOutputScanner {
     const redacted = redactions.length > 0;
 
     if (redacted && this.logger) {
-      this.logger.warn({
-        source,
-        redactions,
-      }, 'Credential pattern detected and redacted in output');
+      this.logger.warn(
+        {
+          source,
+          redactions,
+        },
+        'Credential pattern detected and redacted in output'
+      );
     }
 
     return { text: current, redacted, redactions };

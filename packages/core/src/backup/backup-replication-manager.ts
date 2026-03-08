@@ -79,11 +79,14 @@ export class BackupReplicationManager {
     };
 
     this.backupHistory.push(info);
-    logger.info({
-      filename,
-      provider: this.config.provider,
-      sizeBytes: stats.size,
-    }, 'Backup shipped successfully');
+    logger.info(
+      {
+        filename,
+        provider: this.config.provider,
+        sizeBytes: stats.size,
+      },
+      'Backup shipped successfully'
+    );
 
     // Enforce retention
     await this.enforceRetention();
@@ -193,15 +196,21 @@ export class BackupReplicationManager {
     const intervalMs = 24 * 60 * 60 * 1000;
     this.scheduleTimer = setInterval(() => {
       void this.createAndShipBackup().catch((err: unknown) => {
-        getLogger().error({
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Scheduled backup failed');
+        getLogger().error(
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Scheduled backup failed'
+        );
       });
     }, intervalMs);
-    getLogger().info({
-      schedule: this.config.schedule,
-      provider: this.config.provider,
-    }, 'Backup schedule started');
+    getLogger().info(
+      {
+        schedule: this.config.schedule,
+        provider: this.config.provider,
+      },
+      'Backup schedule started'
+    );
   }
 
   async cleanup(): Promise<void> {

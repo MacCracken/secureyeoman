@@ -141,9 +141,12 @@ export class RagEvalEngine {
       try {
         return await this.llmFaithfulness(answer, contexts);
       } catch (err) {
-        this.deps.logger.warn({
-          error: String(err),
-        }, 'LLM faithfulness scoring failed, falling back to token overlap');
+        this.deps.logger.warn(
+          {
+            error: String(err),
+          },
+          'LLM faithfulness scoring failed, falling back to token overlap'
+        );
       }
     }
 
@@ -166,9 +169,12 @@ export class RagEvalEngine {
       const score = Number(json.score);
       return Number.isFinite(score) ? Math.max(0, Math.min(1, score)) : 0;
     } catch {
-      this.deps.logger.warn({
-        content: response.content?.slice(0, 200),
-      }, 'Failed to parse LLM faithfulness response');
+      this.deps.logger.warn(
+        {
+          content: response.content?.slice(0, 200),
+        },
+        'Failed to parse LLM faithfulness response'
+      );
       return this.tokenOverlapFaithfulness(answer, contexts);
     }
   }

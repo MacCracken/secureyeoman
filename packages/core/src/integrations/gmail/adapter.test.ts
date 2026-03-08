@@ -428,11 +428,11 @@ describe('GmailIntegration', () => {
 
       await vi.advanceTimersByTimeAsync(1001);
       expect(mockLogger.warn).toHaveBeenCalledWith(
-{
-        error: 'Unknown error',
-      },
-'Gmail poll error'
-);
+        {
+          error: 'Unknown error',
+        },
+        'Gmail poll error'
+      );
     });
 
     it('skips message when processMessage fetch fails', async () => {
@@ -843,11 +843,11 @@ describe('GmailIntegration', () => {
       await adapter.start();
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
-{
-        labelName: 'fail-label',
-      },
-'Failed to create Gmail label'
-);
+        {
+          labelName: 'fail-label',
+        },
+        'Failed to create Gmail label'
+      );
     });
 
     it('handles resolveLabelId failure gracefully', async () => {

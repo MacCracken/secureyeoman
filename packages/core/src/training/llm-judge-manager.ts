@@ -409,9 +409,12 @@ export class LlmJudgeManager {
           level: 'warn',
         });
       } catch (err) {
-        this.logger.error({
-          error: err instanceof Error ? err.message : 'unknown',
-        }, 'Failed to send auto-eval notification');
+        this.logger.error(
+          {
+            error: err instanceof Error ? err.message : 'unknown',
+          },
+          'Failed to send auto-eval notification'
+        );
       }
     }
 

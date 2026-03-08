@@ -4,7 +4,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { SecuritySettings, RolesSettings, SecretsPanel, UserRoleAssignments } from './SecuritySettings';
+import {
+  SecuritySettings,
+  RolesSettings,
+  SecretsPanel,
+  UserRoleAssignments,
+} from './SecuritySettings';
 import { createMetricsSnapshot } from '../test/mocks';
 
 vi.mock('../api/client', () => ({
@@ -1423,7 +1428,6 @@ describe('RolesSettings', () => {
     renderRolesSettings();
     expect(await screen.findByText('No permissions')).toBeInTheDocument();
   });
-
 });
 
 // ── UserRoleAssignments (moved from RolesSettings) ──────────────────────
@@ -1443,7 +1447,13 @@ describe('UserRoleAssignments', () => {
     vi.resetAllMocks();
     mockFetchRoles.mockResolvedValue({
       roles: [
-        { id: 'r-ops', name: 'Custom Ops', permissions: [{ resource: 'tasks', action: 'read' }], isBuiltin: false, inheritFrom: [] },
+        {
+          id: 'r-ops',
+          name: 'Custom Ops',
+          permissions: [{ resource: 'tasks', action: 'read' }],
+          isBuiltin: false,
+          inheritFrom: [],
+        },
       ],
     });
     mockFetchAssignments.mockResolvedValue({

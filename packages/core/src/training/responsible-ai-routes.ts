@@ -181,7 +181,7 @@ export function registerResponsibleAiRoutes(
       // Only allow users to query their own data, or admins to query any
       const authUser = (request as any).authUser;
       if (authUser?.userId && authUser.userId !== userId && authUser.role !== 'admin') {
-        return sendError(reply, 403, 'Not authorized to view this user\'s provenance data');
+        return sendError(reply, 403, "Not authorized to view this user's provenance data");
       }
       const entries = await getManager().findUserProvenance(userId);
       return reply.send({ items: entries });
@@ -196,7 +196,7 @@ export function registerResponsibleAiRoutes(
       // Only allow users to redact their own data, or admins to redact any
       const authUser = (request as any).authUser;
       if (authUser?.userId && authUser.userId !== userId && authUser.role !== 'admin') {
-        return sendError(reply, 403, 'Not authorized to redact this user\'s data');
+        return sendError(reply, 403, "Not authorized to redact this user's data");
       }
       const count = await getManager().redactUserData(userId);
       return reply.send({ redacted: count });

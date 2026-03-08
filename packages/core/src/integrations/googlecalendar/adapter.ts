@@ -234,9 +234,12 @@ export class GoogleCalendarIntegration implements Integration {
         await this.deps.onMessage(unified);
       }
     } catch (err) {
-      this.logger?.warn({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Google Calendar poll error');
+      this.logger?.warn(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Google Calendar poll error'
+      );
     }
   }
 

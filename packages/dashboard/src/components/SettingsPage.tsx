@@ -301,7 +301,11 @@ function ThemeEditorDialog({
   if (!open) return null;
 
   const handleExport = () => {
-    const json = JSON.stringify({ name: editorName, isDark: editorIsDark, colors: editorColors }, null, 2);
+    const json = JSON.stringify(
+      { name: editorName, isDark: editorIsDark, colors: editorColors },
+      null,
+      2
+    );
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -314,12 +318,18 @@ function ThemeEditorDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4 p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold">
-            {initial?.isInstalledTheme ? 'Edit as Custom Theme' : initial ? 'Edit Theme' : 'Create Theme'}
+            {initial?.isInstalledTheme
+              ? 'Edit as Custom Theme'
+              : initial
+                ? 'Edit Theme'
+                : 'Create Theme'}
           </h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
@@ -328,14 +338,17 @@ function ThemeEditorDialog({
 
         {initial?.isInstalledTheme && (
           <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
-            Editing an installed theme creates a new custom copy. The original remains available for re-install.
+            Editing an installed theme creates a new custom copy. The original remains available for
+            re-install.
           </p>
         )}
 
         <div className="flex gap-4 items-center">
           <input
             value={editorName}
-            onChange={(e) => { setEditorName(e.target.value); }}
+            onChange={(e) => {
+              setEditorName(e.target.value);
+            }}
             className="text-sm px-2 py-1 rounded border border-input bg-background flex-1"
             placeholder="Theme name"
             maxLength={64}
@@ -344,7 +357,9 @@ function ThemeEditorDialog({
             <input
               type="checkbox"
               checked={editorIsDark}
-              onChange={(e) => { setEditorIsDark(e.target.checked); }}
+              onChange={(e) => {
+                setEditorIsDark(e.target.checked);
+              }}
               className="rounded"
             />
             Dark theme
@@ -370,12 +385,16 @@ function ThemeEditorDialog({
                 <div
                   className="w-6 h-6 rounded border border-border flex-shrink-0"
                   style={{
-                    backgroundColor: isValidHsl(editorColors[v]) ? `hsl(${editorColors[v]})` : '#888',
+                    backgroundColor: isValidHsl(editorColors[v])
+                      ? `hsl(${editorColors[v]})`
+                      : '#888',
                   }}
                 />
                 <input
                   value={editorColors[v]}
-                  onChange={(e) => { setEditorColors((prev) => ({ ...prev, [v]: e.target.value })); }}
+                  onChange={(e) => {
+                    setEditorColors((prev) => ({ ...prev, [v]: e.target.value }));
+                  }}
                   className={`text-xs px-1.5 py-1 rounded border bg-background flex-1 font-mono ${
                     isValidHsl(editorColors[v]) ? 'border-input' : 'border-destructive'
                   }`}
@@ -400,7 +419,9 @@ function ThemeEditorDialog({
             Cancel
           </button>
           <button
-            onClick={() => { onSave({ name: editorName, isDark: editorIsDark, colors: editorColors }); }}
+            onClick={() => {
+              onSave({ name: editorName, isDark: editorIsDark, colors: editorColors });
+            }}
             className="text-xs px-3 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90"
           >
             Save & Apply
@@ -424,7 +445,8 @@ function AppearanceTab() {
   // ── Installed marketplace themes ──
   const { data: marketplaceThemeData } = useQuery({
     queryKey: ['marketplace-themes'],
-    queryFn: () => fetchMarketplaceSkills(undefined, undefined, undefined, undefined, 200, undefined, 'theme'),
+    queryFn: () =>
+      fetchMarketplaceSkills(undefined, undefined, undefined, undefined, 200, undefined, 'theme'),
   });
 
   const installedMarketplaceThemes: MarketplaceThemeMeta[] = (marketplaceThemeData?.skills ?? [])
@@ -489,7 +511,9 @@ function AppearanceTab() {
         {theme === t.id && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
         {t.id !== 'system' && (
           <button
-            onClick={() => { openEditBuiltinTheme(t); }}
+            onClick={() => {
+              openEditBuiltinTheme(t);
+            }}
             className="p-0.5 text-muted-foreground hover:text-primary"
             title="Edit as custom theme"
           >
@@ -525,7 +549,9 @@ function AppearanceTab() {
         <div className="flex items-center gap-1 px-2 py-1.5 bg-card text-left">
           <span className="text-xs font-medium truncate flex-1">{t.name}</span>
           <button
-            onClick={() => { openEditCustomTheme(t); }}
+            onClick={() => {
+              openEditCustomTheme(t);
+            }}
             className="p-0.5 hover:text-primary"
             title="Edit theme"
           >
@@ -594,7 +620,9 @@ function AppearanceTab() {
           <span className="text-xs font-medium truncate flex-1">{t.name}</span>
           {theme === themeId && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
           <button
-            onClick={() => { openEditMarketplaceTheme(t); }}
+            onClick={() => {
+              openEditMarketplaceTheme(t);
+            }}
             className="p-0.5 hover:text-primary"
             title="Edit as custom theme"
           >
@@ -714,11 +742,11 @@ function AppearanceTab() {
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-muted-foreground" />
           <h3 className="text-sm font-medium text-muted-foreground">Auto-Switch Schedule</h3>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-            schedule.enabled
-              ? 'bg-success/10 text-success'
-              : 'bg-muted text-muted-foreground'
-          }`}>
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+              schedule.enabled ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
+            }`}
+          >
             {schedule.enabled ? 'Enabled' : 'Disabled'}
           </span>
           <button
@@ -740,7 +768,7 @@ function AppearanceTab() {
           </button>
         </div>
         {schedule.enabled && (
-        <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
+          <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
             <>
               <label className="flex items-center justify-between text-sm cursor-pointer">
                 <span>Use OS light/dark schedule</span>
@@ -860,7 +888,7 @@ function AppearanceTab() {
                 </label>
               </div>
             </>
-        </div>
+          </div>
         )}
       </div>
 
@@ -874,8 +902,12 @@ function AppearanceTab() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Download className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-medium text-muted-foreground">Installed from Marketplace</h3>
-            <span className="text-xs text-muted-foreground">({installedMarketplaceThemes.length})</span>
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Installed from Marketplace
+            </h3>
+            <span className="text-xs text-muted-foreground">
+              ({installedMarketplaceThemes.length})
+            </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {installedMarketplaceThemes.map((t) => (
@@ -929,11 +961,13 @@ function AppearanceTab() {
       {/* ── Theme Editor Dialog ── */}
       <ThemeEditorDialog
         open={editorOpen}
-        onClose={() => { setEditorOpen(false); setEditorInit(null); }}
+        onClose={() => {
+          setEditorOpen(false);
+          setEditorInit(null);
+        }}
         onSave={handleEditorSave}
         initial={editorInit}
       />
-
     </div>
   );
 }

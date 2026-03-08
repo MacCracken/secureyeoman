@@ -194,12 +194,12 @@ describe('MemoryAuditScheduler', () => {
     const scheduler = makeScheduler(mocks);
     await scheduler.setSchedule('monthly', '0 1 15 * *');
     expect(mockLogger.info).toHaveBeenCalledWith(
-{
-      scope: 'monthly',
-      cron: '0 1 15 * *',
-    },
-'Audit schedule updated'
-);
+      {
+        scope: 'monthly',
+        cron: '0 1 15 * *',
+      },
+      'Audit schedule updated'
+    );
   });
 
   // ── runManualAudit ─────────────────────────────────────────
@@ -225,12 +225,12 @@ describe('MemoryAuditScheduler', () => {
     const scheduler = makeScheduler(mocks);
     await scheduler.runManualAudit('weekly', 'soul-7');
     expect(mockLogger.info).toHaveBeenCalledWith(
-{
-      scope: 'weekly',
-      personalityId: 'soul-7',
-    },
-'Manual audit triggered'
-);
+      {
+        scope: 'weekly',
+        personalityId: 'soul-7',
+      },
+      'Manual audit triggered'
+    );
   });
 
   // ── History ────────────────────────────────────────────────

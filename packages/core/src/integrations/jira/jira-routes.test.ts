@@ -156,7 +156,11 @@ describe('Jira Routes', () => {
 
     it('creates issue and returns 201', async () => {
       buildApp();
-      const created = { id: '10001', key: 'PROJ-43', self: 'https://test.atlassian.net/rest/api/3/issue/10001' };
+      const created = {
+        id: '10001',
+        key: 'PROJ-43',
+        self: 'https://test.atlassian.net/rest/api/3/issue/10001',
+      };
       fetchSpy.mockResolvedValueOnce(jsonResponse(created, 201));
 
       const res = await app.inject({
@@ -196,14 +200,22 @@ describe('Jira Routes', () => {
 
     it('returns 503 when no integration is configured', async () => {
       buildApp([]);
-      const res = await app.inject({ method: 'POST', url, payload: { projectKey: 'P', summary: 'S' } });
+      const res = await app.inject({
+        method: 'POST',
+        url,
+        payload: { projectKey: 'P', summary: 'S' },
+      });
       expect(res.statusCode).toBe(503);
     });
 
     it('forwards upstream error', async () => {
       buildApp();
       fetchSpy.mockResolvedValueOnce(errorResponse(400, ['Project not found']));
-      const res = await app.inject({ method: 'POST', url, payload: { projectKey: 'BAD', summary: 'S' } });
+      const res = await app.inject({
+        method: 'POST',
+        url,
+        payload: { projectKey: 'BAD', summary: 'S' },
+      });
       expect(res.statusCode).toBe(400);
       expect(res.json().message).toBe('Project not found');
     });

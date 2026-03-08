@@ -55,9 +55,12 @@ export class BodyModule extends BaseModule {
     }
     await this.heartbeatManager.initialize();
     this.heartbeatManager.start();
-    this.logger.debug({
-      intervalMs: this.config.heartbeat.intervalMs,
-    }, 'Heart manager started');
+    this.logger.debug(
+      {
+        intervalMs: this.config.heartbeat.intervalMs,
+      },
+      'Heart manager started'
+    );
 
     // Seed personality roster (fire-and-forget)
     const hbmRef = this.heartbeatManager;
@@ -82,9 +85,12 @@ export class BodyModule extends BaseModule {
         );
       })
       .catch((err: unknown) => {
-        this.logger?.warn({
-          error: err instanceof Error ? err.message : 'Unknown error',
-        }, 'Failed to seed personality roster for heartbeat');
+        this.logger?.warn(
+          {
+            error: err instanceof Error ? err.message : 'Unknown error',
+          },
+          'Failed to seed personality roster for heartbeat'
+        );
       });
   }
 

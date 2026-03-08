@@ -62,7 +62,9 @@ function isSystemSkill(s: Skill): boolean {
   try {
     const parsed = JSON.parse(s.instructions);
     if (parsed.themeId) return true;
-  } catch { /* not theme JSON */ }
+  } catch {
+    /* not theme JSON */
+  }
   if (s.instructions?.startsWith('---\nname:')) return true;
   return false;
 }
@@ -131,7 +133,9 @@ export function PersonalTab() {
 
   const selectedPersonality = personalities.find((p) => p.id === selectedPersonalityId) ?? null;
   const skills = selectedPersonalityId
-    ? (data?.skills ?? []).filter((s) => s.personalityId === selectedPersonalityId && !isSystemSkill(s))
+    ? (data?.skills ?? []).filter(
+        (s) => s.personalityId === selectedPersonalityId && !isSystemSkill(s)
+      )
     : [];
   const pendingCount = skills.filter((s) => s.status === 'pending_approval').length;
 

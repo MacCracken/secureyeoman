@@ -221,10 +221,13 @@ export class DocumentManager {
         const doc = await this.ingestText(content, title, personalityId, 'shared');
         results.push(doc);
       } catch (err) {
-        this.logger.warn({
-          file: file.path,
-          error: String(err),
-        }, 'Failed to ingest GitHub wiki file');
+        this.logger.warn(
+          {
+            file: file.path,
+            error: String(err),
+          },
+          'Failed to ingest GitHub wiki file'
+        );
       }
     }
 
@@ -459,11 +462,14 @@ export class DocumentManager {
           await this.brainManager.learn(topic, piece, source, 0.9, personalityId ?? undefined);
         } catch (err) {
           // Log and continue — don't fail the whole ingest if one chunk fails
-          this.logger.warn({
-            docId,
-            chunk: storeIdx - 1,
-            error: String(err),
-          }, 'Failed to learn chunk');
+          this.logger.warn(
+            {
+              docId,
+              chunk: storeIdx - 1,
+              error: String(err),
+            },
+            'Failed to learn chunk'
+          );
         }
       }
     }

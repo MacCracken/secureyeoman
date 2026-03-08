@@ -114,11 +114,14 @@ export class CorpusLoader {
   /** Register a validated corpus source. */
   registerSource(source: CorpusSource): void {
     this.sources.set(source.id, source);
-    this.log.info({
-      sourceId: source.id,
-      name: source.name,
-      format: source.format,
-    }, 'Corpus source registered');
+    this.log.info(
+      {
+        sourceId: source.id,
+        name: source.name,
+        format: source.format,
+      },
+      'Corpus source registered'
+    );
   }
 
   /** Get a registered source by ID. */

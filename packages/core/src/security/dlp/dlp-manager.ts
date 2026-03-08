@@ -70,17 +70,23 @@ export class DlpManager {
         tenantId: metadata?.tenantId ?? 'default',
       });
     } catch (err) {
-      this.logger.warn({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Failed to record egress event');
+      this.logger.warn(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Failed to record egress event'
+      );
     }
 
-    this.logger.info({
-      destination,
-      action: result.action,
-      findingsCount: result.findings.length,
-      classificationLevel: result.classificationLevel,
-    }, 'DLP outbound scan completed');
+    this.logger.info(
+      {
+        destination,
+        action: result.action,
+        findingsCount: result.findings.length,
+        classificationLevel: result.classificationLevel,
+      },
+      'DLP outbound scan completed'
+    );
 
     return result;
   }

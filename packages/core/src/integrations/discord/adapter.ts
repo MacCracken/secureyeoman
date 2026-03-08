@@ -99,9 +99,12 @@ export class DiscordIntegration implements Integration {
         await rest.put(route, { body: SLASH_COMMANDS });
         this.logger?.info('Discord slash commands registered');
       } catch (err) {
-        this.logger?.warn({
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Discord slash command registration failed');
+        this.logger?.warn(
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Discord slash command registration failed'
+        );
       }
     });
 
@@ -168,7 +171,10 @@ export class DiscordIntegration implements Integration {
         })();
       } else {
         this.deps!.onMessage(unified).catch((err: unknown) => {
-          this.logger?.error({ error: err instanceof Error ? err.message : String(err) }, 'onMessage handler failed');
+          this.logger?.error(
+            { error: err instanceof Error ? err.message : String(err) },
+            'onMessage handler failed'
+          );
         });
       }
     });
@@ -201,7 +207,10 @@ export class DiscordIntegration implements Integration {
         };
 
         this.deps!.onMessage(unified).catch((err: unknown) => {
-          this.logger?.error({ error: err instanceof Error ? err.message : String(err) }, 'onMessage handler failed');
+          this.logger?.error(
+            { error: err instanceof Error ? err.message : String(err) },
+            'onMessage handler failed'
+          );
         });
         return;
       }
@@ -287,7 +296,10 @@ export class DiscordIntegration implements Integration {
         };
 
         this.deps!.onMessage(unified).catch((err: unknown) => {
-          this.logger?.error({ error: err instanceof Error ? err.message : String(err) }, 'onMessage handler failed');
+          this.logger?.error(
+            { error: err instanceof Error ? err.message : String(err) },
+            'onMessage handler failed'
+          );
         });
       }
     });

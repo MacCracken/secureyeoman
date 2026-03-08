@@ -77,12 +77,19 @@ export function DocumentsPanel() {
   });
   const personalities = personalitiesData?.personalities ?? [];
 
-  const filterPersonalityId =
-    isOrg ? undefined : (selectedPersonalityId === ALL_PERSONALITIES ? undefined : selectedPersonalityId);
+  const filterPersonalityId = isOrg
+    ? undefined
+    : selectedPersonalityId === ALL_PERSONALITIES
+      ? undefined
+      : selectedPersonalityId;
 
   const { data: docsData, isLoading } = useQuery({
     queryKey: ['kb-documents', kbScope, filterPersonalityId],
-    queryFn: () => listDocuments({ personalityId: filterPersonalityId, scope: isOrg ? 'organization' : undefined }),
+    queryFn: () =>
+      listDocuments({
+        personalityId: filterPersonalityId,
+        scope: isOrg ? 'organization' : undefined,
+      }),
     staleTime: 5000,
   });
   const documents = docsData?.documents ?? [];
@@ -90,7 +97,7 @@ export function DocumentsPanel() {
   const uploadMutation = useMutation({
     mutationFn: (file: File) =>
       uploadDocument(file, {
-        personalityId: isOrg ? undefined : (uploadPersonalityId || undefined),
+        personalityId: isOrg ? undefined : uploadPersonalityId || undefined,
         visibility: isOrg ? 'shared' : uploadVisibility,
         title: uploadTitle || undefined,
         scope: isOrg ? 'organization' : undefined,

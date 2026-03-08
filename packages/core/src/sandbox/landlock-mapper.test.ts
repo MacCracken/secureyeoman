@@ -83,9 +83,11 @@ describe('landlock-mapper', () => {
     });
 
     it('generates empty network rules when network disabled', () => {
-      const policy = profileToLandlockPolicy(makeProfile({
-        network: { allowed: false, allowedHosts: [], allowedPorts: [] },
-      }));
+      const policy = profileToLandlockPolicy(
+        makeProfile({
+          network: { allowed: false, allowedHosts: [], allowedPorts: [] },
+        })
+      );
       expect(policy.networkRules).toHaveLength(0);
     });
 
@@ -103,16 +105,18 @@ describe('landlock-mapper', () => {
     });
 
     it('handles high-security profile with no exec paths', () => {
-      const policy = profileToLandlockPolicy(makeProfile({
-        name: 'high-security',
-        label: 'High Security',
-        filesystem: {
-          allowedReadPaths: ['/tmp'],
-          allowedWritePaths: ['/tmp'],
-          allowedExecPaths: [],
-        },
-        network: { allowed: false, allowedHosts: [], allowedPorts: [] },
-      }));
+      const policy = profileToLandlockPolicy(
+        makeProfile({
+          name: 'high-security',
+          label: 'High Security',
+          filesystem: {
+            allowedReadPaths: ['/tmp'],
+            allowedWritePaths: ['/tmp'],
+            allowedExecPaths: [],
+          },
+          network: { allowed: false, allowedHosts: [], allowedPorts: [] },
+        })
+      );
 
       const execRules = policy.filesystemRules.filter((r) => r.access.includes('execute'));
       expect(execRules).toHaveLength(0);
@@ -121,11 +125,14 @@ describe('landlock-mapper', () => {
 
   describe('submitPolicyToAgnos', () => {
     it('submits policy and returns policyId on success', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ policy_id: 'pol-123' }),
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ policy_id: 'pol-123' }),
+        })
+      );
 
       const policy = profileToLandlockPolicy(makeProfile());
       const result = await submitPolicyToAgnos('http://localhost:8090', policy, 'key');
@@ -134,11 +141,14 @@ describe('landlock-mapper', () => {
     });
 
     it('returns error on HTTP failure', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        text: () => Promise.resolve('Bad Request'),
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 400,
+          text: () => Promise.resolve('Bad Request'),
+        })
+      );
 
       const policy = profileToLandlockPolicy(makeProfile());
       const result = await submitPolicyToAgnos('http://localhost:8090', policy);
@@ -158,11 +168,14 @@ describe('landlock-mapper', () => {
 
   describe('syncProfilesToAgnos', () => {
     it('syncs enabled profiles and counts results', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ policy_id: 'p1' }),
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ policy_id: 'p1' }),
+        })
+      );
 
       const profiles = [
         makeProfile({ name: 'prod', enabled: true }),
@@ -183,10 +196,7 @@ describe('landlock-mapper', () => {
       });
       vi.stubGlobal('fetch', fetchSpy);
 
-      await syncProfilesToAgnos(
-        [makeProfile({ enabled: false })],
-        'http://localhost:8090'
-      );
+      await syncProfilesToAgnos([makeProfile({ enabled: false })], 'http://localhost:8090');
       expect(fetchSpy).not.toHaveBeenCalled();
     });
   });

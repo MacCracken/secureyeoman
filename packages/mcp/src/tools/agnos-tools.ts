@@ -43,7 +43,11 @@ async function agnosGet(
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
   const res = await fetch(`${baseUrl}${path}`, { headers });
   let body: unknown;
-  try { body = await res.json(); } catch { body = await res.text().catch(() => ''); }
+  try {
+    body = await res.json();
+  } catch {
+    body = await res.text().catch(() => '');
+  }
   return { ok: res.ok, status: res.status, body };
 }
 
@@ -59,7 +63,11 @@ async function agnosPost(
     body: JSON.stringify(payload),
   });
   let body: unknown;
-  try { body = await res.json(); } catch { body = await res.text().catch(() => ''); }
+  try {
+    body = await res.json();
+  } catch {
+    body = await res.text().catch(() => '');
+  }
   return { ok: res.ok, status: res.status, body };
 }
 
@@ -75,7 +83,11 @@ async function agnosPut(
     body: JSON.stringify(payload),
   });
   let body: unknown;
-  try { body = await res.json(); } catch { body = await res.text().catch(() => ''); }
+  try {
+    body = await res.json();
+  } catch {
+    body = await res.text().catch(() => '');
+  }
   return { ok: res.ok, status: res.status, body };
 }
 
@@ -86,7 +98,11 @@ async function agnosDelete(
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
   const res = await fetch(`${baseUrl}${path}`, { method: 'DELETE', headers });
   let body: unknown;
-  try { body = await res.json(); } catch { body = await res.text().catch(() => ''); }
+  try {
+    body = await res.json();
+  } catch {
+    body = await res.text().catch(() => '');
+  }
   return { ok: res.ok, status: res.status, body };
 }
 
@@ -134,10 +150,13 @@ export function registerAgnosTools(
     wrapToolHandler('agnos_runtime_health', middleware, async () => {
       try {
         const { ok, status, body } = await agnosGet(rtUrl, '/v1/health', rtH());
-        if (!ok) return errResult(`AGNOS runtime health failed: HTTP ${status}\n${JSON.stringify(body)}`);
+        if (!ok)
+          return errResult(`AGNOS runtime health failed: HTTP ${status}\n${JSON.stringify(body)}`);
         return { content: [{ type: 'text' as const, text: fmt('AGNOS Runtime Health', body) }] };
       } catch (err) {
-        return errResult(`Cannot reach AGNOS runtime at ${rtUrl}: ${err instanceof Error ? err.message : String(err)}`);
+        return errResult(
+          `Cannot reach AGNOS runtime at ${rtUrl}: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     })
   );
@@ -153,10 +172,15 @@ export function registerAgnosTools(
     wrapToolHandler('agnos_gateway_health', middleware, async () => {
       try {
         const { ok, status, body } = await agnosGet(gwUrl, '/v1/health', gwH());
-        if (!ok) return errResult(`AGNOS gateway health failed: HTTP ${status}\n${JSON.stringify(body)}`);
-        return { content: [{ type: 'text' as const, text: fmt('AGNOS LLM Gateway Health', body) }] };
+        if (!ok)
+          return errResult(`AGNOS gateway health failed: HTTP ${status}\n${JSON.stringify(body)}`);
+        return {
+          content: [{ type: 'text' as const, text: fmt('AGNOS LLM Gateway Health', body) }],
+        };
       } catch (err) {
-        return errResult(`Cannot reach AGNOS gateway at ${gwUrl}: ${err instanceof Error ? err.message : String(err)}`);
+        return errResult(
+          `Cannot reach AGNOS gateway at ${gwUrl}: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     })
   );
@@ -171,7 +195,8 @@ export function registerAgnosTools(
     },
     wrapToolHandler('agnos_agents_list', middleware, async () => {
       const { ok, status, body } = await agnosGet(rtUrl, '/v1/agents', rtH());
-      if (!ok) return errResult(`AGNOS agents list failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      if (!ok)
+        return errResult(`AGNOS agents list failed: HTTP ${status}\n${JSON.stringify(body)}`);
       return { content: [{ type: 'text' as const, text: fmt('AGNOS Agents', body) }] };
     })
   );
@@ -181,15 +206,23 @@ export function registerAgnosTools(
   server.registerTool(
     'agnos_agent_detail',
     {
-      description: 'Get details of a specific AGNOS agent (status, capabilities, memory, heartbeat)',
+      description:
+        'Get details of a specific AGNOS agent (status, capabilities, memory, heartbeat)',
       inputSchema: {
         agent_id: z.string().describe('Agent ID'),
       },
     },
     wrapToolHandler('agnos_agent_detail', middleware, async (args) => {
-      const { ok, status, body } = await agnosGet(rtUrl, `/v1/agents/${encodeURIComponent(args.agent_id)}`, rtH());
-      if (!ok) return errResult(`AGNOS agent detail failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return { content: [{ type: 'text' as const, text: fmt(`AGNOS Agent: ${args.agent_id}`, body) }] };
+      const { ok, status, body } = await agnosGet(
+        rtUrl,
+        `/v1/agents/${encodeURIComponent(args.agent_id)}`,
+        rtH()
+      );
+      if (!ok)
+        return errResult(`AGNOS agent detail failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return {
+        content: [{ type: 'text' as const, text: fmt(`AGNOS Agent: ${args.agent_id}`, body) }],
+      };
     })
   );
 
@@ -198,7 +231,8 @@ export function registerAgnosTools(
   server.registerTool(
     'agnos_agent_register',
     {
-      description: 'Register a new agent with the AGNOS runtime. Returns agent ID for subsequent operations.',
+      description:
+        'Register a new agent with the AGNOS runtime. Returns agent ID for subsequent operations.',
       inputSchema: {
         name: z.string().describe('Unique agent name'),
         capabilities: z.array(z.string()).default([]).describe('List of capability strings'),
@@ -206,12 +240,18 @@ export function registerAgnosTools(
       },
     },
     wrapToolHandler('agnos_agent_register', middleware, async (args) => {
-      const { ok, status, body } = await agnosPost(rtUrl, '/v1/agents/register', {
-        name: args.name,
-        capabilities: args.capabilities,
-        metadata: args.metadata,
-      }, rtH());
-      if (!ok) return errResult(`AGNOS agent register failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      const { ok, status, body } = await agnosPost(
+        rtUrl,
+        '/v1/agents/register',
+        {
+          name: args.name,
+          capabilities: args.capabilities,
+          metadata: args.metadata,
+        },
+        rtH()
+      );
+      if (!ok)
+        return errResult(`AGNOS agent register failed: HTTP ${status}\n${JSON.stringify(body)}`);
       return { content: [{ type: 'text' as const, text: fmt('AGNOS Agent Registered', body) }] };
     })
   );
@@ -227,8 +267,13 @@ export function registerAgnosTools(
       },
     },
     wrapToolHandler('agnos_agent_deregister', middleware, async (args) => {
-      const { ok, status, body } = await agnosDelete(rtUrl, `/v1/agents/${encodeURIComponent(args.agent_id)}`, rtH());
-      if (!ok) return errResult(`AGNOS agent deregister failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      const { ok, status, body } = await agnosDelete(
+        rtUrl,
+        `/v1/agents/${encodeURIComponent(args.agent_id)}`,
+        rtH()
+      );
+      if (!ok)
+        return errResult(`AGNOS agent deregister failed: HTTP ${status}\n${JSON.stringify(body)}`);
       return { content: [{ type: 'text' as const, text: fmt('AGNOS Agent Deregistered', body) }] };
     })
   );
@@ -244,9 +289,18 @@ export function registerAgnosTools(
       },
     },
     wrapToolHandler('agnos_agent_memory_list', middleware, async (args) => {
-      const { ok, status, body } = await agnosGet(rtUrl, `/v1/agents/${encodeURIComponent(args.agent_id)}/memory`, rtH());
-      if (!ok) return errResult(`AGNOS memory list failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return { content: [{ type: 'text' as const, text: fmt(`Agent Memory Keys: ${args.agent_id}`, body) }] };
+      const { ok, status, body } = await agnosGet(
+        rtUrl,
+        `/v1/agents/${encodeURIComponent(args.agent_id)}/memory`,
+        rtH()
+      );
+      if (!ok)
+        return errResult(`AGNOS memory list failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return {
+        content: [
+          { type: 'text' as const, text: fmt(`Agent Memory Keys: ${args.agent_id}`, body) },
+        ],
+      };
     })
   );
 
@@ -293,7 +347,9 @@ export function registerAgnosTools(
         rtH()
       );
       if (!ok) return errResult(`AGNOS memory set failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return { content: [{ type: 'text' as const, text: fmt(`Memory Stored: ${args.key}`, body) }] };
+      return {
+        content: [{ type: 'text' as const, text: fmt(`Memory Stored: ${args.key}`, body) }],
+      };
     })
   );
 
@@ -314,8 +370,11 @@ export function registerAgnosTools(
         `/v1/agents/${encodeURIComponent(args.agent_id)}/memory/${encodeURIComponent(args.key)}`,
         rtH()
       );
-      if (!ok) return errResult(`AGNOS memory delete failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return { content: [{ type: 'text' as const, text: fmt(`Memory Deleted: ${args.key}`, body) }] };
+      if (!ok)
+        return errResult(`AGNOS memory delete failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return {
+        content: [{ type: 'text' as const, text: fmt(`Memory Deleted: ${args.key}`, body) }],
+      };
     })
   );
 
@@ -344,7 +403,8 @@ export function registerAgnosTools(
     },
     wrapToolHandler('agnos_gateway_metrics', middleware, async () => {
       const { ok, status, body } = await agnosGet(gwUrl, '/v1/metrics', gwH());
-      if (!ok) return errResult(`AGNOS gateway metrics failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      if (!ok)
+        return errResult(`AGNOS gateway metrics failed: HTTP ${status}\n${JSON.stringify(body)}`);
       return { content: [{ type: 'text' as const, text: fmt('AGNOS LLM Gateway Metrics', body) }] };
     })
   );
@@ -354,7 +414,8 @@ export function registerAgnosTools(
   server.registerTool(
     'agnos_gateway_models',
     {
-      description: 'List available models on the AGNOS LLM gateway (Ollama, llama.cpp, OpenAI, Anthropic)',
+      description:
+        'List available models on the AGNOS LLM gateway (Ollama, llama.cpp, OpenAI, Anthropic)',
       inputSchema: {},
     },
     wrapToolHandler('agnos_gateway_models', middleware, async () => {
@@ -374,25 +435,43 @@ export function registerAgnosTools(
         'Routes to local or cloud providers with caching, rate limiting, and token accounting.',
       inputSchema: {
         model: z.string().describe('Model name (e.g. llama3, gpt-4o, claude-3-opus)'),
-        messages: z.array(z.object({
-          role: z.enum(['user', 'assistant', 'system']),
-          content: z.string(),
-        })).describe('Chat messages'),
+        messages: z
+          .array(
+            z.object({
+              role: z.enum(['user', 'assistant', 'system']),
+              content: z.string(),
+            })
+          )
+          .describe('Chat messages'),
         temperature: z.number().min(0).max(2).default(0.7).describe('Sampling temperature'),
-        max_tokens: z.number().int().min(1).max(128000).default(1024).describe('Max tokens to generate'),
-        agent_id: z.string().optional().describe('Agent ID for token accounting (x-agent-id header)'),
+        max_tokens: z
+          .number()
+          .int()
+          .min(1)
+          .max(128000)
+          .default(1024)
+          .describe('Max tokens to generate'),
+        agent_id: z
+          .string()
+          .optional()
+          .describe('Agent ID for token accounting (x-agent-id header)'),
       },
     },
     wrapToolHandler('agnos_gateway_chat', middleware, async (args) => {
       const headers = gwH();
       if (args.agent_id) headers['x-agent-id'] = args.agent_id;
 
-      const { ok, status, body } = await agnosPost(gwUrl, '/v1/chat/completions', {
-        model: args.model,
-        messages: args.messages,
-        temperature: args.temperature,
-        max_tokens: args.max_tokens,
-      }, headers);
+      const { ok, status, body } = await agnosPost(
+        gwUrl,
+        '/v1/chat/completions',
+        {
+          model: args.model,
+          messages: args.messages,
+          temperature: args.temperature,
+          max_tokens: args.max_tokens,
+        },
+        headers
+      );
 
       if (!ok) return errResult(`AGNOS chat failed: HTTP ${status}\n${JSON.stringify(body)}`);
       return { content: [{ type: 'text' as const, text: fmt('AGNOS Chat Completion', body) }] };
@@ -408,24 +487,34 @@ export function registerAgnosTools(
         'Forward audit events to the AGNOS cryptographic audit chain. Events are appended ' +
         'to the immutable, HMAC-signed log with correlation IDs for cross-project tracing.',
       inputSchema: {
-        events: z.array(z.object({
-          timestamp: z.string().describe('ISO8601 timestamp'),
-          action: z.string().describe('Action type (e.g. file.write, auth.login)'),
-          agent: z.string().optional().describe('Agent that performed the action'),
-          details: z.record(z.string(), z.unknown()).default({}).describe('Event details'),
-          outcome: z.enum(['success', 'failure', 'unknown']).default('success'),
-        })).describe('Audit events to forward'),
+        events: z
+          .array(
+            z.object({
+              timestamp: z.string().describe('ISO8601 timestamp'),
+              action: z.string().describe('Action type (e.g. file.write, auth.login)'),
+              agent: z.string().optional().describe('Agent that performed the action'),
+              details: z.record(z.string(), z.unknown()).default({}).describe('Event details'),
+              outcome: z.enum(['success', 'failure', 'unknown']).default('success'),
+            })
+          )
+          .describe('Audit events to forward'),
         source: z.string().default('secureyeoman').describe('Source system identifier'),
         correlation_id: z.string().optional().describe('Correlation ID for cross-project tracing'),
       },
     },
     wrapToolHandler('agnos_audit_forward', middleware, async (args) => {
-      const { ok, status, body } = await agnosPost(rtUrl, '/v1/audit/forward', {
-        events: args.events,
-        source: args.source,
-        correlation_id: args.correlation_id,
-      }, rtH());
-      if (!ok) return errResult(`AGNOS audit forward failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      const { ok, status, body } = await agnosPost(
+        rtUrl,
+        '/v1/audit/forward',
+        {
+          events: args.events,
+          source: args.source,
+          correlation_id: args.correlation_id,
+        },
+        rtH()
+      );
+      if (!ok)
+        return errResult(`AGNOS audit forward failed: HTTP ${status}\n${JSON.stringify(body)}`);
       return { content: [{ type: 'text' as const, text: fmt('Audit Events Forwarded', body) }] };
     })
   );
@@ -450,7 +539,8 @@ export function registerAgnosTools(
       const qs = params.toString();
       const path = `/v1/audit${qs ? `?${qs}` : ''}`;
       const { ok, status, body } = await agnosGet(rtUrl, path, rtH());
-      if (!ok) return errResult(`AGNOS audit query failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      if (!ok)
+        return errResult(`AGNOS audit query failed: HTTP ${status}\n${JSON.stringify(body)}`);
       return { content: [{ type: 'text' as const, text: fmt('AGNOS Audit Log', body) }] };
     })
   );
@@ -466,27 +556,37 @@ export function registerAgnosTools(
       inputSchema: {
         agent_id: z.string().describe('Agent ID that produced the trace'),
         input: z.string().describe('Input that triggered the reasoning'),
-        steps: z.array(z.object({
-          name: z.string().describe('Step name'),
-          rationale: z.string().describe('Why this step was taken'),
-          tool: z.string().optional().describe('Tool used (if any)'),
-          output: z.string().optional().describe('Step output'),
-          duration_ms: z.number().int().default(0).describe('Step duration in ms'),
-          success: z.boolean().default(true),
-        })).describe('Reasoning steps'),
+        steps: z
+          .array(
+            z.object({
+              name: z.string().describe('Step name'),
+              rationale: z.string().describe('Why this step was taken'),
+              tool: z.string().optional().describe('Tool used (if any)'),
+              output: z.string().optional().describe('Step output'),
+              duration_ms: z.number().int().default(0).describe('Step duration in ms'),
+              success: z.boolean().default(true),
+            })
+          )
+          .describe('Reasoning steps'),
         result: z.string().optional().describe('Final result'),
         duration_ms: z.number().int().default(0).describe('Total duration in ms'),
       },
     },
     wrapToolHandler('agnos_traces_submit', middleware, async (args) => {
-      const { ok, status, body } = await agnosPost(rtUrl, '/v1/traces', {
-        agent_id: args.agent_id,
-        input: args.input,
-        steps: args.steps,
-        result: args.result,
-        duration_ms: args.duration_ms,
-      }, rtH());
-      if (!ok) return errResult(`AGNOS trace submit failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      const { ok, status, body } = await agnosPost(
+        rtUrl,
+        '/v1/traces',
+        {
+          agent_id: args.agent_id,
+          input: args.input,
+          steps: args.steps,
+          result: args.result,
+          duration_ms: args.duration_ms,
+        },
+        rtH()
+      );
+      if (!ok)
+        return errResult(`AGNOS trace submit failed: HTTP ${status}\n${JSON.stringify(body)}`);
       return { content: [{ type: 'text' as const, text: fmt('Reasoning Trace Submitted', body) }] };
     })
   );
@@ -506,7 +606,8 @@ export function registerAgnosTools(
         ? `/v1/traces?agent_id=${encodeURIComponent(args.agent_id)}`
         : '/v1/traces';
       const { ok, status, body } = await agnosGet(rtUrl, path, rtH());
-      if (!ok) return errResult(`AGNOS traces query failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      if (!ok)
+        return errResult(`AGNOS traces query failed: HTTP ${status}\n${JSON.stringify(body)}`);
       return { content: [{ type: 'text' as const, text: fmt('AGNOS Reasoning Traces', body) }] };
     })
   );
@@ -524,12 +625,18 @@ export function registerAgnosTools(
       },
     },
     wrapToolHandler('agnos_webhooks_register', middleware, async (args) => {
-      const { ok, status, body } = await agnosPost(rtUrl, '/v1/webhooks', {
-        url: args.url,
-        events: args.events,
-        secret: args.secret,
-      }, rtH());
-      if (!ok) return errResult(`AGNOS webhook register failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      const { ok, status, body } = await agnosPost(
+        rtUrl,
+        '/v1/webhooks',
+        {
+          url: args.url,
+          events: args.events,
+          secret: args.secret,
+        },
+        rtH()
+      );
+      if (!ok)
+        return errResult(`AGNOS webhook register failed: HTTP ${status}\n${JSON.stringify(body)}`);
       return { content: [{ type: 'text' as const, text: fmt('AGNOS Webhook Registered', body) }] };
     })
   );
@@ -546,12 +653,36 @@ export function registerAgnosTools(
     },
     wrapToolHandler('agnos_overview', middleware, async () => {
       const [rtHealth, gwHealth, agents, rtMetrics, gwMetrics, models] = await Promise.all([
-        agnosGet(rtUrl, '/v1/health', rtH()).catch(() => ({ ok: false, status: 0, body: { error: 'unreachable' } })),
-        agnosGet(gwUrl, '/v1/health', gwH()).catch(() => ({ ok: false, status: 0, body: { error: 'unreachable' } })),
-        agnosGet(rtUrl, '/v1/agents', rtH()).catch(() => ({ ok: false, status: 0, body: { error: 'unreachable' } })),
-        agnosGet(rtUrl, '/v1/metrics', rtH()).catch(() => ({ ok: false, status: 0, body: { error: 'unreachable' } })),
-        agnosGet(gwUrl, '/v1/metrics', gwH()).catch(() => ({ ok: false, status: 0, body: { error: 'unreachable' } })),
-        agnosGet(gwUrl, '/v1/models', gwH()).catch(() => ({ ok: false, status: 0, body: { error: 'unreachable' } })),
+        agnosGet(rtUrl, '/v1/health', rtH()).catch(() => ({
+          ok: false,
+          status: 0,
+          body: { error: 'unreachable' },
+        })),
+        agnosGet(gwUrl, '/v1/health', gwH()).catch(() => ({
+          ok: false,
+          status: 0,
+          body: { error: 'unreachable' },
+        })),
+        agnosGet(rtUrl, '/v1/agents', rtH()).catch(() => ({
+          ok: false,
+          status: 0,
+          body: { error: 'unreachable' },
+        })),
+        agnosGet(rtUrl, '/v1/metrics', rtH()).catch(() => ({
+          ok: false,
+          status: 0,
+          body: { error: 'unreachable' },
+        })),
+        agnosGet(gwUrl, '/v1/metrics', gwH()).catch(() => ({
+          ok: false,
+          status: 0,
+          body: { error: 'unreachable' },
+        })),
+        agnosGet(gwUrl, '/v1/models', gwH()).catch(() => ({
+          ok: false,
+          status: 0,
+          body: { error: 'unreachable' },
+        })),
       ]);
 
       const overview = {
@@ -567,7 +698,9 @@ export function registerAgnosTools(
         },
       };
 
-      return { content: [{ type: 'text' as const, text: fmt('AGNOS Platform Overview', overview) }] };
+      return {
+        content: [{ type: 'text' as const, text: fmt('AGNOS Platform Overview', overview) }],
+      };
     })
   );
 }

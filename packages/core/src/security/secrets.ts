@@ -275,13 +275,19 @@ export class SecretStore {
       this.secrets = new Map(Object.entries(data));
       this.loaded = true;
 
-      this.getLogger().info({
-        secretCount: this.secrets.size,
-      }, 'Secret store loaded');
+      this.getLogger().info(
+        {
+          secretCount: this.secrets.size,
+        },
+        'Secret store loaded'
+      );
     } catch (error) {
-      this.getLogger().error({
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }, 'Failed to load secret store');
+      this.getLogger().error(
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        'Failed to load secret store'
+      );
       throw new Error('Failed to decrypt secret store. Check master key.');
     }
   }
@@ -307,9 +313,12 @@ export class SecretStore {
     // Write with restricted permissions
     writeFileSync(this.storePath, serialized, { mode: 0o600 });
 
-    this.getLogger().info({
-      secretCount: this.secrets.size,
-    }, 'Secret store saved');
+    this.getLogger().info(
+      {
+        secretCount: this.secrets.size,
+      },
+      'Secret store saved'
+    );
   }
 
   /**

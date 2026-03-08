@@ -160,11 +160,14 @@ export class PretrainManager {
     );
 
     const job = rowToJob(rows[0]!);
-    this.logger.info({
-      jobId: id,
-      name: input.name,
-      architecture: input.architecture,
-    }, 'Pre-training job created');
+    this.logger.info(
+      {
+        jobId: id,
+        name: input.name,
+        architecture: input.architecture,
+      },
+      'Pre-training job created'
+    );
     return job;
   }
 

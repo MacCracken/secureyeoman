@@ -112,9 +112,12 @@ export class ZapierIntegration implements WebhookIntegration {
       };
       await this.deps.onMessage(unified);
     } catch (err) {
-      this.logger?.warn({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Zapier webhook parse error');
+      this.logger?.warn(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Zapier webhook parse error'
+      );
     }
   }
 

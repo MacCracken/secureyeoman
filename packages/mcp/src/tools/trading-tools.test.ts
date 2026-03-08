@@ -409,8 +409,12 @@ describe('trading-tools — feature gating', () => {
 
 describe('bullshift_algo_strategies', () => {
   let originalFetch: typeof globalThis.fetch;
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   it('calls GET /v1/algo/strategies', async () => {
     mockFetchOk([{ id: '1', name: 'Grid', state: 'Running' }]);
@@ -425,8 +429,12 @@ describe('bullshift_algo_strategies', () => {
 
 describe('bullshift_sentiment', () => {
   let originalFetch: typeof globalThis.fetch;
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   it('calls /v1/sentiment/aggregate/:symbol when symbol provided', async () => {
     mockFetchOk({ symbol: 'AAPL', overall_score: 0.8 });
@@ -447,8 +455,12 @@ describe('bullshift_sentiment', () => {
 
 describe('bullshift_list_alerts', () => {
   let originalFetch: typeof globalThis.fetch;
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   it('calls GET /v1/webhooks', async () => {
     mockFetchOk([]);
@@ -461,8 +473,12 @@ describe('bullshift_list_alerts', () => {
 
 describe('bullshift_create_alert', () => {
   let originalFetch: typeof globalThis.fetch;
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   it('sends POST /v1/webhooks with webhook config', async () => {
     mockFetchOk({ id: 'wh-1' });

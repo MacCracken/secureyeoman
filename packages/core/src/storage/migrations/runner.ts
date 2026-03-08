@@ -45,11 +45,7 @@ const LEGACY_MIGRATION_IDS = [
 ];
 
 /** New tier-split IDs that replace the legacy ones. */
-const TIER_SPLIT_IDS = [
-  '001_community',
-  '002_pro',
-  '003_enterprise',
-];
+const TIER_SPLIT_IDS = ['001_community', '002_pro', '003_enterprise'];
 
 /**
  * IDs of baseline migrations that must always run regardless of tier.
@@ -66,9 +62,7 @@ const ALWAYS_RUN_IDS = new Set(TIER_SPLIT_IDS);
  */
 function filterByTier(migrations: MigrationEntry[], tier: LicenseTier): MigrationEntry[] {
   const maxRank = TIER_RANK[tier];
-  return migrations.filter((m) =>
-    ALWAYS_RUN_IDS.has(m.id) || TIER_RANK[m.tier] <= maxRank
-  );
+  return migrations.filter((m) => ALWAYS_RUN_IDS.has(m.id) || TIER_RANK[m.tier] <= maxRank);
 }
 
 export async function runMigrations(tier: LicenseTier = 'enterprise'): Promise<void> {
@@ -136,7 +130,9 @@ export async function runMigrations(tier: LicenseTier = 'enterprise'): Promise<v
         // Also apply any incremental migrations (011+) that aren't yet applied
         const incrementals = migrations.filter((m) => !TIER_SPLIT_IDS.includes(m.id));
         for (const { id, sql } of incrementals) {
-          const existing = await client.query('SELECT id FROM schema_migrations WHERE id = $1', [id]);
+          const existing = await client.query('SELECT id FROM schema_migrations WHERE id = $1', [
+            id,
+          ]);
           if (existing.rows.length > 0) continue;
 
           await client.query('SET statement_timeout = 300000');
@@ -146,7 +142,8 @@ export async function runMigrations(tier: LicenseTier = 'enterprise'): Promise<v
             await client.query('SET statement_timeout = 0');
           }
           await client.query('INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)', [
-            id, now,
+            id,
+            now,
           ]);
         }
         return;

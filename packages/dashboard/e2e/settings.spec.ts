@@ -22,7 +22,9 @@ test.describe('Settings page', () => {
   test('shows settings tabs', async ({ page }) => {
     await page.goto('/settings');
     // Look for tab-like buttons (License, Backup, Security, API Keys, etc.)
-    const tabs = page.getByRole('button').filter({ hasText: /license|backup|security|api key|theme|provider/i });
+    const tabs = page
+      .getByRole('button')
+      .filter({ hasText: /license|backup|security|api key|theme|provider/i });
     const count = await tabs.count();
     expect(count).toBeGreaterThanOrEqual(2);
   });

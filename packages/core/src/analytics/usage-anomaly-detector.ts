@@ -153,9 +153,12 @@ export class UsageAnomalyDetector {
           details,
         })
         .catch((err: unknown) => {
-          this.logger.error({
-            error: err instanceof Error ? err.message : String(err),
-          }, 'UsageAnomalyDetector: failed to persist anomaly');
+          this.logger.error(
+            {
+              error: err instanceof Error ? err.message : String(err),
+            },
+            'UsageAnomalyDetector: failed to persist anomaly'
+          );
         });
     }
   }

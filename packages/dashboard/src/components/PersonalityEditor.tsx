@@ -1771,8 +1771,8 @@ function BrainSection({
         )}
 
         {/* Organizational Intent Signal — only when org is enabled */}
-        {orgEnabled && (
-          orgIntentMcpEnabled ? (
+        {orgEnabled &&
+          (orgIntentMcpEnabled ? (
             <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Target className="w-4 h-4 text-primary shrink-0" />
@@ -1817,8 +1817,7 @@ function BrainSection({
                 </button>
               </div>
             </div>
-          )
-        )}
+          ))}
 
         {/* System Prompt Confidentiality override */}
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">

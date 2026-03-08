@@ -308,10 +308,13 @@ export class FinetuneManager {
 
     // Watch container completion in background
     this._watchContainer(jobId, containerId, adapterDir).catch((err: unknown) => {
-      this.logger.error({
-        jobId,
-        error: err instanceof Error ? err.message : 'unknown',
-      }, 'Finetune watcher error');
+      this.logger.error(
+        {
+          jobId,
+          error: err instanceof Error ? err.message : 'unknown',
+        },
+        'Finetune watcher error'
+      );
     });
   }
 
@@ -353,10 +356,13 @@ export class FinetuneManager {
             const updatedJob = await this.getJob(jobId);
             if (updatedJob) {
               this.onJobComplete(jobId, updatedJob).catch((err: unknown) => {
-                this.logger.error({
-                  jobId,
-                  error: err instanceof Error ? err.message : 'unknown',
-                }, 'onJobComplete callback failed');
+                this.logger.error(
+                  {
+                    jobId,
+                    error: err instanceof Error ? err.message : 'unknown',
+                  },
+                  'onJobComplete callback failed'
+                );
               });
             }
           }
@@ -492,9 +498,12 @@ export class FinetuneManager {
       env: { ...process.env, OLLAMA_HOST: ollamaBaseUrl },
     });
 
-    this.logger.info({
-      jobId,
-      adapterName: job.adapterName,
-    }, 'Adapter registered with Ollama');
+    this.logger.info(
+      {
+        jobId,
+        adapterName: job.adapterName,
+      },
+      'Adapter registered with Ollama'
+    );
   }
 }

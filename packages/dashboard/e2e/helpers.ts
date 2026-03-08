@@ -32,6 +32,6 @@ export async function expectLoginRedirect(page: Page): Promise<void> {
 export async function waitForDashboard(page: Page): Promise<void> {
   // The sidebar or main layout should be present
   await expect(
-    page.locator('[data-testid="sidebar"], nav, [role="navigation"]').first(),
+    page.locator('[data-testid="sidebar"], nav, [role="navigation"]').first()
   ).toBeVisible({ timeout: 10000 });
 }

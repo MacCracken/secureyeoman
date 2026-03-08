@@ -108,11 +108,14 @@ export class RetentionManager {
     }
 
     const durationMs = Date.now() - start;
-    this.logger.info({
-      totalPurged,
-      policiesApplied: details.length,
-      durationMs,
-    }, 'Retention purge completed');
+    this.logger.info(
+      {
+        totalPurged,
+        policiesApplied: details.length,
+        durationMs,
+      },
+      'Retention purge completed'
+    );
 
     return {
       totalPurged,

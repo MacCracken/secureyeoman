@@ -122,9 +122,12 @@ export class TelegramIntegration implements Integration {
           text = `[Image: ${result.description}]${msg.caption ? `\n${msg.caption}` : ''}`;
         }
       } catch (err) {
-        this.logger?.warn({
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Failed to analyze photo');
+        this.logger?.warn(
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Failed to analyze photo'
+        );
       }
 
       const unified: UnifiedMessage = {
@@ -168,9 +171,12 @@ export class TelegramIntegration implements Integration {
           text = `[Voice: ${result.text}]`;
         }
       } catch (err) {
-        this.logger?.warn({
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Failed to transcribe voice');
+        this.logger?.warn(
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Failed to transcribe voice'
+        );
       }
 
       const unified: UnifiedMessage = {
@@ -255,9 +261,12 @@ export class TelegramIntegration implements Integration {
 
     // ── Error handler ──────────────────────────────────────
     this.bot.catch((err) => {
-      this.logger?.error({
-        error: err.message,
-      }, 'Telegram bot error');
+      this.logger?.error(
+        {
+          error: err.message,
+        },
+        'Telegram bot error'
+      );
     });
 
     this.logger?.info('Telegram integration initialized');
@@ -296,9 +305,12 @@ export class TelegramIntegration implements Integration {
         const buf = Buffer.from(metadata.audioBase64, 'base64');
         await this.bot.api.sendVoice(Number(chatId), new InputFile(buf, 'response.ogg'));
       } catch (err) {
-        this.logger?.warn({
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Failed to send TTS voice message');
+        this.logger?.warn(
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Failed to send TTS voice message'
+        );
       }
     }
 

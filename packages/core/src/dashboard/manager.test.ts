@@ -45,12 +45,12 @@ describe('DashboardManager', () => {
       const d = await manager.create({ name: 'New Dashboard', widgets: [] } as any);
       expect(d.id).toBe('dash-1');
       expect(logger.info).toHaveBeenCalledWith(
-{
-        id: 'dash-1',
-        name: 'My Dashboard',
-      },
-'Custom dashboard created'
-);
+        {
+          id: 'dash-1',
+          name: 'My Dashboard',
+        },
+        'Custom dashboard created'
+      );
     });
   });
 

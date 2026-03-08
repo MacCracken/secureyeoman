@@ -125,9 +125,12 @@ export class QQIntegration implements Integration {
       // OneBot HTTP event push configured to point at our webhook endpoint.
       // This poll keeps the connection alive and logs health.
     } catch (err) {
-      this.logger?.warn({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'QQ poll error');
+      this.logger?.warn(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'QQ poll error'
+      );
     }
   }
 

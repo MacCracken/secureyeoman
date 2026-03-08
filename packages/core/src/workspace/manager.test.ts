@@ -113,12 +113,12 @@ describe('WorkspaceManager', () => {
       const member = await manager.addMember('ws-1', 'user-1', 'member');
       expect(member.role).toBe('member');
       expect(logger.info).toHaveBeenCalledWith(
-{
-        workspaceId: 'ws-1',
-        userId: 'user-1',
-      },
-'Member added to workspace'
-);
+        {
+          workspaceId: 'ws-1',
+          userId: 'user-1',
+        },
+        'Member added to workspace'
+      );
     });
   });
 
@@ -128,12 +128,12 @@ describe('WorkspaceManager', () => {
       const ok = await manager.removeMember('ws-1', 'user-1');
       expect(ok).toBe(true);
       expect(logger.info).toHaveBeenCalledWith(
-{
-        workspaceId: 'ws-1',
-        userId: 'user-1',
-      },
-'Member removed from workspace'
-);
+        {
+          workspaceId: 'ws-1',
+          userId: 'user-1',
+        },
+        'Member removed from workspace'
+      );
     });
   });
 
@@ -143,13 +143,13 @@ describe('WorkspaceManager', () => {
       const member = await manager.updateMemberRole('ws-1', 'user-1', 'admin');
       expect(member?.role).toBe('admin');
       expect(logger.info).toHaveBeenCalledWith(
-{
-        workspaceId: 'ws-1',
-        userId: 'user-1',
-        role: 'admin',
-      },
-'Member role updated'
-);
+        {
+          workspaceId: 'ws-1',
+          userId: 'user-1',
+          role: 'admin',
+        },
+        'Member role updated'
+      );
     });
   });
 

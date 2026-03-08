@@ -38,10 +38,7 @@ export function registerGoogleWorkspaceTools(
         .max(100)
         .optional()
         .describe('Maximum number of files to return (1–100, default 20)'),
-      folderId: z
-        .string()
-        .optional()
-        .describe('Parent folder ID to list files from'),
+      folderId: z.string().optional().describe('Parent folder ID to list files from'),
       mimeType: z
         .string()
         .optional()
@@ -102,10 +99,7 @@ export function registerGoogleWorkspaceTools(
       'Create a new folder in Google Drive. Optionally specify a parent folder. Returns the created folder with its ID.',
     inputSchema: {
       name: z.string().describe('Folder name'),
-      parentId: z
-        .string()
-        .optional()
-        .describe('Parent folder ID (default: root)'),
+      parentId: z.string().optional().describe('Parent folder ID (default: root)'),
     },
     method: 'post',
     buildPath: () => '/api/v1/integrations/gdrive/folders',
@@ -122,16 +116,9 @@ export function registerGoogleWorkspaceTools(
       'Upload a file to Google Drive. Content can be provided as base64-encoded data or plain text. Returns the created file with its ID.',
     inputSchema: {
       name: z.string().describe('File name including extension'),
-      mimeType: z
-        .string()
-        .describe('MIME type of the file (e.g. "text/plain", "application/pdf")'),
-      content: z
-        .string()
-        .describe('File content as base64-encoded data or plain text'),
-      folderId: z
-        .string()
-        .optional()
-        .describe('Destination folder ID (default: root)'),
+      mimeType: z.string().describe('MIME type of the file (e.g. "text/plain", "application/pdf")'),
+      content: z.string().describe('File content as base64-encoded data or plain text'),
+      folderId: z.string().optional().describe('Destination folder ID (default: root)'),
     },
     method: 'post',
     buildPath: () => '/api/v1/integrations/gdrive/files',
@@ -187,8 +174,7 @@ export function registerGoogleWorkspaceTools(
     inputSchema: {
       spreadsheetId: z.string().describe('Google Sheets spreadsheet ID'),
     },
-    buildPath: (args) =>
-      `/api/v1/integrations/gsheets/spreadsheets/${args.spreadsheetId}`,
+    buildPath: (args) => `/api/v1/integrations/gsheets/spreadsheets/${args.spreadsheetId}`,
   });
 
   // ── gsheets_get_values ──────────────────────────────────────────
@@ -198,12 +184,9 @@ export function registerGoogleWorkspaceTools(
       'Read cell values from a Google Sheets spreadsheet. Specify a range in A1 notation (e.g. "Sheet1!A1:D10"). Returns a 2D array of cell values.',
     inputSchema: {
       spreadsheetId: z.string().describe('Google Sheets spreadsheet ID'),
-      range: z
-        .string()
-        .describe('Cell range in A1 notation (e.g. "Sheet1!A1:D10", "A1:Z100")'),
+      range: z.string().describe('Cell range in A1 notation (e.g. "Sheet1!A1:D10", "A1:Z100")'),
     },
-    buildPath: (args) =>
-      `/api/v1/integrations/gsheets/spreadsheets/${args.spreadsheetId}/values`,
+    buildPath: (args) => `/api/v1/integrations/gsheets/spreadsheets/${args.spreadsheetId}/values`,
     buildQuery: (args) => ({
       range: args.range as string,
     }),
@@ -216,16 +199,13 @@ export function registerGoogleWorkspaceTools(
       'Update cell values in a Google Sheets spreadsheet. Provide a range in A1 notation and a 2D array of values. Overwrites existing data in the specified range.',
     inputSchema: {
       spreadsheetId: z.string().describe('Google Sheets spreadsheet ID'),
-      range: z
-        .string()
-        .describe('Cell range in A1 notation (e.g. "Sheet1!A1:D10")'),
+      range: z.string().describe('Cell range in A1 notation (e.g. "Sheet1!A1:D10")'),
       values: z
         .array(z.array(z.union([z.string(), z.number(), z.null()])))
         .describe('2D array of cell values (rows of columns)'),
     },
     method: 'put',
-    buildPath: (args) =>
-      `/api/v1/integrations/gsheets/spreadsheets/${args.spreadsheetId}/values`,
+    buildPath: (args) => `/api/v1/integrations/gsheets/spreadsheets/${args.spreadsheetId}/values`,
     buildBody: (args) => ({
       range: args.range,
       values: args.values,
@@ -267,7 +247,9 @@ export function registerGoogleWorkspaceTools(
       sheetNames: z
         .array(z.string())
         .optional()
-        .describe('Optional list of sheet (tab) names to create (default: one sheet named "Sheet1")'),
+        .describe(
+          'Optional list of sheet (tab) names to create (default: one sheet named "Sheet1")'
+        ),
     },
     method: 'post',
     buildPath: () => '/api/v1/integrations/gsheets/spreadsheets',
@@ -289,8 +271,7 @@ export function registerGoogleWorkspaceTools(
     inputSchema: {
       documentId: z.string().describe('Google Docs document ID'),
     },
-    buildPath: (args) =>
-      `/api/v1/integrations/gdocs/documents/${args.documentId}`,
+    buildPath: (args) => `/api/v1/integrations/gdocs/documents/${args.documentId}`,
   });
 
   // ── gdocs_create_document ───────────────────────────────────────
@@ -300,10 +281,7 @@ export function registerGoogleWorkspaceTools(
       'Create a new Google Docs document. Optionally provide initial content as markdown or plain text. Returns the created document with its ID and URL.',
     inputSchema: {
       title: z.string().describe('Document title'),
-      content: z
-        .string()
-        .optional()
-        .describe('Initial document content (markdown or plain text)'),
+      content: z.string().optional().describe('Initial document content (markdown or plain text)'),
     },
     method: 'post',
     buildPath: () => '/api/v1/integrations/gdocs/documents',

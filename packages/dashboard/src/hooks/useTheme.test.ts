@@ -74,8 +74,16 @@ describe('useTheme — theme registry', () => {
 
   it('DARK_THEMES includes marketplace-installable dark themes', () => {
     const marketplaceDark: ThemeId[] = [
-      'tokyonight', 'catppuccin', 'gruvbox', 'dracula', 'rose-pine',
-      'monokai', 'github-dark', 'kanagawa', 'palenight', 'nightowl',
+      'tokyonight',
+      'catppuccin',
+      'gruvbox',
+      'dracula',
+      'rose-pine',
+      'monokai',
+      'github-dark',
+      'kanagawa',
+      'palenight',
+      'nightowl',
     ];
     for (const id of marketplaceDark) {
       expect(DARK_THEMES.has(id)).toBe(true);

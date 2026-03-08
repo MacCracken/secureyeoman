@@ -21,10 +21,7 @@ export function registerTodoistTools(
     description:
       'List tasks from Todoist. Optionally filter by project or Todoist filter expression. Returns an array of task objects.',
     inputSchema: {
-      projectId: z
-        .string()
-        .optional()
-        .describe('Project ID to filter tasks by'),
+      projectId: z.string().optional().describe('Project ID to filter tasks by'),
       filter: z
         .string()
         .optional()
@@ -53,18 +50,11 @@ export function registerTodoistTools(
   // ── todoist_create_task ────────────────────────────────────
   registerApiProxyTool(server, client, middleware, {
     name: 'todoist_create_task',
-    description:
-      'Create a new task in Todoist. Returns the created task object with its ID.',
+    description: 'Create a new task in Todoist. Returns the created task object with its ID.',
     inputSchema: {
       content: z.string().describe('Task title / content'),
-      description: z
-        .string()
-        .optional()
-        .describe('Detailed task description'),
-      projectId: z
-        .string()
-        .optional()
-        .describe('Project ID to add the task to'),
+      description: z.string().optional().describe('Detailed task description'),
+      projectId: z.string().optional().describe('Project ID to add the task to'),
       dueString: z
         .string()
         .optional()
@@ -96,14 +86,8 @@ export function registerTodoistTools(
     inputSchema: {
       taskId: z.string().describe('Todoist task ID to update'),
       content: z.string().optional().describe('New task title / content'),
-      description: z
-        .string()
-        .optional()
-        .describe('New task description'),
-      dueString: z
-        .string()
-        .optional()
-        .describe('New natural language due date'),
+      description: z.string().optional().describe('New task description'),
+      dueString: z.string().optional().describe('New natural language due date'),
       priority: z
         .number()
         .int()

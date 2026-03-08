@@ -64,9 +64,12 @@ export class MemoryAuditScheduler {
       this.checkSchedules();
     }, 60 * 1000);
 
-    this.logger.info({
-      schedules: JSON.stringify(this.schedules),
-    }, 'Memory audit scheduler started');
+    this.logger.info(
+      {
+        schedules: JSON.stringify(this.schedules),
+      },
+      'Memory audit scheduler started'
+    );
   }
 
   stop(): void {

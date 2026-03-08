@@ -50,10 +50,7 @@ export function registerAgnosticHooks(
   }
 
   const hookIds: string[] = [];
-  const hookPoints = config.triggerHookPoints ?? [
-    'agent:after-delegate',
-    'swarm:after-execute',
-  ];
+  const hookPoints = config.triggerHookPoints ?? ['agent:after-delegate', 'swarm:after-execute'];
 
   for (const hookPoint of hookPoints) {
     const id = deps.extensionManager.registerHook(
@@ -62,10 +59,13 @@ export function registerAgnosticHooks(
         try {
           await submitQATask(config, deps.logger, hookPoint, context.data);
         } catch (err) {
-          deps.logger.warn({
-            hookPoint,
-            error: err instanceof Error ? err.message : String(err),
-          }, 'AGNOSTIC QA trigger failed');
+          deps.logger.warn(
+            {
+              hookPoint,
+              error: err instanceof Error ? err.message : String(err),
+            },
+            'AGNOSTIC QA trigger failed'
+          );
         }
         return { vetoed: false, errors: [] };
       },
@@ -74,10 +74,13 @@ export function registerAgnosticHooks(
     hookIds.push(id);
   }
 
-  deps.logger.info({
-    hookPoints,
-    agnosticUrl: config.agnosticUrl,
-  }, 'AGNOSTIC hooks registered');
+  deps.logger.info(
+    {
+      hookPoints,
+      agnosticUrl: config.agnosticUrl,
+    },
+    'AGNOSTIC hooks registered'
+  );
 
   return () => {
     for (const id of hookIds) {
@@ -120,20 +123,26 @@ async function submitQATask(
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    logger.warn({
-      hookPoint,
-      status: res.status,
-      body: body.slice(0, 500),
-    }, 'AGNOSTIC QA task submission failed');
+    logger.warn(
+      {
+        hookPoint,
+        status: res.status,
+        body: body.slice(0, 500),
+      },
+      'AGNOSTIC QA task submission failed'
+    );
     return;
   }
 
-  const result = await res.json() as { task_id?: string; session_id?: string };
-  logger.info({
-    hookPoint,
-    taskId: result.task_id,
-    sessionId: result.session_id,
-  }, 'AGNOSTIC QA task submitted');
+  const result = (await res.json()) as { task_id?: string; session_id?: string };
+  logger.info(
+    {
+      hookPoint,
+      taskId: result.task_id,
+      sessionId: result.session_id,
+    },
+    'AGNOSTIC QA task submitted'
+  );
 }
 
 // ─── Outbound Webhook Dispatcher ────────────────────────────────────────────
@@ -175,7 +184,7 @@ export async function dispatchToAgnostic(
 
   if (!res.ok) return { accepted: false };
 
-  const result = await res.json() as { accepted?: boolean; task_id?: string };
+  const result = (await res.json()) as { accepted?: boolean; task_id?: string };
   return { accepted: result.accepted ?? false, taskId: result.task_id };
 }
 

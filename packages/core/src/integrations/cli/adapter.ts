@@ -19,9 +19,12 @@ export class CliIntegration implements Integration {
 
   async init(config: IntegrationConfig, deps: IntegrationDeps): Promise<void> {
     this.logger = deps.logger;
-    this.logger?.info({
-      displayName: config.displayName,
-    }, 'CLI integration initialized');
+    this.logger?.info(
+      {
+        displayName: config.displayName,
+      },
+      'CLI integration initialized'
+    );
   }
 
   async start(): Promise<void> {

@@ -47,7 +47,7 @@ export function ConnectorsPanel() {
     setCrawlResult(null);
     try {
       const res = await ingestUrl(crawlUrl.trim(), {
-        personalityId: isOrg ? undefined : (crawlPersonality || undefined),
+        personalityId: isOrg ? undefined : crawlPersonality || undefined,
         scope: isOrg ? 'organization' : undefined,
       });
       setCrawlResult({ ok: true, msg: `Ingested: ${res.document.title} (${res.document.status})` });
@@ -66,7 +66,7 @@ export function ConnectorsPanel() {
       const res = await ingestGithubWiki(
         wikiOwner.trim(),
         wikiRepo.trim(),
-        isOrg ? undefined : (wikiPersonality || undefined),
+        isOrg ? undefined : wikiPersonality || undefined,
         isOrg ? 'organization' : undefined
       );
       setWikiResult({
@@ -86,7 +86,7 @@ export function ConnectorsPanel() {
     setPasteResult(null);
     try {
       const res = await ingestText(pasteText.trim(), pasteTitle.trim(), {
-        personalityId: isOrg ? undefined : (pastePersonality || undefined),
+        personalityId: isOrg ? undefined : pastePersonality || undefined,
         scope: isOrg ? 'organization' : undefined,
       });
       setPasteResult({ ok: true, msg: `Added: ${res.document.title}` });

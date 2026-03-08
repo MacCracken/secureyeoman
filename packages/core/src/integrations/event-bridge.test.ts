@@ -23,7 +23,10 @@ describe('EventBridge', () => {
       const written: string[] = [];
       const mockReply = {
         raw: {
-          write: (data: string) => { written.push(data); return true; },
+          write: (data: string) => {
+            written.push(data);
+            return true;
+          },
           writeHead: vi.fn(),
           end: vi.fn(),
         },
@@ -54,7 +57,9 @@ describe('EventBridge', () => {
 
       const mockReply = {
         raw: {
-          write: () => { throw new Error('broken pipe'); },
+          write: () => {
+            throw new Error('broken pipe');
+          },
         },
       };
 
@@ -85,11 +90,14 @@ describe('EventBridge', () => {
         },
       });
 
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        body: stream,
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          body: stream,
+        })
+      );
 
       const bridge = new EventBridge(
         { maxReconnectAttempts: 1, reconnectDelayMs: 10 },

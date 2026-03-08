@@ -39,9 +39,12 @@ export class EventDispatcher {
     try {
       subscriptions = await this.store.getSubscriptionsForEvent(event.type, event.tenantId);
     } catch (err) {
-      this.logger.error({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'EventDispatcher: failed to fetch subscriptions');
+      this.logger.error(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'EventDispatcher: failed to fetch subscriptions'
+      );
       return;
     }
 
@@ -60,10 +63,13 @@ export class EventDispatcher {
 
         await this.attemptDelivery(deliveryId, sub, event);
       } catch (err) {
-        this.logger.error({
-          subscriptionId: sub.id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'EventDispatcher: delivery creation failed');
+        this.logger.error(
+          {
+            subscriptionId: sub.id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'EventDispatcher: delivery creation failed'
+        );
       }
     }
   }
@@ -79,9 +85,12 @@ export class EventDispatcher {
     try {
       deliveries = await this.store.getPendingRetries(now);
     } catch (err) {
-      this.logger.error({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'EventDispatcher: failed to fetch pending retries');
+      this.logger.error(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'EventDispatcher: failed to fetch pending retries'
+      );
       return 0;
     }
 
@@ -101,10 +110,13 @@ export class EventDispatcher {
         await this.attemptDelivery(delivery.id, sub, delivery.payload);
         count++;
       } catch (err) {
-        this.logger.error({
-          deliveryId: delivery.id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'EventDispatcher: retry processing failed');
+        this.logger.error(
+          {
+            deliveryId: delivery.id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'EventDispatcher: retry processing failed'
+        );
       }
     }
 
@@ -169,10 +181,13 @@ export class EventDispatcher {
           responseStatus: response.status,
           responseBody: truncatedBody,
         });
-        this.logger.debug({
-          deliveryId,
-          status: response.status,
-        }, 'EventDispatcher: delivery succeeded');
+        this.logger.debug(
+          {
+            deliveryId,
+            status: response.status,
+          },
+          'EventDispatcher: delivery succeeded'
+        );
         return;
       }
 
@@ -203,10 +218,13 @@ export class EventDispatcher {
         responseBody,
         error,
       });
-      this.logger.warn({
-        deliveryId,
-        attempts: currentAttempts,
-      }, 'EventDispatcher: max retries exhausted');
+      this.logger.warn(
+        {
+          deliveryId,
+          attempts: currentAttempts,
+        },
+        'EventDispatcher: max retries exhausted'
+      );
       return;
     }
 
@@ -222,11 +240,14 @@ export class EventDispatcher {
       responseBody,
       error,
     });
-    this.logger.debug({
-      deliveryId,
-      nextRetryAt,
-      attempts: currentAttempts,
-    }, 'EventDispatcher: scheduled retry');
+    this.logger.debug(
+      {
+        deliveryId,
+        nextRetryAt,
+        attempts: currentAttempts,
+      },
+      'EventDispatcher: scheduled retry'
+    );
   }
 
   private async getAttempts(deliveryId: string): Promise<number> {

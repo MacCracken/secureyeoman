@@ -14,9 +14,7 @@ const TODOIST_INTEGRATION = {
 
 function mockIntegrationManager(opts?: { noIntegrations?: boolean }): IntegrationManager {
   return {
-    listIntegrations: vi
-      .fn()
-      .mockResolvedValue(opts?.noIntegrations ? [] : [TODOIST_INTEGRATION]),
+    listIntegrations: vi.fn().mockResolvedValue(opts?.noIntegrations ? [] : [TODOIST_INTEGRATION]),
   } as unknown as IntegrationManager;
 }
 
@@ -84,7 +82,7 @@ describe('todoist-routes', () => {
         expect.stringContaining('/rest/v2/tasks'),
         expect.objectContaining({
           headers: expect.objectContaining({ Authorization: 'Bearer todoist_test_token' }),
-        }),
+        })
       );
     });
 
@@ -131,7 +129,7 @@ describe('todoist-routes', () => {
       expect(res.json()).toEqual(task);
       expect(globalThis.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/tasks/task-42'),
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -167,14 +165,20 @@ describe('todoist-routes', () => {
       const res = await app.inject({
         method: 'POST',
         url,
-        payload: { content: 'Ship it', priority: 4, dueString: 'tomorrow', projectId: 'p1', description: 'desc' },
+        payload: {
+          content: 'Ship it',
+          priority: 4,
+          dueString: 'tomorrow',
+          projectId: 'p1',
+          description: 'desc',
+        },
       });
 
       expect(res.statusCode).toBe(201);
       expect(res.json()).toEqual(created);
 
       const fetchBody = JSON.parse(
-        (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body as string,
+        (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body as string
       );
       expect(fetchBody.content).toBe('Ship it');
       expect(fetchBody.priority).toBe(4);
@@ -303,7 +307,7 @@ describe('todoist-routes', () => {
       expect(res.json()).toEqual(projects);
       expect(globalThis.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/rest/v2/projects'),
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 

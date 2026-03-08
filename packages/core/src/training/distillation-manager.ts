@@ -277,10 +277,13 @@ export class DistillationManager {
               });
               teacherResponse = resp.content;
             } catch (err) {
-              this.logger.warn({
-                jobId,
-                error: err instanceof Error ? err.message : 'unknown',
-              }, 'Teacher LLM call failed');
+              this.logger.warn(
+                {
+                  jobId,
+                  error: err instanceof Error ? err.message : 'unknown',
+                },
+                'Teacher LLM call failed'
+              );
               continue;
             }
 

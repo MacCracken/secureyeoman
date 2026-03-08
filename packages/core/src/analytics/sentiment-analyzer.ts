@@ -55,10 +55,13 @@ export class SentimentAnalyzer {
           score: result.score,
         });
       } catch (err) {
-        this.logger.warn({
-          messageId: msg.id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'SentimentAnalyzer: failed to classify message');
+        this.logger.warn(
+          {
+            messageId: msg.id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'SentimentAnalyzer: failed to classify message'
+        );
       }
     }
 
@@ -103,9 +106,12 @@ export class SentimentAnalyzer {
     if (this.intervalHandle) return;
     this.intervalHandle = setInterval(() => {
       void this.analyzeNewMessages().catch((err: unknown) => {
-        this.logger.error({
-          error: err instanceof Error ? err.message : String(err),
-        }, 'SentimentAnalyzer: interval error');
+        this.logger.error(
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'SentimentAnalyzer: interval error'
+        );
       });
     }, SENTIMENT_INTERVAL_MS);
   }

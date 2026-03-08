@@ -186,13 +186,15 @@ describe('BatchInferenceWidget', () => {
     });
     const textarea = screen.getByPlaceholderText(/Explain quantum/);
     fireEvent.change(textarea, { target: { value: 'Hello\nWorld' } });
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ id: 'new' }),
-    } as Response).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve([]),
-    } as Response);
+    fetchSpy
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: 'new' }),
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([]),
+      } as Response);
     fireEvent.click(screen.getByText('Submit Batch'));
     await waitFor(() => {
       const postCalls = fetchSpy.mock.calls.filter((c) => {

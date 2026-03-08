@@ -130,11 +130,14 @@ export class ClassificationEngine {
       }
     }
 
-    this.logger.debug({
-      level: highestLevel,
-      rulesCount: rules.length,
-      piiCount: piiFound.length,
-    }, 'Content classified');
+    this.logger.debug(
+      {
+        level: highestLevel,
+        rulesCount: rules.length,
+        piiCount: piiFound.length,
+      },
+      'Content classified'
+    );
 
     return {
       level: highestLevel,

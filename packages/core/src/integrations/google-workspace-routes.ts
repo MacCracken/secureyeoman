@@ -34,8 +34,7 @@ async function resolveGoogleAccess(
 ): Promise<{ accessToken: string; tokenId: string } | null> {
   const tokens = await oauthTokenService.listTokens();
   const token =
-    tokens.find((t) => t.provider === 'gdrive') ??
-    tokens.find((t) => t.provider === 'google');
+    tokens.find((t) => t.provider === 'gdrive') ?? tokens.find((t) => t.provider === 'google');
   if (!token) return null;
   const accessToken = await oauthTokenService.getValidToken(token.provider, token.email);
   if (!accessToken) return null;
@@ -61,11 +60,18 @@ function fetchGoogle(
 
 async function handleGoogleResponse(
   resp: Response,
-  reply: { send: (data: unknown) => unknown; code: (n: number) => { send: (data: unknown) => unknown } }
+  reply: {
+    send: (data: unknown) => unknown;
+    code: (n: number) => { send: (data: unknown) => unknown };
+  }
 ): Promise<unknown> {
   if (!resp.ok) {
     const body = await resp.text();
-    return sendError(reply as never, resp.status as 400 | 401 | 403 | 404 | 500, googleErrorMessage(resp.status, body));
+    return sendError(
+      reply as never,
+      resp.status as 400 | 401 | 403 | 404 | 500,
+      googleErrorMessage(resp.status, body)
+    );
   }
   const data = await resp.json();
   return reply.send(data);
@@ -87,7 +93,11 @@ export function registerGoogleWorkspaceRoutes(
   }>('/api/v1/integrations/gdrive/files', async (req, reply) => {
     const creds = await resolveGoogleAccess(oauthTokenService);
     if (!creds) {
-      return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No Google account connected. Connect via Settings > Connections > OAuth.'
+      );
     }
 
     const url = new URL(`${DRIVE_API}/files`);
@@ -99,7 +109,13 @@ export function registerGoogleWorkspaceRoutes(
     url.searchParams.set('pageSize', req.query.pageSize ?? '20');
     url.searchParams.set('fields', 'files(id,name,mimeType,size,modifiedTime,parents)');
 
-    const resp = await fetchGoogle(url.toString(), {}, creds.tokenId, creds.accessToken, oauthTokenService);
+    const resp = await fetchGoogle(
+      url.toString(),
+      {},
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
     return handleGoogleResponse(resp, reply);
   });
 
@@ -109,7 +125,11 @@ export function registerGoogleWorkspaceRoutes(
   }>('/api/v1/integrations/gdrive/files/search', async (req, reply) => {
     const creds = await resolveGoogleAccess(oauthTokenService);
     if (!creds) {
-      return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No Google account connected. Connect via Settings > Connections > OAuth.'
+      );
     }
 
     if (!req.query.query) {
@@ -121,7 +141,13 @@ export function registerGoogleWorkspaceRoutes(
     url.searchParams.set('pageSize', req.query.pageSize ?? '20');
     url.searchParams.set('fields', 'files(id,name,mimeType,size,modifiedTime,description)');
 
-    const resp = await fetchGoogle(url.toString(), {}, creds.tokenId, creds.accessToken, oauthTokenService);
+    const resp = await fetchGoogle(
+      url.toString(),
+      {},
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
     return handleGoogleResponse(resp, reply);
   });
 
@@ -131,7 +157,11 @@ export function registerGoogleWorkspaceRoutes(
     async (req, reply) => {
       const creds = await resolveGoogleAccess(oauthTokenService);
       if (!creds) {
-        return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+        return sendError(
+          reply,
+          404,
+          'No Google account connected. Connect via Settings > Connections > OAuth.'
+        );
       }
 
       const resp = await fetchGoogle(
@@ -151,7 +181,11 @@ export function registerGoogleWorkspaceRoutes(
   }>('/api/v1/integrations/gdrive/folders', async (req, reply) => {
     const creds = await resolveGoogleAccess(oauthTokenService);
     if (!creds) {
-      return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No Google account connected. Connect via Settings > Connections > OAuth.'
+      );
     }
 
     if (!req.body.name) {
@@ -178,7 +212,11 @@ export function registerGoogleWorkspaceRoutes(
 
     if (!resp.ok) {
       const body = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, googleErrorMessage(resp.status, body));
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        googleErrorMessage(resp.status, body)
+      );
     }
     const data = await resp.json();
     return reply.code(201).send(data);
@@ -190,7 +228,11 @@ export function registerGoogleWorkspaceRoutes(
   }>('/api/v1/integrations/gdrive/files', async (req, reply) => {
     const creds = await resolveGoogleAccess(oauthTokenService);
     if (!creds) {
-      return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No Google account connected. Connect via Settings > Connections > OAuth.'
+      );
     }
 
     const { name, mimeType, content, folderId } = req.body;
@@ -235,7 +277,11 @@ export function registerGoogleWorkspaceRoutes(
 
     if (!resp.ok) {
       const body = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, googleErrorMessage(resp.status, body));
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        googleErrorMessage(resp.status, body)
+      );
     }
     const data = await resp.json();
     return reply.code(201).send(data);
@@ -247,7 +293,11 @@ export function registerGoogleWorkspaceRoutes(
     async (req, reply) => {
       const creds = await resolveGoogleAccess(oauthTokenService);
       if (!creds) {
-        return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+        return sendError(
+          reply,
+          404,
+          'No Google account connected. Connect via Settings > Connections > OAuth.'
+        );
       }
 
       const resp = await fetchGoogle(
@@ -264,7 +314,11 @@ export function registerGoogleWorkspaceRoutes(
 
       if (!resp.ok) {
         const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, googleErrorMessage(resp.status, body));
+        return sendError(
+          reply,
+          resp.status as 400 | 401 | 403 | 404 | 500,
+          googleErrorMessage(resp.status, body)
+        );
       }
       return reply.send({ success: true, fileId: req.params.fileId, trashed: true });
     }
@@ -277,7 +331,11 @@ export function registerGoogleWorkspaceRoutes(
   }>('/api/v1/integrations/gdrive/files/:fileId/share', async (req, reply) => {
     const creds = await resolveGoogleAccess(oauthTokenService);
     if (!creds) {
-      return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No Google account connected. Connect via Settings > Connections > OAuth.'
+      );
     }
 
     const { email, role } = req.body;
@@ -299,7 +357,11 @@ export function registerGoogleWorkspaceRoutes(
 
     if (!resp.ok) {
       const body = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, googleErrorMessage(resp.status, body));
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        googleErrorMessage(resp.status, body)
+      );
     }
     const data = await resp.json();
     return reply.code(201).send(data);
@@ -313,7 +375,11 @@ export function registerGoogleWorkspaceRoutes(
     async (req, reply) => {
       const creds = await resolveGoogleAccess(oauthTokenService);
       if (!creds) {
-        return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+        return sendError(
+          reply,
+          404,
+          'No Google account connected. Connect via Settings > Connections > OAuth.'
+        );
       }
 
       const url = `${SHEETS_API}/${encodeURIComponent(req.params.spreadsheetId)}?fields=spreadsheetId,properties,sheets.properties`;
@@ -329,7 +395,11 @@ export function registerGoogleWorkspaceRoutes(
   }>('/api/v1/integrations/gsheets/spreadsheets/:spreadsheetId/values', async (req, reply) => {
     const creds = await resolveGoogleAccess(oauthTokenService);
     if (!creds) {
-      return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No Google account connected. Connect via Settings > Connections > OAuth.'
+      );
     }
 
     if (!req.query.range) {
@@ -348,7 +418,11 @@ export function registerGoogleWorkspaceRoutes(
   }>('/api/v1/integrations/gsheets/spreadsheets/:spreadsheetId/values', async (req, reply) => {
     const creds = await resolveGoogleAccess(oauthTokenService);
     if (!creds) {
-      return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No Google account connected. Connect via Settings > Connections > OAuth.'
+      );
     }
 
     const { range, values } = req.body;
@@ -380,7 +454,11 @@ export function registerGoogleWorkspaceRoutes(
     async (req, reply) => {
       const creds = await resolveGoogleAccess(oauthTokenService);
       if (!creds) {
-        return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+        return sendError(
+          reply,
+          404,
+          'No Google account connected. Connect via Settings > Connections > OAuth.'
+        );
       }
 
       const { range, values } = req.body;
@@ -410,7 +488,11 @@ export function registerGoogleWorkspaceRoutes(
   }>('/api/v1/integrations/gsheets/spreadsheets', async (req, reply) => {
     const creds = await resolveGoogleAccess(oauthTokenService);
     if (!creds) {
-      return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No Google account connected. Connect via Settings > Connections > OAuth.'
+      );
     }
 
     if (!req.body.title) {
@@ -440,7 +522,11 @@ export function registerGoogleWorkspaceRoutes(
 
     if (!resp.ok) {
       const body = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, googleErrorMessage(resp.status, body));
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        googleErrorMessage(resp.status, body)
+      );
     }
     const data = await resp.json();
     return reply.code(201).send(data);
@@ -454,7 +540,11 @@ export function registerGoogleWorkspaceRoutes(
     async (req, reply) => {
       const creds = await resolveGoogleAccess(oauthTokenService);
       if (!creds) {
-        return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+        return sendError(
+          reply,
+          404,
+          'No Google account connected. Connect via Settings > Connections > OAuth.'
+        );
       }
 
       const resp = await fetchGoogle(
@@ -474,7 +564,11 @@ export function registerGoogleWorkspaceRoutes(
   }>('/api/v1/integrations/gdocs/documents', async (req, reply) => {
     const creds = await resolveGoogleAccess(oauthTokenService);
     if (!creds) {
-      return sendError(reply, 404, 'No Google account connected. Connect via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No Google account connected. Connect via Settings > Connections > OAuth.'
+      );
     }
 
     if (!req.body.title) {
@@ -496,7 +590,11 @@ export function registerGoogleWorkspaceRoutes(
 
     if (!createResp.ok) {
       const body = await createResp.text();
-      return sendError(reply, createResp.status as 400 | 401 | 403 | 404 | 500, googleErrorMessage(createResp.status, body));
+      return sendError(
+        reply,
+        createResp.status as 400 | 401 | 403 | 404 | 500,
+        googleErrorMessage(createResp.status, body)
+      );
     }
 
     const doc = (await createResp.json()) as { documentId: string };

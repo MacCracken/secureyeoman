@@ -223,10 +223,13 @@ export class SchemaClusteringManager {
     const embeddings = await this.deps.embeddingProvider.embed(texts);
 
     if (embeddings.length !== entries.length) {
-      this.deps.logger.warn({
-        entries: entries.length,
-        embeddings: embeddings.length,
-      }, 'Embedding count mismatch');
+      this.deps.logger.warn(
+        {
+          entries: entries.length,
+          embeddings: embeddings.length,
+        },
+        'Embedding count mismatch'
+      );
       return this.schemas;
     }
 
@@ -281,18 +284,24 @@ export class SchemaClusteringManager {
           confidence: coherence,
         });
       } catch (err) {
-        this.deps.logger.warn({
-          label,
-          error: String(err),
-        }, 'Failed to create schema knowledge');
+        this.deps.logger.warn(
+          {
+            label,
+            error: String(err),
+          },
+          'Failed to create schema knowledge'
+        );
       }
     }
 
     this.schemas = newSchemas;
-    this.deps.logger.info({
-      totalEntries: entries.length,
-      clustersFormed: newSchemas.length,
-    }, 'Schema clustering complete');
+    this.deps.logger.info(
+      {
+        totalEntries: entries.length,
+        clustersFormed: newSchemas.length,
+      },
+      'Schema clustering complete'
+    );
 
     return newSchemas;
   }

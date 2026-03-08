@@ -209,11 +209,14 @@ export class CouncilManager {
           );
           tokensUsed += converged.tokensUsed;
           if (converged.result) {
-            this.logger.debug({
-              runId: run.id,
-              round,
-              reasoning: converged.reasoning,
-            }, 'Council reached convergence');
+            this.logger.debug(
+              {
+                runId: run.id,
+                round,
+                reasoning: converged.reasoning,
+              },
+              'Council reached convergence'
+            );
             break;
           }
         }

@@ -866,7 +866,9 @@ describe('SettingsPage', () => {
     renderComponent();
     await user.click(await screen.findByRole('button', { name: /Appearance/i }));
     expect(screen.getByText('Auto-Switch Schedule')).toBeInTheDocument();
-    expect(screen.getByRole('switch', { name: /Enable scheduled theme switching/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('switch', { name: /Enable scheduled theme switching/ })
+    ).toBeInTheDocument();
   });
 
   it('shows "no custom themes" message on Appearance tab', async () => {

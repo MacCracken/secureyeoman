@@ -25,14 +25,14 @@ export type EntityState = 'dormant' | 'thinking' | 'active' | 'training' | 'inge
 // ── Color palettes ────────────────────────────────────────────────
 
 interface Palette {
-  iris1: string;      // outer iris
-  iris2: string;      // inner iris
-  pupil: string;      // pupil glow
-  glow: string;       // ambient glow
-  filament: string;   // radial filaments
-  stream: string;     // data stream particles
-  sclera: string;     // eye white tint
-  lid: string;        // eyelid color
+  iris1: string; // outer iris
+  iris2: string; // inner iris
+  pupil: string; // pupil glow
+  glow: string; // ambient glow
+  filament: string; // radial filaments
+  stream: string; // data stream particles
+  sclera: string; // eye white tint
+  lid: string; // eyelid color
 }
 
 const PALETTES: Record<EntityState, Palette> = {
@@ -166,8 +166,8 @@ const STATE_CONFIG: Record<EntityState, StateConfig> = {
 
 interface StreamParticle {
   angle: number;
-  radius: number;     // normalized 0..1 within iris
-  speed: number;      // radial speed (negative = inward)
+  radius: number; // normalized 0..1 within iris
+  speed: number; // radial speed (negative = inward)
   angularSpeed: number;
   brightness: number;
   size: number;
@@ -203,7 +203,7 @@ function renderEye(
   time: number,
   w: number,
   h: number,
-  currentLidOpenness: number,
+  currentLidOpenness: number
 ) {
   const palette = PALETTES[state];
   const cfg = STATE_CONFIG[state];
@@ -217,10 +217,12 @@ function renderEye(
   const scale = 1 + breathPhase;
 
   // Micro-saccades (tiny positional shifts)
-  const saccadeX = Math.sin(time * 0.037 + 1.7) * cfg.saccadeAmp * minDim
-    + Math.sin(time * 0.089) * cfg.saccadeAmp * minDim * 0.5;
-  const saccadeY = Math.cos(time * 0.041 + 0.3) * cfg.saccadeAmp * minDim
-    + Math.cos(time * 0.073) * cfg.saccadeAmp * minDim * 0.5;
+  const saccadeX =
+    Math.sin(time * 0.037 + 1.7) * cfg.saccadeAmp * minDim +
+    Math.sin(time * 0.089) * cfg.saccadeAmp * minDim * 0.5;
+  const saccadeY =
+    Math.cos(time * 0.041 + 0.3) * cfg.saccadeAmp * minDim +
+    Math.cos(time * 0.073) * cfg.saccadeAmp * minDim * 0.5;
 
   const ecx = cx + saccadeX;
   const ecy = cy + saccadeY;
@@ -250,15 +252,21 @@ function renderEye(
   // Upper lid curve
   ctx.moveTo(ecx - almondW, ecy);
   ctx.bezierCurveTo(
-    ecx - almondW * 0.5, ecy - almondH * 1.3,
-    ecx + almondW * 0.5, ecy - almondH * 1.3,
-    ecx + almondW, ecy,
+    ecx - almondW * 0.5,
+    ecy - almondH * 1.3,
+    ecx + almondW * 0.5,
+    ecy - almondH * 1.3,
+    ecx + almondW,
+    ecy
   );
   // Lower lid curve
   ctx.bezierCurveTo(
-    ecx + almondW * 0.5, ecy + almondH * 1.1,
-    ecx - almondW * 0.5, ecy + almondH * 1.1,
-    ecx - almondW, ecy,
+    ecx + almondW * 0.5,
+    ecy + almondH * 1.1,
+    ecx - almondW * 0.5,
+    ecy + almondH * 1.1,
+    ecx - almondW,
+    ecy
   );
   ctx.closePath();
   ctx.clip();
@@ -407,9 +415,12 @@ function renderEye(
   ctx.lineTo(w, ecy);
   ctx.lineTo(ecx + almondW, ecy);
   ctx.bezierCurveTo(
-    ecx + almondW * 0.5, ecy - almondH * 1.3,
-    ecx - almondW * 0.5, ecy - almondH * 1.3,
-    ecx - almondW, ecy,
+    ecx + almondW * 0.5,
+    ecy - almondH * 1.3,
+    ecx - almondW * 0.5,
+    ecy - almondH * 1.3,
+    ecx - almondW,
+    ecy
   );
   ctx.lineTo(0, ecy);
   ctx.closePath();
@@ -422,9 +433,12 @@ function renderEye(
   ctx.lineTo(w, ecy);
   ctx.lineTo(ecx + almondW, ecy);
   ctx.bezierCurveTo(
-    ecx + almondW * 0.5, ecy + almondH * 1.1,
-    ecx - almondW * 0.5, ecy + almondH * 1.1,
-    ecx - almondW, ecy,
+    ecx + almondW * 0.5,
+    ecy + almondH * 1.1,
+    ecx - almondW * 0.5,
+    ecy + almondH * 1.1,
+    ecx - almondW,
+    ecy
   );
   ctx.lineTo(0, ecy);
   ctx.closePath();
@@ -440,9 +454,12 @@ function renderEye(
     ctx.beginPath();
     ctx.moveTo(ecx - almondW, ecy);
     ctx.bezierCurveTo(
-      ecx - almondW * 0.5, ecy - almondH * 1.3,
-      ecx + almondW * 0.5, ecy - almondH * 1.3,
-      ecx + almondW, ecy,
+      ecx - almondW * 0.5,
+      ecy - almondH * 1.3,
+      ecx + almondW * 0.5,
+      ecy - almondH * 1.3,
+      ecx + almondW,
+      ecy
     );
     ctx.stroke();
 
@@ -452,9 +469,12 @@ function renderEye(
     ctx.beginPath();
     ctx.moveTo(ecx - almondW, ecy);
     ctx.bezierCurveTo(
-      ecx - almondW * 0.5, ecy + almondH * 1.1,
-      ecx + almondW * 0.5, ecy + almondH * 1.1,
-      ecx + almondW, ecy,
+      ecx - almondW * 0.5,
+      ecy + almondH * 1.1,
+      ecx + almondW * 0.5,
+      ecy + almondH * 1.1,
+      ecx + almondW,
+      ecy
     );
     ctx.stroke();
   }
@@ -473,11 +493,7 @@ function renderEye(
 
 // ── Physics step ──────────────────────────────────────────────────
 
-function stepStreams(
-  streams: StreamParticle[],
-  state: EntityState,
-  time: number,
-): void {
+function stepStreams(streams: StreamParticle[], state: EntityState, time: number): void {
   const cfg = STATE_CONFIG[state];
 
   for (const s of streams) {

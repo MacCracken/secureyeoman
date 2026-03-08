@@ -117,9 +117,7 @@ describe('agnos-tools', () => {
     it('returns health data when runtime is reachable', async () => {
       vi.stubGlobal(
         'fetch',
-        mockFetch([
-          { ok: true, status: 200, json: { status: 'healthy', uptime: 12345 } },
-        ])
+        mockFetch([{ ok: true, status: 200, json: { status: 'healthy', uptime: 12345 } }])
       );
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerAgnosTools(server, makeConfig(), noopMiddleware());
@@ -135,10 +133,7 @@ describe('agnos-tools', () => {
 
   describe('agnos_gateway_health', () => {
     it('registers gateway health tool', () => {
-      vi.stubGlobal(
-        'fetch',
-        mockFetch([{ ok: true, status: 200, json: { status: 'healthy' } }])
-      );
+      vi.stubGlobal('fetch', mockFetch([{ ok: true, status: 200, json: { status: 'healthy' } }]));
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerAgnosTools(server, makeConfig(), noopMiddleware());
       expect(true).toBe(true);
@@ -157,9 +152,7 @@ describe('agnos-tools', () => {
     it('handles successful agent registration', async () => {
       vi.stubGlobal(
         'fetch',
-        mockFetch([
-          { ok: true, status: 200, json: { agent_id: 'ag-001', name: 'test-agent' } },
-        ])
+        mockFetch([{ ok: true, status: 200, json: { agent_id: 'ag-001', name: 'test-agent' } }])
       );
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerAgnosTools(server, makeConfig(), noopMiddleware());
@@ -185,12 +178,7 @@ describe('agnos-tools', () => {
 
   describe('agnos_overview', () => {
     it('registers overview tool that fetches 6 endpoints', () => {
-      vi.stubGlobal(
-        'fetch',
-        mockFetch([
-          { ok: true, status: 200, json: { status: 'healthy' } },
-        ])
-      );
+      vi.stubGlobal('fetch', mockFetch([{ ok: true, status: 200, json: { status: 'healthy' } }]));
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerAgnosTools(server, makeConfig(), noopMiddleware());
       expect(true).toBe(true);
@@ -199,9 +187,7 @@ describe('agnos-tools', () => {
 
   describe('auth headers', () => {
     it('includes Authorization header when API keys are set', () => {
-      const fetchSpy = mockFetch([
-        { ok: true, status: 200, json: { status: 'ok' } },
-      ]);
+      const fetchSpy = mockFetch([{ ok: true, status: 200, json: { status: 'ok' } }]);
       vi.stubGlobal('fetch', fetchSpy);
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       const config = makeConfig({

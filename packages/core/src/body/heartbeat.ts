@@ -214,11 +214,14 @@ export class HeartbeatManager {
       try {
         await this.executeAction(trigger, check, result);
       } catch (err) {
-        this.logger.error({
-          check: check.name,
-          action: trigger.action,
-          error: err instanceof Error ? err.message : 'Unknown error',
-        }, 'Action execution failed');
+        this.logger.error(
+          {
+            check: check.name,
+            action: trigger.action,
+            error: err instanceof Error ? err.message : 'Unknown error',
+          },
+          'Action execution failed'
+        );
       }
     }
   }
@@ -329,21 +332,27 @@ export class HeartbeatManager {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        this.logger.info({
-          check: check.name,
-          url,
-          attempt: attempt + 1,
-        }, 'Webhook executed successfully');
+        this.logger.info(
+          {
+            check: check.name,
+            url,
+            attempt: attempt + 1,
+          },
+          'Webhook executed successfully'
+        );
         return;
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));
 
         if (attempt < retryCount) {
-          this.logger.warn({
-            check: check.name,
-            attempt: attempt + 1,
-            error: lastError.message,
-          }, 'Webhook failed, retrying');
+          this.logger.warn(
+            {
+              check: check.name,
+              attempt: attempt + 1,
+              error: lastError.message,
+            },
+            'Webhook failed, retrying'
+          );
           await this.sleep(retryDelayMs * (attempt + 1)); // Exponential backoff
         }
       }
@@ -385,10 +394,13 @@ export class HeartbeatManager {
         metadata: { checkType: check.type, status: result.status },
       })
       .catch((err: unknown) => {
-        this.logger.warn({
-          check: check.name,
-          error: err instanceof Error ? err.message : 'Unknown error',
-        }, 'Failed to persist heartbeat notification');
+        this.logger.warn(
+          {
+            check: check.name,
+            error: err instanceof Error ? err.message : 'Unknown error',
+          },
+          'Failed to persist heartbeat notification'
+        );
       });
 
     // Console notification (always available)
@@ -399,10 +411,13 @@ export class HeartbeatManager {
 
     // Integration-based notifications
     if (!this.integrationManager) {
-      this.logger.warn({
-        channel,
-        check: check.name,
-      }, 'Integration manager not available for notification');
+      this.logger.warn(
+        {
+          channel,
+          check: check.name,
+        },
+        'Integration manager not available for notification'
+      );
       return;
     }
 
@@ -419,11 +434,14 @@ export class HeartbeatManager {
     }
 
     if (adapters.length === 0) {
-      this.logger.warn({
-        channel,
-        integrationId,
-        check: check.name,
-      }, 'No running adapters found for notification channel');
+      this.logger.warn(
+        {
+          channel,
+          integrationId,
+          check: check.name,
+        },
+        'No running adapters found for notification channel'
+      );
       return;
     }
 
@@ -438,12 +456,15 @@ export class HeartbeatManager {
             metadata: { check: check.name, channel, recipient },
           });
         } catch (err) {
-          this.logger.warn({
-            check: check.name,
-            channel,
-            recipient,
-            error: err instanceof Error ? err.message : String(err),
-          }, 'Heartbeat notification dispatch failed');
+          this.logger.warn(
+            {
+              check: check.name,
+              channel,
+              recipient,
+              error: err instanceof Error ? err.message : String(err),
+            },
+            'Heartbeat notification dispatch failed'
+          );
           await this.auditChain.record({
             event: 'notification_dispatch_failed',
             level: 'warn',
@@ -487,11 +508,14 @@ export class HeartbeatManager {
       importance
     );
 
-    this.logger.info({
-      check: check.name,
-      category,
-      importance,
-    }, 'Memory recorded from heartbeat action');
+    this.logger.info(
+      {
+        check: check.name,
+        category,
+        importance,
+      },
+      'Memory recorded from heartbeat action'
+    );
   }
 
   /**
@@ -507,12 +531,15 @@ export class HeartbeatManager {
     const command = config.command as string;
     const args = (config.args as string[]) || [];
 
-    this.logger.warn({
-      check: check.name,
-      command,
-      args,
-      result: result.status,
-    }, 'Command execution action is not implemented');
+    this.logger.warn(
+      {
+        check: check.name,
+        command,
+        args,
+        result: result.status,
+      },
+      'Command execution action is not implemented'
+    );
     throw new Error(
       'Command execution action is not implemented — enable sandbox execution via the execution config'
     );
@@ -532,12 +559,15 @@ export class HeartbeatManager {
     const model = config?.model as string | undefined;
     const maxTokens = (config?.maxTokens as number) || 500;
 
-    this.logger.warn({
-      check: check.name,
-      model: model || 'default',
-      maxTokens,
-      promptLength: prompt?.length,
-    }, 'LLM analysis action is not implemented');
+    this.logger.warn(
+      {
+        check: check.name,
+        model: model || 'default',
+        maxTokens,
+        promptLength: prompt?.length,
+      },
+      'LLM analysis action is not implemented'
+    );
     throw new Error(
       'LLM analysis action is not implemented — heartbeat LLM actions require an AI client integration'
     );
@@ -566,9 +596,12 @@ export class HeartbeatManager {
         // Non-fatal — taskLastRun stays empty for this check
       }
     }
-    this.logger.debug({
-      checks: this.config.checks.length,
-    }, 'Heartbeat task times hydrated from log');
+    this.logger.debug(
+      {
+        checks: this.config.checks.length,
+      },
+      'Heartbeat task times hydrated from log'
+    );
   }
 
   start(): void {
@@ -578,9 +611,12 @@ export class HeartbeatManager {
     this.interval = setInterval(() => {
       runWithCorrelationId(uuidv7(), () => {
         void this.beat().catch((err: unknown) => {
-          this.logger.error({
-            error: err instanceof Error ? err.message : 'Unknown error',
-          }, 'Heartbeat failed');
+          this.logger.error(
+            {
+              error: err instanceof Error ? err.message : 'Unknown error',
+            },
+            'Heartbeat failed'
+          );
         });
       });
     }, this.config.intervalMs);
@@ -700,11 +736,14 @@ export class HeartbeatManager {
               errorDetail,
             });
           } catch (logErr) {
-            this.logger.warn({
-              check: check.name,
-              personalityId: p.id,
-              error: logErr instanceof Error ? logErr.message : 'Unknown error',
-            }, 'Failed to persist heartbeat log entry');
+            this.logger.warn(
+              {
+                check: check.name,
+                personalityId: p.id,
+                error: logErr instanceof Error ? logErr.message : 'Unknown error',
+              },
+              'Failed to persist heartbeat log entry'
+            );
           }
         }
       }
@@ -713,10 +752,13 @@ export class HeartbeatManager {
       try {
         await this.executeActions(check, result);
       } catch (err) {
-        this.logger.error({
-          check: check.name,
-          error: err instanceof Error ? err.message : 'Unknown error',
-        }, 'Action execution failed for check');
+        this.logger.error(
+          {
+            check: check.name,
+            error: err instanceof Error ? err.message : 'Unknown error',
+          },
+          'Action execution failed for check'
+        );
       }
     }
 

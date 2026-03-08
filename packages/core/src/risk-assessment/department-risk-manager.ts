@@ -214,10 +214,13 @@ export class DepartmentRiskManager {
           },
         };
         alertManager.evaluate(syntheticSnapshot).catch((err: unknown) => {
-          this.logger.error({
-            departmentId,
-            error: err instanceof Error ? err.message : String(err),
-          }, 'Appetite breach alert evaluation failed');
+          this.logger.error(
+            {
+              departmentId,
+              error: err instanceof Error ? err.message : String(err),
+            },
+            'Appetite breach alert evaluation failed'
+          );
         });
       }
     }
@@ -233,10 +236,13 @@ export class DepartmentRiskManager {
         const score = await this.snapshotDepartmentScore(dept.id, assessmentId);
         scores.push(score);
       } catch (err) {
-        this.logger.warn({
-          departmentId: dept.id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Failed to snapshot department score');
+        this.logger.warn(
+          {
+            departmentId: dept.id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Failed to snapshot department score'
+        );
       }
     }
     return scores;

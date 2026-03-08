@@ -517,12 +517,12 @@ describe('DocumentManager', () => {
 
       expect(results).toEqual([]);
       expect(deps.logger.warn).toHaveBeenCalledWith(
-{
-        owner: 'org',
-        repo: 'repo',
-      },
-'No markdown files found in repository'
-);
+        {
+          owner: 'org',
+          repo: 'repo',
+        },
+        'No markdown files found in repository'
+      );
     });
 
     it('skips files with null download_url', async () => {

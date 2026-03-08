@@ -23,9 +23,9 @@ test.describe('Metrics page', () => {
   test('displays KPI cards or statistics', async ({ page }) => {
     await page.goto('/metrics');
     // Look for stat cards, numbers, or health indicators
-    const statsArea = page.locator(
-      '[data-testid="kpi"], .stat-card, .card, [class*="grid"]',
-    ).first();
+    const statsArea = page
+      .locator('[data-testid="kpi"], .stat-card, .card, [class*="grid"]')
+      .first();
     await expect(statsArea).toBeVisible({ timeout: 10000 });
   });
 

@@ -82,11 +82,14 @@ export class SiemForwarder {
     } catch (err) {
       this._stats.errors++;
       this._stats.dropped += batch.length;
-      this.logger.error({
-        provider: this.provider.name,
-        batchSize: batch.length,
-        error: err instanceof Error ? err.message : String(err),
-      }, 'SIEM forwarding failed');
+      this.logger.error(
+        {
+          provider: this.provider.name,
+          batchSize: batch.length,
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'SIEM forwarding failed'
+      );
     } finally {
       this._flushing = false;
     }

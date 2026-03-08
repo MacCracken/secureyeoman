@@ -245,9 +245,12 @@ export class PlatformModule implements AppModule {
         });
         this.logger.debug('Branching manager initialized');
       } catch (error) {
-        this.logger.warn({
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }, 'Branching manager initialization failed (non-fatal)');
+        this.logger.warn(
+          {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+          'Branching manager initialization failed (non-fatal)'
+        );
       }
     } else {
       this.logger.debug('Branching manager skipped — no database pool');
@@ -270,9 +273,12 @@ export class PlatformModule implements AppModule {
         await this.dynamicToolManager.initialize();
         this.logger.debug('Dynamic tool manager initialized');
       } catch (error) {
-        this.logger.warn({
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }, 'Dynamic tool manager initialization failed (non-fatal)');
+        this.logger.warn(
+          {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+          'Dynamic tool manager initialization failed (non-fatal)'
+        );
       }
     }
   }
@@ -304,9 +310,12 @@ export class PlatformModule implements AppModule {
         }, MS_PER_DAY);
         this.riskScheduleTimer.unref();
       } catch (error) {
-        this.logger.warn({
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }, 'RiskAssessmentManager initialization failed (non-fatal)');
+        this.logger.warn(
+          {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+          'RiskAssessmentManager initialization failed (non-fatal)'
+        );
       }
     }
 
@@ -322,9 +331,12 @@ export class PlatformModule implements AppModule {
         });
         this.logger.debug('DepartmentRiskManager initialized');
       } catch (error) {
-        this.logger.warn({
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }, 'DepartmentRiskManager initialization failed (non-fatal)');
+        this.logger.warn(
+          {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+          'DepartmentRiskManager initialization failed (non-fatal)'
+        );
       }
     }
 

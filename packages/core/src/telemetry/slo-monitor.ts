@@ -226,18 +226,24 @@ export class SloMonitor {
     };
 
     alertManager.evaluate(snapshot).catch((err: unknown) => {
-      this.logger.error({
-        sloId: def.id,
-        error: err instanceof Error ? err.message : String(err),
-      }, 'SLO burn-rate alert evaluation failed');
+      this.logger.error(
+        {
+          sloId: def.id,
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'SLO burn-rate alert evaluation failed'
+      );
     });
 
-    this.logger.warn({
-      sloId: def.id,
-      sloName: def.name,
-      burnRate: status.burnRate,
-      threshold: def.burnRateThreshold,
-      errorBudgetRemaining: status.errorBudgetRemaining,
-    }, 'SLO burn rate threshold exceeded');
+    this.logger.warn(
+      {
+        sloId: def.id,
+        sloName: def.name,
+        burnRate: status.burnRate,
+        threshold: def.burnRateThreshold,
+        errorBudgetRemaining: status.errorBudgetRemaining,
+      },
+      'SLO burn rate threshold exceeded'
+    );
   }
 }

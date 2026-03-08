@@ -23,7 +23,10 @@ function makeConfig(overrides?: Partial<AgnosticHooksConfig>): AgnosticHooksConf
 }
 
 function makeDeps(): AgnosticHooksDeps & {
-  hookHandlers: Map<string, (ctx: { data: unknown }) => Promise<{ vetoed: boolean; errors: string[] }>>;
+  hookHandlers: Map<
+    string,
+    (ctx: { data: unknown }) => Promise<{ vetoed: boolean; errors: string[] }>
+  >;
   hookIdCounter: number;
 } {
   const hookHandlers = new Map<
@@ -156,9 +159,7 @@ describe('agnostic-hooks', () => {
     });
 
     it('hook handler warns on non-200 response', async () => {
-      const fetchSpy = mockFetch([
-        { ok: false, status: 500, text: 'Internal Server Error' },
-      ]);
+      const fetchSpy = mockFetch([{ ok: false, status: 500, text: 'Internal Server Error' }]);
       vi.stubGlobal('fetch', fetchSpy);
 
       const deps = makeDeps();
@@ -199,9 +200,7 @@ describe('agnostic-hooks', () => {
     });
 
     it('skips signature when no webhook secret', async () => {
-      const fetchSpy = mockFetch([
-        { ok: true, status: 200, json: { accepted: true } },
-      ]);
+      const fetchSpy = mockFetch([{ ok: true, status: 200, json: { accepted: true } }]);
       vi.stubGlobal('fetch', fetchSpy);
 
       const config = makeConfig({ webhookSecret: undefined });
@@ -213,9 +212,7 @@ describe('agnostic-hooks', () => {
     });
 
     it('includes API key header when set', async () => {
-      const fetchSpy = mockFetch([
-        { ok: true, status: 200, json: { accepted: true } },
-      ]);
+      const fetchSpy = mockFetch([{ ok: true, status: 200, json: { accepted: true } }]);
       vi.stubGlobal('fetch', fetchSpy);
 
       await dispatchToAgnostic(makeConfig({ apiKey: 'key-123' }), 'test', {});
@@ -226,10 +223,7 @@ describe('agnostic-hooks', () => {
     });
 
     it('returns accepted=false on non-200 response', async () => {
-      vi.stubGlobal(
-        'fetch',
-        mockFetch([{ ok: false, status: 503, text: 'Service Unavailable' }])
-      );
+      vi.stubGlobal('fetch', mockFetch([{ ok: false, status: 503, text: 'Service Unavailable' }]));
 
       const result = await dispatchToAgnostic(makeConfig(), 'test', {});
       expect(result.accepted).toBe(false);

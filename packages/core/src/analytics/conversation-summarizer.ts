@@ -69,10 +69,13 @@ export class ConversationSummarizer {
         });
         summarized++;
       } catch (err) {
-        this.logger.warn({
-          conversationId: conv.id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'ConversationSummarizer: failed to summarize');
+        this.logger.warn(
+          {
+            conversationId: conv.id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'ConversationSummarizer: failed to summarize'
+        );
       }
     }
 
@@ -129,9 +132,12 @@ export class ConversationSummarizer {
     if (this.intervalHandle) return;
     this.intervalHandle = setInterval(() => {
       void this.summarizeNew().catch((err: unknown) => {
-        this.logger.error({
-          error: err instanceof Error ? err.message : String(err),
-        }, 'ConversationSummarizer: interval error');
+        this.logger.error(
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'ConversationSummarizer: interval error'
+        );
       });
     }, SUMMARIZE_INTERVAL_MS);
   }

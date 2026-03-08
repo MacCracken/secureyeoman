@@ -662,9 +662,12 @@ export class AuthService {
         metadata,
       });
     } catch (err) {
-      this.deps.logger.error({
-        error: err instanceof Error ? err.message : 'Unknown',
-      }, 'Failed to record auth audit event');
+      this.deps.logger.error(
+        {
+          error: err instanceof Error ? err.message : 'Unknown',
+        },
+        'Failed to record auth audit event'
+      );
     }
   }
 }

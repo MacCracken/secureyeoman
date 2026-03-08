@@ -134,13 +134,16 @@ export class LinuxCaptureSandbox {
       throw new Error('LinuxCaptureSandbox is only available on Linux');
     }
 
-    this.logger.info({
-      maxMemory: this.config.maxMemory,
-      maxCpuPercent: this.config.maxCpuPercent,
-      maxDuration: this.config.maxDuration,
-      allowNetwork: this.config.allowNetwork,
-      syscallPolicy: this.config.syscallPolicy,
-    }, 'Initializing Linux capture sandbox');
+    this.logger.info(
+      {
+        maxMemory: this.config.maxMemory,
+        maxCpuPercent: this.config.maxCpuPercent,
+        maxDuration: this.config.maxDuration,
+        allowNetwork: this.config.allowNetwork,
+        syscallPolicy: this.config.syscallPolicy,
+      },
+      'Initializing Linux capture sandbox'
+    );
 
     this.initialized = true;
   }

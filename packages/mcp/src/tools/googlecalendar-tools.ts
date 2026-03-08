@@ -22,10 +22,7 @@ export function registerGoogleCalendarTools(
     description:
       'List events from a Google Calendar. Supports time range filtering and text search. Returns event stubs with IDs; use gcal_get_event to fetch full details.',
     inputSchema: {
-      calendarId: z
-        .string()
-        .optional()
-        .describe('Calendar ID (default "primary")'),
+      calendarId: z.string().optional().describe('Calendar ID (default "primary")'),
       timeMin: z
         .string()
         .optional()
@@ -41,10 +38,7 @@ export function registerGoogleCalendarTools(
         .max(250)
         .optional()
         .describe('Maximum number of events to return (1–250, default 10)'),
-      q: z
-        .string()
-        .optional()
-        .describe('Free text search terms to find events'),
+      q: z.string().optional().describe('Free text search terms to find events'),
     },
     buildPath: () => '/api/v1/integrations/googlecalendar/events',
     buildQuery: (args) => {
@@ -65,10 +59,7 @@ export function registerGoogleCalendarTools(
       'Get the full details of a single Google Calendar event by its ID. Returns summary, start/end times, description, location, attendees, and other metadata.',
     inputSchema: {
       eventId: z.string().describe('Google Calendar event ID'),
-      calendarId: z
-        .string()
-        .optional()
-        .describe('Calendar ID (default "primary")'),
+      calendarId: z.string().optional().describe('Calendar ID (default "primary")'),
     },
     buildPath: (args) => `/api/v1/integrations/googlecalendar/events/${args.eventId}`,
     buildQuery: (args) => {
@@ -87,18 +78,9 @@ export function registerGoogleCalendarTools(
       summary: z.string().describe('Event title/summary'),
       start: z.string().describe('Event start time as ISO 8601 datetime'),
       end: z.string().describe('Event end time as ISO 8601 datetime'),
-      description: z
-        .string()
-        .optional()
-        .describe('Detailed description of the event'),
-      location: z
-        .string()
-        .optional()
-        .describe('Event location (address or place name)'),
-      calendarId: z
-        .string()
-        .optional()
-        .describe('Calendar ID (default "primary")'),
+      description: z.string().optional().describe('Detailed description of the event'),
+      location: z.string().optional().describe('Event location (address or place name)'),
+      calendarId: z.string().optional().describe('Calendar ID (default "primary")'),
     },
     method: 'post',
     buildPath: () => '/api/v1/integrations/googlecalendar/events',
@@ -121,10 +103,7 @@ export function registerGoogleCalendarTools(
       text: z
         .string()
         .describe('Natural language description of the event (e.g. "Team meeting Friday 3pm")'),
-      calendarId: z
-        .string()
-        .optional()
-        .describe('Calendar ID (default "primary")'),
+      calendarId: z.string().optional().describe('Calendar ID (default "primary")'),
     },
     method: 'post',
     buildPath: () => '/api/v1/integrations/googlecalendar/events/quick',
@@ -146,10 +125,7 @@ export function registerGoogleCalendarTools(
       end: z.string().optional().describe('Updated end time as ISO 8601 datetime'),
       description: z.string().optional().describe('Updated event description'),
       location: z.string().optional().describe('Updated event location'),
-      calendarId: z
-        .string()
-        .optional()
-        .describe('Calendar ID (default "primary")'),
+      calendarId: z.string().optional().describe('Calendar ID (default "primary")'),
     },
     method: 'put',
     buildPath: (args) => `/api/v1/integrations/googlecalendar/events/${args.eventId}`,
@@ -168,10 +144,7 @@ export function registerGoogleCalendarTools(
   // query params, and we need to pass the optional calendarId.
   const deleteSchema = {
     eventId: z.string().describe('Google Calendar event ID to delete'),
-    calendarId: z
-      .string()
-      .optional()
-      .describe('Calendar ID (default "primary")'),
+    calendarId: z.string().optional().describe('Calendar ID (default "primary")'),
   };
 
   server.registerTool(

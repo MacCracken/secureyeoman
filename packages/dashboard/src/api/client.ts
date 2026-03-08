@@ -2141,14 +2141,12 @@ export async function fetchMarketQuote(symbol: string): Promise<MarketQuoteRespo
 
 export async function fetchMarketHistorical(
   symbol: string,
-  days = 100,
+  days = 100
 ): Promise<MarketHistoricalResponse> {
   return request(`/trading/historical?symbol=${encodeURIComponent(symbol)}&days=${days}`);
 }
 
-export async function fetchMarketSearch(
-  keywords: string,
-): Promise<MarketQuoteResponse> {
+export async function fetchMarketSearch(keywords: string): Promise<MarketQuoteResponse> {
   return request(`/trading/search?keywords=${encodeURIComponent(keywords)}`);
 }
 

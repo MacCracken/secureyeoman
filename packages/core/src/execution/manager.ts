@@ -52,10 +52,13 @@ export class CodeExecutionManager {
     // Expire any sessions that outlived their timeout from a previous run
     const expired = await this.deps.storage.expireStaleSessions(this.config.sessionTimeout);
     if (expired > 0) {
-      this.deps.logger.debug({
-        component: 'execution',
-        count: expired,
-      }, 'Expired stale sessions on startup');
+      this.deps.logger.debug(
+        {
+          component: 'execution',
+          count: expired,
+        },
+        'Expired stale sessions on startup'
+      );
     }
 
     // Start periodic expiry check
@@ -64,9 +67,12 @@ export class CodeExecutionManager {
     }, SESSION_EXPIRY_CHECK_INTERVAL_MS);
     this.expiryTimer.unref();
 
-    this.deps.logger.debug({
-      component: 'execution',
-    }, 'CodeExecutionManager initialized');
+    this.deps.logger.debug(
+      {
+        component: 'execution',
+      },
+      'CodeExecutionManager initialized'
+    );
   }
 
   // ── Execution ───────────────────────────────────────────────────
@@ -322,9 +328,12 @@ export class CodeExecutionManager {
       clearInterval(this.expiryTimer);
       this.expiryTimer = null;
     }
-    this.deps.logger.debug({
-      component: 'execution',
-    }, 'CodeExecutionManager cleaned up');
+    this.deps.logger.debug(
+      {
+        component: 'execution',
+      },
+      'CodeExecutionManager cleaned up'
+    );
   }
 
   // ── Private helpers ─────────────────────────────────────────────
@@ -333,15 +342,21 @@ export class CodeExecutionManager {
     try {
       const expired = await this.deps.storage.expireStaleSessions(this.config.sessionTimeout);
       if (expired > 0) {
-        this.deps.logger.debug({
-          component: 'execution',
-          count: expired,
-        }, 'Expired stale sessions');
+        this.deps.logger.debug(
+          {
+            component: 'execution',
+            count: expired,
+          },
+          'Expired stale sessions'
+        );
       }
     } catch {
-      this.deps.logger.warn({
-        component: 'execution',
-      }, 'Failed to expire stale sessions');
+      this.deps.logger.warn(
+        {
+          component: 'execution',
+        },
+        'Failed to expire stale sessions'
+      );
     }
   }
 
@@ -354,9 +369,12 @@ export class CodeExecutionManager {
         metadata,
       });
     } catch {
-      this.deps.logger.warn({
-        component: 'execution',
-      }, 'Failed to record execution audit event');
+      this.deps.logger.warn(
+        {
+          component: 'execution',
+        },
+        'Failed to record execution audit event'
+      );
     }
   }
 }

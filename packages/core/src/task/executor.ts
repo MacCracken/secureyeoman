@@ -216,12 +216,15 @@ export class TaskExecutor {
     };
 
     // Log task creation
-    this.getLogger().info({
-      ...logContext,
-      taskId: task.id,
-      taskType: task.type,
-      taskName: task.name,
-    }, 'Task created');
+    this.getLogger().info(
+      {
+        ...logContext,
+        taskId: task.id,
+        taskType: task.type,
+        taskName: task.name,
+      },
+      'Task created'
+    );
 
     await this.auditChain.record({
       event: 'task_created',
@@ -325,10 +328,13 @@ export class TaskExecutor {
         ? this.sandbox.run(executeFn, this.sandboxOptions).then(async (sandboxResult) => {
             // Log sandbox violations
             if (sandboxResult.violations.length > 0) {
-              this.getLogger().warn({
-                ...logContext,
-                violations: sandboxResult.violations.map((v) => v.description),
-              }, 'Sandbox violations during task execution');
+              this.getLogger().warn(
+                {
+                  ...logContext,
+                  violations: sandboxResult.violations.map((v) => v.description),
+                },
+                'Sandbox violations during task execution'
+              );
               await this.auditChain.record({
                 event: 'sandbox_violation',
                 level: 'warn',
@@ -380,10 +386,13 @@ export class TaskExecutor {
         resources: task.resources,
       });
 
-      this.getLogger().info({
-        ...logContext,
-        durationMs: task.durationMs,
-      }, 'Task completed');
+      this.getLogger().info(
+        {
+          ...logContext,
+          durationMs: task.durationMs,
+        },
+        'Task completed'
+      );
 
       await this.auditChain.record({
         event: 'task_completed',
@@ -426,12 +435,15 @@ export class TaskExecutor {
         resources: task.resources,
       });
 
-      this.getLogger().error({
-        ...logContext,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        status: task.status,
-        durationMs: task.durationMs,
-      }, 'Task failed');
+      this.getLogger().error(
+        {
+          ...logContext,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          status: task.status,
+          durationMs: task.durationMs,
+        },
+        'Task failed'
+      );
 
       await this.auditChain.record({
         event: 'task_failed',

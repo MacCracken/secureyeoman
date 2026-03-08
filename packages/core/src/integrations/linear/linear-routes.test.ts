@@ -27,9 +27,7 @@ const LINEAR_INTEGRATION = {
 
 function mockIntegrationManager(opts?: { noIntegrations?: boolean }): IntegrationManager {
   return {
-    listIntegrations: vi.fn().mockResolvedValue(
-      opts?.noIntegrations ? [] : [LINEAR_INTEGRATION]
-    ),
+    listIntegrations: vi.fn().mockResolvedValue(opts?.noIntegrations ? [] : [LINEAR_INTEGRATION]),
   } as unknown as IntegrationManager;
 }
 
@@ -51,12 +49,8 @@ function graphqlErrors(messages: string[]): Response {
   return {
     ok: true,
     status: 200,
-    json: () =>
-      Promise.resolve({ errors: messages.map((m) => ({ message: m })) }),
-    text: () =>
-      Promise.resolve(
-        JSON.stringify({ errors: messages.map((m) => ({ message: m })) })
-      ),
+    json: () => Promise.resolve({ errors: messages.map((m) => ({ message: m })) }),
+    text: () => Promise.resolve(JSON.stringify({ errors: messages.map((m) => ({ message: m })) })),
   } as unknown as Response;
 }
 
@@ -136,7 +130,14 @@ describe('Linear Routes', () => {
     it('returns search results on success', async () => {
       const issueSearch = {
         nodes: [
-          { id: 'i-1', identifier: 'ENG-1', title: 'Bug fix', state: { name: 'Todo' }, priority: 2, assignee: { name: 'Alice' } },
+          {
+            id: 'i-1',
+            identifier: 'ENG-1',
+            title: 'Bug fix',
+            state: { name: 'Todo' },
+            priority: 2,
+            assignee: { name: 'Alice' },
+          },
         ],
       };
       mockFetch.mockResolvedValue(graphqlOk({ issueSearch }));
@@ -212,9 +213,7 @@ describe('Linear Routes', () => {
   describe('GET /api/v1/integrations/linear/issues', () => {
     it('returns issues on success', async () => {
       const issues = {
-        nodes: [
-          { id: 'i-1', identifier: 'ENG-1', title: 'Task', state: { name: 'In Progress' } },
-        ],
+        nodes: [{ id: 'i-1', identifier: 'ENG-1', title: 'Task', state: { name: 'In Progress' } }],
       };
       mockFetch.mockResolvedValue(graphqlOk({ issues }));
       const app = await buildApp(mockIntegrationManager());
@@ -337,10 +336,13 @@ describe('Linear Routes', () => {
 
   describe('POST /api/v1/integrations/linear/issues', () => {
     it('creates an issue and returns 201', async () => {
-      const issue = { id: 'i-new', identifier: 'ENG-99', title: 'New task', url: 'https://linear.app/eng/issue/ENG-99' };
-      mockFetch.mockResolvedValue(
-        graphqlOk({ issueCreate: { success: true, issue } })
-      );
+      const issue = {
+        id: 'i-new',
+        identifier: 'ENG-99',
+        title: 'New task',
+        url: 'https://linear.app/eng/issue/ENG-99',
+      };
+      mockFetch.mockResolvedValue(graphqlOk({ issueCreate: { success: true, issue } }));
       const app = await buildApp(mockIntegrationManager());
 
       const res = await app.inject({
@@ -433,9 +435,7 @@ describe('Linear Routes', () => {
     });
 
     it('returns 502 when issueCreate reports failure (success: false)', async () => {
-      mockFetch.mockResolvedValue(
-        graphqlOk({ issueCreate: { success: false, issue: null } })
-      );
+      mockFetch.mockResolvedValue(graphqlOk({ issueCreate: { success: false, issue: null } }));
       const app = await buildApp(mockIntegrationManager());
 
       const res = await app.inject({
@@ -465,9 +465,7 @@ describe('Linear Routes', () => {
   describe('PUT /api/v1/integrations/linear/issues/:issueId', () => {
     it('updates an issue on success', async () => {
       const issue = { id: 'i-1', identifier: 'ENG-42', title: 'Updated', state: { name: 'Done' } };
-      mockFetch.mockResolvedValue(
-        graphqlOk({ issueUpdate: { success: true, issue } })
-      );
+      mockFetch.mockResolvedValue(graphqlOk({ issueUpdate: { success: true, issue } }));
       const app = await buildApp(mockIntegrationManager());
 
       const res = await app.inject({
@@ -513,9 +511,7 @@ describe('Linear Routes', () => {
     });
 
     it('returns 502 when issueUpdate reports failure (success: false)', async () => {
-      mockFetch.mockResolvedValue(
-        graphqlOk({ issueUpdate: { success: false, issue: null } })
-      );
+      mockFetch.mockResolvedValue(graphqlOk({ issueUpdate: { success: false, issue: null } }));
       const app = await buildApp(mockIntegrationManager());
 
       const res = await app.inject({
@@ -544,10 +540,13 @@ describe('Linear Routes', () => {
 
   describe('POST /api/v1/integrations/linear/issues/:issueId/comments', () => {
     it('creates a comment and returns 201', async () => {
-      const comment = { id: 'c-1', body: 'Nice work!', createdAt: '2026-03-06T00:00:00Z', user: { name: 'Alice' } };
-      mockFetch.mockResolvedValue(
-        graphqlOk({ commentCreate: { success: true, comment } })
-      );
+      const comment = {
+        id: 'c-1',
+        body: 'Nice work!',
+        createdAt: '2026-03-06T00:00:00Z',
+        user: { name: 'Alice' },
+      };
+      mockFetch.mockResolvedValue(graphqlOk({ commentCreate: { success: true, comment } }));
       const app = await buildApp(mockIntegrationManager());
 
       const res = await app.inject({
@@ -593,9 +592,7 @@ describe('Linear Routes', () => {
     });
 
     it('returns 502 when commentCreate reports failure (success: false)', async () => {
-      mockFetch.mockResolvedValue(
-        graphqlOk({ commentCreate: { success: false, comment: null } })
-      );
+      mockFetch.mockResolvedValue(graphqlOk({ commentCreate: { success: false, comment: null } }));
       const app = await buildApp(mockIntegrationManager());
 
       const res = await app.inject({
@@ -625,9 +622,11 @@ describe('Linear Routes', () => {
   describe('credential resolution', () => {
     it('returns 404 when integration exists but apiKey is missing', async () => {
       const mgr = {
-        listIntegrations: vi.fn().mockResolvedValue([
-          { id: 'intg-linear-1', platform: 'linear', enabled: true, config: {} },
-        ]),
+        listIntegrations: vi
+          .fn()
+          .mockResolvedValue([
+            { id: 'intg-linear-1', platform: 'linear', enabled: true, config: {} },
+          ]),
       } as unknown as IntegrationManager;
       const app = await buildApp(mgr);
 

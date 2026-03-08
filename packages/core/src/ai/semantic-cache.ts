@@ -81,9 +81,12 @@ export class SemanticCache {
         metadata: response.metadata as Record<string, unknown> | undefined,
       };
     } catch (err) {
-      this.deps.logger.warn({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Semantic cache get error');
+      this.deps.logger.warn(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Semantic cache get error'
+      );
       return null;
     }
   }
@@ -123,9 +126,12 @@ export class SemanticCache {
         [vectorStr, provider, model, requestHash, JSON.stringify(response), expiresAt]
       );
     } catch (err) {
-      this.deps.logger.warn({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Semantic cache set error');
+      this.deps.logger.warn(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Semantic cache set error'
+      );
     }
   }
 
@@ -160,9 +166,12 @@ export class SemanticCache {
     if (this.cleanupInterval) return;
     this.cleanupInterval = setInterval(() => {
       void this.cleanup().catch((err: unknown) => {
-        this.deps.logger.warn({
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Semantic cache cleanup error');
+        this.deps.logger.warn(
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Semantic cache cleanup error'
+        );
       });
     }, intervalMs);
   }

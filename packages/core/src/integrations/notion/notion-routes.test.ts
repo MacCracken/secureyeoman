@@ -303,9 +303,7 @@ describe('Notion Routes', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.json()).toEqual(blocks);
-      expect(fetchSpy.mock.calls[0][0]).toBe(
-        'https://api.notion.com/v1/blocks/page-789/children'
-      );
+      expect(fetchSpy.mock.calls[0][0]).toBe('https://api.notion.com/v1/blocks/page-789/children');
       expectNotionHeaders();
     });
 
@@ -337,7 +335,9 @@ describe('Notion Routes', () => {
       const result = { results: [{ id: 'block-new' }] };
       mockFetchOk(result);
 
-      const children = [{ type: 'paragraph', paragraph: { rich_text: [{ text: { content: 'Hi' } }] } }];
+      const children = [
+        { type: 'paragraph', paragraph: { rich_text: [{ text: { content: 'Hi' } }] } },
+      ];
       const res = await app.inject({
         method: 'POST',
         url,
@@ -346,9 +346,7 @@ describe('Notion Routes', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.json()).toEqual(result);
-      expect(fetchSpy.mock.calls[0][0]).toBe(
-        'https://api.notion.com/v1/blocks/page-abc/children'
-      );
+      expect(fetchSpy.mock.calls[0][0]).toBe('https://api.notion.com/v1/blocks/page-abc/children');
       expect((fetchSpy.mock.calls[0][1] as RequestInit).method).toBe('PATCH');
       expectNotionHeaders();
 
@@ -426,9 +424,7 @@ describe('Notion Routes', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.json()).toEqual(queryResult);
-      expect(fetchSpy.mock.calls[0][0]).toBe(
-        'https://api.notion.com/v1/databases/db-999/query'
-      );
+      expect(fetchSpy.mock.calls[0][0]).toBe('https://api.notion.com/v1/databases/db-999/query');
       expectNotionHeaders();
 
       const sentBody = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string);

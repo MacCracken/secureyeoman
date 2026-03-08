@@ -25,7 +25,11 @@ export function MarketplaceTab({
   workflowsEnabled = false,
   subAgentsEnabled = false,
   initialContentType,
-}: { workflowsEnabled?: boolean; subAgentsEnabled?: boolean; initialContentType?: ContentType } = {}) {
+}: {
+  workflowsEnabled?: boolean;
+  subAgentsEnabled?: boolean;
+  initialContentType?: ContentType;
+} = {}) {
   const queryClient = useQueryClient();
   const hiddenTypes: ContentType[] = [
     ...(!workflowsEnabled ? ['workflows' as const] : []),
@@ -111,9 +115,10 @@ export function MarketplaceTab({
   // Split out theme and personality items for their dedicated tabs
   const themeSkills = allRaw.filter((s: CatalogSkill) => s.category === 'theme');
   const personalitySkills = allRaw.filter((s: CatalogSkill) => s.category === 'personality');
-  const allSkills = contentType === 'skills'
-    ? allRaw.filter((s: CatalogSkill) => s.category !== 'theme' && s.category !== 'personality')
-    : allRaw;
+  const allSkills =
+    contentType === 'skills'
+      ? allRaw.filter((s: CatalogSkill) => s.category !== 'theme' && s.category !== 'personality')
+      : allRaw;
   // Build category counts from full set (before client-side category filter)
   const categoryCounts = allSkills.reduce<Record<string, number>>((acc, s) => {
     const cat = s.category || 'general';
@@ -211,7 +216,9 @@ export function MarketplaceTab({
                 className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 placeholder="Search themes…"
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); }}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                }}
               />
             </div>
             {isLoading ? (
@@ -254,7 +261,9 @@ export function MarketplaceTab({
                 className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 placeholder="Search personalities…"
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); }}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                }}
               />
             </div>
             {isLoading ? (
@@ -271,7 +280,9 @@ export function MarketplaceTab({
                 <div className="flex items-center gap-2">
                   <UserCircle className="w-4 h-4 text-primary" />
                   <h3 className="text-sm font-semibold text-foreground">Personalities</h3>
-                  <span className="text-xs text-muted-foreground">({personalitySkills.length})</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({personalitySkills.length})
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {personalitySkills.map((s) =>
@@ -340,11 +351,7 @@ export function MarketplaceTab({
                         ({builtinSkills.length})
                       </span>
                     </div>
-                    <CategoryGroupedGrid
-                      skills={builtinSkills}
-                      renderCard={(s) => renderCard(s)}
-
-                    />
+                    <CategoryGroupedGrid skills={builtinSkills} renderCard={(s) => renderCard(s)} />
                   </section>
                 )}
 

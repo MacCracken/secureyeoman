@@ -104,11 +104,14 @@ export class ConsolidationManager {
 
       // Auto-dedup: very high similarity
       if (topScore >= this.config.quickCheck.autoDedupThreshold) {
-        this.logger.debug({
-          memoryId: memory.id,
-          duplicateOf: topResult.id,
-          score: topScore,
-        }, 'Auto-dedup: removing duplicate memory');
+        this.logger.debug(
+          {
+            memoryId: memory.id,
+            duplicateOf: topResult.id,
+            score: topScore,
+          },
+          'Auto-dedup: removing duplicate memory'
+        );
 
         await this.storage.deleteMemory(memory.id);
         await this.vectorManager.removeMemory(memory.id);
@@ -296,11 +299,14 @@ export class ConsolidationManager {
       this.history = this.history.slice(-50);
     }
 
-    this.logger.info({
-      candidates: report.totalCandidates,
-      ...report.summary,
-      durationMs: report.durationMs,
-    }, 'Deep consolidation complete');
+    this.logger.info(
+      {
+        candidates: report.totalCandidates,
+        ...report.summary,
+        durationMs: report.durationMs,
+      },
+      'Deep consolidation complete'
+    );
 
     return report;
   }

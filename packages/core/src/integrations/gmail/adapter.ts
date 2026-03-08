@@ -111,10 +111,13 @@ export class GmailIntegration implements Integration {
     const profile = await this.fetchProfile();
     this.email = profile.emailAddress;
 
-    this.logger?.info({
-      displayName: config.displayName,
-      email: this.email,
-    }, 'Gmail integration initialized');
+    this.logger?.info(
+      {
+        displayName: config.displayName,
+        email: this.email,
+      },
+      'Gmail integration initialized'
+    );
   }
 
   async start(): Promise<void> {
@@ -144,17 +147,23 @@ export class GmailIntegration implements Integration {
         void this.poll();
       }, interval);
 
-      this.logger?.info({
-        email: this.email,
-        intervalMs: interval,
-        labelFilter: gc.labelFilter,
-      }, 'Gmail polling started');
+      this.logger?.info(
+        {
+          email: this.email,
+          intervalMs: interval,
+          labelFilter: gc.labelFilter,
+        },
+        'Gmail polling started'
+      );
     }
 
-    this.logger?.info({
-      enableRead: gc.enableRead,
-      enableSend: gc.enableSend,
-    }, 'Gmail integration started');
+    this.logger?.info(
+      {
+        enableRead: gc.enableRead,
+        enableSend: gc.enableSend,
+      },
+      'Gmail integration started'
+    );
   }
 
   async stop(): Promise<void> {
@@ -278,9 +287,12 @@ export class GmailIntegration implements Integration {
         await this.processMessage(msgId);
       }
     } catch (err) {
-      this.logger?.warn({
-        error: err instanceof Error ? err.message : 'Unknown error',
-      }, 'Gmail poll error');
+      this.logger?.warn(
+        {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        },
+        'Gmail poll error'
+      );
     }
   }
 

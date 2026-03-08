@@ -123,20 +123,26 @@ export class McpHealthMonitor {
         lastError: errorMsg,
       };
 
-      this.logger.warn({
-        serverId,
-        serverName: server.name,
-        failures,
-        error: errorMsg,
-      }, 'MCP server health check failed');
-
-      // Auto-disable after threshold
-      if (failures >= this.config.autoDisableThreshold) {
-        this.logger.error({
+      this.logger.warn(
+        {
           serverId,
           serverName: server.name,
           failures,
-        }, 'MCP server auto-disabled due to consecutive failures');
+          error: errorMsg,
+        },
+        'MCP server health check failed'
+      );
+
+      // Auto-disable after threshold
+      if (failures >= this.config.autoDisableThreshold) {
+        this.logger.error(
+          {
+            serverId,
+            serverName: server.name,
+            failures,
+          },
+          'MCP server auto-disabled due to consecutive failures'
+        );
         await this.storage.updateServer(serverId, { enabled: false });
       }
     }

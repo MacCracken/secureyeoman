@@ -206,9 +206,7 @@ export function getAvatarDir(dataDir: string): string {
 export class SoulStorage extends PgBaseStorage {
   // ── Personalities ─────────────────────────────────────────────
 
-  async createPersonality(
-    data: PersonalityCreate
-  ): Promise<Personality> {
+  async createPersonality(data: PersonalityCreate): Promise<Personality> {
     const now = Date.now();
     const id = uuidv7();
 

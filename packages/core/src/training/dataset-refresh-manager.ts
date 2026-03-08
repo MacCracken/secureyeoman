@@ -145,10 +145,13 @@ export class DatasetRefreshManager {
     }
     const handle = setInterval(() => {
       void this.runRefresh(id).catch((err: unknown) => {
-        this.deps.logger.error({
-          id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Dataset refresh cron error');
+        this.deps.logger.error(
+          {
+            id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Dataset refresh cron error'
+        );
       });
     }, intervalMs);
     this.cronHandles.set(id, handle);

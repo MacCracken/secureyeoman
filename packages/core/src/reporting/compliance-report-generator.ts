@@ -98,10 +98,13 @@ export class ComplianceReportGenerator {
         const result = await this.queryAuditLog(auditOpts);
         auditEvents = result.entries;
       } catch (err) {
-        this.logger.warn({
-          id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Failed to query audit events for compliance report');
+        this.logger.warn(
+          {
+            id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Failed to query audit events for compliance report'
+        );
       }
     }
 
@@ -118,10 +121,13 @@ export class ComplianceReportGenerator {
         const result = await this.egressStore.queryEgress(egressFilters);
         egressEvents = result.events;
       } catch (err) {
-        this.logger.warn({
-          id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Failed to query egress events for compliance report');
+        this.logger.warn(
+          {
+            id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Failed to query egress events for compliance report'
+        );
       }
     }
 
@@ -153,10 +159,13 @@ export class ComplianceReportGenerator {
           );
         }
       } catch (err) {
-        this.logger.warn({
-          id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Failed to query classifications for compliance report');
+        this.logger.warn(
+          {
+            id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Failed to query classifications for compliance report'
+        );
       }
     }
 
@@ -195,12 +204,15 @@ export class ComplianceReportGenerator {
 
     this.reports.set(id, { ...report, content });
 
-    this.logger.info({
-      id,
-      auditEvents: auditEvents.length,
-      egressEvents: egressEvents.length,
-      classifications: classifications.length,
-    }, 'Compliance report generated');
+    this.logger.info(
+      {
+        id,
+        auditEvents: auditEvents.length,
+        egressEvents: egressEvents.length,
+        classifications: classifications.length,
+      },
+      'Compliance report generated'
+    );
 
     return { id, summary, content };
   }

@@ -100,10 +100,26 @@ vi.mock('./skills/index.js', () => ({
   kanagawaThemeSkill: { name: 'Kanagawa', author: 'YEOMAN', version: '2026.3.7' },
   palenightThemeSkill: { name: 'Palenight', author: 'YEOMAN', version: '2026.3.7' },
   nightOwlThemeSkill: { name: 'Night Owl', author: 'YEOMAN', version: '2026.3.7' },
-  technicalWriterPersonality: { name: 'Meridian (Technical Writer)', author: 'YEOMAN', version: '2026.3.7' },
-  dataEngineerPersonality: { name: 'Conduit (Data Engineer)', author: 'YEOMAN', version: '2026.3.7' },
-  projectManagerPersonality: { name: 'Compass (Project Manager)', author: 'YEOMAN', version: '2026.3.7' },
-  devopsEngineerPersonality: { name: 'Anvil (DevOps Engineer)', author: 'YEOMAN', version: '2026.3.7' },
+  technicalWriterPersonality: {
+    name: 'Meridian (Technical Writer)',
+    author: 'YEOMAN',
+    version: '2026.3.7',
+  },
+  dataEngineerPersonality: {
+    name: 'Conduit (Data Engineer)',
+    author: 'YEOMAN',
+    version: '2026.3.7',
+  },
+  projectManagerPersonality: {
+    name: 'Compass (Project Manager)',
+    author: 'YEOMAN',
+    version: '2026.3.7',
+  },
+  devopsEngineerPersonality: {
+    name: 'Anvil (DevOps Engineer)',
+    author: 'YEOMAN',
+    version: '2026.3.7',
+  },
   uxDesignerPersonality: { name: 'Prism (UX Designer)', author: 'YEOMAN', version: '2026.3.7' },
 }));
 

@@ -93,7 +93,9 @@ export const McpServiceConfigSchema = z.object({
   webRateLimitPerMinute: z.number().int().min(1).max(100).default(10),
   exposeWebScraping: z.boolean().default(true),
   exposeWebSearch: z.boolean().default(true),
-  webSearchProvider: z.enum(['duckduckgo', 'serpapi', 'tavily', 'brave', 'bing', 'exa', 'searxng']).default('duckduckgo'),
+  webSearchProvider: z
+    .enum(['duckduckgo', 'serpapi', 'tavily', 'brave', 'bing', 'exa', 'searxng'])
+    .default('duckduckgo'),
   webSearchApiKey: z.string().optional(),
   /** Additional provider-specific API keys for multi-search aggregation. */
   braveSearchApiKey: z.string().optional(),

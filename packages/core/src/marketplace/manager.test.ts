@@ -114,12 +114,12 @@ describe('MarketplaceManager', () => {
       expect(ok).toBe(true);
       expect(storage.setInstalled).toHaveBeenCalledWith('skill-1', true);
       expect(logger.info).toHaveBeenCalledWith(
-{
-        id: 'skill-1',
-        personalityId: null,
-      },
-'Marketplace skill installed'
-);
+        {
+          id: 'skill-1',
+          personalityId: null,
+        },
+        'Marketplace skill installed'
+      );
     });
 
     it('creates brain skill when brainManager provided', async () => {
@@ -199,12 +199,12 @@ describe('MarketplaceManager', () => {
       expect(ok).toBe(true);
       expect(storage.setInstalled).toHaveBeenCalledWith('skill-1', false);
       expect(logger.info).toHaveBeenCalledWith(
-{
-        id: 'skill-1',
-        personalityId: null,
-      },
-'Marketplace skill uninstalled'
-);
+        {
+          id: 'skill-1',
+          personalityId: null,
+        },
+        'Marketplace skill uninstalled'
+      );
     });
 
     it('removes matching brain skills when brainManager provided', async () => {
@@ -260,12 +260,12 @@ describe('MarketplaceManager', () => {
       expect(skill.id).toBe('skill-1');
       expect(storage.addSkill).toHaveBeenCalled();
       expect(logger.info).toHaveBeenCalledWith(
-{
-        id: 'skill-1',
-        name: 'Test Skill',
-      },
-'Skill published to marketplace'
-);
+        {
+          id: 'skill-1',
+          name: 'Test Skill',
+        },
+        'Skill published to marketplace'
+      );
     });
   });
 

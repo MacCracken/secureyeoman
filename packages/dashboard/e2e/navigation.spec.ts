@@ -20,7 +20,7 @@ test.describe('Dashboard navigation', () => {
 
   test('sidebar is visible', async ({ page }) => {
     await expect(
-      page.locator('[data-testid="sidebar"], nav, [role="navigation"]').first(),
+      page.locator('[data-testid="sidebar"], nav, [role="navigation"]').first()
     ).toBeVisible();
   });
 

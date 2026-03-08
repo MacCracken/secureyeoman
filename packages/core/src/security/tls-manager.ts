@@ -142,9 +142,12 @@ export class TlsManager {
       this.getLogger().info({ certDir }, 'Auto-generated TLS cert expired — regenerating');
     }
 
-    this.getLogger().warn({
-      certDir,
-    }, 'Generating self-signed TLS certificate — NOT suitable for production');
+    this.getLogger().warn(
+      {
+        certDir,
+      },
+      'Generating self-signed TLS certificate — NOT suitable for production'
+    );
 
     this.generatedPaths = generateDevCerts(certDir);
     return {

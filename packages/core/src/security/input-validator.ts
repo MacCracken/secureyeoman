@@ -175,11 +175,14 @@ export class InputValidator {
     // Stage 1: Size check (byte length to prevent multi-byte character bypass)
     const byteLength = Buffer.byteLength(input, 'utf-8');
     if (byteLength > this.config.maxInputLength) {
-      this.getLogger().warn({
-        ...context,
-        inputLength: byteLength,
-        maxLength: this.config.maxInputLength,
-      }, 'Input exceeds size limit');
+      this.getLogger().warn(
+        {
+          ...context,
+          inputLength: byteLength,
+          maxLength: this.config.maxInputLength,
+        },
+        'Input exceeds size limit'
+      );
 
       return {
         valid: false,
@@ -223,22 +226,28 @@ export class InputValidator {
         if (action === 'block') {
           blocked = true;
           blockReason = `Injection score ${injectionScore.toFixed(2)} meets threshold ${this.config.jailbreakThreshold}`;
-          this.getLogger().warn({
-            ...context,
-            injectionScore,
-            threshold: this.config.jailbreakThreshold,
-          }, 'Request blocked by jailbreak score threshold');
+          this.getLogger().warn(
+            {
+              ...context,
+              injectionScore,
+              threshold: this.config.jailbreakThreshold,
+            },
+            'Request blocked by jailbreak score threshold'
+          );
         } else if (action === 'warn') {
           warnings.push({
             code: 'JAILBREAK_SCORE_THRESHOLD',
             message: `Injection score ${injectionScore.toFixed(2)} meets threshold (jailbreakAction=warn)`,
             severity: 'high',
           });
-          this.getLogger().warn({
-            ...context,
-            injectionScore,
-            threshold: this.config.jailbreakThreshold,
-          }, 'Jailbreak score threshold exceeded (warn mode)');
+          this.getLogger().warn(
+            {
+              ...context,
+              injectionScore,
+              threshold: this.config.jailbreakThreshold,
+            },
+            'Jailbreak score threshold exceeded (warn mode)'
+          );
         }
         // audit_only: score is recorded on result, no further action here
       }
@@ -265,13 +274,16 @@ export class InputValidator {
 
     // Log validation result for audit
     if (warnings.length > 0 || blocked) {
-      this.getLogger().info({
-        ...context,
-        valid: result.valid,
-        blocked: result.blocked,
-        warningCount: warnings.length,
-        warnings: warnings.map((w) => w.code),
-      }, 'Input validation completed with warnings');
+      this.getLogger().info(
+        {
+          ...context,
+          valid: result.valid,
+          blocked: result.blocked,
+          warningCount: warnings.length,
+          warnings: warnings.map((w) => w.code),
+        },
+        'Input validation completed with warnings'
+      );
     }
 
     return result;
@@ -347,11 +359,14 @@ export class InputValidator {
           blocked = true;
           blockReason = `Blocked: ${name.replace(/_/g, ' ')} detected`;
 
-          this.getLogger().warn({
-            ...context,
-            injectionType: name,
-            pattern: pattern.source,
-          }, 'Injection attempt blocked');
+          this.getLogger().warn(
+            {
+              ...context,
+              injectionType: name,
+              pattern: pattern.source,
+            },
+            'Injection attempt blocked'
+          );
           break;
         } else {
           // Sanitize by escaping the pattern

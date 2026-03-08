@@ -1994,7 +1994,8 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'agnos_agent_detail',
-      description: 'Get details of a specific AGNOS agent (status, capabilities, memory, heartbeat)',
+      description:
+        'Get details of a specific AGNOS agent (status, capabilities, memory, heartbeat)',
       category: 'agnos',
     },
     {
@@ -2039,7 +2040,8 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'agnos_gateway_models',
-      description: 'List available models on the AGNOS LLM gateway (Ollama, llama.cpp, OpenAI, Anthropic)',
+      description:
+        'List available models on the AGNOS LLM gateway (Ollama, llama.cpp, OpenAI, Anthropic)',
       category: 'agnos',
     },
     {
@@ -2074,73 +2076,264 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'agnos_overview',
-      description: 'Get a unified AGNOS platform overview: runtime health, gateway health, agents, metrics, models',
+      description:
+        'Get a unified AGNOS platform overview: runtime health, gateway health, agents, metrics, models',
       category: 'agnos',
     },
 
     // Google Calendar tools
-    { name: 'gcal_list_events', description: 'List Google Calendar events with optional time range and search query', category: 'googlecalendar' },
-    { name: 'gcal_get_event', description: 'Get details of a specific Google Calendar event by ID', category: 'googlecalendar' },
-    { name: 'gcal_create_event', description: 'Create a Google Calendar event with summary, start/end times, and optional location', category: 'googlecalendar' },
-    { name: 'gcal_quick_add', description: 'Create a Google Calendar event from natural language text (e.g. "Meeting tomorrow at 3pm")', category: 'googlecalendar' },
-    { name: 'gcal_update_event', description: 'Update an existing Google Calendar event', category: 'googlecalendar' },
-    { name: 'gcal_delete_event', description: 'Delete a Google Calendar event by ID', category: 'googlecalendar' },
-    { name: 'gcal_list_calendars', description: 'List all calendars accessible to the authenticated user', category: 'googlecalendar' },
+    {
+      name: 'gcal_list_events',
+      description: 'List Google Calendar events with optional time range and search query',
+      category: 'googlecalendar',
+    },
+    {
+      name: 'gcal_get_event',
+      description: 'Get details of a specific Google Calendar event by ID',
+      category: 'googlecalendar',
+    },
+    {
+      name: 'gcal_create_event',
+      description:
+        'Create a Google Calendar event with summary, start/end times, and optional location',
+      category: 'googlecalendar',
+    },
+    {
+      name: 'gcal_quick_add',
+      description:
+        'Create a Google Calendar event from natural language text (e.g. "Meeting tomorrow at 3pm")',
+      category: 'googlecalendar',
+    },
+    {
+      name: 'gcal_update_event',
+      description: 'Update an existing Google Calendar event',
+      category: 'googlecalendar',
+    },
+    {
+      name: 'gcal_delete_event',
+      description: 'Delete a Google Calendar event by ID',
+      category: 'googlecalendar',
+    },
+    {
+      name: 'gcal_list_calendars',
+      description: 'List all calendars accessible to the authenticated user',
+      category: 'googlecalendar',
+    },
 
     // Linear tools
-    { name: 'linear_list_issues', description: 'List Linear issues with optional team, status, and assignee filters', category: 'linear' },
-    { name: 'linear_get_issue', description: 'Get details of a specific Linear issue by ID', category: 'linear' },
-    { name: 'linear_create_issue', description: 'Create a new Linear issue with title, description, team, and priority', category: 'linear' },
-    { name: 'linear_update_issue', description: 'Update an existing Linear issue (title, state, priority, assignee)', category: 'linear' },
-    { name: 'linear_create_comment', description: 'Add a comment to a Linear issue', category: 'linear' },
-    { name: 'linear_list_teams', description: 'List all teams in the Linear workspace', category: 'linear' },
-    { name: 'linear_search_issues', description: 'Search Linear issues by text query', category: 'linear' },
+    {
+      name: 'linear_list_issues',
+      description: 'List Linear issues with optional team, status, and assignee filters',
+      category: 'linear',
+    },
+    {
+      name: 'linear_get_issue',
+      description: 'Get details of a specific Linear issue by ID',
+      category: 'linear',
+    },
+    {
+      name: 'linear_create_issue',
+      description: 'Create a new Linear issue with title, description, team, and priority',
+      category: 'linear',
+    },
+    {
+      name: 'linear_update_issue',
+      description: 'Update an existing Linear issue (title, state, priority, assignee)',
+      category: 'linear',
+    },
+    {
+      name: 'linear_create_comment',
+      description: 'Add a comment to a Linear issue',
+      category: 'linear',
+    },
+    {
+      name: 'linear_list_teams',
+      description: 'List all teams in the Linear workspace',
+      category: 'linear',
+    },
+    {
+      name: 'linear_search_issues',
+      description: 'Search Linear issues by text query',
+      category: 'linear',
+    },
 
     // Todoist tools
-    { name: 'todoist_list_tasks', description: 'List active Todoist tasks with optional project and filter', category: 'todoist' },
-    { name: 'todoist_get_task', description: 'Get details of a specific Todoist task by ID', category: 'todoist' },
-    { name: 'todoist_create_task', description: 'Create a new Todoist task with content, due date, and priority', category: 'todoist' },
-    { name: 'todoist_update_task', description: 'Update an existing Todoist task', category: 'todoist' },
-    { name: 'todoist_complete_task', description: 'Mark a Todoist task as complete', category: 'todoist' },
-    { name: 'todoist_list_projects', description: 'List all Todoist projects', category: 'todoist' },
+    {
+      name: 'todoist_list_tasks',
+      description: 'List active Todoist tasks with optional project and filter',
+      category: 'todoist',
+    },
+    {
+      name: 'todoist_get_task',
+      description: 'Get details of a specific Todoist task by ID',
+      category: 'todoist',
+    },
+    {
+      name: 'todoist_create_task',
+      description: 'Create a new Todoist task with content, due date, and priority',
+      category: 'todoist',
+    },
+    {
+      name: 'todoist_update_task',
+      description: 'Update an existing Todoist task',
+      category: 'todoist',
+    },
+    {
+      name: 'todoist_complete_task',
+      description: 'Mark a Todoist task as complete',
+      category: 'todoist',
+    },
+    {
+      name: 'todoist_list_projects',
+      description: 'List all Todoist projects',
+      category: 'todoist',
+    },
 
     // Jira tools
-    { name: 'jira_search_issues', description: 'Search Jira issues using JQL query syntax', category: 'jira' },
-    { name: 'jira_get_issue', description: 'Get details of a specific Jira issue by key (e.g. PROJ-123)', category: 'jira' },
-    { name: 'jira_create_issue', description: 'Create a new Jira issue with project, summary, type, and optional fields', category: 'jira' },
+    {
+      name: 'jira_search_issues',
+      description: 'Search Jira issues using JQL query syntax',
+      category: 'jira',
+    },
+    {
+      name: 'jira_get_issue',
+      description: 'Get details of a specific Jira issue by key (e.g. PROJ-123)',
+      category: 'jira',
+    },
+    {
+      name: 'jira_create_issue',
+      description: 'Create a new Jira issue with project, summary, type, and optional fields',
+      category: 'jira',
+    },
     { name: 'jira_update_issue', description: 'Update an existing Jira issue', category: 'jira' },
     { name: 'jira_create_comment', description: 'Add a comment to a Jira issue', category: 'jira' },
-    { name: 'jira_list_projects', description: 'List all accessible Jira projects', category: 'jira' },
-    { name: 'jira_get_transitions', description: 'Get available workflow transitions for a Jira issue', category: 'jira' },
-    { name: 'jira_transition_issue', description: 'Transition a Jira issue to a new workflow state', category: 'jira' },
+    {
+      name: 'jira_list_projects',
+      description: 'List all accessible Jira projects',
+      category: 'jira',
+    },
+    {
+      name: 'jira_get_transitions',
+      description: 'Get available workflow transitions for a Jira issue',
+      category: 'jira',
+    },
+    {
+      name: 'jira_transition_issue',
+      description: 'Transition a Jira issue to a new workflow state',
+      category: 'jira',
+    },
 
     // Notion tools
-    { name: 'notion_search', description: 'Search Notion pages and databases by text query', category: 'notion' },
-    { name: 'notion_get_page', description: 'Get a Notion page by ID with properties and metadata', category: 'notion' },
-    { name: 'notion_create_page', description: 'Create a new Notion page in a database with title and properties', category: 'notion' },
-    { name: 'notion_update_page', description: 'Update Notion page properties', category: 'notion' },
-    { name: 'notion_get_page_blocks', description: 'Get the block content (body) of a Notion page', category: 'notion' },
-    { name: 'notion_append_blocks', description: 'Append block content to a Notion page', category: 'notion' },
-    { name: 'notion_query_database', description: 'Query a Notion database with filters and sorts', category: 'notion' },
+    {
+      name: 'notion_search',
+      description: 'Search Notion pages and databases by text query',
+      category: 'notion',
+    },
+    {
+      name: 'notion_get_page',
+      description: 'Get a Notion page by ID with properties and metadata',
+      category: 'notion',
+    },
+    {
+      name: 'notion_create_page',
+      description: 'Create a new Notion page in a database with title and properties',
+      category: 'notion',
+    },
+    {
+      name: 'notion_update_page',
+      description: 'Update Notion page properties',
+      category: 'notion',
+    },
+    {
+      name: 'notion_get_page_blocks',
+      description: 'Get the block content (body) of a Notion page',
+      category: 'notion',
+    },
+    {
+      name: 'notion_append_blocks',
+      description: 'Append block content to a Notion page',
+      category: 'notion',
+    },
+    {
+      name: 'notion_query_database',
+      description: 'Query a Notion database with filters and sorts',
+      category: 'notion',
+    },
 
     // Google Drive tools
-    { name: 'gdrive_list_files', description: 'List files in Google Drive with optional search, folder, and MIME type filters', category: 'google-workspace' },
-    { name: 'gdrive_get_file', description: 'Get metadata for a specific Google Drive file by ID', category: 'google-workspace' },
-    { name: 'gdrive_search', description: 'Full-text search across Google Drive files', category: 'google-workspace' },
-    { name: 'gdrive_create_folder', description: 'Create a new folder in Google Drive', category: 'google-workspace' },
-    { name: 'gdrive_upload_file', description: 'Upload a file to Google Drive with content', category: 'google-workspace' },
-    { name: 'gdrive_delete_file', description: 'Delete a file from Google Drive', category: 'google-workspace' },
-    { name: 'gdrive_share_file', description: 'Share a Google Drive file with a user by email', category: 'google-workspace' },
+    {
+      name: 'gdrive_list_files',
+      description: 'List files in Google Drive with optional search, folder, and MIME type filters',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gdrive_get_file',
+      description: 'Get metadata for a specific Google Drive file by ID',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gdrive_search',
+      description: 'Full-text search across Google Drive files',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gdrive_create_folder',
+      description: 'Create a new folder in Google Drive',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gdrive_upload_file',
+      description: 'Upload a file to Google Drive with content',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gdrive_delete_file',
+      description: 'Delete a file from Google Drive',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gdrive_share_file',
+      description: 'Share a Google Drive file with a user by email',
+      category: 'google-workspace',
+    },
 
     // Google Sheets tools
-    { name: 'gsheets_get_spreadsheet', description: 'Get spreadsheet metadata including sheet names and properties', category: 'google-workspace' },
-    { name: 'gsheets_get_values', description: 'Read cell values from a Google Sheets range (A1 notation)', category: 'google-workspace' },
-    { name: 'gsheets_update_values', description: 'Write values to a Google Sheets range', category: 'google-workspace' },
-    { name: 'gsheets_append_values', description: 'Append rows to a Google Sheets range', category: 'google-workspace' },
-    { name: 'gsheets_create_spreadsheet', description: 'Create a new Google Sheets spreadsheet', category: 'google-workspace' },
+    {
+      name: 'gsheets_get_spreadsheet',
+      description: 'Get spreadsheet metadata including sheet names and properties',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gsheets_get_values',
+      description: 'Read cell values from a Google Sheets range (A1 notation)',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gsheets_update_values',
+      description: 'Write values to a Google Sheets range',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gsheets_append_values',
+      description: 'Append rows to a Google Sheets range',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gsheets_create_spreadsheet',
+      description: 'Create a new Google Sheets spreadsheet',
+      category: 'google-workspace',
+    },
 
     // Google Docs tools
-    { name: 'gdocs_get_document', description: 'Get the content and metadata of a Google Docs document', category: 'google-workspace' },
-    { name: 'gdocs_create_document', description: 'Create a new Google Docs document with optional initial content', category: 'google-workspace' },
+    {
+      name: 'gdocs_get_document',
+      description: 'Get the content and metadata of a Google Docs document',
+      category: 'google-workspace',
+    },
+    {
+      name: 'gdocs_create_document',
+      description: 'Create a new Google Docs document with optional initial content',
+      category: 'google-workspace',
+    },
   ];
 }

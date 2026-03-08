@@ -147,10 +147,13 @@ export class WorkflowManager {
 
     setImmediate(() => {
       this.engine.execute(run, definition).catch((err: unknown) => {
-        this.logger.error({
-          runId: run.id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Workflow engine execution error');
+        this.logger.error(
+          {
+            runId: run.id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Workflow engine execution error'
+        );
       });
     });
 

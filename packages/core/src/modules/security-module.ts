@@ -148,9 +148,12 @@ export class SecurityModule implements AppModule {
       this.config.model.apiKeyEnv,
     ];
     this.keyringManager = initializeKeyring(this.config.security.secretBackend, knownSecretKeys);
-    this.logger.debug({
-      backend: this.keyringManager.getProvider().name,
-    }, 'Keyring initialized');
+    this.logger.debug(
+      {
+        backend: this.keyringManager.getProvider().name,
+      },
+      'Keyring initialized'
+    );
 
     // SecretsManager
     const vaultCfg = this.config.security.vault;
@@ -172,9 +175,12 @@ export class SecurityModule implements AppModule {
     };
     this.secretsManager = new SecretsManager(smConfig);
     await this.secretsManager.initialize();
-    this.logger.debug({
-      backend: this.config.security.secretBackend,
-    }, 'SecretsManager initialized');
+    this.logger.debug(
+      {
+        backend: this.config.security.secretBackend,
+      },
+      'SecretsManager initialized'
+    );
 
     // TlsManager
     const tlsCfg = this.config.gateway.tls;
@@ -393,9 +399,12 @@ export class SecurityModule implements AppModule {
       });
       this.logger.debug('ExternalizationGate initialized');
     } catch (err) {
-      this.logger.warn({
-        reason: err instanceof Error ? err.message : String(err),
-      }, 'ExternalizationGate initialization failed');
+      this.logger.warn(
+        {
+          reason: err instanceof Error ? err.message : String(err),
+        },
+        'ExternalizationGate initialization failed'
+      );
     }
 
     // AthiManager
@@ -410,9 +419,12 @@ export class SecurityModule implements AppModule {
         });
         this.logger.debug('AthiManager initialized');
       } catch (error) {
-        this.logger.warn({
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }, 'AthiManager initialization failed (non-fatal)');
+        this.logger.warn(
+          {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+          'AthiManager initialization failed (non-fatal)'
+        );
       }
     }
 
@@ -430,9 +442,12 @@ export class SecurityModule implements AppModule {
         await this.sraManager.seedComplianceMappings();
         this.logger.debug('SraManager initialized');
       } catch (error) {
-        this.logger.warn({
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }, 'SraManager initialization failed (non-fatal)');
+        this.logger.warn(
+          {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+          'SraManager initialization failed (non-fatal)'
+        );
       }
     }
 

@@ -32,9 +32,9 @@ test.describe('Security page', () => {
   test('overview tab shows event list or empty state', async ({ page }) => {
     await page.goto('/security');
     // The default tab (overview) should show events or an empty state
-    const content = page.locator(
-      'table, [data-testid="event-list"], [class*="empty"], .card',
-    ).first();
+    const content = page
+      .locator('table, [data-testid="event-list"], [class*="empty"], .card')
+      .first();
     await expect(content).toBeVisible({ timeout: 10000 });
   });
 });

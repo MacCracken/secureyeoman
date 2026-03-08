@@ -1433,10 +1433,13 @@ export class SraManager {
         await this.storage.createBuiltinBlueprint(bp);
         this.logger.debug({ blueprintId: bp.id }, 'Seeded builtin SRA blueprint');
       } catch (err) {
-        this.logger.error({
-          blueprintId: bp.id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Failed to seed builtin SRA blueprint');
+        this.logger.error(
+          {
+            blueprintId: bp.id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Failed to seed builtin SRA blueprint'
+        );
       }
     }
   }
@@ -1447,9 +1450,12 @@ export class SraManager {
       await this.storage.seedComplianceMappings(mappings);
       this.logger.debug({ count: mappings.length }, 'Seeded SRA compliance mappings');
     } catch (err) {
-      this.logger.error({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Failed to seed SRA compliance mappings');
+      this.logger.error(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Failed to seed SRA compliance mappings'
+      );
     }
   }
 }

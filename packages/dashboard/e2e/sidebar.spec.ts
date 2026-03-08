@@ -44,7 +44,9 @@ test.describe('Sidebar', () => {
       const classes = await metricsLink.getAttribute('class');
       const ariaCurrent = await metricsLink.getAttribute('aria-current');
       // At least one distinguishing attribute should be present
-      expect(classes?.includes('active') || ariaCurrent === 'page' || classes?.includes('bg-')).toBeTruthy();
+      expect(
+        classes?.includes('active') || ariaCurrent === 'page' || classes?.includes('bg-')
+      ).toBeTruthy();
     }
   });
 

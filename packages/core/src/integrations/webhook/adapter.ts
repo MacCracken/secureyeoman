@@ -37,11 +37,14 @@ export class GenericWebhookIntegration implements WebhookIntegration {
     this.webhookUrl = wh.webhookUrl ?? '';
     this.secret = wh.secret ?? '';
 
-    this.logger?.info({
-      displayName: config.displayName,
-      hasUrl: !!this.webhookUrl,
-      hasSigned: !!this.secret,
-    }, 'Webhook integration initialized');
+    this.logger?.info(
+      {
+        displayName: config.displayName,
+        hasUrl: !!this.webhookUrl,
+        hasSigned: !!this.secret,
+      },
+      'Webhook integration initialized'
+    );
   }
 
   async start(): Promise<void> {

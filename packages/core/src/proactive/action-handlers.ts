@@ -35,10 +35,13 @@ export async function executeMessageAction(
         await adapter.sendMessage('proactive', action.content);
         sent++;
       } catch (err) {
-        logger.warn({
-          platform: config.platform,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Failed to send proactive message via integration');
+        logger.warn(
+          {
+            platform: config.platform,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Failed to send proactive message via integration'
+        );
       }
     }
 
@@ -144,10 +147,13 @@ export async function executeExecuteAction(
 
   // Execute action delegates to sub-agent system
   // For safety, we log the request rather than auto-executing
-  logger.info({
-    taskName: action.taskName,
-    agentProfile: action.agentProfile,
-  }, 'Proactive execute action requested');
+  logger.info(
+    {
+      taskName: action.taskName,
+      agentProfile: action.agentProfile,
+    },
+    'Proactive execute action requested'
+  );
 
   return {
     success: true,
@@ -171,10 +177,13 @@ export async function executeLearnAction(
       action.importance ?? 0.6
     );
 
-    logger.info({
-      category: action.category,
-      memoryType: action.memoryType,
-    }, 'Proactive learn action stored');
+    logger.info(
+      {
+        category: action.category,
+        memoryType: action.memoryType,
+      },
+      'Proactive learn action stored'
+    );
     return { success: true, message: 'Knowledge stored in memory' };
   } catch (err) {
     return {

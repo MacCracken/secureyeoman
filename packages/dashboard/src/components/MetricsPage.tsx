@@ -172,7 +172,7 @@ interface MetricsPageProps {
 export function MetricsPage({ metrics, health }: MetricsPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (['control', 'costs', 'full', 'analytics'] as Tab[]).includes(
-    searchParams.get('tab') as Tab,
+    searchParams.get('tab') as Tab
   )
     ? (searchParams.get('tab') as Tab)
     : 'control';
@@ -1459,11 +1459,14 @@ function MissionControlTab({
   const sorted = [...cardLayouts]
     .map((c) => {
       // Auto-reveal The Entity when personality is active
-      if (c.id === 'the-entity' && entityPersonalityActive && !c.visible) return { ...c, visible: true };
+      if (c.id === 'the-entity' && entityPersonalityActive && !c.visible)
+        return { ...c, visible: true };
       // Hide The Entity when personality is not installed
-      if (c.id === 'the-entity' && !hasEntityPersonality && c.visible) return { ...c, visible: false };
+      if (c.id === 'the-entity' && !hasEntityPersonality && c.visible)
+        return { ...c, visible: false };
       // Hide BullShift when tools are disabled
-      if (c.id === 'bullshift-stream' && !bullshiftEnabled && c.visible) return { ...c, visible: false };
+      if (c.id === 'bullshift-stream' && !bullshiftEnabled && c.visible)
+        return { ...c, visible: false };
       return c;
     })
     .sort((a, b) => a.order - b.order);

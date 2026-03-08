@@ -90,9 +90,12 @@ export class LinearIntegration implements WebhookIntegration {
       const issue = body.data?.issueCreate?.issue;
       return issue?.identifier ?? issue?.id ?? `linear_${Date.now()}`;
     } catch (err) {
-      this.logger?.warn({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Linear sendMessage error');
+      this.logger?.warn(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Linear sendMessage error'
+      );
       return 'linear_error';
     }
   }
@@ -176,9 +179,12 @@ export class LinearIntegration implements WebhookIntegration {
       };
       await this.deps.onMessage(unified);
     } catch (err) {
-      this.logger?.warn({
-        error: err instanceof Error ? err.message : String(err),
-      }, 'Linear webhook parse error');
+      this.logger?.warn(
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'Linear webhook parse error'
+      );
     }
   }
 

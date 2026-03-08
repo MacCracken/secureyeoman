@@ -462,12 +462,12 @@ describe('executeExecuteAction', () => {
     await executeExecuteAction(action, makeDeps());
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-{
-      taskName: 'analyze-logs',
-      agentProfile: 'ops',
-    },
-'Proactive execute action requested'
-);
+      {
+        taskName: 'analyze-logs',
+        agentProfile: 'ops',
+      },
+      'Proactive execute action requested'
+    );
   });
 
   it('works without agentProfile', async () => {

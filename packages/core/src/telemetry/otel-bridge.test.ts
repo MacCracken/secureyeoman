@@ -41,12 +41,9 @@ describe('otel-bridge', () => {
 
   describe('startCrossServiceSpan', () => {
     it('creates span and enriches headers', () => {
-      const result = startCrossServiceSpan(
-        'secureyeoman',
-        'agnostic:health',
-        'agnostic',
-        { 'Content-Type': 'application/json' }
-      );
+      const result = startCrossServiceSpan('secureyeoman', 'agnostic:health', 'agnostic', {
+        'Content-Type': 'application/json',
+      });
       expect(result.span).toBeTruthy();
       expect(result.headers['Content-Type']).toBe('application/json');
       result.span.end();
@@ -77,10 +74,13 @@ describe('otel-bridge', () => {
     });
 
     it('records error status on non-ok response', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: false,
-        status: 503,
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 503,
+        })
+      );
 
       const res = await tracedFetch(
         'secureyeoman',
@@ -121,10 +121,7 @@ describe('otel-bridge', () => {
 
       const res = await bridge.fetchAgnostic('/health', 'http://localhost:8000');
       expect(res.ok).toBe(true);
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'http://localhost:8000/health',
-        expect.anything()
-      );
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:8000/health', expect.anything());
     });
 
     it('getTraceHeaders returns headers object', () => {
@@ -142,11 +139,7 @@ describe('otel-bridge', () => {
         { logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() } as any }
       );
 
-      const result = await bridge.withCrossProjectSpan(
-        'test-op',
-        'agnostic',
-        async () => 'done'
-      );
+      const result = await bridge.withCrossProjectSpan('test-op', 'agnostic', async () => 'done');
       expect(result).toBe('done');
     });
 

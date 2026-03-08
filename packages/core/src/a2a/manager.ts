@@ -67,10 +67,13 @@ export class A2AManager {
       });
     }
 
-    this.deps.logger.debug({
-      peerCount: peers.length,
-      discoveryMethod: this.config.discoveryMethod,
-    }, 'A2AManager initialized');
+    this.deps.logger.debug(
+      {
+        peerCount: peers.length,
+        discoveryMethod: this.config.discoveryMethod,
+      },
+      'A2AManager initialized'
+    );
   }
 
   // ── Peer management ────────────────────────────────────────────
@@ -232,10 +235,13 @@ export class A2AManager {
       }
     }
 
-    this.deps.logger.info({
-      method: this.config.discoveryMethod,
-      newPeersFound: newPeers.length,
-    }, 'A2A discovery completed');
+    this.deps.logger.info(
+      {
+        method: this.config.discoveryMethod,
+        newPeersFound: newPeers.length,
+      },
+      'A2A discovery completed'
+    );
 
     return newPeers;
   }
@@ -260,10 +266,13 @@ export class A2AManager {
 
     const sent = await this.deps.transport.send(peer, message);
     if (!sent) {
-      this.deps.logger.warn({
-        peerId,
-        messageId: message.id,
-      }, 'Failed to delegate task to peer');
+      this.deps.logger.warn(
+        {
+          peerId,
+          messageId: message.id,
+        },
+        'Failed to delegate task to peer'
+      );
       return null;
     }
 
@@ -380,11 +389,14 @@ export class A2AManager {
 
         if (missed >= MAX_MISSED_HEARTBEATS) {
           await this.deps.storage.updatePeer(peer.id, { status: 'offline' });
-          this.deps.logger.warn({
-            peerId: peer.id,
-            peerName: peer.name,
-            missedCount: missed,
-          }, 'Peer marked offline after missed heartbeats');
+          this.deps.logger.warn(
+            {
+              peerId: peer.id,
+              peerName: peer.name,
+              missedCount: missed,
+            },
+            'Peer marked offline after missed heartbeats'
+          );
         }
       }
     }

@@ -437,7 +437,11 @@ describe('aggregateResults', () => {
       {
         provider: 'brave' as SearchProviderName,
         results: [
-          { title: 'Example Page', url: 'https://example.com/', snippet: 'A longer snippet from Brave search' },
+          {
+            title: 'Example Page',
+            url: 'https://example.com/',
+            snippet: 'A longer snippet from Brave search',
+          },
         ],
       },
     ];
@@ -465,9 +469,7 @@ describe('aggregateResults', () => {
       },
       {
         provider: 'tavily' as SearchProviderName,
-        results: [
-          { title: 'Shared', url: 'https://shared.com', snippet: 'Tavily version' },
-        ],
+        results: [{ title: 'Shared', url: 'https://shared.com', snippet: 'Tavily version' }],
       },
     ];
 
@@ -537,9 +539,7 @@ describe('searchBing', () => {
       ok: true,
       json: vi.fn().mockResolvedValue({
         webPages: {
-          value: [
-            { name: 'Bing Result', url: 'https://bing.com', snippet: 'Found via Bing' },
-          ],
+          value: [{ name: 'Bing Result', url: 'https://bing.com', snippet: 'Found via Bing' }],
         },
       }),
     } as unknown as Response);
@@ -570,9 +570,7 @@ describe('searchExa', () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue({
-        results: [
-          { title: 'Exa Result', url: 'https://exa.ai', text: 'Neural search result' },
-        ],
+        results: [{ title: 'Exa Result', url: 'https://exa.ai', text: 'Neural search result' }],
       }),
     } as unknown as Response);
 
@@ -619,8 +617,8 @@ describe('searchSearxng', () => {
     expect(results[0]!.snippet).toBe('Self-hosted search');
 
     const fetchCall = vi.mocked(fetch).mock.calls[0]!;
-    expect((fetchCall[0] as string)).toContain('localhost:8080/search');
-    expect((fetchCall[0] as string)).toContain('format=json');
+    expect(fetchCall[0] as string).toContain('localhost:8080/search');
+    expect(fetchCall[0] as string).toContain('format=json');
   });
 
   it('strips trailing slash from base URL', async () => {
@@ -631,7 +629,7 @@ describe('searchSearxng', () => {
 
     await searchSearxng('test', 'http://localhost:8080/', 5);
     const fetchCall = vi.mocked(fetch).mock.calls[0]!;
-    expect((fetchCall[0] as string)).not.toContain('//search');
+    expect(fetchCall[0] as string).not.toContain('//search');
   });
 });
 
@@ -673,9 +671,7 @@ describe('searchViaMcpServer', () => {
           {
             type: 'text',
             text: JSON.stringify({
-              results: [
-                { title: 'Nested', url: 'https://nested.com', snippet: 'Nested result' },
-              ],
+              results: [{ title: 'Nested', url: 'https://nested.com', snippet: 'Nested result' }],
             }),
           },
         ],

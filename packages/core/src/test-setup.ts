@@ -66,15 +66,17 @@ export async function truncateAllTables(): Promise<void> {
   );
 
   if (res.rows.length > 0) {
-    const tableList = res.rows.map((r) => {
-      // full_name is "schema"."table" — validate both parts
-      const parts = r.full_name.replace(/"/g, '').split('.');
-      const schema = parts[0] ?? '';
-      const table = parts[1] ?? '';
-      assertSafeIdentifier(schema);
-      assertSafeIdentifier(table);
-      return r.full_name;
-    }).join(', ');
+    const tableList = res.rows
+      .map((r) => {
+        // full_name is "schema"."table" — validate both parts
+        const parts = r.full_name.replace(/"/g, '').split('.');
+        const schema = parts[0] ?? '';
+        const table = parts[1] ?? '';
+        assertSafeIdentifier(schema);
+        assertSafeIdentifier(table);
+        return r.full_name;
+      })
+      .join(', ');
     await pool.query(`TRUNCATE ${tableList} CASCADE`);
   }
 
@@ -86,11 +88,13 @@ export async function truncateAllTables(): Promise<void> {
      WHERE schemaname = 'public' AND tablename != 'schema_migrations'`
   );
   if (publicRes.rows.length > 0) {
-    const pubList = publicRes.rows.map((r) => {
-      const tableName = r.full_name.replace(/^public\."(.+)"$/, '$1');
-      assertSafeIdentifier(tableName);
-      return r.full_name;
-    }).join(', ');
+    const pubList = publicRes.rows
+      .map((r) => {
+        const tableName = r.full_name.replace(/^public\."(.+)"$/, '$1');
+        assertSafeIdentifier(tableName);
+        return r.full_name;
+      })
+      .join(', ');
     await pool.query(`TRUNCATE ${pubList} CASCADE`);
   }
 

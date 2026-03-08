@@ -53,8 +53,7 @@ export function registerJiraTools(
   // ── jira_create_issue ──────────────────────────────────────
   registerApiProxyTool(server, client, middleware, {
     name: 'jira_create_issue',
-    description:
-      'Create a new Jira issue. Returns the created issue key and ID.',
+    description: 'Create a new Jira issue. Returns the created issue key and ID.',
     inputSchema: {
       projectKey: z.string().describe('Project key (e.g. "PROJ")'),
       summary: z.string().describe('Issue summary / title'),
@@ -66,14 +65,8 @@ export function registerJiraTools(
         .string()
         .optional()
         .describe('Issue description (plain text or Atlassian Document Format)'),
-      assignee: z
-        .string()
-        .optional()
-        .describe('Assignee account ID or email'),
-      priority: z
-        .string()
-        .optional()
-        .describe('Priority name (e.g. "High", "Medium", "Low")'),
+      assignee: z.string().optional().describe('Assignee account ID or email'),
+      priority: z.string().optional().describe('Priority name (e.g. "High", "Medium", "Low")'),
     },
     method: 'post',
     buildPath: () => '/api/v1/integrations/jira/issues',
@@ -96,14 +89,8 @@ export function registerJiraTools(
       issueKey: z.string().describe('Jira issue key (e.g. "PROJ-123")'),
       summary: z.string().optional().describe('New issue summary'),
       description: z.string().optional().describe('New issue description'),
-      assignee: z
-        .string()
-        .optional()
-        .describe('New assignee account ID or email'),
-      priority: z
-        .string()
-        .optional()
-        .describe('New priority name (e.g. "High", "Medium", "Low")'),
+      assignee: z.string().optional().describe('New assignee account ID or email'),
+      priority: z.string().optional().describe('New priority name (e.g. "High", "Medium", "Low")'),
     },
     method: 'put',
     buildPath: (args) => `/api/v1/integrations/jira/issues/${args.issueKey}`,
@@ -119,8 +106,7 @@ export function registerJiraTools(
   // ── jira_create_comment ────────────────────────────────────
   registerApiProxyTool(server, client, middleware, {
     name: 'jira_create_comment',
-    description:
-      'Add a comment to a Jira issue. Returns the created comment with its ID.',
+    description: 'Add a comment to a Jira issue. Returns the created comment with its ID.',
     inputSchema: {
       issueKey: z.string().describe('Jira issue key (e.g. "PROJ-123")'),
       body: z.string().describe('Comment text'),

@@ -46,8 +46,7 @@ export function registerNotionTools(
   // ── notion_get_page ────────────────────────────────────────
   registerApiProxyTool(server, client, middleware, {
     name: 'notion_get_page',
-    description:
-      'Retrieve a Notion page by its ID. Returns the page properties and metadata.',
+    description: 'Retrieve a Notion page by its ID. Returns the page properties and metadata.',
     inputSchema: {
       pageId: z.string().describe('Notion page ID (UUID)'),
     },
@@ -57,8 +56,7 @@ export function registerNotionTools(
   // ── notion_create_page ─────────────────────────────────────
   registerApiProxyTool(server, client, middleware, {
     name: 'notion_create_page',
-    description:
-      'Create a new page in a Notion database. Returns the created page with its ID.',
+    description: 'Create a new page in a Notion database. Returns the created page with its ID.',
     inputSchema: {
       parentDatabaseId: z.string().describe('Parent database ID to create the page in'),
       title: z.string().describe('Page title'),
@@ -79,13 +77,10 @@ export function registerNotionTools(
   // ── notion_update_page ─────────────────────────────────────
   registerApiProxyTool(server, client, middleware, {
     name: 'notion_update_page',
-    description:
-      'Update properties of an existing Notion page. Returns the updated page.',
+    description: 'Update properties of an existing Notion page. Returns the updated page.',
     inputSchema: {
       pageId: z.string().describe('Notion page ID (UUID)'),
-      properties: z
-        .string()
-        .describe('Page properties to update as a JSON object string'),
+      properties: z.string().describe('Page properties to update as a JSON object string'),
     },
     method: 'put',
     buildPath: (args) => `/api/v1/integrations/notion/pages/${args.pageId}`,
@@ -109,13 +104,10 @@ export function registerNotionTools(
   // ── notion_append_blocks ───────────────────────────────────
   registerApiProxyTool(server, client, middleware, {
     name: 'notion_append_blocks',
-    description:
-      'Append content blocks to a Notion page. Returns the appended block objects.',
+    description: 'Append content blocks to a Notion page. Returns the appended block objects.',
     inputSchema: {
       pageId: z.string().describe('Notion page ID (UUID)'),
-      children: z
-        .string()
-        .describe('JSON array of Notion block objects to append'),
+      children: z.string().describe('JSON array of Notion block objects to append'),
     },
     method: 'post',
     buildPath: (args) => `/api/v1/integrations/notion/pages/${args.pageId}/blocks`,
@@ -132,14 +124,8 @@ export function registerNotionTools(
       'Query a Notion database with optional filters and sorts. Returns matching pages from the database.',
     inputSchema: {
       databaseId: z.string().describe('Notion database ID (UUID)'),
-      filter: z
-        .string()
-        .optional()
-        .describe('Notion filter object as a JSON string'),
-      sorts: z
-        .string()
-        .optional()
-        .describe('Notion sorts array as a JSON string'),
+      filter: z.string().optional().describe('Notion filter object as a JSON string'),
+      sorts: z.string().optional().describe('Notion sorts array as a JSON string'),
       pageSize: z
         .number()
         .int()

@@ -164,12 +164,15 @@ export class ResponseGuard {
 
         findings.push({ patternName: name, severity, snippet });
 
-        this.getLogger().warn({
-          ...context,
-          patternName: name,
-          severity,
-          snippet: snippet.slice(0, 60),
-        }, 'ResponseGuard finding');
+        this.getLogger().warn(
+          {
+            ...context,
+            patternName: name,
+            severity,
+            snippet: snippet.slice(0, 60),
+          },
+          'ResponseGuard finding'
+        );
       }
     }
 
@@ -241,10 +244,13 @@ export class ResponseGuard {
     }
 
     if (warnings.length > 0) {
-      this.getLogger().warn({
-        warningCount: warnings.length,
-        warnings: warnings.map((w) => w.type),
-      }, 'ResponseGuard brain consistency warnings');
+      this.getLogger().warn(
+        {
+          warningCount: warnings.length,
+          warnings: warnings.map((w) => w.type),
+        },
+        'ResponseGuard brain consistency warnings'
+      );
     }
 
     return warnings;
@@ -283,10 +289,13 @@ export class ResponseGuard {
     let redacted = responseText;
     if (hasLeak) {
       redacted = redactMatchingTrigrams(responseText, systemTrigrams);
-      this.getLogger().warn({
-        overlapRatio: overlapRatio.toFixed(3),
-        threshold: this.systemPromptLeakThreshold,
-      }, 'System prompt leak detected in response');
+      this.getLogger().warn(
+        {
+          overlapRatio: overlapRatio.toFixed(3),
+          threshold: this.systemPromptLeakThreshold,
+        },
+        'System prompt leak detected in response'
+      );
     }
 
     return { hasLeak, overlapRatio, redacted };

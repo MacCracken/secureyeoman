@@ -108,10 +108,13 @@ export class ResponsibleAiManager {
   // ── Cohort Error Analysis ───────────────────────────────────────
 
   async runCohortAnalysis(opts: CohortAnalysisCreate): Promise<CohortAnalysis> {
-    this.logger.info({
-      evalRunId: opts.evalRunId,
-      dimension: opts.dimension,
-    }, 'Running cohort error analysis');
+    this.logger.info(
+      {
+        evalRunId: opts.evalRunId,
+        dimension: opts.dimension,
+      },
+      'Running cohort error analysis'
+    );
 
     const rows = await this.loadEvalScores(opts.evalRunId);
     if (rows.length === 0) {
@@ -177,10 +180,13 @@ export class ResponsibleAiManager {
   // ── Fairness Metrics ────────────────────────────────────────────
 
   async computeFairnessReport(opts: FairnessReportCreate): Promise<FairnessReport> {
-    this.logger.info({
-      evalRunId: opts.evalRunId,
-      protectedAttribute: opts.protectedAttribute,
-    }, 'Computing fairness metrics');
+    this.logger.info(
+      {
+        evalRunId: opts.evalRunId,
+        protectedAttribute: opts.protectedAttribute,
+      },
+      'Computing fairness metrics'
+    );
 
     const rows = await this.loadEvalScores(opts.evalRunId);
     if (rows.length === 0) {
@@ -248,11 +254,14 @@ export class ResponsibleAiManager {
     };
 
     await this.storage.insertFairnessReport(report);
-    this.logger.info({
-      id: report.id,
-      disparateImpact: disparateImpactRatio,
-      passes: report.passesThreshold,
-    }, 'Fairness report complete');
+    this.logger.info(
+      {
+        id: report.id,
+        disparateImpact: disparateImpactRatio,
+        passes: report.passesThreshold,
+      },
+      'Fairness report complete'
+    );
     return report;
   }
 
@@ -321,10 +330,13 @@ export class ResponsibleAiManager {
     };
 
     await this.storage.insertShapExplanation(explanation);
-    this.logger.info({
-      id: explanation.id,
-      tokenCount: attributions.length,
-    }, 'SHAP explanation complete');
+    this.logger.info(
+      {
+        id: explanation.id,
+        tokenCount: attributions.length,
+      },
+      'SHAP explanation complete'
+    );
     return explanation;
   }
 
@@ -373,10 +385,13 @@ export class ResponsibleAiManager {
    * from existing records to populate the card.
    */
   async generateModelCard(opts: ModelCardCreate): Promise<ModelCard> {
-    this.logger.info({
-      personalityId: opts.personalityId,
-      modelName: opts.modelName,
-    }, 'Generating model card');
+    this.logger.info(
+      {
+        personalityId: opts.personalityId,
+        modelName: opts.modelName,
+      },
+      'Generating model card'
+    );
 
     const now = Date.now();
     const card: ModelCard = {

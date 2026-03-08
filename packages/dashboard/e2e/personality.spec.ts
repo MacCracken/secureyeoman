@@ -29,9 +29,9 @@ test.describe('Personality page', () => {
   test('displays personality list or empty state', async ({ page }) => {
     await page.goto('/personality');
     // Either shows personality cards or an empty state message
-    const content = page.locator(
-      '[data-testid="personality-list"], .card, [class*="empty"], [class*="grid"]',
-    ).first();
+    const content = page
+      .locator('[data-testid="personality-list"], .card, [class*="empty"], [class*="grid"]')
+      .first();
     await expect(content).toBeVisible({ timeout: 10000 });
   });
 

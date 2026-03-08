@@ -55,16 +55,22 @@ export class KvCacheWarmer {
         return false;
       }
 
-      this.deps.logger.info({
-        model,
-        keepAlive: this.deps.config.keepAlive,
-      }, 'KV cache warmed successfully');
+      this.deps.logger.info(
+        {
+          model,
+          keepAlive: this.deps.config.keepAlive,
+        },
+        'KV cache warmed successfully'
+      );
       return true;
     } catch (err) {
-      this.deps.logger.warn({
-        model,
-        error: err instanceof Error ? err.message : String(err),
-      }, 'KV cache warmup error');
+      this.deps.logger.warn(
+        {
+          model,
+          error: err instanceof Error ? err.message : String(err),
+        },
+        'KV cache warmup error'
+      );
       return false;
     }
   }

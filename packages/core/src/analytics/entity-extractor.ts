@@ -76,10 +76,13 @@ export class EntityExtractor {
 
         extracted++;
       } catch (err) {
-        this.logger.warn({
-          conversationId: conv.id,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'EntityExtractor: failed to extract');
+        this.logger.warn(
+          {
+            conversationId: conv.id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'EntityExtractor: failed to extract'
+        );
       }
     }
 
@@ -136,9 +139,12 @@ export class EntityExtractor {
     if (this.intervalHandle) return;
     this.intervalHandle = setInterval(() => {
       void this.extractNew().catch((err: unknown) => {
-        this.logger.error({
-          error: err instanceof Error ? err.message : String(err),
-        }, 'EntityExtractor: interval error');
+        this.logger.error(
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'EntityExtractor: interval error'
+        );
       });
     }, EXTRACT_INTERVAL_MS);
   }

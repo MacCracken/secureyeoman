@@ -173,10 +173,13 @@ export class ReconsolidationManager {
       return decision;
     } catch (err) {
       this.stats.errors++;
-      this.deps.logger.warn({
-        memoryId: memory.id,
-        error: String(err),
-      }, 'Reconsolidation evaluation failed');
+      this.deps.logger.warn(
+        {
+          memoryId: memory.id,
+          error: String(err),
+        },
+        'Reconsolidation evaluation failed'
+      );
       return null;
     }
   }
@@ -192,10 +195,13 @@ export class ReconsolidationManager {
         await this.deps.storage.updateMemory(memoryId, {
           content: decision.updatedContent,
         });
-        this.deps.logger.info({
-          memoryId,
-          reasoning: decision.reasoning,
-        }, 'Memory reconsolidated (update)');
+        this.deps.logger.info(
+          {
+            memoryId,
+            reasoning: decision.reasoning,
+          },
+          'Memory reconsolidated (update)'
+        );
       } else if (decision.action === 'split' && decision.splitContents?.length) {
         // Get the original memory to preserve metadata
         const original = await this.deps.storage.getMemory(memoryId);
@@ -217,18 +223,24 @@ export class ReconsolidationManager {
 
         // Delete the original
         await this.deps.storage.deleteMemory(memoryId);
-        this.deps.logger.info({
-          memoryId,
-          splitCount: decision.splitContents.length,
-          reasoning: decision.reasoning,
-        }, 'Memory reconsolidated (split)');
+        this.deps.logger.info(
+          {
+            memoryId,
+            splitCount: decision.splitContents.length,
+            reasoning: decision.reasoning,
+          },
+          'Memory reconsolidated (split)'
+        );
       }
     } catch (err) {
-      this.deps.logger.warn({
-        memoryId,
-        action: decision.action,
-        error: String(err),
-      }, 'Failed to apply reconsolidation');
+      this.deps.logger.warn(
+        {
+          memoryId,
+          action: decision.action,
+          error: String(err),
+        },
+        'Failed to apply reconsolidation'
+      );
     }
   }
 

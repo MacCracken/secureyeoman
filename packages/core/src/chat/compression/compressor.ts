@@ -211,11 +211,14 @@ export class HistoryCompressor {
         await this.storage.sealEntry(msg.id);
       }
 
-      this.logger.debug({
-        conversationId,
-        messages: unsealedMessages.length,
-        summaryTokens: tokenCount,
-      }, 'Topic compressed');
+      this.logger.debug(
+        {
+          conversationId,
+          messages: unsealedMessages.length,
+          summaryTokens: tokenCount,
+        },
+        'Topic compressed'
+      );
     } catch (err) {
       this.logger.warn({ error: String(err) }, 'Topic compression failed');
     }
@@ -272,11 +275,14 @@ export class HistoryCompressor {
         await this.storage.sealEntry(topic.id);
       }
 
-      this.logger.debug({
-        conversationId,
-        topics: batch.length,
-        summaryTokens: tokenCount,
-      }, 'Bulk summary created');
+      this.logger.debug(
+        {
+          conversationId,
+          topics: batch.length,
+          summaryTokens: tokenCount,
+        },
+        'Bulk summary created'
+      );
     } catch (err) {
       this.logger.warn({ error: String(err) }, 'Bulk escalation failed');
     }

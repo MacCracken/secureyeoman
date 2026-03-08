@@ -67,12 +67,24 @@ Split the monolithic `001_baseline.sql` into tier-separated baselines so the dat
 - **`agnosticos` service** (`docker-compose.yml`): Added agnosticos container under `agnos` profile. LLM Gateway on :8088 (OpenAI-compatible), Agent Runtime on :8090. Environment variables wired to core and MCP services.
 - **Dev workflow**: `docker compose --env-file .env.dev --profile dev --profile agnos up -d` brings up the full stack including AGNOS.
 
-### CI & Infrastructure
+### CI & Release Pipeline
 
-- **GitHub Actions workflow** (`.github/workflows/ci.yml`): Expanded CI pipeline with improved test stages and workflow reliability.
+- **CI workflow slimmed** (`.github/workflows/ci.yml`): Removed build, docker-build, and docker-push jobs — CI is now lint, typecheck, tests, security audit, and Helm lint only. Build and Docker are handled by the release workflow.
+- **Release workflow** (`.github/workflows/release-binary.yml`): Added `workflow_dispatch` with version/prerelease inputs, CI gate via `workflow_call`, concurrency group, auto-generated release notes with binary table and verification instructions, Sigstore cosign signing, SLSA provenance attestations.
+- **CI gate permissions fix**: Removed `docker-push` job (with `packages: write`) from CI to unblock `workflow_call` reuse — nested job permissions must be subset of caller permissions.
+- **Workspace package resolution**: All workspace packages (`@secureyeoman/shared`, `@secureyeoman/mcp`, `@secureyeoman/core`) now export source `.ts` files instead of `dist/`. Eliminates build-before-test requirement in CI.
+- **npm audit overrides**: Scoped `undici@6.23.0` override to `@discordjs/rest` and `discord.js` only (prevents breaking jsdom). Added `dompurify@3.3.2` and `nanoid@5.1.6` overrides for audit compliance.
+
+### Type & Lint Fixes
+
+- **36 ESLint errors fixed**: `Array<T>` → `T[]` syntax (7 files), `no-confusing-void-expression` (6 files), `use-unknown-in-catch-callback-variable` (3 files), unnecessary type assertions (4 files), misused spread, optional chain preference, dashboard e2e files excluded from root lint config.
+- **8 TypeScript errors fixed**: `auth-middleware.ts` cert CN type narrowing (`string | string[]`), `crypto-pool.ts` worker error callback typing, `core-client.ts` undici Agent/Dispatcher mismatch (`any` escape hatch).
+- **RBAC storage defensive guards**: `getAllRoleDefinitions()` and `listActiveAssignments()` catch `42P01` (relation missing) and return empty arrays instead of crashing during startup before migrations run.
 
 ### Bug Fixes
 
+- **Migration runner**: All baseline migrations (001–003) now always run regardless of license tier. Full schema must be present for startup — tier gating is at the route level via `requiresLicense()`.
+- **Dashboard Blob test**: `exportPersonality` test uses duck-type check instead of `toBeInstanceOf(Blob)` to avoid jsdom/Node 22 Blob class mismatch.
 - **Personality storage** (`soul/storage.ts`, `soul/manager.ts`): Fixes to personality CRUD operations and default personality handling.
 - **Marketplace manager** (`marketplace/manager.ts`, `marketplace/storage.ts`): Fixes to community sync result reporting and skill counting.
 - **Test stability**: Fixed ~20 test files across core and dashboard for assertion accuracy, mock correctness, and flaky test elimination.

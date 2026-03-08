@@ -744,7 +744,9 @@ describe('PersonalityEditor — default personality toggle', () => {
 // ── Org Intent toggle in Brain section ──────────────────────────────
 
 describe('PersonalityEditor — Organizational Intent toggle', () => {
-  it.todo('Org Intent shows not-enabled state when allowIntentEditor is off — needs collapsible section test fix');
+  it.todo(
+    'Org Intent shows not-enabled state when allowIntentEditor is off — needs collapsible section test fix'
+  );
 
   it('Org Intent toggle is enabled when both allowOrgIntent and exposeOrgIntentTools are true', async () => {
     mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
@@ -906,7 +908,6 @@ describe('PersonalityEditor — delete button', () => {
     );
     expect(deleteBtn).toBeDisabled();
   });
-
 });
 
 describe('PersonalityEditor — Disposition', () => {

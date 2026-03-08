@@ -91,10 +91,13 @@ export class OutboundWebhookDispatcher {
   ): Promise<void> {
     // SSRF guard: block delivery to private/internal network addresses
     if (isPrivateUrl(wh.url)) {
-      this.logger.warn({
-        webhookId: wh.id,
-        url: wh.url,
-      }, 'OutboundWebhookDispatcher: blocked SSRF attempt');
+      this.logger.warn(
+        {
+          webhookId: wh.id,
+          url: wh.url,
+        },
+        'OutboundWebhookDispatcher: blocked SSRF attempt'
+      );
       return;
     }
 

@@ -55,10 +55,13 @@ export class KnowledgeGraphCoherenceChecker {
 
     const issuesFixed = issues.filter((i) => i.autoFixed).length;
 
-    this.logger.info({
-      issuesFound: issues.length,
-      issuesFixed,
-    }, 'Knowledge graph coherence check completed');
+    this.logger.info(
+      {
+        issuesFound: issues.length,
+        issuesFixed,
+      },
+      'Knowledge graph coherence check completed'
+    );
 
     return {
       issuesFound: issues.length,
@@ -86,10 +89,13 @@ export class KnowledgeGraphCoherenceChecker {
             content: entry.content, // no-op update to clear supersedes
           });
         } catch (err) {
-          this.logger.warn({
-            knowledgeId: entry.id,
-            error: String(err),
-          }, 'Failed to fix orphaned supersedes');
+          this.logger.warn(
+            {
+              knowledgeId: entry.id,
+              error: String(err),
+            },
+            'Failed to fix orphaned supersedes'
+          );
         }
       }
     }
@@ -122,10 +128,13 @@ export class KnowledgeGraphCoherenceChecker {
               content: entry.content,
             });
           } catch (err) {
-            this.logger.warn({
-              knowledgeId: entry.id,
-              error: String(err),
-            }, 'Failed to break circular supersession');
+            this.logger.warn(
+              {
+                knowledgeId: entry.id,
+                error: String(err),
+              },
+              'Failed to break circular supersession'
+            );
           }
           break;
         }
