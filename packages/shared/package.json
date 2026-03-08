@@ -9,12 +9,14 @@
     ".": {
       "types": "./src/index.ts",
       "source": "./src/index.ts",
+      "development": "./src/index.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./types": {
       "types": "./src/types/index.ts",
       "source": "./src/types/index.ts",
+      "development": "./src/types/index.ts",
       "import": "./dist/types/index.js",
       "default": "./dist/types/index.js"
     }

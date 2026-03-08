@@ -1,10 +1,12 @@
-# Dockerfile.dev — Node.js multi-stage build for local development
+# Dockerfile.dev — Node.js multi-stage build on AGNOS base
 #
-# Self-contained: no pre-built binary or Bun required.
+# Builder: node:22-alpine (compiles TypeScript)
+# Runtime: ghcr.io/maccracken/agnosticos:latest (LLM Gateway + Agent Runtime built-in)
+#
 # Used by docker-compose.yml for local docker compose up.
 #
 # For production deployments use the binary-based Dockerfile instead:
-#   npm run build:binary        # requires Bun
+#   npm run build:binary
 #   docker build -t secureyeoman .
 
 # ---- builder ----
@@ -30,14 +32,30 @@ COPY packages/ packages/
 RUN npm run build
 
 # ---- runtime ----
-FROM node:22-alpine
+FROM ghcr.io/maccracken/agnosticos:latest
 
-RUN apk add --no-cache git \
- && addgroup -S secureyeoman && adduser -S -G secureyeoman -h /home/secureyeoman secureyeoman \
+USER root
+
+# Install Node.js 22 on Debian bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    wget \
+    ca-certificates \
+    gnupg \
+ && mkdir -p /etc/apt/keyrings \
+ && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+    | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+ && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
+    > /etc/apt/sources.list.d/nodesource.list \
+ && apt-get update && apt-get install -y --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/* \
+ && groupadd -r secureyeoman && useradd -r -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
  && chown -R secureyeoman:secureyeoman /home/secureyeoman \
  && mkdir -p /usr/share/secureyeoman/community-repo \
- && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman
+ && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman \
+ && chown -R secureyeoman:agnos /run/agnos /var/lib/agnos /var/log/agnos /etc/agnos
 
 ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-repo
 
@@ -64,12 +82,16 @@ COPY --from=builder /app/packages/mcp/node_modules packages/mcp/node_modules/
 # dashboard (served by core gateway via @fastify/static)
 COPY --from=builder /app/packages/dashboard/dist packages/dashboard/dist/
 
-EXPOSE 18789
+# Combined entrypoint: starts AGNOS services then SecureYeoman
+COPY docker/entrypoint-combined.sh /usr/local/bin/entrypoint-combined.sh
+RUN chmod +x /usr/local/bin/entrypoint-combined.sh
+
+EXPOSE 18789 8088 8090
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD node /app/packages/core/dist/cli.js health --json || exit 1
 
 USER secureyeoman
 
-ENTRYPOINT ["node", "/app/packages/core/dist/cli.js"]
-CMD ["start"]
+ENTRYPOINT ["tini", "--", "/usr/local/bin/entrypoint-combined.sh"]
+CMD ["node", "/app/packages/core/dist/cli.js", "start"]

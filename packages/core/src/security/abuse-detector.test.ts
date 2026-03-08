@@ -74,15 +74,12 @@ describe('AbuseDetector — recordBlock()', () => {
   });
 
   it('resets blocked retry counter after cool-down is triggered', () => {
-    const { detector } = makeDetector({ blockedRetryLimit: 2, coolDownMs: 1 });
+    const { detector } = makeDetector({ blockedRetryLimit: 2, coolDownMs: 60_000 });
     detector.recordBlock('s3');
     detector.recordBlock('s3');
-    // After cool-down expires, should no longer be in cool-down after another block
-    // (counter was reset, so need 2 more blocks to re-trigger)
-    // Simulate expiry: internally we can't manipulate time here, just verify counter reset
-    // by checking that we'd need blockedRetryLimit blocks again
+    // Cool-down was triggered (2 blocks = blockedRetryLimit) and 60s hasn't elapsed
     const state = detector.check('s3');
-    expect(state.inCoolDown).toBe(true); // still in cool-down (coolDownMs=1ms so may expire)
+    expect(state.inCoolDown).toBe(true);
   });
 
   it('is a no-op when disabled', () => {

@@ -1,7 +1,7 @@
 name: secureyeoman
 
 services:
-  sy-pg:
+  postgres:
     image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: secureyeoman
@@ -19,7 +19,7 @@ services:
       start_period: 5s
     restart: unless-stopped
 
-  sy-core:
+  core:
     build:
       context: .
       dockerfile: Dockerfile.dev
@@ -36,7 +36,7 @@ services:
       SECUREYEOMAN_HOST: "0.0.0.0"
       NODE_ENV: production
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secureyeoman_dev}
-      DATABASE_HOST: sy-pg
+      DATABASE_HOST: postgres
       DATABASE_USER: secureyeoman
       DATABASE_NAME: secureyeoman
       # OAuth credentials loaded from env_file (.env.dev) — do not re-declare here
@@ -44,9 +44,9 @@ services:
       # OPA sidecar for Rego policy evaluation (Phase 50).
       # Unset to disable OPA; core falls back to natural-language rule matching.
       OPA_ADDR: ${OPA_ADDR:-}
-      # AGNOS integration — runs in-container (baked into agnosticos base image).
-      AGNOS_GATEWAY_URL: ${AGNOS_GATEWAY_URL:-http://127.0.0.1:8088}
-      AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://127.0.0.1:8090}
+      # AGNOS integration — points to agnosticos service when --profile agnos is active.
+      AGNOS_GATEWAY_URL: ${AGNOS_GATEWAY_URL:-http://agnosticos:8088}
+      AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://agnosticos:8090}
       AGNOS_GATEWAY_API_KEY: ${AGNOS_GATEWAY_API_KEY:-}
       AGNOS_RUNTIME_API_KEY: ${AGNOS_RUNTIME_API_KEY:-}
       # AGNOSTIC QA integration — points to agnostic service when --profile agnostic is active.
@@ -59,20 +59,15 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      sy-pg:
+      postgres:
         condition: service_healthy
-    profiles:
-      - dev
-      - full-dev
     restart: unless-stopped
 
   # MCP service uses the 'mcp-server' subcommand of the core binary/node process
-  sy-mcp:
+  mcp:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    # MCP sidecar doesn't need AGNOS — skip the combined entrypoint.
-    entrypoint: ["node", "/app/packages/core/dist/cli.js"]
     command: ["mcp-server"]
     ports:
       - "3001:3001"
@@ -86,7 +81,7 @@ services:
       MCP_TRANSPORT: "${MCP_TRANSPORT:-streamable-http}"
       MCP_AUTO_REGISTER: "${MCP_AUTO_REGISTER:-true}"
       # MCP_CORE_URL set via env_file (.env.dev) — defaults to http, override to https when TLS enabled
-      MCP_ADVERTISE_URL: "http://sy-mcp:3001"
+      MCP_ADVERTISE_URL: "http://mcp:3001"
       MCP_EXPOSE_FILESYSTEM: "${MCP_EXPOSE_FILESYSTEM:-false}"
       MCP_ALLOWED_PATHS: "${MCP_ALLOWED_PATHS:-}"
       MCP_RATE_LIMIT_PER_TOOL: "${MCP_RATE_LIMIT_PER_TOOL:-30}"
@@ -95,9 +90,8 @@ services:
       # Do NOT re-declare them here — environment: overrides env_file values,
       # and the ${VAR:-default} pattern would replace .env.dev's true with false.
       AGNOSTIC_URL: ${AGNOSTIC_URL:-http://agnostic:8000}
-      # Dev: points to sy-core. Prod: override to http://secureyeoman:8088 via env.
-      AGNOS_GATEWAY_URL: ${AGNOS_GATEWAY_URL:-http://sy-core:8088}
-      AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://sy-core:8090}
+      AGNOS_GATEWAY_URL: ${AGNOS_GATEWAY_URL:-http://agnosticos:8088}
+      AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://agnosticos:8090}
       NODE_ENV: production
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3001/health"]
@@ -106,62 +100,40 @@ services:
       retries: 3
       start_period: 10s
     depends_on:
-      sy-core:
+      core:
         condition: service_healthy
-        required: false
-      secureyeoman:
-        condition: service_healthy
-        required: false
     profiles:
       - mcp
       - full
       - full-dev
       - dev
-      - prod
     restart: unless-stopped
 
-  # --- Production services (--profile prod) ---
-  # Uses binary-based Dockerfile (requires: npm run build:binary first).
-  # Dashboard is served by core via @fastify/static — no separate dashboard service.
-
-  secureyeoman:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+  # AGNOS (agnosticos) — AI-Native General Operating System.
+  # Provides LLM Gateway (port 8088, OpenAI-compatible) and Agent Runtime (port 8090).
+  # For local dev build, use: agnos:latest
+  agnosticos:
+    image: ghcr.io/maccracken/agnosticos:latest
     ports:
-      - "18789:18789"
-    volumes:
-      - data:/home/secureyeoman/.secureyeoman
-      - community-repo:/usr/share/secureyeoman/community-repo
-      - ./certs:/app/certs:ro
-    env_file: .env.dev
+      - "8088:8088"
+      - "8090:8090"
     environment:
-      SECUREYEOMAN_HOST: "0.0.0.0"
-      NODE_ENV: production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secureyeoman_dev}
-      DATABASE_HOST: sy-pg
-      DATABASE_USER: secureyeoman
-      DATABASE_NAME: secureyeoman
-      OPA_ADDR: ${OPA_ADDR:-}
-      AGNOS_GATEWAY_URL: ${AGNOS_GATEWAY_URL:-http://127.0.0.1:8088}
-      AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://127.0.0.1:8090}
-      AGNOS_GATEWAY_API_KEY: ${AGNOS_GATEWAY_API_KEY:-}
-      AGNOS_RUNTIME_API_KEY: ${AGNOS_RUNTIME_API_KEY:-}
-      AGNOSTIC_URL: ${AGNOSTIC_URL:-http://agnostic:8000}
-      AGNOSTIC_API_KEY: ${AGNOSTIC_API_KEY:-}
+      AGNOS_LOG_FORMAT: "${AGNOS_LOG_FORMAT:-json}"
+      RUST_LOG: "${RUST_LOG:-info}"
+      AGNOS_RUNTIME_BIND: "0.0.0.0"
+      AGNOS_GATEWAY_BIND: "0.0.0.0"
+      AGNOS_RUNTIME_API_KEY: "${AGNOS_RUNTIME_API_KEY:-}"
+      AGNOS_GATEWAY_API_KEY: "${AGNOS_GATEWAY_API_KEY:-}"
     healthcheck:
-      test: ["CMD", "secureyeoman", "health", "--json"]
+      test: ["CMD", "curl", "-sf", "http://localhost:8088/v1/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 15s
-    depends_on:
-      sy-pg:
-        condition: service_healthy
+      start_period: 10s
     profiles:
-      - prod
+      - agnos
+      - full
+      - full-dev
     restart: unless-stopped
 
   # AGNOSTIC QA Platform — webgui with embedded Redis and SQLite.
@@ -194,37 +166,10 @@ services:
       - full-dev
     restart: unless-stopped
 
-  # AGNOS (agnosticos) — standalone AI-Native General Operating System container.
-  # Provides LLM Gateway (port 8088) and Agent Runtime (port 8090) as a separate service.
-  # Core already has AGNOS baked in; this is for full integration testing.
-  agnosticos:
-    image: ghcr.io/maccracken/agnosticos:latest
-    ports:
-      - "8088:8088"
-      - "8090:8090"
-    environment:
-      AGNOS_LOG_FORMAT: "${AGNOS_LOG_FORMAT:-json}"
-      RUST_LOG: "${RUST_LOG:-info}"
-      AGNOS_RUNTIME_BIND: "0.0.0.0"
-      AGNOS_GATEWAY_BIND: "0.0.0.0"
-      AGNOS_RUNTIME_API_KEY: "${AGNOS_RUNTIME_API_KEY:-}"
-      AGNOS_GATEWAY_API_KEY: "${AGNOS_GATEWAY_API_KEY:-}"
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8088/v1/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    profiles:
-      - agnos
-      - full
-      - full-dev
-    restart: unless-stopped
-
   # OPA sidecar — used by IntentManager for Rego policy evaluation (Phase 50).
   # Capabilities are restricted to block SSRF: http.send and net.lookup_ip_addr
   # are disabled before accepting user-authored Rego policies.
-  sy-opa:
+  opa:
     image: openpolicyagent/opa:1.14.0
     command:
       - "run"
@@ -244,12 +189,11 @@ services:
       - opa
       - full
       - full-dev
-      - prod
     restart: unless-stopped
 
   # Dashboard is now served by the core gateway (SPA serving via @fastify/static).
   # The separate dashboard service below is for local development only.
-  sy-dashboard-dev:
+  dashboard-dev:
     image: node:22-alpine
     working_dir: /app
     command: sh -c "npm install --ignore-scripts && npm run dev:dashboard"
@@ -266,7 +210,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "300"
     depends_on:
-      sy-core:
+      core:
         condition: service_healthy
     profiles:
       - dev

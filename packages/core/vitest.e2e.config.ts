@@ -13,7 +13,7 @@ const sqlRaw: Plugin = {
 export default defineConfig({
   plugins: [sqlRaw],
   resolve: {
-    conditions: ['source'],
+    conditions: ['source', 'development'],
   },
   test: {
     name: 'core:e2e',

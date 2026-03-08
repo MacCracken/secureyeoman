@@ -1,26 +1,30 @@
-# Dockerfile — Binary-based image (Phase 22)
+# Dockerfile — Binary-based image on AGNOS base
 #
-# Uses a pre-compiled Bun binary (~80 MB) instead of the multi-stage
-# Node.js build (~600 MB). Build the binary first with:
+# Uses ghcr.io/maccracken/agnosticos:latest as the base, giving SecureYeoman
+# built-in LLM Gateway (port 8088) and Agent Runtime (port 8090).
+#
+# Build the binary first with:
 #   npm run build:binary
 #
 # Then build this image:
 #   docker build -t secureyeoman .
 
-# Pin by digest for reproducible builds (debian:bookworm-slim as of 2026-03-05)
-FROM debian:bookworm-slim@sha256:74d56e3931e0d5a1dd51f8c8a2466d21de84a271cd3b5a733b803aa91abf4421
+FROM ghcr.io/maccracken/agnosticos:latest
 
 LABEL org.opencontainers.image.source="https://github.com/MacCracken/secureyeoman"
-LABEL org.opencontainers.image.description="SecureYeoman — Secure, local-first AI assistant"
+LABEL org.opencontainers.image.description="SecureYeoman — Secure, local-first AI assistant (on AGNOS)"
 LABEL org.opencontainers.image.licenses="MIT"
 
-RUN apt-get update && apt-get install -y --no-install-recommends git \
+USER root
+
+RUN apt-get update && apt-get install -y --no-install-recommends git wget \
  && rm -rf /var/lib/apt/lists/* \
- && groupadd -r secureyeoman && useradd -r -g secureyeoman -d /home/secureyeoman -m secureyeoman \
+ && groupadd -r secureyeoman && useradd -r -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
  && chown -R secureyeoman:secureyeoman /home/secureyeoman \
  && mkdir -p /usr/share/secureyeoman/community-repo \
- && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman
+ && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman \
+ && chown -R secureyeoman:agnos /run/agnos /var/lib/agnos /var/log/agnos /etc/agnos
 
 ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-repo
 
@@ -28,26 +32,22 @@ ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-repo
 COPY dist/secureyeoman-linux-x64 /usr/local/bin/secureyeoman
 RUN chmod +x /usr/local/bin/secureyeoman
 
-# SQL migration files — co-located with the binary so the compiled binary can
-# find them via dirname(process.execPath)/migrations/ at runtime.
-# (Bun's --assets flag for embedding into the virtual FS requires Bun >= 1.2.)
+# SQL migration files
 COPY dist/migrations/ /usr/local/bin/migrations/
 
-# Dashboard dist — served via @fastify/static from /usr/share/secureyeoman/dashboard.
-# Mount or COPY the dashboard build here, or set SECUREYEOMAN_DASHBOARD_DIST at runtime.
-# (Will be embeddable into the binary via --assets once Bun >= 1.2 is in use.)
+# Combined entrypoint: starts AGNOS services then SecureYeoman
+COPY docker/entrypoint-combined.sh /usr/local/bin/entrypoint-combined.sh
+RUN chmod +x /usr/local/bin/entrypoint-combined.sh
 
-# Use JSON log format in the binary image: pino-pretty is not bundled in the
-# standalone binary and is not installed in this lean image.
-# Set SECUREYEOMAN_LOG_FORMAT=pretty (with pino-pretty available) to override.
+# Use JSON log format (pino-pretty not bundled in standalone binary)
 ENV SECUREYEOMAN_LOG_FORMAT=json
 
-EXPOSE 18789
+EXPOSE 18789 8088 8090
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD secureyeoman health --json || exit 1
 
 USER secureyeoman
 
-ENTRYPOINT ["secureyeoman"]
-CMD ["start"]
+ENTRYPOINT ["tini", "--", "/usr/local/bin/entrypoint-combined.sh"]
+CMD ["secureyeoman", "start"]
