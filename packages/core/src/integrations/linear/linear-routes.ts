@@ -33,7 +33,7 @@ async function resolveLinearCredentials(
 
 interface LinearGraphQLResponse {
   data?: Record<string, unknown>;
-  errors?: Array<{ message: string }>;
+  errors?: { message: string }[];
 }
 
 async function linearGraphQL(
@@ -74,16 +74,23 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     }
 
     try {
-      const result = await linearGraphQL(creds.apiKey, `
+      const result = await linearGraphQL(
+        creds.apiKey,
+        `
         query {
           teams {
             nodes { id name key }
           }
         }
-      `);
+      `
+      );
 
       if (result.errors?.length) {
-        return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
+        return sendError(
+          reply,
+          502,
+          `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`
+        );
       }
 
       return reply.send(result.data?.teams);
@@ -105,7 +112,9 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
       const limit = Math.min(Math.max(Number(req.query.limit ?? 25), 1), 100);
 
       try {
-        const result = await linearGraphQL(creds.apiKey, `
+        const result = await linearGraphQL(
+          creds.apiKey,
+          `
           query IssueSearch($term: String!, $first: Int!) {
             issueSearch(term: $term, first: $first) {
               nodes {
@@ -118,10 +127,16 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
               }
             }
           }
-        `, { term: q, first: limit });
+        `,
+          { term: q, first: limit }
+        );
 
         if (result.errors?.length) {
-          return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
+          return sendError(
+            reply,
+            502,
+            `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`
+          );
         }
 
         return reply.send(result.data?.issueSearch);
@@ -132,22 +147,24 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
   );
 
   // GET /api/v1/integrations/linear/issues?teamId=&status=&assigneeId=&limit=
-  app.get<{ Querystring: { teamId?: string; status?: string; assigneeId?: string; limit?: string } }>(
-    '/api/v1/integrations/linear/issues',
-    async (req, reply) => {
-      const creds = await resolveLinearCredentials(integrationManager);
-      if (!creds) return sendError(reply, 404, 'No Linear integration configured.');
+  app.get<{
+    Querystring: { teamId?: string; status?: string; assigneeId?: string; limit?: string };
+  }>('/api/v1/integrations/linear/issues', async (req, reply) => {
+    const creds = await resolveLinearCredentials(integrationManager);
+    if (!creds) return sendError(reply, 404, 'No Linear integration configured.');
 
-      const limit = Math.min(Math.max(Number(req.query.limit ?? 25), 1), 100);
+    const limit = Math.min(Math.max(Number(req.query.limit ?? 25), 1), 100);
 
-      // Build filter object dynamically
-      const filter: Record<string, unknown> = {};
-      if (req.query.teamId) filter.team = { id: { eq: req.query.teamId } };
-      if (req.query.status) filter.state = { name: { eq: req.query.status } };
-      if (req.query.assigneeId) filter.assignee = { id: { eq: req.query.assigneeId } };
+    // Build filter object dynamically
+    const filter: Record<string, unknown> = {};
+    if (req.query.teamId) filter.team = { id: { eq: req.query.teamId } };
+    if (req.query.status) filter.state = { name: { eq: req.query.status } };
+    if (req.query.assigneeId) filter.assignee = { id: { eq: req.query.assigneeId } };
 
-      try {
-        const result = await linearGraphQL(creds.apiKey, `
+    try {
+      const result = await linearGraphQL(
+        creds.apiKey,
+        `
           query ListIssues($first: Int!, $filter: IssueFilter) {
             issues(first: $first, filter: $filter) {
               nodes {
@@ -163,21 +180,26 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
               }
             }
           }
-        `, {
+        `,
+        {
           first: limit,
           filter: Object.keys(filter).length > 0 ? filter : undefined,
-        });
-
-        if (result.errors?.length) {
-          return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
         }
+      );
 
-        return reply.send(result.data?.issues);
-      } catch (err) {
-        return sendError(reply, 500, `Linear API error: ${toErrorMessage(err)}`);
+      if (result.errors?.length) {
+        return sendError(
+          reply,
+          502,
+          `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`
+        );
       }
+
+      return reply.send(result.data?.issues);
+    } catch (err) {
+      return sendError(reply, 500, `Linear API error: ${toErrorMessage(err)}`);
     }
-  );
+  });
 
   // GET /api/v1/integrations/linear/issues/:issueId
   app.get<{ Params: { issueId: string } }>(
@@ -187,7 +209,9 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
       if (!creds) return sendError(reply, 404, 'No Linear integration configured.');
 
       try {
-        const result = await linearGraphQL(creds.apiKey, `
+        const result = await linearGraphQL(
+          creds.apiKey,
+          `
           query GetIssue($id: String!) {
             issue(id: $id) {
               id
@@ -204,10 +228,16 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
               url
             }
           }
-        `, { id: req.params.issueId });
+        `,
+          { id: req.params.issueId }
+        );
 
         if (result.errors?.length) {
-          return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
+          return sendError(
+            reply,
+            502,
+            `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`
+          );
         }
 
         return reply.send(result.data?.issue);
@@ -243,7 +273,9 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     if (labelIds !== undefined) input.labelIds = labelIds;
 
     try {
-      const result = await linearGraphQL(creds.apiKey, `
+      const result = await linearGraphQL(
+        creds.apiKey,
+        `
         mutation CreateIssue($input: IssueCreateInput!) {
           issueCreate(input: $input) {
             success
@@ -255,10 +287,16 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
             }
           }
         }
-      `, { input });
+      `,
+        { input }
+      );
 
       if (result.errors?.length) {
-        return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
+        return sendError(
+          reply,
+          502,
+          `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`
+        );
       }
 
       const createResult = result.data?.issueCreate as
@@ -303,7 +341,9 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     }
 
     try {
-      const result = await linearGraphQL(creds.apiKey, `
+      const result = await linearGraphQL(
+        creds.apiKey,
+        `
         mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
           issueUpdate(id: $id, input: $input) {
             success
@@ -315,10 +355,16 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
             }
           }
         }
-      `, { id: req.params.issueId, input });
+      `,
+        { id: req.params.issueId, input }
+      );
 
       if (result.errors?.length) {
-        return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
+        return sendError(
+          reply,
+          502,
+          `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`
+        );
       }
 
       const updateResult = result.data?.issueUpdate as
@@ -347,7 +393,9 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     if (!body) return sendError(reply, 400, '"body" is required.');
 
     try {
-      const result = await linearGraphQL(creds.apiKey, `
+      const result = await linearGraphQL(
+        creds.apiKey,
+        `
         mutation CreateComment($input: CommentCreateInput!) {
           commentCreate(input: $input) {
             success
@@ -359,10 +407,16 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
             }
           }
         }
-      `, { input: { issueId: req.params.issueId, body } });
+      `,
+        { input: { issueId: req.params.issueId, body } }
+      );
 
       if (result.errors?.length) {
-        return sendError(reply, 502, `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`);
+        return sendError(
+          reply,
+          502,
+          `Linear API error: ${result.errors?.[0]?.message ?? 'Unknown error'}`
+        );
       }
 
       const createResult = result.data?.commentCreate as

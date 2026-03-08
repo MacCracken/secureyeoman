@@ -41,7 +41,7 @@ function generateDemoData(): OhlcvPoint[] {
 // ── Data parsing ──────────────────────────────────────────────────
 
 function parseHistorical(res: MarketHistoricalResponse): OhlcvPoint[] | null {
-  const d = res.data as Record<string, unknown>;
+  const d = res.data;
 
   // AlphaVantage TIME_SERIES_DAILY format
   const timeSeries = (d['Time Series (Daily)'] ?? d['Time Series (Daily)']) as
@@ -62,7 +62,15 @@ function parseHistorical(res: MarketHistoricalResponse): OhlcvPoint[] | null {
   }
 
   // Finnhub candle format { c:[], h:[], l:[], o:[], t:[], v:[], s:"ok" }
-  const candle = d as { c?: number[]; h?: number[]; l?: number[]; o?: number[]; t?: number[]; v?: number[]; s?: string };
+  const candle = d as {
+    c?: number[];
+    h?: number[];
+    l?: number[];
+    o?: number[];
+    t?: number[];
+    v?: number[];
+    s?: string;
+  };
   if (candle.s === 'ok' && candle.c?.length) {
     return candle.c.map((close, i) => {
       const ts = (candle.t?.[i] ?? 0) * 1000;
@@ -90,7 +98,11 @@ export function TradingDashboardWidget({
   const [symbol, setSymbol] = useState('AAPL');
   const [searchInput, setSearchInput] = useState('AAPL');
 
-  const { data: historicalRes, isLoading, isError } = useQuery({
+  const {
+    data: historicalRes,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['market-historical', symbol],
     queryFn: () => fetchMarketHistorical(symbol, 60),
     staleTime: 5 * 60_000,
@@ -121,7 +133,9 @@ export function TradingDashboardWidget({
           <input
             type="text"
             value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              setSearchInput(e.target.value.toUpperCase());
+            }}
             className="border rounded px-2 py-1 text-sm w-24 bg-background"
             placeholder="Symbol"
           />

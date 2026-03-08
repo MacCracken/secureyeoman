@@ -104,13 +104,16 @@ export class TokenFederationService {
       .setJti(jti)
       .sign(this.secret);
 
-    this.logger?.info({
-      audience: request.audience,
-      subject: request.subject,
-      role: request.role,
-      ttl,
-      jti,
-    }, 'Federation token issued');
+    this.logger?.info(
+      {
+        audience: request.audience,
+        subject: request.subject,
+        role: request.role,
+        ttl,
+        jti,
+      },
+      'Federation token issued'
+    );
 
     return { token, expiresIn: ttl, expiresAt, audience: request.audience, jti };
   }
@@ -118,10 +121,7 @@ export class TokenFederationService {
   /**
    * Verify an inbound federation token (e.g., from AGNOSTIC calling back).
    */
-  async verifyToken(
-    token: string,
-    expectedAudience?: string
-  ): Promise<FederationTokenPayload> {
+  async verifyToken(token: string, expectedAudience?: string): Promise<FederationTokenPayload> {
     const { payload } = await jwtVerify(token, this.secret, {
       algorithms: ['HS256'],
       issuer: this.issuer,
@@ -136,7 +136,7 @@ export class TokenFederationService {
 
     return {
       sub: p.sub!,
-      aud: (Array.isArray(p.aud) ? p.aud[0] : p.aud) as string,
+      aud: (Array.isArray(p.aud) ? p.aud[0] : p.aud)!,
       iss: p.iss!,
       role: p.role as string,
       scopes: (p.scopes as string[]) ?? [],

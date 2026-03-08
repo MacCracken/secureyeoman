@@ -48,12 +48,10 @@ const DEMO_ALLOC: AllocationSlice[] = [
 // ── Data parsing ──────────────────────────────────────────────────
 
 function parseHistorical(res: MarketHistoricalResponse): OhlcvPoint[] | null {
-  const d = res.data as Record<string, unknown>;
+  const d = res.data;
 
   // AlphaVantage
-  const timeSeries = d['Time Series (Daily)'] as
-    | Record<string, Record<string, string>>
-    | undefined;
+  const timeSeries = d['Time Series (Daily)'] as Record<string, Record<string, string>> | undefined;
   if (timeSeries) {
     return Object.entries(timeSeries)
       .slice(0, 30)
@@ -69,7 +67,15 @@ function parseHistorical(res: MarketHistoricalResponse): OhlcvPoint[] | null {
   }
 
   // Finnhub
-  const candle = d as { c?: number[]; h?: number[]; l?: number[]; o?: number[]; t?: number[]; v?: number[]; s?: string };
+  const candle = d as {
+    c?: number[];
+    h?: number[];
+    l?: number[];
+    o?: number[];
+    t?: number[];
+    v?: number[];
+    s?: string;
+  };
   if (candle.s === 'ok' && candle.c?.length) {
     return candle.c.slice(-30).map((close, i, arr) => {
       const offset = candle.c!.length - arr.length;
@@ -91,14 +97,14 @@ function parseHistorical(res: MarketHistoricalResponse): OhlcvPoint[] | null {
 
 function parsePositions(data: unknown): AllocationSlice[] | null {
   if (!Array.isArray(data)) return null;
-  const positions = data as Array<{
+  const positions = data as {
     symbol?: string;
     name?: string;
     market_value?: number;
     marketValue?: number;
     qty?: number;
     current_price?: number;
-  }>;
+  }[];
   if (positions.length === 0) return null;
 
   return positions
@@ -132,11 +138,11 @@ export function FinancialChartsCard() {
 
   const chartData = useMemo(
     () => (historicalRes ? parseHistorical(historicalRes) : null),
-    [historicalRes],
+    [historicalRes]
   );
   const allocData = useMemo(
     () => (positionsData ? parsePositions(positionsData) : null),
-    [positionsData],
+    [positionsData]
   );
 
   const displayOhlcv = chartData ?? generateDemoOhlcv();
@@ -148,7 +154,9 @@ export function FinancialChartsCard() {
     <div className="flex flex-col gap-2" data-testid="financial-charts-card">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => setView('candlestick')}
+          onClick={() => {
+            setView('candlestick');
+          }}
           className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
             view === 'candlestick'
               ? 'bg-primary text-primary-foreground'
@@ -159,7 +167,9 @@ export function FinancialChartsCard() {
           Price
         </button>
         <button
-          onClick={() => setView('allocation')}
+          onClick={() => {
+            setView('allocation');
+          }}
           className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
             view === 'allocation'
               ? 'bg-primary text-primary-foreground'

@@ -639,333 +639,351 @@ export function SecuritySettings() {
       <div className="card">
         <button
           type="button"
-          onClick={() => setPromptSecurityOpen(!promptSecurityOpen)}
+          onClick={() => {
+            setPromptSecurityOpen(!promptSecurityOpen);
+          }}
           className="w-full p-4 border-b flex items-center gap-2 text-left"
         >
-          {promptSecurityOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+          {promptSecurityOpen ? (
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          )}
           <Shield className="w-5 h-5 text-primary" />
           <h3 className="font-medium">Prompt Security</h3>
         </button>
-        {promptSecurityOpen && <div className="p-4 space-y-5">
-          {/* Prompt Guard mode */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Prompt Guard Mode</label>
-            <p className="text-xs text-muted-foreground mb-2">
-              Scans assembled prompts before the LLM call for indirect injection attempts.
-            </p>
-            <select
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={promptGuardMode}
-              onChange={(e) => {
+        {promptSecurityOpen && (
+          <div className="p-4 space-y-5">
+            {/* Prompt Guard mode */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Prompt Guard Mode</label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Scans assembled prompts before the LLM call for indirect injection attempts.
+              </p>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={promptGuardMode}
+                onChange={(e) => {
+                  policyMutation.mutate({
+                    promptGuardMode: e.target.value as 'block' | 'warn' | 'disabled',
+                  });
+                }}
+                disabled={policyMutation.isPending}
+              >
+                <option value="block">Block — reject request on high-severity finding</option>
+                <option value="warn">Warn — log and allow (default)</option>
+                <option value="disabled">Disabled — skip scanning</option>
+              </select>
+            </div>
+
+            {/* Response Guard mode */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Response Guard Mode</label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Scans LLM responses for output-side injection, role confusion, and exfiltration
+                patterns.
+              </p>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={responseGuardMode}
+                onChange={(e) => {
+                  policyMutation.mutate({
+                    responseGuardMode: e.target.value as 'block' | 'warn' | 'disabled',
+                  });
+                }}
+                disabled={policyMutation.isPending}
+              >
+                <option value="block">Block — reject response on high-severity finding</option>
+                <option value="warn">Warn — log and allow (default)</option>
+                <option value="disabled">Disabled — skip scanning</option>
+              </select>
+            </div>
+
+            {/* Jailbreak threshold */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium flex items-center justify-between">
+                <span>Jailbreak Score Threshold</span>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {jailbreakThreshold.toFixed(2)}
+                </span>
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Weighted injection risk score [0–1] that triggers the jailbreak action. Lower = more
+                sensitive.
+              </p>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={jailbreakThreshold}
+                onChange={(e) => {
+                  policyMutation.mutate({ jailbreakThreshold: parseFloat(e.target.value) });
+                }}
+                disabled={policyMutation.isPending}
+                className="w-full accent-primary"
+              />
+            </div>
+
+            {/* Jailbreak action */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Jailbreak Threshold Action</label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Action taken when a message's injection score meets the threshold above.
+              </p>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={jailbreakAction}
+                onChange={(e) => {
+                  policyMutation.mutate({
+                    jailbreakAction: e.target.value as 'block' | 'warn' | 'audit_only',
+                  });
+                }}
+                disabled={policyMutation.isPending}
+              >
+                <option value="block">Block — reject request (400)</option>
+                <option value="warn">Warn — audit log + allow (default)</option>
+                <option value="audit_only">Audit Only — record score, no warning</option>
+              </select>
+            </div>
+
+            {/* System prompt confidentiality */}
+            <PolicyToggle
+              label="System Prompt Confidentiality"
+              icon={<Lock className="w-4 h-4 text-muted-foreground" />}
+              enabled={strictSystemPromptConf}
+              isPending={policyMutation.isPending}
+              onToggle={() => {
                 policyMutation.mutate({
-                  promptGuardMode: e.target.value as 'block' | 'warn' | 'disabled',
+                  strictSystemPromptConfidentiality: !strictSystemPromptConf,
                 });
               }}
-              disabled={policyMutation.isPending}
-            >
-              <option value="block">Block — reject request on high-severity finding</option>
-              <option value="warn">Warn — log and allow (default)</option>
-              <option value="disabled">Disabled — skip scanning</option>
-            </select>
-          </div>
+              description="Scan AI responses for n-gram overlap with system prompt contents. Detected leaks are redacted and audit-logged. Can be overridden per personality."
+            />
 
-          {/* Response Guard mode */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Response Guard Mode</label>
-            <p className="text-xs text-muted-foreground mb-2">
-              Scans LLM responses for output-side injection, role confusion, and exfiltration
-              patterns.
-            </p>
-            <select
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={responseGuardMode}
-              onChange={(e) => {
-                policyMutation.mutate({
-                  responseGuardMode: e.target.value as 'block' | 'warn' | 'disabled',
-                });
+            {/* Abuse detection */}
+            <PolicyToggle
+              label="Rate-Aware Abuse Detection"
+              icon={<Shield className="w-4 h-4 text-muted-foreground" />}
+              enabled={abuseDetectionEnabled}
+              isPending={policyMutation.isPending}
+              onToggle={() => {
+                policyMutation.mutate({ abuseDetectionEnabled: !abuseDetectionEnabled });
               }}
-              disabled={policyMutation.isPending}
-            >
-              <option value="block">Block — reject response on high-severity finding</option>
-              <option value="warn">Warn — log and allow (default)</option>
-              <option value="disabled">Disabled — skip scanning</option>
-            </select>
-          </div>
-
-          {/* Jailbreak threshold */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium flex items-center justify-between">
-              <span>Jailbreak Score Threshold</span>
-              <span className="font-mono text-xs text-muted-foreground">
-                {jailbreakThreshold.toFixed(2)}
-              </span>
-            </label>
-            <p className="text-xs text-muted-foreground mb-2">
-              Weighted injection risk score [0–1] that triggers the jailbreak action. Lower = more
-              sensitive.
-            </p>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={jailbreakThreshold}
-              onChange={(e) => {
-                policyMutation.mutate({ jailbreakThreshold: parseFloat(e.target.value) });
-              }}
-              disabled={policyMutation.isPending}
-              className="w-full accent-primary"
+              description="Track blocked-message retries, topic pivoting, and tool-call anomalies per session. Triggered sessions enter a cool-down period and emit suspicious_pattern audit events."
             />
           </div>
-
-          {/* Jailbreak action */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Jailbreak Threshold Action</label>
-            <p className="text-xs text-muted-foreground mb-2">
-              Action taken when a message's injection score meets the threshold above.
-            </p>
-            <select
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={jailbreakAction}
-              onChange={(e) => {
-                policyMutation.mutate({
-                  jailbreakAction: e.target.value as 'block' | 'warn' | 'audit_only',
-                });
-              }}
-              disabled={policyMutation.isPending}
-            >
-              <option value="block">Block — reject request (400)</option>
-              <option value="warn">Warn — audit log + allow (default)</option>
-              <option value="audit_only">Audit Only — record score, no warning</option>
-            </select>
-          </div>
-
-          {/* System prompt confidentiality */}
-          <PolicyToggle
-            label="System Prompt Confidentiality"
-            icon={<Lock className="w-4 h-4 text-muted-foreground" />}
-            enabled={strictSystemPromptConf}
-            isPending={policyMutation.isPending}
-            onToggle={() => {
-              policyMutation.mutate({
-                strictSystemPromptConfidentiality: !strictSystemPromptConf,
-              });
-            }}
-            description="Scan AI responses for n-gram overlap with system prompt contents. Detected leaks are redacted and audit-logged. Can be overridden per personality."
-          />
-
-          {/* Abuse detection */}
-          <PolicyToggle
-            label="Rate-Aware Abuse Detection"
-            icon={<Shield className="w-4 h-4 text-muted-foreground" />}
-            enabled={abuseDetectionEnabled}
-            isPending={policyMutation.isPending}
-            onToggle={() => {
-              policyMutation.mutate({ abuseDetectionEnabled: !abuseDetectionEnabled });
-            }}
-            description="Track blocked-message retries, topic pivoting, and tool-call anomalies per session. Triggered sessions enter a cool-down period and emit suspicious_pattern audit events."
-          />
-        </div>}
+        )}
       </div>
 
       {/* Content Guardrails (Phase 95) */}
       <div className="card">
         <button
           type="button"
-          onClick={() => setContentGuardrailsOpen(!contentGuardrailsOpen)}
+          onClick={() => {
+            setContentGuardrailsOpen(!contentGuardrailsOpen);
+          }}
           className="w-full p-4 border-b flex items-center gap-2 text-left"
         >
-          {contentGuardrailsOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+          {contentGuardrailsOpen ? (
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          )}
           <Shield className="w-5 h-5 text-primary" />
           <h3 className="font-medium">Content Guardrails</h3>
         </button>
-        {contentGuardrailsOpen && <div className="p-4 space-y-5">
-          <PolicyToggle
-            label="Enable Content Guardrails"
-            enabled={cgEnabled}
-            isPending={policyMutation.isPending}
-            onToggle={() => {
-              policyMutation.mutate({ contentGuardrailsEnabled: !cgEnabled });
-            }}
-            description="Enforce output-side content policies: PII redaction, topic restrictions, toxicity filtering, custom block lists, and citation grounding."
-          />
+        {contentGuardrailsOpen && (
+          <div className="p-4 space-y-5">
+            <PolicyToggle
+              label="Enable Content Guardrails"
+              enabled={cgEnabled}
+              isPending={policyMutation.isPending}
+              onToggle={() => {
+                policyMutation.mutate({ contentGuardrailsEnabled: !cgEnabled });
+              }}
+              description="Enforce output-side content policies: PII redaction, topic restrictions, toxicity filtering, custom block lists, and citation grounding."
+            />
 
-          {cgEnabled && (
-            <>
-              {/* PII mode */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium">PII Detection Mode</label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Detect or redact personally identifiable information (emails, phone numbers, SSNs,
-                  credit cards, IPs).
-                </p>
-                <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={cgPiiMode}
-                  onChange={(e) => {
-                    policyMutation.mutate({
-                      contentGuardrailsPiiMode: e.target.value as
-                        | 'disabled'
-                        | 'detect_only'
-                        | 'redact',
-                    });
-                  }}
-                  disabled={policyMutation.isPending}
-                >
-                  <option value="disabled">Disabled</option>
-                  <option value="detect_only">Detect Only — log but do not modify</option>
-                  <option value="redact">Redact — replace with placeholders</option>
-                </select>
-              </div>
+            {cgEnabled && (
+              <>
+                {/* PII mode */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">PII Detection Mode</label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Detect or redact personally identifiable information (emails, phone numbers,
+                    SSNs, credit cards, IPs).
+                  </p>
+                  <select
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={cgPiiMode}
+                    onChange={(e) => {
+                      policyMutation.mutate({
+                        contentGuardrailsPiiMode: e.target.value as
+                          | 'disabled'
+                          | 'detect_only'
+                          | 'redact',
+                      });
+                    }}
+                    disabled={policyMutation.isPending}
+                  >
+                    <option value="disabled">Disabled</option>
+                    <option value="detect_only">Detect Only — log but do not modify</option>
+                    <option value="redact">Redact — replace with placeholders</option>
+                  </select>
+                </div>
 
-              {/* Toxicity */}
-              <div className="space-y-3">
-                <PolicyToggle
-                  label="Toxicity Filtering"
-                  enabled={cgToxicityEnabled}
-                  isPending={policyMutation.isPending}
-                  onToggle={() => {
-                    policyMutation.mutate({ contentGuardrailsToxicityEnabled: !cgToxicityEnabled });
-                  }}
-                  description="Use an external classifier to detect toxic or harmful content in responses."
-                />
-                {cgToxicityEnabled && (
-                  <div className="pl-4 space-y-3">
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium">Toxicity Mode</label>
+                {/* Toxicity */}
+                <div className="space-y-3">
+                  <PolicyToggle
+                    label="Toxicity Filtering"
+                    enabled={cgToxicityEnabled}
+                    isPending={policyMutation.isPending}
+                    onToggle={() => {
+                      policyMutation.mutate({
+                        contentGuardrailsToxicityEnabled: !cgToxicityEnabled,
+                      });
+                    }}
+                    description="Use an external classifier to detect toxic or harmful content in responses."
+                  />
+                  {cgToxicityEnabled && (
+                    <div className="pl-4 space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium">Toxicity Mode</label>
+                        <select
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          value={cgToxicityMode}
+                          onChange={(e) => {
+                            policyMutation.mutate({
+                              contentGuardrailsToxicityMode: e.target.value as
+                                | 'block'
+                                | 'warn'
+                                | 'audit_only',
+                            });
+                          }}
+                          disabled={policyMutation.isPending}
+                        >
+                          <option value="block">Block — reject toxic responses</option>
+                          <option value="warn">Warn — log and allow</option>
+                          <option value="audit_only">Audit Only — silent logging</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium">Classifier URL</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          placeholder="https://toxicity-classifier.example.com/classify"
+                          value={cgToxicityUrl}
+                          onChange={(e) => {
+                            policyMutation.mutate({
+                              contentGuardrailsToxicityClassifierUrl: e.target.value,
+                            });
+                          }}
+                          disabled={policyMutation.isPending}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium">
+                          Threshold: {cgToxicityThreshold.toFixed(2)}
+                        </label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          className="w-full"
+                          value={cgToxicityThreshold}
+                          onChange={(e) => {
+                            policyMutation.mutate({
+                              contentGuardrailsToxicityThreshold: parseFloat(e.target.value),
+                            });
+                          }}
+                          disabled={policyMutation.isPending}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Block list */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Block List</label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    One entry per line. Prefix with <code>regex:</code> for regex patterns.
+                  </p>
+                  <textarea
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                    rows={4}
+                    value={cgBlockList.join('\n')}
+                    onChange={(e) => {
+                      policyMutation.mutate({
+                        contentGuardrailsBlockList: e.target.value.split('\n').filter(Boolean),
+                      });
+                    }}
+                    disabled={policyMutation.isPending}
+                  />
+                </div>
+
+                {/* Blocked topics */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Blocked Topics</label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    One topic per line. Responses touching these topics will be blocked.
+                  </p>
+                  <textarea
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                    rows={3}
+                    value={cgBlockedTopics.join('\n')}
+                    onChange={(e) => {
+                      policyMutation.mutate({
+                        contentGuardrailsBlockedTopics: e.target.value.split('\n').filter(Boolean),
+                      });
+                    }}
+                    disabled={policyMutation.isPending}
+                  />
+                </div>
+
+                {/* Grounding */}
+                <div className="space-y-3">
+                  <PolicyToggle
+                    label="Grounding Verification"
+                    enabled={cgGroundingEnabled}
+                    isPending={policyMutation.isPending}
+                    onToggle={() => {
+                      policyMutation.mutate({
+                        contentGuardrailsGroundingEnabled: !cgGroundingEnabled,
+                      });
+                    }}
+                    description="Verify cited claims against the knowledge base. Unverified citations are flagged or blocked."
+                  />
+                  {cgGroundingEnabled && (
+                    <div className="pl-4 space-y-1">
+                      <label className="text-sm font-medium">Grounding Mode</label>
                       <select
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={cgToxicityMode}
+                        value={cgGroundingMode}
                         onChange={(e) => {
                           policyMutation.mutate({
-                            contentGuardrailsToxicityMode: e.target.value as
-                              | 'block'
-                              | 'warn'
-                              | 'audit_only',
+                            contentGuardrailsGroundingMode: e.target.value as 'flag' | 'block',
                           });
                         }}
                         disabled={policyMutation.isPending}
                       >
-                        <option value="block">Block — reject toxic responses</option>
-                        <option value="warn">Warn — log and allow</option>
-                        <option value="audit_only">Audit Only — silent logging</option>
+                        <option value="flag">
+                          Flag — tag unverified citations with [unverified]
+                        </option>
+                        <option value="block">
+                          Block — reject responses with unverified citations
+                        </option>
                       </select>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium">Classifier URL</label>
-                      <input
-                        type="text"
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="https://toxicity-classifier.example.com/classify"
-                        value={cgToxicityUrl}
-                        onChange={(e) => {
-                          policyMutation.mutate({
-                            contentGuardrailsToxicityClassifierUrl: e.target.value,
-                          });
-                        }}
-                        disabled={policyMutation.isPending}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium">
-                        Threshold: {cgToxicityThreshold.toFixed(2)}
-                      </label>
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.05}
-                        className="w-full"
-                        value={cgToxicityThreshold}
-                        onChange={(e) => {
-                          policyMutation.mutate({
-                            contentGuardrailsToxicityThreshold: parseFloat(e.target.value),
-                          });
-                        }}
-                        disabled={policyMutation.isPending}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Block list */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Block List</label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  One entry per line. Prefix with <code>regex:</code> for regex patterns.
-                </p>
-                <textarea
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
-                  rows={4}
-                  value={cgBlockList.join('\n')}
-                  onChange={(e) => {
-                    policyMutation.mutate({
-                      contentGuardrailsBlockList: e.target.value.split('\n').filter(Boolean),
-                    });
-                  }}
-                  disabled={policyMutation.isPending}
-                />
-              </div>
-
-              {/* Blocked topics */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Blocked Topics</label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  One topic per line. Responses touching these topics will be blocked.
-                </p>
-                <textarea
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
-                  rows={3}
-                  value={cgBlockedTopics.join('\n')}
-                  onChange={(e) => {
-                    policyMutation.mutate({
-                      contentGuardrailsBlockedTopics: e.target.value.split('\n').filter(Boolean),
-                    });
-                  }}
-                  disabled={policyMutation.isPending}
-                />
-              </div>
-
-              {/* Grounding */}
-              <div className="space-y-3">
-                <PolicyToggle
-                  label="Grounding Verification"
-                  enabled={cgGroundingEnabled}
-                  isPending={policyMutation.isPending}
-                  onToggle={() => {
-                    policyMutation.mutate({
-                      contentGuardrailsGroundingEnabled: !cgGroundingEnabled,
-                    });
-                  }}
-                  description="Verify cited claims against the knowledge base. Unverified citations are flagged or blocked."
-                />
-                {cgGroundingEnabled && (
-                  <div className="pl-4 space-y-1">
-                    <label className="text-sm font-medium">Grounding Mode</label>
-                    <select
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={cgGroundingMode}
-                      onChange={(e) => {
-                        policyMutation.mutate({
-                          contentGuardrailsGroundingMode: e.target.value as 'flag' | 'block',
-                        });
-                      }}
-                      disabled={policyMutation.isPending}
-                    >
-                      <option value="flag">
-                        Flag — tag unverified citations with [unverified]
-                      </option>
-                      <option value="block">
-                        Block — reject responses with unverified citations
-                      </option>
-                    </select>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>}
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Proactive Assistance Policy */}
@@ -1956,7 +1974,11 @@ interface ServiceKeyDef {
 
 const SERVICE_KEYS: ServiceKeyDef[] = [
   // SecureYeoman — core platform keys
-  { name: 'SECUREYEOMAN_TOKEN_SECRET', label: 'Token Secret (JWT signing)', category: 'SecureYeoman' },
+  {
+    name: 'SECUREYEOMAN_TOKEN_SECRET',
+    label: 'Token Secret (JWT signing)',
+    category: 'SecureYeoman',
+  },
   { name: 'SECUREYEOMAN_ADMIN_PASSWORD', label: 'Admin Password', category: 'SecureYeoman' },
   { name: 'SECUREYEOMAN_SIGNING_KEY', label: 'Signing Key', category: 'SecureYeoman' },
   { name: 'SECUREYEOMAN_ENCRYPTION_KEY', label: 'Encryption Key', category: 'SecureYeoman' },
@@ -1964,12 +1986,30 @@ const SERVICE_KEYS: ServiceKeyDef[] = [
   { name: 'AGNOSTIC_API_KEY', label: 'Agnostic QA Platform API Key', category: 'Yeoman MCP' },
   { name: 'AGNOS_RUNTIME_API_KEY', label: 'AGNOS Agent Runtime API Key', category: 'Yeoman MCP' },
   { name: 'AGNOS_GATEWAY_API_KEY', label: 'AGNOS LLM Gateway API Key', category: 'Yeoman MCP' },
-  { name: 'BULLSHIFT_API_URL', label: 'BullShift Trading API URL', category: 'Yeoman MCP', isUrl: true },
-  { name: 'PHOTISNADI_SUPABASE_URL', label: 'Photisnadi Supabase URL', category: 'Yeoman MCP', isUrl: true },
-  { name: 'PHOTISNADI_SUPABASE_KEY', label: 'Photisnadi Supabase Service Key', category: 'Yeoman MCP' },
+  {
+    name: 'BULLSHIFT_API_URL',
+    label: 'BullShift Trading API URL',
+    category: 'Yeoman MCP',
+    isUrl: true,
+  },
+  {
+    name: 'PHOTISNADI_SUPABASE_URL',
+    label: 'Photisnadi Supabase URL',
+    category: 'Yeoman MCP',
+    isUrl: true,
+  },
+  {
+    name: 'PHOTISNADI_SUPABASE_KEY',
+    label: 'Photisnadi Supabase Service Key',
+    category: 'Yeoman MCP',
+  },
   { name: 'PHOTISNADI_USER_ID', label: 'Photisnadi User ID', category: 'Yeoman MCP' },
   // Search
-  { name: 'MCP_WEB_SEARCH_API_KEY', label: 'Web Search API Key (SerpAPI / Tavily)', category: 'Search' },
+  {
+    name: 'MCP_WEB_SEARCH_API_KEY',
+    label: 'Web Search API Key (SerpAPI / Tavily)',
+    category: 'Search',
+  },
   { name: 'BRAVE_SEARCH_API_KEY', label: 'Brave Search API Key', category: 'Search' },
   { name: 'BING_SEARCH_API_KEY', label: 'Bing Search API Key', category: 'Search' },
   { name: 'EXA_API_KEY', label: 'Exa Neural Search API Key', category: 'Search' },
@@ -2081,13 +2121,14 @@ export function ServiceKeysPanel() {
           Service API Keys
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          API keys for MCP search, security, proxy, and external services.
-          Stored encrypted in the secrets backend. Env vars take precedence if set.
+          API keys for MCP search, security, proxy, and external services. Stored encrypted in the
+          secrets backend. Env vars take precedence if set.
         </p>
         {!isLoading && (
           <p className="text-xs text-muted-foreground mt-1">
             {totalConfigured} of {SERVICE_KEYS.length} service keys configured
-            {customKeys.length > 0 && ` · ${customKeys.length} custom secret${customKeys.length !== 1 ? 's' : ''}`}
+            {customKeys.length > 0 &&
+              ` · ${customKeys.length} custom secret${customKeys.length !== 1 ? 's' : ''}`}
           </p>
         )}
       </div>
@@ -2102,7 +2143,9 @@ export function ServiceKeysPanel() {
           return (
             <div key={category} className="border-b border-border last:border-0">
               <button
-                onClick={() => { toggleCategory(category); }}
+                onClick={() => {
+                  toggleCategory(category);
+                }}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors text-left"
                 aria-expanded={isExpanded}
                 data-testid={`category-${category}`}
@@ -2116,13 +2159,15 @@ export function ServiceKeysPanel() {
                   {CATEGORY_ICONS[category] ?? <Key className="w-4 h-4" />}
                   <span className="font-medium text-sm">{category}</span>
                 </div>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  configuredInCategory === keys.length
-                    ? 'bg-success/10 text-success'
-                    : configuredInCategory > 0
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-muted text-muted-foreground'
-                }`}>
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    configuredInCategory === keys.length
+                      ? 'bg-success/10 text-success'
+                      : configuredInCategory > 0
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-muted text-muted-foreground'
+                  }`}
+                >
                   {configuredInCategory}/{keys.length}
                 </span>
               </button>
@@ -2144,7 +2189,9 @@ export function ServiceKeysPanel() {
                             )}
                             <div className="min-w-0">
                               <span className="text-xs block truncate">{keyDef.label}</span>
-                              <span className="font-mono text-[10px] text-muted-foreground block truncate">{keyDef.name}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground block truncate">
+                                {keyDef.name}
+                              </span>
                             </div>
                           </div>
                           <div className="flex items-center gap-1 flex-shrink-0">
@@ -2162,7 +2209,9 @@ export function ServiceKeysPanel() {
                             {isSet && (
                               <button
                                 className="text-destructive hover:text-destructive/80 p-1 rounded hover:bg-destructive/10"
-                                onClick={() => { setConfirmDelete(keyDef.name); }}
+                                onClick={() => {
+                                  setConfirmDelete(keyDef.name);
+                                }}
                                 aria-label={`Remove ${keyDef.name}`}
                                 title="Remove"
                               >
@@ -2177,7 +2226,9 @@ export function ServiceKeysPanel() {
                             <input
                               type={keyDef.isUrl ? 'text' : 'password'}
                               value={editValue}
-                              onChange={(e) => { setEditValue(e.target.value); }}
+                              onChange={(e) => {
+                                setEditValue(e.target.value);
+                              }}
                               placeholder={keyDef.isUrl ? 'https://...' : 'Paste key...'}
                               className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                               autoFocus
@@ -2186,16 +2237,22 @@ export function ServiceKeysPanel() {
                               <button
                                 className="btn btn-ghost text-sm px-3 py-1 flex items-center gap-1"
                                 onClick={() => {
-                                  if (editValue) setMutation.mutate({ name: keyDef.name, value: editValue });
+                                  if (editValue)
+                                    setMutation.mutate({ name: keyDef.name, value: editValue });
                                 }}
                                 disabled={!editValue || setMutation.isPending}
                               >
-                                {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                                {setMutation.isPending && (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                )}
                                 {isSet ? 'Update' : 'Save'}
                               </button>
                               <button
                                 className="btn btn-ghost text-sm px-3 py-1"
-                                onClick={() => { setEditingKey(null); setEditValue(''); }}
+                                onClick={() => {
+                                  setEditingKey(null);
+                                  setEditValue('');
+                                }}
                               >
                                 Cancel
                               </button>
@@ -2214,7 +2271,9 @@ export function ServiceKeysPanel() {
         {/* Custom Secrets category */}
         <div className="border-b border-border last:border-0">
           <button
-            onClick={() => { toggleCategory('Custom Secrets'); }}
+            onClick={() => {
+              toggleCategory('Custom Secrets');
+            }}
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors text-left"
             aria-expanded={expandedCategories.has('Custom Secrets')}
             data-testid="category-Custom Secrets"
@@ -2228,11 +2287,13 @@ export function ServiceKeysPanel() {
               <Lock className="w-4 h-4" />
               <span className="font-medium text-sm">Custom Secrets</span>
             </div>
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-              customKeys.length > 0
-                ? 'bg-primary/10 text-primary'
-                : 'bg-muted text-muted-foreground'
-            }`}>
+            <span
+              className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                customKeys.length > 0
+                  ? 'bg-primary/10 text-primary'
+                  : 'bg-muted text-muted-foreground'
+              }`}
+            >
               {customKeys.length}
             </span>
           </button>
@@ -2268,7 +2329,9 @@ export function ServiceKeysPanel() {
                             </button>
                             <button
                               className="text-destructive hover:text-destructive/80 p-1 rounded hover:bg-destructive/10"
-                              onClick={() => { setConfirmDelete(key); }}
+                              onClick={() => {
+                                setConfirmDelete(key);
+                              }}
                               aria-label={`Delete secret ${key}`}
                               title="Delete"
                             >
@@ -2282,7 +2345,9 @@ export function ServiceKeysPanel() {
                             <input
                               type="password"
                               value={editValue}
-                              onChange={(e) => { setEditValue(e.target.value); }}
+                              onChange={(e) => {
+                                setEditValue(e.target.value);
+                              }}
                               placeholder="New value..."
                               className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                               autoFocus
@@ -2291,16 +2356,22 @@ export function ServiceKeysPanel() {
                               <button
                                 className="btn btn-ghost text-sm px-3 py-1 flex items-center gap-1"
                                 onClick={() => {
-                                  if (editValue) setMutation.mutate({ name: key, value: editValue });
+                                  if (editValue)
+                                    setMutation.mutate({ name: key, value: editValue });
                                 }}
                                 disabled={!editValue || setMutation.isPending}
                               >
-                                {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                                {setMutation.isPending && (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                )}
                                 Update
                               </button>
                               <button
                                 className="btn btn-ghost text-sm px-3 py-1"
-                                onClick={() => { setEditingKey(null); setEditValue(''); }}
+                                onClick={() => {
+                                  setEditingKey(null);
+                                  setEditValue('');
+                                }}
                               >
                                 Cancel
                               </button>
@@ -2318,7 +2389,9 @@ export function ServiceKeysPanel() {
                 <div className="p-3 rounded-lg bg-muted/10 border border-border/50 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Name (uppercase)</label>
+                      <label className="text-xs text-muted-foreground block mb-1">
+                        Name (uppercase)
+                      </label>
                       <input
                         type="text"
                         value={newName}
@@ -2335,7 +2408,9 @@ export function ServiceKeysPanel() {
                       <input
                         type="password"
                         value={newValue}
-                        onChange={(e) => { setNewValue(e.target.value); }}
+                        onChange={(e) => {
+                          setNewValue(e.target.value);
+                        }}
                         placeholder="••••••••"
                         className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                       />
@@ -2345,7 +2420,8 @@ export function ServiceKeysPanel() {
                     <button
                       className="btn btn-ghost text-sm px-3 py-1 flex items-center gap-1"
                       onClick={() => {
-                        if (newName && newValue) setMutation.mutate({ name: newName, value: newValue });
+                        if (newName && newValue)
+                          setMutation.mutate({ name: newName, value: newValue });
                       }}
                       disabled={!newName || !newValue || setMutation.isPending}
                     >
@@ -2354,7 +2430,11 @@ export function ServiceKeysPanel() {
                     </button>
                     <button
                       className="btn btn-ghost text-sm px-3 py-1"
-                      onClick={() => { setAddingCustom(false); setNewName(''); setNewValue(''); }}
+                      onClick={() => {
+                        setAddingCustom(false);
+                        setNewName('');
+                        setNewValue('');
+                      }}
                     >
                       Cancel
                     </button>
@@ -2363,7 +2443,9 @@ export function ServiceKeysPanel() {
               ) : (
                 <button
                   className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 px-2 py-1.5"
-                  onClick={() => { setAddingCustom(true); }}
+                  onClick={() => {
+                    setAddingCustom(true);
+                  }}
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add Custom Secret

@@ -790,8 +790,12 @@ describe('markNotificationRead', () => {
 
 describe('exportPersonality', () => {
   it('calls GET /soul/personalities/:id/export with format param', async () => {
-    const blob = new Blob(['# personality'], { type: 'text/markdown' });
-    mockFetch.mockReturnValueOnce(Promise.resolve(new Response(blob, { status: 200 })));
+    // Use string body — jsdom's Response doesn't support Blob constructor bodies
+    mockFetch.mockReturnValueOnce(
+      Promise.resolve(
+        new Response('# personality', { status: 200, headers: { 'Content-Type': 'text/markdown' } })
+      )
+    );
     const result = await exportPersonality('p1', 'md');
     expect(result).toBeInstanceOf(Blob);
     expect(mockFetch.mock.calls[0][0]).toBe('/api/v1/soul/personalities/p1/export?format=md');

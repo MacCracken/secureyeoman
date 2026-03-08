@@ -379,7 +379,11 @@ async function performSearch(
     case 'tavily':
       return searchTavily(query, config.webSearchApiKey ?? '', maxResults);
     case 'brave':
-      return searchBrave(query, config.braveSearchApiKey ?? config.webSearchApiKey ?? '', maxResults);
+      return searchBrave(
+        query,
+        config.braveSearchApiKey ?? config.webSearchApiKey ?? '',
+        maxResults
+      );
     case 'bing':
       return searchBing(query, config.bingSearchApiKey ?? config.webSearchApiKey ?? '', maxResults);
     case 'exa':
@@ -498,7 +502,8 @@ async function searchBrave(
   apiKey: string,
   maxResults: number
 ): Promise<SearchResult[]> {
-  if (!apiKey) throw new Error('Brave Search requires braveSearchApiKey or MCP_BRAVE_SEARCH_API_KEY');
+  if (!apiKey)
+    throw new Error('Brave Search requires braveSearchApiKey or MCP_BRAVE_SEARCH_API_KEY');
 
   const params = new URLSearchParams({
     q: query,
@@ -636,7 +641,14 @@ async function searchSearxng(
 
 // ─── Multi-Search Aggregation ───────────────────────────────
 
-type SearchProviderName = 'duckduckgo' | 'serpapi' | 'tavily' | 'brave' | 'bing' | 'exa' | 'searxng';
+type SearchProviderName =
+  | 'duckduckgo'
+  | 'serpapi'
+  | 'tavily'
+  | 'brave'
+  | 'bing'
+  | 'exa'
+  | 'searxng';
 
 interface MultiSearchResultItem extends SearchResult {
   sources: SearchProviderName[];
@@ -1097,13 +1109,11 @@ export function registerWebTools(
           .default(5)
           .describe('Maximum results per provider'),
         providers: z
-          .array(
-            z.enum(['duckduckgo', 'serpapi', 'tavily', 'brave', 'bing', 'exa', 'searxng'])
-          )
+          .array(z.enum(['duckduckgo', 'serpapi', 'tavily', 'brave', 'bing', 'exa', 'searxng']))
           .optional()
           .describe(
             'Specific providers to query (defaults to all configured). ' +
-            'Connected MCP search servers (Brave Search, Exa) are always included when available.'
+              'Connected MCP search servers (Brave Search, Exa) are always included when available.'
           ),
       },
     },
@@ -1120,11 +1130,13 @@ export function registerWebTools(
 
       // Fan out to all native providers in parallel
       const nativePromises = providers.map((p) =>
-        searchByProvider(p, args.query, config, args.maxResultsPerProvider).catch((err) => ({
-          provider: p,
-          results: [] as SearchResult[],
-          error: err instanceof Error ? err.message : String(err),
-        }))
+        searchByProvider(p, args.query, config, args.maxResultsPerProvider).catch(
+          (err: unknown) => ({
+            provider: p,
+            results: [] as SearchResult[],
+            error: err instanceof Error ? err.message : String(err),
+          })
+        )
       );
 
       // Also query connected MCP search servers (Brave Search, Exa prebuilts)

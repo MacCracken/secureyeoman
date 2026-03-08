@@ -31,17 +31,13 @@ async function resolveTodoistCredentials(
   return { apiToken: cfg.apiToken };
 }
 
-async function todoistFetch(
-  apiToken: string,
-  path: string,
-  init?: RequestInit
-): Promise<Response> {
+async function todoistFetch(apiToken: string, path: string, init?: RequestInit): Promise<Response> {
   return fetch(TODOIST_API + path, {
     ...init,
     headers: {
       Authorization: 'Bearer ' + apiToken,
       'Content-Type': 'application/json',
-      ...init?.headers,
+      ...(init?.headers as Record<string, string> | undefined),
     },
   });
 }

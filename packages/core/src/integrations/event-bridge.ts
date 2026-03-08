@@ -69,7 +69,10 @@ export class EventBridge {
   registerRoutes(app: FastifyInstance): void {
     app.get(
       '/api/v1/events/bridge/stream',
-      async (request: FastifyRequest<{ Querystring: { source?: string } }>, reply: FastifyReply) => {
+      async (
+        request: FastifyRequest<{ Querystring: { source?: string } }>,
+        reply: FastifyReply
+      ) => {
         const source = request.query.source ?? 'unknown';
         const clientId = `bridge-${++this.clientIdCounter}`;
 
@@ -211,10 +214,13 @@ export class EventBridge {
       } catch (err) {
         if (abort.signal.aborted) return; // Intentional disconnect
 
-        this.logger.warn({
-          name,
-          error: err instanceof Error ? err.message : String(err),
-        }, 'Event bridge connection lost');
+        this.logger.warn(
+          {
+            name,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          'Event bridge connection lost'
+        );
       }
 
       this.subscriptionAborts.delete(name);
@@ -238,12 +244,24 @@ export class EventBridge {
    */
   startSubscriptions(): void {
     if (this.config.agnosticSseUrl) {
-      this.subscribe('agnostic', this.config.agnosticSseUrl, this.config.agnosticApiKey)
-        .catch((err) => this.logger.warn({ error: err instanceof Error ? err.message : String(err) }, 'Agnostic SSE subscription failed'));
+      void this.subscribe('agnostic', this.config.agnosticSseUrl, this.config.agnosticApiKey).catch(
+        (err: unknown) => {
+          this.logger.warn(
+            { error: err instanceof Error ? err.message : String(err) },
+            'Agnostic SSE subscription failed'
+          );
+        }
+      );
     }
     if (this.config.agnosSseUrl) {
-      this.subscribe('agnos', this.config.agnosSseUrl, this.config.agnosApiKey)
-        .catch((err) => this.logger.warn({ error: err instanceof Error ? err.message : String(err) }, 'Agnos SSE subscription failed'));
+      void this.subscribe('agnos', this.config.agnosSseUrl, this.config.agnosApiKey).catch(
+        (err: unknown) => {
+          this.logger.warn(
+            { error: err instanceof Error ? err.message : String(err) },
+            'Agnos SSE subscription failed'
+          );
+        }
+      );
     }
   }
 
@@ -270,7 +288,11 @@ export class EventBridge {
     this.subscriptionAborts.clear();
 
     for (const client of this.clients.values()) {
-      try { client.reply.raw.end(); } catch { /* client already gone */ }
+      try {
+        client.reply.raw.end();
+      } catch {
+        /* client already gone */
+      }
     }
     this.clients.clear();
   }

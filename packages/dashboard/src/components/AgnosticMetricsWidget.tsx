@@ -22,12 +22,12 @@ interface AgnosticWidgetData {
     total: number;
     active: number;
   };
-  recentTasks: Array<{
+  recentTasks: {
     id: string;
     title: string;
     status: string;
     createdAt: string;
-  }>;
+  }[];
 }
 
 async function fetchWidget(): Promise<AgnosticWidgetData> {
@@ -49,7 +49,9 @@ function StatusBadge({ status }: { status: string }) {
     offline: 'bg-red-500/20 text-red-400',
   };
   return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${colors[status] ?? 'bg-zinc-600 text-zinc-300'}`}>
+    <span
+      className={`rounded-full px-2 py-0.5 text-xs font-medium ${colors[status] ?? 'bg-zinc-600 text-zinc-300'}`}
+    >
       {status}
     </span>
   );
@@ -131,12 +133,17 @@ export default function AgnosticMetricsWidget() {
                 <span className="truncate text-xs text-zinc-300" title={task.title}>
                   {task.title}
                 </span>
-                <span className={`ml-2 whitespace-nowrap text-xs ${
-                  task.status === 'completed' ? 'text-green-400' :
-                  task.status === 'failed' ? 'text-red-400' :
-                  task.status === 'running' ? 'text-blue-400' :
-                  'text-zinc-500'
-                }`}>
+                <span
+                  className={`ml-2 whitespace-nowrap text-xs ${
+                    task.status === 'completed'
+                      ? 'text-green-400'
+                      : task.status === 'failed'
+                        ? 'text-red-400'
+                        : task.status === 'running'
+                          ? 'text-blue-400'
+                          : 'text-zinc-500'
+                  }`}
+                >
                   {task.status}
                 </span>
               </div>

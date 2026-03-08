@@ -17,6 +17,8 @@ export default tseslint.config(
       'packages/core/vitest.*.config.ts',
       'packages/mobile/**',
       'packages/core/examples/**',
+      'packages/dashboard/e2e/**',
+      'packages/dashboard/playwright.config.ts',
     ],
   },
 

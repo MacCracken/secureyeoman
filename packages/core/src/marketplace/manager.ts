@@ -145,17 +145,23 @@ export class MarketplaceManager {
               personalityId: personalityId ?? null,
             })
           );
-          this.logger.info({
-            id,
-            name: skill.name,
-            source: brainSource,
-            personalityId: personalityId ?? null,
-          }, 'Brain skill created from marketplace');
+          this.logger.info(
+            {
+              id,
+              name: skill.name,
+              source: brainSource,
+              personalityId: personalityId ?? null,
+            },
+            'Brain skill created from marketplace'
+          );
         } catch (err) {
-          this.logger.error({
-            id,
-            error: err instanceof Error ? err.message : 'Unknown error',
-          }, 'Failed to create brain skill from marketplace');
+          this.logger.error(
+            {
+              id,
+              error: err instanceof Error ? err.message : 'Unknown error',
+            },
+            'Failed to create brain skill from marketplace'
+          );
         }
       }
     }
@@ -183,20 +189,26 @@ export class MarketplaceManager {
           const target = matches.find((s) => s.personalityId === personalityId);
           if (target) {
             await this.brainManager.deleteSkill(target.id);
-            this.logger.info({
-              id,
-              brainSkillId: target.id,
-              personalityId,
-            }, 'Brain skill removed (marketplace uninstall)');
+            this.logger.info(
+              {
+                id,
+                brainSkillId: target.id,
+                personalityId,
+              },
+              'Brain skill removed (marketplace uninstall)'
+            );
           }
         } else {
           // No personality context: remove ALL brain skill records for this marketplace skill
           for (const match of matches) {
             await this.brainManager.deleteSkill(match.id);
-            this.logger.info({
-              id,
-              brainSkillId: match.id,
-            }, 'Brain skill removed (marketplace uninstall)');
+            this.logger.info(
+              {
+                id,
+                brainSkillId: match.id,
+              },
+              'Brain skill removed (marketplace uninstall)'
+            );
           }
         }
 
@@ -208,10 +220,13 @@ export class MarketplaceManager {
           await this.storage.setInstalled(id, false);
         }
       } catch (err) {
-        this.logger.error({
-          id,
-          error: err instanceof Error ? err.message : 'Unknown error',
-        }, 'Failed to remove brain skill on marketplace uninstall');
+        this.logger.error(
+          {
+            id,
+            error: err instanceof Error ? err.message : 'Unknown error',
+          },
+          'Failed to remove brain skill on marketplace uninstall'
+        );
         return false;
       }
     } else {
@@ -244,16 +259,22 @@ export class MarketplaceManager {
             (await this.storage.findByNameAndSource(skillName, 'builtin')));
       if (mpSkill?.installed) {
         await this.storage.setInstalled(mpSkill.id, false);
-        this.logger.info({
-          name: skillName,
-          marketplaceId: mpSkill.id,
-        }, 'Marketplace skill marked uninstalled (brain skill deleted)');
+        this.logger.info(
+          {
+            name: skillName,
+            marketplaceId: mpSkill.id,
+          },
+          'Marketplace skill marked uninstalled (brain skill deleted)'
+        );
       }
     } catch (err) {
-      this.logger.error({
-        skillName,
-        error: err instanceof Error ? err.message : 'Unknown error',
-      }, 'Failed to sync marketplace installed state after brain skill deletion');
+      this.logger.error(
+        {
+          skillName,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        },
+        'Failed to sync marketplace installed state after brain skill deletion'
+      );
     }
   }
 
@@ -923,10 +944,13 @@ export class MarketplaceManager {
             const { data, warnings } = serializer.fromMarkdown(content);
 
             if (warnings.length > 0) {
-              this.logger.debug({
-                file: filePath,
-                warnings,
-              }, 'Community personality parse warnings');
+              this.logger.debug(
+                {
+                  file: filePath,
+                  warnings,
+                },
+                'Community personality parse warnings'
+              );
             }
 
             // Extract subdirectory as a subcategory tag (e.g., "professional", "sci-fi")
@@ -942,11 +966,14 @@ export class MarketplaceManager {
               name: data.name ?? path.basename(filePath, '.md'),
               description: data.description ?? '',
               version: '1.0.0',
-              author: typeof (data as Record<string, unknown>).author === 'string'
-                ? ((data as Record<string, unknown>).author as string)
-                : typeof (data as Record<string, unknown>).author === 'object' && (data as Record<string, unknown>).author !== null
-                  ? (((data as Record<string, unknown>).author as Record<string, unknown>).name as string ?? 'Community')
-                  : 'Community',
+              author:
+                typeof (data as Record<string, unknown>).author === 'string'
+                  ? ((data as Record<string, unknown>).author as string)
+                  : typeof (data as Record<string, unknown>).author === 'object' &&
+                      (data as Record<string, unknown>).author !== null
+                    ? ((((data as Record<string, unknown>).author as Record<string, unknown>)
+                        .name as string) ?? 'Community')
+                    : 'Community',
               category: 'personality',
               tags,
               instructions: content,
@@ -961,7 +988,7 @@ export class MarketplaceManager {
             };
 
             const existing = await this.storage.findByNameAndSource(skillData.name!, 'community');
-            if (existing && existing.tags?.includes('community-personality')) {
+            if (existing?.tags?.includes('community-personality')) {
               await this.storage.updateSkill(existing.id, skillData);
               result.personalitiesUpdated++;
             } else if (!existing) {
@@ -1011,11 +1038,12 @@ export class MarketplaceManager {
             name: data.name,
             description: typeof data.description === 'string' ? data.description : '',
             version: typeof data.version === 'string' ? data.version : '1.0.0',
-            author: typeof data.author === 'string'
-              ? data.author
-              : typeof data.author === 'object' && data.author !== null
-                ? ((data.author as Record<string, unknown>).name as string ?? 'Community')
-                : 'Community',
+            author:
+              typeof data.author === 'string'
+                ? data.author
+                : typeof data.author === 'object' && data.author !== null
+                  ? (((data.author as Record<string, unknown>).name as string) ?? 'Community')
+                  : 'Community',
             category: 'theme',
             tags,
             instructions: JSON.stringify(data),
@@ -1049,25 +1077,28 @@ export class MarketplaceManager {
     }
 
     this.lastSyncedAt = Date.now();
-    this.logger.info({
-      path: repoPath,
-      added: result.added,
-      updated: result.updated,
-      skipped: result.skipped,
-      errors: result.errors.length,
-      workflowsAdded: result.workflowsAdded,
-      workflowsUpdated: result.workflowsUpdated,
-      swarmsAdded: result.swarmsAdded,
-      swarmsUpdated: result.swarmsUpdated,
-      councilsAdded: result.councilsAdded,
-      councilsUpdated: result.councilsUpdated,
-      securityTemplatesAdded: result.securityTemplatesAdded,
-      securityTemplatesUpdated: result.securityTemplatesUpdated,
-      personalitiesAdded: result.personalitiesAdded,
-      personalitiesUpdated: result.personalitiesUpdated,
-      themesAdded: result.themesAdded,
-      themesUpdated: result.themesUpdated,
-    }, 'Community skill sync complete');
+    this.logger.info(
+      {
+        path: repoPath,
+        added: result.added,
+        updated: result.updated,
+        skipped: result.skipped,
+        errors: result.errors.length,
+        workflowsAdded: result.workflowsAdded,
+        workflowsUpdated: result.workflowsUpdated,
+        swarmsAdded: result.swarmsAdded,
+        swarmsUpdated: result.swarmsUpdated,
+        councilsAdded: result.councilsAdded,
+        councilsUpdated: result.councilsUpdated,
+        securityTemplatesAdded: result.securityTemplatesAdded,
+        securityTemplatesUpdated: result.securityTemplatesUpdated,
+        personalitiesAdded: result.personalitiesAdded,
+        personalitiesUpdated: result.personalitiesUpdated,
+        themesAdded: result.themesAdded,
+        themesUpdated: result.themesUpdated,
+      },
+      'Community skill sync complete'
+    );
 
     return result;
   }

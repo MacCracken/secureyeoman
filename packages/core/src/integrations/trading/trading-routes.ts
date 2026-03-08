@@ -25,7 +25,11 @@ function getMarketDataProvider(): MarketProvider | null {
   return null;
 }
 
-async function marketFetch(provider: MarketProvider, path: string, params: Record<string, string> = {}): Promise<unknown> {
+async function marketFetch(
+  provider: MarketProvider,
+  path: string,
+  params: Record<string, string> = {}
+): Promise<unknown> {
   const url = new URL(path, provider.baseUrl);
   if (provider.name === 'alphavantage') url.searchParams.set('apikey', provider.apiKey);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
@@ -35,15 +39,19 @@ async function marketFetch(provider: MarketProvider, path: string, params: Recor
 
   const res = await fetch(url.toString(), { headers });
   if (!res.ok) throw new Error(`Market data API error: HTTP ${res.status}`);
-  return (await res.json()) as unknown;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return await res.json();
 }
 
-async function bullshiftFetch(path: string): Promise<{ ok: boolean; status: number; data: unknown }> {
+async function bullshiftFetch(
+  path: string
+): Promise<{ ok: boolean; status: number; data: unknown }> {
   try {
     const res = await fetch(`${BULLSHIFT_URL}${path}`, {
       headers: { Accept: 'application/json' },
     });
-    const data = (await res.json()) as unknown;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const data = await res.json();
     return { ok: res.ok, status: res.status, data };
   } catch (err) {
     return { ok: false, status: 502, data: { error: toErrorMessage(err) } };
@@ -53,33 +61,29 @@ async function bullshiftFetch(path: string): Promise<{ ok: boolean; status: numb
 // ── Route Registration ──────────────────────────────────────────
 
 export function registerTradingRoutes(app: FastifyInstance): void {
-
   // GET /api/v1/trading/quote?symbol=AAPL
-  app.get<{ Querystring: { symbol?: string } }>(
-    '/api/v1/trading/quote',
-    async (req, reply) => {
-      const { symbol } = req.query;
-      if (!symbol) return sendError(reply, 400, 'Missing required query parameter: symbol');
+  app.get<{ Querystring: { symbol?: string } }>('/api/v1/trading/quote', async (req, reply) => {
+    const { symbol } = req.query;
+    if (!symbol) return sendError(reply, 400, 'Missing required query parameter: symbol');
 
-      const provider = getMarketDataProvider();
-      if (!provider) return sendError(reply, 503, 'No market data API key configured');
+    const provider = getMarketDataProvider();
+    if (!provider) return sendError(reply, 503, 'No market data API key configured');
 
-      try {
-        let result: unknown;
-        if (provider.name === 'alphavantage') {
-          result = await marketFetch(provider, '/query', {
-            function: 'GLOBAL_QUOTE',
-            symbol,
-          });
-        } else {
-          result = await marketFetch(provider, '/quote', { symbol: symbol.toUpperCase() });
-        }
-        return reply.send({ provider: provider.name, data: result });
-      } catch (err) {
-        return sendError(reply, 502, `Market data error: ${toErrorMessage(err)}`);
+    try {
+      let result: unknown;
+      if (provider.name === 'alphavantage') {
+        result = await marketFetch(provider, '/query', {
+          function: 'GLOBAL_QUOTE',
+          symbol,
+        });
+      } else {
+        result = await marketFetch(provider, '/quote', { symbol: symbol.toUpperCase() });
       }
-    },
-  );
+      return reply.send({ provider: provider.name, data: result });
+    } catch (err) {
+      return sendError(reply, 502, `Market data error: ${toErrorMessage(err)}`);
+    }
+  });
 
   // GET /api/v1/trading/historical?symbol=AAPL&days=30
   app.get<{ Querystring: { symbol?: string; days?: string } }>(
@@ -114,47 +118,46 @@ export function registerTradingRoutes(app: FastifyInstance): void {
       } catch (err) {
         return sendError(reply, 502, `Market data error: ${toErrorMessage(err)}`);
       }
-    },
+    }
   );
 
   // GET /api/v1/trading/search?keywords=Apple
-  app.get<{ Querystring: { keywords?: string } }>(
-    '/api/v1/trading/search',
-    async (req, reply) => {
-      const { keywords } = req.query;
-      if (!keywords) return sendError(reply, 400, 'Missing required query parameter: keywords');
+  app.get<{ Querystring: { keywords?: string } }>('/api/v1/trading/search', async (req, reply) => {
+    const { keywords } = req.query;
+    if (!keywords) return sendError(reply, 400, 'Missing required query parameter: keywords');
 
-      const provider = getMarketDataProvider();
-      if (!provider) return sendError(reply, 503, 'No market data API key configured');
+    const provider = getMarketDataProvider();
+    if (!provider) return sendError(reply, 503, 'No market data API key configured');
 
-      try {
-        let result: unknown;
-        if (provider.name === 'alphavantage') {
-          result = await marketFetch(provider, '/query', {
-            function: 'SYMBOL_SEARCH',
-            keywords,
-          });
-        } else {
-          result = await marketFetch(provider, '/search', { q: keywords });
-        }
-        return reply.send({ provider: provider.name, data: result });
-      } catch (err) {
-        return sendError(reply, 502, `Market data error: ${toErrorMessage(err)}`);
+    try {
+      let result: unknown;
+      if (provider.name === 'alphavantage') {
+        result = await marketFetch(provider, '/query', {
+          function: 'SYMBOL_SEARCH',
+          keywords,
+        });
+      } else {
+        result = await marketFetch(provider, '/search', { q: keywords });
       }
-    },
-  );
+      return reply.send({ provider: provider.name, data: result });
+    } catch (err) {
+      return sendError(reply, 502, `Market data error: ${toErrorMessage(err)}`);
+    }
+  });
 
   // GET /api/v1/trading/bullshift/positions
   app.get('/api/v1/trading/bullshift/positions', async (_req, reply) => {
     const res = await bullshiftFetch('/v1/positions');
-    if (!res.ok) return sendError(reply, res.status, `BullShift error: ${toErrorMessage(res.data)}`);
+    if (!res.ok)
+      return sendError(reply, res.status, `BullShift error: ${toErrorMessage(res.data)}`);
     return reply.send(res.data);
   });
 
   // GET /api/v1/trading/bullshift/account
   app.get('/api/v1/trading/bullshift/account', async (_req, reply) => {
     const res = await bullshiftFetch('/v1/account');
-    if (!res.ok) return sendError(reply, res.status, `BullShift error: ${toErrorMessage(res.data)}`);
+    if (!res.ok)
+      return sendError(reply, res.status, `BullShift error: ${toErrorMessage(res.data)}`);
     return reply.send(res.data);
   });
 

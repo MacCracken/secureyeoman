@@ -127,10 +127,7 @@ export function registerPhotisnadiTools(
           .enum(['todo', 'inProgress', 'inReview', 'blocked', 'done'])
           .optional()
           .describe('Filter by task status'),
-        priority: z
-          .enum(['low', 'medium', 'high'])
-          .optional()
-          .describe('Filter by priority level'),
+        priority: z.enum(['low', 'medium', 'high']).optional().describe('Filter by priority level'),
         limit: z.number().int().min(1).max(200).optional().describe('Max results (default 50)'),
       },
     },
@@ -277,7 +274,7 @@ export function registerPhotisnadiTools(
         'tasks',
         `user_id=eq.${sb.userId}&select=status,priority,due_date`,
         sb
-      )) as Array<{ status: string; priority: string; due_date: string | null }>;
+      )) as { status: string; priority: string; due_date: string | null }[];
 
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 86400000);

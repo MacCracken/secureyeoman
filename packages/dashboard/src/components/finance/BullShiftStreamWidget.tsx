@@ -41,8 +41,14 @@ interface StreamStatus {
 const DEMO_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA', 'META', 'AMZN', 'AMD'];
 
 const demoPrices: Record<string, number> = {
-  AAPL: 178.50, MSFT: 415.20, GOOGL: 165.80, TSLA: 245.30,
-  NVDA: 880.40, META: 505.60, AMZN: 185.90, AMD: 164.70,
+  AAPL: 178.5,
+  MSFT: 415.2,
+  GOOGL: 165.8,
+  TSLA: 245.3,
+  NVDA: 880.4,
+  META: 505.6,
+  AMZN: 185.9,
+  AMD: 164.7,
 };
 
 let demoSeqId = 0;
@@ -118,9 +124,7 @@ function parsePositionsToTicks(data: unknown): PriceTick[] | null {
 
 function positionSymbols(data: unknown): string[] {
   if (!Array.isArray(data)) return [];
-  return (data as BullshiftPosition[])
-    .map((p) => p.symbol)
-    .filter((s): s is string => !!s);
+  return (data as BullshiftPosition[]).map((p) => p.symbol).filter((s): s is string => !!s);
 }
 
 // ── Sub-components ────────────────────────────────────────────────
@@ -152,18 +156,12 @@ const TickerBar = memo(function TickerBar({ ticks }: { ticks: PriceTick[] }) {
   return (
     <div className="flex gap-3 overflow-x-auto scrollbar-hide py-1">
       {ticks.map((tick) => (
-        <div
-          key={tick.symbol}
-          className="flex items-center gap-1.5 flex-shrink-0 text-xs"
-        >
+        <div key={tick.symbol} className="flex items-center gap-1.5 flex-shrink-0 text-xs">
           <span className="font-semibold text-foreground">{tick.symbol}</span>
           <span className="font-mono">${tick.price.toFixed(2)}</span>
-          <span
-            className={`font-mono ${
-              tick.change >= 0 ? 'text-emerald-400' : 'text-red-400'
-            }`}
-          >
-            {tick.change >= 0 ? '+' : ''}{tick.changePct.toFixed(2)}%
+          <span className={`font-mono ${tick.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {tick.change >= 0 ? '+' : ''}
+            {tick.changePct.toFixed(2)}%
           </span>
         </div>
       ))}
@@ -193,8 +191,9 @@ export function BullShiftStreamWidget() {
     retry: 1,
   });
 
-  const bullshiftUp = (healthData as Record<string, unknown>)?.status === 'ok'
-    || (healthData as Record<string, unknown>)?.status === 'healthy';
+  const bullshiftUp =
+    (healthData as Record<string, unknown>)?.status === 'ok' ||
+    (healthData as Record<string, unknown>)?.status === 'healthy';
 
   const { data: positionsData } = useQuery({
     queryKey: ['bullshift-positions-stream'],
@@ -287,10 +286,14 @@ export function BullShiftStreamWidget() {
         </div>
         <div className="flex items-center gap-1.5">
           {timeSinceLastEvent !== null && timeSinceLastEvent > 5 && (
-            <span title="Stale data"><AlertTriangle className="w-3 h-3 text-warning" /></span>
+            <span title="Stale data">
+              <AlertTriangle className="w-3 h-3 text-warning" />
+            </span>
           )}
           <button
-            onClick={() => setIsLive((l) => !l)}
+            onClick={() => {
+              setIsLive((l) => !l);
+            }}
             className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
               isLive
                 ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
@@ -332,13 +335,19 @@ export function BullShiftStreamWidget() {
         <div className="text-center">
           <div className="text-muted-foreground">Buy Vol</div>
           <div className="font-mono font-medium text-emerald-400">
-            {trades.filter((t) => t.side === 'buy').reduce((s, t) => s + t.qty, 0).toLocaleString()}
+            {trades
+              .filter((t) => t.side === 'buy')
+              .reduce((s, t) => s + t.qty, 0)
+              .toLocaleString()}
           </div>
         </div>
         <div className="text-center">
           <div className="text-muted-foreground">Sell Vol</div>
           <div className="font-mono font-medium text-red-400">
-            {trades.filter((t) => t.side === 'sell').reduce((s, t) => s + t.qty, 0).toLocaleString()}
+            {trades
+              .filter((t) => t.side === 'sell')
+              .reduce((s, t) => s + t.qty, 0)
+              .toLocaleString()}
           </div>
         </div>
         <div className="text-center">

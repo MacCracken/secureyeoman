@@ -52,7 +52,7 @@ interface OAITool {
 interface OAIChatResponse {
   id: string;
   model: string;
-  choices: Array<{
+  choices: {
     index: number;
     message: {
       role: string;
@@ -60,7 +60,7 @@ interface OAIChatResponse {
       tool_calls?: OAIToolCall[];
     };
     finish_reason: string;
-  }>;
+  }[];
   usage?: {
     prompt_tokens: number;
     completion_tokens: number;
@@ -71,19 +71,19 @@ interface OAIChatResponse {
 interface OAIStreamChunk {
   id: string;
   model: string;
-  choices: Array<{
+  choices: {
     index: number;
     delta: {
       role?: string;
       content?: string | null;
-      tool_calls?: Array<{
+      tool_calls?: {
         index: number;
         id?: string;
         function?: { name?: string; arguments?: string };
-      }>;
+      }[];
     };
     finish_reason: string | null;
-  }>;
+  }[];
   usage?: {
     prompt_tokens: number;
     completion_tokens: number;
