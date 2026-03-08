@@ -51,10 +51,25 @@ Comprehensive security audit covering input validation, error handling, auth/acc
 - **InstalledTab expansion** (`dashboard/components/skills/InstalledTab.tsx`): Shows installed items across all categories with uninstall capability.
 - **SettingsPage refresh** (`dashboard/components/SettingsPage.tsx`): Significant UI improvements to settings layout and organization.
 
+### License-Gated Migration Schema (Schema Tier Split)
+
+Split the monolithic `001_baseline.sql` into tier-separated baselines so the database schema matches the active license tier.
+
+- **3 tier baselines** (`storage/migrations/`): `001_community.sql` (55 tables — core chat, soul, brain, marketplace, auth, audit, MCP), `002_pro.sql` (65 tables — workflows, analytics, agents, RBAC, eval, telemetry), `003_enterprise.sql` (51 tables — DLP, A2A, federation, advanced training, SSO/tenants, chaos, policy-as-code, IaC, agent replay). All idempotent (IF NOT EXISTS).
+- **Incremental squash**: Migrations 002–007 (agent_replay, policy_as_code, iac, chaos, federated_learning, pretrain_jobs) absorbed into `003_enterprise.sql`.
+- **Tier-aware migration runner** (`storage/migrations/runner.ts`): `runMigrations(tier)` filters manifest by `TIER_RANK`. Default `'enterprise'` for backwards compat. `secureyeoman.ts` passes `licenseManager.getTier()`.
+- **Legacy compatibility shim**: Old monolithic IDs (001_baseline, 002–007) detected and mapped to new tier-split IDs automatically.
+- **Tests**: 14 unit tests (manifest structure, tier ordering, runner fast-path, tier filtering, legacy compat) + 8 integration tests (community-only, pro, enterprise, upgrade, idempotency, partial recovery, timestamps, legacy shim).
+- **ADR 031** (`docs/adr/031-license-gated-schema.md`): Architecture decision record.
+
+### AGNOS Dev Stack Integration
+
+- **`agnosticos` service** (`docker-compose.yml`): Added agnosticos container under `agnos` profile. LLM Gateway on :8088 (OpenAI-compatible), Agent Runtime on :8090. Environment variables wired to core and MCP services.
+- **Dev workflow**: `docker compose --env-file .env.dev --profile dev --profile agnos up -d` brings up the full stack including AGNOS.
+
 ### CI & Infrastructure
 
 - **GitHub Actions workflow** (`.github/workflows/ci.yml`): Expanded CI pipeline with improved test stages and workflow reliability.
-- **ADR 031** (`docs/adr/031-license-gated-schema.md`): Architecture decision record for license-gated migration schema (planned — see roadmap).
 
 ### Bug Fixes
 

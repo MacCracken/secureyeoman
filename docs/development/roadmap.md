@@ -9,7 +9,7 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| Schema Tier Split | License-Gated Migration Schema | P1 — architecture | Planned |
+| Schema Tier Split | License-Gated Migration Schema | P1 — architecture | Done (2026-03-07) |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Integration C (remaining) | AGNOS node22 Base Image | P2 | Unblocked (AGNOS Alpha available) |
 | 145 | Cross-Project MCP Expansion | P2 | In Progress (1 item remaining) |
@@ -305,4 +305,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-07 (test coverage stats updated, completed items pruned). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-08 (Schema Tier Split marked done, timeline table synced). See [Changelog](../../CHANGELOG.md) for full history.*
