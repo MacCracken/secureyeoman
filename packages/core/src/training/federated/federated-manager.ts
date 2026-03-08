@@ -5,6 +5,7 @@
  * model update collection, aggregation, and privacy budget tracking.
  */
 
+import { randomBytes } from 'node:crypto';
 import type { Logger } from 'pino';
 import type {
   FederatedLearningConfig,
@@ -78,7 +79,7 @@ export class FederatedManager {
 
     const session: FederatedSession = {
       ...input,
-      id: `fl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `fl-${Date.now()}-${randomBytes(4).toString('hex')}`,
       currentRound: 0,
       status: 'active',
       createdAt: Date.now(),
@@ -139,7 +140,7 @@ export class FederatedManager {
     datasetSize: number
   ): Promise<FederatedParticipant> {
     const participant: FederatedParticipant = {
-      id: `fp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `fp-${Date.now()}-${randomBytes(4).toString('hex')}`,
       peerId,
       name,
       status: 'registered',
@@ -194,7 +195,7 @@ export class FederatedManager {
 
     const roundNumber = session.currentRound + 1;
     const round = {
-      id: `fr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `fr-${Date.now()}-${randomBytes(4).toString('hex')}`,
       sessionId,
       roundNumber,
       status: 'distributing' as const,
@@ -239,7 +240,7 @@ export class FederatedManager {
 
     const fullUpdate: ModelUpdate & { id: string } = {
       ...update,
-      id: `mu-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `mu-${Date.now()}-${randomBytes(4).toString('hex')}`,
       roundId,
       submittedAt: Date.now(),
     };

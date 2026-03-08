@@ -2,8 +2,10 @@
  * IaC Routes — REST API for infrastructure-as-code template management.
  */
 
+import { randomBytes } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { IacManager } from './iac-manager.js';
+import { IacDeploymentStatusSchema } from '@secureyeoman/shared';
 import { sendError } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { requiresLicense } from '../licensing/license-guard.js';
@@ -209,11 +211,11 @@ export function registerIacRoutes(app: FastifyInstance, opts: IacRouteOptions): 
 
       try {
         const deployment = {
-          id: `iac-deploy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          id: `iac-deploy-${Date.now()}-${randomBytes(4).toString('hex')}`,
           templateId: body.templateId,
           templateName: body.templateName,
           templateVersion: body.templateVersion ?? '',
-          status: body.status as any,
+          status: IacDeploymentStatusSchema.parse(body.status),
           variables: body.variables ?? {},
           planOutput: body.planOutput ?? '',
           applyOutput: body.applyOutput ?? '',

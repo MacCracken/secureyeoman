@@ -5,6 +5,7 @@
  * tracking. Enforces safety limits and manages concurrent experiments.
  */
 
+import { randomBytes } from 'node:crypto';
 import type { Logger } from 'pino';
 import type {
   ChaosEngineeringConfig,
@@ -63,7 +64,7 @@ export class ChaosManager {
 
     const experiment: ChaosExperiment = {
       ...input,
-      id: `chaos-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `chaos-${Date.now()}-${randomBytes(4).toString('hex')}`,
       status: 'draft',
       startedAt: 0,
       completedAt: 0,
@@ -184,7 +185,7 @@ export class ChaosManager {
 
     const metrics = this.computeMetrics(faultResults);
     const experimentResult: ChaosExperimentResult & { id: string } = {
-      id: `result-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `result-${Date.now()}-${randomBytes(4).toString('hex')}`,
       experimentId: id,
       status,
       startedAt: startTime,

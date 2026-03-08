@@ -5,6 +5,7 @@
  * falls back to the active personality when omitted.
  */
 
+import { randomBytes } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import type {
@@ -551,7 +552,7 @@ function captureWebSearchSources(output: unknown, brainContext: BrainContextMeta
       brainContext.sources.push({
         index: nextIndex(),
         type: 'web_search',
-        sourceId: url ?? `web-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        sourceId: url ?? `web-${Date.now()}-${randomBytes(4).toString('hex')}`,
         content: snippet,
         sourceLabel: title,
         url,

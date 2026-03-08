@@ -6,7 +6,7 @@
  * HMAC-SHA256 signature, and normalizes the payload to UnifiedMessage.
  */
 
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
@@ -121,7 +121,7 @@ export class GenericWebhookIntegration implements WebhookIntegration {
     if (!this.deps) throw new Error('Integration not initialized');
 
     const unified: UnifiedMessage = {
-      id: `wh_in_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      id: `wh_in_${Date.now()}_${randomBytes(4).toString('hex')}`,
       integrationId: this.config!.id,
       platform: 'webhook',
       direction: 'inbound',

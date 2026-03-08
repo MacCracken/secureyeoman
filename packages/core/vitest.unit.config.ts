@@ -70,6 +70,9 @@ const DB_TEST_EXCLUDE = [
 
 export default defineConfig({
   plugins: [sqlRaw],
+  resolve: {
+    conditions: ['source'],
+  },
   test: {
     name: 'core:unit',
     globals: true,

@@ -151,7 +151,7 @@ export class DiscordIntegration implements Integration {
       // Vision processing for image attachments
       const mmManager = this.deps?.multimodalManager;
       if (mmManager) {
-        void (async () => {
+        (async () => {
           for (const att of unified.attachments ?? []) {
             if (att.mimeType?.startsWith('image/') && att.url) {
               try {
@@ -168,7 +168,12 @@ export class DiscordIntegration implements Integration {
             }
           }
           await this.deps!.onMessage(unified);
-        })();
+        })().catch((err: unknown) => {
+          this.logger?.error(
+            { error: err instanceof Error ? err.message : String(err) },
+            'Vision processing / onMessage failed'
+          );
+        });
       } else {
         this.deps!.onMessage(unified).catch((err: unknown) => {
           this.logger?.error(
@@ -185,7 +190,12 @@ export class DiscordIntegration implements Integration {
       if ((interaction as any).isModalSubmit?.()) {
         const modal = interaction as ModalSubmitInteraction;
         const feedbackText = modal.fields.getTextInputValue('feedback_input');
-        void modal.reply({ content: 'Thank you for your feedback!', ephemeral: true });
+        modal.reply({ content: 'Thank you for your feedback!', ephemeral: true }).catch((err: unknown) => {
+          this.logger?.warn(
+            { error: err instanceof Error ? err.message : String(err) },
+            'Discord modal reply failed'
+          );
+        });
 
         const unified: UnifiedMessage = {
           id: `dc_modal_${modal.id}`,
@@ -221,7 +231,7 @@ export class DiscordIntegration implements Integration {
       const { commandName } = cmd;
 
       if (commandName === 'help') {
-        void cmd.reply({
+        cmd.reply({
           embeds: [
             new EmbedBuilder()
               .setTitle('FRIDAY Help')
@@ -235,12 +245,14 @@ export class DiscordIntegration implements Integration {
               )
               .setColor(0x5865f2),
           ],
+        }).catch((err: unknown) => {
+          this.logger?.warn({ error: err instanceof Error ? err.message : String(err) }, 'Discord help reply failed');
         });
         return;
       }
 
       if (commandName === 'status') {
-        void cmd.reply({
+        cmd.reply({
           embeds: [
             new EmbedBuilder()
               .setTitle('FRIDAY Status')
@@ -251,6 +263,8 @@ export class DiscordIntegration implements Integration {
               )
               .setColor(0x57f287),
           ],
+        }).catch((err: unknown) => {
+          this.logger?.warn({ error: err instanceof Error ? err.message : String(err) }, 'Discord status reply failed');
         });
         return;
       }
@@ -268,13 +282,17 @@ export class DiscordIntegration implements Integration {
         );
 
         modal.addComponents(row);
-        void (cmd as any).showModal(modal);
+        (cmd as any).showModal(modal).catch((err: unknown) => {
+          this.logger?.warn({ error: err instanceof Error ? err.message : String(err) }, 'Discord showModal failed');
+        });
         return;
       }
 
       if (commandName === 'ask') {
         const question = cmd.options.getString('question', true);
-        void cmd.deferReply();
+        cmd.deferReply().catch((err: unknown) => {
+          this.logger?.warn({ error: err instanceof Error ? err.message : String(err) }, 'Discord deferReply failed');
+        });
 
         const unified: UnifiedMessage = {
           id: `dc_${cmd.id}`,

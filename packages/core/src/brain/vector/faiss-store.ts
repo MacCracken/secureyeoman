@@ -44,7 +44,13 @@ export class FaissVectorStore implements VectorStore {
 
     if (fs.existsSync(indexPath) && fs.existsSync(sidecarPath)) {
       this.index = this.faissModule.IndexFlatL2.read(indexPath);
-      this.sidecar = JSON.parse(fs.readFileSync(sidecarPath, 'utf-8'));
+      try {
+        this.sidecar = JSON.parse(fs.readFileSync(sidecarPath, 'utf-8'));
+      } catch {
+        // Corrupted sidecar — start fresh
+        this.index = new this.faissModule.IndexFlatL2(this.dimensions);
+        return;
+      }
     } else {
       this.index = new this.faissModule.IndexFlatL2(this.dimensions);
     }

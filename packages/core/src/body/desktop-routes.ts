@@ -341,9 +341,14 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       const auditLogger = getCaptureAuditLogger?.();
       const bridge = getTrainingBridge?.();
 
+      const { x, y } = request.body ?? {};
+      if (typeof x !== 'number' || typeof y !== 'number') {
+        return sendError(reply, 400, 'x and y must be numbers');
+      }
+
       try {
         const { moveMouse } = await import('./actuator/input.js');
-        await moveMouse(request.body.x, request.body.y);
+        await moveMouse(x, y);
         auditLog(
           auditLogger,
           'capture.completed',
@@ -481,9 +486,18 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       const auditLogger = getCaptureAuditLogger?.();
       const bridge = getTrainingBridge?.();
 
+      const text = request.body?.text;
+      const delayMs = request.body?.delayMs ?? 0;
+      if (typeof text !== 'string' || !text) {
+        return sendError(reply, 400, 'text is required and must be a string');
+      }
+      if (typeof delayMs !== 'number' || delayMs < 0) {
+        return sendError(reply, 400, 'delayMs must be a non-negative number');
+      }
+
       try {
         const { typeText } = await import('./actuator/input.js');
-        await typeText(request.body.text, request.body.delayMs ?? 0);
+        await typeText(text, delayMs);
         auditLog(
           auditLogger,
           'capture.completed',

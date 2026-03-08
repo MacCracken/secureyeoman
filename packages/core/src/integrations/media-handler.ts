@@ -140,14 +140,22 @@ export class MediaHandler {
     try {
       const parsed = new URL(url);
       const hostname = parsed.hostname;
+      // Strip IPv6 brackets for comparison
+      const bare = hostname.startsWith('[') ? hostname.slice(1, -1) : hostname;
       if (
-        hostname === 'localhost' ||
-        hostname === '127.0.0.1' ||
-        hostname === '::1' ||
-        hostname.startsWith('10.') ||
-        hostname.startsWith('192.168.') ||
-        hostname.startsWith('169.254.') ||
-        /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+        bare === 'localhost' ||
+        bare === '127.0.0.1' ||
+        bare === '::1' ||
+        bare === '::' ||
+        bare === '0.0.0.0' ||
+        bare.startsWith('10.') ||
+        bare.startsWith('192.168.') ||
+        bare.startsWith('169.254.') ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(bare) ||
+        // IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1, ::ffff:10.0.0.1)
+        /^::ffff:(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0)/i.test(bare) ||
+        // Reject any hostname ending in .internal or .local (DNS rebinding vectors)
+        /\.(internal|local|localhost)$/i.test(bare)
       ) {
         throw new MediaError('URL targets a private address', 'SSRF_BLOCKED');
       }

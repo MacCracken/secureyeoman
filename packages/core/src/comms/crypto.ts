@@ -37,10 +37,17 @@ export class AgentCrypto {
 
   constructor(keyStorePath?: string) {
     if (keyStorePath && existsSync(keyStorePath)) {
-      const stored = JSON.parse(readFileSync(keyStorePath, 'utf8')) as {
-        x25519Private: string;
-        ed25519Private: string;
-      };
+      let stored: { x25519Private: string; ed25519Private: string };
+      try {
+        stored = JSON.parse(readFileSync(keyStorePath, 'utf8')) as {
+          x25519Private: string;
+          ed25519Private: string;
+        };
+      } catch (err) {
+        throw new Error(
+          `Failed to parse key store at ${keyStorePath}: ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
       this.x25519PrivateKey = createPrivateKey({
         key: Buffer.from(stored.x25519Private, 'base64'),
         format: 'der',

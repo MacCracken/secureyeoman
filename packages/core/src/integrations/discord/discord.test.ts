@@ -400,7 +400,7 @@ describe('DiscordIntegration', () => {
     )?.[1] as ((interaction: any) => void) | undefined;
     expect(interactionHandler).toBeDefined();
 
-    const showModal = vi.fn();
+    const showModal = vi.fn().mockResolvedValue(undefined);
     const fakeInteraction = {
       isModalSubmit: () => false,
       isCommand: () => true,
@@ -411,8 +411,8 @@ describe('DiscordIntegration', () => {
       guildId: 'guild_1',
       createdTimestamp: Date.now(),
       options: { getString: vi.fn() },
-      deferReply: vi.fn(),
-      reply: vi.fn(),
+      deferReply: vi.fn().mockResolvedValue(undefined),
+      reply: vi.fn().mockResolvedValue(undefined),
       showModal,
     };
 

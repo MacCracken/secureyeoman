@@ -165,10 +165,15 @@ export class CollabManager {
     getLogger().debug({ docId, clientId }, 'Collab client left');
 
     if (entry.clients.size === 0) {
-      // Persist immediately when the room empties
-      void this.persistNow(docId, entry);
+      // Persist before removing from map to prevent race with concurrent join
       if (entry.saveTimer) clearTimeout(entry.saveTimer);
       this.docs.delete(docId);
+      this.persistNow(docId, entry).catch((err: unknown) => {
+        getLogger().warn(
+          { docId, error: err instanceof Error ? err.message : String(err) },
+          'Collab persist on leave failed'
+        );
+      });
     } else {
       // Let remaining peers know this client's awareness is gone
       this.broadcastAwareness(docId, clientId, entry);

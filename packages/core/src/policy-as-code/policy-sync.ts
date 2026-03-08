@@ -5,6 +5,7 @@
  * and recording deployment history for audit trails.
  */
 
+import { randomBytes } from 'node:crypto';
 import type { OpaClient } from '../intent/opa-client.js';
 import { evalCel } from '../intent/cel-evaluator.js';
 import type { PolicyBundleStore } from './policy-bundle-store.js';
@@ -68,7 +69,7 @@ export class PolicySync {
     }
 
     const deployment: PolicyDeployment = {
-      id: `deploy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `deploy-${Date.now()}-${randomBytes(4).toString('hex')}`,
       bundleId: bundle.id,
       bundleName: bundle.metadata.name,
       bundleVersion: bundle.metadata.version,

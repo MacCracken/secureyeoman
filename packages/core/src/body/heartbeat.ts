@@ -690,7 +690,7 @@ export class HeartbeatManager {
         checks.push(result);
         this.taskLastRun.set(check.name, start);
       } catch (err) {
-        errorDetail = err instanceof Error ? (err.stack ?? err.message) : String(err);
+        errorDetail = err instanceof Error ? err.message : String(err);
         result = {
           name: check.name,
           type: check.type,

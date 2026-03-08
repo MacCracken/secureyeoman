@@ -16,7 +16,7 @@
  *   - TRANSCRIBE_ENABLE_DIARIZATION — 'true' to enable speaker labels
  */
 
-import { createHmac, createHash } from 'node:crypto';
+import { createHmac, createHash, randomBytes } from 'node:crypto';
 
 const FETCH_TIMEOUT_MS = 30_000;
 
@@ -213,7 +213,7 @@ export async function transcribeViaAWSTranscribe(
   const endpoint = `https://transcribe.${creds.region}.amazonaws.com`;
 
   // Build the transcription job request
-  const jobName = `sy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const jobName = `sy-${Date.now()}-${randomBytes(4).toString('hex')}`;
   const jobBody: Record<string, unknown> = {
     TranscriptionJobName: jobName,
     Media: {

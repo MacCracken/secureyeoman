@@ -178,7 +178,7 @@ services:
     restart: unless-stopped
 
   agnostic-webgui:
-    image: ghcr.io/maccracken/agnostic-webgui:2026.3.8
+    image: agnostic-webgui:local
     ports:
       - "8000:8000"
     environment:

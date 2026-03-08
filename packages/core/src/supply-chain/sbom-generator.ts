@@ -11,7 +11,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { createHash } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { VERSION } from '../version.js';
 
 export interface SbomComponent {
@@ -79,13 +79,25 @@ export function generateSbom(options: SbomOptions = {}): SbomDocument {
     throw new Error(`No package-lock.json found in ${rootDir} or parent directories`);
   }
 
-  const lockData: PackageLockV3 = JSON.parse(readFileSync(lockPath, 'utf-8'));
+  let lockData: PackageLockV3;
+  try {
+    lockData = JSON.parse(readFileSync(lockPath, 'utf-8'));
+  } catch (err) {
+    throw new Error(
+      `Failed to parse ${lockPath}: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
 
   // Read root package.json for application metadata
   const rootPkgPath = join(dirname(lockPath), 'package.json');
-  const rootPkg = existsSync(rootPkgPath)
-    ? (JSON.parse(readFileSync(rootPkgPath, 'utf-8')) as Record<string, unknown>)
-    : {};
+  let rootPkg: Record<string, unknown> = {};
+  if (existsSync(rootPkgPath)) {
+    try {
+      rootPkg = JSON.parse(readFileSync(rootPkgPath, 'utf-8')) as Record<string, unknown>;
+    } catch {
+      // Non-fatal — fall back to defaults
+    }
+  }
 
   const components = extractComponents(lockData, includeDev);
 
@@ -256,15 +268,5 @@ function parseIntegrityHashes(integrity: string): { alg: string; content: string
 }
 
 function generateUuid(): string {
-  const bytes = createHash('sha256').update(`${Date.now()}-${Math.random()}`).digest();
-
-  // Format as UUID v4-like
-  const hex = bytes.subarray(0, 16).toString('hex');
-  return [
-    hex.substring(0, 8),
-    hex.substring(8, 12),
-    `4${hex.substring(13, 16)}`,
-    hex.substring(16, 20),
-    hex.substring(20, 32),
-  ].join('-');
+  return randomUUID();
 }

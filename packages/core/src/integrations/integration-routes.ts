@@ -130,14 +130,18 @@ export function registerIntegrationRoutes(
       request: FastifyRequest<{ Params: { id: string }; Body: IntegrationUpdate }>,
       reply: FastifyReply
     ) => {
-      const integration = await integrationManager.updateIntegration(
-        request.params.id,
-        request.body
-      );
-      if (!integration) {
-        return sendError(reply, 404, 'Integration not found');
+      try {
+        const integration = await integrationManager.updateIntegration(
+          request.params.id,
+          request.body
+        );
+        if (!integration) {
+          return sendError(reply, 404, 'Integration not found');
+        }
+        return { integration: maskIntegration(integration) };
+      } catch (err) {
+        return sendError(reply, 400, toErrorMessage(err));
       }
-      return { integration: maskIntegration(integration) };
     }
   );
 
@@ -286,11 +290,18 @@ export function registerIntegrationRoutes(
       request: FastifyRequest<{ Params: { id: string }; Body: { chatId: string; text: string } }>,
       reply: FastifyReply
     ) => {
+      const { chatId, text } = request.body ?? {};
+      if (!chatId || typeof chatId !== 'string') {
+        return sendError(reply, 400, 'chatId is required');
+      }
+      if (!text || typeof text !== 'string') {
+        return sendError(reply, 400, 'text is required');
+      }
       try {
         const platformMessageId = await integrationManager.sendMessage(
           request.params.id,
-          request.body.chatId,
-          request.body.text
+          chatId,
+          text
         );
         return reply.code(201).send({ platformMessageId });
       } catch (err) {

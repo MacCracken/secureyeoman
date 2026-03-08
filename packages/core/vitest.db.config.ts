@@ -70,6 +70,9 @@ const DB_TESTS = [
 
 export default defineConfig({
   plugins: [sqlRaw],
+  resolve: {
+    conditions: ['source'],
+  },
   test: {
     name: 'core:db',
     globals: true,
