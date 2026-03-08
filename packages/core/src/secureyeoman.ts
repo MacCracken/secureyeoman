@@ -1908,14 +1908,22 @@ export class SecureYeoman {
     this.logger?.info('Security policy updated', updates);
 
     const { communityGitUrl: _url, ...persistableUpdates } = updates;
-    void this.persistSecurityPolicyToDb(persistableUpdates as Record<string, unknown>);
+    void this.persistSecurityPolicyToDb(persistableUpdates as Record<string, unknown>).catch(
+      (err: unknown) => {
+        this.logger?.error({ err }, 'Failed to persist security policy to DB');
+      }
+    );
 
-    void this.auditChain?.record({
-      event: 'security_policy_changed',
-      level: 'info',
-      message: `Security policy updated: ${JSON.stringify(updates)}`,
-      metadata: updates,
-    });
+    void this.auditChain
+      ?.record({
+        event: 'security_policy_changed',
+        level: 'info',
+        message: `Security policy updated: ${JSON.stringify(updates)}`,
+        metadata: updates,
+      })
+      .catch((err: unknown) => {
+        this.logger?.error({ err }, 'Failed to record security policy audit event');
+      });
   }
 
   private async persistSecurityPolicyToDb(updates: Record<string, unknown>): Promise<void> {

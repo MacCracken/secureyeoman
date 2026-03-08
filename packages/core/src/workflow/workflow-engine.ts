@@ -343,16 +343,18 @@ export class WorkflowEngine {
               },
               'Step output schema violation'
             );
-            void this.auditChain?.record({
-              event: 'step_output_schema_violation',
-              level: 'warn',
-              message: `Step "${step.name}" output failed schema validation`,
-              metadata: {
-                stepId: step.id,
-                errorCount: schemaValidation.errors.length,
-                errors: schemaValidation.errors.map((e) => `${e.path}: ${e.message}`),
-              },
-            });
+            void this.auditChain
+              ?.record({
+                event: 'step_output_schema_violation',
+                level: 'warn',
+                message: `Step "${step.name}" output failed schema validation`,
+                metadata: {
+                  stepId: step.id,
+                  errorCount: schemaValidation.errors.length,
+                  errors: schemaValidation.errors.map((e) => `${e.path}: ${e.message}`),
+                },
+              })
+              .catch(() => {});
             if (outputSchemaMode === 'strict') {
               throw new Error(
                 `Step "${step.id}" output failed schema validation (${schemaValidation.errors.length} error(s)): ` +

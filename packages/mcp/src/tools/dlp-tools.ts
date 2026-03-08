@@ -43,7 +43,7 @@ export function registerDlpTools(
         .describe('Content type for persistence'),
     },
     wrapToolHandler('dlp_classify', middleware, async (args) => {
-      if (!(config as any).exposeDlp) return disabled();
+      if (!('exposeDlp' in config) || !config.exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/classify', args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
@@ -59,7 +59,7 @@ export function registerDlpTools(
       contentType: z.string().optional().describe('Content type context'),
     },
     wrapToolHandler('dlp_scan', middleware, async (args) => {
-      if (!(config as any).exposeDlp) return disabled();
+      if (!('exposeDlp' in config) || !config.exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/scan', args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
@@ -74,7 +74,7 @@ export function registerDlpTools(
       limit: z.number().int().optional().describe('Max results (default 50)'),
     },
     wrapToolHandler('dlp_policies', middleware, async (args) => {
-      if (!(config as any).exposeDlp) return disabled();
+      if (!('exposeDlp' in config) || !config.exposeDlp) return disabled();
       const query: Record<string, string> = {};
       if (args.active !== undefined) query.active = String(args.active);
       if (args.limit !== undefined) query.limit = String(args.limit);
@@ -92,7 +92,7 @@ export function registerDlpTools(
       to: z.number().optional().describe('End timestamp (ms). Default: now'),
     },
     wrapToolHandler('dlp_egress_stats', middleware, async (args) => {
-      if (!(config as any).exposeDlp) return disabled();
+      if (!('exposeDlp' in config) || !config.exposeDlp) return disabled();
       const query: Record<string, string> = {};
       if (args.from !== undefined) query.from = String(args.from);
       if (args.to !== undefined) query.to = String(args.to);
@@ -114,7 +114,7 @@ export function registerDlpTools(
         .describe('Watermark algorithm (default: unicode-steganography)'),
     },
     wrapToolHandler('dlp_watermark_embed', middleware, async (args) => {
-      if (!(config as any).exposeDlp) return disabled();
+      if (!('exposeDlp' in config) || !config.exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/watermark/embed', args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
@@ -132,7 +132,7 @@ export function registerDlpTools(
         .describe('Watermark algorithm to use for extraction'),
     },
     wrapToolHandler('dlp_watermark_extract', middleware, async (args) => {
-      if (!(config as any).exposeDlp) return disabled();
+      if (!('exposeDlp' in config) || !config.exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/watermark/extract', args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })

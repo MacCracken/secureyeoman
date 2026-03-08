@@ -233,7 +233,7 @@ export class EventBridge {
 
       this.logger.info({ name, delay: reconnectDelay }, 'Event bridge reconnecting');
       await new Promise((r) => setTimeout(r, reconnectDelay));
-      connect();
+      return connect();
     };
 
     connect();

@@ -8,10 +8,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { AuthService } from '../security/auth.js';
 import { AuthStorage } from '../security/auth-storage.js';
-import {
-  AuditChain,
-  InMemoryAuditStorage,
-} from '../logging/audit-chain.js';
+import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { RBAC, initializeRBAC } from '../security/rbac.js';
 import { type RateLimiterLike, createRateLimiter } from '../security/rate-limiter.js';
 import { createAuthHook, createRbacHook } from '../gateway/auth-middleware.js';

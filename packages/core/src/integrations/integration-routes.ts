@@ -600,6 +600,9 @@ export function registerIntegrationRoutes(
         request: FastifyRequest<{ Params: { id: string }; Body: OutboundWebhookUpdate }>,
         reply: FastifyReply
       ) => {
+        if (request.body.url) {
+          assertPublicUrl(request.body.url, 'Webhook URL');
+        }
         const webhook = await outboundWebhookStorage.updateWebhook(request.params.id, request.body);
         if (!webhook) return sendError(reply, 404, 'Outbound webhook not found');
         return { webhook };

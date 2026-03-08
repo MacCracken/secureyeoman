@@ -153,7 +153,9 @@ export class MediaHandler {
         bare.startsWith('169.254.') ||
         /^172\.(1[6-9]|2\d|3[01])\./.test(bare) ||
         // IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1, ::ffff:10.0.0.1)
-        /^::ffff:(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0)/i.test(bare) ||
+        /^::ffff:(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0)/i.test(
+          bare
+        ) ||
         // Reject any hostname ending in .internal or .local (DNS rebinding vectors)
         /\.(internal|local|localhost)$/i.test(bare)
       ) {

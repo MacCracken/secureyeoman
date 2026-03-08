@@ -186,17 +186,19 @@ Respond ONLY with JSON (no markdown, no explanation): {"assignTo": ["profileName
         assignedMembers.push(team.members[0]!.profileName);
       }
 
-      void this.auditChain?.record({
-        event: 'team_coordinator_assigned',
-        level: 'info',
-        message: `Team "${team.name}" coordinator assigned members for run ${run.id}`,
-        metadata: {
-          runId: run.id,
-          teamId: team.id,
-          assignedMembers,
-          reasoning: decision.reasoning,
-        },
-      });
+      void this.auditChain
+        ?.record({
+          event: 'team_coordinator_assigned',
+          level: 'info',
+          message: `Team "${team.name}" coordinator assigned members for run ${run.id}`,
+          metadata: {
+            runId: run.id,
+            teamId: team.id,
+            assignedMembers,
+            reasoning: decision.reasoning,
+          },
+        })
+        .catch(() => {});
 
       // Step 4: Dispatch delegations
       const delegationResults: string[] = [];

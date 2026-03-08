@@ -412,8 +412,20 @@ export function parseModelString(input: string): ParsedModelString {
 
     // Check if the provider part is a known provider name
     const knownProviders = new Set([
-      'anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio',
-      'localai', 'deepseek', 'mistral', 'grok', 'letta', 'groq', 'openrouter', 'agnos',
+      'anthropic',
+      'openai',
+      'gemini',
+      'ollama',
+      'opencode',
+      'lmstudio',
+      'localai',
+      'deepseek',
+      'mistral',
+      'grok',
+      'letta',
+      'groq',
+      'openrouter',
+      'agnos',
     ]);
 
     if (knownProviders.has(providerPart)) {

@@ -68,7 +68,11 @@ export class LocalEmbeddingProvider extends BaseEmbeddingProvider {
     return new Promise((resolve, reject) => {
       this.responseQueue.push({ resolve, reject });
       const request = JSON.stringify({ texts }) + '\n';
-      this.process!.stdin!.write(request);
+      if (!this.process?.stdin) {
+        reject(new Error('Embedding process stdin not available'));
+        return;
+      }
+      this.process.stdin.write(request);
     });
   }
 
@@ -120,13 +124,14 @@ export class LocalEmbeddingProvider extends BaseEmbeddingProvider {
     await new Promise<void>((resolve) => {
       const onData = (data: Buffer) => {
         if (data.toString().includes('Loaded')) {
-          this.process!.stderr!.off('data', onData);
+          this.process?.stderr?.off('data', onData);
           resolve();
         }
       };
-      this.process!.stderr!.on('data', onData);
+      this.process?.stderr?.on('data', onData);
       // Timeout after 60s
       setTimeout(() => {
+        this.process?.stderr?.off('data', onData);
         resolve();
       }, 60000);
     });

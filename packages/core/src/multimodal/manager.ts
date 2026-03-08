@@ -1010,11 +1010,13 @@ export class MultimodalManager {
         result as unknown as Record<string, unknown>,
         durationMs
       );
-      void this.deps.extensionManager?.emit('multimodal:image-analyzed', {
-        event: 'multimodal:image-analyzed',
-        data: { jobId, result },
-        timestamp: Date.now(),
-      });
+      void this.deps.extensionManager
+        ?.emit('multimodal:image-analyzed', {
+          event: 'multimodal:image-analyzed',
+          data: { jobId, result },
+          timestamp: Date.now(),
+        })
+        .catch(() => {});
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
@@ -1108,11 +1110,13 @@ export class MultimodalManager {
         result as unknown as Record<string, unknown>,
         durationMs
       );
-      void this.deps.extensionManager?.emit('multimodal:audio-transcribed', {
-        event: 'multimodal:audio-transcribed',
-        data: { jobId, result },
-        timestamp: Date.now(),
-      });
+      void this.deps.extensionManager
+        ?.emit('multimodal:audio-transcribed', {
+          event: 'multimodal:audio-transcribed',
+          data: { jobId, result },
+          timestamp: Date.now(),
+        })
+        .catch(() => {});
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
@@ -1204,11 +1208,13 @@ export class MultimodalManager {
         { format: result.format, durationMs, audioSizeBytes: audioBase64.length },
         durationMs
       );
-      void this.deps.extensionManager?.emit('multimodal:speech-generated', {
-        event: 'multimodal:speech-generated',
-        data: { jobId, format: result.format },
-        timestamp: Date.now(),
-      });
+      void this.deps.extensionManager
+        ?.emit('multimodal:speech-generated', {
+          event: 'multimodal:speech-generated',
+          data: { jobId, format: result.format },
+          timestamp: Date.now(),
+        })
+        .catch(() => {});
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
@@ -1327,11 +1333,13 @@ export class MultimodalManager {
         { format, durationMs, audioSizeBytes: buffer.length },
         durationMs
       );
-      void this.deps.extensionManager?.emit('multimodal:speech-generated', {
-        event: 'multimodal:speech-generated',
-        data: { jobId, format },
-        timestamp: Date.now(),
-      });
+      void this.deps.extensionManager
+        ?.emit('multimodal:speech-generated', {
+          event: 'multimodal:speech-generated',
+          data: { jobId, format },
+          timestamp: Date.now(),
+        })
+        .catch(() => {});
       return { buffer, format, durationMs };
     } catch (error) {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
@@ -1407,11 +1415,13 @@ export class MultimodalManager {
         result as unknown as Record<string, unknown>,
         durationMs
       );
-      void this.deps.extensionManager?.emit('multimodal:image-generated', {
-        event: 'multimodal:image-generated',
-        data: { jobId, result },
-        timestamp: Date.now(),
-      });
+      void this.deps.extensionManager
+        ?.emit('multimodal:image-generated', {
+          event: 'multimodal:image-generated',
+          data: { jobId, result },
+          timestamp: Date.now(),
+        })
+        .catch(() => {});
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
@@ -1455,11 +1465,13 @@ export class MultimodalManager {
         result as unknown as Record<string, unknown>,
         durationMs
       );
-      void this.deps.extensionManager?.emit('multimodal:haptic-triggered', {
-        event: 'multimodal:haptic-triggered',
-        data: { jobId, pattern, patternMs, description: request.description },
-        timestamp: Date.now(),
-      });
+      void this.deps.extensionManager
+        ?.emit('multimodal:haptic-triggered', {
+          event: 'multimodal:haptic-triggered',
+          data: { jobId, pattern, patternMs, description: request.description },
+          timestamp: Date.now(),
+        })
+        .catch(() => {});
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));

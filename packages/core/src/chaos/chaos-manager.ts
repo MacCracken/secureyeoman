@@ -46,6 +46,7 @@ export class ChaosManager {
         this.log.error({ err }, 'Chaos scheduler check failed');
       });
     }, 10_000);
+    this.schedulerTimer.unref();
     this.log.info({}, 'Chaos engineering scheduler started');
   }
 

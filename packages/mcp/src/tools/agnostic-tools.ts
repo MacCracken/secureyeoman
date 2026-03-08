@@ -884,19 +884,22 @@ export function registerAgnosticTools(
         'Valid providers: openai, anthropic, google, ollama, lm_studio, custom_local, agnos_gateway.',
       inputSchema: {
         provider: z
-          .enum(['openai', 'anthropic', 'google', 'ollama', 'lm_studio', 'custom_local', 'agnos_gateway'])
+          .enum([
+            'openai',
+            'anthropic',
+            'google',
+            'ollama',
+            'lm_studio',
+            'custom_local',
+            'agnos_gateway',
+          ])
           .describe('LLM provider name'),
-        api_key: z
-          .string()
-          .describe('The API key or token'),
+        api_key: z.string().describe('The API key or token'),
         base_url: z
           .string()
           .optional()
           .describe('Override base URL for the provider (e.g. custom endpoint)'),
-        model: z
-          .string()
-          .optional()
-          .describe('Default model to use with this credential'),
+        model: z.string().optional().describe('Default model to use with this credential'),
         expires_in_seconds: z
           .number()
           .int()

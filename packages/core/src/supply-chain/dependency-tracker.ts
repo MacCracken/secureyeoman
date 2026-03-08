@@ -14,7 +14,7 @@
  *   const alerts = analyzeRisks(diff);
  */
 
-import { readFileSync, existsSync, writeFileSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 export interface LockEntry {
@@ -292,7 +292,6 @@ export function trackDependencies(rootDir: string): {
     // Create baseline
     const baselineDir = join(rootDir, '.secureyeoman');
     if (!existsSync(baselineDir)) {
-      const { mkdirSync } = require('node:fs') as typeof import('node:fs');
       mkdirSync(baselineDir, { recursive: true });
     }
     writeFileSync(baselinePath, currentContent, 'utf-8');

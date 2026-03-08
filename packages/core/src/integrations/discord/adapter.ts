@@ -190,12 +190,14 @@ export class DiscordIntegration implements Integration {
       if ((interaction as any).isModalSubmit?.()) {
         const modal = interaction as ModalSubmitInteraction;
         const feedbackText = modal.fields.getTextInputValue('feedback_input');
-        modal.reply({ content: 'Thank you for your feedback!', ephemeral: true }).catch((err: unknown) => {
-          this.logger?.warn(
-            { error: err instanceof Error ? err.message : String(err) },
-            'Discord modal reply failed'
-          );
-        });
+        modal
+          .reply({ content: 'Thank you for your feedback!', ephemeral: true })
+          .catch((err: unknown) => {
+            this.logger?.warn(
+              { error: err instanceof Error ? err.message : String(err) },
+              'Discord modal reply failed'
+            );
+          });
 
         const unified: UnifiedMessage = {
           id: `dc_modal_${modal.id}`,
@@ -231,41 +233,51 @@ export class DiscordIntegration implements Integration {
       const { commandName } = cmd;
 
       if (commandName === 'help') {
-        cmd.reply({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle('FRIDAY Help')
-              .setDescription(
-                '**Commands:**\n' +
-                  '`/ask <question>` — Ask FRIDAY a question\n' +
-                  '`/status` — Check agent status\n' +
-                  '`/help` — Show this help\n' +
-                  '`/feedback` — Submit feedback\n\n' +
-                  'Or just send a message in a channel where FRIDAY is listening.'
-              )
-              .setColor(0x5865f2),
-          ],
-        }).catch((err: unknown) => {
-          this.logger?.warn({ error: err instanceof Error ? err.message : String(err) }, 'Discord help reply failed');
-        });
+        cmd
+          .reply({
+            embeds: [
+              new EmbedBuilder()
+                .setTitle('FRIDAY Help')
+                .setDescription(
+                  '**Commands:**\n' +
+                    '`/ask <question>` — Ask FRIDAY a question\n' +
+                    '`/status` — Check agent status\n' +
+                    '`/help` — Show this help\n' +
+                    '`/feedback` — Submit feedback\n\n' +
+                    'Or just send a message in a channel where FRIDAY is listening.'
+                )
+                .setColor(0x5865f2),
+            ],
+          })
+          .catch((err: unknown) => {
+            this.logger?.warn(
+              { error: err instanceof Error ? err.message : String(err) },
+              'Discord help reply failed'
+            );
+          });
         return;
       }
 
       if (commandName === 'status') {
-        cmd.reply({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle('FRIDAY Status')
-              .addFields(
-                { name: 'Agent', value: config.displayName, inline: true },
-                { name: 'Platform', value: 'Discord', inline: true },
-                { name: 'Status', value: 'Connected', inline: true }
-              )
-              .setColor(0x57f287),
-          ],
-        }).catch((err: unknown) => {
-          this.logger?.warn({ error: err instanceof Error ? err.message : String(err) }, 'Discord status reply failed');
-        });
+        cmd
+          .reply({
+            embeds: [
+              new EmbedBuilder()
+                .setTitle('FRIDAY Status')
+                .addFields(
+                  { name: 'Agent', value: config.displayName, inline: true },
+                  { name: 'Platform', value: 'Discord', inline: true },
+                  { name: 'Status', value: 'Connected', inline: true }
+                )
+                .setColor(0x57f287),
+            ],
+          })
+          .catch((err: unknown) => {
+            this.logger?.warn(
+              { error: err instanceof Error ? err.message : String(err) },
+              'Discord status reply failed'
+            );
+          });
         return;
       }
 
@@ -283,7 +295,10 @@ export class DiscordIntegration implements Integration {
 
         modal.addComponents(row);
         (cmd as any).showModal(modal).catch((err: unknown) => {
-          this.logger?.warn({ error: err instanceof Error ? err.message : String(err) }, 'Discord showModal failed');
+          this.logger?.warn(
+            { error: err instanceof Error ? err.message : String(err) },
+            'Discord showModal failed'
+          );
         });
         return;
       }
@@ -291,7 +306,10 @@ export class DiscordIntegration implements Integration {
       if (commandName === 'ask') {
         const question = cmd.options.getString('question', true);
         cmd.deferReply().catch((err: unknown) => {
-          this.logger?.warn({ error: err instanceof Error ? err.message : String(err) }, 'Discord deferReply failed');
+          this.logger?.warn(
+            { error: err instanceof Error ? err.message : String(err) },
+            'Discord deferReply failed'
+          );
         });
 
         const unified: UnifiedMessage = {

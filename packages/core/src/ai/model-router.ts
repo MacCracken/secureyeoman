@@ -234,7 +234,9 @@ export class ModelRouter {
     // If nothing at target tier, widen to next cheaper tier
     if (tieredCandidates.length === 0) {
       const fallbackTier: ModelTier = tier === 'premium' ? 'capable' : 'fast';
-      tieredCandidates = candidates.filter((m) => getModelTier(m.model, m.provider) === fallbackTier);
+      tieredCandidates = candidates.filter(
+        (m) => getModelTier(m.model, m.provider) === fallbackTier
+      );
     }
 
     // Still nothing — widen to all candidates
