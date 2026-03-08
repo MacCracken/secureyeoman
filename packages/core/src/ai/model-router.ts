@@ -11,6 +11,7 @@
 
 import type { CostCalculator, AvailableModel } from './cost-calculator.js';
 import { getAvailableModels } from './cost-calculator.js';
+import { getModelTier } from './model-registry.js';
 import type { TeeAttestationVerifier } from '../security/tee-attestation.js';
 
 // ── Task Complexity ───────────────────────────────────────────────────────────
@@ -44,50 +45,8 @@ export interface TaskProfile {
  */
 export type ModelTier = 'fast' | 'capable' | 'premium';
 
-// Static tier assignments. Local/free providers are always 'fast'.
-const MODEL_TIER: Record<string, ModelTier> = {
-  // Fast / cheap
-  'claude-haiku-3-5-20241022': 'fast',
-  'claude-haiku-4-5': 'fast',
-  'gpt-4o-mini': 'fast',
-  'o3-mini': 'fast',
-  'gemini-2.0-flash': 'fast',
-  'gemini-3-flash': 'fast',
-  'grok-3-mini': 'fast',
-  'deepseek-chat': 'fast',
-  'deepseek-coder': 'fast',
-  'qwen3-coder': 'fast',
-
-  // Capable / balanced
-  'claude-sonnet-4-20250514': 'capable',
-  'claude-sonnet-4-5': 'capable',
-  'gpt-4o': 'capable',
-  'gpt-5.2': 'capable',
-  'grok-3': 'capable',
-  'grok-2-1212': 'capable',
-  'grok-2-vision-1212': 'capable',
-  'deepseek-reasoner': 'capable',
-
-  // Premium / expensive
-  'claude-opus-4-20250514': 'premium',
-  'gpt-4-turbo': 'premium',
-  o1: 'premium',
-  'o1-mini': 'premium',
-
-  // Letta (stateful agent platform — provider/model-id naming)
-  'openai/gpt-4o-mini': 'fast',
-  'anthropic/claude-haiku-3-5-20241022': 'fast',
-  'openai/gpt-4o': 'capable',
-  'anthropic/claude-sonnet-4-20250514': 'capable',
-};
-
-/** Local providers are always free and always fast. */
-const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'localai', 'big-pickle']);
-
-function modelTier(model: string, provider: string): ModelTier {
-  if (LOCAL_PROVIDERS.has(provider) || model === 'big-pickle') return 'fast';
-  return MODEL_TIER[model] ?? 'capable';
-}
+// Model tier lookups are now delegated to the centralized model-registry.
+// See model-registry.ts for the canonical model metadata.
 
 // ── Complexity→Tier Mapping ───────────────────────────────────────────────────
 
@@ -270,12 +229,12 @@ export class ModelRouter {
     }
 
     // Find candidates at target tier
-    let tieredCandidates = candidates.filter((m) => modelTier(m.model, m.provider) === tier);
+    let tieredCandidates = candidates.filter((m) => getModelTier(m.model, m.provider) === tier);
 
     // If nothing at target tier, widen to next cheaper tier
     if (tieredCandidates.length === 0) {
       const fallbackTier: ModelTier = tier === 'premium' ? 'capable' : 'fast';
-      tieredCandidates = candidates.filter((m) => modelTier(m.model, m.provider) === fallbackTier);
+      tieredCandidates = candidates.filter((m) => getModelTier(m.model, m.provider) === fallbackTier);
     }
 
     // Still nothing — widen to all candidates
@@ -298,7 +257,7 @@ export class ModelRouter {
     const selectedCost = this.estimateCostForCandidate(selected, tokenBudget);
 
     // Confidence: higher when multiple good candidates exist at the target tier
-    const atTargetTier = sorted.filter((m) => modelTier(m.model, m.provider) === tier).length;
+    const atTargetTier = sorted.filter((m) => getModelTier(m.model, m.provider) === tier).length;
     const confidence = atTargetTier >= 2 ? 0.9 : atTargetTier === 1 ? 0.75 : 0.5;
 
     // If confidence is very low and a defaultModel is configured, respect the default

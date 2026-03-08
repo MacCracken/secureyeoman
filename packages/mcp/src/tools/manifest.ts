@@ -1928,6 +1928,17 @@ export function getToolManifest(): ToolManifestEntry[] {
       description: 'Get unified quality dashboard: sessions, pass rates, agent queues, LLM usage',
       category: 'qa',
     },
+    {
+      name: 'agnostic_provision_credentials',
+      description:
+        'Provision API credentials for a service via A2A (CREDENTIAL_PROVISIONING_ENABLED)',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_revoke_credentials',
+      description: 'Revoke previously provisioned API credentials for a service via A2A',
+      category: 'qa',
+    },
 
     // Agnostic REST API proxy tools (registerApiProxyTool)
     {

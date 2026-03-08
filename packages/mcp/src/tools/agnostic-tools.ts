@@ -873,6 +873,149 @@ export function registerAgnosticTools(
     })
   );
 
+  // ── agnostic_provision_credentials ─────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_provision_credentials',
+    {
+      description:
+        'Provision API credentials for a service or integration. ' +
+        'SecureYeoman/AGNOS pushes credentials at runtime when CREDENTIAL_PROVISIONING_ENABLED=true on the Agnostic side. ' +
+        'Sends an a2a:provision_credentials message to Agnostic.',
+      inputSchema: {
+        service_name: z
+          .string()
+          .describe('Target service or integration name (e.g. "openai", "github", "jira")'),
+        credential_type: z
+          .enum(['api_key', 'oauth_token', 'service_account', 'bearer_token'])
+          .default('api_key')
+          .describe('Type of credential being provisioned'),
+        credential_value: z
+          .string()
+          .describe('The credential value (API key, token, etc.)'),
+        metadata: z
+          .record(z.string(), z.string())
+          .default({})
+          .describe('Optional metadata — e.g. { "scope": "read", "expires_at": "2026-12-31" }'),
+        from_peer_id: z
+          .string()
+          .default('yeoman')
+          .describe('Sender peer ID — identifies this YEOMAN instance'),
+      },
+    },
+    wrapToolHandler('agnostic_provision_credentials', middleware, async (args) => {
+      const messageId = randomUUID();
+      const message = {
+        id: messageId,
+        type: 'a2a:provision_credentials',
+        fromPeerId: args.from_peer_id,
+        toPeerId: 'agnostic',
+        payload: {
+          service_name: args.service_name,
+          credential_type: args.credential_type,
+          credential_value: args.credential_value,
+          metadata: args.metadata,
+        },
+        timestamp: Date.now(),
+      };
+
+      const { ok, status, body } = await agnosticPost(config, '/api/v1/a2a/receive', message);
+
+      if (!ok) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Credential provisioning failed: HTTP ${status}\n${JSON.stringify(body)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: formatResponse(
+              `Credentials provisioned for "${args.service_name}" (message_id: ${messageId})`,
+              body
+            ),
+          },
+        ],
+      };
+    })
+  );
+
+  // ── agnostic_revoke_credentials ──────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_revoke_credentials',
+    {
+      description:
+        'Revoke previously provisioned API credentials for a service. ' +
+        'Sends an a2a:revoke_credentials message to Agnostic.',
+      inputSchema: {
+        service_name: z
+          .string()
+          .describe('Target service whose credentials should be revoked'),
+        credential_type: z
+          .enum(['api_key', 'oauth_token', 'service_account', 'bearer_token'])
+          .default('api_key')
+          .describe('Type of credential to revoke'),
+        reason: z
+          .string()
+          .default('rotation')
+          .describe('Reason for revocation (e.g. "rotation", "compromised", "decommission")'),
+        from_peer_id: z
+          .string()
+          .default('yeoman')
+          .describe('Sender peer ID — identifies this YEOMAN instance'),
+      },
+    },
+    wrapToolHandler('agnostic_revoke_credentials', middleware, async (args) => {
+      const messageId = randomUUID();
+      const message = {
+        id: messageId,
+        type: 'a2a:revoke_credentials',
+        fromPeerId: args.from_peer_id,
+        toPeerId: 'agnostic',
+        payload: {
+          service_name: args.service_name,
+          credential_type: args.credential_type,
+          reason: args.reason,
+        },
+        timestamp: Date.now(),
+      };
+
+      const { ok, status, body } = await agnosticPost(config, '/api/v1/a2a/receive', message);
+
+      if (!ok) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Credential revocation failed: HTTP ${status}\n${JSON.stringify(body)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: formatResponse(
+              `Credentials revoked for "${args.service_name}" (message_id: ${messageId})`,
+              body
+            ),
+          },
+        ],
+      };
+    })
+  );
+
   // ── REST API Proxy Tools ────────────────────────────────────────────────
   // Zero-code MCP integration via registerApiProxyTool() for high-value
   // Agnostic endpoints. Uses an adapter that wraps agnosticGet/agnosticPost

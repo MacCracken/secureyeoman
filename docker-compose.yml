@@ -189,6 +189,7 @@ services:
       WEBGUI_PORT: "8000"
       DATABASE_URL: "postgresql+asyncpg://${AGNOSTIC_POSTGRES_USER:-agnostic}:${AGNOSTIC_POSTGRES_PASSWORD:-agnostic_dev}@agnostic-postgres:5432/${AGNOSTIC_POSTGRES_DB:-agnostic}"
       DATABASE_ENABLED: "${AGNOSTIC_DATABASE_ENABLED:-false}"
+      CREDENTIAL_PROVISIONING_ENABLED: "${CREDENTIAL_PROVISIONING_ENABLED:-true}"
     depends_on:
       agnostic-redis:
         condition: service_started

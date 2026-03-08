@@ -104,41 +104,10 @@ export interface AvailableModel {
   cachedInputPer1M?: number;
 }
 
-const MODEL_PROVIDER_MAP: Record<string, string> = {
-  'claude-opus-4-20250514': 'anthropic',
-  'claude-sonnet-4-20250514': 'anthropic',
-  'claude-haiku-3-5-20241022': 'anthropic',
-  'gpt-4o': 'openai',
-  'gpt-4o-mini': 'openai',
-  'gpt-4-turbo': 'openai',
-  o1: 'openai',
-  'o1-mini': 'openai',
-  'o3-mini': 'openai',
-  o3: 'openai',
-  'gemini-2.0-flash': 'gemini',
-  'gemini-2.0-flash-lite': 'gemini',
-  'gpt-5.2': 'opencode',
-  'claude-sonnet-4-5': 'opencode',
-  'claude-haiku-4-5': 'opencode',
-  'gemini-3-flash': 'opencode',
-  'qwen3-coder': 'opencode',
-  'big-pickle': 'opencode',
-  'deepseek-chat': 'deepseek',
-  'deepseek-coder': 'deepseek',
-  'deepseek-reasoner': 'deepseek',
-  'grok-3': 'grok',
-  'grok-3-mini': 'grok',
-  'grok-2-1212': 'grok',
-  'grok-2-vision-1212': 'grok',
-  'openai/gpt-4o': 'letta',
-  'openai/gpt-4o-mini': 'letta',
-  'anthropic/claude-sonnet-4-20250514': 'letta',
-  'anthropic/claude-haiku-3-5-20241022': 'letta',
-  'llama-3.3-70b-versatile': 'groq',
-  'llama-3.1-8b-instant': 'groq',
-  'mixtral-8x7b-32768': 'groq',
-  'gemma2-9b-it': 'groq',
-};
+import { resolveProvider } from './model-registry.js';
+
+// MODEL_PROVIDER_MAP is now derived from the centralized model-registry.
+// Use resolveProvider() for model→provider lookups.
 
 /**
  * Default environment variable name for each provider's API key.
@@ -169,7 +138,7 @@ export function getAvailableModels(onlyAvailable = false): Record<string, Availa
   const grouped: Record<string, AvailableModel[]> = {};
 
   for (const [model, pricing] of Object.entries(PRICING)) {
-    const provider = MODEL_PROVIDER_MAP[model] ?? 'unknown';
+    const provider = resolveProvider(model) ?? 'unknown';
     if (!grouped[provider]) {
       grouped[provider] = [];
     }
