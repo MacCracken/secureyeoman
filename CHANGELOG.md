@@ -4,6 +4,43 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.8]
+
+### AI Model Registry
+
+Centralized model metadata for 35 models across 9 providers, replacing scattered duplicate maps in `model-router.ts` and `cost-calculator.ts`.
+
+- **Model registry** (`ai/model-registry.ts`): Canonical source for context windows, max output tokens, capabilities (`chat`, `vision`, `reasoning`, `tool_use`, `code`, `streaming`), tier (`fast`/`capable`/`premium`), cost tier, and extended thinking support. Lazy-built lookup indexes by model name and provider.
+- **Public API**: `parseModelString()` (parses `"provider/model"` addressing), `getModelEntry()`, `getContextWindow()`, `hasCapability()`, `findModelsWithCapabilities()`, `getModelTier()`, `resolveProvider()`, `getAllModels()`.
+- **Consolidated duplicates**: Removed ~40-line `MODEL_TIER` map from `model-router.ts` and ~35-line `MODEL_PROVIDER_MAP` from `cost-calculator.ts`. Both now delegate to the registry.
+- **Tests**: 22 unit tests covering all public API methods.
+
+### AGNOSTIC Credential Provisioning (MCP)
+
+Runtime LLM API key injection from SecureYeoman into the Agnostic QA platform via MCP tools.
+
+- **`agnostic_provision_credentials` tool** (`mcp/tools/agnostic-tools.ts`): Pushes provider API keys (OpenAI, Anthropic, Google, etc.) to Agnostic's credential store with optional expiry, model override, and base URL.
+- **`agnostic_revoke_credentials` tool** (`mcp/tools/agnostic-tools.ts`): Revokes credentials by provider name or wildcard `*` for all.
+- **Manifest entries** (`mcp/tools/manifest.ts`): Both tools registered for AI discoverability.
+- **Docker Compose**: `CREDENTIAL_PROVISIONING_ENABLED` wired to `agnostic-webgui` service.
+
+### MCP Streamable HTTP Transport Fix
+
+- **Session ID mismatch** (`mcp/transport/streamable-http.ts`): Fixed critical bug where session ID was read from transport *before* `handleRequest()` generated it, causing all subsequent tool calls to 500. Now generates UUID upfront via `sessionIdGenerator` callback.
+- **Stale transport recovery**: Added try/catch around `mcpServer.server.connect()` with `close()` + retry fallback for stale transport references.
+
+### Code Audit Round 5
+
+- **P1: SSRF bypass** (`integrations/integration-routes.ts`): Added `assertPublicUrl()` to PUT `/api/v1/outbound-webhooks/:id` — was missing on update path while present on create.
+- **P1: Fire-and-forget promises**: Added `.catch()` handlers to 10 unguarded `void` async calls across `secureyeoman.ts` (2), `team-manager.ts` (1), `workflow-engine.ts` (1), `multimodal/manager.ts` (6). Prevents unhandled promise rejections.
+- **P2: Timer leak** (`chaos/chaos-manager.ts`): Added `.unref()` to scheduler `setInterval` so it doesn't prevent graceful shutdown.
+- **P2: Listener leak** (`ai/embeddings/local.ts`): Remove `onData` listener in timeout branch of model load wait. Added stdin guard before write.
+- **P2: Event bridge reconnect** (`integrations/event-bridge.ts`): Changed `connect()` to `return connect()` so reconnect errors propagate.
+- **P2: `as any` casts** (`mcp/tools/dlp-tools.ts`): Replaced 3× `(config as any).exposeDlp` with `'exposeDlp' in config` type guard.
+- **P2: `require()` in ESM** (`supply-chain/dependency-tracker.ts`): Replaced 2× `require('node:fs')` with top-level `mkdirSync` import.
+
+---
+
 ## [2026.3.7]
 
 ### Code Audit Round 4: Security Hardening
