@@ -6,13 +6,19 @@
  * script copies *.sql alongside the compiled *.js files so they are
  * always co-located with manifest.js at runtime.
  *
- * 001_baseline.sql is the consolidated schema (v2026.3.5, includes phases 131-138).
- * New migrations should be appended after it starting at 002_*.
+ * Schema is split by license tier:
+ *   001_community.sql — Core platform (always applied)
+ *   002_pro.sql       — Workflows, analytics, agents, RBAC (pro+)
+ *   003_enterprise.sql — DLP, training, chaos, federated, IaC, etc.
+ *
+ * Incremental migrations (011+) carry a tier tag and are applied
+ * only when the active tier permits.
  */
 
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { LicenseTier } from '../../licensing/license-manager.js';
 
 // In a Bun compiled standalone binary, import.meta.url is set to the virtual
 // filesystem path of the binary itself (e.g. "file:///$bunfs/root/<binary-name>"),
@@ -34,12 +40,17 @@ function readSql(filename: string): string {
   return readFileSync(join(__dirname, filename), 'utf-8');
 }
 
-export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
-  { id: '001_baseline', sql: readSql('001_baseline.sql') },
-  { id: '002_agent_replay', sql: readSql('002_agent_replay.sql') },
-  { id: '003_policy_as_code', sql: readSql('003_policy_as_code.sql') },
-  { id: '004_iac', sql: readSql('004_iac.sql') },
-  { id: '005_chaos_engineering', sql: readSql('005_chaos_engineering.sql') },
-  { id: '006_federated_learning', sql: readSql('006_federated_learning.sql') },
-  { id: '007_pretrain_jobs', sql: readSql('007_pretrain_jobs.sql') },
+export interface MigrationEntry {
+  id: string;
+  sql: string;
+  tier: LicenseTier;
+}
+
+export const MIGRATION_MANIFEST: MigrationEntry[] = [
+  // Tier-split baselines (replace old 001_baseline + 002-007 incrementals)
+  { id: '001_community', sql: readSql('001_community.sql'), tier: 'community' },
+  { id: '002_pro', sql: readSql('002_pro.sql'), tier: 'pro' },
+  { id: '003_enterprise', sql: readSql('003_enterprise.sql'), tier: 'enterprise' },
+  // Future incremental migrations go here with tier tags:
+  // { id: '011_example', sql: readSql('011_example.sql'), tier: 'pro' },
 ];

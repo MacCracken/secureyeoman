@@ -59,26 +59,30 @@
 
 **Priority**: P1 — Architecture. Must complete before enforcement activation.
 
+**Status**: Done (2026-03-07).
+
 **Goal**: Split the monolithic `001_baseline.sql` into tier-separated baselines so the database schema matches the active license. Community installs only get community tables. Pro/Enterprise schemas are applied when a valid license is detected.
 
 ### Migration Structure
 
-| File | Tier | Contents |
-|------|------|----------|
-| `001_community.sql` | Community | Core tables: conversations, messages, personalities, soul, brain (basic), marketplace, skills, settings, themes |
-| `002_pro.sql` | Pro | Workflows, analytics, advanced brain, RBAC, cognitive memory, prompt versioning, agent eval, guardrails |
-| `003_enterprise.sql` | Enterprise | DLP, TEE, federated learning, chaos engineering, multi-region, supply chain, SIEM/OTel, policy-as-code, IaC |
-| `011_*.sql` onwards | Incremental | Future migrations tagged with minimum tier (`-- tier: community|pro|enterprise`) |
+| File | Tier | Tables | Contents |
+|------|------|--------|----------|
+| `001_community.sql` | Community | 55 | Core: chat, soul, brain, marketplace, auth (basic), audit, mcp, dashboard, task, integration, comms, spirit, workspace |
+| `002_pro.sql` | Pro | 65 | Workflows, analytics, agents, RBAC, eval, events, execution, extensions, browser, capture, multimodal, risk, security, telemetry, admin |
+| `003_enterprise.sql` | Enterprise | 51 | DLP, A2A, federation, training (advanced), auth (SSO/tenants), chaos, federated learning, policy-as-code, IaC, agent replay, pretrain |
+| `011_*.sql` onwards | Incremental | — | Future migrations tagged with `-- tier:` header |
 
 ### Implementation
 
-- [ ] **Audit `001_baseline.sql`** — Classify every schema/table into community, pro, or enterprise tier. Document the mapping.
-- [ ] **Split baseline** — Extract `001_baseline.sql` into `001_community.sql`, `002_pro.sql`, `003_enterprise.sql`. Each file is idempotent (IF NOT EXISTS).
-- [ ] **Tier-aware migration runner** — Modify `MigrationManager` to read the current license tier and only apply migrations up to that tier. When a license upgrade is detected, run the next tier's baseline + any incremental migrations for that tier.
-- [ ] **Incremental migration tagging** — Add a `-- tier: <tier>` header comment convention to migrations 011+. Runner skips migrations above the active tier.
-- [ ] **Downgrade safety** — When a license expires/downgrades, do NOT drop tables. Data is preserved but feature routes return 402. Tables become dormant.
-- [ ] **Startup tier check** — On boot, compare `LicenseManager.currentTier` against applied migrations. If tier upgraded, auto-apply new tier migrations. Log clearly.
-- [ ] **Tests** — Unit tests for tier-aware runner: community-only apply, pro upgrade applies 002, enterprise upgrade applies 003. Verify skip logic for incremental migrations.
+- [x] **Audit `001_baseline.sql`** — 181 tables classified into community (55), pro (65), enterprise (51+squashed).
+- [x] **Split baseline** — `001_community.sql`, `002_pro.sql`, `003_enterprise.sql`. All idempotent (IF NOT EXISTS).
+- [x] **Squash incrementals** — 002-007 (agent_replay, policy_as_code, iac, chaos, federated_learning, pretrain_jobs) absorbed into `003_enterprise.sql`.
+- [x] **Tier-aware migration runner** — `runMigrations(tier)` filters manifest by `TIER_RANK`. Default `'enterprise'` for backwards compat. `secureyeoman.ts` passes `licenseManager.getTier()`.
+- [x] **Incremental migration tagging** — `MigrationEntry` gains `tier` field. Manifest entries sorted by id, filtered by tier rank at runtime.
+- [x] **Downgrade safety** — No tables dropped on downgrade. Feature routes return 402 via existing `requiresLicense()`.
+- [x] **Startup tier check** — Runner applies all migrations up to active tier. License upgrade auto-applies missing tier baselines.
+- [x] **Legacy compatibility** — Old monolithic IDs (001_baseline, 002-007) detected and mapped to new tier-split IDs via compatibility shim.
+- [x] **Tests** — 14 unit tests (manifest structure, tier ordering, runner fast-path, tier filtering, legacy compat). 8 integration tests (community-only, pro, enterprise, upgrade, idempotency, partial recovery, timestamps, legacy shim).
 
 ---
 

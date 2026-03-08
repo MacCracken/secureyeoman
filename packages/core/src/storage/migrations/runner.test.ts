@@ -44,6 +44,7 @@ async function wipeAllSchemas(): Promise<void> {
   const schemas = [
     'a2a',
     'admin',
+    'agent_replay',
     'agents',
     'ai',
     'analytics',
@@ -52,17 +53,24 @@ async function wipeAllSchemas(): Promise<void> {
     'brain',
     'browser',
     'capture',
+    'chaos',
     'chat',
     'comms',
     'dashboard',
+    'dlp',
+    'eval',
+    'events',
     'execution',
     'experiment',
     'extensions',
+    'federated',
     'federation',
+    'iac',
     'integration',
     'marketplace',
     'mcp',
     'multimodal',
+    'policy_as_code',
     'proactive',
     'rbac',
     'risk',
@@ -103,20 +111,20 @@ describe('runMigrations()', () => {
   beforeAll(async () => {
     initPool(dbConfig);
     // Ensure schema objects exist before any test calls wipeMigrationsTable().
-    // On a fresh DB this is the first migration run.
-    await runMigrations();
+    // On a fresh DB this is the first migration run (enterprise = all tiers).
+    await runMigrations('enterprise');
   });
 
   afterAll(async () => {
     // Leave DB fully migrated for any subsequent suites that share the test DB.
-    await runMigrations();
+    await runMigrations('enterprise');
     // Do NOT closePool/resetPool — with isolate: false the pool is shared
     // across all DB test files and must stay alive.
   });
 
-  it('applies all manifest entries on a fresh schema_migrations table', async () => {
+  it('applies all manifest entries on a fresh schema_migrations table (enterprise)', async () => {
     await wipeAllSchemas();
-    await runMigrations();
+    await runMigrations('enterprise');
 
     const ids = await appliedIds();
     const expectedIds = MIGRATION_MANIFEST.map((m) => m.id);
@@ -125,9 +133,60 @@ describe('runMigrations()', () => {
     expect(ids).toHaveLength(MIGRATION_MANIFEST.length);
   });
 
+  it('community tier applies only 001_community', async () => {
+    await wipeAllSchemas();
+    await runMigrations('community');
+
+    const ids = await appliedIds();
+    expect(ids).toContain('001_community');
+    expect(ids).not.toContain('002_pro');
+    expect(ids).not.toContain('003_enterprise');
+
+    // Verify community schema exists
+    const schemas = await getPool().query<{ schema_name: string }>(
+      `SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'chat'`
+    );
+    expect(schemas.rows).toHaveLength(1);
+  });
+
+  it('pro tier applies 001_community + 002_pro', async () => {
+    await wipeAllSchemas();
+    await runMigrations('pro');
+
+    const ids = await appliedIds();
+    expect(ids).toContain('001_community');
+    expect(ids).toContain('002_pro');
+    expect(ids).not.toContain('003_enterprise');
+
+    // Verify pro schema exists
+    const schemas = await getPool().query<{ schema_name: string }>(
+      `SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'workflow'`
+    );
+    expect(schemas.rows).toHaveLength(1);
+  });
+
+  it('upgrade from community to enterprise applies missing tiers', async () => {
+    await wipeAllSchemas();
+    await runMigrations('community');
+
+    let ids = await appliedIds();
+    expect(ids).toHaveLength(1);
+
+    // Upgrade to enterprise
+    await runMigrations('enterprise');
+
+    ids = await appliedIds();
+    expect(ids).toContain('001_community');
+    expect(ids).toContain('002_pro');
+    expect(ids).toContain('003_enterprise');
+  });
+
   it('is idempotent — second call applies nothing new (fast-path)', async () => {
+    await wipeAllSchemas();
+    await runMigrations('enterprise');
     const before = await appliedIds();
-    await runMigrations();
+
+    await runMigrations('enterprise');
     const after = await appliedIds();
 
     expect(after).toEqual(before);
@@ -141,7 +200,7 @@ describe('runMigrations()', () => {
     const before = await appliedIds();
     expect(before).not.toContain(lastId);
 
-    await runMigrations();
+    await runMigrations('enterprise');
 
     const after = await appliedIds();
     expect(after).toContain(lastId);
@@ -156,5 +215,27 @@ describe('runMigrations()', () => {
       const ts = Number(row.applied_at);
       expect(ts, `applied_at for ${row.id} should be a positive integer`).toBeGreaterThan(0);
     }
+  });
+
+  it('legacy compatibility — old baseline IDs cause tier-split IDs to be marked applied', async () => {
+    await wipeAllSchemas();
+    // Simulate an old DB that has the monolithic migration
+    await runMigrations('enterprise');
+    const pool = getPool();
+
+    // Wipe tracking table and re-insert old-style IDs
+    await pool.query('DELETE FROM schema_migrations');
+    await pool.query(
+      `INSERT INTO schema_migrations (id, applied_at) VALUES ('001_baseline', $1)`,
+      [Date.now()]
+    );
+
+    // Run migrations — should detect legacy and mark split IDs as applied
+    await runMigrations('enterprise');
+
+    const ids = await appliedIds();
+    expect(ids).toContain('001_community');
+    expect(ids).toContain('002_pro');
+    expect(ids).toContain('003_enterprise');
   });
 });

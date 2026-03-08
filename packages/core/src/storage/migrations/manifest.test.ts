@@ -14,12 +14,13 @@ describe('MIGRATION_MANIFEST', () => {
     expect(MIGRATION_MANIFEST.length).toBeGreaterThan(0);
   });
 
-  it('every entry has a string id and non-empty sql', () => {
+  it('every entry has a string id, non-empty sql, and valid tier', () => {
     for (const entry of MIGRATION_MANIFEST) {
       expect(typeof entry.id).toBe('string');
       expect(entry.id.length).toBeGreaterThan(0);
       expect(typeof entry.sql).toBe('string');
       expect(entry.sql.trim().length).toBeGreaterThan(0);
+      expect(['community', 'pro', 'enterprise']).toContain(entry.tier);
     }
   });
 
@@ -41,7 +42,12 @@ describe('MIGRATION_MANIFEST', () => {
     }
   });
 
-  it('starts with 001_baseline', () => {
-    expect(MIGRATION_MANIFEST[0]?.id).toBe('001_baseline');
+  it('starts with 001_community', () => {
+    expect(MIGRATION_MANIFEST[0]?.id).toBe('001_community');
+  });
+
+  it('tier baselines are in correct order', () => {
+    const tiers = MIGRATION_MANIFEST.slice(0, 3).map((m) => m.tier);
+    expect(tiers).toEqual(['community', 'pro', 'enterprise']);
   });
 });

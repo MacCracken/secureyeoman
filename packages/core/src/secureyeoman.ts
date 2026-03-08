@@ -287,7 +287,7 @@ export class SecureYeoman {
       // Step 2.1: Initialize PostgreSQL pool and run migrations
       stepStart = performance.now();
       initPoolFromConfig(this.config.core.database);
-      await runMigrations();
+      await runMigrations(this.licenseManager.getTier());
       mark('db-pool+migrations', stepStart);
       this.logger.debug('PostgreSQL pool initialized and migrations applied');
 

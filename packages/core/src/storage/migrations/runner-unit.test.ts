@@ -29,8 +29,8 @@ vi.mock('../pg-pool.js', () => ({
 // ─── Mock manifest ────────────────────────────────────────────────────────────
 
 const MOCK_MANIFEST = [
-  { id: '001_initial', sql: 'CREATE TABLE IF NOT EXISTS test (id TEXT)' },
-  { id: '002_users', sql: 'CREATE TABLE IF NOT EXISTS users (id TEXT)' },
+  { id: '001_initial', sql: 'CREATE TABLE IF NOT EXISTS test (id TEXT)', tier: 'community' },
+  { id: '002_users', sql: 'CREATE TABLE IF NOT EXISTS users (id TEXT)', tier: 'pro' },
 ];
 
 vi.mock('./manifest.js', () => ({
@@ -53,7 +53,7 @@ describe('runMigrations() — fast path (latest already applied)', () => {
   it('returns early when latest migration already applied', async () => {
     // CREATE TABLE IF NOT EXISTS returns empty rows
     mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // CREATE TABLE
-    // SELECT latest id returns matching id
+    // SELECT WHERE id = $1 returns the latest filtered entry
     mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: '002_users' }] });
 
     await runMigrations();
@@ -61,22 +61,36 @@ describe('runMigrations() — fast path (latest already applied)', () => {
     // connect() should NOT be called (no lock needed)
     expect(mockConnect).not.toHaveBeenCalled();
   });
+
+  it('community tier only checks for 001_initial as latest', async () => {
+    mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // CREATE TABLE
+    mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: '001_initial' }] }); // community latest found
+
+    await runMigrations('community');
+
+    expect(mockConnect).not.toHaveBeenCalled();
+  });
 });
 
 describe('runMigrations() — full migration run', () => {
   it('acquires lock and runs all migrations when none applied', async () => {
     mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // CREATE TABLE
-    mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // SELECT latest → none applied
+    mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // SELECT WHERE id = latest → none
 
-    // Client queries: lock, recheck, 001 check, 001 sql, 001 insert, 002 check, 002 sql, 002 insert, unlock
+    // Client queries: lock, recheck, legacy check, per-migration loop, unlock
     mockClientQuery
       .mockResolvedValueOnce({ rows: [] }) // pg_advisory_lock
-      .mockResolvedValueOnce({ rows: [] }) // recheck SELECT latest
+      .mockResolvedValueOnce({ rows: [] }) // recheck SELECT WHERE id = latest
+      .mockResolvedValueOnce({ rows: [] }) // legacy check (SELECT WHERE id = ANY)
       .mockResolvedValueOnce({ rows: [] }) // SELECT 001 → not found
+      .mockResolvedValueOnce({ rows: [] }) // SET statement_timeout
       .mockResolvedValueOnce({ rows: [] }) // 001 SQL
+      .mockResolvedValueOnce({ rows: [] }) // SET statement_timeout = 0
       .mockResolvedValueOnce({ rows: [] }) // INSERT 001
       .mockResolvedValueOnce({ rows: [] }) // SELECT 002 → not found
+      .mockResolvedValueOnce({ rows: [] }) // SET statement_timeout
       .mockResolvedValueOnce({ rows: [] }) // 002 SQL
+      .mockResolvedValueOnce({ rows: [] }) // SET statement_timeout = 0
       .mockResolvedValueOnce({ rows: [] }) // INSERT 002
       .mockResolvedValueOnce({ rows: [] }); // pg_advisory_unlock
 
@@ -100,8 +114,11 @@ describe('runMigrations() — full migration run', () => {
     mockClientQuery
       .mockResolvedValueOnce({ rows: [] }) // pg_advisory_lock
       .mockResolvedValueOnce({ rows: [] }) // recheck
+      .mockResolvedValueOnce({ rows: [] }) // legacy check
       .mockResolvedValueOnce({ rows: [] }) // SELECT 001 → not found
+      .mockResolvedValueOnce({ rows: [] }) // SET statement_timeout
       .mockRejectedValueOnce(new Error('SQL syntax error')) // 001 SQL fails
+      .mockResolvedValueOnce({ rows: [] }) // SET statement_timeout = 0 (finally)
       .mockResolvedValueOnce({ rows: [] }); // pg_advisory_unlock
 
     await expect(runMigrations()).rejects.toThrow('SQL syntax error');
@@ -112,7 +129,7 @@ describe('runMigrations() — full migration run', () => {
 describe('runMigrations() — re-check fast path after lock', () => {
   it('skips all migrations when latest is applied after lock acquired', async () => {
     mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // CREATE TABLE
-    mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // SELECT latest → none
+    mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // SELECT WHERE id = latest → none
 
     mockClientQuery
       .mockResolvedValueOnce({ rows: [] }) // pg_advisory_lock
@@ -138,9 +155,12 @@ describe('runMigrations() — skip already-applied migrations', () => {
     mockClientQuery
       .mockResolvedValueOnce({ rows: [] }) // lock
       .mockResolvedValueOnce({ rows: [] }) // recheck
+      .mockResolvedValueOnce({ rows: [] }) // legacy check → no legacy
       .mockResolvedValueOnce({ rows: [{ id: '001_initial' }] }) // SELECT 001 → already applied
       .mockResolvedValueOnce({ rows: [] }) // SELECT 002 → not applied
+      .mockResolvedValueOnce({ rows: [] }) // SET statement_timeout
       .mockResolvedValueOnce({ rows: [] }) // 002 SQL
+      .mockResolvedValueOnce({ rows: [] }) // SET statement_timeout = 0
       .mockResolvedValueOnce({ rows: [] }) // INSERT 002
       .mockResolvedValueOnce({ rows: [] }); // unlock
 
