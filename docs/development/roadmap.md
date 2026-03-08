@@ -99,17 +99,17 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### Test Coverage — Current Status (2026-03-06)
+### Test Coverage — Current Status (2026-03-07)
 
-**Core unit: 89.67% stmt / 79.49% branches** (target 88% / 77% — exceeded).
+**Core unit: 89.31% stmt / 79.10% branches** (target 88% / 77% — exceeded).
 
 | Suite | Files | Tests | Stmts % | Branch % | Status |
 |-------|-------|-------|---------|----------|--------|
-| Core Unit | 607 | 15,110 | 89.67 | 79.49 | All passing |
-| Dashboard | 100 | 1,408 | 44.56 | 46.32 | All passing |
-| MCP | 57 | 820 | 58.51 | 46.51 | All passing |
+| Core Unit | 619 | 15,339 | 89.31 | 79.10 | All passing |
+| Dashboard | 164 | 3,201 | 62.37 | 61.98 | All passing |
+| MCP | 72 | 1,066 | 61.80 | 48.51 | All passing |
 | Core E2E | 7 | 53 | — | — | All passing |
-| Core DB (integration) | 41 | 886 | — | — | All passing (clean DB verified) |
+| Core DB (integration) | 47 | 933+ | — | — | All passing (clean DB verified) |
 
 **Improvement areas per suite:**
 
@@ -117,8 +117,8 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 |-------|------|-------|
 | Core Unit | `sandbox/`, `config/`, `cli/commands/` | Branch coverage gaps in exec paths and flag parsing |
 | Core Unit | `training/federated/`, `workflow/` | Manager logic branches, engine conditions |
-| Dashboard | All components | 44% stmt coverage — unit test sweep in progress |
-| MCP | Tool handlers, manifest | 58% stmt coverage — unit test sweep in progress |
+| Dashboard | API client, complex components | 62% stmt coverage — significant improvement from 44%, continue sweep |
+| MCP | Tool handlers, manifest | 62% stmt coverage — improved from 58%, continue sweep |
 | Core E2E | Expand coverage | Currently 7 files / 53 tests; add training, delegation, analytics flows |
 
 ---
@@ -299,4 +299,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-06 (completed items pruned, Phase 145 planned). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-07 (test coverage stats updated, completed items pruned). See [Changelog](../../CHANGELOG.md) for full history.*

@@ -4,6 +4,77 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.7]
+
+### Code Audit Round 4: Security Hardening
+
+Comprehensive security audit covering input validation, error handling, auth/access control, concurrency, memory, and API design. 6 parallel audit agents, all findings fixed.
+
+#### Input Validation & Injection Prevention
+- **SSRF prevention** (`a2a/a2a-routes.ts`): Local peer registration validates URL is actually `localhost`/`127.0.0.1`/`::1` before accepting.
+- **SSRF in media handler** (`integrations/media-handler.ts`): URL hostname checked against private IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, ::1, fc00::, fe80::) before fetch.
+- **Path traversal** (`integrations/media-handler.ts`): Attachment filenames sanitized (strip `/`, `\`, `..`), resolved path verified to stay within `tempDir` via `resolve()` + `startsWith()`.
+- **Header injection** (`soul/soul-routes.ts`): Personality name in `Content-Disposition` header sanitized — `\r`, `\n`, `"`, `\` replaced with `_`.
+- **Prototype pollution** (`integrations/notion/notion-routes.ts`): User-supplied `properties` objects filtered to exclude `__proto__`, `constructor`, `prototype` keys.
+- **parseInt radix** (`integrations/qq/adapter.ts`): Added explicit radix 10 and `isNaN` guard on QQ chat ID parsing.
+
+#### Auth & Access Control
+- **IDOR on workspace GET** (`workspace/workspace-routes.ts`): Added membership check — requesting user must be a member of the workspace to view it.
+- **IDOR on workspace DELETE** (`workspace/workspace-routes.ts`): Added `requireWorkspaceAdmin()` check, same as PUT.
+- **IDOR on provenance** (`training/responsible-ai-routes.ts`): User provenance endpoints verify requesting user matches the target userId (or is admin).
+
+#### Concurrency & Data Races
+- **Audit chain init race** (`logging/audit-chain.ts`): `initialize()` now deduplicates concurrent calls via shared promise. Prevents double-init when multiple callers race.
+- **Integration start TOCTOU** (`integrations/manager.ts`): Added `starting` Set to prevent concurrent `startIntegration()` calls from double-initializing the same integration.
+- **Map iteration race** (`brain/working-memory.ts`): Snapshot `prefetchCache` entries via `Array.from()` before clearing and iterating.
+- **Timer leak** (`training/dataset-refresh-manager.ts`): `startCron()` now stops existing cron before starting a new one (was silently leaking the old interval).
+
+#### Memory & Performance
+- **CircuitBreakerRegistry cap** (`resilience/circuit-breaker.ts`): Registry capped at 500 breakers with FIFO eviction to prevent unbounded growth.
+- **Counter ID collision** (`utils/crypto-pool.ts`): Changed integer counter to `randomUUID()` for pending request IDs — prevents collision after counter wrap.
+- **Sync I/O in hot loop** (`training/distillation-manager.ts`): Replaced `appendFileSync` with async `appendFile` from `node:fs/promises`.
+- **Listener leak** (`integrations/event-bridge.ts`): Changed `request.raw.on('close')` to `request.raw.once('close')`.
+
+#### Promise & Error Handling
+- **Hanging promise** (`sandbox/linux-sandbox.ts`): Added `reject` to Promise constructor so `.catch(reject)` on fallback path actually works.
+- **Unhandled rejection** (`integrations/event-bridge.ts`): Added `.catch()` to `subscribe()` calls in `startSubscriptions()`.
+
+#### Logger Compatibility
+- **Dual argument order** (`logging/logger.ts`): `SecureLogger` interface now accepts both `('msg', {ctx})` and `({ctx}, 'msg')` call patterns via overloaded signatures and `resolveLogArgs()` runtime detection. Fixes type errors from bulk Pino migration without requiring callers to pick one convention.
+- **Local logger interfaces** (`security/guardrail-filter-loader.ts`, `security/guardrail-pipeline.ts`): 7 log calls corrected to match local `(msg, ctx?)` interface (not SecureLogger).
+
+### Community Theme Sync & Marketplace Improvements
+
+- **Theme sync** (`marketplace/skills/themes.ts`): Community sync discovers `.json` theme files from the community repo `themes/` directory. Parses and upserts as marketplace skills with `category: 'design'`, `tags: ['theme', 'community-theme']`.
+- **Personality sync** (`marketplace/skills/personalities.ts`): Community sync discovers `.md` personality files from the community repo `personalities/` directory. Parses via `PersonalityMarkdownSerializer` and upserts with `[community]` prefix.
+- **CommunityTab redesign** (`dashboard/components/skills/CommunityTab.tsx`): Unified community content view with category tabs for Skills, Workflows, Swarm Templates, Personalities, and Themes.
+- **InstalledTab expansion** (`dashboard/components/skills/InstalledTab.tsx`): Shows installed items across all categories with uninstall capability.
+- **SettingsPage refresh** (`dashboard/components/SettingsPage.tsx`): Significant UI improvements to settings layout and organization.
+
+### CI & Infrastructure
+
+- **GitHub Actions workflow** (`.github/workflows/ci.yml`): Expanded CI pipeline with improved test stages and workflow reliability.
+- **ADR 031** (`docs/adr/031-license-gated-schema.md`): Architecture decision record for license-gated migration schema (planned — see roadmap).
+
+### Bug Fixes
+
+- **Personality storage** (`soul/storage.ts`, `soul/manager.ts`): Fixes to personality CRUD operations and default personality handling.
+- **Marketplace manager** (`marketplace/manager.ts`, `marketplace/storage.ts`): Fixes to community sync result reporting and skill counting.
+- **Test stability**: Fixed ~20 test files across core and dashboard for assertion accuracy, mock correctness, and flaky test elimination.
+- **`test-setup.ts`**: Fixed `string | undefined` type errors in table name destructuring for atomic TRUNCATE.
+
+### Test Coverage Update
+
+| Suite | Files | Tests | Stmts % | Branch % |
+|-------|-------|-------|---------|----------|
+| Core Unit | 619 | 15,339 | 89.31 | 79.10 |
+| Dashboard | 164 | 3,201 | 62.37 | 61.98 |
+| MCP | 72 | 1,066 | 61.80 | 48.51 |
+| Core E2E | 7 | 53 | — | — |
+| Core DB | 47 | 933+ | — | — |
+
+---
+
 ## [2026.3.6]
 
 ### Native Integration MCP Tools, Multi-Search & Secrets Management
