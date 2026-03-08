@@ -133,14 +133,24 @@ describe('runMigrations()', () => {
     expect(ids).toHaveLength(MIGRATION_MANIFEST.length);
   });
 
-  it('community tier applies only 001_community', async () => {
+  it('community tier applies all baselines (schema always complete)', async () => {
     await wipeAllSchemas();
     await runMigrations('community');
 
     const ids = await appliedIds();
+    // All 3 baselines always run — full schema is required for startup
     expect(ids).toContain('001_community');
-    expect(ids).not.toContain('002_pro');
-    expect(ids).not.toContain('003_enterprise');
+    expect(ids).toContain('002_pro');
+    expect(ids).toContain('003_enterprise');
+
+    // But incremental migrations above community tier are excluded
+    const manifest = MIGRATION_MANIFEST;
+    const proIncrementals = manifest.filter(
+      (m) => m.tier === 'pro' && !['001_community', '002_pro', '003_enterprise'].includes(m.id)
+    );
+    for (const m of proIncrementals) {
+      expect(ids).not.toContain(m.id);
+    }
 
     // Verify community schema exists
     const schemas = await getPool().query<{ schema_name: string }>(
@@ -149,14 +159,25 @@ describe('runMigrations()', () => {
     expect(schemas.rows).toHaveLength(1);
   });
 
-  it('pro tier applies 001_community + 002_pro', async () => {
+  it('pro tier applies all baselines plus pro incrementals', async () => {
     await wipeAllSchemas();
     await runMigrations('pro');
 
     const ids = await appliedIds();
+    // All 3 baselines always run
     expect(ids).toContain('001_community');
     expect(ids).toContain('002_pro');
-    expect(ids).not.toContain('003_enterprise');
+    expect(ids).toContain('003_enterprise');
+
+    // But enterprise-only incrementals are excluded
+    const manifest = MIGRATION_MANIFEST;
+    const enterpriseIncrementals = manifest.filter(
+      (m) =>
+        m.tier === 'enterprise' && !['001_community', '002_pro', '003_enterprise'].includes(m.id)
+    );
+    for (const m of enterpriseIncrementals) {
+      expect(ids).not.toContain(m.id);
+    }
 
     // Verify pro schema exists
     const schemas = await getPool().query<{ schema_name: string }>(
@@ -165,20 +186,24 @@ describe('runMigrations()', () => {
     expect(schemas.rows).toHaveLength(1);
   });
 
-  it('upgrade from community to enterprise applies missing tiers', async () => {
+  it('upgrade from community to enterprise applies incremental migrations', async () => {
     await wipeAllSchemas();
     await runMigrations('community');
 
     let ids = await appliedIds();
-    expect(ids).toHaveLength(1);
-
-    // Upgrade to enterprise
-    await runMigrations('enterprise');
-
-    ids = await appliedIds();
+    // All 3 baselines applied even for community
     expect(ids).toContain('001_community');
     expect(ids).toContain('002_pro');
     expect(ids).toContain('003_enterprise');
+
+    const communityCount = ids.length;
+
+    // Upgrade to enterprise — now incremental enterprise migrations apply too
+    await runMigrations('enterprise');
+
+    ids = await appliedIds();
+    expect(ids.length).toBeGreaterThanOrEqual(communityCount);
+    expect(ids).toEqual(MIGRATION_MANIFEST.map((m) => m.id));
   });
 
   it('is idempotent — second call applies nothing new (fast-path)', async () => {
@@ -225,10 +250,9 @@ describe('runMigrations()', () => {
 
     // Wipe tracking table and re-insert old-style IDs
     await pool.query('DELETE FROM schema_migrations');
-    await pool.query(
-      `INSERT INTO schema_migrations (id, applied_at) VALUES ('001_baseline', $1)`,
-      [Date.now()]
-    );
+    await pool.query(`INSERT INTO schema_migrations (id, applied_at) VALUES ('001_baseline', $1)`, [
+      Date.now(),
+    ]);
 
     // Run migrations — should detect legacy and mark split IDs as applied
     await runMigrations('enterprise');

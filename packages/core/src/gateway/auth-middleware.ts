@@ -89,11 +89,11 @@ export function createAuthHook(opts: AuthHookOptions) {
     if (typeof socket.authorized === 'boolean' && socket.authorized) {
       try {
         const cert = socket.getPeerCertificate();
-        if (cert?.subject?.CN) {
-          const assignedRole = (opts.rbac?.getUserRole(cert.subject.CN) ??
-            'operator') as AuthUser['role'];
+        const cn = Array.isArray(cert?.subject?.CN) ? cert.subject.CN[0] : cert?.subject?.CN;
+        if (cn) {
+          const assignedRole = (opts.rbac?.getUserRole(cn) ?? 'operator') as AuthUser['role'];
           request.authUser = {
-            userId: cert.subject.CN,
+            userId: cn,
             role: assignedRole,
             permissions: [],
             authMethod: 'certificate',

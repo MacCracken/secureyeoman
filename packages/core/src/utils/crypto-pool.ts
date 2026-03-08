@@ -57,7 +57,7 @@ export class CryptoPool {
           req.resolve(msg.result!);
         }
       });
-      worker.on('error', (err) => {
+      worker.on('error', (err: Error) => {
         // Reject all pending requests for this worker
         // (worker_threads reassigns error to the worker instance)
         for (const [id, req] of this.pending) {
