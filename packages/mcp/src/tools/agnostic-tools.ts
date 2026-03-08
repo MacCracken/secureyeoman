@@ -254,9 +254,11 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_session_list', middleware, async (args) => {
+      const limit = args.limit ?? 20;
+      const offset = args.offset ?? 0;
       const { ok, status, body } = await agnosticGet(
         config,
-        `/api/sessions?limit=${args.limit}&offset=${args.offset}`
+        `/api/sessions?limit=${limit}&offset=${offset}`
       );
       if (!ok) {
         return {

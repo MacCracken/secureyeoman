@@ -49,6 +49,9 @@ services:
       AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://agnosticos:8090}
       AGNOS_GATEWAY_API_KEY: ${AGNOS_GATEWAY_API_KEY:-}
       AGNOS_RUNTIME_API_KEY: ${AGNOS_RUNTIME_API_KEY:-}
+      # AGNOSTIC QA integration — points to agnostic-webgui service when --profile agnostic is active.
+      AGNOSTIC_URL: ${AGNOSTIC_URL:-http://agnostic-webgui:8000}
+      AGNOSTIC_API_KEY: ${AGNOSTIC_API_KEY:-}
     healthcheck:
       test: ["CMD-SHELL", "NODE_TLS_REJECT_UNAUTHORIZED=0 node /app/packages/core/dist/cli.js health --url https://127.0.0.1:18789 --json 2>/dev/null || node /app/packages/core/dist/cli.js health --url http://127.0.0.1:18789 --json"]
       interval: 30s
@@ -84,6 +87,9 @@ services:
       MCP_RATE_LIMIT_PER_TOOL: "${MCP_RATE_LIMIT_PER_TOOL:-30}"
       MCP_LOG_LEVEL: "${MCP_LOG_LEVEL:-info}"
       MCP_EXPOSE_AGNOS_TOOLS: "${MCP_EXPOSE_AGNOS_TOOLS:-false}"
+      MCP_EXPOSE_AGNOSTIC_TOOLS: "${MCP_EXPOSE_AGNOSTIC_TOOLS:-false}"
+      AGNOSTIC_URL: ${AGNOSTIC_URL:-http://agnostic-webgui:8000}
+      AGNOSTIC_API_KEY: ${AGNOSTIC_API_KEY:-}
       AGNOS_GATEWAY_URL: ${AGNOS_GATEWAY_URL:-http://agnosticos:8088}
       AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://agnosticos:8090}
       AGNOS_GATEWAY_API_KEY: ${AGNOS_GATEWAY_API_KEY:-}
@@ -128,6 +134,81 @@ services:
     profiles:
       - agnos
       - full
+      - full-dev
+    restart: unless-stopped
+
+  # AGNOSTIC QA Platform — webgui + backing services.
+  # Provides QA task management, webhooks, and SSE event stream on port 8000.
+  agnostic-redis:
+    image: redis:7-alpine
+    volumes:
+      - agnostic-redis-data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    profiles:
+      - agnostic
+      - full-dev
+    restart: unless-stopped
+
+  agnostic-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${AGNOSTIC_POSTGRES_DB:-agnostic}
+      POSTGRES_USER: ${AGNOSTIC_POSTGRES_USER:-agnostic}
+      POSTGRES_PASSWORD: ${AGNOSTIC_POSTGRES_PASSWORD:-agnostic_dev}
+    volumes:
+      - agnostic-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AGNOSTIC_POSTGRES_USER:-agnostic}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    profiles:
+      - agnostic
+      - full-dev
+    restart: unless-stopped
+
+  agnostic-webgui:
+    image: ghcr.io/maccracken/agnostic-webgui:2026.3.8
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_URL: redis://agnostic-redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AGNOSTIC_API_KEY: ${AGNOSTIC_API_KEY:-}
+      YEOMAN_A2A_ENABLED: "${YEOMAN_A2A_ENABLED:-true}"
+      MCP_SERVER_ENABLED: "${MCP_SERVER_ENABLED:-true}"
+      WEBGUI_HOST: "0.0.0.0"
+      WEBGUI_PORT: "8000"
+      DATABASE_URL: "postgresql+asyncpg://${AGNOSTIC_POSTGRES_USER:-agnostic}:${AGNOSTIC_POSTGRES_PASSWORD:-agnostic_dev}@agnostic-postgres:5432/${AGNOSTIC_POSTGRES_DB:-agnostic}"
+      DATABASE_ENABLED: "${AGNOSTIC_DATABASE_ENABLED:-false}"
+    depends_on:
+      agnostic-redis:
+        condition: service_started
+      agnostic-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+    profiles:
+      - agnostic
       - full-dev
     restart: unless-stopped
 
@@ -185,5 +266,7 @@ volumes:
   pgdata:
   data:
   community-repo:
+  agnostic-redis-data:
+  agnostic-pgdata:
   node-modules:
   dashboard-node-modules:

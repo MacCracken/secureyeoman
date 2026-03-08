@@ -3,14 +3,20 @@
   "version": "2026.3.8",
   "description": "SecureYeoman MCP (Model Context Protocol) Service",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "types": "./src/index.ts",
   "bin": {
     "secureyeoman-mcp": "./dist/cli.js"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./cli": "./src/cli.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./src/cli.ts",
+      "default": "./dist/cli.js"
+    }
   },
   "license": "AGPL-3.0-only",
   "scripts": {

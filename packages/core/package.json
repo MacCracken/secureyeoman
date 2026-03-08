@@ -3,13 +3,16 @@
   "version": "2026.3.8",
   "description": "SecureYeoman Core Agent Engine",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "types": "./src/index.ts",
   "bin": {
     "secureyeoman": "./dist/cli.js"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "license": "AGPL-3.0-only",
   "scripts": {
