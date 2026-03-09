@@ -5,6 +5,7 @@ import { ConsolidationExecutor } from './executor.js';
 
 const mockStorage = {
   getMemory: vi.fn(),
+  getMemoryBatch: vi.fn(),
   createMemory: vi.fn(),
   deleteMemory: vi.fn(),
 };
@@ -49,6 +50,9 @@ describe('ConsolidationExecutor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStorage.getMemory.mockResolvedValue(makeMemory('mem-1'));
+    mockStorage.getMemoryBatch.mockImplementation(async (ids: string[]) =>
+      ids.map((id) => makeMemory(id))
+    );
     mockStorage.createMemory.mockResolvedValue(makeMemory('merged-1'));
     mockStorage.deleteMemory.mockResolvedValue(true);
     mockAudit.record.mockResolvedValue(undefined);
@@ -105,9 +109,7 @@ describe('ConsolidationExecutor', () => {
 
   describe('execute - MERGE action', () => {
     it('creates merged memory and deletes source memories', async () => {
-      mockStorage.getMemory
-        .mockResolvedValueOnce(makeMemory('m1'))
-        .mockResolvedValueOnce(makeMemory('m2'));
+      mockStorage.getMemoryBatch.mockResolvedValueOnce([makeMemory('m1'), makeMemory('m2')]);
 
       const summary = await executor.execute(
         [
@@ -129,7 +131,7 @@ describe('ConsolidationExecutor', () => {
     });
 
     it('indexes merged memory in vector store', async () => {
-      mockStorage.getMemory.mockResolvedValue(makeMemory('m1'));
+      mockStorage.getMemoryBatch.mockResolvedValueOnce([makeMemory('m1')]);
 
       await executor.execute(
         [{ type: 'MERGE', sourceIds: ['m1'], reason: 'test', mergedContent: 'merged' }],
@@ -150,7 +152,7 @@ describe('ConsolidationExecutor', () => {
     });
 
     it('aborts MERGE if a source memory no longer exists', async () => {
-      mockStorage.getMemory.mockResolvedValueOnce(null);
+      mockStorage.getMemoryBatch.mockResolvedValueOnce([]); // none found
 
       await executor.execute(
         [{ type: 'MERGE', sourceIds: ['gone'], reason: 'test', mergedContent: 'x' }],
@@ -161,7 +163,7 @@ describe('ConsolidationExecutor', () => {
     });
 
     it('records audit entry after successful MERGE', async () => {
-      mockStorage.getMemory.mockResolvedValue(makeMemory('m1'));
+      mockStorage.getMemoryBatch.mockResolvedValueOnce([makeMemory('m1')]);
 
       await executor.execute(
         [{ type: 'MERGE', sourceIds: ['m1'], reason: 'similar', mergedContent: 'merged' }],
@@ -176,9 +178,8 @@ describe('ConsolidationExecutor', () => {
 
   describe('execute - REPLACE action', () => {
     it('deletes source memories except the target', async () => {
-      mockStorage.getMemory
-        .mockResolvedValueOnce(makeMemory('m1')) // verify target
-        .mockResolvedValueOnce(makeMemory('m2')); // check non-target source
+      mockStorage.getMemory.mockResolvedValueOnce(makeMemory('m1')); // verify target
+      mockStorage.getMemoryBatch.mockResolvedValueOnce([makeMemory('m2')]); // batch check non-target
 
       await executor.execute(
         [{ type: 'REPLACE', sourceIds: ['m1', 'm2'], reason: 'duplicate', replaceTargetId: 'm1' }],
@@ -274,7 +275,7 @@ describe('ConsolidationExecutor', () => {
 
   describe('error resilience', () => {
     it('logs warning and continues on action failure', async () => {
-      mockStorage.getMemory.mockRejectedValueOnce(new Error('DB error'));
+      mockStorage.getMemoryBatch.mockRejectedValueOnce(new Error('DB error'));
 
       const summary = await executor.execute(
         [{ type: 'MERGE', sourceIds: ['m1'], reason: 'test', mergedContent: 'merged' }],
@@ -295,7 +296,7 @@ describe('ConsolidationExecutor', () => {
         logger: mockLogger as any,
       });
 
-      mockStorage.getMemory.mockResolvedValue(makeMemory('m1'));
+      mockStorage.getMemoryBatch.mockResolvedValueOnce([makeMemory('m1')]);
 
       await expect(
         executorNoVec.execute(

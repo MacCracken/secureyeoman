@@ -23,6 +23,7 @@ export class FaissVectorStore implements VectorStore {
   private sidecar: SidecarData = { idToIndex: {}, indexToId: {}, nextIndex: 0 };
   private faissModule: any = null;
   private deletedCount = 0;
+  private persistTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(dimensions: number, persistDir: string) {
     this.dimensions = dimensions;
@@ -65,6 +66,14 @@ export class FaissVectorStore implements VectorStore {
     await writeFile(sidecarPath, JSON.stringify(this.sidecar));
   }
 
+  private schedulePersist(): void {
+    if (this.persistTimer) clearTimeout(this.persistTimer);
+    this.persistTimer = setTimeout(() => {
+      this.persistTimer = null;
+      this.persist().catch(() => {});
+    }, 500);
+  }
+
   private normalize(vector: number[]): number[] {
     const magnitude = Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0));
     if (magnitude === 0) return vector;
@@ -86,7 +95,7 @@ export class FaissVectorStore implements VectorStore {
     this.sidecar.idToIndex[id] = idx;
     this.sidecar.indexToId[idx] = id;
 
-    await this.persist();
+    this.schedulePersist();
   }
 
   async insertBatch(
@@ -150,7 +159,7 @@ export class FaissVectorStore implements VectorStore {
     delete this.sidecar.indexToId[idx];
     this.deletedCount++;
 
-    await this.persist();
+    this.schedulePersist();
     return true;
   }
 
@@ -207,6 +216,10 @@ export class FaissVectorStore implements VectorStore {
   }
 
   async close(): Promise<void> {
+    if (this.persistTimer) {
+      clearTimeout(this.persistTimer);
+      this.persistTimer = null;
+    }
     if (this.index) {
       await this.persist();
       this.index = null;

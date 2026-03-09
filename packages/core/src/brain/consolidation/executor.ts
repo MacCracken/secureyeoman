@@ -98,12 +98,12 @@ export class ConsolidationExecutor {
     }
 
     // Verify all source memories still exist (optimistic locking)
-    for (const id of action.sourceIds) {
-      const memory = await this.storage.getMemory(id);
-      if (!memory) {
-        this.logger.warn({ id }, 'Source memory no longer exists, skipping merge');
-        return;
-      }
+    const sourceMemories = await this.storage.getMemoryBatch(action.sourceIds);
+    if (sourceMemories.length !== action.sourceIds.length) {
+      const foundIds = new Set(sourceMemories.map((m) => m.id));
+      const missing = action.sourceIds.find((id) => !foundIds.has(id));
+      this.logger.warn({ id: missing }, 'Source memory no longer exists, skipping merge');
+      return;
     }
 
     // Create the merged memory
@@ -150,18 +150,17 @@ export class ConsolidationExecutor {
     }
 
     // Delete all sources except the target
-    for (const id of action.sourceIds) {
-      if (id === action.replaceTargetId) continue;
-
-      const memory = await this.storage.getMemory(id);
-      if (memory) {
-        await this.storage.deleteMemory(id);
-        if (this.vectorManager) {
-          try {
-            await this.vectorManager.removeMemory(id);
-          } catch {
-            /* best effort */
-          }
+    const idsToDelete = action.sourceIds.filter((id) => id !== action.replaceTargetId);
+    const existingMemories = await this.storage.getMemoryBatch(idsToDelete);
+    const existingIds = new Set(existingMemories.map((m) => m.id));
+    for (const id of idsToDelete) {
+      if (!existingIds.has(id)) continue;
+      await this.storage.deleteMemory(id);
+      if (this.vectorManager) {
+        try {
+          await this.vectorManager.removeMemory(id);
+        } catch {
+          /* best effort */
         }
       }
     }

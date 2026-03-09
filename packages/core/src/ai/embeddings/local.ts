@@ -79,6 +79,13 @@ export class LocalEmbeddingProvider extends BaseEmbeddingProvider {
   private async ensureProcess(): Promise<void> {
     if (this.process && !this.process.killed) return;
 
+    // Clean up old process listeners if it exited but reference lingered
+    if (this.process) {
+      this.process.stdout?.removeAllListeners();
+      this.process.stderr?.removeAllListeners();
+      this.process.removeAllListeners();
+    }
+
     this.process = spawn(this.pythonPath, ['-c', PYTHON_SCRIPT, this.model], {
       stdio: ['pipe', 'pipe', 'pipe'],
     });

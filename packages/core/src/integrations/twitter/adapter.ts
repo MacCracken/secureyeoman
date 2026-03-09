@@ -122,7 +122,9 @@ export class TwitterIntegration implements Integration {
     const interval = (this.config?.config.pollIntervalMs as number | undefined) ?? 300_000;
     this.pollTimer = setTimeout(() => {
       void this.poll().finally(() => {
-        this.schedulePoll();
+        if (this.running) {
+          this.schedulePoll();
+        }
       });
     }, interval);
   }

@@ -1027,9 +1027,13 @@ export class SubAgentManager {
       ),
       new Promise<never>((_, reject) => {
         if (signal.aborted) reject(new Error('Delegation aborted'));
-        signal.addEventListener('abort', () => {
-          reject(new Error('Delegation aborted'));
-        });
+        signal.addEventListener(
+          'abort',
+          () => {
+            reject(new Error('Delegation aborted'));
+          },
+          { once: true }
+        );
       }),
     ]);
 

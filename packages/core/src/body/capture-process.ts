@@ -145,16 +145,19 @@ export class CaptureProcess {
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
 
-      this.child!.stdout?.on('data', (chunk: Buffer) => {
+      const onData = (chunk: Buffer) => {
         chunks.push(chunk);
-      });
+      };
+      this.child!.stdout?.removeAllListeners('data');
+      this.child!.stdout?.on('data', onData);
 
-      this.child!.on('error', (error) => {
+      this.child!.once('error', (error) => {
+        this.child!.stdout?.off('data', onData);
         this.status = 'failed';
         reject(error);
       });
 
-      this.child!.on('exit', (code, signal) => {
+      this.child!.once('exit', (code, signal) => {
         if (code === 0) {
           const result = Buffer.concat(chunks);
           this.status = 'running';

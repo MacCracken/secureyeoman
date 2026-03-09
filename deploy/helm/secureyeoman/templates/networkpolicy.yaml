@@ -42,8 +42,9 @@ spec:
   egress:
     # To managed database
     - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: database
       ports:
         - port: {{ .Values.database.port }}
           protocol: TCP

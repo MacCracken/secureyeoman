@@ -966,13 +966,21 @@ export class BrainStorage extends PgBaseStorage {
   ): Promise<void> {
     if (chunks.length === 0) return;
     const now = Date.now();
-    for (const c of chunks) {
-      await this.query(
-        `INSERT INTO brain.document_chunks (id, source_id, source_table, chunk_index, content, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING`,
-        [c.id, sourceId, sourceTable, c.chunkIndex, c.content, now]
+    const params: unknown[] = [];
+    const valueClauses: string[] = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const c = chunks[i]!;
+      const offset = i * 6;
+      valueClauses.push(
+        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`
       );
+      params.push(c.id, sourceId, sourceTable, c.chunkIndex, c.content, now);
     }
+    await this.query(
+      `INSERT INTO brain.document_chunks (id, source_id, source_table, chunk_index, content, created_at)
+       VALUES ${valueClauses.join(', ')} ON CONFLICT (id) DO NOTHING`,
+      params
+    );
   }
 
   async deleteChunksForSource(sourceId: string): Promise<void> {

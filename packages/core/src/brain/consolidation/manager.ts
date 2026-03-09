@@ -162,14 +162,16 @@ export class ConsolidationManager {
 
     // Process flagged memories first, then sample others
     const idsToProcess = [...snapshotIds];
+    const idsToProcessSet = new Set(idsToProcess);
 
     // Also sample some non-flagged memories for broader consolidation
     const allMemories = await this.storage.queryMemories({
       limit: this.config.deepConsolidation.batchSize,
     });
     for (const mem of allMemories) {
-      if (!idsToProcess.includes(mem.id)) {
+      if (!idsToProcessSet.has(mem.id)) {
         idsToProcess.push(mem.id);
+        idsToProcessSet.add(mem.id);
       }
       if (idsToProcess.length >= this.config.deepConsolidation.batchSize) break;
     }
@@ -188,17 +190,18 @@ export class ConsolidationManager {
       const filteredSimilar = similar.filter((r) => r.id !== memId);
 
       if (filteredSimilar.length > 0) {
-        const similarWithContent = await Promise.all(
-          filteredSimilar.map(async (r) => {
-            const mem = await this.storage.getMemory(r.id);
-            return {
-              id: r.id,
-              content: mem?.content ?? '',
-              score: r.score,
-              importance: mem?.importance ?? 0,
-            };
-          })
-        );
+        const similarIds = filteredSimilar.map((r) => r.id);
+        const similarMemories = await this.storage.getMemoryBatch(similarIds);
+        const memById = new Map(similarMemories.map((m) => [m.id, m]));
+        const similarWithContent = filteredSimilar.map((r) => {
+          const mem = memById.get(r.id);
+          return {
+            id: r.id,
+            content: mem?.content ?? '',
+            score: r.score,
+            importance: mem?.importance ?? 0,
+          };
+        });
 
         candidates.push({
           memoryId: memId,

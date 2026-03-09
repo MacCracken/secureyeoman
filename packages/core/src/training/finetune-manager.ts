@@ -419,14 +419,23 @@ export class FinetuneManager {
       resolve?.();
     });
 
-    while (true) {
-      while (lines.length > 0) {
-        yield lines.shift()!;
+    try {
+      while (true) {
+        while (lines.length > 0) {
+          yield lines.shift()!;
+        }
+        if (done) break;
+        await new Promise<void>((r) => {
+          resolve = r;
+        });
       }
-      if (done) break;
-      await new Promise<void>((r) => {
-        resolve = r;
-      });
+    } finally {
+      child.stdout?.off('data', enqueue);
+      child.stderr?.off('data', enqueue);
+      child.removeAllListeners('exit');
+      if (!child.killed) {
+        child.kill();
+      }
     }
   }
 

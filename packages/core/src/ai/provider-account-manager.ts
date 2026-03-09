@@ -10,6 +10,7 @@ import type { ProviderKeyValidator } from './provider-key-validator.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { AlertManager } from '../telemetry/alert-manager.js';
 import { PROVIDER_KEY_ENV } from './cost-calculator.js';
+import { getLogger } from '../logging/logger.js';
 
 export interface ProviderAccountManagerDeps {
   storage: ProviderAccountStorage;
@@ -84,7 +85,14 @@ export class ProviderAccountManager {
     if (!account) return false;
 
     // Remove the stored secret
-    await this.secretsManager.delete(account.secretName).catch(() => {});
+    await this.secretsManager
+      .delete(account.secretName)
+      .catch((err) =>
+        getLogger().warn(
+          { err, secretName: account.secretName },
+          'Failed to delete provider account secret'
+        )
+      );
 
     const deleted = await this.storage.deleteAccount(id);
     if (deleted) {

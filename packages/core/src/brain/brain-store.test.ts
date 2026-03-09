@@ -423,13 +423,13 @@ describe('BrainStorage (extended)', () => {
       expect(mockQuery).not.toHaveBeenCalled();
     });
 
-    it('inserts each chunk', async () => {
+    it('inserts all chunks in a single multi-row INSERT', async () => {
       mockQuery.mockResolvedValue({ rows: [], rowCount: 1 });
       await storage.createChunks('src-1', 'memories', [
         { id: 'c1', content: 'chunk1', chunkIndex: 0 },
         { id: 'c2', content: 'chunk2', chunkIndex: 1 },
       ]);
-      expect(mockQuery).toHaveBeenCalledTimes(2);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
       const sql = mockQuery.mock.calls[0][0] as string;
       expect(sql).toContain('INSERT INTO brain.document_chunks');
       expect(sql).toContain('ON CONFLICT');

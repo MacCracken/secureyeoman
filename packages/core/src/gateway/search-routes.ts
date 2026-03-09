@@ -8,7 +8,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { resolve as resolvePath, relative } from 'node:path';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { getLogger } from '../logging/logger.js';
@@ -50,6 +50,7 @@ interface SearchResult {
 interface ReplaceFileResult {
   file: string;
   replacements: number;
+  skipped?: string;
 }
 
 interface ReplaceResult {
@@ -222,6 +223,14 @@ export function registerSearchRoutes(app: FastifyInstance): void {
 
           const fullPath = resolvePath(resolvedCwd, file);
           if (!existsSync(fullPath)) continue;
+
+          const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+          const fileSize = statSync(fullPath).size;
+          if (fileSize > MAX_FILE_SIZE) {
+            log.warn({ file, fileSize }, 'Skipping file exceeding 10 MB size limit in search-replace');
+            results.push({ file, replacements: 0, skipped: 'File exceeds 10 MB limit' });
+            continue;
+          }
 
           const content = readFileSync(fullPath, 'utf-8');
           let newContent: string;

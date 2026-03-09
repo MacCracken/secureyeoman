@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { FaissVectorStore } from './faiss-store.js';
 
 // ─── Hoisted mocks ────────────────────────────────────────────
@@ -61,6 +61,7 @@ describe('FaissVectorStore', () => {
   let store: FaissVectorStore;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     // Reset mock state
     mockIndex.add.mockClear();
     mockIndex.ntotal.mockClear().mockReturnValue(0);
@@ -78,6 +79,10 @@ describe('FaissVectorStore', () => {
     mockWriteFile.mockClear().mockResolvedValue(undefined);
 
     store = new FaissVectorStore(3, '/tmp/test-faiss');
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('initialization', () => {
@@ -101,9 +106,12 @@ describe('FaissVectorStore', () => {
   });
 
   describe('insert', () => {
-    it('inserts a vector and persists to disk', async () => {
+    it('inserts a vector and persists to disk after debounce', async () => {
       await store.insert('id-1', [1, 0, 0]);
       expect(mockIndex.add).toHaveBeenCalledWith(expect.any(Array));
+      // insert() uses schedulePersist() with a 500ms debounce
+      expect(mockWriteFile).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(500);
       expect(mockWriteFile).toHaveBeenCalled();
     });
 
@@ -198,8 +206,12 @@ describe('FaissVectorStore', () => {
 
     it('returns true and marks deleted in sidecar', async () => {
       await store.insert('id-1', [1, 0, 0]);
+      mockWriteFile.mockClear();
       const result = await store.delete('id-1');
       expect(result).toBe(true);
+      // delete() uses schedulePersist() with a 500ms debounce
+      expect(mockWriteFile).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(500);
       expect(mockWriteFile).toHaveBeenCalled();
     });
   });

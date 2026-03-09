@@ -52,6 +52,14 @@ export class McpHealthMonitor {
     const { servers } = await this.storage.listServers();
     const enabled = servers.filter((s) => s.enabled);
     const settled = await Promise.allSettled(enabled.map((s) => this.checkServer(s.id)));
+    for (const result of settled) {
+      if (result.status === 'rejected') {
+        this.logger.warn(
+          { error: result.reason instanceof Error ? result.reason.message : String(result.reason) },
+          'MCP health check rejected'
+        );
+      }
+    }
     return settled
       .filter((r): r is PromiseFulfilledResult<McpServerHealth> => r.status === 'fulfilled')
       .map((r) => r.value);

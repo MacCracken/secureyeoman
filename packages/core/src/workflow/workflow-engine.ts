@@ -354,7 +354,9 @@ export class WorkflowEngine {
                   errors: schemaValidation.errors.map((e) => `${e.path}: ${e.message}`),
                 },
               })
-              .catch(() => {});
+              .catch((err) =>
+                this.logger.warn({ err }, 'Failed to record step_output_schema_violation audit')
+              );
             if (outputSchemaMode === 'strict') {
               throw new Error(
                 `Step "${step.id}" output failed schema validation (${schemaValidation.errors.length} error(s)): ` +

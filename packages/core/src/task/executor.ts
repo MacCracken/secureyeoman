@@ -358,9 +358,13 @@ export class TaskExecutor {
       const result = await Promise.race([
         executionPromise,
         new Promise((_, reject) => {
-          abortController.signal.addEventListener('abort', () => {
-            reject(new Error('Task timeout'));
-          });
+          abortController.signal.addEventListener(
+            'abort',
+            () => {
+              reject(new Error('Task timeout'));
+            },
+            { once: true }
+          );
         }),
       ]);
 

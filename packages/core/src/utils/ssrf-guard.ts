@@ -71,6 +71,7 @@ export function isPrivateUrl(rawUrl: string): boolean {
     'metadata.google.internal',
     'metadata.internal',
     'instance-data', // AWS EC2 alias
+    'host.docker.internal', // Docker host gateway
   ];
   if (BLOCKED_HOSTNAMES.includes(hostname)) {
     return true;

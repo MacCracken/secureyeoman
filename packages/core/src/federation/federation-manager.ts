@@ -161,7 +161,15 @@ export class FederationManager {
 
   async runHealthCycle(): Promise<void> {
     const peers = await this.storage.list();
-    await Promise.allSettled(peers.map((p) => this.checkHealth(p.id)));
+    const settled = await Promise.allSettled(peers.map((p) => this.checkHealth(p.id)));
+    for (const result of settled) {
+      if (result.status === 'rejected') {
+        this.logger.warn(
+          { error: result.reason instanceof Error ? result.reason.message : String(result.reason) },
+          'Federation health check rejected'
+        );
+      }
+    }
   }
 
   private async fetchPeer(

@@ -22,13 +22,14 @@ vi.mock('node:fs', () => ({
   existsSync: vi.fn(() => true),
   readFileSync: vi.fn(() => 'hello world foo bar\nfoo baz\n'),
   writeFileSync: vi.fn(),
+  statSync: vi.fn(() => ({ size: 100 })),
 }));
 vi.mock('../utils/process-env.js', () => ({
   buildSafeEnv: () => ({}),
 }));
 
 import { execFile } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 
 const mockExecFile = vi.mocked(
   execFile as unknown as (...args: any[]) => Promise<{ stdout: string }>

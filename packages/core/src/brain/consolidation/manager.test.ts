@@ -39,6 +39,9 @@ function makeVectorManager(overrides: any = {}) {
 function makeStorage(overrides: any = {}) {
   return {
     getMemory: vi.fn().mockResolvedValue(MEMORY),
+    getMemoryBatch: vi
+      .fn()
+      .mockImplementation(async (ids: string[]) => ids.map((id) => ({ ...MEMORY, id }))),
     deleteMemory: vi.fn().mockResolvedValue(undefined),
     queryMemories: vi.fn().mockResolvedValue([]),
     touchMemories: vi.fn().mockResolvedValue(undefined),

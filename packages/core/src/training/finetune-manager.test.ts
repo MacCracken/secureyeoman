@@ -409,15 +409,20 @@ describe('FinetuneManager', () => {
           on: vi.fn((event: string, handler: Function) => {
             stdoutHandlers[event] = handler;
           }),
+          off: vi.fn(),
         },
         stderr: {
           on: vi.fn((event: string, handler: Function) => {
             stderrHandlers[event] = handler;
           }),
+          off: vi.fn(),
         },
         on: vi.fn((event: string, handler: Function) => {
           childHandlers[event] = handler;
         }),
+        removeAllListeners: vi.fn(),
+        kill: vi.fn(),
+        exitCode: null,
         unref: vi.fn(),
       };
 

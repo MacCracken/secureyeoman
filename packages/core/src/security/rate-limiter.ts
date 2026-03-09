@@ -51,6 +51,9 @@ export interface RateLimiterLike {
   getStats(): { totalHits: number; totalChecks: number };
 }
 
+/** Maximum number of tracked windows before early eviction / rejection. */
+const MAX_WINDOWS = 100_000;
+
 interface WindowEntry {
   count: number;
   windowStart: number;
@@ -140,6 +143,24 @@ export class RateLimiter {
     let window = this.windows.get(windowKey);
 
     if (!window || now - window.windowStart >= rule.windowMs) {
+      // If at capacity, run early eviction before inserting a new entry
+      if (!this.windows.has(windowKey) && this.windows.size >= MAX_WINDOWS) {
+        this.cleanup();
+        // If still at capacity after cleanup, reject the request
+        if (this.windows.size >= MAX_WINDOWS) {
+          this.totalHits++;
+          this.getLogger().warn(
+            { windowsSize: this.windows.size },
+            'Rate limiter at max capacity, rejecting request'
+          );
+          return {
+            allowed: false,
+            remaining: 0,
+            resetAt: now + rule.windowMs,
+            retryAfter: Math.ceil(rule.windowMs / 1000),
+          };
+        }
+      }
       // Start new window
       window = {
         count: 0,

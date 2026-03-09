@@ -288,6 +288,97 @@ services:
       - prod
     restart: unless-stopped
 
+  # Photisnadi — Kanban task management with daily rituals (Flutter web).
+  # dev: pulls from GHCR. full-dev: builds from local ../photisnadi source.
+  # sy-core proxy routes use PHOTISNADI_SUPABASE_URL/KEY from env_file.
+  photisnadi:
+    image: ghcr.io/maccracken/photisnadi:latest
+    ports:
+      - '8080:8080'
+    environment:
+      PORT: '8080'
+      SUPABASE_URL: ${PHOTISNADI_SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${PHOTISNADI_SUPABASE_KEY:-}
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8080/']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
+    profiles:
+      - dev
+    restart: unless-stopped
+
+  # Photisnadi local build — uses sibling repo source for full integration dev.
+  photisnadi-dev:
+    build:
+      context: ../photisnadi
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
+    environment:
+      PORT: '8080'
+      SUPABASE_URL: ${PHOTISNADI_SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${PHOTISNADI_SUPABASE_KEY:-}
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8080/']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
+    profiles:
+      - full-dev
+    restart: unless-stopped
+
+  # BullShift — Algorithmic trading platform (Rust API).
+  # dev: pulls from GHCR. full-dev: builds from local ../bullshift source.
+  bullshift:
+    image: ghcr.io/maccracken/bullshift:latest
+    ports:
+      - '${BULLSHIFT_PORT:-8787}:8787'
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      BULLSHIFT_PORT: '8787'
+      ALPACA_API_KEY: ${ALPACA_API_KEY:-}
+      ALPACA_API_SECRET: ${ALPACA_API_SECRET:-}
+      ALPACA_SANDBOX: '${ALPACA_SANDBOX:-true}'
+    volumes:
+      - bullshift-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8787/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - dev
+    restart: unless-stopped
+
+  # BullShift local build — uses sibling repo source for full integration dev.
+  bullshift-dev:
+    build:
+      context: ../bullshift
+      dockerfile: Dockerfile
+    ports:
+      - '${BULLSHIFT_PORT:-8787}:8787'
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      BULLSHIFT_PORT: '8787'
+      ALPACA_API_KEY: ${ALPACA_API_KEY:-}
+      ALPACA_API_SECRET: ${ALPACA_API_SECRET:-}
+      ALPACA_SANDBOX: '${ALPACA_SANDBOX:-true}'
+    volumes:
+      - bullshift-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8787/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - full-dev
+    restart: unless-stopped
+
   # Dashboard is now served by the core gateway (SPA serving via @fastify/static).
   # The separate dashboard service below is for local development only.
   sy-dashboard-dev:
@@ -317,5 +408,6 @@ volumes:
   pgdata:
   data:
   community-repo:
+  bullshift-data:
   node-modules:
   dashboard-node-modules:

@@ -2,6 +2,7 @@
 # Combined entrypoint: configures TLS (Caddy) and process supervision (supervisord)
 # for AGNOS services (LLM Gateway + Agent Runtime) and SecureYeoman.
 set -e
+trap 'kill -TERM $(jobs -p) 2>/dev/null; wait' SIGTERM SIGINT
 
 AGNOS_VERSION="$(cat /etc/agnos/VERSION 2>/dev/null || echo 'unknown')"
 echo "AGNOS v${AGNOS_VERSION} + SecureYeoman starting..."
@@ -83,7 +84,7 @@ if [ "$_use_embedded_pg" = "true" ]; then
   # Initialize cluster if needed
   if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
     echo "[entrypoint] Initializing PostgreSQL data directory..."
-    gosu postgres initdb -D /var/lib/postgresql/data --auth-local=trust --auth-host=scram-sha-256 -U postgres
+    gosu postgres initdb -D /var/lib/postgresql/data --auth-local=scram-sha-256 --auth-host=scram-sha-256 -U postgres
     cp /etc/postgresql/postgresql.conf /var/lib/postgresql/data/postgresql.conf
     # Allow local connections from secureyeoman user
     echo "host all all 127.0.0.1/32 scram-sha-256" >> /var/lib/postgresql/data/pg_hba.conf
@@ -94,7 +95,7 @@ if [ "$_use_embedded_pg" = "true" ]; then
 
   # Create user and database if they don't exist
   gosu postgres psql -U postgres -tc "SELECT 1 FROM pg_roles WHERE rolname = '$DATABASE_USER'" | grep -q 1 || \
-    gosu postgres psql -U postgres -c "CREATE ROLE \"$DATABASE_USER\" WITH LOGIN PASSWORD '$_pg_pass'"
+    gosu postgres psql -U postgres -v pass="$_pg_pass" -c "CREATE ROLE \"$DATABASE_USER\" WITH LOGIN PASSWORD :'pass'"
   gosu postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'" | grep -q 1 || \
     gosu postgres psql -U postgres -c "CREATE DATABASE \"$DATABASE_NAME\" OWNER \"$DATABASE_USER\" ENCODING 'UTF8'"
 

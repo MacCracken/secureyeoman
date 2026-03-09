@@ -57,6 +57,9 @@ function createMockDeps(): ConsolidationManagerDeps {
     } as any,
     storage: {
       getMemory: vi.fn(async (id: string) => makeMemory(id, `content for ${id}`)),
+      getMemoryBatch: vi.fn(async (ids: string[]) =>
+        ids.map((id) => makeMemory(id, `content for ${id}`))
+      ),
       queryMemories: vi.fn(async () => []),
       createMemory: vi.fn(async (data: any) =>
         makeMemory('new-mem', data.content, data.importance)
