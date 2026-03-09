@@ -15,6 +15,7 @@ import type {
   PolicyLanguage,
   PolicyAsCodeConfig,
 } from '@secureyeoman/shared';
+import { errorToString } from '../utils/errors.js';
 
 export interface CompileResult {
   bundle: PolicyBundle;
@@ -112,7 +113,7 @@ export class BundleCompiler {
         await this.opaClient.deletePolicy(tempId);
       } catch (err) {
         errors.push(
-          `${path}: OPA compile error — ${err instanceof Error ? err.message : String(err)}`
+          `${path}: OPA compile error — ${errorToString(err)}`
         );
       }
     }
@@ -137,7 +138,7 @@ export class BundleCompiler {
         evalCel(line, {});
       } catch (err) {
         errors.push(
-          `${path}:${i + 1}: CEL parse error — ${err instanceof Error ? err.message : String(err)}`
+          `${path}:${i + 1}: CEL parse error — ${errorToString(err)}`
         );
       }
     }

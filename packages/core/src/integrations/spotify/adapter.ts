@@ -9,6 +9,7 @@
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 interface SpotifyConfig {
   clientId: string;
@@ -129,7 +130,7 @@ export class SpotifyIntegration implements Integration {
       const profile = (await resp.json()) as SpotifyProfileResponse;
       return { ok: true, message: `Connected as ${profile.display_name ?? profile.id}` };
     } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : String(err) };
+      return { ok: false, message: errorToString(err) };
     }
   }
 
@@ -184,7 +185,7 @@ export class SpotifyIntegration implements Integration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Spotify poll error'
       );

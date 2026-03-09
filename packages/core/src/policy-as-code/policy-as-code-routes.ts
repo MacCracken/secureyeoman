@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { BundleManager } from './bundle-manager.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, errorToString } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { requiresLicense } from '../licensing/license-guard.js';
 
@@ -100,7 +100,7 @@ export function registerPolicyAsCodeRoutes(
         return sendError(
           reply,
           500,
-          `Sync failed: ${err instanceof Error ? err.message : String(err)}`
+          `Sync failed: ${errorToString(err)}`
         );
       }
     }
@@ -147,7 +147,7 @@ export function registerPolicyAsCodeRoutes(
             : null,
         });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : String(err));
+        return sendError(reply, 400, errorToString(err));
       }
     }
   );
@@ -192,7 +192,7 @@ export function registerPolicyAsCodeRoutes(
         );
         return reply.send({ deployment });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : String(err));
+        return sendError(reply, 400, errorToString(err));
       }
     }
   );
@@ -223,7 +223,7 @@ export function registerPolicyAsCodeRoutes(
         return sendError(
           reply,
           500,
-          `Evaluation failed: ${err instanceof Error ? err.message : String(err)}`
+          `Evaluation failed: ${errorToString(err)}`
         );
       }
     }

@@ -10,6 +10,7 @@
 
 import type { Command, CommandContext } from '../router.js';
 import { extractBoolFlag, extractFlag } from '../utils.js';
+import { errorToString } from '../../utils/errors.js';
 
 const USAGE = `
 Usage: secureyeoman sbom <subcommand> [options]
@@ -103,7 +104,7 @@ async function runGenerate(ctx: CommandContext, argv: string[]): Promise<number>
 
     return 0;
   } catch (err: unknown) {
-    ctx.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`Error: ${errorToString(err)}\n`);
     return 1;
   }
 }
@@ -177,7 +178,7 @@ async function runDeps(ctx: CommandContext, argv: string[]): Promise<number> {
       ctx.stdout.write(`${c.green('✓')} Dependency baseline updated\n`);
       return 0;
     } catch (err: unknown) {
-      ctx.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
+      ctx.stderr.write(`Error: ${errorToString(err)}\n`);
       return 1;
     }
   }
@@ -242,7 +243,7 @@ async function runDeps(ctx: CommandContext, argv: string[]): Promise<number> {
     const hasCritical = alerts.some((a) => a.level === 'critical' || a.level === 'high');
     return hasCritical ? 1 : 0;
   } catch (err: unknown) {
-    ctx.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`Error: ${errorToString(err)}\n`);
     return 1;
   }
 }

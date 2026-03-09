@@ -13,6 +13,7 @@
 import { trace, context, propagation, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import type { Span, Tracer } from '@opentelemetry/api';
 import type { SecureLogger } from '../logging/logger.js';
+import { errorToString } from '../utils/errors.js';
 
 export interface OtelBridgeConfig {
   /** Shared OTLP endpoint for cross-project traces. Falls back to OTEL_EXPORTER_OTLP_ENDPOINT. */
@@ -121,7 +122,7 @@ export async function tracedFetch(
   } catch (err) {
     span.setStatus({
       code: SpanStatusCode.ERROR,
-      message: err instanceof Error ? err.message : String(err),
+      message: errorToString(err),
     });
     throw err;
   } finally {
@@ -202,7 +203,7 @@ export class OtelBridge {
     } catch (err) {
       span.setStatus({
         code: SpanStatusCode.ERROR,
-        message: err instanceof Error ? err.message : String(err),
+        message: errorToString(err),
       });
       throw err;
     } finally {

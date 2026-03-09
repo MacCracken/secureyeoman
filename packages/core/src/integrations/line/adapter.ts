@@ -11,6 +11,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 interface LineConfig {
   channelSecret: string;
@@ -131,7 +132,7 @@ export class LineIntegration implements WebhookIntegration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Line webhook parse error'
       );
@@ -202,7 +203,7 @@ export class LineIntegration implements WebhookIntegration {
       const info = (await resp.json()) as { userId: string; displayName: string };
       return { ok: true, message: `Connected as ${info.displayName} (${info.userId})` };
     } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : String(err) };
+      return { ok: false, message: errorToString(err) };
     }
   }
 

@@ -10,6 +10,7 @@ import type {
   LearnAction,
 } from '@secureyeoman/shared';
 import type { ActionResult, ProactiveManagerDeps } from './types.js';
+import { errorToString } from '../utils/errors.js';
 
 export async function executeMessageAction(
   action: MessageAction,
@@ -38,7 +39,7 @@ export async function executeMessageAction(
         logger.warn(
           {
             platform: config.platform,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to send proactive message via integration'
         );
@@ -58,7 +59,7 @@ export async function executeMessageAction(
     return {
       success: false,
       message: 'Failed to send message',
-      error: err instanceof Error ? err.message : String(err),
+      error: errorToString(err),
     };
   }
 }
@@ -134,7 +135,7 @@ export async function executeRemindAction(
     return {
       success: false,
       message: 'Failed to store reminder',
-      error: err instanceof Error ? err.message : String(err),
+      error: errorToString(err),
     };
   }
 }
@@ -189,7 +190,7 @@ export async function executeLearnAction(
     return {
       success: false,
       message: 'Failed to store knowledge',
-      error: err instanceof Error ? err.message : String(err),
+      error: errorToString(err),
     };
   }
 }

@@ -23,6 +23,7 @@ import type {
   SraControlResult,
   SraAssessmentSummary,
 } from '@secureyeoman/shared';
+import { errorToString } from '../utils/errors.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -1436,7 +1437,7 @@ export class SraManager {
         this.logger.error(
           {
             blueprintId: bp.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to seed builtin SRA blueprint'
         );
@@ -1452,7 +1453,7 @@ export class SraManager {
     } catch (err) {
       this.logger.error(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Failed to seed SRA compliance mappings'
       );

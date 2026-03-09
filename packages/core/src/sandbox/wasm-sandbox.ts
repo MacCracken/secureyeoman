@@ -28,6 +28,7 @@ import type {
   SandboxResult,
   SandboxViolation,
 } from './types.js';
+import { errorToString } from '../utils/errors.js';
 
 export interface WasmSandboxOptions {
   /** Maximum WASM linear memory in pages (64KB each). Default: 256 (16MB). */
@@ -130,7 +131,7 @@ export class WasmSandbox implements Sandbox {
       };
     } catch (error) {
       const endTime = Date.now();
-      const errMsg = error instanceof Error ? error.message : String(error);
+      const errMsg = errorToString(error);
 
       // Classify the error
       if (errMsg.includes('timed out') || errMsg.includes('timeout')) {

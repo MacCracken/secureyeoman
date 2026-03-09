@@ -4,6 +4,7 @@
 
 import type { Command, CommandContext } from '../router.js';
 import { extractFlag, extractBoolFlag, extractCommonFlags, apiCall } from '../utils.js';
+import { errorToString } from '../../utils/errors.js';
 
 const USAGE = `
 Usage: secureyeoman model [--url URL] [--token TOKEN] [--json] <action> [args]
@@ -88,7 +89,7 @@ export const modelCommand: Command = {
           return 1;
       }
     } catch (err) {
-      ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+      ctx.stderr.write(`${errorToString(err)}\n`);
       return 1;
     }
   },
@@ -538,7 +539,7 @@ async function ollamaPull(
       body: JSON.stringify({ model }),
     });
   } catch (err) {
-    ctx.stderr.write(`Connection failed: ${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`Connection failed: ${errorToString(err)}\n`);
     return 1;
   }
 

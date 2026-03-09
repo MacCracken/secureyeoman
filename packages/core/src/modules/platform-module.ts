@@ -57,6 +57,7 @@ import type { StrategyStorage } from '../soul/strategy-storage.js';
 import { EventSubscriptionStore } from '../events/event-subscription-store.js';
 import { EventDispatcher } from '../events/event-dispatcher.js';
 import type { Pool } from 'pg';
+import { toErrorMessage } from '../utils/errors.js';
 
 // ------------------------------------------------------------------
 // Dependency interfaces for each init phase
@@ -247,7 +248,7 @@ export class PlatformModule implements AppModule {
       } catch (error) {
         this.logger.warn(
           {
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: toErrorMessage(error),
           },
           'Branching manager initialization failed (non-fatal)'
         );
@@ -275,7 +276,7 @@ export class PlatformModule implements AppModule {
       } catch (error) {
         this.logger.warn(
           {
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: toErrorMessage(error),
           },
           'Dynamic tool manager initialization failed (non-fatal)'
         );
@@ -312,7 +313,7 @@ export class PlatformModule implements AppModule {
       } catch (error) {
         this.logger.warn(
           {
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: toErrorMessage(error),
           },
           'RiskAssessmentManager initialization failed (non-fatal)'
         );
@@ -333,7 +334,7 @@ export class PlatformModule implements AppModule {
       } catch (error) {
         this.logger.warn(
           {
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: toErrorMessage(error),
           },
           'DepartmentRiskManager initialization failed (non-fatal)'
         );

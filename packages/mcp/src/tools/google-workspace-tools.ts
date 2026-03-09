@@ -10,7 +10,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { registerApiProxyTool, wrapToolHandler } from './tool-utils.js';
+import { buildQueryFromArgs, registerApiProxyTool, wrapToolHandler } from './tool-utils.js';
 
 export function registerGoogleWorkspaceTools(
   server: McpServer,
@@ -47,14 +47,7 @@ export function registerGoogleWorkspaceTools(
         ),
     },
     buildPath: () => '/api/v1/integrations/gdrive/files',
-    buildQuery: (args) => {
-      const q: Record<string, string> = {};
-      if (args.q) q.q = args.q as string;
-      if (args.pageSize) q.pageSize = String(args.pageSize);
-      if (args.folderId) q.folderId = args.folderId as string;
-      if (args.mimeType) q.mimeType = args.mimeType as string;
-      return q;
-    },
+    buildQuery: (args) => buildQueryFromArgs(args, ['q', 'pageSize', 'folderId', 'mimeType']),
   });
 
   // ── gdrive_get_file ─────────────────────────────────────────────
@@ -84,12 +77,7 @@ export function registerGoogleWorkspaceTools(
         .describe('Maximum number of results to return (1–100, default 20)'),
     },
     buildPath: () => '/api/v1/integrations/gdrive/files/search',
-    buildQuery: (args) => {
-      const q: Record<string, string> = {};
-      q.query = args.query as string;
-      if (args.pageSize) q.pageSize = String(args.pageSize);
-      return q;
-    },
+    buildQuery: (args) => buildQueryFromArgs(args, ['query', 'pageSize']),
   });
 
   // ── gdrive_create_folder ────────────────────────────────────────

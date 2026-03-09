@@ -36,6 +36,7 @@ import type { AlertManager } from '../telemetry/alert-manager.js';
 import type { CouncilManager } from '../agents/council-manager.js';
 import { emitJobCompletion } from '../telemetry/job-completion-events.js';
 import { withSpan } from '../telemetry/instrument.js';
+import { errorToString } from '../utils/errors.js';
 
 // ── Magic-number constants ───────────────────────────────────────────────────
 const DEFAULT_RETRY_BACKOFF_MS = 1000;
@@ -189,7 +190,7 @@ export class WorkflowEngine {
         this.logger
       );
     } catch (err) {
-      const error = err instanceof Error ? err.message : String(err);
+      const error = errorToString(err);
       await this.storage.updateRun(run.id, {
         status: 'failed',
         error,
@@ -369,7 +370,7 @@ export class WorkflowEngine {
         error = null;
         break;
       } catch (err) {
-        error = err instanceof Error ? err.message : String(err);
+        error = errorToString(err);
         this.logger.warn(
           {
             stepId: step.id,
@@ -476,7 +477,7 @@ export class WorkflowEngine {
               {
                 stepId: step.id,
                 command: String(cfg.command),
-                error: err instanceof Error ? err.message : String(err),
+                error: errorToString(err),
               },
               'Deterministic command failed, falling through to agent dispatch'
             );
@@ -846,7 +847,7 @@ export class WorkflowEngine {
             } catch (err) {
               this.logger.warn(
                 {
-                  error: err instanceof Error ? err.message : String(err),
+                  error: errorToString(err),
                 },
                 'conditional_deploy: Ollama registration failed (non-fatal)'
               );
@@ -1197,7 +1198,7 @@ export class WorkflowEngine {
       this.logger.warn(
         {
           expression: expr,
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Workflow condition evaluation failed'
       );

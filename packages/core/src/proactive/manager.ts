@@ -22,6 +22,7 @@ import {
   executeExecuteAction,
   executeLearnAction,
 } from './action-handlers.js';
+import { errorToString } from '../utils/errors.js';
 
 export class ProactiveManager {
   private readonly storage: ProactiveStorage;
@@ -65,7 +66,7 @@ export class ProactiveManager {
       void this.storage.deleteExpiredSuggestions().catch((err: unknown) => {
         this.deps.logger.warn(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to clean expired suggestions'
         );
@@ -370,7 +371,7 @@ export class ProactiveManager {
         this.deps.logger.warn(
           {
             triggerId: trigger.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Schedule trigger evaluation failed'
         );

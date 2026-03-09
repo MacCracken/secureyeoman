@@ -12,6 +12,7 @@
 
 import type { Command, CommandContext } from '../router.js';
 import { extractBoolFlag, extractCommonFlags, apiCall, colorContext } from '../utils.js';
+import { errorToString } from '../../utils/errors.js';
 
 const USAGE = `
 Usage: secureyeoman provider <subcommand> [options]
@@ -140,7 +141,7 @@ async function runList(
     }
     return 0;
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
     return 1;
   }
 }
@@ -195,7 +196,7 @@ async function runAdd(
     ctx.stdout.write(`Account created: ${d.id as string} (${d.label as string})\n`);
     return 0;
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
     return 1;
   }
 }
@@ -238,7 +239,7 @@ async function runValidate(
     ctx.stdout.write(`Account ${d.id as string}: ${statusColor(d.status as string)}\n`);
     return 0;
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
     return 1;
   }
 }
@@ -276,7 +277,7 @@ async function runSetDefault(
     ctx.stdout.write(`Default set: ${d.label as string} (${d.provider as string})\n`);
     return 0;
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
     return 1;
   }
 }
@@ -335,7 +336,7 @@ async function runCosts(
     ctx.stdout.write('\n');
     return 0;
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
     return 1;
   }
 }
@@ -382,7 +383,7 @@ async function runRotate(
     ctx.stdout.write(`Key rotated: ${d.label as string} → ${statusColor(d.status as string)}\n`);
     return 0;
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
     return 1;
   }
 }

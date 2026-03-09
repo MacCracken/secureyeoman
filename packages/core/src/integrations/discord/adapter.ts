@@ -28,6 +28,7 @@ import {
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 const SLASH_COMMANDS = [
   {
@@ -101,7 +102,7 @@ export class DiscordIntegration implements Integration {
       } catch (err) {
         this.logger?.warn(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Discord slash command registration failed'
         );
@@ -170,14 +171,14 @@ export class DiscordIntegration implements Integration {
           await this.deps!.onMessage(unified);
         })().catch((err: unknown) => {
           this.logger?.error(
-            { error: err instanceof Error ? err.message : String(err) },
+            { error: errorToString(err) },
             'Vision processing / onMessage failed'
           );
         });
       } else {
         this.deps!.onMessage(unified).catch((err: unknown) => {
           this.logger?.error(
-            { error: err instanceof Error ? err.message : String(err) },
+            { error: errorToString(err) },
             'onMessage handler failed'
           );
         });
@@ -194,7 +195,7 @@ export class DiscordIntegration implements Integration {
           .reply({ content: 'Thank you for your feedback!', ephemeral: true })
           .catch((err: unknown) => {
             this.logger?.warn(
-              { error: err instanceof Error ? err.message : String(err) },
+              { error: errorToString(err) },
               'Discord modal reply failed'
             );
           });
@@ -220,7 +221,7 @@ export class DiscordIntegration implements Integration {
 
         this.deps!.onMessage(unified).catch((err: unknown) => {
           this.logger?.error(
-            { error: err instanceof Error ? err.message : String(err) },
+            { error: errorToString(err) },
             'onMessage handler failed'
           );
         });
@@ -251,7 +252,7 @@ export class DiscordIntegration implements Integration {
           })
           .catch((err: unknown) => {
             this.logger?.warn(
-              { error: err instanceof Error ? err.message : String(err) },
+              { error: errorToString(err) },
               'Discord help reply failed'
             );
           });
@@ -274,7 +275,7 @@ export class DiscordIntegration implements Integration {
           })
           .catch((err: unknown) => {
             this.logger?.warn(
-              { error: err instanceof Error ? err.message : String(err) },
+              { error: errorToString(err) },
               'Discord status reply failed'
             );
           });
@@ -296,7 +297,7 @@ export class DiscordIntegration implements Integration {
         modal.addComponents(row);
         (cmd as any).showModal(modal).catch((err: unknown) => {
           this.logger?.warn(
-            { error: err instanceof Error ? err.message : String(err) },
+            { error: errorToString(err) },
             'Discord showModal failed'
           );
         });
@@ -307,7 +308,7 @@ export class DiscordIntegration implements Integration {
         const question = cmd.options.getString('question', true);
         cmd.deferReply().catch((err: unknown) => {
           this.logger?.warn(
-            { error: err instanceof Error ? err.message : String(err) },
+            { error: errorToString(err) },
             'Discord deferReply failed'
           );
         });
@@ -333,7 +334,7 @@ export class DiscordIntegration implements Integration {
 
         this.deps!.onMessage(unified).catch((err: unknown) => {
           this.logger?.error(
-            { error: err instanceof Error ? err.message : String(err) },
+            { error: errorToString(err) },
             'onMessage handler failed'
           );
         });

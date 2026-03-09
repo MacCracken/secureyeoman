@@ -7,6 +7,7 @@
 
 import { moveMouse, clickMouse, scrollMouse, typeText, pressKey, releaseKey } from './input.js';
 import { readClipboard, writeClipboard } from './clipboard.js';
+import { sleep } from '../../utils/sleep.js';
 
 export type InputAction =
   | { type: 'mouse_move'; x: number; y: number }
@@ -38,10 +39,6 @@ export interface SequenceResult {
 
 const MAX_STEPS = 50;
 const MAX_WAIT_MS = 5_000;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
  * Execute an InputSequence.

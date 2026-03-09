@@ -5,7 +5,7 @@
  * ContentGuardrail) as GuardrailFilter plugins for the extensible pipeline.
  */
 
-import crypto from 'node:crypto';
+import { sha256 } from '../utils/crypto.js';
 import type {
   GuardrailFilter,
   GuardrailFilterContext,
@@ -15,12 +15,6 @@ import type {
 } from '@secureyeoman/shared';
 import type { ToolOutputScanner } from './tool-output-scanner.js';
 import type { ContentGuardrail } from './content-guardrail.js';
-
-// ── Helpers ──────────────────────────────────────────────────────────
-
-function hash(text: string): string {
-  return crypto.createHash('sha256').update(text).digest('hex');
-}
 
 // ── Response Guard types (avoid importing the full module) ───────────
 
@@ -112,7 +106,7 @@ export class ResponseGuardFilter implements GuardrailFilter {
         type: 'injection_pattern',
         action: result.passed ? 'warn' : 'block',
         detail: `${f.patternName}: ${f.detail ?? f.severity}`,
-        contentHash: hash(f.patternName),
+        contentHash: sha256(f.patternName),
       });
     }
 
@@ -214,7 +208,7 @@ export class PromptGuardFilter implements GuardrailFilter {
       type: 'prompt_injection',
       action: result.passed ? 'warn' : 'block',
       detail: `${f.patternName}: ${f.detail ?? f.severity}`,
-      contentHash: hash(f.patternName),
+      contentHash: sha256(f.patternName),
     }));
 
     return {

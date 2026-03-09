@@ -20,6 +20,7 @@ import type {
 import { PROVENANCE_WEIGHTS } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import { chunk } from './chunker.js';
+import { errorToString } from '../utils/errors.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -77,7 +78,7 @@ export class DocumentManager {
       this.logger.warn({ docId: doc.id, error: String(err) }, 'Document ingest failed');
       return await this.storage.updateDocument(doc.id, {
         status: 'error',
-        errorMessage: err instanceof Error ? err.message : String(err),
+        errorMessage: errorToString(err),
       });
     }
   }
@@ -124,7 +125,7 @@ export class DocumentManager {
       this.logger.warn({ docId: doc.id, url, error: String(err) }, 'URL ingest failed');
       return await this.storage.updateDocument(doc.id, {
         status: 'error',
-        errorMessage: err instanceof Error ? err.message : String(err),
+        errorMessage: errorToString(err),
       });
     }
   }
@@ -158,7 +159,7 @@ export class DocumentManager {
       this.logger.warn({ docId: doc.id, error: String(err) }, 'Text ingest failed');
       return await this.storage.updateDocument(doc.id, {
         status: 'error',
-        errorMessage: err instanceof Error ? err.message : String(err),
+        errorMessage: errorToString(err),
       });
     }
   }
@@ -266,7 +267,7 @@ export class DocumentManager {
       this.logger.warn({ docId: doc.id, error: String(err) }, 'Excalidraw ingest failed');
       return await this.storage.updateDocument(doc.id, {
         status: 'error',
-        errorMessage: err instanceof Error ? err.message : String(err),
+        errorMessage: errorToString(err),
       });
     }
   }

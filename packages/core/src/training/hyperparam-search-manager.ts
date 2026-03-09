@@ -8,6 +8,7 @@ import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type { FinetuneManager } from './finetune-manager.js';
 import type { HyperparamSearch, HyperparamSearchCreate } from '@secureyeoman/shared';
+import { errorToString } from '../utils/errors.js';
 
 function rowToSearch(row: Record<string, unknown>): HyperparamSearch {
   return {
@@ -118,7 +119,7 @@ export class HyperparamSearchManager {
       } catch (err) {
         this.deps.logger.error(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to create trial job'
         );
@@ -129,7 +130,7 @@ export class HyperparamSearchManager {
     this._watchCompletion(id).catch((err: unknown) => {
       this.deps.logger.error(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Search completion watch error'
       );

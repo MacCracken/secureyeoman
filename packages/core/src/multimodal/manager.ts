@@ -25,6 +25,7 @@ import type { SecureLogger } from '../logging/logger.js';
 import type { HookPoint, HookContext, HookResult } from '../extensions/types.js';
 import { transcribeViaAWSTranscribe } from './stt/transcribe.js';
 import { synthesizeViaPolly } from './tts/polly.js';
+import { errorToString } from '../utils/errors.js';
 
 const MAX_BASE64_LENGTH = 20_971_520; // ~20MB encoded
 const FETCH_TIMEOUT_MS = 30_000;
@@ -1021,7 +1022,7 @@ export class MultimodalManager {
         );
       return result;
     } catch (error) {
-      const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
+      const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Vision analysis failed');
       throw new Error(msg);
@@ -1123,7 +1124,7 @@ export class MultimodalManager {
         );
       return result;
     } catch (error) {
-      const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
+      const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Audio transcription failed');
       throw new Error(msg);
@@ -1223,7 +1224,7 @@ export class MultimodalManager {
         );
       return result;
     } catch (error) {
-      const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
+      const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Speech synthesis failed');
       throw new Error(msg);
@@ -1350,7 +1351,7 @@ export class MultimodalManager {
         );
       return { buffer, format, durationMs };
     } catch (error) {
-      const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
+      const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Speech synthesis (binary) failed');
       throw new Error(msg);
@@ -1434,7 +1435,7 @@ export class MultimodalManager {
         );
       return result;
     } catch (error) {
-      const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
+      const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Image generation failed');
       throw new Error(msg);
@@ -1486,7 +1487,7 @@ export class MultimodalManager {
         );
       return result;
     } catch (error) {
-      const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
+      const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Haptic trigger failed');
       throw new Error(msg);

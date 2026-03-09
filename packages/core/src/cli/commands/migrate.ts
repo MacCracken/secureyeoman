@@ -17,6 +17,7 @@ import { closePool } from '../../storage/pg-pool.js';
 import { initializeLogger, createNoopLogger } from '../../logging/logger.js';
 import type { Command, CommandContext } from '../router.js';
 import { extractBoolFlag } from '../utils.js';
+import { errorToString } from '../../utils/errors.js';
 
 export const migrateCommand: Command = {
   name: 'migrate',
@@ -48,7 +49,7 @@ migrations before the core Deployment rolls out.
       // Fall back to noop logger if config fails; let the DB error surface below
       logger = createNoopLogger();
       ctx.stderr.write(
-        `Failed to load config: ${err instanceof Error ? err.message : String(err)}\n`
+        `Failed to load config: ${errorToString(err)}\n`
       );
       return 1;
     }
@@ -60,7 +61,7 @@ migrations before the core Deployment rolls out.
       ctx.stdout.write('Migrations complete.\n');
       return 0;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorToString(err);
       logger.error({ error: msg }, 'Database migration failed');
       ctx.stderr.write(`Migration failed: ${msg}\n`);
       return 1;

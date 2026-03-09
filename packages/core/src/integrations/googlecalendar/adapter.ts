@@ -9,6 +9,7 @@ import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { OAuthTokenService } from '../../gateway/oauth-token-service.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 // ─── Config & API types ─────────────────────────────────────
 
@@ -173,7 +174,7 @@ export class GoogleCalendarIntegration implements Integration {
 
       return { ok: true, message: 'Google Calendar connection successful' };
     } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : String(err) };
+      return { ok: false, message: errorToString(err) };
     }
   }
 
@@ -236,7 +237,7 @@ export class GoogleCalendarIntegration implements Integration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Google Calendar poll error'
       );

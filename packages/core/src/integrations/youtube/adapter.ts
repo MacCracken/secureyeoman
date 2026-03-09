@@ -9,6 +9,7 @@
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 interface YouTubeConfig {
   apiKey: string;
@@ -121,7 +122,7 @@ export class YouTubeIntegration implements Integration {
       const title = data.items?.[0]?.snippet?.title ?? 'unknown channel';
       return { ok: true, message: `Connected — channel: ${title}` };
     } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : String(err) };
+      return { ok: false, message: errorToString(err) };
     }
   }
 
@@ -173,7 +174,7 @@ export class YouTubeIntegration implements Integration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'YouTube poll error'
       );

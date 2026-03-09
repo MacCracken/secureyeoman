@@ -9,6 +9,7 @@ import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type { AIClient } from '../ai/client.js';
 import type { AnalyticsStorage } from './analytics-storage.js';
+import { errorToString } from '../utils/errors.js';
 
 const SENTIMENT_INTERVAL_MS = 300_000; // 5 minutes
 const BATCH_SIZE = 100;
@@ -58,7 +59,7 @@ export class SentimentAnalyzer {
         this.logger.warn(
           {
             messageId: msg.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'SentimentAnalyzer: failed to classify message'
         );
@@ -108,7 +109,7 @@ export class SentimentAnalyzer {
       void this.analyzeNewMessages().catch((err: unknown) => {
         this.logger.error(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'SentimentAnalyzer: interval error'
         );

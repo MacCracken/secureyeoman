@@ -9,7 +9,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { registerApiProxyTool, wrapToolHandler } from './tool-utils.js';
+import { buildQueryFromArgs, registerApiProxyTool, wrapToolHandler } from './tool-utils.js';
 
 export function registerGoogleCalendarTools(
   server: McpServer,
@@ -41,15 +41,7 @@ export function registerGoogleCalendarTools(
       q: z.string().optional().describe('Free text search terms to find events'),
     },
     buildPath: () => '/api/v1/integrations/googlecalendar/events',
-    buildQuery: (args) => {
-      const q: Record<string, string> = {};
-      if (args.calendarId) q.calendarId = args.calendarId as string;
-      if (args.timeMin) q.timeMin = args.timeMin as string;
-      if (args.timeMax) q.timeMax = args.timeMax as string;
-      if (args.maxResults) q.maxResults = String(args.maxResults);
-      if (args.q) q.q = args.q as string;
-      return q;
-    },
+    buildQuery: (args) => buildQueryFromArgs(args, ['calendarId', 'timeMin', 'timeMax', 'maxResults', 'q']),
   });
 
   // ── gcal_get_event ──────────────────────────────────────────────
@@ -62,11 +54,7 @@ export function registerGoogleCalendarTools(
       calendarId: z.string().optional().describe('Calendar ID (default "primary")'),
     },
     buildPath: (args) => `/api/v1/integrations/googlecalendar/events/${args.eventId}`,
-    buildQuery: (args) => {
-      const q: Record<string, string> = {};
-      if (args.calendarId) q.calendarId = args.calendarId as string;
-      return q;
-    },
+    buildQuery: (args) => buildQueryFromArgs(args, ['calendarId']),
   });
 
   // ── gcal_create_event ───────────────────────────────────────────

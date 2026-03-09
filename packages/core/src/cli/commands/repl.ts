@@ -14,6 +14,7 @@ import {
   apiCall,
   formatTable,
 } from '../utils.js';
+import { errorToString } from '../../utils/errors.js';
 
 const REPL_COMMANDS = ['health', 'config', 'integration', 'help', 'exit', 'quit'];
 const INTEGRATION_ACTIONS = ['list', 'show', 'create', 'delete', 'start', 'stop'];
@@ -175,7 +176,7 @@ async function replHealth(ctx: CommandContext, baseUrl: string): Promise<void> {
       `  Status: ${String(data.status)}  Version: ${String(data.version)}  Uptime: ${formatUptime(data.uptime as number)}\n`
     );
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
   }
 }
 
@@ -211,7 +212,7 @@ async function replConfig(ctx: CommandContext, baseUrl: string): Promise<void> {
       ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
     }
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
   }
 }
 
@@ -315,6 +316,6 @@ async function replIntegration(
         ctx.stderr.write(`Unknown integration action: ${action}\n`);
     }
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
   }
 }

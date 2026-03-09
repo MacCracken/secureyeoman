@@ -11,6 +11,7 @@ import { createTransport, type Transporter } from 'nodemailer';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { toErrorMessage } from '../../utils/errors.js';
 
 // ─── Config ─────────────────────────────────────────────────
 
@@ -226,7 +227,7 @@ export class EmailIntegration implements Integration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : 'Unknown error',
+          error: toErrorMessage(err),
         },
         'Email IMAP lock failed'
       );
@@ -252,7 +253,7 @@ export class EmailIntegration implements Integration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : 'Unknown error',
+          error: toErrorMessage(err),
         },
         'Email poll error'
       );

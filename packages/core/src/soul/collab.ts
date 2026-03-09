@@ -20,6 +20,7 @@ import * as Y from 'yjs';
 import type { WebSocket } from 'ws';
 import type { SoulStorage } from './storage.js';
 import { getLogger } from '../logging/logger.js';
+import { errorToString } from '../utils/errors.js';
 
 // Yjs protocol constants
 const MSG_SYNC = 0;
@@ -170,7 +171,7 @@ export class CollabManager {
       this.docs.delete(docId);
       this.persistNow(docId, entry).catch((err: unknown) => {
         getLogger().warn(
-          { docId, error: err instanceof Error ? err.message : String(err) },
+          { docId, error: errorToString(err) },
           'Collab persist on leave failed'
         );
       });
@@ -238,7 +239,7 @@ export class CollabManager {
       getLogger().error(
         {
           docId,
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Failed to persist collab doc'
       );

@@ -23,6 +23,7 @@ import type {
 } from './types.js';
 import { uuidv7 } from '../utils/crypto.js';
 import { createHmac } from 'node:crypto';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface ExtensionManagerDeps {
   storage: ExtensionStorage;
@@ -400,7 +401,7 @@ export class ExtensionManager {
     } catch (err) {
       this.deps.logger.warn(
         {
-          error: err instanceof Error ? err.message : 'Unknown error',
+          error: toErrorMessage(err),
         },
         'Failed to load webhooks for dispatch'
       );
@@ -463,7 +464,7 @@ export class ExtensionManager {
         {
           webhookId: webhook.id,
           url: webhook.url,
-          error: err instanceof Error ? err.message : 'Unknown error',
+          error: toErrorMessage(err),
         },
         'Webhook delivery error'
       );

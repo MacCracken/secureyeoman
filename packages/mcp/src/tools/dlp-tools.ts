@@ -10,18 +10,13 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler, jsonResponse } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'DLP tools are disabled. Enable exposeDlp in MCP config to use dlp_* tools.',
-      },
-    ],
-    isError: true,
-  };
+const DLP_DISABLED_MSG =
+  'DLP tools are disabled. Enable exposeDlp in MCP config to use dlp_* tools.';
+
+function disabled() {
+  return errorResponse(DLP_DISABLED_MSG);
 }
 
 export function registerDlpTools(

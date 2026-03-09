@@ -22,27 +22,18 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, errorResponse } from './tool-utils.js';
 
 const DISABLED_MSG =
   'Organizational intent tools are disabled. Enable Organizational Intent Access in MCP config to use intent_* tools.';
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [{ type: 'text', text: DISABLED_MSG }],
-    isError: true,
-  };
+function disabled() {
+  return errorResponse(DISABLED_MSG);
 }
 
 function textResponse(data: unknown) {
-  return {
-    content: [
-      {
-        type: 'text' as const,
-        text: typeof data === 'string' ? data : JSON.stringify(data, null, 2),
-      },
-    ],
-  };
+  const text = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  return { content: [{ type: 'text' as const, text }] };
 }
 
 export function registerIntentTools(

@@ -16,6 +16,7 @@ import {
   apiCall,
   colorContext,
 } from '../utils.js';
+import { errorToString } from '../../utils/errors.js';
 
 const USAGE = `
 Usage: secureyeoman risk <subcommand> [options]
@@ -97,7 +98,7 @@ export const riskCommand: Command = {
           return 1;
       }
     } catch (err) {
-      ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+      ctx.stderr.write(`${errorToString(err)}\n`);
       return 1;
     }
   },
@@ -641,7 +642,7 @@ async function runLocalRisk(
     ctx.stderr.write(`Unknown local subcommand: ${sub}\n`);
     return 1;
   } catch (err) {
-    ctx.stderr.write(`Local mode error: ${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`Local mode error: ${errorToString(err)}\n`);
     return 1;
   } finally {
     await liteCtx.cleanup();

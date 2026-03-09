@@ -31,6 +31,7 @@ import {
   type DynamicTool,
   type DynamicToolCreate,
 } from './dynamic-tool-storage.js';
+import { errorToString } from '../utils/errors.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -125,7 +126,7 @@ export class DynamicToolManager {
         this.deps.logger.warn(
           {
             name: tool.name,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to compile dynamic tool on startup — skipping'
         );
@@ -281,7 +282,7 @@ export class DynamicToolManager {
 
       return { output: result, isError: false };
     } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err);
+      const raw = errorToString(err);
       return {
         output: {
           error: `Dynamic tool "${toolName}" implementation error: ${raw}. Check the tool's implementation code for undefined variables or logic errors.`,

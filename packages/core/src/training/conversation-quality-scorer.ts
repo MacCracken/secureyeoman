@@ -13,6 +13,7 @@
 
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
+import { errorToString } from '../utils/errors.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ export class ConversationQualityScorer {
         this.logger.warn(
           {
             conversationId: row.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'ConversationQualityScorer: failed to score conversation'
         );
@@ -135,7 +136,7 @@ export class ConversationQualityScorer {
       void this.scoreNewConversations(this.pool).catch((err: unknown) => {
         this.logger.error(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'ConversationQualityScorer: interval error'
         );

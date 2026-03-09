@@ -10,6 +10,7 @@ import { Bot, InputFile } from 'grammy';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 export class TelegramIntegration implements Integration {
   readonly platform: Platform = 'telegram';
@@ -124,7 +125,7 @@ export class TelegramIntegration implements Integration {
       } catch (err) {
         this.logger?.warn(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to analyze photo'
         );
@@ -173,7 +174,7 @@ export class TelegramIntegration implements Integration {
       } catch (err) {
         this.logger?.warn(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to transcribe voice'
         );
@@ -307,7 +308,7 @@ export class TelegramIntegration implements Integration {
       } catch (err) {
         this.logger?.warn(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to send TTS voice message'
         );

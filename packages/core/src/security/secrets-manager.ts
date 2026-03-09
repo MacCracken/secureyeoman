@@ -16,6 +16,7 @@ import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logge
 import { SecretStore } from './secrets.js';
 import type { KeyringManager } from './keyring/manager.js';
 import { VaultBackend, type VaultBackendConfig } from './vault-backend.js';
+import { errorToString } from '../utils/errors.js';
 
 export type SecretsBackendType = 'auto' | 'keyring' | 'env' | 'file' | 'vault';
 
@@ -109,7 +110,7 @@ export class SecretsManager {
           this.getLogger().warn(
             {
               name,
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Vault get failed, falling back to env'
           );
@@ -146,7 +147,7 @@ export class SecretsManager {
           this.getLogger().warn(
             {
               name,
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Vault set failed, falling back to env'
           );
@@ -188,7 +189,7 @@ export class SecretsManager {
           this.getLogger().warn(
             {
               name,
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Vault delete failed'
           );

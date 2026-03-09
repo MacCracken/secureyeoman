@@ -23,6 +23,7 @@ import type { PluginLoader, LoadedPlugin } from './plugin-loader.js';
 import type { OutboundWebhookDispatcher } from './outbound-webhook-dispatcher.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { CircuitBreakerRegistry } from '../resilience/circuit-breaker.js';
+import { errorToString } from '../utils/errors.js';
 import type { z } from 'zod';
 
 export interface IntegrationManagerDeps {
@@ -264,7 +265,7 @@ export class IntegrationManager {
       });
     } catch (err) {
       this.starting.delete(id);
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errorToString(err);
       await this.storage.updateStatus(id, 'error', message);
       this.deps.logger.error(`Failed to start integration ${id}: ${message}`);
 
@@ -286,7 +287,7 @@ export class IntegrationManager {
       await entry.integration.stop();
     } catch (err) {
       this.deps.logger.error(
-        `Error stopping integration ${id}: ${err instanceof Error ? err.message : String(err)}`
+        `Error stopping integration ${id}: ${errorToString(err)}`
       );
     }
 
@@ -311,7 +312,7 @@ export class IntegrationManager {
         await this.startIntegration(config.id);
       } catch (err) {
         this.deps.logger.error(
-          `Failed to auto-start integration ${config.id}: ${err instanceof Error ? err.message : String(err)}`
+          `Failed to auto-start integration ${config.id}: ${errorToString(err)}`
         );
       }
     }
@@ -453,7 +454,7 @@ export class IntegrationManager {
       this.reconnectState.delete(id);
     } catch (err) {
       this.deps.logger.warn(
-        `Integration ${id} reconnect attempt ${state.retryCount} failed: ${err instanceof Error ? err.message : String(err)}`
+        `Integration ${id} reconnect attempt ${state.retryCount} failed: ${errorToString(err)}`
       );
     }
   }

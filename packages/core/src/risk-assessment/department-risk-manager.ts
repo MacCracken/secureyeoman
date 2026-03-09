@@ -22,6 +22,7 @@ import type {
   RiskHeatmapCell,
   RiskTrendPoint,
 } from '@secureyeoman/shared';
+import { errorToString } from '../utils/errors.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -217,7 +218,7 @@ export class DepartmentRiskManager {
           this.logger.error(
             {
               departmentId,
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Appetite breach alert evaluation failed'
           );
@@ -239,7 +240,7 @@ export class DepartmentRiskManager {
         this.logger.warn(
           {
             departmentId: dept.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to snapshot department score'
         );

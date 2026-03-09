@@ -8,6 +8,7 @@ import type { AuditChain } from '../logging/audit-chain.js';
 import type { AuditQueryOptions, AuditQueryResult } from '../logging/sqlite-storage.js';
 import { uuidv7 } from '../utils/crypto.js';
 import { formatHtmlReport, formatCsvReport } from './templates.js';
+import { errorToString } from '../utils/errors.js';
 
 export interface HeartbeatTaskInfo {
   name: string;
@@ -68,7 +69,7 @@ export class AuditReportGenerator {
       this.logger.warn(
         {
           id,
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Audit chain verification failed during report generation'
       );
@@ -93,7 +94,7 @@ export class AuditReportGenerator {
       this.logger.warn(
         {
           id,
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Failed to query audit entries for report'
       );
@@ -109,7 +110,7 @@ export class AuditReportGenerator {
         this.logger.warn(
           {
             id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to query tasks for report'
         );
@@ -125,7 +126,7 @@ export class AuditReportGenerator {
         this.logger.warn(
           {
             id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to query heartbeat tasks for report'
         );

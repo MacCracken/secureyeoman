@@ -7,6 +7,7 @@ import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type { AIClient } from '../ai/client.js';
 import type { AnalyticsStorage } from './analytics-storage.js';
+import { errorToString } from '../utils/errors.js';
 
 const SUMMARIZE_INTERVAL_MS = 600_000; // 10 minutes
 const MESSAGE_PREVIEW_LENGTH = 500;
@@ -72,7 +73,7 @@ export class ConversationSummarizer {
         this.logger.warn(
           {
             conversationId: conv.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'ConversationSummarizer: failed to summarize'
         );
@@ -134,7 +135,7 @@ export class ConversationSummarizer {
       void this.summarizeNew().catch((err: unknown) => {
         this.logger.error(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'ConversationSummarizer: interval error'
         );

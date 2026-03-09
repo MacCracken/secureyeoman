@@ -8,6 +8,7 @@
 
 import type { Command, CommandContext } from '../router.js';
 import { extractBoolFlag, extractCommonFlags, apiCall, colorContext } from '../utils.js';
+import { errorToString } from '../../utils/errors.js';
 
 const USAGE = `
 Usage: secureyeoman license <subcommand> [options]
@@ -106,7 +107,7 @@ ${d.error ? `\n    ⚠  Error: ${d.error as string}\n` : ''}
 `);
     return 0;
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
     return 1;
   }
 }
@@ -143,7 +144,7 @@ async function runSet(
     );
     return 0;
   } catch (err) {
-    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`${errorToString(err)}\n`);
     return 1;
   }
 }

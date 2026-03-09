@@ -10,6 +10,7 @@ import type { RoutingRule, RoutingRuleMatch, RoutingRuleDryRun } from '@secureye
 import type { RoutingRulesStorage } from './routing-rules-storage.js';
 import type { IntegrationManager } from './manager.js';
 import type { SecureLogger } from '../logging/logger.js';
+import { errorToString } from '../utils/errors.js';
 
 export interface RoutingRulesManagerDeps {
   storage: RoutingRulesStorage;
@@ -122,7 +123,7 @@ export class RoutingRulesManager {
         // Fire-and-forget — don't block message routing on stat update
         this.deps.storage.recordMatch(rule.id).catch((err: unknown) => {
           this.deps.logger.warn(
-            `Failed to record match for rule ${rule.id}: ${err instanceof Error ? err.message : String(err)}`
+            `Failed to record match for rule ${rule.id}: ${errorToString(err)}`
           );
         });
       }
@@ -224,7 +225,7 @@ export class RoutingRulesManager {
     } catch (err) {
       logger.error(
         `Routing rule "${rule.name}" (${rule.id}) action failed: ` +
-          (err instanceof Error ? err.message : String(err))
+          (errorToString(err))
       );
     }
   }

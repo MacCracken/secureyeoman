@@ -6,6 +6,15 @@ export function toErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Unknown error';
 }
 
+/**
+ * Like {@link toErrorMessage} but stringifies non-Error values instead of
+ * returning a generic fallback.  Prefer this when the caller needs the raw
+ * error value for logging or debugging.
+ */
+export function errorToString(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 import type { FastifyReply } from 'fastify';
 
 const HTTP_STATUS_NAMES: Record<number, string> = {

@@ -8,7 +8,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { registerApiProxyTool } from './tool-utils.js';
+import { buildQueryFromArgs, registerApiProxyTool } from './tool-utils.js';
 
 export function registerLinearTools(
   server: McpServer,
@@ -33,14 +33,7 @@ export function registerLinearTools(
         .describe('Maximum number of issues to return (1-100, default 25)'),
     },
     buildPath: () => '/api/v1/integrations/linear/issues',
-    buildQuery: (args) => {
-      const q: Record<string, string> = {};
-      if (args.teamId) q.teamId = args.teamId as string;
-      if (args.status) q.status = args.status as string;
-      if (args.assigneeId) q.assigneeId = args.assigneeId as string;
-      if (args.limit !== undefined) q.limit = String(args.limit);
-      return q;
-    },
+    buildQuery: (args) => buildQueryFromArgs(args, ['teamId', 'status', 'assigneeId', 'limit']),
   });
 
   // ── linear_get_issue ────────────────────────────────────────────
@@ -164,11 +157,6 @@ export function registerLinearTools(
         .describe('Maximum number of results to return (1-100, default 25)'),
     },
     buildPath: () => '/api/v1/integrations/linear/issues/search',
-    buildQuery: (args) => {
-      const q: Record<string, string> = {};
-      q.query = args.query as string;
-      if (args.limit !== undefined) q.limit = String(args.limit);
-      return q;
-    },
+    buildQuery: (args) => buildQueryFromArgs(args, ['query', 'limit']),
   });
 }

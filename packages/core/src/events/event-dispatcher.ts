@@ -14,6 +14,7 @@ import { createHmac } from 'node:crypto';
 import type { EventSubscriptionStore } from './event-subscription-store.js';
 import type { EventPayload, EventSubscription, EventDelivery } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
+import { errorToString } from '../utils/errors.js';
 
 export interface EventDispatcherDeps {
   store: EventSubscriptionStore;
@@ -41,7 +42,7 @@ export class EventDispatcher {
     } catch (err) {
       this.logger.error(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'EventDispatcher: failed to fetch subscriptions'
       );
@@ -66,7 +67,7 @@ export class EventDispatcher {
         this.logger.error(
           {
             subscriptionId: sub.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'EventDispatcher: delivery creation failed'
         );
@@ -87,7 +88,7 @@ export class EventDispatcher {
     } catch (err) {
       this.logger.error(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'EventDispatcher: failed to fetch pending retries'
       );
@@ -113,7 +114,7 @@ export class EventDispatcher {
         this.logger.error(
           {
             deliveryId: delivery.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'EventDispatcher: retry processing failed'
         );
@@ -193,7 +194,7 @@ export class EventDispatcher {
 
       await this.handleFailure(deliveryId, sub, now, response.status, truncatedBody, null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorMessage = errorToString(err);
       await this.handleFailure(deliveryId, sub, now, null, null, errorMessage);
     }
   }

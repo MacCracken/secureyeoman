@@ -112,6 +112,26 @@ export function errorResponse(message: string): ToolResult {
   return { content: [{ type: 'text' as const, text: message }], isError: true };
 }
 
+// ── Query Builder ───────────────────────────────────────────────────────────
+
+/**
+ * Build a query string object from tool args, including only defined/non-null values.
+ * Numbers are converted to strings automatically.
+ */
+export function buildQueryFromArgs(
+  args: Record<string, unknown>,
+  keys: string[]
+): Record<string, string> {
+  const q: Record<string, string> = {};
+  for (const key of keys) {
+    const val = args[key];
+    if (val !== undefined && val !== null) {
+      q[key] = typeof val === 'string' ? val : String(val);
+    }
+  }
+  return q;
+}
+
 // ── Disabled Tool Stub ──────────────────────────────────────────────────────
 
 /**

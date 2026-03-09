@@ -8,7 +8,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { registerApiProxyTool } from './tool-utils.js';
+import { buildQueryFromArgs, registerApiProxyTool } from './tool-utils.js';
 
 export function registerTodoistTools(
   server: McpServer,
@@ -28,12 +28,7 @@ export function registerTodoistTools(
         .describe('Todoist filter expression (e.g. "today", "overdue", "p1")'),
     },
     buildPath: () => '/api/v1/integrations/todoist/tasks',
-    buildQuery: (args) => {
-      const q: Record<string, string> = {};
-      if (args.projectId) q.projectId = args.projectId as string;
-      if (args.filter) q.filter = args.filter as string;
-      return q;
-    },
+    buildQuery: (args) => buildQueryFromArgs(args, ['projectId', 'filter']),
   });
 
   // ── todoist_get_task ───────────────────────────────────────

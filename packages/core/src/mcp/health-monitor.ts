@@ -5,6 +5,7 @@
 import type { McpServerHealth } from '@secureyeoman/shared';
 import type { McpStorage } from './storage.js';
 import type { SecureLogger } from '../logging/logger.js';
+import { errorToString } from '../utils/errors.js';
 
 export interface McpHealthMonitorConfig {
   checkIntervalMs: number;
@@ -55,7 +56,7 @@ export class McpHealthMonitor {
     for (const result of settled) {
       if (result.status === 'rejected') {
         this.logger.warn(
-          { error: result.reason instanceof Error ? result.reason.message : String(result.reason) },
+          { error: errorToString(result.reason) },
           'MCP health check rejected'
         );
       }
@@ -119,7 +120,7 @@ export class McpHealthMonitor {
       };
     } catch (err) {
       const failures = (existing?.consecutiveFailures ?? 0) + 1;
-      const errorMsg = err instanceof Error ? err.message : String(err);
+      const errorMsg = errorToString(err);
 
       health = {
         serverId,

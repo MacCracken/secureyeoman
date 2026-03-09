@@ -15,6 +15,7 @@ import type { SoulManager } from '../soul/manager.js';
 import { MarketplaceStorage } from './storage.js';
 import { gitCloneOrPull } from './git-fetch.js';
 import { PersonalityMarkdownSerializer } from '../soul/personality-serializer.js';
+import { errorToString, toErrorMessage } from '../utils/errors.js';
 
 export interface MarketplaceManagerDeps {
   logger: SecureLogger;
@@ -158,7 +159,7 @@ export class MarketplaceManager {
           this.logger.error(
             {
               id,
-              error: err instanceof Error ? err.message : 'Unknown error',
+              error: toErrorMessage(err),
             },
             'Failed to create brain skill from marketplace'
           );
@@ -223,7 +224,7 @@ export class MarketplaceManager {
         this.logger.error(
           {
             id,
-            error: err instanceof Error ? err.message : 'Unknown error',
+            error: toErrorMessage(err),
           },
           'Failed to remove brain skill on marketplace uninstall'
         );
@@ -271,7 +272,7 @@ export class MarketplaceManager {
       this.logger.error(
         {
           skillName,
-          error: err instanceof Error ? err.message : 'Unknown error',
+          error: toErrorMessage(err),
         },
         'Failed to sync marketplace installed state after brain skill deletion'
       );
@@ -329,7 +330,7 @@ export class MarketplaceManager {
       try {
         await gitCloneOrPull(effectiveGitUrl, repoPath, this.logger);
       } catch (err) {
-        result.errors.push(`Git fetch failed: ${err instanceof Error ? err.message : String(err)}`);
+        result.errors.push(`Git fetch failed: ${errorToString(err)}`);
         return result;
       }
     }
@@ -418,7 +419,7 @@ export class MarketplaceManager {
         syncedNames.add(data.name);
       } catch (err) {
         result.errors.push(
-          `Error processing ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+          `Error processing ${filePath}: ${errorToString(err)}`
         );
       }
     }
@@ -499,7 +500,7 @@ export class MarketplaceManager {
             syncedWorkflowNames.add(workflowName);
           } catch (err) {
             result.errors.push(
-              `Error processing workflow ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+              `Error processing workflow ${filePath}: ${errorToString(err)}`
             );
           }
         }
@@ -578,7 +579,7 @@ export class MarketplaceManager {
             syncedWorkflowNames.add(workflowName);
           } catch (err) {
             result.errors.push(
-              `Error processing workflow dir ${dirPath}: ${err instanceof Error ? err.message : String(err)}`
+              `Error processing workflow dir ${dirPath}: ${errorToString(err)}`
             );
           }
         }
@@ -649,7 +650,7 @@ export class MarketplaceManager {
             syncedSwarmNames.add(swarmName);
           } catch (err) {
             result.errors.push(
-              `Error processing swarm ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+              `Error processing swarm ${filePath}: ${errorToString(err)}`
             );
           }
         }
@@ -721,7 +722,7 @@ export class MarketplaceManager {
             syncedSwarmNames.add(swarmName);
           } catch (err) {
             result.errors.push(
-              `Error processing swarm dir ${dirPath}: ${err instanceof Error ? err.message : String(err)}`
+              `Error processing swarm dir ${dirPath}: ${errorToString(err)}`
             );
           }
         }
@@ -803,7 +804,7 @@ export class MarketplaceManager {
             syncedCouncilNames.add(councilName);
           } catch (err) {
             result.errors.push(
-              `Error processing council ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+              `Error processing council ${filePath}: ${errorToString(err)}`
             );
           }
         }
@@ -922,7 +923,7 @@ export class MarketplaceManager {
             syncedNames.add(metadata.name);
           } catch (err) {
             result.errors.push(
-              `Error processing security template ${dir.name}: ${err instanceof Error ? err.message : String(err)}`
+              `Error processing security template ${dir.name}: ${errorToString(err)}`
             );
           }
         }
@@ -1001,7 +1002,7 @@ export class MarketplaceManager {
             syncedNames.add(skillData.name!);
           } catch (err) {
             result.errors.push(
-              `Error processing personality ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+              `Error processing personality ${filePath}: ${errorToString(err)}`
             );
           }
         }
@@ -1070,7 +1071,7 @@ export class MarketplaceManager {
           syncedNames.add(data.name);
         } catch (err) {
           result.errors.push(
-            `Error processing theme ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+            `Error processing theme ${filePath}: ${errorToString(err)}`
           );
         }
       }

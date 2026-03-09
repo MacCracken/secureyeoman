@@ -9,6 +9,7 @@
 import { createHash } from 'node:crypto';
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
+import { errorToString } from '../utils/errors.js';
 
 export interface SemanticCacheConfig {
   enabled: boolean;
@@ -83,7 +84,7 @@ export class SemanticCache {
     } catch (err) {
       this.deps.logger.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Semantic cache get error'
       );
@@ -128,7 +129,7 @@ export class SemanticCache {
     } catch (err) {
       this.deps.logger.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Semantic cache set error'
       );
@@ -168,7 +169,7 @@ export class SemanticCache {
       void this.cleanup().catch((err: unknown) => {
         this.deps.logger.warn(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Semantic cache cleanup error'
         );

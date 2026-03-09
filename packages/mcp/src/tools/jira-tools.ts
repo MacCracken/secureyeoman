@@ -8,7 +8,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { registerApiProxyTool } from './tool-utils.js';
+import { buildQueryFromArgs, registerApiProxyTool } from './tool-utils.js';
 
 export function registerJiraTools(
   server: McpServer,
@@ -31,12 +31,7 @@ export function registerJiraTools(
         .describe('Maximum number of results to return (default 25)'),
     },
     buildPath: () => '/api/v1/integrations/jira/issues/search',
-    buildQuery: (args) => {
-      const q: Record<string, string> = {};
-      q.jql = args.jql as string;
-      if (args.maxResults) q.maxResults = String(args.maxResults);
-      return q;
-    },
+    buildQuery: (args) => buildQueryFromArgs(args, ['jql', 'maxResults']),
   });
 
   // ── jira_get_issue ─────────────────────────────────────────

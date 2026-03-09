@@ -101,6 +101,7 @@ import { runMigrations } from './storage/migrations/runner.js';
 import { closePool } from './storage/pg-pool.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot, AuditEntry } from '@secureyeoman/shared';
 import { RemoteDelegationTransport } from './a2a/transport.js';
+import { errorToString, toErrorMessage } from './utils/errors.js';
 
 // Type-only re-exports needed for getters that return types from modules we don't directly import
 import type { SecretsManager } from './security/secrets-manager.js';
@@ -714,7 +715,7 @@ export class SecureYeoman {
         } catch (error) {
           this.logger.warn(
             {
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: toErrorMessage(error),
             },
             'Multimodal manager initialization failed (non-fatal)'
           );
@@ -793,7 +794,7 @@ export class SecureYeoman {
     } catch (error) {
       if (this.logger) {
         this.logger.fatal('SecureYeoman initialization failed', {
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: toErrorMessage(error),
         });
       }
       await this.cleanup();
@@ -959,7 +960,7 @@ export class SecureYeoman {
             } catch (err) {
               this.logger?.debug(
                 {
-                  error: err instanceof Error ? err.message : String(err),
+                  error: errorToString(err),
                 },
                 'getMetrics: scan history stats unavailable'
               );
@@ -988,7 +989,7 @@ export class SecureYeoman {
             } catch (err) {
               this.logger?.debug(
                 {
-                  error: err instanceof Error ? err.message : String(err),
+                  error: errorToString(err),
                 },
                 'getMetrics: department risk summary unavailable'
               );
@@ -1941,7 +1942,7 @@ export class SecureYeoman {
     } catch (err) {
       this.logger?.error(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Failed to persist security policy to DB'
       );
@@ -2028,7 +2029,7 @@ export class SecureYeoman {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Failed to load security policy from DB (table may not exist yet)'
       );
@@ -2121,7 +2122,7 @@ export class SecureYeoman {
     } catch (error) {
       this.logger?.error(
         {
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: toErrorMessage(error),
         },
         'Error during shutdown'
       );
@@ -2232,7 +2233,7 @@ export class SecureYeoman {
       return result;
     } catch (error) {
       this.logger!.warn(`${name} initialization failed (non-fatal)`, {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: toErrorMessage(error),
       });
       return null;
     }

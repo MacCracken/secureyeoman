@@ -54,6 +54,7 @@ import type { CircuitBreakerRegistry } from '../resilience/circuit-breaker.js';
 import { CircuitBreakerOpenError } from '../resilience/circuit-breaker.js';
 import { getTracer } from '../telemetry/otel.js';
 import { SpanStatusCode } from '@opentelemetry/api';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface AIClientConfig {
   model: ModelConfig;
@@ -601,7 +602,7 @@ export class AIClient {
 
         await this.auditRecord('ai_error', {
           provider: providerName,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: toErrorMessage(error),
           latencyMs: elapsed,
         });
 
@@ -712,7 +713,7 @@ export class AIClient {
 
       await this.auditRecord('ai_stream_error', {
         provider: providerName,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: toErrorMessage(error),
         latencyMs: elapsed,
       });
 

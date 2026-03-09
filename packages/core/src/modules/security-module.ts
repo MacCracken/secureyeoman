@@ -57,6 +57,7 @@ import { WatermarkStore } from '../security/dlp/watermark-store.js';
 import { RetentionStore } from '../security/dlp/retention-store.js';
 import { RetentionManager } from '../security/dlp/retention-manager.js';
 import { getPool } from '../storage/pg-pool.js';
+import { toErrorMessage, errorToString } from '../utils/errors.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { AuthService } from '../security/auth.js';
 import type { AlertManager } from '../telemetry/alert-manager.js';
@@ -401,7 +402,7 @@ export class SecurityModule implements AppModule {
     } catch (err) {
       this.logger.warn(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'ExternalizationGate initialization failed'
       );
@@ -421,7 +422,7 @@ export class SecurityModule implements AppModule {
       } catch (error) {
         this.logger.warn(
           {
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: toErrorMessage(error),
           },
           'AthiManager initialization failed (non-fatal)'
         );
@@ -444,7 +445,7 @@ export class SecurityModule implements AppModule {
       } catch (error) {
         this.logger.warn(
           {
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: toErrorMessage(error),
           },
           'SraManager initialization failed (non-fatal)'
         );

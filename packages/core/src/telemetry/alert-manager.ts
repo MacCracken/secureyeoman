@@ -16,6 +16,7 @@ import type {
 } from './alert-storage.js';
 import type { NotificationManager } from '../notifications/notification-manager.js';
 import type { SecureLogger } from '../logging/logger.js';
+import { errorToString } from '../utils/errors.js';
 
 export type { AlertRule, AlertChannel };
 
@@ -90,7 +91,7 @@ export class AlertManager {
           {
             ruleId: rule.id,
             ruleName: rule.name,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Alert rule evaluation error'
         );
@@ -166,7 +167,7 @@ export class AlertManager {
       this.logger.error(
         {
           ruleId: rule.id,
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Failed to create alert notification'
       );
@@ -179,7 +180,7 @@ export class AlertManager {
           {
             ruleId: rule.id,
             channelType: channel.type,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Alert channel dispatch error'
         );

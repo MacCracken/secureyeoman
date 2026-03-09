@@ -6,7 +6,7 @@ import { randomBytes } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { IacManager } from './iac-manager.js';
 import { IacDeploymentStatusSchema } from '@secureyeoman/shared';
-import { sendError } from '../utils/errors.js';
+import { sendError, errorToString } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { requiresLicense } from '../licensing/license-guard.js';
 
@@ -104,7 +104,7 @@ export function registerIacRoutes(app: FastifyInstance, opts: IacRouteOptions): 
         return sendError(
           reply,
           500,
-          `Sync failed: ${err instanceof Error ? err.message : String(err)}`
+          `Sync failed: ${errorToString(err)}`
         );
       }
     }
@@ -139,7 +139,7 @@ export function registerIacRoutes(app: FastifyInstance, opts: IacRouteOptions): 
 
         return sendError(reply, 400, 'Provide either templateId or (tool + files)');
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : String(err));
+        return sendError(reply, 400, errorToString(err));
       }
     }
   );
@@ -230,7 +230,7 @@ export function registerIacRoutes(app: FastifyInstance, opts: IacRouteOptions): 
         await iacManager.recordDeployment(deployment);
         return reply.code(201).send({ deployment });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : String(err));
+        return sendError(reply, 500, errorToString(err));
       }
     }
   );

@@ -109,7 +109,7 @@ import { registerPhotisnadiRoutes } from '../integrations/photisnadi/photisnadi-
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, errorToString, toErrorMessage } from '../utils/errors.js';
 import { VERSION } from '../version.js';
 import { otelFastifyPlugin } from '../telemetry/otel-fastify-plugin.js';
 import { registerAlertRoutes } from '../telemetry/alert-routes.js';
@@ -189,7 +189,7 @@ export class GatewayServer {
       await fn();
     } catch (err) {
       this.getLogger().debug(`${name} routes skipped`, {
-        reason: err instanceof Error ? err.message : String(err),
+        reason: errorToString(err),
       });
     }
   }
@@ -844,7 +844,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().error(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'MCP routes failed to register'
       );
@@ -988,7 +988,7 @@ export class GatewayServer {
         } catch (err) {
           this.getLogger().debug(
             {
-              reason: err instanceof Error ? err.message : String(err),
+              reason: errorToString(err),
             },
             'CI/CD webhook routes skipped'
           );
@@ -997,7 +997,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Workflow routes skipped'
       );
@@ -1019,7 +1019,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Intent routes skipped'
       );
@@ -1045,7 +1045,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Autonomy audit routes skipped'
       );
@@ -1067,7 +1067,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Notification routes skipped'
       );
@@ -1163,7 +1163,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'TEE routes skipped'
       );
@@ -1196,7 +1196,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'DLP routes skipped'
       );
@@ -1212,7 +1212,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Extension routes skipped'
       );
@@ -1228,7 +1228,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Execution routes skipped'
       );
@@ -1244,7 +1244,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'A2A routes skipped'
       );
@@ -1261,7 +1261,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Proactive routes skipped'
       );
@@ -1290,7 +1290,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Multimodal routes skipped'
       );
@@ -1310,7 +1310,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Desktop control routes skipped'
       );
@@ -1332,7 +1332,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Capture consent routes skipped'
       );
@@ -1363,7 +1363,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Browser automation routes skipped'
       );
@@ -1386,7 +1386,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Group chat routes skipped'
       );
@@ -1407,7 +1407,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Routing rules routes skipped'
       );
@@ -1427,7 +1427,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Audit export routes skipped'
       );
@@ -1443,7 +1443,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Backup routes skipped'
       );
@@ -1459,7 +1459,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Tenant routes skipped'
       );
@@ -1476,7 +1476,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Training routes skipped'
       );
@@ -1516,7 +1516,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Federation routes skipped'
       );
@@ -1533,7 +1533,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Gateway routes skipped'
       );
@@ -1555,7 +1555,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Analytics routes skipped'
       );
@@ -1600,7 +1600,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Sandbox scanning routes skipped'
       );
@@ -1621,7 +1621,7 @@ export class GatewayServer {
     } catch (err) {
       this.getLogger().debug(
         {
-          reason: err instanceof Error ? err.message : String(err),
+          reason: errorToString(err),
         },
         'Event subscription routes skipped'
       );
@@ -1712,7 +1712,7 @@ export class GatewayServer {
       } catch (err) {
         components.database = {
           ok: false,
-          detail: err instanceof Error ? err.message : 'Unknown error',
+          detail: toErrorMessage(err),
         };
       }
 
@@ -1967,7 +1967,7 @@ export class GatewayServer {
           await this.secureYeoman.resetUsageStat(stat);
           return { success: true, stat };
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Unknown error';
+          const message = toErrorMessage(err);
           return sendError(reply, 500, message);
         }
       }
@@ -2613,7 +2613,7 @@ export class GatewayServer {
         } catch (err) {
           this.getLogger().error(
             {
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Failed to update security policy'
           );
@@ -2880,7 +2880,7 @@ export class GatewayServer {
       } catch (err) {
         this.getLogger().error(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to list secrets'
         );
@@ -2906,7 +2906,7 @@ export class GatewayServer {
           this.getLogger().error(
             {
               name,
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Failed to check secret'
           );
@@ -2950,7 +2950,7 @@ export class GatewayServer {
           this.getLogger().error(
             {
               name,
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Failed to set secret'
           );
@@ -2985,7 +2985,7 @@ export class GatewayServer {
           this.getLogger().error(
             {
               name,
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Failed to delete secret'
           );
@@ -3013,7 +3013,7 @@ export class GatewayServer {
       } catch (err) {
         this.getLogger().error(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to list internal SSH keys'
         );
@@ -3049,7 +3049,7 @@ export class GatewayServer {
         } catch (err) {
           this.getLogger().error(
             {
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Failed to resolve secrets'
           );
@@ -3070,7 +3070,7 @@ export class GatewayServer {
       } catch (err) {
         this.getLogger().error(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to get TLS status'
         );
@@ -3092,7 +3092,7 @@ export class GatewayServer {
       } catch (err) {
         this.getLogger().error(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to generate TLS cert'
         );

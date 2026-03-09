@@ -14,6 +14,7 @@ import {
   apiCall,
   Spinner,
 } from '../utils.js';
+import { errorToString } from '../../utils/errors.js';
 
 export const memoryCommand: Command = {
   name: 'memory',
@@ -420,7 +421,7 @@ Options:
       }
       return 0;
     } catch (err) {
-      ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+      ctx.stderr.write(`${errorToString(err)}\n`);
       return 1;
     }
   },
@@ -538,7 +539,7 @@ async function runLocalMemory(
     ctx.stderr.write(`Unknown local subcommand: ${subcommand}\n`);
     return 1;
   } catch (err) {
-    ctx.stderr.write(`Local mode error: ${err instanceof Error ? err.message : String(err)}\n`);
+    ctx.stderr.write(`Local mode error: ${errorToString(err)}\n`);
     return 1;
   } finally {
     await liteCtx.cleanup();

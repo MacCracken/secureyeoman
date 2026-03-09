@@ -6,7 +6,7 @@
  * custom block lists, guardrail audit trail, and grounding checks.
  */
 
-import crypto from 'node:crypto';
+import { sha256 } from '../utils/crypto.js';
 import type {
   ContentGuardrailConfig,
   ContentGuardrailPersonalityConfig,
@@ -70,10 +70,6 @@ const PII_REPLACE_REGEXES = PII_PATTERNS.map((p) => ({
 }));
 
 // ── Helpers ───────────────────────────────────────────────────────────
-
-function contentHash(text: string): string {
-  return crypto.createHash('sha256').update(text).digest('hex');
-}
 
 function tokenize(text: string): string[] {
   return text
@@ -145,7 +141,7 @@ export class ContentGuardrail {
             type: 'pii',
             action: piiMode === 'redact' ? 'redact' : 'warn',
             detail: `${pattern.type} detected`,
-            contentHash: contentHash(match[0]),
+            contentHash: sha256(match[0]),
           });
         }
         if (piiMode === 'redact') {
@@ -166,7 +162,7 @@ export class ContentGuardrail {
           type: 'block_list',
           action: 'block',
           detail: `Blocked term: ${match[0]}`,
-          contentHash: contentHash(match[0]),
+          contentHash: sha256(match[0]),
         });
       }
     }
@@ -222,7 +218,7 @@ export class ContentGuardrail {
             type: 'topic',
             action: 'block',
             detail: `Response touches restricted topic: ${topic}`,
-            contentHash: contentHash(topic),
+            contentHash: sha256(topic),
           });
           blocked = true;
         }
@@ -243,7 +239,7 @@ export class ContentGuardrail {
           type: 'toxicity',
           action,
           detail: `Toxicity score ${toxResult.score.toFixed(2)} exceeds threshold${toxResult.categories ? ` (${toxResult.categories.join(', ')})` : ''}`,
-          contentHash: contentHash(text.slice(0, 200)),
+          contentHash: sha256(text.slice(0, 200)),
         });
         if (action === 'block') blocked = true;
       }
@@ -403,7 +399,7 @@ export class ContentGuardrail {
             type: 'grounding',
             action: this.config.groundingMode === 'block' ? 'block' : 'flag',
             detail: `Unverified citation: ${citation}`,
-            contentHash: contentHash(citation),
+            contentHash: sha256(citation),
           });
         }
       } catch {

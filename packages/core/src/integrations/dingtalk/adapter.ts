@@ -10,6 +10,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 import { assertPublicUrl } from '../../utils/ssrf-guard.js';
 
 interface DingTalkConfig {
@@ -141,7 +142,7 @@ export class DingTalkIntegration implements WebhookIntegration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'DingTalk webhook parse error'
       );
@@ -166,7 +167,7 @@ export class DingTalkIntegration implements WebhookIntegration {
           message: resp.status === 401 ? 'Invalid app credentials' : 'DingTalk connected',
         };
       } catch (err) {
-        return { ok: false, message: err instanceof Error ? err.message : String(err) };
+        return { ok: false, message: errorToString(err) };
       }
     }
     return { ok: true, message: 'DingTalk ready — awaiting webhook events' };

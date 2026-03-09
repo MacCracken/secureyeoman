@@ -14,6 +14,7 @@ import { execFile } from 'node:child_process';
 import { access, constants } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { promisify } from 'node:util';
+import { toErrorMessage } from '../../utils/errors.js';
 type SqliteDatabase = import('better-sqlite3').Database;
 
 async function loadSqlite(): Promise<
@@ -106,7 +107,7 @@ export class IMessageIntegration implements Integration {
       db.close();
     } catch (err) {
       throw new Error(
-        `Failed to read iMessage database: ${err instanceof Error ? err.message : 'Unknown error'}`
+        `Failed to read iMessage database: ${toErrorMessage(err)}`
       );
     }
 
@@ -122,7 +123,7 @@ export class IMessageIntegration implements Integration {
       void this.pollMessages().catch((err: unknown) => {
         this.logger?.error(
           {
-            error: err instanceof Error ? err.message : 'Unknown error',
+            error: toErrorMessage(err),
           },
           'iMessage poll error'
         );
@@ -163,7 +164,7 @@ export class IMessageIntegration implements Integration {
       return messageId;
     } catch (err) {
       throw new Error(
-        `Failed to send iMessage: ${err instanceof Error ? err.message : 'Unknown error'}`
+        `Failed to send iMessage: ${toErrorMessage(err)}`
       );
     }
   }

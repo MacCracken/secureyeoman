@@ -7,6 +7,7 @@
  */
 
 import { AIProviderError } from './errors.js';
+import { sleep } from '../utils/sleep.js';
 
 export interface RetryConfig {
   maxRetries: number;
@@ -44,7 +45,7 @@ export class RetryManager {
         }
 
         const delay = this.calculateDelay(attempt, lastError);
-        await this.sleep(delay);
+        await sleep(delay);
       }
     }
 
@@ -102,9 +103,6 @@ export class RetryManager {
     return Math.floor(clampedDelay / 2 + jitter / 2);
   }
 
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }
 
 /**

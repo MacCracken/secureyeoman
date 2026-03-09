@@ -26,6 +26,7 @@ import type { AlertManager } from '../telemetry/alert-manager.js';
 import type { TrainingModule } from './training-module.js';
 import type { MarketplaceManager } from '../marketplace/manager.js';
 import type { SoulManager } from '../soul/manager.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface DelegationModuleDeps {
   getAuditChain: () => AuditChain | null;
@@ -114,7 +115,7 @@ export class DelegationModule extends BaseModule {
       } catch (swarmError) {
         this.logger.warn(
           {
-            error: swarmError instanceof Error ? swarmError.message : 'Unknown error',
+            error: toErrorMessage(swarmError),
           },
           'Swarm manager initialization failed (non-fatal)'
         );
@@ -148,7 +149,7 @@ export class DelegationModule extends BaseModule {
       } catch (teamError) {
         this.logger.warn(
           {
-            error: teamError instanceof Error ? teamError.message : 'Unknown error',
+            error: toErrorMessage(teamError),
           },
           'Team manager initialization failed (non-fatal)'
         );
@@ -177,7 +178,7 @@ export class DelegationModule extends BaseModule {
       } catch (councilError) {
         this.logger.warn(
           {
-            error: councilError instanceof Error ? councilError.message : 'Unknown error',
+            error: toErrorMessage(councilError),
           },
           'Council manager initialization failed (non-fatal)'
         );
@@ -229,7 +230,7 @@ export class DelegationModule extends BaseModule {
       } catch (workflowError) {
         this.logger.warn(
           {
-            error: workflowError instanceof Error ? workflowError.message : 'Unknown error',
+            error: toErrorMessage(workflowError),
           },
           'Workflow manager initialization failed (non-fatal)'
         );
@@ -237,7 +238,7 @@ export class DelegationModule extends BaseModule {
     } catch (error) {
       this.logger.warn(
         {
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: toErrorMessage(error),
         },
         'Sub-agent delegation initialization failed (non-fatal)'
       );

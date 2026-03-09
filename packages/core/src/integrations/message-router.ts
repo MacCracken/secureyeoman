@@ -13,6 +13,7 @@ import type { IntegrationStorage } from './storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { OutboundWebhookDispatcher } from './outbound-webhook-dispatcher.js';
 import type { RoutingRulesManager } from './routing-rules-manager.js';
+import { errorToString } from '../utils/errors.js';
 
 export interface MessageRouterDeps {
   logger: SecureLogger;
@@ -192,7 +193,7 @@ export class MessageRouter {
             metadata.audioFormat = ttsResult.format;
           } catch (err) {
             logger.warn(
-              `TTS synthesis failed: ${err instanceof Error ? err.message : String(err)}`
+              `TTS synthesis failed: ${errorToString(err)}`
             );
           }
         }
@@ -205,7 +206,7 @@ export class MessageRouter {
         );
       }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
+      const errorMsg = errorToString(err);
       logger.error(`Failed to process inbound message: ${errorMsg}`);
 
       // Send error response back to the platform
@@ -218,7 +219,7 @@ export class MessageRouter {
         );
       } catch (sendErr) {
         logger.error(
-          `Failed to send error response: ${sendErr instanceof Error ? sendErr.message : String(sendErr)}`
+          `Failed to send error response: ${errorToString(sendErr)}`
         );
       }
     }

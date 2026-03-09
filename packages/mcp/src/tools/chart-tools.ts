@@ -9,7 +9,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, errorResponse } from './tool-utils.js';
 import {
   renderCandlestick,
   renderLineChart,
@@ -21,16 +21,11 @@ import {
   renderSparkline,
 } from './chart-scene.js';
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'Charting tools are disabled. Enable exposeCharting in MCP config to use chart_* tools.',
-      },
-    ],
-    isError: true,
-  };
+const CHART_DISABLED_MSG =
+  'Charting tools are disabled. Enable exposeCharting in MCP config to use chart_* tools.';
+
+function disabled() {
+  return errorResponse(CHART_DISABLED_MSG);
 }
 
 // ─── Shared Zod fragments ───────────────────────────────────────────────────

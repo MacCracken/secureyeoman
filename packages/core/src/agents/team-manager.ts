@@ -18,6 +18,7 @@ import type {
   TeamRun,
   TeamRunParams,
 } from '@secureyeoman/shared';
+import { errorToString } from '../utils/errors.js';
 
 export interface TeamManagerDeps {
   storage: TeamStorage;
@@ -109,7 +110,7 @@ export class TeamManager {
       this.logger.error(
         {
           runId: teamRun.id,
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Team run execution failed'
       );
@@ -267,7 +268,7 @@ Provide a unified, synthesized response:`;
         completedAt: Date.now(),
       });
     } catch (err) {
-      const error = err instanceof Error ? err.message : String(err);
+      const error = errorToString(err);
       await this.storage.updateRun(run.id, {
         status: 'failed',
         error,

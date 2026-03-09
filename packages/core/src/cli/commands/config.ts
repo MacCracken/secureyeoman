@@ -9,6 +9,7 @@
 import type { Command, CommandContext } from '../router.js';
 import { extractFlag, extractBoolFlag, colorContext } from '../utils.js';
 import { loadConfig, validateSecrets } from '../../config/loader.js';
+import { errorToString } from '../../utils/errors.js';
 
 const USAGE = `
 Usage: secureyeoman config [subcommand] [options]
@@ -76,7 +77,7 @@ export const configCommand: Command = {
           validateSecrets(config);
           ctx.stdout.write('All required secrets are set.\n');
         } catch (err) {
-          ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+          ctx.stderr.write(`${errorToString(err)}\n`);
           return 1;
         }
       }
@@ -84,7 +85,7 @@ export const configCommand: Command = {
       return 0;
     } catch (err) {
       ctx.stderr.write(
-        `Configuration error:\n${err instanceof Error ? err.message : String(err)}\n`
+        `Configuration error:\n${errorToString(err)}\n`
       );
       return 1;
     }
@@ -125,7 +126,7 @@ Options:
     checks.push({
       name: 'config_structure',
       passed: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: errorToString(err),
     });
   }
 
@@ -138,7 +139,7 @@ Options:
       checks.push({
         name: 'required_secrets',
         passed: false,
-        error: err instanceof Error ? err.message : String(err),
+        error: errorToString(err),
       });
     }
   } else {

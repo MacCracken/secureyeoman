@@ -8,6 +8,7 @@
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 interface TodoistConfig {
   apiToken: string;
@@ -106,7 +107,7 @@ export class TodoistIntegration implements Integration {
       const projects = (await resp.json()) as TodoistProject[];
       return { ok: true, message: `Connected — ${projects.length} project(s) accessible` };
     } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : String(err) };
+      return { ok: false, message: errorToString(err) };
     }
   }
 
@@ -157,7 +158,7 @@ export class TodoistIntegration implements Integration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Todoist poll error'
       );

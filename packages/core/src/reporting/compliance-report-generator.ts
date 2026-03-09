@@ -19,6 +19,7 @@ import {
   escapeCsv,
   formatTimestamp,
 } from '../risk-assessment/risk-assessment-report.js';
+import { errorToString } from '../utils/errors.js';
 
 export interface ComplianceReportOptions {
   from: number;
@@ -101,7 +102,7 @@ export class ComplianceReportGenerator {
         this.logger.warn(
           {
             id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to query audit events for compliance report'
         );
@@ -124,7 +125,7 @@ export class ComplianceReportGenerator {
         this.logger.warn(
           {
             id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to query egress events for compliance report'
         );
@@ -162,7 +163,7 @@ export class ComplianceReportGenerator {
         this.logger.warn(
           {
             id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Failed to query classifications for compliance report'
         );

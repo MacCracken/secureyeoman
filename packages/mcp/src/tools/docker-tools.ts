@@ -22,7 +22,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, errorResponse } from './tool-utils.js';
 
 const MAX_OUTPUT = 5 * 1024 * 1024; // 5MB
 const DEFAULT_TIMEOUT = 60_000; // 1 minute
@@ -64,16 +64,10 @@ function runDocker(
   });
 }
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'Docker tools are disabled. Set MCP_EXPOSE_DOCKER=true to enable.',
-      },
-    ],
-    isError: true,
-  };
+const DOCKER_DISABLED_MSG = 'Docker tools are disabled. Set MCP_EXPOSE_DOCKER=true to enable.';
+
+function disabled() {
+  return errorResponse(DOCKER_DISABLED_MSG);
 }
 
 // ─── Tool Registration ───────────────────────────────────────────────────────

@@ -18,6 +18,8 @@ import type {
 } from './outbound-webhook-storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { isPrivateUrl } from '../utils/ssrf-guard.js';
+import { sleep } from '../utils/sleep.js';
+import { errorToString } from '../utils/errors.js';
 
 // ─── Payload shape ────────────────────────────────────────────
 
@@ -74,7 +76,7 @@ export class OutboundWebhookDispatcher {
       webhooks = await this.storage.listForEvent(event);
     } catch (err) {
       this.logger.error(`OutboundWebhookDispatcher: failed to list webhooks for event ${event}`, {
-        error: err instanceof Error ? err.message : String(err),
+        error: errorToString(err),
       });
       return;
     }
@@ -116,7 +118,7 @@ export class OutboundWebhookDispatcher {
 
     while (attempt <= this.maxRetries) {
       if (attempt > 0) {
-        await this.sleep(this.baseDelayMs * 2 ** (attempt - 1));
+        await sleep(this.baseDelayMs * 2 ** (attempt - 1));
       }
 
       try {
@@ -144,7 +146,7 @@ export class OutboundWebhookDispatcher {
       } catch (err) {
         this.logger.warn(
           `OutboundWebhookDispatcher: network error posting to ${wh.url} (attempt ${attempt + 1})`,
-          { error: err instanceof Error ? err.message : String(err) }
+          { error: errorToString(err) }
         );
       }
 
@@ -164,7 +166,4 @@ export class OutboundWebhookDispatcher {
     return `sha256=${createHmac('sha256', secret).update(payload).digest('hex')}`;
   }
 
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

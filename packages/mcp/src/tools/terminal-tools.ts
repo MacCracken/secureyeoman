@@ -17,18 +17,12 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, errorResponse } from './tool-utils.js';
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'Terminal tools are disabled. Set MCP_EXPOSE_TERMINAL=true to enable.',
-      },
-    ],
-    isError: true,
-  };
+const TERMINAL_DISABLED_MSG = 'Terminal tools are disabled. Set MCP_EXPOSE_TERMINAL=true to enable.';
+
+function disabled() {
+  return errorResponse(TERMINAL_DISABLED_MSG);
 }
 
 export function registerTerminalTools(

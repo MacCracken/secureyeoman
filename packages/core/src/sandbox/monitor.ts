@@ -10,6 +10,7 @@
 
 import { platform } from 'node:os';
 import type { SecureLogger } from '../logging/logger.js';
+import { errorToString } from '../utils/errors.js';
 
 export interface IntegrityCheckResult {
   name: string;
@@ -111,7 +112,7 @@ export class SandboxMonitor {
       return {
         name: 'namespace_isolation',
         passed: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorToString(error),
       };
     }
   }
@@ -137,7 +138,7 @@ export class SandboxMonitor {
       return {
         name: 'filesystem_isolation',
         passed: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorToString(error),
       };
     }
   }
@@ -168,7 +169,7 @@ export class SandboxMonitor {
       return {
         name: 'process_isolation',
         passed: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorToString(error),
       };
     }
   }

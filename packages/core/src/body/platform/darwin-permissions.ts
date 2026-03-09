@@ -12,6 +12,7 @@ import { platform } from 'node:os';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { SecureLogger } from '../../logging/logger.js';
+import { sleep } from '../../utils/sleep.js';
 import type {
   CapturePermissionType,
   PermissionStatus,
@@ -142,7 +143,7 @@ export class DarwinPermissionManager implements PlatformPermissionManager {
       await this.triggerScreenCapturePrompt();
     }
 
-    await this.delay(1000);
+    await sleep(1000);
 
     return this.checkPermission(type);
   }
@@ -192,7 +193,4 @@ export class DarwinPermissionManager implements PlatformPermissionManager {
     }
   }
 
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

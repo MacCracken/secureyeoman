@@ -12,6 +12,8 @@ export interface KeyValidationResult {
   models?: string[];
 }
 
+import { errorToString } from '../utils/errors.js';
+
 const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'localai']);
 
 const PROVIDER_HEALTH_URLS: Record<string, string> = {
@@ -75,7 +77,7 @@ export class ProviderKeyValidator {
     } catch (err) {
       return {
         valid: false,
-        error: `Unreachable: ${err instanceof Error ? err.message : String(err)}`,
+        error: `Unreachable: ${errorToString(err)}`,
       };
     }
   }
@@ -134,7 +136,7 @@ export class ProviderKeyValidator {
     } catch (err) {
       return {
         valid: false,
-        error: `Validation failed: ${err instanceof Error ? err.message : String(err)}`,
+        error: `Validation failed: ${errorToString(err)}`,
       };
     }
   }

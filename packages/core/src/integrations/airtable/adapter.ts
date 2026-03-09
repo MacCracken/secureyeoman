@@ -8,6 +8,7 @@
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 interface AirtableConfig {
   apiKey: string;
@@ -118,7 +119,7 @@ export class AirtableIntegration implements Integration {
       const data = (await resp.json()) as AirtableWhoAmI;
       return { ok: true, message: `Connected as ${data.email ?? data.id}` };
     } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : String(err) };
+      return { ok: false, message: errorToString(err) };
     }
   }
 
@@ -170,7 +171,7 @@ export class AirtableIntegration implements Integration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Airtable poll error'
       );

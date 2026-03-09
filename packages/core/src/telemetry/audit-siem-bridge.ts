@@ -10,6 +10,7 @@ import type { SecureLogger } from '../logging/logger.js';
 import { getCurrentTraceId } from './otel.js';
 import { getCurrentSpanId } from './instrument.js';
 import { getCorrelationId } from '../utils/correlation-context.js';
+import { errorToString } from '../utils/errors.js';
 
 /** Maps audit event names to SIEM severity levels. */
 const EVENT_SEVERITY_MAP: Record<string, SiemSeverity> = {
@@ -88,7 +89,7 @@ export class AuditSiemBridge {
       this.logger.error(
         {
           event: entry.event,
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Failed to bridge audit event to SIEM'
       );
@@ -130,7 +131,7 @@ export class AuditSiemBridge {
       this.logger.error(
         {
           action: entry.action,
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Failed to bridge DLP event to SIEM'
       );

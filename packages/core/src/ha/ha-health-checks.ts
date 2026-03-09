@@ -13,6 +13,7 @@ import { getPool, getReadPool, hasReadReplicas, getReplicaCount } from '../stora
 import { getLogger } from '../logging/logger.js';
 import { readFileSync } from 'node:fs';
 import * as crypto from 'node:crypto';
+import { errorToString } from '../utils/errors.js';
 
 export interface HealthComponent {
   ok: boolean;
@@ -72,7 +73,7 @@ export async function checkVectorStore(): Promise<HealthComponent> {
     }
     return {
       ok: false,
-      detail: `pgvector check failed: ${err instanceof Error ? err.message : String(err)}`,
+      detail: `pgvector check failed: ${errorToString(err)}`,
     };
   }
 }
@@ -105,7 +106,7 @@ export function checkCertExpiry(certPath?: string): HealthComponent {
   } catch (err) {
     return {
       ok: false,
-      detail: `Certificate check failed: ${err instanceof Error ? err.message : String(err)}`,
+      detail: `Certificate check failed: ${errorToString(err)}`,
     };
   }
 }

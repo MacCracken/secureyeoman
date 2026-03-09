@@ -6,6 +6,7 @@
 import type { BrainManager } from '../brain/manager.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { ProactiveTriggerCreate } from '@secureyeoman/shared';
+import { errorToString } from '../utils/errors.js';
 
 export interface InteractionEvent {
   type: string;
@@ -52,7 +53,7 @@ export class PatternLearner {
     } catch (err) {
       this.logger.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Failed to record interaction for pattern learning'
       );
@@ -126,7 +127,7 @@ export class PatternLearner {
     } catch (err) {
       this.logger.error(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Pattern detection failed'
       );

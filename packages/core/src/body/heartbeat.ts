@@ -22,6 +22,8 @@ import type { HeartbeatLogStorage } from './heartbeat-log-storage.js';
 import type { NotificationManager } from '../notifications/notification-manager.js';
 import { runWithCorrelationId } from '../utils/correlation-context.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { sleep } from '../utils/sleep.js';
+import { errorToString, toErrorMessage } from '../utils/errors.js';
 // Type definitions for proactive heartbeat features
 // These extend the shared types with action and scheduling capabilities
 
@@ -218,7 +220,7 @@ export class HeartbeatManager {
           {
             check: check.name,
             action: trigger.action,
-            error: err instanceof Error ? err.message : 'Unknown error',
+            error: toErrorMessage(err),
           },
           'Action execution failed'
         );
@@ -353,7 +355,7 @@ export class HeartbeatManager {
             },
             'Webhook failed, retrying'
           );
-          await this.sleep(retryDelayMs * (attempt + 1)); // Exponential backoff
+          await sleep(retryDelayMs * (attempt + 1)); // Exponential backoff
         }
       }
     }
@@ -397,7 +399,7 @@ export class HeartbeatManager {
         this.logger.warn(
           {
             check: check.name,
-            error: err instanceof Error ? err.message : 'Unknown error',
+            error: toErrorMessage(err),
           },
           'Failed to persist heartbeat notification'
         );
@@ -461,7 +463,7 @@ export class HeartbeatManager {
               check: check.name,
               channel,
               recipient,
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Heartbeat notification dispatch failed'
           );
@@ -473,7 +475,7 @@ export class HeartbeatManager {
               check: check.name,
               channel,
               recipient,
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
           });
         }
@@ -574,13 +576,6 @@ export class HeartbeatManager {
   }
 
   /**
-   * Utility: Sleep for specified milliseconds
-   */
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  /**
    * Hydrate taskLastRun from persisted log entries so that "last run" timestamps
    * survive process restarts. Should be awaited before calling start().
    */
@@ -613,7 +608,7 @@ export class HeartbeatManager {
         void this.beat().catch((err: unknown) => {
           this.logger.error(
             {
-              error: err instanceof Error ? err.message : 'Unknown error',
+              error: toErrorMessage(err),
             },
             'Heartbeat failed'
           );
@@ -690,7 +685,7 @@ export class HeartbeatManager {
         checks.push(result);
         this.taskLastRun.set(check.name, start);
       } catch (err) {
-        errorDetail = err instanceof Error ? err.message : String(err);
+        errorDetail = errorToString(err);
         result = {
           name: check.name,
           type: check.type,
@@ -740,7 +735,7 @@ export class HeartbeatManager {
               {
                 check: check.name,
                 personalityId: p.id,
-                error: logErr instanceof Error ? logErr.message : 'Unknown error',
+                error: toErrorMessage(logErr),
               },
               'Failed to persist heartbeat log entry'
             );
@@ -755,7 +750,7 @@ export class HeartbeatManager {
         this.logger.error(
           {
             check: check.name,
-            error: err instanceof Error ? err.message : 'Unknown error',
+            error: toErrorMessage(err),
           },
           'Action execution failed for check'
         );

@@ -7,6 +7,7 @@ import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type { AIClient } from '../ai/client.js';
 import type { AnalyticsStorage } from './analytics-storage.js';
+import { errorToString } from '../utils/errors.js';
 
 const EXTRACT_INTERVAL_MS = 900_000; // 15 minutes
 const BATCH_SIZE = 30;
@@ -79,7 +80,7 @@ export class EntityExtractor {
         this.logger.warn(
           {
             conversationId: conv.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'EntityExtractor: failed to extract'
         );
@@ -141,7 +142,7 @@ export class EntityExtractor {
       void this.extractNew().catch((err: unknown) => {
         this.logger.error(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'EntityExtractor: interval error'
         );

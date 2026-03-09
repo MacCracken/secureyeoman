@@ -20,6 +20,7 @@ import { TwitterApi, type UserV2 } from 'twitter-api-v2';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 export class TwitterIntegration implements Integration {
   readonly platform: Platform = 'twitter';
@@ -108,7 +109,7 @@ export class TwitterIntegration implements Integration {
       this.logger?.warn(
         'Twitter: could not resolve authenticated user — mention polling disabled',
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         }
       );
     }
@@ -182,7 +183,7 @@ export class TwitterIntegration implements Integration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Twitter: mention poll failed'
       );

@@ -30,6 +30,7 @@ import type { AlertManager } from '../telemetry/alert-manager.js';
 import type { SecretsManager } from '../security/secrets-manager.js';
 import type { SoulManager } from '../soul/manager.js';
 import type { Config } from '@secureyeoman/shared';
+import { toErrorMessage, errorToString } from '../utils/errors.js';
 
 // ------------------------------------------------------------------
 // Dependency interfaces
@@ -177,7 +178,7 @@ export class AIModule extends BaseModule {
     } catch (error) {
       this.logger.warn(
         {
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: toErrorMessage(error),
         },
         'AI client initialization failed (non-fatal)'
       );
@@ -202,7 +203,7 @@ export class AIModule extends BaseModule {
         this.providerAccountManager.importFromEnv().catch((err: unknown) => {
           this.logger?.warn(
             {
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Provider account env import failed (non-fatal)'
           );
@@ -210,7 +211,7 @@ export class AIModule extends BaseModule {
       } catch (error) {
         this.logger.warn(
           {
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: toErrorMessage(error),
           },
           'ProviderAccountManager initialization failed (non-fatal)'
         );
@@ -299,7 +300,7 @@ export class AIModule extends BaseModule {
         {
           provider,
           model,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: toErrorMessage(error),
         },
         'Failed to switch AI model'
       );

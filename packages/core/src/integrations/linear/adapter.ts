@@ -10,6 +10,7 @@ import { createHmac } from 'crypto';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 interface LinearConfig {
   apiKey: string;
@@ -92,7 +93,7 @@ export class LinearIntegration implements WebhookIntegration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Linear sendMessage error'
       );
@@ -181,7 +182,7 @@ export class LinearIntegration implements WebhookIntegration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Linear webhook parse error'
       );
@@ -211,7 +212,7 @@ export class LinearIntegration implements WebhookIntegration {
         message: `Connected to Linear as ${viewer?.name ?? 'unknown'}${viewer?.organization?.name ? ` (${viewer.organization.name})` : ''}`,
       };
     } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : String(err) };
+      return { ok: false, message: errorToString(err) };
     }
   }
 }

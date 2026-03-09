@@ -28,6 +28,7 @@ import {
 } from '@secureyeoman/shared';
 import type { Sandbox, SandboxOptions } from '../sandbox/types.js';
 import type { TaskStorage } from './task-storage.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface TaskExecutorConfig {
   /** Maximum concurrent tasks */
@@ -423,7 +424,7 @@ export class TaskExecutor {
         success: false,
         error: {
           code: isTimeout ? 'TIMEOUT' : 'EXECUTION_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: toErrorMessage(error),
           recoverable: false,
         },
       };
@@ -442,7 +443,7 @@ export class TaskExecutor {
       this.getLogger().error(
         {
           ...logContext,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: toErrorMessage(error),
           status: task.status,
           durationMs: task.durationMs,
         },

@@ -12,6 +12,7 @@ import { platform } from 'node:os';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { SecureLogger } from '../../logging/logger.js';
+import { sleep } from '../../utils/sleep.js';
 import type {
   CapturePermissionType,
   PermissionStatus,
@@ -141,7 +142,7 @@ export class WindowsPermissionManager implements PlatformPermissionManager {
       await this.showScreenCaptureInstructions();
     }
 
-    await this.delay(500);
+    await sleep(500);
 
     return this.checkPermission(type);
   }
@@ -192,7 +193,4 @@ export class WindowsPermissionManager implements PlatformPermissionManager {
     }
   }
 
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

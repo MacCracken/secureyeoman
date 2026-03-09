@@ -7,6 +7,7 @@ import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type { AlertManager } from '../telemetry/alert-manager.js';
 import type { DriftBaseline, DriftSnapshot } from '@secureyeoman/shared';
+import { errorToString } from '../utils/errors.js';
 
 function rowToBaseline(row: Record<string, unknown>): DriftBaseline {
   return {
@@ -126,7 +127,7 @@ export class DriftDetectionManager {
         this.deps.logger.warn(
           {
             baselineId: baseline.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Drift check failed for baseline'
         );
@@ -203,7 +204,7 @@ export class DriftDetectionManager {
       void this.checkAllDrift().catch((err: unknown) => {
         this.deps.logger.error(
           {
-            error: err instanceof Error ? err.message : String(err),
+            error: errorToString(err),
           },
           'Periodic drift check error'
         );

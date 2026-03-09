@@ -13,6 +13,8 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureLogger } from '../logging/logger.js';
 
+import { errorToString } from '../utils/errors.js';
+
 const MAX_SSE_CLIENTS = 10_000;
 const MAX_BACKOFF_MS = 60_000;
 
@@ -238,7 +240,7 @@ export class EventBridge {
           this.logger.warn(
             {
               name,
-              error: err instanceof Error ? err.message : String(err),
+              error: errorToString(err),
             },
             'Event bridge connection lost'
           );
@@ -269,7 +271,7 @@ export class EventBridge {
       void this.subscribe('agnostic', this.config.agnosticSseUrl, this.config.agnosticApiKey).catch(
         (err: unknown) => {
           this.logger.warn(
-            { error: err instanceof Error ? err.message : String(err) },
+            { error: errorToString(err) },
             'Agnostic SSE subscription failed'
           );
         }
@@ -279,7 +281,7 @@ export class EventBridge {
       void this.subscribe('agnos', this.config.agnosSseUrl, this.config.agnosApiKey).catch(
         (err: unknown) => {
           this.logger.warn(
-            { error: err instanceof Error ? err.message : String(err) },
+            { error: errorToString(err) },
             'Agnos SSE subscription failed'
           );
         }

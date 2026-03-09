@@ -18,6 +18,7 @@ import type {
   SwarmRunParams,
   SwarmMember,
 } from '@secureyeoman/shared';
+import { errorToString } from '../utils/errors.js';
 
 export interface SwarmManagerDeps {
   storage: SwarmStorage;
@@ -227,7 +228,7 @@ export class SwarmManager {
         tokensUsedCompletion: totals.completion,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorToString(err);
       this.logger.error({ runId: run.id, error: msg }, 'Swarm execution failed');
       await this.storage.updateRun(run.id, {
         status: 'failed',
@@ -311,7 +312,7 @@ export class SwarmManager {
 
         completedMembers.push({ ...member, result: lastResult });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = errorToString(err);
         await this.storage.updateMember(member.id, {
           status: 'failed',
           result: `Error: ${msg}`,
@@ -375,7 +376,7 @@ export class SwarmManager {
 
           return { role: roleConfig.role, result };
         } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
+          const msg = errorToString(err);
           await this.storage.updateMember(member.id, {
             status: 'failed',
             result: `Error: ${msg}`,
@@ -416,7 +417,7 @@ export class SwarmManager {
         });
         return synthResult;
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = errorToString(err);
         await this.storage.updateMember(coordMember.id, {
           status: 'failed',
           result: `Error: ${msg}`,
@@ -464,7 +465,7 @@ export class SwarmManager {
       });
       return result;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorToString(err);
       await this.storage.updateMember(member.id, {
         status: 'failed',
         result: `Error: ${msg}`,

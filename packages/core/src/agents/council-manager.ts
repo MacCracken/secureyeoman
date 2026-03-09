@@ -18,6 +18,7 @@ import type {
   CouncilRunParams,
   CouncilPosition,
 } from '@secureyeoman/shared';
+import { errorToString } from '../utils/errors.js';
 
 export interface CouncilManagerDeps {
   storage: CouncilStorage;
@@ -187,7 +188,7 @@ export class CouncilManager {
               memberRole: member.role,
               profileName: member.profileName,
               round,
-              position: `Error: ${settledResult.reason instanceof Error ? settledResult.reason.message : String(settledResult.reason)}`,
+              position: `Error: ${errorToString(settledResult.reason)}`,
               confidence: 0,
               keyPoints: [],
               agreements: [],
@@ -242,7 +243,7 @@ export class CouncilManager {
         completedAt: Date.now(),
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorToString(err);
       this.logger.error({ runId: run.id, error: msg }, 'Council deliberation failed');
       await this.storage.updateRun(run.id, {
         status: 'failed',
@@ -477,7 +478,7 @@ Synthesize a final decision. Respond ONLY with JSON:
       };
     } catch (err) {
       return {
-        decision: `Synthesis failed: ${err instanceof Error ? err.message : String(err)}`,
+        decision: `Synthesis failed: ${errorToString(err)}`,
         consensus: 'split',
         dissents: [],
         reasoning: 'Synthesis call failed',

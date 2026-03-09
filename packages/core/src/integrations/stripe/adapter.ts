@@ -10,6 +10,7 @@ import { createHmac } from 'crypto';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { errorToString } from '../../utils/errors.js';
 
 interface StripeConfig {
   secretKey: string;
@@ -153,7 +154,7 @@ export class StripeIntegration implements WebhookIntegration {
     } catch (err) {
       this.logger?.warn(
         {
-          error: err instanceof Error ? err.message : String(err),
+          error: errorToString(err),
         },
         'Stripe webhook parse error'
       );
@@ -172,7 +173,7 @@ export class StripeIntegration implements WebhookIntegration {
         message: `Connected to Stripe account ${account.business_profile?.name ?? account.id}`,
       };
     } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : String(err) };
+      return { ok: false, message: errorToString(err) };
     }
   }
 }
