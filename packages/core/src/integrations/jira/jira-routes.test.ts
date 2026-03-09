@@ -92,10 +92,10 @@ describe('Jira Routes', () => {
       expect(res.json().message).toMatch(/jql/i);
     });
 
-    it('returns 503 when no integration is configured', async () => {
+    it('returns 401 when no integration is configured', async () => {
       buildApp([]);
       const res = await app.inject({ method: 'GET', url, query: { jql: 'x' } });
-      expect(res.statusCode).toBe(503);
+      expect(res.statusCode).toBe(401);
       expect(res.json().message).toMatch(/no enabled jira/i);
     });
 
@@ -134,10 +134,10 @@ describe('Jira Routes', () => {
       expect(calledUrl).toBe(`${BASE_URL}/issue/PROJ-42?expand=renderedFields`);
     });
 
-    it('returns 503 when no integration is configured', async () => {
+    it('returns 401 when no integration is configured', async () => {
       buildApp([]);
       const res = await app.inject({ method: 'GET', url });
-      expect(res.statusCode).toBe(503);
+      expect(res.statusCode).toBe(401);
     });
 
     it('forwards upstream 404', async () => {
@@ -198,14 +198,14 @@ describe('Jira Routes', () => {
       expect(res.json().message).toMatch(/summary/);
     });
 
-    it('returns 503 when no integration is configured', async () => {
+    it('returns 401 when no integration is configured', async () => {
       buildApp([]);
       const res = await app.inject({
         method: 'POST',
         url,
         payload: { projectKey: 'P', summary: 'S' },
       });
-      expect(res.statusCode).toBe(503);
+      expect(res.statusCode).toBe(401);
     });
 
     it('forwards upstream error', async () => {
@@ -253,10 +253,10 @@ describe('Jira Routes', () => {
       expect(body.fields.summary).toBe('Updated');
     });
 
-    it('returns 503 when no integration is configured', async () => {
+    it('returns 401 when no integration is configured', async () => {
       buildApp([]);
       const res = await app.inject({ method: 'PUT', url, payload: { summary: 'X' } });
-      expect(res.statusCode).toBe(503);
+      expect(res.statusCode).toBe(401);
     });
 
     it('forwards upstream error', async () => {
@@ -306,10 +306,10 @@ describe('Jira Routes', () => {
       expect(res.json().message).toMatch(/body/i);
     });
 
-    it('returns 503 when no integration is configured', async () => {
+    it('returns 401 when no integration is configured', async () => {
       buildApp([]);
       const res = await app.inject({ method: 'POST', url, payload: { body: 'x' } });
-      expect(res.statusCode).toBe(503);
+      expect(res.statusCode).toBe(401);
     });
 
     it('forwards upstream error', async () => {
@@ -339,10 +339,10 @@ describe('Jira Routes', () => {
       expect(calledUrl).toBe(`${BASE_URL}/project`);
     });
 
-    it('returns 503 when no integration is configured', async () => {
+    it('returns 401 when no integration is configured', async () => {
       buildApp([]);
       const res = await app.inject({ method: 'GET', url });
-      expect(res.statusCode).toBe(503);
+      expect(res.statusCode).toBe(401);
     });
 
     it('forwards upstream error', async () => {
@@ -372,10 +372,10 @@ describe('Jira Routes', () => {
       expect(calledUrl).toBe(`${BASE_URL}/issue/PROJ-42/transitions`);
     });
 
-    it('returns 503 when no integration is configured', async () => {
+    it('returns 401 when no integration is configured', async () => {
       buildApp([]);
       const res = await app.inject({ method: 'GET', url });
-      expect(res.statusCode).toBe(503);
+      expect(res.statusCode).toBe(401);
     });
 
     it('forwards upstream error', async () => {
@@ -413,10 +413,10 @@ describe('Jira Routes', () => {
       expect(res.json().message).toMatch(/transitionId/i);
     });
 
-    it('returns 503 when no integration is configured', async () => {
+    it('returns 401 when no integration is configured', async () => {
       buildApp([]);
       const res = await app.inject({ method: 'POST', url, payload: { transitionId: '1' } });
-      expect(res.statusCode).toBe(503);
+      expect(res.statusCode).toBe(401);
     });
 
     it('forwards upstream error', async () => {

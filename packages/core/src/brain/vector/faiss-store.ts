@@ -7,6 +7,7 @@
 
 import type { VectorStore, VectorResult } from './types.js';
 import * as fs from 'fs';
+import { writeFile } from 'node:fs/promises';
 import * as path from 'path';
 
 interface SidecarData {
@@ -56,12 +57,12 @@ export class FaissVectorStore implements VectorStore {
     }
   }
 
-  private persist(): void {
+  private async persist(): Promise<void> {
     const indexPath = path.join(this.persistDir, 'index.faiss');
     const sidecarPath = path.join(this.persistDir, 'sidecar.json');
 
     this.index.write(indexPath);
-    fs.writeFileSync(sidecarPath, JSON.stringify(this.sidecar));
+    await writeFile(sidecarPath, JSON.stringify(this.sidecar));
   }
 
   private normalize(vector: number[]): number[] {
@@ -85,7 +86,7 @@ export class FaissVectorStore implements VectorStore {
     this.sidecar.idToIndex[id] = idx;
     this.sidecar.indexToId[idx] = id;
 
-    this.persist();
+    await this.persist();
   }
 
   async insertBatch(
@@ -106,7 +107,7 @@ export class FaissVectorStore implements VectorStore {
       this.sidecar.indexToId[idx] = item.id;
     }
 
-    this.persist();
+    await this.persist();
   }
 
   async search(vector: number[], limit: number, threshold?: number): Promise<VectorResult[]> {
@@ -149,7 +150,7 @@ export class FaissVectorStore implements VectorStore {
     delete this.sidecar.indexToId[idx];
     this.deletedCount++;
 
-    this.persist();
+    await this.persist();
     return true;
   }
 
@@ -159,7 +160,7 @@ export class FaissVectorStore implements VectorStore {
     this.index = new this.faissModule.IndexFlatL2(this.dimensions);
     this.sidecar = { idToIndex: {}, indexToId: {}, nextIndex: 0 };
     this.deletedCount = 0;
-    this.persist();
+    await this.persist();
   }
 
   /** Rebuild index without deleted entries to reclaim space. */
@@ -192,7 +193,7 @@ export class FaissVectorStore implements VectorStore {
     this.index = newIndex;
     this.sidecar = newSidecar;
     this.deletedCount = 0;
-    this.persist();
+    await this.persist();
   }
 
   /** Get the number of vectors deleted since last compact. */
@@ -207,7 +208,7 @@ export class FaissVectorStore implements VectorStore {
 
   async close(): Promise<void> {
     if (this.index) {
-      this.persist();
+      await this.persist();
       this.index = null;
     }
   }

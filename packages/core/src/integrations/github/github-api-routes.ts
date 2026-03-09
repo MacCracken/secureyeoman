@@ -126,7 +126,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
     if (!creds) {
       return sendError(
         reply,
-        404,
+        401,
         'No GitHub account connected. Connect a GitHub account via Settings > Connections > OAuth.'
       );
     }
@@ -161,7 +161,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
     async (req, reply) => {
       const creds = await resolveGithubAccess(oauthTokenService, soulManager);
       if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
+        return sendError(reply, 401, 'No GitHub account connected.');
       }
       const url = new URL(`${GITHUB_API}/user/repos`);
       if (req.query.type) url.searchParams.set('type', req.query.type);
@@ -195,7 +195,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
     async (req, reply) => {
       const creds = await resolveGithubAccess(oauthTokenService, soulManager);
       if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
+        return sendError(reply, 401, 'No GitHub account connected.');
       }
       const resp = await fetchGithub(
         `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}`,
@@ -224,7 +224,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   }>('/api/v1/github/repos/:owner/:repo/pulls', async (req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected.');
+      return sendError(reply, 401, 'No GitHub account connected.');
     }
     const url = new URL(`${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/pulls`);
     if (req.query.state) url.searchParams.set('state', req.query.state);
@@ -256,7 +256,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
     async (req, reply) => {
       const creds = await resolveGithubAccess(oauthTokenService, soulManager);
       if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
+        return sendError(reply, 401, 'No GitHub account connected.');
       }
       const resp = await fetchGithub(
         `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/pulls/${req.params.number}`,
@@ -285,7 +285,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   }>('/api/v1/github/repos/:owner/:repo/issues', async (req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected.');
+      return sendError(reply, 401, 'No GitHub account connected.');
     }
     const url = new URL(`${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/issues`);
     if (req.query.state) url.searchParams.set('state', req.query.state);
@@ -318,7 +318,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
     async (req, reply) => {
       const creds = await resolveGithubAccess(oauthTokenService, soulManager);
       if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
+        return sendError(reply, 401, 'No GitHub account connected.');
       }
       const resp = await fetchGithub(
         `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/issues/${req.params.number}`,
@@ -347,7 +347,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   }>('/api/v1/github/repos/:owner/:repo/issues', async (req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected.');
+      return sendError(reply, 401, 'No GitHub account connected.');
     }
     if (creds.mode === 'suggest') {
       return sendError(
@@ -396,7 +396,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   }>('/api/v1/github/repos/:owner/:repo/pulls', async (req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected.');
+      return sendError(reply, 401, 'No GitHub account connected.');
     }
     if (creds.mode === 'suggest') {
       return sendError(
@@ -458,7 +458,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   app.get('/api/v1/github/ssh-keys', async (_req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected.');
+      return sendError(reply, 401, 'No GitHub account connected.');
     }
     const resp = await fetchGithub(
       `${GITHUB_API}/user/keys`,
@@ -485,7 +485,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   }>('/api/v1/github/ssh-keys', async (req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected.');
+      return sendError(reply, 401, 'No GitHub account connected.');
     }
     if (creds.mode === 'suggest') {
       return sendError(
@@ -532,7 +532,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
     async (req, reply) => {
       const creds = await resolveGithubAccess(oauthTokenService, soulManager);
       if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
+        return sendError(reply, 401, 'No GitHub account connected.');
       }
       if (creds.mode !== 'auto') {
         return sendError(
@@ -569,7 +569,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   }>('/api/v1/github/repos', async (req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected.');
+      return sendError(reply, 401, 'No GitHub account connected.');
     }
     if (creds.mode === 'suggest') {
       return sendError(
@@ -629,7 +629,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   }>('/api/v1/github/repos/:owner/:repo/forks', async (req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected.');
+      return sendError(reply, 401, 'No GitHub account connected.');
     }
     if (creds.mode === 'suggest') {
       return sendError(
@@ -692,7 +692,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   }>('/api/v1/github/repos/:owner/:repo/sync-fork', async (req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected.');
+      return sendError(reply, 401, 'No GitHub account connected.');
     }
     if (creds.mode === 'suggest') {
       return sendError(
@@ -755,7 +755,7 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   }>('/api/v1/github/repos/:owner/:repo/issues/:number/comments', async (req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected.');
+      return sendError(reply, 401, 'No GitHub account connected.');
     }
     if (creds.mode !== 'auto') {
       return sendError(

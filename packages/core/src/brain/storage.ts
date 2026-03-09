@@ -325,6 +325,11 @@ export class BrainStorage extends PgBaseStorage {
     return count > 0;
   }
 
+  async deleteMemories(ids: string[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    return this.execute('DELETE FROM brain.memories WHERE id = ANY($1)', [ids]);
+  }
+
   async queryMemories(query: MemoryQuery & { personalityId?: string } = {}): Promise<Memory[]> {
     let sql = 'SELECT * FROM brain.memories WHERE 1=1';
     const params: unknown[] = [];

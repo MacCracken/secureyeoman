@@ -56,6 +56,7 @@ function makeBrainStorage(overrides: Record<string, unknown> = {}) {
     createMemory: vi.fn().mockResolvedValue(makeMemory()),
     updateMemory: vi.fn().mockResolvedValue(makeMemory()),
     deleteMemory: vi.fn().mockResolvedValue(true),
+    deleteMemories: vi.fn().mockResolvedValue(0),
     ...overrides,
   } as any;
 }
@@ -279,8 +280,7 @@ describe('MemoryCompressor', () => {
       const c = new MemoryCompressor({ brainStorage, auditStorage, policy, logger });
       const result = await c.compress('daily', 'r-1');
 
-      expect(brainStorage.deleteMemory).toHaveBeenCalledWith('a');
-      expect(brainStorage.deleteMemory).toHaveBeenCalledWith('b');
+      expect(brainStorage.deleteMemories).toHaveBeenCalledWith(['a', 'b']);
       expect(result.memoriesArchived).toBe(2);
     });
 
@@ -414,7 +414,7 @@ describe('MemoryCompressor', () => {
           content: expect.any(String),
         })
       );
-      expect(brainStorage.deleteMemory).toHaveBeenCalledWith('other');
+      expect(brainStorage.deleteMemories).toHaveBeenCalledWith(['other']);
     });
 
     it('archives non-anchor members when retainOriginals is true', async () => {

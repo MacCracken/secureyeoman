@@ -15,6 +15,28 @@ Added automated multi-arch Docker image builds to the release pipeline, inspired
 - **CI build test** (`ci.yml`): New `container-build` job verifies `Dockerfile.dev` builds on every push/PR (non-blocking, `continue-on-error: true`).
 - **Release notes**: Updated to include `docker pull` command and cosign container verification instructions.
 
+### Test Coverage Improvements
+
+Added 80 new unit tests across 4 files, targeting the lowest-coverage source files.
+
+- **`security/constitutional-routes.ts`**: 5% → 81% stmt coverage (16 tests). All 3 REST endpoints, disabled config path, preference pair recording with error swallowing.
+- **`integrations/trading/trading-routes.ts`**: 9% → 100% stmt coverage (28 tests). All 6 routes, AlphaVantage + Finnhub provider paths, BullShift proxy, validation and error handling.
+- **`supply-chain/release-verifier.ts`**: 23% → 100% stmt coverage (23 tests, was 6). sha256File, verifyChecksum, verifyCosignSignature, verifyRelease with all error paths.
+- **`sandbox/landlock-worker.ts`**: 18% → 100% stmt coverage (13 tests). IPC message protocol, Landlock detection, suspicious path validation, function execution success/error.
+- **Overall**: 89.34% → 89.68% stmt, 78.86% → 79.14% branch (637 files, 15,780 tests).
+
+### Code Audit Fixes
+
+Performance, security, and code quality improvements from pre-release audit.
+
+- **FAISS async persist** (`brain/vector/faiss-store.ts`): Replaced blocking `writeFileSync` with async `writeFile` from `node:fs/promises`. Prevents event loop stalls during vector indexing in chat requests.
+- **Memory compression N+1** (`brain/audit/compressor.ts`): Replaced sequential per-memory archive and delete loops with `Promise.all()` for archives and batch `deleteMemories()` for deletes. Added `BrainStorage.deleteMemories()` using `DELETE WHERE id = ANY($1)`.
+- **Cost buffer eviction** (`telemetry/cost-attribution.ts`): Replaced O(n) `splice(0, n)` with `slice(-MAX_ENTRIES)` for efficient eviction at 100K entries.
+- **TOTP timing safety** (`security/totp.ts`): Replaced custom XOR loop with Node.js `timingSafeEqual()` for constant-time TOTP code comparison.
+- **Integration error codes**: Standardized missing-credentials errors to `401` across Linear (was 404), Jira (was 503), and GitHub (was 404) integration routes. Todoist and Notion already used 401.
+- **Dashboard memoization** (`TaskHistory.tsx`): Wrapped `personalityMap` in `useMemo` to prevent Map recreation on every render.
+- **Helm chart icon** (`Chart.yaml`): Added `icon` field pointing to favicon SVG, resolving Helm lint warning.
+
 ---
 
 ## [2026.3.8]

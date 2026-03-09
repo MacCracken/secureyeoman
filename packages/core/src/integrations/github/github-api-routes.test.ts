@@ -83,17 +83,17 @@ describe('GitHub API Routes', () => {
   // ── /api/v1/github/profile ──────────────────────────────────────────────────
 
   describe('GET /api/v1/github/profile', () => {
-    it('returns 404 when no GitHub token is connected', async () => {
+    it('returns 401 when no GitHub token is connected', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({ method: 'GET', url: '/api/v1/github/profile' });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
       expect(res.json().message).toMatch(/no github account connected/i);
     });
 
-    it('returns 404 when getValidToken returns null', async () => {
+    it('returns 401 when getValidToken returns null', async () => {
       const app = await buildApp(mockOAuthTokenService({ noValidToken: true }));
       const res = await app.inject({ method: 'GET', url: '/api/v1/github/profile' });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns profile data with mode and scopes on success', async () => {
@@ -140,10 +140,10 @@ describe('GitHub API Routes', () => {
       expect(res.json()).toHaveLength(1);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({ method: 'GET', url: '/api/v1/github/repos' });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
   });
 
@@ -223,14 +223,14 @@ describe('GitHub API Routes', () => {
       expect(res.json().message).toMatch(/suggest/i);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/github/repos/octocat/hello-world/issues',
         payload: issueBody,
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
   });
 
@@ -404,10 +404,10 @@ describe('GitHub API Routes', () => {
       expect(res.json().message).toMatch(/suggest/i);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({ method: 'POST', url: syncUrl, payload: syncBody });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('passes optional head and commit_message to GitHub API', async () => {
@@ -512,13 +512,13 @@ describe('GitHub API Routes', () => {
       expect(url).toContain('page=2');
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/github/repos/octocat/hello-world/pulls',
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns error on GitHub API failure', async () => {
@@ -548,13 +548,13 @@ describe('GitHub API Routes', () => {
       expect(res.json().number).toBe(5);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/github/repos/octocat/hello-world/pulls/5',
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns error on GitHub API failure', async () => {
@@ -584,13 +584,13 @@ describe('GitHub API Routes', () => {
       expect(res.json().number).toBe(7);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/github/repos/octocat/hello-world/issues/7',
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns error on GitHub API failure', async () => {
@@ -723,10 +723,10 @@ describe('GitHub API Routes', () => {
       expect(res.json()).toHaveLength(1);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({ method: 'GET', url: '/api/v1/github/ssh-keys' });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns error on GitHub API failure', async () => {
@@ -782,14 +782,14 @@ describe('GitHub API Routes', () => {
       expect(res.statusCode).toBe(403);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/github/ssh-keys',
         payload: keyPayload,
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns error on GitHub API failure', async () => {
@@ -852,13 +852,13 @@ describe('GitHub API Routes', () => {
       expect(res.statusCode).toBe(403);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({
         method: 'DELETE',
         url: '/api/v1/github/ssh-keys/42',
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns error on GitHub API failure', async () => {
@@ -919,14 +919,14 @@ describe('GitHub API Routes', () => {
       expect(res.statusCode).toBe(403);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/github/repos',
         payload: repoPayload,
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns error on GitHub API failure', async () => {
@@ -1004,14 +1004,14 @@ describe('GitHub API Routes', () => {
       expect(res.statusCode).toBe(403);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/github/repos/octocat/hello-world/forks',
         payload: {},
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns error on GitHub API failure', async () => {
@@ -1114,14 +1114,14 @@ describe('GitHub API Routes', () => {
       expect(res.statusCode).toBe(403);
     });
 
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/github/repos/octocat/hello-world/issues/1/comments',
         payload: { body: 'comment' },
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns error on API failure', async () => {
@@ -1174,13 +1174,13 @@ describe('GitHub API Routes', () => {
   // ── GET /api/v1/github/repos/:owner/:repo error ───────────────────────────
 
   describe('GET /api/v1/github/repos/:owner/:repo error', () => {
-    it('returns 404 when no token', async () => {
+    it('returns 401 when no token', async () => {
       const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/github/repos/octocat/hello-world',
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns error on GitHub API failure', async () => {

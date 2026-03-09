@@ -91,10 +91,10 @@ describe('Linear Routes', () => {
       expect(res.json()).toEqual(teams);
     });
 
-    it('returns 404 when no Linear integration configured', async () => {
+    it('returns 401 when no Linear integration configured', async () => {
       const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
       const res = await app.inject({ method: 'GET', url: '/api/v1/integrations/linear/teams' });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
       expect(res.json().message).toMatch(/no linear integration/i);
     });
 
@@ -161,13 +161,13 @@ describe('Linear Routes', () => {
       expect(res.json().message).toMatch(/query/i);
     });
 
-    it('returns 404 when no integration configured', async () => {
+    it('returns 401 when no integration configured', async () => {
       const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/integrations/linear/issues/search?query=test',
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns 502 on GraphQL errors', async () => {
@@ -252,10 +252,10 @@ describe('Linear Routes', () => {
       expect(fetchBody.variables.filter).toBeUndefined();
     });
 
-    it('returns 404 when no integration configured', async () => {
+    it('returns 401 when no integration configured', async () => {
       const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
       const res = await app.inject({ method: 'GET', url: '/api/v1/integrations/linear/issues' });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns 502 on GraphQL errors', async () => {
@@ -299,13 +299,13 @@ describe('Linear Routes', () => {
       expect(res.json()).toEqual(issue);
     });
 
-    it('returns 404 when no integration configured', async () => {
+    it('returns 401 when no integration configured', async () => {
       const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/integrations/linear/issues/i-1',
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns 502 on GraphQL errors', async () => {
@@ -412,14 +412,14 @@ describe('Linear Routes', () => {
       expect(res.json().message).toMatch(/teamId/i);
     });
 
-    it('returns 404 when no integration configured', async () => {
+    it('returns 401 when no integration configured', async () => {
       const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/integrations/linear/issues',
         payload: { title: 'Test', teamId: 't-1' },
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns 502 on GraphQL errors', async () => {
@@ -488,14 +488,14 @@ describe('Linear Routes', () => {
       expect(res.json().message).toMatch(/at least one field/i);
     });
 
-    it('returns 404 when no integration configured', async () => {
+    it('returns 401 when no integration configured', async () => {
       const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
       const res = await app.inject({
         method: 'PUT',
         url: '/api/v1/integrations/linear/issues/i-1',
         payload: { title: 'x' },
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns 502 on GraphQL errors', async () => {
@@ -569,14 +569,14 @@ describe('Linear Routes', () => {
       expect(res.json().message).toMatch(/body/i);
     });
 
-    it('returns 404 when no integration configured', async () => {
+    it('returns 401 when no integration configured', async () => {
       const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/integrations/linear/issues/i-1/comments',
         payload: { body: 'Hello' },
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns 502 on GraphQL errors', async () => {
@@ -620,7 +620,7 @@ describe('Linear Routes', () => {
   // ── Credential resolution edge cases ───────────────────────────────────────
 
   describe('credential resolution', () => {
-    it('returns 404 when integration exists but apiKey is missing', async () => {
+    it('returns 401 when integration exists but apiKey is missing', async () => {
       const mgr = {
         listIntegrations: vi
           .fn()
@@ -631,7 +631,7 @@ describe('Linear Routes', () => {
       const app = await buildApp(mgr);
 
       const res = await app.inject({ method: 'GET', url: '/api/v1/integrations/linear/teams' });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(401);
     });
 
     it('sends apiKey in Authorization header (no Bearer prefix)', async () => {

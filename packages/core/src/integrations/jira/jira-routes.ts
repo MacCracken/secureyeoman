@@ -63,7 +63,7 @@ async function withCredentials(
 ): Promise<void> {
   const creds = await resolveJiraCredentials(integrationManager);
   if (!creds) {
-    return sendError(reply, 503, 'No enabled Jira integration configured');
+    return sendError(reply, 401, 'No enabled Jira integration configured');
   }
   await fn(creds);
 }

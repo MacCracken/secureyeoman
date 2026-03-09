@@ -5,7 +5,7 @@
  * Create, edit, and delete tasks. Used in Automation page (Tasks tab).
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -125,8 +125,10 @@ export function OpenTasks() {
     queryFn: fetchPersonalities,
     staleTime: 60000,
   });
-  const personalityMap = new Map<string, string>(
-    (personalitiesData?.personalities ?? []).map((p) => [p.id, p.name])
+  const personalityMap = useMemo(
+    () =>
+      new Map<string, string>((personalitiesData?.personalities ?? []).map((p) => [p.id, p.name])),
+    [personalitiesData]
   );
 
   const createTaskMutation = useMutation({

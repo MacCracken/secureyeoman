@@ -10,6 +10,7 @@ const {
   mockExistsSync,
   mockReadFileSync,
   mockWriteFileSync,
+  mockWriteFile,
 } = vi.hoisted(() => {
   const mockIndex = {
     add: vi.fn(),
@@ -33,6 +34,7 @@ const {
       .fn()
       .mockReturnValue(JSON.stringify({ idToIndex: {}, indexToId: {}, nextIndex: 0 })),
     mockWriteFileSync: vi.fn(),
+    mockWriteFile: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -48,6 +50,10 @@ vi.mock('fs', async (importOriginal) => {
     writeFileSync: mockWriteFileSync,
   };
 });
+
+vi.mock('node:fs/promises', () => ({
+  writeFile: mockWriteFile,
+}));
 
 // ─── Tests ────────────────────────────────────────────────────
 
@@ -69,6 +75,7 @@ describe('FaissVectorStore', () => {
       .mockClear()
       .mockReturnValue(JSON.stringify({ idToIndex: {}, indexToId: {}, nextIndex: 0 }));
     mockWriteFileSync.mockClear();
+    mockWriteFile.mockClear().mockResolvedValue(undefined);
 
     store = new FaissVectorStore(3, '/tmp/test-faiss');
   });
@@ -97,7 +104,7 @@ describe('FaissVectorStore', () => {
     it('inserts a vector and persists to disk', async () => {
       await store.insert('id-1', [1, 0, 0]);
       expect(mockIndex.add).toHaveBeenCalledWith(expect.any(Array));
-      expect(mockWriteFileSync).toHaveBeenCalled();
+      expect(mockWriteFile).toHaveBeenCalled();
     });
 
     it('normalizes the vector before adding (magnitude 5 → 0.6, 0.8)', async () => {
@@ -128,7 +135,7 @@ describe('FaissVectorStore', () => {
         { id: 'b', vector: [0, 1, 0] },
       ]);
       expect(mockIndex.add).toHaveBeenCalledTimes(2);
-      expect(mockWriteFileSync).toHaveBeenCalled();
+      expect(mockWriteFile).toHaveBeenCalled();
     });
   });
 
@@ -193,7 +200,7 @@ describe('FaissVectorStore', () => {
       await store.insert('id-1', [1, 0, 0]);
       const result = await store.delete('id-1');
       expect(result).toBe(true);
-      expect(mockWriteFileSync).toHaveBeenCalled();
+      expect(mockWriteFile).toHaveBeenCalled();
     });
   });
 
@@ -246,9 +253,9 @@ describe('FaissVectorStore', () => {
   describe('close', () => {
     it('persists to disk and nullifies index', async () => {
       await store.insert('id-1', [1, 0, 0]);
-      const writeCallsBefore = mockWriteFileSync.mock.calls.length;
+      const writeCallsBefore = mockWriteFile.mock.calls.length;
       await store.close();
-      expect(mockWriteFileSync.mock.calls.length).toBeGreaterThan(writeCallsBefore);
+      expect(mockWriteFile.mock.calls.length).toBeGreaterThan(writeCallsBefore);
     });
 
     it('is no-op when not yet initialized', async () => {

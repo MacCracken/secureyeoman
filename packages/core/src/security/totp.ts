@@ -5,7 +5,7 @@
  * No external dependencies.
  */
 
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 const TOTP_PERIOD = 30; // seconds
 const TOTP_DIGITS = 6;
@@ -135,9 +135,5 @@ function base32Decode(encoded: string): Buffer {
 
 function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return result === 0;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }

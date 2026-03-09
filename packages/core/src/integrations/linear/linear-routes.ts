@@ -68,7 +68,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     if (!creds) {
       return sendError(
         reply,
-        404,
+        401,
         'No Linear integration configured. Add a Linear integration via Settings > Connections.'
       );
     }
@@ -104,7 +104,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     '/api/v1/integrations/linear/issues/search',
     async (req, reply) => {
       const creds = await resolveLinearCredentials(integrationManager);
-      if (!creds) return sendError(reply, 404, 'No Linear integration configured.');
+      if (!creds) return sendError(reply, 401, 'No Linear integration configured.');
 
       const q = req.query.query;
       if (!q) return sendError(reply, 400, 'Query parameter "query" is required.');
@@ -151,7 +151,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     Querystring: { teamId?: string; status?: string; assigneeId?: string; limit?: string };
   }>('/api/v1/integrations/linear/issues', async (req, reply) => {
     const creds = await resolveLinearCredentials(integrationManager);
-    if (!creds) return sendError(reply, 404, 'No Linear integration configured.');
+    if (!creds) return sendError(reply, 401, 'No Linear integration configured.');
 
     const limit = Math.min(Math.max(Number(req.query.limit ?? 25), 1), 100);
 
@@ -206,7 +206,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     '/api/v1/integrations/linear/issues/:issueId',
     async (req, reply) => {
       const creds = await resolveLinearCredentials(integrationManager);
-      if (!creds) return sendError(reply, 404, 'No Linear integration configured.');
+      if (!creds) return sendError(reply, 401, 'No Linear integration configured.');
 
       try {
         const result = await linearGraphQL(
@@ -259,7 +259,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     };
   }>('/api/v1/integrations/linear/issues', async (req, reply) => {
     const creds = await resolveLinearCredentials(integrationManager);
-    if (!creds) return sendError(reply, 404, 'No Linear integration configured.');
+    if (!creds) return sendError(reply, 401, 'No Linear integration configured.');
 
     const { title, description, teamId, priority, assigneeId, labelIds } = req.body;
 
@@ -325,7 +325,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     };
   }>('/api/v1/integrations/linear/issues/:issueId', async (req, reply) => {
     const creds = await resolveLinearCredentials(integrationManager);
-    if (!creds) return sendError(reply, 404, 'No Linear integration configured.');
+    if (!creds) return sendError(reply, 401, 'No Linear integration configured.');
 
     const { title, description, stateId, priority, assigneeId } = req.body;
 
@@ -387,7 +387,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
     Body: { body: string };
   }>('/api/v1/integrations/linear/issues/:issueId/comments', async (req, reply) => {
     const creds = await resolveLinearCredentials(integrationManager);
-    if (!creds) return sendError(reply, 404, 'No Linear integration configured.');
+    if (!creds) return sendError(reply, 401, 'No Linear integration configured.');
 
     const { body } = req.body;
     if (!body) return sendError(reply, 400, '"body" is required.');

@@ -131,23 +131,23 @@ export class MemoryCompressor {
 
           // Archive originals
           if (this.policy.shouldRetainOriginals()) {
-            for (const mem of group) {
-              await this.auditStorage.archiveMemory({
-                originalMemoryId: mem.id,
-                originalContent: mem.content,
-                originalImportance: mem.importance,
-                originalContext: mem.context,
-                transformType: 'compressed',
-                auditReportId: reportId,
-              });
-            }
+            await Promise.all(
+              group.map((mem) =>
+                this.auditStorage.archiveMemory({
+                  originalMemoryId: mem.id,
+                  originalContent: mem.content,
+                  originalImportance: mem.importance,
+                  originalContext: mem.context,
+                  transformType: 'compressed',
+                  auditReportId: reportId,
+                })
+              )
+            );
           }
 
           // Delete originals
-          for (const mem of group) {
-            await this.brainStorage.deleteMemory(mem.id);
-            summary.memoriesArchived++;
-          }
+          await this.brainStorage.deleteMemories(group.map((m) => m.id));
+          summary.memoriesArchived += group.length;
 
           summary.memoriesCompressed++;
         } else {
@@ -209,21 +209,23 @@ export class MemoryCompressor {
             });
 
             // Archive and delete non-anchor members
-            for (const mem of cluster) {
-              if (mem.id === anchor.id) continue;
-              if (this.policy.shouldRetainOriginals()) {
-                await this.auditStorage.archiveMemory({
-                  originalMemoryId: mem.id,
-                  originalContent: mem.content,
-                  originalImportance: mem.importance,
-                  originalContext: mem.context,
-                  transformType: 'merged',
-                  auditReportId: reportId,
-                });
-              }
-              await this.brainStorage.deleteMemory(mem.id);
-              summary.memoriesArchived++;
+            const nonAnchor = cluster.filter((m) => m.id !== anchor.id);
+            if (this.policy.shouldRetainOriginals()) {
+              await Promise.all(
+                nonAnchor.map((mem) =>
+                  this.auditStorage.archiveMemory({
+                    originalMemoryId: mem.id,
+                    originalContent: mem.content,
+                    originalImportance: mem.importance,
+                    originalContext: mem.context,
+                    transformType: 'merged',
+                    auditReportId: reportId,
+                  })
+                )
+              );
             }
+            await this.brainStorage.deleteMemories(nonAnchor.map((m) => m.id));
+            summary.memoriesArchived += nonAnchor.length;
 
             summary.memoriesCompressed++;
           } else {
