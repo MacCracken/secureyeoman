@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 
 export function registerWorkflowTools(
   server: McpServer,
@@ -23,7 +23,7 @@ export function registerWorkflowTools(
     },
     wrapToolHandler('workflow_list', middleware, async (args) => {
       const result = await client.get('/api/v1/workflows', { limit: String(args.limit) });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -35,7 +35,7 @@ export function registerWorkflowTools(
     },
     wrapToolHandler('workflow_get', middleware, async (args) => {
       const result = await client.get(`/api/v1/workflows/${args.id}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -54,7 +54,7 @@ export function registerWorkflowTools(
         input: args.input,
         triggeredBy: args.triggeredBy ?? 'mcp',
       });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -66,7 +66,7 @@ export function registerWorkflowTools(
     },
     wrapToolHandler('workflow_run_status', middleware, async (args) => {
       const result = await client.get(`/api/v1/workflows/runs/${args.runId}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -78,7 +78,7 @@ export function registerWorkflowTools(
     },
     wrapToolHandler('workflow_cancel', middleware, async (args) => {
       const result = await client.delete(`/api/v1/workflows/runs/${args.runId}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

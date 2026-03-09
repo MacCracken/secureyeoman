@@ -27,7 +27,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse, registerDisabledStub } from './tool-utils.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -449,23 +449,7 @@ export function subnetMaskToWildcard(input: string): string {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function textResponse(data: unknown) {
-  return {
-    content: [
-      {
-        type: 'text' as const,
-        text: typeof data === 'string' ? data : JSON.stringify(data, null, 2),
-      },
-    ],
-  };
-}
-
-function errorResponse(msg: string) {
-  return {
-    content: [{ type: 'text' as const, text: msg }],
-    isError: true as const,
-  };
-}
+// jsonResponse, errorResponse, registerDisabledStub imported from tool-utils.js
 
 const STUB_TOOLS = [
   // Device automation (46.1)
@@ -525,11 +509,7 @@ export async function registerNetworkTools(
 ): Promise<void> {
   if (!config.exposeNetworkTools) {
     for (const name of STUB_TOOLS) {
-      server.registerTool(
-        name,
-        { description: `Network tool (disabled). ${DISABLED_MSG}`, inputSchema: {} },
-        wrapToolHandler(name, middleware, async () => errorResponse(DISABLED_MSG))
-      );
+      registerDisabledStub(server, middleware, name, DISABLED_MSG);
     }
     return;
   }
@@ -576,7 +556,7 @@ export async function registerNetworkTools(
         password,
         privateKey
       );
-      return textResponse({ sessionId, host, username, connectedAt: new Date().toISOString() });
+      return jsonResponse({ sessionId, host, username, connectedAt: new Date().toISOString() });
     })
   );
 
@@ -600,7 +580,7 @@ export async function registerNetworkTools(
       for (const cmd of commands) {
         results[cmd] = await runSshCommand(sessionId, cmd);
       }
-      return textResponse(results);
+      return jsonResponse(results);
     })
   );
 
@@ -632,14 +612,14 @@ export async function registerNetworkTools(
 
       if (dryRun) {
         const preview = ['configure terminal', ...configLines, 'end'].join('\n');
-        return textResponse({ dryRun: true, preview, message: 'Dry run — no changes committed.' });
+        return jsonResponse({ dryRun: true, preview, message: 'Dry run — no changes committed.' });
       }
 
       const output = await runSshCommand(
         sessionId,
         `configure terminal\n${configLines.join('\n')}\nend`
       );
-      return textResponse({ pushed: configLines.length, output });
+      return jsonResponse({ pushed: configLines.length, output });
     })
   );
 
@@ -694,7 +674,7 @@ export async function registerNetworkTools(
           ? { status: 'ok', ...r.value }
           : { host: targets[i]!.host, status: 'error', error: (r.reason as Error).message }
       );
-      return textResponse(summary);
+      return jsonResponse(summary);
     })
   );
 
@@ -716,7 +696,7 @@ export async function registerNetworkTools(
         count: number;
       };
       const output = await runSshCommand(sessionId, `ping ${target} repeat ${count ?? 5}`);
-      return textResponse({ target, output });
+      return jsonResponse({ target, output });
     })
   );
 
@@ -737,7 +717,7 @@ export async function registerNetworkTools(
         maxHops: number;
       };
       const output = await runSshCommand(sessionId, `traceroute ${target} ttl 1 ${maxHops ?? 30}`);
-      return textResponse({ target, output });
+      return jsonResponse({ target, output });
     })
   );
 
@@ -755,7 +735,7 @@ export async function registerNetworkTools(
     wrapToolHandler('network_discovery_cdp', middleware, async (args) => {
       const { sessionId } = args as { sessionId: string };
       const output = await runSshCommand(sessionId, 'show cdp neighbors detail');
-      return textResponse({ raw: output, parsed: parseCdpNeighbors(output) });
+      return jsonResponse({ raw: output, parsed: parseCdpNeighbors(output) });
     })
   );
 
@@ -771,7 +751,7 @@ export async function registerNetworkTools(
     wrapToolHandler('network_discovery_lldp', middleware, async (args) => {
       const { sessionId } = args as { sessionId: string };
       const output = await runSshCommand(sessionId, 'show lldp neighbors detail');
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -850,7 +830,7 @@ export async function registerNetworkTools(
         ),
       ].join('\n');
 
-      return textResponse({ nodes: nodeList, edges, mermaid });
+      return jsonResponse({ nodes: nodeList, edges, mermaid });
     })
   );
 
@@ -867,7 +847,7 @@ export async function registerNetworkTools(
       const { sessionId, vrf } = args as { sessionId: string; vrf?: string };
       const cmd = vrf ? `show arp vrf ${vrf}` : 'show arp';
       const output = await runSshCommand(sessionId, cmd);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -885,7 +865,7 @@ export async function registerNetworkTools(
       const { sessionId, vlan } = args as { sessionId: string; vlan?: number };
       const cmd = vlan ? `show mac address-table vlan ${vlan}` : 'show mac address-table';
       const output = await runSshCommand(sessionId, cmd);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -917,7 +897,7 @@ export async function registerNetworkTools(
       if (protocol && protocol !== 'all') cmd += ` ${protocol}`;
       if (prefix) cmd += ` ${prefix}`;
       const output = await runSshCommand(sessionId, cmd);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -933,7 +913,7 @@ export async function registerNetworkTools(
     wrapToolHandler('network_ospf_neighbors', middleware, async (args) => {
       const { sessionId } = args as { sessionId: string };
       const output = await runSshCommand(sessionId, 'show ip ospf neighbor');
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -950,7 +930,7 @@ export async function registerNetworkTools(
       const { sessionId, processId } = args as { sessionId: string; processId?: number };
       const cmd = processId ? `show ip ospf ${processId} database` : 'show ip ospf database';
       const output = await runSshCommand(sessionId, cmd);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -967,7 +947,7 @@ export async function registerNetworkTools(
       const { sessionId, afi } = args as { sessionId: string; afi: string };
       const cmd = afi === 'ipv4' ? 'show bgp summary' : `show bgp ${afi} unicast summary`;
       const output = await runSshCommand(sessionId, cmd);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -988,7 +968,7 @@ export async function registerNetworkTools(
       const { sessionId, interface: iface } = args as { sessionId: string; interface?: string };
       const cmd = iface ? `show interfaces ${iface}` : 'show interfaces status';
       const output = await runSshCommand(sessionId, cmd);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -1003,7 +983,7 @@ export async function registerNetworkTools(
     wrapToolHandler('network_vlan_list', middleware, async (args) => {
       const { sessionId } = args as { sessionId: string };
       const output = await runSshCommand(sessionId, 'show vlan brief');
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -1023,7 +1003,7 @@ export async function registerNetworkTools(
       const { sessionId, aclName } = args as { sessionId: string; aclName?: string };
       const cmd = aclName ? `show ip access-lists ${aclName}` : 'show ip access-lists';
       const output = await runSshCommand(sessionId, cmd);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -1041,7 +1021,7 @@ export async function registerNetworkTools(
         runSshCommand(sessionId, 'show aaa servers'),
         runSshCommand(sessionId, 'show running-config | section aaa'),
       ]);
-      return textResponse({ servers, aaaConfig: runningConfig });
+      return jsonResponse({ servers, aaaConfig: runningConfig });
     })
   );
 
@@ -1059,7 +1039,7 @@ export async function registerNetworkTools(
       const { sessionId, interface: iface } = args as { sessionId: string; interface?: string };
       const cmd = iface ? `show port-security interface ${iface}` : 'show port-security';
       const output = await runSshCommand(sessionId, cmd);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -1077,7 +1057,7 @@ export async function registerNetworkTools(
       const { sessionId, vlan } = args as { sessionId: string; vlan?: number };
       const cmd = vlan ? `show spanning-tree vlan ${vlan}` : 'show spanning-tree';
       const output = await runSshCommand(sessionId, cmd);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -1093,7 +1073,7 @@ export async function registerNetworkTools(
     wrapToolHandler('network_software_version', middleware, async (args) => {
       const { sessionId } = args as { sessionId: string };
       const output = await runSshCommand(sessionId, 'show version');
-      return textResponse({ raw: output, parsed: parseShowVersion(output) });
+      return jsonResponse({ raw: output, parsed: parseShowVersion(output) });
     })
   );
 
@@ -1127,7 +1107,7 @@ export async function registerNetworkTools(
       if (tag) params.push(`tag=${encodeURIComponent(tag)}`);
       if (status) params.push(`status=${status}`);
       const data = await netboxFetch(config, `/dcim/devices/?${params.join('&')}`);
-      return textResponse(data);
+      return jsonResponse(data);
     })
   );
 
@@ -1145,7 +1125,7 @@ export async function registerNetworkTools(
       const { deviceName, enabledOnly } = args as { deviceName: string; enabledOnly: boolean };
       const path = `/dcim/interfaces/?device=${encodeURIComponent(deviceName)}${enabledOnly ? '&enabled=true' : ''}`;
       const data = await netboxFetch(config, path);
-      return textResponse(data);
+      return jsonResponse(data);
     })
   );
 
@@ -1173,7 +1153,7 @@ export async function registerNetworkTools(
       if (vrf) params.push(`vrf=${encodeURIComponent(vrf)}`);
       if (deviceName) params.push(`device=${encodeURIComponent(deviceName)}`);
       const data = await netboxFetch(config, `/ipam/ip-addresses/?${params.join('&')}`);
-      return textResponse(data);
+      return jsonResponse(data);
     })
   );
 
@@ -1192,7 +1172,7 @@ export async function registerNetworkTools(
       const params = [`limit=${limit ?? 50}`];
       if (site) params.push(`site=${encodeURIComponent(site)}`);
       const data = await netboxFetch(config, `/dcim/cables/?${params.join('&')}`);
-      return textResponse(data);
+      return jsonResponse(data);
     })
   );
 
@@ -1229,7 +1209,7 @@ export async function registerNetworkTools(
           missingInNetbox.push(`${n.deviceId} (${n.ip ?? 'no IP'}) via ${n.localInterface}`);
       }
 
-      return textResponse({
+      return jsonResponse({
         liveNeighborCount: liveNeighbors.length,
         netboxCableCount: nbCables.results.length,
         missingInNetbox,
@@ -1274,7 +1254,7 @@ export async function registerNetworkTools(
       if (pubStartDate) params.pubStartDate = pubStartDate + 'T00:00:00.000';
       if (pubEndDate) params.pubEndDate = pubEndDate + 'T23:59:59.999';
       const data = await nvdFetch(config, params);
-      return textResponse(data);
+      return jsonResponse(data);
     })
   );
 
@@ -1303,7 +1283,7 @@ export async function registerNetworkTools(
       const params: Record<string, string> = { cpeName };
       if (cvssV3SeverityMin) params.cvssV3Severity = cvssV3SeverityMin;
       const data = await nvdFetch(config, params);
-      return textResponse(data);
+      return jsonResponse(data);
     })
   );
 
@@ -1322,7 +1302,7 @@ export async function registerNetworkTools(
     wrapToolHandler('nvd_cve_get', middleware, async (args) => {
       const { cveId } = args as { cveId: string };
       const data = await nvdFetch(config, { cveId });
-      return textResponse(data);
+      return jsonResponse(data);
     })
   );
 
@@ -1342,7 +1322,7 @@ export async function registerNetworkTools(
     wrapToolHandler('subnet_calculator', middleware, async (args) => {
       const { cidr } = args as { cidr: string };
       try {
-        return textResponse(calculateSubnet(cidr));
+        return jsonResponse(calculateSubnet(cidr));
       } catch (err) {
         return errorResponse((err as Error).message);
       }
@@ -1369,7 +1349,7 @@ export async function registerNetworkTools(
         hostRequirements: number[];
       };
       try {
-        return textResponse(calculateVlsm(parentCidr, hostRequirements));
+        return jsonResponse(calculateVlsm(parentCidr, hostRequirements));
       } catch (err) {
         return errorResponse((err as Error).message);
       }
@@ -1392,7 +1372,7 @@ export async function registerNetworkTools(
       const { input } = args as { input: string };
       try {
         const wildcard = subnetMaskToWildcard(input);
-        return textResponse({ input, wildcardMask: wildcard });
+        return jsonResponse({ input, wildcardMask: wildcard });
       } catch (err) {
         return errorResponse((err as Error).message);
       }
@@ -1434,7 +1414,7 @@ export async function registerNetworkTools(
         },
         30 * 60 * 1000
       );
-      return textResponse({
+      return jsonResponse({
         pcapId,
         bytes: buf.length,
         message: 'File uploaded. Use pcapId with pcap_* tools.',
@@ -1458,7 +1438,7 @@ export async function registerNetworkTools(
       if (!path)
         return errorResponse(`pcapId "${pcapId}" not found. Upload a file first with pcap_upload.`);
       const output = await runTshark(['-r', path, '-qz', 'io,phs']);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -1477,7 +1457,7 @@ export async function registerNetworkTools(
       const path = pcapStore.get(pcapId);
       if (!path) return errorResponse(`pcapId "${pcapId}" not found.`);
       const output = await runTshark(['-r', path, '-qz', `conv,${layer ?? 'ip'}`]);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -1517,7 +1497,7 @@ export async function registerNetworkTools(
         '-E',
         'separator=\t',
       ]);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 
@@ -1563,7 +1543,7 @@ export async function registerNetworkTools(
         '-E',
         'separator=\t',
       ]);
-      return textResponse({ raw: output });
+      return jsonResponse({ raw: output });
     })
   );
 }

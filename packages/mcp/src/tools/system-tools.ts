@@ -7,7 +7,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 
 export function registerSystemTools(
   server: McpServer,
@@ -23,7 +23,7 @@ export function registerSystemTools(
     },
     wrapToolHandler('system_health', middleware, async () => {
       const result = await client.get('/health');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -35,7 +35,7 @@ export function registerSystemTools(
     },
     wrapToolHandler('system_metrics', middleware, async () => {
       const result = await client.get('/api/v1/metrics');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -60,7 +60,7 @@ export function registerSystemTools(
         rateLimitPerTool: config.rateLimitPerTool,
         logLevel: config.logLevel,
       };
-      return { content: [{ type: 'text' as const, text: JSON.stringify(safeConfig, null, 2) }] };
+      return jsonResponse(safeConfig);
     })
   );
 }

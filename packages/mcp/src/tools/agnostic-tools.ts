@@ -19,7 +19,15 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler, registerApiProxyTool } from './tool-utils.js';
+import {
+  wrapToolHandler,
+  registerApiProxyTool,
+  labelledResponse,
+  errorResponse,
+  registerDisabledStub,
+  createHttpClient,
+} from './tool-utils.js';
+import type { HttpResult } from './tool-utils.js';
 import type { CoreApiClient as ICoreApiClient } from '../core-client.js';
 
 const DISABLED_MSG =
@@ -67,48 +75,19 @@ async function getAuthHeaders(config: McpServiceConfig): Promise<Record<string, 
   }
 }
 
-async function agnosticGet(
+/**
+ * Make an authenticated request to the Agnostic API. Creates a fresh
+ * httpClient per call so that async JWT token refresh is handled correctly.
+ */
+async function agnosticRequest(
   config: McpServiceConfig,
-  path: string
-): Promise<{ ok: boolean; status: number; body: unknown }> {
-  const authHeaders = await getAuthHeaders(config);
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders };
-
-  const res = await fetch(`${config.agnosticUrl}${path}`, { headers });
-  let body: unknown;
-  try {
-    body = await res.json();
-  } catch {
-    body = await res.text().catch(() => '');
-  }
-  return { ok: res.ok, status: res.status, body };
-}
-
-async function agnosticPost(
-  config: McpServiceConfig,
+  method: 'get' | 'post' | 'put' | 'delete',
   path: string,
-  payload: unknown
-): Promise<{ ok: boolean; status: number; body: unknown }> {
+  payload?: unknown
+): Promise<HttpResult> {
   const authHeaders = await getAuthHeaders(config);
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders };
-
-  const res = await fetch(`${config.agnosticUrl}${path}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
-  let body: unknown;
-  try {
-    body = await res.json();
-  } catch {
-    body = await res.text().catch(() => '');
-  }
-  return { ok: res.ok, status: res.status, body };
-}
-
-function formatResponse(label: string, body: unknown): string {
-  const text = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
-  return `${label}\n---\n${text}`;
+  const client = createHttpClient(config.agnosticUrl, authHeaders);
+  return client[method](path, payload);
 }
 
 // ─── Registration ─────────────────────────────────────────────────────────────
@@ -119,15 +98,7 @@ export function registerAgnosticTools(
   middleware: ToolMiddleware
 ): void {
   if (!config.exposeAgnosticTools) {
-    // Register a single informational stub so agents understand why tools are absent
-    server.registerTool(
-      'agnostic_status',
-      { description: `Agnostic QA tools (disabled). ${DISABLED_MSG}`, inputSchema: {} },
-      wrapToolHandler('agnostic_status', middleware, async () => ({
-        content: [{ type: 'text' as const, text: DISABLED_MSG }],
-        isError: true,
-      }))
-    );
+    registerDisabledStub(server, middleware, 'agnostic_status', DISABLED_MSG);
     return;
   }
 
@@ -143,19 +114,11 @@ export function registerAgnosticTools(
       try {
         const res = await fetch(`${config.agnosticUrl}/health`);
         const body = await res.json().catch(() => ({}));
-        return {
-          content: [{ type: 'text' as const, text: formatResponse('Agnostic Health', body) }],
-        };
+        return labelledResponse('Agnostic Health', body);
       } catch (err) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Cannot reach Agnostic at ${config.agnosticUrl}: ${err instanceof Error ? err.message : String(err)}`,
-            },
-          ],
-          isError: true,
-        };
+        return errorResponse(
+          `Cannot reach Agnostic at ${config.agnosticUrl}: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     })
   );
@@ -169,21 +132,9 @@ export function registerAgnosticTools(
       inputSchema: {},
     },
     wrapToolHandler('agnostic_agents_status', middleware, async () => {
-      const { ok, status, body } = await agnosticGet(config, '/api/agents');
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Agents status failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-      return {
-        content: [{ type: 'text' as const, text: formatResponse('Agnostic Agents', body) }],
-      };
+      const { ok, status, body } = await agnosticRequest(config, 'get', '/api/agents');
+      if (!ok) return errorResponse(`Agents status failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse('Agnostic Agents', body);
     })
   );
 
@@ -196,21 +147,9 @@ export function registerAgnosticTools(
       inputSchema: {},
     },
     wrapToolHandler('agnostic_agents_queues', middleware, async () => {
-      const { ok, status, body } = await agnosticGet(config, '/api/agents/queues');
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Queue depths failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-      return {
-        content: [{ type: 'text' as const, text: formatResponse('Agnostic Queue Depths', body) }],
-      };
+      const { ok, status, body } = await agnosticRequest(config, 'get', '/api/agents/queues');
+      if (!ok) return errorResponse(`Queue depths failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse('Agnostic Queue Depths', body);
     })
   );
 
@@ -224,21 +163,9 @@ export function registerAgnosticTools(
       inputSchema: {},
     },
     wrapToolHandler('agnostic_dashboard', middleware, async () => {
-      const { ok, status, body } = await agnosticGet(config, '/api/dashboard');
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Dashboard failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-      return {
-        content: [{ type: 'text' as const, text: formatResponse('Agnostic Dashboard', body) }],
-      };
+      const { ok, status, body } = await agnosticRequest(config, 'get', '/api/dashboard');
+      if (!ok) return errorResponse(`Dashboard failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse('Agnostic Dashboard', body);
     })
   );
 
@@ -256,24 +183,13 @@ export function registerAgnosticTools(
     wrapToolHandler('agnostic_session_list', middleware, async (args) => {
       const limit = args.limit ?? 20;
       const offset = args.offset ?? 0;
-      const { ok, status, body } = await agnosticGet(
+      const { ok, status, body } = await agnosticRequest(
         config,
+        'get',
         `/api/sessions?limit=${limit}&offset=${offset}`
       );
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Sessions failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-      return {
-        content: [{ type: 'text' as const, text: formatResponse('Agnostic Sessions', body) }],
-      };
+      if (!ok) return errorResponse(`Sessions failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse('Agnostic Sessions', body);
     })
   );
 
@@ -288,21 +204,13 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_session_detail', middleware, async (args) => {
-      const { ok, status, body } = await agnosticGet(
+      const { ok, status, body } = await agnosticRequest(
         config,
+        'get',
         `/api/sessions/${encodeURIComponent(args.session_id)}`
       );
-      if (!ok) {
-        return {
-          content: [{ type: 'text' as const, text: `Session not found: HTTP ${status}` }],
-          isError: true,
-        };
-      }
-      return {
-        content: [
-          { type: 'text' as const, text: formatResponse(`Session: ${args.session_id}`, body) },
-        ],
-      };
+      if (!ok) return errorResponse(`Session not found: HTTP ${status}`);
+      return labelledResponse(`Session: ${args.session_id}`, body);
     })
   );
 
@@ -322,25 +230,14 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_generate_report', middleware, async (args) => {
-      const { ok, status, body } = await agnosticPost(config, '/api/reports/generate', {
+      const { ok, status, body } = await agnosticRequest(config, 'post', '/api/reports/generate', {
         session_id: args.session_id,
         report_type: args.report_type,
         format: args.format,
       });
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Report generation failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-      return {
-        content: [{ type: 'text' as const, text: formatResponse('Report Generated', body) }],
-      };
+      if (!ok)
+        return errorResponse(`Report generation failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse('Report Generated', body);
     })
   );
 
@@ -390,7 +287,7 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_submit_qa', middleware, async (args) => {
-      const { ok, status, body } = await agnosticPost(config, '/api/tasks', {
+      const { ok, status, body } = await agnosticRequest(config, 'post', '/api/tasks', {
         title: args.title,
         description: args.description,
         target_url: args.target_url,
@@ -403,19 +300,9 @@ export function registerAgnosticTools(
         callback_secret: args.callback_secret,
       });
 
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Task submission failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      return { content: [{ type: 'text' as const, text: formatResponse('Task Submitted', body) }] };
+      if (!ok)
+        return errorResponse(`Task submission failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse('Task Submitted', body);
     })
   );
 
@@ -432,26 +319,15 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_task_status', middleware, async (args) => {
-      const { ok, status, body } = await agnosticGet(
+      const { ok, status, body } = await agnosticRequest(
         config,
+        'get',
         `/api/tasks/${encodeURIComponent(args.task_id)}`
       );
 
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Task status failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      return {
-        content: [{ type: 'text' as const, text: formatResponse(`Task: ${args.task_id}`, body) }],
-      };
+      if (!ok)
+        return errorResponse(`Task status failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse(`Task: ${args.task_id}`, body);
     })
   );
 
@@ -511,43 +387,26 @@ export function registerAgnosticTools(
         timestamp: Date.now(),
       };
 
-      const { ok, status, body } = await agnosticPost(config, '/api/v1/a2a/receive', message);
+      const { ok, status, body } = await agnosticRequest(
+        config,
+        'post',
+        '/api/v1/a2a/receive',
+        message
+      );
 
       if (!ok) {
         if (status === 404) {
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text:
-                  `A2A endpoint not found (HTTP 404). Agnostic P8 (POST /api/v1/a2a/receive) ` +
-                  `is not yet implemented on the Agnostic side.\n` +
-                  `Use agnostic_submit_qa for REST-based submission.\n\n` +
-                  `A2A message that would be sent:\n${JSON.stringify(message, null, 2)}`,
-              },
-            ],
-            isError: true,
-          };
+          return errorResponse(
+            `A2A endpoint not found (HTTP 404). Agnostic P8 (POST /api/v1/a2a/receive) ` +
+            `is not yet implemented on the Agnostic side.\n` +
+            `Use agnostic_submit_qa for REST-based submission.\n\n` +
+            `A2A message that would be sent:\n${JSON.stringify(message, null, 2)}`
+          );
         }
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `A2A delegation failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
+        return errorResponse(`A2A delegation failed: HTTP ${status}\n${JSON.stringify(body)}`);
       }
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: formatResponse(`A2A Delegation Sent (message_id: ${messageId})`, body),
-          },
-        ],
-      };
+      return labelledResponse(`A2A Delegation Sent (message_id: ${messageId})`, body);
     })
   );
 
@@ -568,32 +427,17 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_session_diff', middleware, async (args) => {
-      const { ok, status, body } = await agnosticGet(
+      const { ok, status, body } = await agnosticRequest(
         config,
+        'get',
         `/api/test-sessions/diff?base=${encodeURIComponent(args.base_session_id)}&compare=${encodeURIComponent(args.compare_session_id)}`
       );
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Session diff failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: formatResponse(
-              `Session Diff: ${args.base_session_id} → ${args.compare_session_id}`,
-              body
-            ),
-          },
-        ],
-      };
+      if (!ok)
+        return errorResponse(`Session diff failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse(
+        `Session Diff: ${args.base_session_id} → ${args.compare_session_id}`,
+        body
+      );
     })
   );
 
@@ -616,29 +460,14 @@ export function registerAgnosticTools(
     },
     wrapToolHandler('agnostic_structured_results', middleware, async (args) => {
       const query = args.result_type ? `?result_type=${args.result_type}` : '';
-      const { ok, status, body } = await agnosticGet(
+      const { ok, status, body } = await agnosticRequest(
         config,
+        'get',
         `/api/results/structured/${encodeURIComponent(args.session_id)}${query}`
       );
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Structured results failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: formatResponse(`Structured Results: ${args.session_id}`, body),
-          },
-        ],
-      };
+      if (!ok)
+        return errorResponse(`Structured results failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse(`Structured Results: ${args.session_id}`, body);
     })
   );
 
@@ -662,29 +491,14 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_quality_trends', middleware, async (args) => {
-      const { ok, status, body } = await agnosticGet(
+      const { ok, status, body } = await agnosticRequest(
         config,
+        'get',
         `/api/test-metrics/trends?days=${args.days}`
       );
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Quality trends failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: formatResponse(`Quality Trends (${args.days} days)`, body),
-          },
-        ],
-      };
+      if (!ok)
+        return errorResponse(`Quality trends failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse(`Quality Trends (${args.days} days)`, body);
     })
   );
 
@@ -702,21 +516,13 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_security_findings', middleware, async (args) => {
-      const { ok, status, body } = await agnosticGet(
+      const { ok, status, body } = await agnosticRequest(
         config,
+        'get',
         `/api/results/structured/${encodeURIComponent(args.session_id)}?result_type=security`
       );
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Security findings failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
+      if (!ok)
+        return errorResponse(`Security findings failed: HTTP ${status}\n${JSON.stringify(body)}`);
 
       // Extract findings array for easier consumption
       const data = body as Record<string, unknown>;
@@ -725,20 +531,13 @@ export function registerAgnosticTools(
       const security = results?.security as Record<string, unknown> | undefined;
       const findings = security?.findings ?? [];
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: formatResponse(`Security Findings: ${args.session_id}`, {
-              session_id: args.session_id,
-              total_findings: Array.isArray(findings) ? findings.length : 0,
-              overall_score: security?.overall_score,
-              risk_level: security?.risk_level,
-              findings,
-            }),
-          },
-        ],
-      };
+      return labelledResponse(`Security Findings: ${args.session_id}`, {
+        session_id: args.session_id,
+        total_findings: Array.isArray(findings) ? findings.length : 0,
+        overall_score: security?.overall_score,
+        risk_level: security?.risk_level,
+        findings,
+      });
     })
   );
 
@@ -779,7 +578,7 @@ export function registerAgnosticTools(
       if (args.run_qa_analyst) agents.push('qa-analyst');
       if (args.run_qa_manager) agents.push('qa-manager');
 
-      const { ok, status, body } = await agnosticPost(config, '/api/tasks', {
+      const { ok, status, body } = await agnosticRequest(config, 'post', '/api/tasks', {
         title: args.title,
         description: args.description,
         target_url: args.target_url,
@@ -788,29 +587,12 @@ export function registerAgnosticTools(
         standards: args.standards,
       });
 
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `QA orchestration failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: formatResponse(
-              `QA Orchestrated (agents: ${agents.length ? agents.join(', ') : 'all'})`,
-              body
-            ),
-          },
-        ],
-      };
+      if (!ok)
+        return errorResponse(`QA orchestration failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      return labelledResponse(
+        `QA Orchestrated (agents: ${agents.length ? agents.join(', ') : 'all'})`,
+        body
+      );
     })
   );
 
@@ -843,14 +625,16 @@ export function registerAgnosticTools(
     wrapToolHandler('agnostic_quality_dashboard', middleware, async (args) => {
       // Fetch multiple endpoints in parallel
       const [dashRes, sessRes, trendsRes, llmRes] = await Promise.all([
-        agnosticGet(config, '/api/dashboard/metrics'),
-        agnosticGet(config, `/api/sessions?limit=${args.session_limit}&offset=0`),
-        agnosticGet(config, `/api/test-metrics/trends?days=${args.trend_days}`).catch(() => ({
-          ok: false,
-          status: 503,
-          body: { message: 'Database not enabled' },
-        })),
-        agnosticGet(config, '/api/dashboard/llm'),
+        agnosticRequest(config, 'get', '/api/dashboard/metrics'),
+        agnosticRequest(config, 'get', `/api/sessions?limit=${args.session_limit}&offset=0`),
+        agnosticRequest(config, 'get', `/api/test-metrics/trends?days=${args.trend_days}`).catch(
+          () => ({
+            ok: false as const,
+            status: 503,
+            body: { message: 'Database not enabled' },
+          })
+        ),
+        agnosticRequest(config, 'get', '/api/dashboard/llm'),
       ]);
 
       const dashboard: Record<string, unknown> = {
@@ -862,14 +646,7 @@ export function registerAgnosticTools(
         llm_usage: llmRes.ok ? llmRes.body : { error: `HTTP ${llmRes.status}` },
       };
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: formatResponse('Quality Dashboard', dashboard),
-          },
-        ],
-      };
+      return labelledResponse('Quality Dashboard', dashboard);
     })
   );
 
@@ -936,31 +713,21 @@ export function registerAgnosticTools(
         timestamp: Date.now(),
       };
 
-      const { ok, status, body } = await agnosticPost(config, '/api/v1/a2a/receive', message);
+      const { ok, status, body } = await agnosticRequest(
+        config,
+        'post',
+        '/api/v1/a2a/receive',
+        message
+      );
 
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Credential provisioning failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: formatResponse(
-              `Credentials provisioned for "${args.provider}" (message_id: ${messageId})`,
-              body
-            ),
-          },
-        ],
-      };
+      if (!ok)
+        return errorResponse(
+          `Credential provisioning failed: HTTP ${status}\n${JSON.stringify(body)}`
+        );
+      return labelledResponse(
+        `Credentials provisioned for "${args.provider}" (message_id: ${messageId})`,
+        body
+      );
     })
   );
 
@@ -1001,37 +768,27 @@ export function registerAgnosticTools(
         timestamp: Date.now(),
       };
 
-      const { ok, status, body } = await agnosticPost(config, '/api/v1/a2a/receive', message);
+      const { ok, status, body } = await agnosticRequest(
+        config,
+        'post',
+        '/api/v1/a2a/receive',
+        message
+      );
 
-      if (!ok) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Credential revocation failed: HTTP ${status}\n${JSON.stringify(body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: formatResponse(
-              `Credentials revoked for "${args.provider}" (message_id: ${messageId})`,
-              body
-            ),
-          },
-        ],
-      };
+      if (!ok)
+        return errorResponse(
+          `Credential revocation failed: HTTP ${status}\n${JSON.stringify(body)}`
+        );
+      return labelledResponse(
+        `Credentials revoked for "${args.provider}" (message_id: ${messageId})`,
+        body
+      );
     })
   );
 
   // ── REST API Proxy Tools ────────────────────────────────────────────────
   // Zero-code MCP integration via registerApiProxyTool() for high-value
-  // Agnostic endpoints. Uses an adapter that wraps agnosticGet/agnosticPost
+  // Agnostic endpoints. Uses an adapter that wraps agnosticRequest
   // to implement the CoreApiClient interface.
 
   const agnosticClient = createAgnosticApiClient(config);
@@ -1041,7 +798,7 @@ export function registerAgnosticTools(
 // ── AgnosticApiClient Adapter ───────────────────────────────────────────────
 
 /**
- * Adapts agnosticGet/agnosticPost to the CoreApiClient interface so that
+ * Adapts agnosticRequest to the CoreApiClient interface so that
  * registerApiProxyTool() can proxy Agnostic REST endpoints as MCP tools.
  */
 function createAgnosticApiClient(config: McpServiceConfig): ICoreApiClient {
@@ -1056,40 +813,23 @@ function createAgnosticApiClient(config: McpServiceConfig): ICoreApiClient {
         const qs = params.toString();
         if (qs) fullPath += `?${qs}`;
       }
-      const { ok, status, body } = await agnosticGet(config, fullPath);
+      const { ok, status, body } = await agnosticRequest(config, 'get', fullPath);
       if (!ok) throw new Error(`Agnostic API error ${status}: ${JSON.stringify(body)}`);
       return body as T;
     },
     async post<T = unknown>(path: string, payload?: unknown): Promise<T> {
-      const { ok, status, body } = await agnosticPost(config, path, payload);
+      const { ok, status, body } = await agnosticRequest(config, 'post', path, payload);
       if (!ok) throw new Error(`Agnostic API error ${status}: ${JSON.stringify(body)}`);
       return body as T;
     },
     async put<T = unknown>(path: string, payload?: unknown): Promise<T> {
-      // Agnostic has no PUT endpoints exposed as proxy tools; stub for interface
-      const authHeaders = await getAuthHeaders(config);
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...authHeaders,
-      };
-      const res = await fetch(`${config.agnosticUrl}${path}`, {
-        method: 'PUT',
-        headers,
-        body: payload !== undefined ? JSON.stringify(payload) : undefined,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(`Agnostic API error ${res.status}: ${JSON.stringify(body)}`);
+      const { ok, status, body } = await agnosticRequest(config, 'put', path, payload);
+      if (!ok) throw new Error(`Agnostic API error ${status}: ${JSON.stringify(body)}`);
       return body as T;
     },
     async delete<T = unknown>(path: string): Promise<T> {
-      const authHeaders = await getAuthHeaders(config);
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...authHeaders,
-      };
-      const res = await fetch(`${config.agnosticUrl}${path}`, { method: 'DELETE', headers });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(`Agnostic API error ${res.status}: ${JSON.stringify(body)}`);
+      const { ok, status, body } = await agnosticRequest(config, 'delete', path);
+      if (!ok) throw new Error(`Agnostic API error ${status}: ${JSON.stringify(body)}`);
       return body as T;
     },
     async healthCheck(): Promise<boolean> {

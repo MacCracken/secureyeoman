@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 
 export function registerBrainTools(
   server: McpServer,
@@ -33,11 +33,11 @@ export function registerBrainTools(
           `/api/v1/federation/peers/${args.instanceId}/knowledge/search`,
           { q: args.query, limit: String(args.limit) }
         );
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return jsonResponse(result);
       }
       const query: Record<string, string> = { q: args.query, limit: String(args.limit) };
       const result = await client.get('/api/v1/brain/knowledge', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -49,7 +49,7 @@ export function registerBrainTools(
     },
     wrapToolHandler('knowledge_get', middleware, async (args) => {
       const result = await client.get(`/api/v1/brain/knowledge/${args.id}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -65,7 +65,7 @@ export function registerBrainTools(
     },
     wrapToolHandler('knowledge_store', middleware, async (args) => {
       const result = await client.post('/api/v1/brain/knowledge', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -82,7 +82,7 @@ export function registerBrainTools(
       const query: Record<string, string> = { q: args.query };
       if (args.types) query.types = args.types.join(',');
       const result = await client.get('/api/v1/brain/memories', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -101,7 +101,7 @@ export function registerBrainTools(
       const query: Record<string, string> = {};
       if (args.personalityId) query.personalityId = args.personalityId;
       const result = await client.get('/api/v1/brain/cognitive-stats', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -125,7 +125,7 @@ export function registerBrainTools(
       const query: Record<string, string> = { limit: String(args.limit) };
       if (args.minWeight != null) query.minWeight = String(args.minWeight);
       const result = await client.get(`/api/v1/brain/associations/${args.itemId}`, query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

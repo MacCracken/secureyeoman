@@ -15,7 +15,7 @@ import { homedir } from 'node:os';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler, registerApiProxyTool } from './tool-utils.js';
+import { wrapToolHandler, registerApiProxyTool, jsonResponse } from './tool-utils.js';
 import { encryptSshKey } from '../utils/ssh-crypto.js';
 
 // ── SSH key generation (pure Node 20 crypto, no external binary) ──────────────
@@ -355,14 +355,7 @@ export function registerGithubApiTools(
     },
     wrapToolHandler('github_delete_ssh_key', middleware, async (args) => {
       const result = await client.delete(`/api/v1/github/ssh-keys/${args.key_id}`);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(result ?? { deleted: true, key_id: args.key_id }, null, 2),
-          },
-        ],
-      };
+      return jsonResponse(result ?? { deleted: true, key_id: args.key_id });
     })
   );
 
@@ -396,23 +389,12 @@ export function registerGithubApiTools(
 
       // Handle draft-mode preview (core returns { preview: true, ... })
       if (reg.preview) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(
-                {
-                  preview: true,
-                  message:
-                    'GitHub mode is "draft" — the SSH key was NOT registered. No files were written. Approve and switch to auto mode, then run github_setup_ssh again.',
-                  publicKey,
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
+        return jsonResponse({
+          preview: true,
+          message:
+            'GitHub mode is "draft" — the SSH key was NOT registered. No files were written. Approve and switch to auto mode, then run github_setup_ssh again.',
+          publicKey,
+        });
       }
 
       const githubKeyId = reg.id!;
@@ -472,30 +454,19 @@ export function registerGithubApiTools(
         }
       }
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(
-              {
-                success: true,
-                githubKeyId,
-                keyPath,
-                secretName,
-                publicKey,
-                message:
-                  `SSH key registered with GitHub (id: ${githubKeyId}). ` +
-                  `Private key written to ${keyPath} and encrypted in SecretsManager as ${secretName}. ` +
-                  `~/.ssh/config updated for github.com. ` +
-                  `Git can now push/pull via SSH. ` +
-                  `Run: git remote set-url origin git@github.com:<owner>/<repo>.git`,
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({
+        success: true,
+        githubKeyId,
+        keyPath,
+        secretName,
+        publicKey,
+        message:
+          `SSH key registered with GitHub (id: ${githubKeyId}). ` +
+          `Private key written to ${keyPath} and encrypted in SecretsManager as ${secretName}. ` +
+          `~/.ssh/config updated for github.com. ` +
+          `Git can now push/pull via SSH. ` +
+          `Run: git remote set-url origin git@github.com:<owner>/<repo>.git`,
+      });
     })
   );
 
@@ -544,18 +515,7 @@ export function registerGithubApiTools(
       })) as Record<string, unknown>;
 
       if (reg.preview) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(
-                { preview: true, message: 'Draft mode — no key registered or revoked.' },
-                null,
-                2
-              ),
-            },
-          ],
-        };
+        return jsonResponse({ preview: true, message: 'Draft mode — no key registered or revoked.' });
       }
 
       const newKeyId = reg.id!;
@@ -626,26 +586,15 @@ export function registerGithubApiTools(
         }
       }
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(
-              {
-                success: true,
-                newKeyId,
-                revokeNote,
-                keyPath,
-                secretName: newSecretName,
-                publicKey,
-                message: `SSH key rotated. New key id: ${newKeyId}. ${revokeNote}.${secretNote}`,
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({
+        success: true,
+        newKeyId,
+        revokeNote,
+        keyPath,
+        secretName: newSecretName,
+        publicKey,
+        message: `SSH key rotated. New key id: ${newKeyId}. ${revokeNote}.${secretNote}`,
+      });
     })
   );
 
@@ -669,7 +618,7 @@ export function registerGithubApiTools(
         private: args.private,
         auto_init: args.auto_init,
       });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -712,24 +661,13 @@ export function registerGithubApiTools(
       );
       // 204 No Content means already up-to-date; core returns null/empty in that case
       if (result === null || result === undefined) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(
-                {
-                  status: 'up_to_date',
-                  message:
-                    'The fork branch is already up-to-date with the upstream — no merge was necessary.',
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
+        return jsonResponse({
+          status: 'up_to_date',
+          message:
+            'The fork branch is already up-to-date with the upstream — no merge was necessary.',
+        });
       }
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 

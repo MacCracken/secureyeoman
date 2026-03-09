@@ -14,7 +14,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, textResponse } from './tool-utils.js';
 
 const CAPABILITY_DISABLED = {
   content: [
@@ -72,7 +72,7 @@ export function registerDiagnosticTools(
       });
 
       const result = await client.post('/api/v1/diagnostics/agent-report', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -100,7 +100,7 @@ export function registerDiagnosticTools(
       });
 
       const result = await client.get(`/api/v1/diagnostics/agent-report/${args.agentId}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -125,7 +125,7 @@ export function registerDiagnosticTools(
       });
 
       const result = await client.get('/api/v1/diagnostics/ping-integrations');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

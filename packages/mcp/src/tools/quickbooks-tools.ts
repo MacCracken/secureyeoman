@@ -24,7 +24,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -123,9 +123,8 @@ function companyPath(realmId: string, endpoint: string, qs = ''): string {
   return qs ? `${base}&${qs}` : base;
 }
 
-function txt(data: unknown): { content: [{ type: 'text'; text: string }] } {
-  return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
-}
+// txt is an alias for jsonResponse — kept to minimize churn in entity tool registrations
+const txt = jsonResponse;
 
 // ─── Shared schemas ───────────────────────────────────────────────────────────
 
@@ -390,26 +389,10 @@ export function registerQuickBooksTools(
     },
     wrapToolHandler('qbo_health', middleware, async () => {
       if (!config.exposeQuickBooksTools) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: 'QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true to enable.',
-            },
-          ],
-          isError: true,
-        };
+        return errorResponse('QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true to enable.');
       }
       if (!config.quickBooksRealmId) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: 'QUICKBOOKS_REALM_ID is not set. Find your Realm ID in the QBO URL: intuit.com/app/qbo/company/{realmId}/...',
-            },
-          ],
-          isError: true,
-        };
+        return errorResponse('QUICKBOOKS_REALM_ID is not set. Find your Realm ID in the QBO URL: intuit.com/app/qbo/company/{realmId}/...');
       }
       const result = await qboFetch(
         config,
@@ -423,15 +406,9 @@ export function registerQuickBooksTools(
     // Register disabled stubs for all entity tools so MCP clients can discover them
     for (const ec of ENTITIES) {
       const eLower = ec.entity.toLowerCase();
-      const disabledHandler = wrapToolHandler(`qbo_${eLower}_disabled`, middleware, async () => ({
-        content: [
-          {
-            type: 'text' as const,
-            text: 'QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true and provide credentials.',
-          },
-        ],
-        isError: true,
-      }));
+      const disabledHandler = wrapToolHandler(`qbo_${eLower}_disabled`, middleware, async () =>
+        errorResponse('QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true and provide credentials.')
+      );
       for (const op of ['create', 'get', 'search', 'update', ...(ec.deletable ? ['delete'] : [])]) {
         server.registerTool(
           `qbo_${op}_${eLower}`,

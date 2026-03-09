@@ -18,37 +18,31 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import {
+  wrapToolHandler,
+  jsonResponse,
+  registerDisabledStub,
+  createHttpClient,
+} from './tool-utils.js';
 
 const DISABLED_MSG =
   'BullShift trading tools are disabled. Set MCP_EXPOSE_BULLSHIFT_TOOLS=true to enable.';
 
 const BULLSHIFT_URL = (process.env.BULLSHIFT_API_URL ?? 'http://localhost:8787').replace(/\/$/, '');
 
-async function bullshiftFetch(path: string, options: RequestInit = {}): Promise<unknown> {
-  const url = `${BULLSHIFT_URL}${path}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      // eslint-disable-next-line @typescript-eslint/no-misused-spread
-      ...options.headers,
-    },
-  });
-
-  let body: unknown;
-  try {
-    body = await res.json();
-  } catch {
-    throw new Error(`BullShift API returned non-JSON response (HTTP ${res.status})`);
-  }
-
+/** Thin wrapper around createHttpClient that throws on non-ok responses (matching original behaviour). */
+async function bs(
+  method: 'get' | 'post' | 'put' | 'delete',
+  path: string,
+  body?: unknown
+): Promise<unknown> {
+  const client = createHttpClient(BULLSHIFT_URL);
+  const res = await client[method](path, body);
   if (!res.ok) {
-    const msg = (body as { error?: string })?.error ?? `HTTP ${res.status}`;
+    const msg = (res.body as { error?: string })?.error ?? `HTTP ${res.status}`;
     throw new Error(`BullShift API error: ${msg}`);
   }
-
-  return body;
+  return res.body;
 }
 
 // ── Market data helpers ────────────────────────────────────────────────────
@@ -104,14 +98,7 @@ export function registerTradingTools(
   middleware: ToolMiddleware
 ): void {
   if (!config.exposeBullshiftTools) {
-    server.registerTool(
-      'bullshift_status',
-      { description: `BullShift trading tools (disabled). ${DISABLED_MSG}`, inputSchema: {} },
-      wrapToolHandler('bullshift_status', middleware, async () => ({
-        content: [{ type: 'text' as const, text: DISABLED_MSG }],
-        isError: true,
-      }))
-    );
+    registerDisabledStub(server, middleware, 'bullshift_status', DISABLED_MSG);
     return;
   }
 
@@ -126,8 +113,8 @@ export function registerTradingTools(
       inputSchema: {},
     },
     wrapToolHandler('bullshift_health', middleware, async () => {
-      const result = await bullshiftFetch('/health');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const result = await bs('get', '/health');
+      return jsonResponse(result);
     })
   );
 
@@ -142,8 +129,8 @@ export function registerTradingTools(
       inputSchema: {},
     },
     wrapToolHandler('bullshift_get_account', middleware, async () => {
-      const result = await bullshiftFetch('/v1/account');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const result = await bs('get', '/v1/account');
+      return jsonResponse(result);
     })
   );
 
@@ -158,8 +145,8 @@ export function registerTradingTools(
       inputSchema: {},
     },
     wrapToolHandler('bullshift_get_positions', middleware, async () => {
-      const result = await bullshiftFetch('/v1/positions');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const result = await bs('get', '/v1/positions');
+      return jsonResponse(result);
     })
   );
 
@@ -197,11 +184,8 @@ export function registerTradingTools(
       },
     },
     wrapToolHandler('bullshift_submit_order', middleware, async (args) => {
-      const result = await bullshiftFetch('/v1/orders', {
-        method: 'POST',
-        body: JSON.stringify(args),
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const result = await bs('post', '/v1/orders', args);
+      return jsonResponse(result);
     })
   );
 
@@ -218,10 +202,8 @@ export function registerTradingTools(
       },
     },
     wrapToolHandler('bullshift_cancel_order', middleware, async (args) => {
-      const result = await bullshiftFetch(`/v1/orders/${args.order_id}`, {
-        method: 'DELETE',
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const result = await bs('delete', `/v1/orders/${args.order_id}`);
+      return jsonResponse(result);
     })
   );
 
@@ -258,7 +240,7 @@ export function registerTradingTools(
       } else {
         result = await marketDataFetch('/quote', { symbol: args.symbol.toUpperCase() });
       }
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -303,7 +285,7 @@ export function registerTradingTools(
           to: String(now),
         });
       }
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -334,7 +316,7 @@ export function registerTradingTools(
       } else {
         result = await marketDataFetch('/search', { q: args.keywords });
       }
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -398,22 +380,11 @@ export function registerTradingTools(
         logged_at: new Date().toISOString(),
       };
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(
-              {
-                status: 'logged',
-                entry,
-                summary: `${entry.result.toUpperCase()}: ${entry.instrument} ${entry.direction} — P&L: $${entry.pnl} (${entry.pnl_percent}%)`,
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({
+        status: 'logged',
+        entry,
+        summary: `${entry.result.toUpperCase()}: ${entry.instrument} ${entry.direction} — P&L: $${entry.pnl} (${entry.pnl_percent}%)`,
+      });
     })
   );
 
@@ -429,8 +400,8 @@ export function registerTradingTools(
       inputSchema: {},
     },
     wrapToolHandler('bullshift_algo_strategies', middleware, async () => {
-      const result = await bullshiftFetch('/v1/algo/strategies');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const result = await bs('get', '/v1/algo/strategies');
+      return jsonResponse(result);
     })
   );
 
@@ -455,8 +426,8 @@ export function registerTradingTools(
       const path = args.symbol
         ? `/v1/sentiment/aggregate/${encodeURIComponent(args.symbol)}`
         : '/v1/sentiment/signals';
-      const result = await bullshiftFetch(path);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const result = await bs('get', path);
+      return jsonResponse(result);
     })
   );
 
@@ -471,8 +442,8 @@ export function registerTradingTools(
       inputSchema: {},
     },
     wrapToolHandler('bullshift_list_alerts', middleware, async () => {
-      const result = await bullshiftFetch('/v1/webhooks');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const result = await bs('get', '/v1/webhooks');
+      return jsonResponse(result);
     })
   );
 
@@ -511,16 +482,13 @@ export function registerTradingTools(
       },
     },
     wrapToolHandler('bullshift_create_alert', middleware, async (args) => {
-      const result = await bullshiftFetch('/v1/webhooks', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: args.name,
-          url: args.url,
-          format: args.format ?? 'json',
-          triggers: args.triggers,
-        }),
+      const result = await bs('post', '/v1/webhooks', {
+        name: args.name,
+        url: args.url,
+        format: args.format ?? 'json',
+        triggers: args.triggers,
       });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

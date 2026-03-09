@@ -10,7 +10,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 
 function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
   return {
@@ -45,7 +45,7 @@ export function registerDlpTools(
     wrapToolHandler('dlp_classify', middleware, async (args) => {
       if (!('exposeDlp' in config) || !config.exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/classify', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -61,7 +61,7 @@ export function registerDlpTools(
     wrapToolHandler('dlp_scan', middleware, async (args) => {
       if (!('exposeDlp' in config) || !config.exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/scan', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -79,7 +79,7 @@ export function registerDlpTools(
       if (args.active !== undefined) query.active = String(args.active);
       if (args.limit !== undefined) query.limit = String(args.limit);
       const result = await client.get('/api/v1/security/dlp/policies', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -97,7 +97,7 @@ export function registerDlpTools(
       if (args.from !== undefined) query.from = String(args.from);
       if (args.to !== undefined) query.to = String(args.to);
       const result = await client.get('/api/v1/security/dlp/egress/stats', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -116,7 +116,7 @@ export function registerDlpTools(
     wrapToolHandler('dlp_watermark_embed', middleware, async (args) => {
       if (!('exposeDlp' in config) || !config.exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/watermark/embed', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -134,7 +134,7 @@ export function registerDlpTools(
     wrapToolHandler('dlp_watermark_extract', middleware, async (args) => {
       if (!('exposeDlp' in config) || !config.exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/watermark/extract', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

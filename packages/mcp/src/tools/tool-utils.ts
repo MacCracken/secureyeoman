@@ -89,6 +89,93 @@ export function wrapToolHandler<T extends Record<string, unknown>>(
   return wrapped;
 }
 
+// ── Shared Response Helpers ──────────────────────────────────────────────────
+
+/** Wrap any data as a JSON-formatted MCP tool result. */
+export function jsonResponse(data: unknown): ToolResult {
+  return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+}
+
+/** Return a labelled text block (e.g. "Agent Details\n---\n{...}"). */
+export function labelledResponse(label: string, body: unknown): ToolResult {
+  const text = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
+  return { content: [{ type: 'text' as const, text: `${label}\n---\n${text}` }] };
+}
+
+/** Return a plain text MCP tool result. */
+export function textResponse(text: string): ToolResult {
+  return { content: [{ type: 'text' as const, text }] };
+}
+
+/** Return an error MCP tool result. */
+export function errorResponse(message: string): ToolResult {
+  return { content: [{ type: 'text' as const, text: message }], isError: true };
+}
+
+// ── Disabled Tool Stub ──────────────────────────────────────────────────────
+
+/**
+ * Register a single disabled-status stub tool. Used when a feature flag is off.
+ * Replaces the boilerplate each tool file repeats for the disabled case.
+ */
+export function registerDisabledStub(
+  server: McpServer,
+  middleware: ToolMiddleware,
+  toolName: string,
+  message: string
+): void {
+  server.registerTool(
+    toolName,
+    { description: `(disabled) ${message}`, inputSchema: {} },
+    wrapToolHandler(toolName, middleware, async () => errorResponse(message))
+  );
+}
+
+// ── Generic HTTP Client ─────────────────────────────────────────────────────
+
+export interface HttpResult {
+  ok: boolean;
+  status: number;
+  body: unknown;
+}
+
+/** Parse a fetch Response body, preferring JSON, falling back to text. */
+export async function parseResponseBody(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return await res.text().catch(() => '');
+  }
+}
+
+/**
+ * Minimal HTTP client factory for tool files that call external REST APIs.
+ * Eliminates the repeated get/post/put/delete helpers in agnos-tools,
+ * agnostic-tools, trading-tools, etc.
+ */
+export function createHttpClient(
+  baseUrl: string,
+  defaultHeaders: Record<string, string> = {}
+) {
+  const base = baseUrl.replace(/\/$/, '');
+  const headers = { 'Content-Type': 'application/json', ...defaultHeaders };
+
+  async function request(method: string, path: string, body?: unknown): Promise<HttpResult> {
+    const opts: RequestInit = { method, headers };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    const res = await fetch(`${base}${path}`, opts);
+    return { ok: res.ok, status: res.status, body: await parseResponseBody(res) };
+  }
+
+  return {
+    get: (path: string) => request('GET', path),
+    post: (path: string, body?: unknown) => request('POST', path, body),
+    put: (path: string, body?: unknown) => request('PUT', path, body),
+    delete: (path: string) => request('DELETE', path),
+    patch: (path: string, body?: unknown) => request('PATCH', path, body),
+  };
+}
+
 // ── API Proxy Tool Factory ────────────────────────────────────────────────────
 
 /**
@@ -149,7 +236,7 @@ export function registerApiProxyTool<T extends Record<string, unknown>>(
         result = await client.delete(path);
       }
 
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

@@ -11,7 +11,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -51,17 +51,8 @@ async function jenkinsFetch(
   return { ok: res.ok, status: res.status, body };
 }
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'Jenkins tools are disabled. Set exposeJenkins=true and configure jenkinsUrl, jenkinsUsername, jenkinsApiToken in MCP config.',
-      },
-    ],
-    isError: true,
-  };
-}
+const JENKINS_DISABLED_MSG =
+  'Jenkins tools are disabled. Set exposeJenkins=true and configure jenkinsUrl, jenkinsUsername, jenkinsApiToken in MCP config.';
 
 // ─── Tool Registration ───────────────────────────────────────────────────────
 
@@ -76,7 +67,7 @@ export function registerJenkinsTools(
     'List all jobs on the Jenkins server with their name, URL, and build color/status',
     {},
     wrapToolHandler('jenkins_list_jobs', middleware, async () => {
-      if (!config.exposeJenkins) return disabled();
+      if (!config.exposeJenkins) return errorResponse(JENKINS_DISABLED_MSG);
       const { ok, status, body } = await jenkinsFetch(
         config,
         '/api/json?tree=jobs[name,url,color]'
@@ -87,7 +78,7 @@ export function registerJenkinsTools(
           isError: true,
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+      return jsonResponse(body);
     })
   );
 
@@ -106,7 +97,7 @@ export function registerJenkinsTools(
         .describe('Build parameters as key/value pairs; omit for parameterless builds'),
     },
     wrapToolHandler('jenkins_trigger_build', middleware, async ({ jobName, parameters }) => {
-      if (!config.exposeJenkins) return disabled();
+      if (!config.exposeJenkins) return errorResponse(JENKINS_DISABLED_MSG);
       const hasParams = Object.keys(parameters).length > 0;
       const endpoint = hasParams ? `/job/${jobName}/buildWithParameters` : `/job/${jobName}/build`;
       const body = hasParams ? new URLSearchParams(parameters).toString() : undefined;
@@ -128,14 +119,7 @@ export function registerJenkinsTools(
           isError: true,
         };
       }
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({ triggered: true, jobName, parameters }, null, 2),
-          },
-        ],
-      };
+      return jsonResponse({ triggered: true, jobName, parameters });
     })
   );
 
@@ -152,7 +136,7 @@ export function registerJenkinsTools(
         .describe('Build number (use lastBuild=true to get the latest)'),
     },
     wrapToolHandler('jenkins_get_build', middleware, async ({ jobName, buildNumber }) => {
-      if (!config.exposeJenkins) return disabled();
+      if (!config.exposeJenkins) return errorResponse(JENKINS_DISABLED_MSG);
       const { ok, status, body } = await jenkinsFetch(
         config,
         `/job/${jobName}/${buildNumber}/api/json`
@@ -163,7 +147,7 @@ export function registerJenkinsTools(
           isError: true,
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+      return jsonResponse(body);
     })
   );
 
@@ -185,7 +169,7 @@ export function registerJenkinsTools(
       'jenkins_get_build_log',
       middleware,
       async ({ jobName, buildNumber, startByte }) => {
-        if (!config.exposeJenkins) return disabled();
+        if (!config.exposeJenkins) return errorResponse(JENKINS_DISABLED_MSG);
         const path =
           startByte > 0
             ? `/job/${jobName}/${buildNumber}/logText/progressiveText?start=${startByte}`
@@ -216,7 +200,7 @@ export function registerJenkinsTools(
         .describe('Queue item ID from the Location header after triggering a build'),
     },
     wrapToolHandler('jenkins_queue_item', middleware, async ({ itemId }) => {
-      if (!config.exposeJenkins) return disabled();
+      if (!config.exposeJenkins) return errorResponse(JENKINS_DISABLED_MSG);
       const { ok, status, body } = await jenkinsFetch(config, `/queue/item/${itemId}/api/json`);
       if (!ok) {
         return {
@@ -224,7 +208,7 @@ export function registerJenkinsTools(
           isError: true,
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+      return jsonResponse(body);
     })
   );
 }

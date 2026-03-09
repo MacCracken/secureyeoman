@@ -15,7 +15,13 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import {
+  wrapToolHandler,
+  jsonResponse,
+  textResponse,
+  registerDisabledStub,
+  createHttpClient,
+} from './tool-utils.js';
 
 const DISABLED_MSG =
   'Photisnadi tools are disabled. Set MCP_EXPOSE_PHOTISNADI_TOOLS=true to enable.';
@@ -32,72 +38,12 @@ function getSupabaseConfig(): { url: string; key: string; userId: string } | nul
   return { url: url.replace(/\/$/, ''), key, userId };
 }
 
-async function supabaseQuery(
-  table: string,
-  query: string,
-  config: { url: string; key: string }
-): Promise<unknown> {
-  const url = `${config.url}/rest/v1/${table}?${query}`;
-  const res = await fetch(url, {
-    headers: {
-      apikey: config.key,
-      Authorization: `Bearer ${config.key}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
+function createSupabaseClient(sb: { url: string; key: string }) {
+  return createHttpClient(sb.url + '/rest/v1', {
+    apikey: sb.key,
+    Authorization: `Bearer ${sb.key}`,
+    Prefer: 'return=representation',
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${text}`);
-  }
-  return res.json();
-}
-
-async function supabaseInsert(
-  table: string,
-  body: unknown,
-  config: { url: string; key: string }
-): Promise<unknown> {
-  const url = `${config.url}/rest/v1/${table}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      apikey: config.key,
-      Authorization: `Bearer ${config.key}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${text}`);
-  }
-  return res.json();
-}
-
-async function supabaseUpdate(
-  table: string,
-  query: string,
-  body: unknown,
-  config: { url: string; key: string }
-): Promise<unknown> {
-  const url = `${config.url}/rest/v1/${table}?${query}`;
-  const res = await fetch(url, {
-    method: 'PATCH',
-    headers: {
-      apikey: config.key,
-      Authorization: `Bearer ${config.key}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${text}`);
-  }
-  return res.json();
 }
 
 export function registerPhotisnadiTools(
@@ -106,14 +52,7 @@ export function registerPhotisnadiTools(
   middleware: ToolMiddleware
 ): void {
   if (!config.exposePhotisnadiTools) {
-    server.registerTool(
-      'photisnadi_status',
-      { description: `Photisnadi tools (disabled). ${DISABLED_MSG}`, inputSchema: {} },
-      wrapToolHandler('photisnadi_status', middleware, async () => ({
-        content: [{ type: 'text' as const, text: DISABLED_MSG }],
-        isError: true,
-      }))
-    );
+    registerDisabledStub(server, middleware, 'photisnadi_status', DISABLED_MSG);
     return;
   }
 
@@ -137,16 +76,18 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_list_tasks', middleware, async (args) => {
       const sb = getSupabaseConfig();
-      if (!sb) return { content: [{ type: 'text' as const, text: NO_SUPABASE_MSG }] };
+      if (!sb) return textResponse(NO_SUPABASE_MSG);
 
+      const client = createSupabaseClient(sb);
       const params = [`user_id=eq.${sb.userId}`, 'order=modified_at.desc'];
       if (args.project_id) params.push(`project_id=eq.${args.project_id}`);
       if (args.status) params.push(`status=eq.${args.status}`);
       if (args.priority) params.push(`priority=eq.${args.priority}`);
       params.push(`limit=${args.limit ?? 50}`);
 
-      const result = await supabaseQuery('tasks', params.join('&'), sb);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const res = await client.get(`/tasks?${params.join('&')}`);
+      if (!res.ok) throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`);
+      return jsonResponse(res.body);
     })
   );
 
@@ -176,8 +117,9 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_create_task', middleware, async (args) => {
       const sb = getSupabaseConfig();
-      if (!sb) return { content: [{ type: 'text' as const, text: NO_SUPABASE_MSG }] };
+      if (!sb) return textResponse(NO_SUPABASE_MSG);
 
+      const client = createSupabaseClient(sb);
       const task: Record<string, unknown> = {
         user_id: sb.userId,
         title: args.title,
@@ -189,8 +131,9 @@ export function registerPhotisnadiTools(
       if (args.due_date) task.due_date = args.due_date;
       if (args.tags) task.tags = args.tags;
 
-      const result = await supabaseInsert('tasks', task, sb);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const res = await client.post('/tasks', task);
+      if (!res.ok) throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`);
+      return jsonResponse(res.body);
     })
   );
 
@@ -217,8 +160,9 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_update_task', middleware, async (args) => {
       const sb = getSupabaseConfig();
-      if (!sb) return { content: [{ type: 'text' as const, text: NO_SUPABASE_MSG }] };
+      if (!sb) return textResponse(NO_SUPABASE_MSG);
 
+      const client = createSupabaseClient(sb);
       const updates: Record<string, unknown> = { modified_at: new Date().toISOString() };
       if (args.title !== undefined) updates.title = args.title;
       if (args.description !== undefined) updates.description = args.description;
@@ -228,8 +172,9 @@ export function registerPhotisnadiTools(
       if (args.tags !== undefined) updates.tags = args.tags;
 
       const query = `id=eq.${args.task_id}&user_id=eq.${sb.userId}`;
-      const result = await supabaseUpdate('tasks', query, updates, sb);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const res = await client.patch(`/tasks?${query}`, updates);
+      if (!res.ok) throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`);
+      return jsonResponse(res.body);
     })
   );
 
@@ -250,13 +195,15 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_get_rituals', middleware, async (args) => {
       const sb = getSupabaseConfig();
-      if (!sb) return { content: [{ type: 'text' as const, text: NO_SUPABASE_MSG }] };
+      if (!sb) return textResponse(NO_SUPABASE_MSG);
 
+      const client = createSupabaseClient(sb);
       const params = [`user_id=eq.${sb.userId}`, 'order=created_at.asc'];
       if (args.frequency) params.push(`frequency=eq.${args.frequency}`);
 
-      const result = await supabaseQuery('rituals', params.join('&'), sb);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      const res = await client.get(`/rituals?${params.join('&')}`);
+      if (!res.ok) throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`);
+      return jsonResponse(res.body);
     })
   );
 
@@ -272,13 +219,12 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_analytics', middleware, async () => {
       const sb = getSupabaseConfig();
-      if (!sb) return { content: [{ type: 'text' as const, text: NO_SUPABASE_MSG }] };
+      if (!sb) return textResponse(NO_SUPABASE_MSG);
 
-      const tasks = (await supabaseQuery(
-        'tasks',
-        `user_id=eq.${sb.userId}&select=status,priority,due_date`,
-        sb
-      )) as { status: string; priority: string; due_date: string | null }[];
+      const client = createSupabaseClient(sb);
+      const res = await client.get(`/tasks?user_id=eq.${sb.userId}&select=status,priority,due_date`);
+      if (!res.ok) throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`);
+      const tasks = res.body as { status: string; priority: string; due_date: string | null }[];
 
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 86400000);
@@ -308,7 +254,7 @@ export function registerPhotisnadiTools(
         completedThisWeek,
       };
 
-      return { content: [{ type: 'text' as const, text: JSON.stringify(analytics, null, 2) }] };
+      return jsonResponse(analytics);
     })
   );
 
@@ -325,7 +271,7 @@ export function registerPhotisnadiTools(
     wrapToolHandler('photisnadi_sync', middleware, async () => {
       const sb = getSupabaseConfig();
 
-      // Check Photisnadi web UI availability
+      // Check Photisnadi web UI availability (raw fetch — one-off HEAD check)
       let webUiStatus = 'unknown';
       try {
         const uiRes = await fetch('http://photisnadi:8080/', { method: 'HEAD', signal: AbortSignal.timeout(5000) });
@@ -335,50 +281,33 @@ export function registerPhotisnadiTools(
       }
 
       if (!sb) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(
-                {
-                  status: 'partial',
-                  webUi: webUiStatus,
-                  supabase: 'not configured',
-                  message: NO_SUPABASE_MSG,
-                  syncedAt: new Date().toISOString(),
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
+        return jsonResponse({
+          status: 'partial',
+          webUi: webUiStatus,
+          supabase: 'not configured',
+          message: NO_SUPABASE_MSG,
+          syncedAt: new Date().toISOString(),
+        });
       }
 
-      const [tasks, rituals] = await Promise.all([
-        supabaseQuery('tasks', `user_id=eq.${sb.userId}&select=id`, sb) as Promise<unknown[]>,
-        supabaseQuery('rituals', `user_id=eq.${sb.userId}&select=id`, sb) as Promise<unknown[]>,
+      const client = createSupabaseClient(sb);
+      const [tasksRes, ritualsRes] = await Promise.all([
+        client.get(`/tasks?user_id=eq.${sb.userId}&select=id`),
+        client.get(`/rituals?user_id=eq.${sb.userId}&select=id`),
       ]);
+      if (!tasksRes.ok) throw new Error(`Photisnadi Supabase error (HTTP ${tasksRes.status}): ${JSON.stringify(tasksRes.body)}`);
+      if (!ritualsRes.ok) throw new Error(`Photisnadi Supabase error (HTTP ${ritualsRes.status}): ${JSON.stringify(ritualsRes.body)}`);
+      const tasks = tasksRes.body as unknown[];
+      const rituals = ritualsRes.body as unknown[];
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(
-              {
-                status: 'connected',
-                webUi: webUiStatus,
-                supabaseUrl: sb.url,
-                taskCount: tasks.length,
-                ritualCount: rituals.length,
-                syncedAt: new Date().toISOString(),
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({
+        status: 'connected',
+        webUi: webUiStatus,
+        supabaseUrl: sb.url,
+        taskCount: tasks.length,
+        ritualCount: rituals.length,
+        syncedAt: new Date().toISOString(),
+      });
     })
   );
 }

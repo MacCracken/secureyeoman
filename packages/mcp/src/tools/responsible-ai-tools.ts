@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 
 export function registerResponsibleAiTools(
   server: McpServer,
@@ -38,7 +38,7 @@ export function registerResponsibleAiTools(
     },
     wrapToolHandler('rai_cohort_analysis', middleware, async (args) => {
       const result = await client.post('/api/v1/responsible-ai/cohort-analysis', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -64,7 +64,7 @@ export function registerResponsibleAiTools(
     },
     wrapToolHandler('rai_fairness_report', middleware, async (args) => {
       const result = await client.post('/api/v1/responsible-ai/fairness', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -87,7 +87,7 @@ export function registerResponsibleAiTools(
     },
     wrapToolHandler('rai_shap_explain', middleware, async (args) => {
       const result = await client.post('/api/v1/responsible-ai/shap', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -115,7 +115,7 @@ export function registerResponsibleAiTools(
       if (args.status) query.status = args.status;
       query.limit = String(args.limit);
       const result = await client.get('/api/v1/responsible-ai/provenance', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -133,7 +133,7 @@ export function registerResponsibleAiTools(
       const result = await client.get(
         `/api/v1/responsible-ai/provenance/summary/${args.datasetId}`
       );
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -148,7 +148,7 @@ export function registerResponsibleAiTools(
     },
     wrapToolHandler('rai_user_provenance', middleware, async (args) => {
       const result = await client.get(`/api/v1/responsible-ai/provenance/user/${args.userId}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -172,7 +172,7 @@ export function registerResponsibleAiTools(
     },
     wrapToolHandler('rai_model_card', middleware, async (args) => {
       const result = await client.post('/api/v1/responsible-ai/model-cards', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -187,7 +187,7 @@ export function registerResponsibleAiTools(
     },
     wrapToolHandler('rai_model_card_markdown', middleware, async (args) => {
       const result = await client.get(`/api/v1/responsible-ai/model-cards/${args.id}/markdown`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

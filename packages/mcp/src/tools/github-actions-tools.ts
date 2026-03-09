@@ -12,7 +12,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
 
 const GHA_BASE = 'https://api.github.com';
 
@@ -52,17 +52,8 @@ async function ghaFetch(
   return { ok: res.ok, status: res.status, body };
 }
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'GitHub Actions tools are disabled. Set exposeGithubActions=true in MCP config to enable.',
-      },
-    ],
-    isError: true,
-  };
-}
+const GHA_DISABLED_MSG =
+  'GitHub Actions tools are disabled. Set exposeGithubActions=true in MCP config to enable.';
 
 // ─── Tool Registration ───────────────────────────────────────────────────────
 
@@ -80,7 +71,7 @@ export function registerGithubActionsTools(
       repo: z.string().min(1).describe('Repository name'),
     },
     wrapToolHandler('gha_list_workflows', middleware, async ({ owner, repo }) => {
-      if (!config.exposeGithubActions) return disabled();
+      if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
       const { ok, status, body } = await ghaFetch(
         config,
         `/repos/${owner}/${repo}/actions/workflows`
@@ -91,7 +82,7 @@ export function registerGithubActionsTools(
           isError: true,
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+      return jsonResponse(body);
     })
   );
 
@@ -116,7 +107,7 @@ export function registerGithubActionsTools(
       'gha_dispatch_workflow',
       middleware,
       async ({ owner, repo, workflowId, ref, inputs }) => {
-        if (!config.exposeGithubActions) return disabled();
+        if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
         const { ok, status, body } = await ghaFetch(
           config,
           `/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`,
@@ -135,18 +126,7 @@ export function registerGithubActionsTools(
           };
         }
         // 204 No Content on success
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(
-                { dispatched: true, owner, repo, workflowId, ref, inputs },
-                null,
-                2
-              ),
-            },
-          ],
-        };
+        return jsonResponse({ dispatched: true, owner, repo, workflowId, ref, inputs });
       }
     )
   );
@@ -169,7 +149,7 @@ export function registerGithubActionsTools(
       'gha_list_runs',
       middleware,
       async ({ owner, repo, branch, status, perPage }) => {
-        if (!config.exposeGithubActions) return disabled();
+        if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
         const params = new URLSearchParams({ per_page: String(perPage) });
         if (branch) params.set('branch', branch);
         if (status) params.set('status', status);
@@ -183,7 +163,7 @@ export function registerGithubActionsTools(
             isError: true,
           };
         }
-        return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+        return jsonResponse(body);
       }
     )
   );
@@ -198,7 +178,7 @@ export function registerGithubActionsTools(
       runId: z.number().int().positive().describe('Workflow run ID'),
     },
     wrapToolHandler('gha_get_run', middleware, async ({ owner, repo, runId }) => {
-      if (!config.exposeGithubActions) return disabled();
+      if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
       const { ok, status, body } = await ghaFetch(
         config,
         `/repos/${owner}/${repo}/actions/runs/${runId}`
@@ -209,7 +189,7 @@ export function registerGithubActionsTools(
           isError: true,
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+      return jsonResponse(body);
     })
   );
 
@@ -223,7 +203,7 @@ export function registerGithubActionsTools(
       runId: z.number().int().positive().describe('Workflow run ID to cancel'),
     },
     wrapToolHandler('gha_cancel_run', middleware, async ({ owner, repo, runId }) => {
-      if (!config.exposeGithubActions) return disabled();
+      if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
       const { ok, status, body } = await ghaFetch(
         config,
         `/repos/${owner}/${repo}/actions/runs/${runId}/cancel`,
@@ -235,14 +215,7 @@ export function registerGithubActionsTools(
           isError: true,
         };
       }
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({ cancelled: true, owner, repo, runId }, null, 2),
-          },
-        ],
-      };
+      return jsonResponse({ cancelled: true, owner, repo, runId });
     })
   );
 
@@ -256,7 +229,7 @@ export function registerGithubActionsTools(
       runId: z.number().int().positive().describe('Workflow run ID'),
     },
     wrapToolHandler('gha_get_run_logs', middleware, async ({ owner, repo, runId }) => {
-      if (!config.exposeGithubActions) return disabled();
+      if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
       // GitHub returns a 302 redirect to a signed S3 URL; we capture it without following
       const token = getToken(config);
       const url = `${GHA_BASE}/repos/${owner}/${repo}/actions/runs/${runId}/logs`;
@@ -267,14 +240,7 @@ export function registerGithubActionsTools(
       });
       if (res.status === 302) {
         const logsUrl = res.headers.get('location') ?? '';
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({ logsUrl, runId, owner, repo }, null, 2),
-            },
-          ],
-        };
+        return jsonResponse({ logsUrl, runId, owner, repo });
       }
       const body = await res.text();
       return {

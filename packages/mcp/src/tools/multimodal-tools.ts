@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 
 export function registerMultimodalTools(
   server: McpServer,
@@ -30,7 +30,7 @@ export function registerMultimodalTools(
     },
     wrapToolHandler('multimodal_generate_image', middleware, async (args) => {
       const result = await client.post('/api/v1/multimodal/image/generate', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -49,7 +49,7 @@ export function registerMultimodalTools(
     },
     wrapToolHandler('multimodal_analyze_image', middleware, async (args) => {
       const result = await client.post('/api/v1/multimodal/vision/analyze', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -68,7 +68,7 @@ export function registerMultimodalTools(
     },
     wrapToolHandler('multimodal_speak', middleware, async (args) => {
       const result = await client.post('/api/v1/multimodal/audio/speak', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -88,7 +88,7 @@ export function registerMultimodalTools(
     },
     wrapToolHandler('multimodal_transcribe', middleware, async (args) => {
       const result = await client.post('/api/v1/multimodal/audio/transcribe', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -114,7 +114,7 @@ export function registerMultimodalTools(
       if (args.type) query.type = args.type;
       if (args.status) query.status = args.status;
       const result = await client.get('/api/v1/multimodal/jobs', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

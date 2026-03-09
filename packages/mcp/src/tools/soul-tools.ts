@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 
 export function registerSoulTools(
   server: McpServer,
@@ -21,7 +21,7 @@ export function registerSoulTools(
     },
     wrapToolHandler('personality_get', middleware, async () => {
       const result = await client.get('/api/v1/soul/personality');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -33,7 +33,7 @@ export function registerSoulTools(
     },
     wrapToolHandler('personality_switch', middleware, async (args) => {
       const result = await client.post(`/api/v1/soul/personalities/${args.id}/activate`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -47,7 +47,7 @@ export function registerSoulTools(
       const query: Record<string, string> = {};
       if (args.status) query.status = args.status;
       const result = await client.get('/api/v1/soul/skills', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -64,7 +64,7 @@ export function registerSoulTools(
       const result = await client.post(`/api/v1/soul/skills/${args.skillId}/execute`, {
         input: args.input ?? {},
       });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

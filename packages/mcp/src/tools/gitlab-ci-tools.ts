@@ -11,7 +11,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -45,17 +45,8 @@ async function gitlabFetch(
   return { ok: res.ok, status: res.status, body };
 }
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'GitLab CI tools are disabled. Set exposeGitlabCi=true and configure gitlabToken in MCP config.',
-      },
-    ],
-    isError: true,
-  };
-}
+const GITLAB_DISABLED_MSG =
+  'GitLab CI tools are disabled. Set exposeGitlabCi=true and configure gitlabToken in MCP config.';
 
 // ─── Tool Registration ───────────────────────────────────────────────────────
 
@@ -97,7 +88,7 @@ export function registerGitlabCiTools(
       'gitlab_list_pipelines',
       middleware,
       async ({ projectId, ref, status, perPage }) => {
-        if (!config.exposeGitlabCi) return disabled();
+        if (!config.exposeGitlabCi) return errorResponse(GITLAB_DISABLED_MSG);
         const params = new URLSearchParams({ per_page: String(perPage) });
         if (ref) params.set('ref', ref);
         if (status) params.set('status', status);
@@ -112,7 +103,7 @@ export function registerGitlabCiTools(
             isError: true,
           };
         }
-        return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+        return jsonResponse(body);
       }
     )
   );
@@ -133,7 +124,7 @@ export function registerGitlabCiTools(
       'gitlab_trigger_pipeline',
       middleware,
       async ({ projectId, ref, variables }) => {
-        if (!config.exposeGitlabCi) return disabled();
+        if (!config.exposeGitlabCi) return errorResponse(GITLAB_DISABLED_MSG);
         const { ok, status, body } = await gitlabFetch(
           config,
           `/api/v4/projects/${projectId}/pipeline`,
@@ -150,7 +141,7 @@ export function registerGitlabCiTools(
             isError: true,
           };
         }
-        return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+        return jsonResponse(body);
       }
     )
   );
@@ -164,7 +155,7 @@ export function registerGitlabCiTools(
       pipelineId: z.number().int().positive().describe('Pipeline ID'),
     },
     wrapToolHandler('gitlab_get_pipeline', middleware, async ({ projectId, pipelineId }) => {
-      if (!config.exposeGitlabCi) return disabled();
+      if (!config.exposeGitlabCi) return errorResponse(GITLAB_DISABLED_MSG);
       const { ok, status, body } = await gitlabFetch(
         config,
         `/api/v4/projects/${projectId}/pipelines/${pipelineId}`
@@ -175,7 +166,7 @@ export function registerGitlabCiTools(
           isError: true,
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+      return jsonResponse(body);
     })
   );
 
@@ -188,7 +179,7 @@ export function registerGitlabCiTools(
       jobId: z.number().int().positive().describe('Job ID'),
     },
     wrapToolHandler('gitlab_get_job_log', middleware, async ({ projectId, jobId }) => {
-      if (!config.exposeGitlabCi) return disabled();
+      if (!config.exposeGitlabCi) return errorResponse(GITLAB_DISABLED_MSG);
       const { ok, status, body } = await gitlabFetch(
         config,
         `/api/v4/projects/${projectId}/jobs/${jobId}/trace`
@@ -212,7 +203,7 @@ export function registerGitlabCiTools(
       pipelineId: z.number().int().positive().describe('Pipeline ID to cancel'),
     },
     wrapToolHandler('gitlab_cancel_pipeline', middleware, async ({ projectId, pipelineId }) => {
-      if (!config.exposeGitlabCi) return disabled();
+      if (!config.exposeGitlabCi) return errorResponse(GITLAB_DISABLED_MSG);
       const { ok, status, body } = await gitlabFetch(
         config,
         `/api/v4/projects/${projectId}/pipelines/${pipelineId}/cancel`,
@@ -224,7 +215,7 @@ export function registerGitlabCiTools(
           isError: true,
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+      return jsonResponse(body);
     })
   );
 }

@@ -22,7 +22,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
 
 // Response shapes from core PDF extraction endpoints
 interface ExtractResult {
@@ -35,28 +35,17 @@ interface ExtractPagesResult {
   pages: { pageNumber: number; text: string; wordCount: number }[];
 }
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'PDF tools are disabled. Enable PDF Analysis in MCP config to use pdf_* tools.',
-      },
-    ],
-    isError: true,
-  };
+const PDF_DISABLED_MSG =
+  'PDF tools are disabled. Enable PDF Analysis in MCP config to use pdf_* tools.';
+const PDF_ADVANCED_DISABLED_MSG =
+  'Advanced PDF tools are disabled. Enable exposePdfAdvanced in MCP config to use these tools.';
+
+function disabled() {
+  return errorResponse(PDF_DISABLED_MSG);
 }
 
-function disabledAdvanced(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'Advanced PDF tools are disabled. Enable exposePdfAdvanced in MCP config to use these tools.',
-      },
-    ],
-    isError: true,
-  };
+function disabledAdvanced() {
+  return errorResponse(PDF_ADVANCED_DISABLED_MSG);
 }
 
 export function registerPdfTools(
@@ -79,7 +68,7 @@ export function registerPdfTools(
         pdfBase64,
         filename,
       });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -109,7 +98,7 @@ export function registerPdfTools(
           format: 'pdf',
           pdfBase64,
         });
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return jsonResponse(result);
       }
     )
   );
@@ -146,7 +135,7 @@ export function registerPdfTools(
           customPrompt,
           maxLength,
         });
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return jsonResponse(result);
       }
     )
   );
@@ -192,23 +181,12 @@ export function registerPdfTools(
         }
       }
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(
-              {
-                matches,
-                totalMatches: matches.length,
-                query,
-                totalPages: extracted.pages,
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({
+        matches,
+        totalMatches: matches.length,
+        query,
+        totalPages: extracted.pages,
+      });
     })
   );
 
@@ -261,25 +239,14 @@ export function registerPdfTools(
         }
       }
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(
-              {
-                additions,
-                deletions,
-                changes: changes.slice(0, 200), // Cap at 200 change entries
-                summary: `${additions} additions, ${deletions} deletions across ${maxLen} lines`,
-                pagesA: extractA.pages,
-                pagesB: extractB.pages,
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({
+        additions,
+        deletions,
+        changes: changes.slice(0, 200), // Cap at 200 change entries
+        summary: `${additions} additions, ${deletions} deletions across ${maxLen} lines`,
+        pagesA: extractA.pages,
+        pagesB: extractB.pages,
+      });
     })
   );
 
@@ -298,7 +265,7 @@ export function registerPdfTools(
       if (status) params.status = status;
 
       const result = await client.get('/api/v1/brain/documents', params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -322,7 +289,7 @@ export function registerPdfTools(
         pdfBase64,
         pageRange,
       });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -349,7 +316,7 @@ export function registerPdfTools(
           pageRange,
           outputFormat,
         });
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return jsonResponse(result);
       }
     )
   );
@@ -392,22 +359,11 @@ export function registerPdfTools(
         pageAnalysis,
       ].join('\n');
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(
-              {
-                analysisPrompt,
-                totalPages: extracted.totalPages,
-                analyzedPages: extracted.pages.length,
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({
+        analysisPrompt,
+        totalPages: extracted.totalPages,
+        analyzedPages: extracted.pages.length,
+      });
     })
   );
 
@@ -458,23 +414,12 @@ export function registerPdfTools(
         pageContent,
       ].join('\n');
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(
-              {
-                summaryPrompt,
-                style: summaryStyle,
-                totalPages: extracted.totalPages,
-                analyzedPages: extracted.pages.length,
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({
+        summaryPrompt,
+        style: summaryStyle,
+        totalPages: extracted.totalPages,
+        analyzedPages: extracted.pages.length,
+      });
     })
   );
 
@@ -491,7 +436,7 @@ export function registerPdfTools(
       const result = await client.post('/api/v1/brain/documents/form-fields', {
         pdfBase64,
       });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

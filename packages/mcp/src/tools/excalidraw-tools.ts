@@ -9,7 +9,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 import { buildScene, validateScene, patchScene, renderSceneToSvg } from './excalidraw-scene.js';
 import {
   getTemplateCategories,
@@ -104,9 +104,7 @@ export function registerExcalidrawTools(
           gridSize: args.gridMode ? 20 : null,
         });
 
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify(scene, null, 2) }],
-        };
+        return jsonResponse(scene);
       }
     )
   );
@@ -131,9 +129,7 @@ export function registerExcalidrawTools(
           args.scene as unknown as import('@secureyeoman/shared').ExcalidrawScene
         );
 
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-        };
+        return jsonResponse(result);
       }
     )
   );
@@ -163,9 +159,7 @@ export function registerExcalidrawTools(
           args.operations as unknown as import('@secureyeoman/shared').PatchOperation[]
         );
 
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-        };
+        return jsonResponse(result);
       }
     )
   );
@@ -187,14 +181,7 @@ export function registerExcalidrawTools(
       const templates = getTemplatesByCategory(args.category);
       const palettes = getAllPalettes();
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({ categories, templates, palettes }, null, 2),
-          },
-        ],
-      };
+      return jsonResponse({ categories, templates, palettes });
     })
   );
 
@@ -248,23 +235,12 @@ export function registerExcalidrawTools(
           gridSize: 20,
         });
 
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(
-                {
-                  scene,
-                  diagramType: args.diagramType,
-                  style: args.style ?? 'minimal',
-                  elementCount: scene.elements.length,
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
+        return jsonResponse({
+          scene,
+          diagramType: args.diagramType,
+          style: args.style ?? 'minimal',
+          elementCount: scene.elements.length,
+        });
       }
     )
   );
@@ -300,14 +276,7 @@ export function registerExcalidrawTools(
           { width: args.width, height: args.height, darkMode: args.darkMode }
         );
 
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify({ svg, format: 'svg' }, null, 2),
-            },
-          ],
-        };
+        return jsonResponse({ svg, format: 'svg' });
       }
     )
   );

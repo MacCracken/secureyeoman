@@ -15,7 +15,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 
 export function registerTwitterTools(
   server: McpServer,
@@ -32,7 +32,7 @@ export function registerTwitterTools(
     },
     wrapToolHandler('twitter_profile', middleware, async () => {
       const result = await client.get('/api/v1/twitter/profile');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -59,7 +59,7 @@ export function registerTwitterTools(
       if (args.maxResults) query.maxResults = String(args.maxResults);
       if (args.nextToken) query.nextToken = args.nextToken;
       const result = await client.get('/api/v1/twitter/search', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -75,7 +75,7 @@ export function registerTwitterTools(
     },
     wrapToolHandler('twitter_get_tweet', middleware, async (args) => {
       const result = await client.get(`/api/v1/twitter/tweets/${args.tweetId}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -101,7 +101,7 @@ export function registerTwitterTools(
       if (args.maxResults) query.maxResults = String(args.maxResults);
       if (args.sinceId) query.sinceId = args.sinceId;
       const result = await client.get('/api/v1/twitter/mentions', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -125,7 +125,7 @@ export function registerTwitterTools(
       const query: Record<string, string> = {};
       if (args.maxResults) query.maxResults = String(args.maxResults);
       const result = await client.get('/api/v1/twitter/timeline', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -143,7 +143,7 @@ export function registerTwitterTools(
     },
     wrapToolHandler('twitter_get_user', middleware, async (args) => {
       const result = await client.get(`/api/v1/twitter/users/${args.username}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -172,7 +172,7 @@ export function registerTwitterTools(
         quoteTweetId: args.quoteTweetId,
         mediaIds: args.mediaIds,
       });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -204,7 +204,7 @@ export function registerTwitterTools(
         url: args.url,
         data: args.data,
       });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -219,7 +219,7 @@ export function registerTwitterTools(
     },
     wrapToolHandler('twitter_like_tweet', middleware, async (args) => {
       const result = await client.post(`/api/v1/twitter/tweets/${args.tweetId}/like`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -235,7 +235,7 @@ export function registerTwitterTools(
     },
     wrapToolHandler('twitter_retweet', middleware, async (args) => {
       const result = await client.post(`/api/v1/twitter/tweets/${args.tweetId}/retweet`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -251,7 +251,7 @@ export function registerTwitterTools(
     },
     wrapToolHandler('twitter_unretweet', middleware, async (args) => {
       const result = await client.delete(`/api/v1/twitter/tweets/${args.tweetId}/retweet`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

@@ -14,19 +14,10 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'Knowledge Base tools are disabled. Enable Knowledge Base Access in MCP config to use kb_* tools.',
-      },
-    ],
-    isError: true,
-  };
-}
+const KB_DISABLED_MSG =
+  'Knowledge Base tools are disabled. Enable Knowledge Base Access in MCP config to use kb_* tools.';
 
 export function registerKnowledgeBaseTools(
   server: McpServer,
@@ -50,7 +41,7 @@ export function registerKnowledgeBaseTools(
         .describe('Minimum relevance score threshold (0–1)'),
     },
     wrapToolHandler('kb_search', middleware, async ({ query, personalityId, topK, minScore }) => {
-      if (!config.exposeKnowledgeBase) return disabled();
+      if (!config.exposeKnowledgeBase) return errorResponse(KB_DISABLED_MSG);
       const params: Record<string, string> = {
         query,
         type: 'knowledge',
@@ -60,7 +51,7 @@ export function registerKnowledgeBaseTools(
       if (personalityId) params.personalityId = personalityId;
 
       const result = await client.get('/api/v1/brain/search/similar', params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -87,7 +78,7 @@ export function registerKnowledgeBaseTools(
       'kb_add_document',
       middleware,
       async ({ content, title, personalityId, visibility }) => {
-        if (!config.exposeKnowledgeBase) return disabled();
+        if (!config.exposeKnowledgeBase) return errorResponse(KB_DISABLED_MSG);
         let result: unknown;
 
         if (content.startsWith('http://') || content.startsWith('https://')) {
@@ -105,7 +96,7 @@ export function registerKnowledgeBaseTools(
           });
         }
 
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return jsonResponse(result);
       }
     )
   );
@@ -125,13 +116,13 @@ export function registerKnowledgeBaseTools(
         .describe("Filter by visibility: 'private' or 'shared'"),
     },
     wrapToolHandler('kb_list_documents', middleware, async ({ personalityId, visibility }) => {
-      if (!config.exposeKnowledgeBase) return disabled();
+      if (!config.exposeKnowledgeBase) return errorResponse(KB_DISABLED_MSG);
       const params: Record<string, string> = {};
       if (personalityId) params.personalityId = personalityId;
       if (visibility) params.visibility = visibility;
 
       const result = await client.get('/api/v1/brain/documents', params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -143,16 +134,9 @@ export function registerKnowledgeBaseTools(
       id: z.string().min(1).describe('Document ID to delete'),
     },
     wrapToolHandler('kb_delete_document', middleware, async ({ id }) => {
-      if (!config.exposeKnowledgeBase) return disabled();
+      if (!config.exposeKnowledgeBase) return errorResponse(KB_DISABLED_MSG);
       await client.delete(`/api/v1/brain/documents/${id}`);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({ success: true, deleted: id }, null, 2),
-          },
-        ],
-      };
+      return jsonResponse({ success: true, deleted: id });
     })
   );
 }

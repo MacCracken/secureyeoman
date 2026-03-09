@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 
 export function registerTaskTools(
   server: McpServer,
@@ -25,7 +25,7 @@ export function registerTaskTools(
     },
     wrapToolHandler('task_create', middleware, async (args) => {
       const result = await client.post('/api/v1/tasks', args);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -45,7 +45,7 @@ export function registerTaskTools(
       if (args.type) query.type = args.type;
       query.limit = String(args.limit);
       const result = await client.get('/api/v1/tasks', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -57,7 +57,7 @@ export function registerTaskTools(
     },
     wrapToolHandler('task_get', middleware, async (args) => {
       const result = await client.get(`/api/v1/tasks/${args.id}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -69,7 +69,7 @@ export function registerTaskTools(
     },
     wrapToolHandler('task_cancel', middleware, async (args) => {
       const result = await client.delete(`/api/v1/tasks/${args.id}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

@@ -17,18 +17,13 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'SRA tools are disabled. Enable Security Reference Architecture in MCP config to use sra_* tools.',
-      },
-    ],
-    isError: true,
-  };
+const SRA_DISABLED_MSG =
+  'SRA tools are disabled. Enable Security Reference Architecture in MCP config to use sra_* tools.';
+
+function disabled() {
+  return errorResponse(SRA_DISABLED_MSG);
 }
 
 export function registerSraTools(
@@ -60,7 +55,7 @@ export function registerSraTools(
       if (status) params.status = status;
 
       const result = await client.get('/api/v1/security/sra/blueprints', params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -74,7 +69,7 @@ export function registerSraTools(
     wrapToolHandler('sra_get_blueprint', middleware, async ({ id }) => {
       if (!(config as any).exposeSra) return disabled();
       const result = await client.get(`/api/v1/security/sra/blueprints/${id}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -116,7 +111,7 @@ export function registerSraTools(
           framework,
           controls,
         });
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return jsonResponse(result);
       }
     )
   );
@@ -143,7 +138,7 @@ export function registerSraTools(
           name,
           infrastructureDescription,
         });
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return jsonResponse(result);
       }
     )
   );
@@ -158,7 +153,7 @@ export function registerSraTools(
     wrapToolHandler('sra_get_assessment', middleware, async ({ id }) => {
       if (!(config as any).exposeSra) return disabled();
       const result = await client.get(`/api/v1/security/sra/assessments/${id}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -183,7 +178,7 @@ export function registerSraTools(
       if (framework) params.framework = framework;
 
       const result = await client.get('/api/v1/security/sra/compliance-mappings', params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -195,7 +190,7 @@ export function registerSraTools(
     wrapToolHandler('sra_summary', middleware, async () => {
       if (!(config as any).exposeSra) return disabled();
       const result = await client.get('/api/v1/security/sra/summary');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

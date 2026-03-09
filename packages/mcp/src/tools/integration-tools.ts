@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse } from './tool-utils.js';
 
 export function registerIntegrationTools(
   server: McpServer,
@@ -23,7 +23,7 @@ export function registerIntegrationTools(
       const query: Record<string, string> = {};
       if (args.platform) query.platform = args.platform;
       const result = await client.get('/api/v1/integrations', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -42,7 +42,7 @@ export function registerIntegrationTools(
         chatId: args.chatId,
         text: args.text,
       });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -54,7 +54,7 @@ export function registerIntegrationTools(
     },
     wrapToolHandler('integration_status', middleware, async (args) => {
       const result = await client.get(`/api/v1/integrations/${args.id}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

@@ -11,19 +11,10 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'Constitutional AI tools are disabled. Enable constitutional AI in security config to use these tools.',
-      },
-    ],
-    isError: true,
-  };
-}
+const CONSTITUTIONAL_DISABLED_MSG =
+  'Constitutional AI tools are disabled. Enable constitutional AI in security config to use these tools.';
 
 export function registerConstitutionalTools(
   server: McpServer,
@@ -37,9 +28,9 @@ export function registerConstitutionalTools(
     'List the active constitutional AI principles used for self-critique and response revision.',
     {},
     wrapToolHandler('constitutional_principles', middleware, async () => {
-      if (!(config as any).exposeConstitutional) return disabled();
+      if (!(config as any).exposeConstitutional) return errorResponse(CONSTITUTIONAL_DISABLED_MSG);
       const result = await client.get('/security/constitutional/principles');
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -52,9 +43,9 @@ export function registerConstitutionalTools(
       response: z.string().describe('The AI response to critique'),
     },
     wrapToolHandler('constitutional_critique', middleware, async ({ prompt, response }) => {
-      if (!(config as any).exposeConstitutional) return disabled();
+      if (!(config as any).exposeConstitutional) return errorResponse(CONSTITUTIONAL_DISABLED_MSG);
       const result = await client.post('/security/constitutional/critique', { prompt, response });
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 
@@ -67,9 +58,9 @@ export function registerConstitutionalTools(
       response: z.string().describe('The AI response to revise'),
     },
     wrapToolHandler('constitutional_revise', middleware, async ({ prompt, response }) => {
-      if (!(config as any).exposeConstitutional) return disabled();
+      if (!(config as any).exposeConstitutional) return errorResponse(CONSTITUTIONAL_DISABLED_MSG);
       const result = await client.post('/security/constitutional/revise', { prompt, response });
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      return jsonResponse(result);
     })
   );
 }

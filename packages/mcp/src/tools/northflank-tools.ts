@@ -11,7 +11,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
 
 const NORTHFLANK_BASE = 'https://api.northflank.com/v1';
 
@@ -46,16 +46,11 @@ async function northflankFetch(
   return { ok: res.ok, status: res.status, body };
 }
 
-function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: 'Northflank tools are disabled. Set exposeNorthflank=true and configure northflankApiKey in MCP config.',
-      },
-    ],
-    isError: true,
-  };
+const NORTHFLANK_DISABLED_MSG =
+  'Northflank tools are disabled. Set exposeNorthflank=true and configure northflankApiKey in MCP config.';
+
+function disabled() {
+  return errorResponse(NORTHFLANK_DISABLED_MSG);
 }
 
 // ─── Tool Registration ───────────────────────────────────────────────────────
@@ -76,14 +71,9 @@ export function registerNorthflankTools(
       if (!config.exposeNorthflank) return disabled();
       const { ok, status, body } = await northflankFetch(config, `/projects/${projectId}/services`);
       if (!ok) {
-        return {
-          content: [
-            { type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` },
-          ],
-          isError: true,
-        };
+        return errorResponse(`Northflank API error ${status}: ${JSON.stringify(body)}`);
       }
-      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+      return jsonResponse(body);
     })
   );
 
@@ -114,14 +104,9 @@ export function registerNorthflankTools(
           }
         );
         if (!ok) {
-          return {
-            content: [
-              { type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` },
-            ],
-            isError: true,
-          };
+          return errorResponse(`Northflank API error ${status}: ${JSON.stringify(body)}`);
         }
-        return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+        return jsonResponse(body);
       }
     )
   );
@@ -145,14 +130,9 @@ export function registerNorthflankTools(
           `/projects/${projectId}/services/${serviceId}/builds/${buildId}`
         );
         if (!ok) {
-          return {
-            content: [
-              { type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` },
-            ],
-            isError: true,
-          };
+          return errorResponse(`Northflank API error ${status}: ${JSON.stringify(body)}`);
         }
-        return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+        return jsonResponse(body);
       }
     )
   );
@@ -171,14 +151,9 @@ export function registerNorthflankTools(
         `/projects/${projectId}/deployments`
       );
       if (!ok) {
-        return {
-          content: [
-            { type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` },
-          ],
-          isError: true,
-        };
+        return errorResponse(`Northflank API error ${status}: ${JSON.stringify(body)}`);
       }
-      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+      return jsonResponse(body);
     })
   );
 
@@ -207,14 +182,9 @@ export function registerNorthflankTools(
           }
         );
         if (!ok) {
-          return {
-            content: [
-              { type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` },
-            ],
-            isError: true,
-          };
+          return errorResponse(`Northflank API error ${status}: ${JSON.stringify(body)}`);
         }
-        return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
+        return jsonResponse(body);
       }
     )
   );
