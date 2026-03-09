@@ -4,7 +4,7 @@
 
 - Version: 2026.3.8
 - 31 ADRs, 65 guides
-- 32 platform integrations, 400+ MCP tools, 40 CLI commands
+- 32 platform integrations, 400+ MCP tools, 54 CLI commands
 
 ## Documentation
 

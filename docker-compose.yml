@@ -164,8 +164,8 @@ services:
       - prod
     restart: unless-stopped
 
-  # AGNOSTIC QA Platform — webgui with embedded Redis and SQLite.
-  # Provides QA task management, webhooks, and SSE event stream on port 8000.
+  # AGNOSTIC QA Platform — Chainlit webgui + agent workers.
+  # Requires Redis for task queue and session state.
   agnostic:
     image: ghcr.io/maccracken/agnostic:latest
     ports:
@@ -178,6 +178,8 @@ services:
       WEBGUI_HOST: "0.0.0.0"
       WEBGUI_PORT: "8000"
       CREDENTIAL_PROVISIONING_ENABLED: "${CREDENTIAL_PROVISIONING_ENABLED:-true}"
+      REDIS_HOST: agnostic-redis
+      REDIS_PORT: "6379"
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
       interval: 30s
@@ -189,8 +191,27 @@ services:
         limits:
           memory: 4G
           cpus: '2.0'
+    depends_on:
+      agnostic-redis:
+        condition: service_healthy
+        required: false
     profiles:
       - agnostic
+      - full-dev
+    restart: unless-stopped
+
+  # Redis for AGNOSTIC task queue and session state.
+  # TEMPORARY: Next agnostic release embeds Redis internally — remove this service then.
+  # Only in full-dev; standalone agnostic can use its own or embedded Redis.
+  agnostic-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    profiles:
       - full-dev
     restart: unless-stopped
 

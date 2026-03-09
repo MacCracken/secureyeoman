@@ -2,7 +2,7 @@
 
 Most AI assistants serve their platform. SecureYeoman serves you — self-hosted, enterprise-hardened, and answerable only to you. Keep it local. Go hybrid. Connect any provider. Your data only moves when you say so.
 
-**v2026.3.8** | AGPL-3.0 License | 400+ MCP Tools | 40 CLI Commands
+**v2026.3.8** | AGPL-3.0 License | 400+ MCP Tools | 54 CLI Commands
 
 ---
 
@@ -72,9 +72,9 @@ Vector semantic search (FAISS/Qdrant/ChromaDB) fused with tsvector full-text sea
 
 ### 7. Developer Experience
 
-40-command CLI with shell completions and `--json` scripting output. Full-screen TUI (`secureyeoman tui`). Rich lifecycle hook system with observe/transform/veto semantics. Sandboxed code execution (Python, Node.js, shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by explicit consent and audit trail.
+54-command CLI with shell completions and `--json` scripting output. Full-screen TUI (`secureyeoman tui`). Rich lifecycle hook system with observe/transform/veto semantics. Sandboxed code execution (Python, Node.js, shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by explicit consent and audit trail.
 
-- 40 CLI commands + full-screen TUI
+- 54 CLI commands + full-screen TUI
 - Rich lifecycle hooks
 - Sandboxed code execution
 - Desktop control (consent-gated)

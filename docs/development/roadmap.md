@@ -82,7 +82,7 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Dashboard | 164 | 3,201 | 62.37 | 61.98 | All passing |
 | MCP | 72 | 1,066 | 61.80 | 48.51 | All passing |
 | Core E2E | 7 | 53 | — | — | All passing |
-| Core DB (integration) | 47 | 933+ | — | — | All passing (clean DB verified) |
+| Core DB (integration) | 41 | 890 | — | — | All passing (clean DB verified) |
 
 **Improvement areas per suite:**
 
@@ -108,7 +108,8 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 | Item | Status | Description |
 |------|--------|-------------|
-| Smoke-test AGNOS MCP tools | Planned | Verify 20 `agnos_*` MCP tools against live agnosticos container |
+| Smoke-test AGNOS MCP tools | Done (2026-03-08) | All 20 `agnos_*` tools verified against live agnosticos container |
+| Agnostic embedded services | Next agnostic release | Redis + SQLite embedded in container — remove `agnostic-redis` from docker-compose |
 | Merge agnostic into agnosticos | Future | Agnostic becomes a package within agnosticos — collapses to single service |
 
 ---
@@ -250,4 +251,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-08 (AGNOS base image migration done, completed items moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-08 (CLI feature parity — 14 new commands, 54 total. AGNOS base image migration done, 20 AGNOS MCP tools smoke-tested, completed items moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*

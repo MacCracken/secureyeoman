@@ -34,6 +34,20 @@
  *   secureyeoman agents               # View/toggle agent feature flags
  *   secureyeoman migrate              # Run database migrations
  *   secureyeoman world                # ASCII animated agent world
+ *   secureyeoman workflow             # DAG workflows and runs
+ *   secureyeoman dlp                  # Data Loss Prevention
+ *   secureyeoman audit                # Memory audit reports & health
+ *   secureyeoman knowledge            # Knowledge base & RAG ingestion
+ *   secureyeoman chaos                # Chaos engineering experiments
+ *   secureyeoman guardrail            # Guardrail pipeline & filters
+ *   secureyeoman replay               # Agent replay & trace debugging
+ *   secureyeoman pac                  # Policy-as-Code management
+ *   secureyeoman iac                  # Infrastructure-as-Code templates
+ *   secureyeoman observe              # Observability (costs, SLOs, SIEM)
+ *   secureyeoman alert                # Alert rules management
+ *   secureyeoman skill                # Marketplace skills
+ *   secureyeoman federated            # Federated learning sessions
+ *   secureyeoman tenant               # Multi-tenancy management
  */
 
 import { createRouter } from './cli/router.js';
@@ -352,6 +366,111 @@ router.registerLazy({
   description: 'Verify binary release integrity (checksum + signature)',
   usage: 'secureyeoman verify <binary> [options]',
   loader: () => import('./cli/commands/verify.js').then((m) => m.verifyCommand),
+});
+
+router.registerLazy({
+  name: 'workflow',
+  aliases: ['wf'],
+  description: 'Manage DAG workflows and runs',
+  usage: 'secureyeoman workflow <list|show|run|runs|run-detail|cancel|export|import> [options]',
+  loader: () => import('./cli/commands/workflow.js').then((m) => m.workflowCommand),
+});
+
+router.registerLazy({
+  name: 'dlp',
+  description: 'Data Loss Prevention — classifications, scanning, egress',
+  usage: 'secureyeoman dlp <classifications|scan|policies|egress|anomalies|watermark> [options]',
+  loader: () => import('./cli/commands/dlp.js').then((m) => m.dlpCommand),
+});
+
+router.registerLazy({
+  name: 'audit',
+  description: 'Memory audit reports, scheduling, and health',
+  usage: 'secureyeoman audit <reports|show|run|schedule|health|approve> [options]',
+  loader: () => import('./cli/commands/audit.js').then((m) => m.auditCommand),
+});
+
+router.registerLazy({
+  name: 'knowledge',
+  aliases: ['kb'],
+  description: 'Knowledge base — document ingestion and RAG management',
+  usage: 'secureyeoman knowledge <list|ingest-url|ingest-file|ingest-text|delete> [options]',
+  loader: () => import('./cli/commands/knowledge.js').then((m) => m.knowledgeCommand),
+});
+
+router.registerLazy({
+  name: 'chaos',
+  description: 'Chaos engineering experiments and fault injection',
+  usage: 'secureyeoman chaos <list|show|run|abort|results|status> [options]',
+  loader: () => import('./cli/commands/chaos.js').then((m) => m.chaosCommand),
+});
+
+router.registerLazy({
+  name: 'guardrail',
+  aliases: ['gr'],
+  description: 'Guardrail pipeline — filters, metrics, and content testing',
+  usage: 'secureyeoman guardrail <filters|toggle|metrics|reset-metrics|test> [options]',
+  loader: () => import('./cli/commands/guardrail.js').then((m) => m.guardrailCommand),
+});
+
+router.registerLazy({
+  name: 'replay',
+  description: 'Agent replay and trace debugging',
+  usage: 'secureyeoman replay <list|show|summary|chain|diff|delete> [options]',
+  loader: () => import('./cli/commands/replay.js').then((m) => m.replayCommand),
+});
+
+router.registerLazy({
+  name: 'pac',
+  aliases: ['policy-as-code'],
+  description: 'Policy-as-Code bundles, deployments, and evaluation',
+  usage: 'secureyeoman pac <bundles|show|sync|deploy|deployments|rollback|evaluate> [options]',
+  loader: () => import('./cli/commands/pac.js').then((m) => m.pacCommand),
+});
+
+router.registerLazy({
+  name: 'iac',
+  description: 'Infrastructure-as-Code templates and deployments',
+  usage: 'secureyeoman iac <templates|show|sync|validate|deployments|repo> [options]',
+  loader: () => import('./cli/commands/iac.js').then((m) => m.iacCommand),
+});
+
+router.registerLazy({
+  name: 'observe',
+  aliases: ['obs'],
+  description: 'Observability — costs, budgets, SLOs, and SIEM status',
+  usage: 'secureyeoman observe <costs|budgets|slos|siem> [options]',
+  loader: () => import('./cli/commands/observe.js').then((m) => m.observeCommand),
+});
+
+router.registerLazy({
+  name: 'alert',
+  description: 'Manage alert rules — list, test, and delete',
+  usage: 'secureyeoman alert <rules|show|test|delete> [options]',
+  loader: () => import('./cli/commands/alert.js').then((m) => m.alertCommand),
+});
+
+router.registerLazy({
+  name: 'skill',
+  aliases: ['marketplace'],
+  description: 'Marketplace skills — browse, install, and sync',
+  usage: 'secureyeoman skill <list|show|install|uninstall|sync> [options]',
+  loader: () => import('./cli/commands/skill.js').then((m) => m.skillCommand),
+});
+
+router.registerLazy({
+  name: 'federated',
+  aliases: ['fl'],
+  description: 'Federated learning sessions, participants, and rounds',
+  usage: 'secureyeoman federated <sessions|show|pause|resume|cancel|participants|rounds> [options]',
+  loader: () => import('./cli/commands/federated.js').then((m) => m.federatedCommand),
+});
+
+router.registerLazy({
+  name: 'tenant',
+  description: 'Multi-tenancy — list, create, and manage tenants',
+  usage: 'secureyeoman tenant <list|show|create|delete> [options]',
+  loader: () => import('./cli/commands/tenant.js').then((m) => m.tenantCommand),
 });
 
 // ── Help command (eager — uses router directly) ────────────────────────────

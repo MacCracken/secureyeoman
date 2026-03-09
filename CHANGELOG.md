@@ -6,6 +6,27 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.8]
 
+### CLI Feature Parity — 14 New Commands (339 tests)
+
+Full CLI coverage for all major features that previously had API routes but no CLI command. Total: **54 commands** (was 40).
+
+| Command | Alias | Subcommands | Feature |
+|---------|-------|-------------|---------|
+| `workflow` | `wf` | list, show, run, runs, run-detail, cancel, export, import | DAG orchestration |
+| `dlp` | — | classifications, scan, policies, egress, anomalies, watermark | Data Loss Prevention |
+| `audit` | — | reports, show, run, schedule, health, approve | Memory audit & health |
+| `knowledge` | `kb` | list, ingest-url, ingest-file, ingest-text, delete | Knowledge base & RAG |
+| `chaos` | — | list, show, run, abort, results, status | Chaos engineering |
+| `guardrail` | `gr` | filters, toggle, metrics, reset-metrics, test | Guardrail pipeline |
+| `replay` | — | list, show, summary, chain, diff, delete | Agent replay & debugging |
+| `pac` | `policy-as-code` | bundles, show, sync, deploy, deployments, rollback, evaluate | Policy-as-Code |
+| `iac` | — | templates, show, sync, validate, deployments, repo | Infrastructure-as-Code |
+| `observe` | `obs` | costs, budgets, slos, siem | Observability |
+| `alert` | — | rules, show, test, delete | Alert rules |
+| `skill` | `marketplace` | list, show, install, uninstall, sync | Marketplace skills |
+| `federated` | `fl` | sessions, show, pause, resume, cancel, participants, rounds | Federated learning |
+| `tenant` | — | list, show, create, delete | Multi-tenancy |
+
 ### AI Model Registry
 
 Centralized model metadata for 35 models across 9 providers, replacing scattered duplicate maps in `model-router.ts` and `cost-calculator.ts`.
@@ -136,11 +157,11 @@ Split the monolithic `001_baseline.sql` into tier-separated baselines so the dat
 
 | Suite | Files | Tests | Stmts % | Branch % |
 |-------|-------|-------|---------|----------|
-| Core Unit | 619 | 15,339 | 89.31 | 79.10 |
+| Core Unit | 620 | 15,364 | 89.31 | 79.10 |
 | Dashboard | 164 | 3,201 | 62.37 | 61.98 |
 | MCP | 72 | 1,066 | 61.80 | 48.51 |
 | Core E2E | 7 | 53 | — | — |
-| Core DB | 47 | 933+ | — | — |
+| Core DB | 41 | 890 | — | — |
 
 ---
 

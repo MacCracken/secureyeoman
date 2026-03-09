@@ -5,7 +5,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: ~20,600](https://img.shields.io/badge/Tests-~20%2C600-brightgreen.svg)]()
+[![Tests: ~20,500](https://img.shields.io/badge/Tests-~20%2C500-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 
 > **Your AI. Your Rules. Your Infrastructure.**
@@ -98,14 +98,23 @@ See [.env.example](.env.example) and the [Configuration Reference](docs/configur
 
 **Dashboard** — http://localhost:18789 for chat, tasks, security events, personality editor, and settings.
 
-**CLI:**
+**CLI (54 commands):**
 ```bash
 secureyeoman start                              # start the server
 secureyeoman health                             # check server health
 secureyeoman status --profile                   # server status + memory profiling
 secureyeoman model switch anthropic claude-sonnet-4-6
 secureyeoman tui                                # full-screen terminal dashboard
-secureyeoman help                               # all 40 commands
+secureyeoman workflow list                      # manage DAG workflows
+secureyeoman dlp scan report.pdf                # DLP content scanning
+secureyeoman audit reports --json               # memory audit reports
+secureyeoman knowledge ingest-url https://...   # RAG document ingestion
+secureyeoman chaos run <id>                     # chaos engineering
+secureyeoman guardrail filters                  # guardrail pipeline
+secureyeoman replay list                        # agent trace debugging
+secureyeoman observe costs                      # observability & costs
+secureyeoman skill list                         # marketplace skills
+secureyeoman help                               # all 54 commands
 ```
 
 **MCP Integration** — Connect to any MCP-compatible client (Claude Desktop, etc.):
