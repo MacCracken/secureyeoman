@@ -24,6 +24,7 @@ import { createAuditLogger } from './middleware/audit-logger.js';
 import { createSecretRedactor } from './middleware/secret-redactor.js';
 import { registerDashboardRoutes } from './dashboard/routes.js';
 import { decryptSshKey } from './utils/ssh-crypto.js';
+import { MCP_VERSION } from './utils/version.js';
 
 export interface McpServiceServerOptions {
   config: McpServiceConfig;
@@ -51,7 +52,7 @@ export class McpServiceServer {
 
     this.mcpServer = new McpServer({
       name: 'secureyeoman-mcp',
-      version: '1.5.1',
+      version: MCP_VERSION,
     });
   }
 
@@ -123,7 +124,7 @@ export class McpServiceServer {
     this.app.get('/health', async () => ({
       status: 'ok',
       service: 'secureyeoman-mcp',
-      version: '1.5.1',
+      version: MCP_VERSION,
       transport: this.config.transport,
     }));
 

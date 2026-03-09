@@ -19,7 +19,7 @@ LABEL org.opencontainers.image.version="${VERSION}"
 USER root
 
 RUN apt-get update && apt-get install -y --no-install-recommends git wget gettext-base supervisor \
-    postgresql-16 postgresql-16-pgvector gosu \
+    postgresql-17 postgresql-17-pgvector gosu \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd -r secureyeoman && useradd -r -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
@@ -65,7 +65,6 @@ EXPOSE 18789 443 5432 8088 8090
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD secureyeoman health --json || exit 1
 
-USER secureyeoman
-
+# Entrypoint runs as root for PG init; supervisord drops to secureyeoman/postgres per program.
 ENTRYPOINT ["tini", "--", "/usr/local/bin/entrypoint-combined.sh"]
 CMD ["secureyeoman", "start"]

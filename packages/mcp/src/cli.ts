@@ -20,6 +20,7 @@ import { createRateLimiter } from './middleware/rate-limiter.js';
 import { createInputValidator } from './middleware/input-validator.js';
 import { createAuditLogger } from './middleware/audit-logger.js';
 import { createSecretRedactor } from './middleware/secret-redactor.js';
+import { MCP_VERSION } from './utils/version.js';
 
 /**
  * Start the MCP server. Returns an exit code (0 = success).
@@ -51,7 +52,7 @@ export async function runMcpServer(_argv: string[] = []): Promise<number> {
 
     const mcpServer = new McpServer({
       name: 'secureyeoman-mcp',
-      version: '1.5.1',
+      version: MCP_VERSION,
     });
 
     const rateLimiter = createRateLimiter(config.rateLimitPerTool);

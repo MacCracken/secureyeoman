@@ -114,6 +114,8 @@ services:
       # Dev: points to sy-core. Prod: override to http://secureyeoman:8088 via env.
       AGNOS_GATEWAY_URL: ${AGNOS_GATEWAY_URL:-http://sy-core:8088}
       AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://sy-core:8090}
+      # BullShift trading API — points to bullshift service in dev profile
+      BULLSHIFT_API_URL: ${BULLSHIFT_API_URL:-http://bullshift:8787}
       NODE_ENV: production
     healthcheck:
       test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:3001/health']

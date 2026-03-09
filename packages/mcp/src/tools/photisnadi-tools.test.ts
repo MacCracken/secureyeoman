@@ -182,12 +182,16 @@ describe('photisnadi-tools', () => {
   });
 
   it('photisnadi_sync returns connection summary', async () => {
-    let callCount = 0;
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementation(() => {
-        callCount++;
-        const data = callCount === 1 ? [{ id: '1' }, { id: '2' }] : [{ id: 'r1' }];
+      vi.fn().mockImplementation((url: string, opts?: { method?: string }) => {
+        // HEAD request for web UI health check
+        if (opts?.method === 'HEAD') {
+          return Promise.resolve({ ok: true, status: 200 });
+        }
+        // Supabase queries — tasks or rituals
+        const isRituals = (url as string).includes('/rituals');
+        const data = isRituals ? [{ id: 'r1' }] : [{ id: '1' }, { id: '2' }];
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -208,11 +212,12 @@ describe('photisnadi-tools', () => {
     const result = await handlers.photisnadi_sync({});
     const sync = JSON.parse(result.content[0].text);
     expect(sync.status).toBe('connected');
+    expect(sync.webUi).toBe('reachable');
     expect(sync.taskCount).toBe(2);
     expect(sync.ritualCount).toBe(1);
   });
 
-  it('returns isError when supabase config is missing', async () => {
+  it('returns helpful message when supabase config is missing', async () => {
     delete process.env.PHOTISNADI_SUPABASE_URL;
 
     const server = new McpServer({ name: 'test', version: '1.0.0' });
@@ -225,7 +230,6 @@ describe('photisnadi-tools', () => {
     registerPhotisnadiTools(server, makeConfig(), noopMiddleware());
 
     const result = await handlers.photisnadi_list_tasks({});
-    expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('disabled');
+    expect(result.content[0].text).toContain('not configured');
   });
 });

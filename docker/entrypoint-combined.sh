@@ -2,7 +2,11 @@
 # Combined entrypoint: configures TLS (Caddy) and process supervision (supervisord)
 # for AGNOS services (LLM Gateway + Agent Runtime) and SecureYeoman.
 set -e
-trap 'kill -TERM $(jobs -p) 2>/dev/null; wait' SIGTERM SIGINT
+# Signal handling: exec supervisord replaces this shell (PID 1),
+# so SIGTERM goes directly to supervisord which manages child shutdown.
+
+# PostgreSQL binaries (Debian packages install to /usr/lib/postgresql/<ver>/bin/)
+export PATH="/usr/lib/postgresql/17/bin:$PATH"
 
 AGNOS_VERSION="$(cat /etc/agnos/VERSION 2>/dev/null || echo 'unknown')"
 echo "AGNOS v${AGNOS_VERSION} + SecureYeoman starting..."
@@ -39,9 +43,11 @@ if [ "$TLS_ENABLED" = "true" ]; then
 
     envsubst < /etc/caddy/Caddyfile.template > /etc/caddy/Caddyfile
 
-    # Tell Fastify to bind only to localhost (Caddy handles external)
-    export SECUREYEOMAN_HOST="127.0.0.1"
+    # Fastify serves HTTP on 0.0.0.0:18789 for internal container traffic;
+    # Caddy terminates TLS on 443 for external access.
+    export SECUREYEOMAN_HOST="${SECUREYEOMAN_HOST:-0.0.0.0}"
     export SECUREYEOMAN_TLS_ENABLED="false"  # Fastify stays HTTP; Caddy terminates TLS
+    export TLS_ENABLED="false"               # Ensure Fastify doesn't pick up TLS from env_file
 
     # Write supervisord override to enable caddy
     cat > /tmp/supervisord-caddy.conf <<OVERRIDE
@@ -84,7 +90,7 @@ if [ "$_use_embedded_pg" = "true" ]; then
   # Initialize cluster if needed
   if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
     echo "[entrypoint] Initializing PostgreSQL data directory..."
-    gosu postgres initdb -D /var/lib/postgresql/data --auth-local=scram-sha-256 --auth-host=scram-sha-256 -U postgres
+    gosu postgres initdb -D /var/lib/postgresql/data --auth-local=peer --auth-host=scram-sha-256 --encoding=UTF8 --locale=C.UTF-8 -U postgres
     cp /etc/postgresql/postgresql.conf /var/lib/postgresql/data/postgresql.conf
     # Allow local connections from secureyeoman user
     echo "host all all 127.0.0.1/32 scram-sha-256" >> /var/lib/postgresql/data/pg_hba.conf
@@ -95,12 +101,17 @@ if [ "$_use_embedded_pg" = "true" ]; then
 
   # Create user and database if they don't exist
   gosu postgres psql -U postgres -tc "SELECT 1 FROM pg_roles WHERE rolname = '$DATABASE_USER'" | grep -q 1 || \
-    gosu postgres psql -U postgres -v pass="$_pg_pass" -c "CREATE ROLE \"$DATABASE_USER\" WITH LOGIN PASSWORD :'pass'"
+    gosu postgres psql -U postgres -c "CREATE ROLE \"$DATABASE_USER\" WITH LOGIN PASSWORD '$(printf '%s' "$_pg_pass" | sed "s/'/''/g")'"
   gosu postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'" | grep -q 1 || \
-    gosu postgres psql -U postgres -c "CREATE DATABASE \"$DATABASE_NAME\" OWNER \"$DATABASE_USER\" ENCODING 'UTF8'"
+    gosu postgres psql -U postgres -c "CREATE DATABASE \"$DATABASE_NAME\" OWNER \"$DATABASE_USER\" ENCODING 'UTF8' TEMPLATE template0"
 
-  # Install pgvector extension
-  gosu postgres psql -U postgres -d "$DATABASE_NAME" -c "CREATE EXTENSION IF NOT EXISTS vector" 2>/dev/null || true
+  # Install pgvector extension and grant ownership to app user
+  gosu postgres psql -U postgres -d "$DATABASE_NAME" -c "CREATE EXTENSION IF NOT EXISTS vector"
+  gosu postgres psql -U postgres -d "$DATABASE_NAME" -c "GRANT ALL ON SCHEMA public TO \"$DATABASE_USER\""
+  gosu postgres psql -U postgres -d "$DATABASE_NAME" -c "ALTER DATABASE \"$DATABASE_NAME\" OWNER TO \"$DATABASE_USER\""
+  gosu postgres psql -U postgres -d "$DATABASE_NAME" -c "GRANT CREATE ON DATABASE \"$DATABASE_NAME\" TO \"$DATABASE_USER\""
+  # Make secureyeoman a superuser for extension management during migrations
+  gosu postgres psql -U postgres -c "ALTER ROLE \"$DATABASE_USER\" WITH SUPERUSER"
 
   # Stop — supervisord will manage it from here
   gosu postgres pg_ctl -D /var/lib/postgresql/data stop -w -t 10

@@ -4,6 +4,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerDashboardRoutes } from './routes.js';
 import { ProxyAuth } from '../auth/proxy-auth.js';
 import type { CoreApiClient } from '../core-client.js';
+import { MCP_VERSION } from '../utils/version.js';
 
 function mockClient(valid = true): CoreApiClient {
   return {
@@ -62,7 +63,7 @@ describe('dashboard routes', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().service).toBe('secureyeoman-mcp');
-    expect(res.json().version).toBe('1.5.1');
+    expect(res.json().version).toBe(MCP_VERSION);
     expect(res.json().status).toBe('running');
   });
 

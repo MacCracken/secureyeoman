@@ -49,7 +49,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
     > /etc/apt/sources.list.d/nodesource.list \
  && apt-get update && apt-get install -y --no-install-recommends nodejs gettext-base supervisor \
-    postgresql-16 postgresql-16-pgvector gosu \
+    postgresql-17 postgresql-17-pgvector gosu \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd -r secureyeoman && useradd -r -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
@@ -104,10 +104,9 @@ RUN chmod +x /usr/local/bin/entrypoint-combined.sh
 
 EXPOSE 18789 443 5432 8088 8090
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
   CMD node /app/packages/core/dist/cli.js health --json || exit 1
 
-USER secureyeoman
-
+# Entrypoint runs as root for PG init; supervisord drops to secureyeoman/postgres per program.
 ENTRYPOINT ["tini", "--", "/usr/local/bin/entrypoint-combined.sh"]
 CMD ["node", "/app/packages/core/dist/cli.js", "start"]

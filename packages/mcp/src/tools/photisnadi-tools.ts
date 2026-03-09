@@ -18,7 +18,11 @@ import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler } from './tool-utils.js';
 
 const DISABLED_MSG =
-  'Photisnadi tools are disabled. Set MCP_EXPOSE_PHOTISNADI_TOOLS=true and configure PHOTISNADI_SUPABASE_URL, PHOTISNADI_SUPABASE_KEY, PHOTISNADI_USER_ID.';
+  'Photisnadi tools are disabled. Set MCP_EXPOSE_PHOTISNADI_TOOLS=true to enable.';
+
+const NO_SUPABASE_MSG =
+  'Photisnadi Supabase backend is not configured. Set PHOTISNADI_SUPABASE_URL, PHOTISNADI_SUPABASE_KEY, and PHOTISNADI_USER_ID to enable backend task/ritual access. ' +
+  'Photisnadi can still be used via its web UI without Supabase.';
 
 function getSupabaseConfig(): { url: string; key: string; userId: string } | null {
   const url = process.env.PHOTISNADI_SUPABASE_URL;
@@ -133,7 +137,7 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_list_tasks', middleware, async (args) => {
       const sb = getSupabaseConfig();
-      if (!sb) throw new Error(DISABLED_MSG);
+      if (!sb) return { content: [{ type: 'text' as const, text: NO_SUPABASE_MSG }] };
 
       const params = [`user_id=eq.${sb.userId}`, 'order=modified_at.desc'];
       if (args.project_id) params.push(`project_id=eq.${args.project_id}`);
@@ -172,7 +176,7 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_create_task', middleware, async (args) => {
       const sb = getSupabaseConfig();
-      if (!sb) throw new Error(DISABLED_MSG);
+      if (!sb) return { content: [{ type: 'text' as const, text: NO_SUPABASE_MSG }] };
 
       const task: Record<string, unknown> = {
         user_id: sb.userId,
@@ -213,7 +217,7 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_update_task', middleware, async (args) => {
       const sb = getSupabaseConfig();
-      if (!sb) throw new Error(DISABLED_MSG);
+      if (!sb) return { content: [{ type: 'text' as const, text: NO_SUPABASE_MSG }] };
 
       const updates: Record<string, unknown> = { modified_at: new Date().toISOString() };
       if (args.title !== undefined) updates.title = args.title;
@@ -246,7 +250,7 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_get_rituals', middleware, async (args) => {
       const sb = getSupabaseConfig();
-      if (!sb) throw new Error(DISABLED_MSG);
+      if (!sb) return { content: [{ type: 'text' as const, text: NO_SUPABASE_MSG }] };
 
       const params = [`user_id=eq.${sb.userId}`, 'order=created_at.asc'];
       if (args.frequency) params.push(`frequency=eq.${args.frequency}`);
@@ -268,7 +272,7 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_analytics', middleware, async () => {
       const sb = getSupabaseConfig();
-      if (!sb) throw new Error(DISABLED_MSG);
+      if (!sb) return { content: [{ type: 'text' as const, text: NO_SUPABASE_MSG }] };
 
       const tasks = (await supabaseQuery(
         'tasks',
@@ -320,7 +324,36 @@ export function registerPhotisnadiTools(
     },
     wrapToolHandler('photisnadi_sync', middleware, async () => {
       const sb = getSupabaseConfig();
-      if (!sb) throw new Error(DISABLED_MSG);
+
+      // Check Photisnadi web UI availability
+      let webUiStatus = 'unknown';
+      try {
+        const uiRes = await fetch('http://photisnadi:8080/', { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+        webUiStatus = uiRes.ok ? 'reachable' : `HTTP ${uiRes.status}`;
+      } catch {
+        webUiStatus = 'unreachable';
+      }
+
+      if (!sb) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(
+                {
+                  status: 'partial',
+                  webUi: webUiStatus,
+                  supabase: 'not configured',
+                  message: NO_SUPABASE_MSG,
+                  syncedAt: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      }
 
       const [tasks, rituals] = await Promise.all([
         supabaseQuery('tasks', `user_id=eq.${sb.userId}&select=id`, sb) as Promise<unknown[]>,
@@ -334,6 +367,7 @@ export function registerPhotisnadiTools(
             text: JSON.stringify(
               {
                 status: 'connected',
+                webUi: webUiStatus,
                 supabaseUrl: sb.url,
                 taskCount: tasks.length,
                 ritualCount: rituals.length,

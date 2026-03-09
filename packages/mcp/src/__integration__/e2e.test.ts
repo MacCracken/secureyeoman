@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { McpServiceServer } from '../server.js';
 import { CoreApiClient } from '../core-client.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
+import { MCP_VERSION } from '../utils/version.js';
 
 // Mock core server that simulates SecureYeoman's API
 let mockCore: FastifyInstance;
@@ -171,7 +172,7 @@ describe('e2e integration', () => {
   it('health endpoint should include transport info', async () => {
     const res = await mcpServer.getApp().inject({ method: 'GET', url: '/health' });
     expect(res.json().transport).toBe('streamable-http');
-    expect(res.json().version).toBe('1.5.1');
+    expect(res.json().version).toBe(MCP_VERSION);
   });
 
   it('core client should be accessible from server', () => {

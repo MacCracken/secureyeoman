@@ -219,6 +219,8 @@ export function loadConfig(
     exposeDockerTools: parseBool(env.MCP_EXPOSE_DOCKER, false),
     dockerMode: (env.MCP_DOCKER_MODE ?? 'socket') as 'socket' | 'dind',
     dockerHost: env.MCP_DOCKER_HOST,
+    exposeBullshiftTools: parseBool(env.MCP_EXPOSE_BULLSHIFT_TOOLS, false),
+    exposePhotisnadiTools: parseBool(env.MCP_EXPOSE_PHOTISNADI_TOOLS, false),
   };
 
   return McpServiceConfigSchema.parse(raw);

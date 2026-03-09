@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ProxyAuth } from '../auth/proxy-auth.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { MCP_VERSION } from '../utils/version.js';
 
 export function registerDashboardRoutes(
   app: FastifyInstance,
@@ -35,7 +36,7 @@ export function registerDashboardRoutes(
   app.get('/dashboard', async () => {
     return {
       service: 'secureyeoman-mcp',
-      version: '1.5.1',
+      version: MCP_VERSION,
       status: 'running',
       tools: listMcpCapabilities(mcpServer, 'tools'),
       resources: listMcpCapabilities(mcpServer, 'resources'),
