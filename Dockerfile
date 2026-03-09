@@ -18,6 +18,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 USER root
 
 RUN apt-get update && apt-get install -y --no-install-recommends git wget gettext-base supervisor \
+    postgresql-16 postgresql-16-pgvector gosu \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd -r secureyeoman && useradd -r -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
@@ -39,6 +40,11 @@ RUN chmod +x /usr/local/bin/secureyeoman
 # SQL migration files
 COPY dist/migrations/ /usr/local/bin/migrations/
 
+# Embedded PostgreSQL config
+COPY docker/postgresql.conf /etc/postgresql/postgresql.conf
+RUN mkdir -p /etc/postgresql /var/lib/postgresql/data /run/postgresql \
+ && chown -R postgres:postgres /var/lib/postgresql /run/postgresql /etc/postgresql
+
 # Supervisord + Caddy config
 COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/Caddyfile.template /etc/caddy/Caddyfile.template
@@ -52,7 +58,7 @@ RUN chmod +x /usr/local/bin/entrypoint-combined.sh
 # Use JSON log format (pino-pretty not bundled in standalone binary)
 ENV SECUREYEOMAN_LOG_FORMAT=json
 
-EXPOSE 18789 443 8088 8090
+EXPOSE 18789 443 5432 8088 8090
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD secureyeoman health --json || exit 1

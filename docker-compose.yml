@@ -1,6 +1,9 @@
 name: secureyeoman
 
 services:
+  # External PostgreSQL — optional. By default, sy-core/secureyeoman use embedded PG.
+  # To use this external PG instead, run with --profile external-db and set
+  # DATABASE_HOST=sy-pg in the service environment.
   sy-pg:
     image: pgvector/pgvector:pg16
     environment:
@@ -8,15 +11,17 @@ services:
       POSTGRES_USER: secureyeoman
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secureyeoman_dev}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U secureyeoman"]
+      test: ['CMD-SHELL', 'pg_isready -U secureyeoman']
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 5s
+    profiles:
+      - external-db
     restart: unless-stopped
 
   sy-core:
@@ -24,20 +29,22 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
     ports:
-      - "18789:18789"
-      - "${TLS_PORT:-443}:${TLS_PORT:-443}"
+      - '18789:18789'
+      - '${TLS_PORT:-443}:${TLS_PORT:-443}'
     volumes:
       - data:/home/secureyeoman/.secureyeoman
       - community-repo:/usr/share/secureyeoman/community-repo
       - ./certs:/app/certs:ro
     env_file: .env.dev
     environment:
-      SECUREYEOMAN_HOST: "0.0.0.0"
+      SECUREYEOMAN_HOST: '0.0.0.0'
       NODE_ENV: production
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secureyeoman_dev}
-      DATABASE_HOST: sy-pg
+      # DATABASE_HOST is unset by default → embedded PostgreSQL.
+      # Set DATABASE_HOST=sy-pg and use --profile external-db for external PG.
+      DATABASE_HOST: ${DATABASE_HOST:-}
       DATABASE_USER: secureyeoman
       DATABASE_NAME: secureyeoman
       # Unified TLS env vars (Caddy reverse proxy). Loaded from env_file (.env.dev).
@@ -56,15 +63,20 @@ services:
       # AGNOSTIC QA integration — points to agnostic service when --profile agnostic is active.
       AGNOSTIC_URL: ${AGNOSTIC_URL:-http://agnostic:8000}
       AGNOSTIC_API_KEY: ${AGNOSTIC_API_KEY:-}
+      # Photisnadi task/ritual integration
+      PHOTISNADI_SUPABASE_URL: ${PHOTISNADI_SUPABASE_URL:-}
+      PHOTISNADI_SUPABASE_KEY: ${PHOTISNADI_SUPABASE_KEY:-}
+      PHOTISNADI_USER_ID: ${PHOTISNADI_USER_ID:-}
     healthcheck:
-      test: ["CMD-SHELL", "NODE_TLS_REJECT_UNAUTHORIZED=0 node /app/packages/core/dist/cli.js health --url https://127.0.0.1:18789 --json 2>/dev/null || node /app/packages/core/dist/cli.js health --url http://127.0.0.1:18789 --json"]
+      test:
+        [
+          'CMD-SHELL',
+          'NODE_TLS_REJECT_UNAUTHORIZED=0 node /app/packages/core/dist/cli.js health --url https://127.0.0.1:18789 --json 2>/dev/null || node /app/packages/core/dist/cli.js health --url http://127.0.0.1:18789 --json',
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 15s
-    depends_on:
-      sy-pg:
-        condition: service_healthy
+      start_period: 30s
     profiles:
       - dev
       - full-dev
@@ -76,25 +88,25 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     # MCP sidecar doesn't need AGNOS — skip the combined entrypoint.
-    entrypoint: ["node", "/app/packages/core/dist/cli.js"]
-    command: ["mcp-server"]
+    entrypoint: ['node', '/app/packages/core/dist/cli.js']
+    command: ['mcp-server']
     ports:
-      - "3001:3001"
+      - '3001:3001'
     volumes:
       - data:/home/secureyeoman/.secureyeoman
     env_file: .env.dev
     environment:
-      MCP_ENABLED: "${MCP_ENABLED:-true}"
-      MCP_PORT: "3001"
-      MCP_HOST: "0.0.0.0"
-      MCP_TRANSPORT: "${MCP_TRANSPORT:-streamable-http}"
-      MCP_AUTO_REGISTER: "${MCP_AUTO_REGISTER:-true}"
+      MCP_ENABLED: '${MCP_ENABLED:-true}'
+      MCP_PORT: '3001'
+      MCP_HOST: '0.0.0.0'
+      MCP_TRANSPORT: '${MCP_TRANSPORT:-streamable-http}'
+      MCP_AUTO_REGISTER: '${MCP_AUTO_REGISTER:-true}'
       # MCP_CORE_URL set via env_file (.env.dev) — defaults to http, override to https when TLS enabled
-      MCP_ADVERTISE_URL: "http://sy-mcp:3001"
-      MCP_EXPOSE_FILESYSTEM: "${MCP_EXPOSE_FILESYSTEM:-false}"
-      MCP_ALLOWED_PATHS: "${MCP_ALLOWED_PATHS:-}"
-      MCP_RATE_LIMIT_PER_TOOL: "${MCP_RATE_LIMIT_PER_TOOL:-30}"
-      MCP_LOG_LEVEL: "${MCP_LOG_LEVEL:-info}"
+      MCP_ADVERTISE_URL: 'http://sy-mcp:3001'
+      MCP_EXPOSE_FILESYSTEM: '${MCP_EXPOSE_FILESYSTEM:-false}'
+      MCP_ALLOWED_PATHS: '${MCP_ALLOWED_PATHS:-}'
+      MCP_RATE_LIMIT_PER_TOOL: '${MCP_RATE_LIMIT_PER_TOOL:-30}'
+      MCP_LOG_LEVEL: '${MCP_LOG_LEVEL:-info}'
       # Agnostic / AGNOS tool flags and URLs are loaded from env_file (.env.dev).
       # Do NOT re-declare them here — environment: overrides env_file values,
       # and the ${VAR:-default} pattern would replace .env.dev's true with false.
@@ -104,7 +116,7 @@ services:
       AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://sy-core:8090}
       NODE_ENV: production
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3001/health"]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:3001/health']
       interval: 30s
       timeout: 5s
       retries: 3
@@ -133,20 +145,22 @@ services:
       context: .
       dockerfile: Dockerfile
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
     ports:
-      - "18789:18789"
-      - "${TLS_PORT:-443}:${TLS_PORT:-443}"
+      - '18789:18789'
+      - '${TLS_PORT:-443}:${TLS_PORT:-443}'
     volumes:
       - data:/home/secureyeoman/.secureyeoman
       - community-repo:/usr/share/secureyeoman/community-repo
       - ./certs:/app/certs:ro
     env_file: .env.dev
     environment:
-      SECUREYEOMAN_HOST: "0.0.0.0"
+      SECUREYEOMAN_HOST: '0.0.0.0'
       NODE_ENV: production
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secureyeoman_dev}
-      DATABASE_HOST: sy-pg
+      # DATABASE_HOST is unset by default → embedded PostgreSQL.
+      # Set DATABASE_HOST=sy-pg and use --profile external-db for external PG.
+      DATABASE_HOST: ${DATABASE_HOST:-}
       DATABASE_USER: secureyeoman
       DATABASE_NAME: secureyeoman
       OPA_ADDR: ${OPA_ADDR:-}
@@ -156,15 +170,16 @@ services:
       AGNOS_RUNTIME_API_KEY: ${AGNOS_RUNTIME_API_KEY:-}
       AGNOSTIC_URL: ${AGNOSTIC_URL:-http://agnostic:8000}
       AGNOSTIC_API_KEY: ${AGNOSTIC_API_KEY:-}
+      # Photisnadi task/ritual integration
+      PHOTISNADI_SUPABASE_URL: ${PHOTISNADI_SUPABASE_URL:-}
+      PHOTISNADI_SUPABASE_KEY: ${PHOTISNADI_SUPABASE_KEY:-}
+      PHOTISNADI_USER_ID: ${PHOTISNADI_USER_ID:-}
     healthcheck:
-      test: ["CMD", "secureyeoman", "health", "--json"]
+      test: ['CMD', 'secureyeoman', 'health', '--json']
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
-    depends_on:
-      sy-pg:
-        condition: service_healthy
     profiles:
       - prod
     restart: unless-stopped
@@ -174,19 +189,19 @@ services:
   agnostic:
     image: ghcr.io/maccracken/agnostic:latest
     ports:
-      - "8000:8000"
+      - '8000:8000'
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       AGNOSTIC_API_KEY: ${AGNOSTIC_API_KEY:-}
-      YEOMAN_A2A_ENABLED: "${YEOMAN_A2A_ENABLED:-true}"
-      MCP_SERVER_ENABLED: "${MCP_SERVER_ENABLED:-true}"
-      WEBGUI_HOST: "0.0.0.0"
-      WEBGUI_PORT: "8000"
-      CREDENTIAL_PROVISIONING_ENABLED: "${CREDENTIAL_PROVISIONING_ENABLED:-true}"
+      YEOMAN_A2A_ENABLED: '${YEOMAN_A2A_ENABLED:-true}'
+      MCP_SERVER_ENABLED: '${MCP_SERVER_ENABLED:-true}'
+      WEBGUI_HOST: '0.0.0.0'
+      WEBGUI_PORT: '8000'
+      CREDENTIAL_PROVISIONING_ENABLED: '${CREDENTIAL_PROVISIONING_ENABLED:-true}'
       REDIS_HOST: agnostic-redis
-      REDIS_PORT: "6379"
+      REDIS_PORT: '6379'
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -211,7 +226,7 @@ services:
   agnostic-redis:
     image: redis:7-alpine
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 3
@@ -226,17 +241,17 @@ services:
   agnosticos:
     image: ghcr.io/maccracken/agnosticos:latest
     ports:
-      - "8088:8088"
-      - "8090:8090"
+      - '8088:8088'
+      - '8090:8090'
     environment:
-      AGNOS_LOG_FORMAT: "${AGNOS_LOG_FORMAT:-json}"
-      RUST_LOG: "${RUST_LOG:-info}"
-      AGNOS_RUNTIME_BIND: "0.0.0.0"
-      AGNOS_GATEWAY_BIND: "0.0.0.0"
-      AGNOS_RUNTIME_API_KEY: "${AGNOS_RUNTIME_API_KEY:-}"
-      AGNOS_GATEWAY_API_KEY: "${AGNOS_GATEWAY_API_KEY:-}"
+      AGNOS_LOG_FORMAT: '${AGNOS_LOG_FORMAT:-json}'
+      RUST_LOG: '${RUST_LOG:-info}'
+      AGNOS_RUNTIME_BIND: '0.0.0.0'
+      AGNOS_GATEWAY_BIND: '0.0.0.0'
+      AGNOS_RUNTIME_API_KEY: '${AGNOS_RUNTIME_API_KEY:-}'
+      AGNOS_GATEWAY_API_KEY: '${AGNOS_GATEWAY_API_KEY:-}'
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8088/v1/health"]
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8088/v1/health']
       interval: 30s
       timeout: 5s
       retries: 3
@@ -253,15 +268,15 @@ services:
   sy-opa:
     image: openpolicyagent/opa:1.14.0
     command:
-      - "run"
-      - "--server"
-      - "--addr=0.0.0.0:8181"
-      - "--log-level=error"
-      - "--set=decision_logs.console=false"
+      - 'run'
+      - '--server'
+      - '--addr=0.0.0.0:8181'
+      - '--log-level=error'
+      - '--set=decision_logs.console=false'
     ports:
-      - "8181:8181"
+      - '8181:8181'
     healthcheck:
-      test: ["CMD", "/opa", "eval", "true"]
+      test: ['CMD', '/opa', 'eval', 'true']
       interval: 15s
       timeout: 5s
       retries: 3
@@ -280,7 +295,7 @@ services:
     working_dir: /app
     command: sh -c "npm install --ignore-scripts && npm run dev:dashboard"
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - .:/app
       - node-modules:/app/node_modules
@@ -288,9 +303,9 @@ services:
     env_file: .env.dev
     environment:
       # VITE_GATEWAY_URL set via env_file (.env.dev) — defaults to http, override to https when TLS enabled
-      VITE_HOST: "0.0.0.0"
-      CHOKIDAR_USEPOLLING: "true"
-      CHOKIDAR_INTERVAL: "300"
+      VITE_HOST: '0.0.0.0'
+      CHOKIDAR_USEPOLLING: 'true'
+      CHOKIDAR_INTERVAL: '300'
     depends_on:
       sy-core:
         condition: service_healthy

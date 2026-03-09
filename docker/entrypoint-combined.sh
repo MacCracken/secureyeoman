@@ -56,6 +56,63 @@ autostart=false
 OVERRIDE
 fi
 
+# ── Embedded PostgreSQL ─────────────────────────────────────────
+# Skip embedded PG when DATABASE_HOST points to an external server.
+# For HA deployments, set DATABASE_HOST to your external PostgreSQL.
+
+_db_host="${DATABASE_HOST:-}"
+_use_embedded_pg=true
+
+if [ -n "$_db_host" ] && [ "$_db_host" != "localhost" ] && [ "$_db_host" != "127.0.0.1" ]; then
+  _use_embedded_pg=false
+  echo "[entrypoint] Using external PostgreSQL at $_db_host"
+fi
+
+if [ "$_use_embedded_pg" = "true" ]; then
+  echo "[entrypoint] Starting embedded PostgreSQL..."
+
+  export DATABASE_HOST="127.0.0.1"
+  export DATABASE_USER="${DATABASE_USER:-secureyeoman}"
+  export DATABASE_NAME="${DATABASE_NAME:-secureyeoman}"
+  _pg_pass="${POSTGRES_PASSWORD:-secureyeoman_dev}"
+
+  # Ensure directories exist
+  install -d -o postgres -g postgres -m 700 /var/lib/postgresql/data
+  install -d -o postgres -g postgres -m 755 /run/postgresql
+
+  # Initialize cluster if needed
+  if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
+    echo "[entrypoint] Initializing PostgreSQL data directory..."
+    gosu postgres initdb -D /var/lib/postgresql/data --auth-local=trust --auth-host=scram-sha-256 -U postgres
+    cp /etc/postgresql/postgresql.conf /var/lib/postgresql/data/postgresql.conf
+    # Allow local connections from secureyeoman user
+    echo "host all all 127.0.0.1/32 scram-sha-256" >> /var/lib/postgresql/data/pg_hba.conf
+  fi
+
+  # Start postgres temporarily to create user/database
+  gosu postgres pg_ctl -D /var/lib/postgresql/data -l /tmp/pg_init.log start -w -t 30
+
+  # Create user and database if they don't exist
+  gosu postgres psql -U postgres -tc "SELECT 1 FROM pg_roles WHERE rolname = '$DATABASE_USER'" | grep -q 1 || \
+    gosu postgres psql -U postgres -c "CREATE ROLE \"$DATABASE_USER\" WITH LOGIN PASSWORD '$_pg_pass'"
+  gosu postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'" | grep -q 1 || \
+    gosu postgres psql -U postgres -c "CREATE DATABASE \"$DATABASE_NAME\" OWNER \"$DATABASE_USER\" ENCODING 'UTF8'"
+
+  # Install pgvector extension
+  gosu postgres psql -U postgres -d "$DATABASE_NAME" -c "CREATE EXTENSION IF NOT EXISTS vector" 2>/dev/null || true
+
+  # Stop — supervisord will manage it from here
+  gosu postgres pg_ctl -D /var/lib/postgresql/data stop -w -t 10
+
+  # Enable postgres in supervisord
+  cat > /tmp/supervisord-postgres.conf <<PGEOF
+[program:postgres]
+autostart=true
+PGEOF
+
+  echo "[entrypoint] Embedded PostgreSQL ready (user=$DATABASE_USER, db=$DATABASE_NAME)"
+fi
+
 # --- Set the command for secureyeoman process ---
 # $@ comes from CMD in Dockerfile (e.g. "secureyeoman start" or "node ... start")
 export SY_CMD="$*"

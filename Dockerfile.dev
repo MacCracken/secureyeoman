@@ -49,6 +49,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
     > /etc/apt/sources.list.d/nodesource.list \
  && apt-get update && apt-get install -y --no-install-recommends nodejs gettext-base supervisor \
+    postgresql-16 postgresql-16-pgvector gosu \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd -r secureyeoman && useradd -r -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
@@ -86,6 +87,11 @@ COPY --from=builder /app/packages/mcp/node_modules packages/mcp/node_modules/
 # dashboard (served by core gateway via @fastify/static)
 COPY --from=builder /app/packages/dashboard/dist packages/dashboard/dist/
 
+# Embedded PostgreSQL config
+COPY docker/postgresql.conf /etc/postgresql/postgresql.conf
+RUN mkdir -p /etc/postgresql /var/lib/postgresql/data /run/postgresql \
+ && chown -R postgres:postgres /var/lib/postgresql /run/postgresql /etc/postgresql
+
 # Supervisord + Caddy config
 COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/Caddyfile.template /etc/caddy/Caddyfile.template
@@ -96,7 +102,7 @@ RUN mkdir -p /var/log/supervisor /etc/caddy /data/caddy \
 COPY docker/entrypoint-combined.sh /usr/local/bin/entrypoint-combined.sh
 RUN chmod +x /usr/local/bin/entrypoint-combined.sh
 
-EXPOSE 18789 443 8088 8090
+EXPOSE 18789 443 5432 8088 8090
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD node /app/packages/core/dist/cli.js health --json || exit 1

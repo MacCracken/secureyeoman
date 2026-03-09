@@ -10,7 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 145 | Cross-Project MCP Expansion (Photisnadi widget) | P2 | 1 item remaining + 1 draft infra item |
+| 145 | Cross-Project MCP Expansion (Photisnadi widget) | P2 | Widget done; 2 future items remaining |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -102,7 +102,7 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 | Item | Effort | Status | Description |
 |------|--------|--------|-------------|
-| Photisnadi dashboard widget | 0.5 day | Planned | `PhotosnadiWidget.tsx` showing task counts by status, ritual streaks, recent activity. Proxy route at `/api/v1/integrations/photisnadi/widget` |
+| Photisnadi dashboard widget | 0.5 day | Done (2026-03-09) | `TaskTrackerWidget.tsx` showing task counts by status, ritual streaks, recent activity. Proxy route at `/api/v1/integrations/photisnadi/widget` |
 
 ### Cross-Project — Future
 
@@ -113,8 +113,10 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | SY TLS via Caddy reverse proxy | Done (2026-03-09) | Supervisord + Caddy in Docker images. 3 modes: provided certs, auto ACME, HTTP passthrough. Fastify stays HTTP on 127.0.0.1, Caddy handles :443. Fastify TLS kept as fallback for bare-metal |
 | Unified TLS env vars | Done (2026-03-09) | `TLS_ENABLED`, `TLS_CERT_PATH`, `TLS_KEY_PATH`, `TLS_DOMAIN`, `TLS_PORT` shared across SY, Agnostic, AGNOS. Legacy `SECUREYEOMAN_TLS_*` still supported with lower precedence |
 | Docker image CI/CD — GHCR push | Done (2026-03-09) | Multi-arch (amd64 + arm64) image build in release pipeline. Push to `ghcr.io/maccracken/secureyeoman`. Cosign-signed. CI build test on every push/PR |
-| SY embedded PostgreSQL | Draft | Move `sy-pg` into the SY container (supervisord). Same pattern as Agnostic: skip embedded when `DATABASE_HOST` points to external. Removes mandatory sidecar for single-node deployments |
+| SY embedded PostgreSQL | Done (2026-03-09) | Move `sy-pg` into the SY container (supervisord). Same pattern as Agnostic: skip embedded when `DATABASE_HOST` points to external. Removes mandatory sidecar for single-node deployments |
 | Merge agnostic into agnosticos | Future | Agnostic becomes a package within agnosticos — collapses to single service |
+| Photisnadi in SY container | Future | Photisnadi baked into agnosticos base image or run as separate container. User choice via `PHOTISNADI_ENABLED` flag. When embedded, supervisord manages Photisnadi process; when external, SY proxies via SUPABASE_URL |
+| Task tracker widget — third-party aggregator | Future | Extend TaskTrackerWidget to aggregate tasks from third-party trackers (Photisnadi, Trello, Jira, Linear, Todoist, Asana) via adapter interface. Unified view of all external task sources. Widget auto-selects adapters based on configured integrations |
 
 ---
 
@@ -255,4 +257,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-08 (CLI feature parity — 14 new commands, 54 total. AGNOS base image migration done, 20 AGNOS MCP tools smoke-tested, completed items moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-09 (TaskTrackerWidget renamed from PhotisnadiWidget, SY embedded PostgreSQL done, Photisnadi env vars added to docker-compose). See [Changelog](../../CHANGELOG.md) for full history.*

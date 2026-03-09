@@ -25,6 +25,24 @@ Added 80 new unit tests across 4 files, targeting the lowest-coverage source fil
 - **`sandbox/landlock-worker.ts`**: 18% → 100% stmt coverage (13 tests). IPC message protocol, Landlock detection, suspicious path validation, function execution success/error.
 - **Overall**: 89.34% → 89.68% stmt, 78.86% → 79.14% branch (637 files, 15,780 tests).
 
+### Photisnadi Dashboard Widget (Phase 145)
+
+- **Proxy route** (`integrations/photisnadi/photisnadi-routes.ts`): Two endpoints — `GET /api/v1/integrations/photisnadi/widget` (aggregated task/ritual/activity data) and `GET /api/v1/integrations/photisnadi/health` (connectivity check). Supabase credentials stay server-side.
+- **TaskTrackerWidget** (`dashboard/integrations/TaskTrackerWidget.tsx`): Task tracker card with status bar, priority pills, overdue/completed-this-week counts, ritual frequency breakdown, and recent activity feed. Currently backed by Photisnadi; designed to aggregate third-party trackers (Trello, Jira, Linear, Todoist) via adapter interface in a future release.
+- **API client**: Added `fetchPhotisnadiWidget()` and `fetchPhotisnadiHealth()` to dashboard API client.
+- **Docker**: Photisnadi env vars (`PHOTISNADI_SUPABASE_URL`, `PHOTISNADI_SUPABASE_KEY`, `PHOTISNADI_USER_ID`) added to both dev and prod compose services.
+
+### Embedded PostgreSQL
+
+Embedded PostgreSQL 16 + pgvector in the Docker container. Eliminates the mandatory `sy-pg` sidecar for single-node deployments. External PostgreSQL remains fully supported for HA.
+
+- **supervisord** (`docker/supervisord.conf`): Added `[program:postgres]` entry (priority 5, autostart conditional).
+- **Entrypoint** (`docker/entrypoint-combined.sh`): Auto-detects embedded vs external mode — skips embedded PG when `DATABASE_HOST` points to a remote host. Initializes cluster, creates user/database/pgvector extension on first run.
+- **PostgreSQL config** (`docker/postgresql.conf`): Hardened defaults (localhost-only, scram-sha-256, row security, tuned memory).
+- **Dockerfiles**: Added `postgresql-16`, `postgresql-16-pgvector`, `gosu` packages to all three Dockerfiles.
+- **docker-compose**: `sy-pg` service gated behind `--profile external-db`. Default mode is embedded PG. `DATABASE_HOST` defaults to empty (triggers embedded).
+- **Deployment docs**: Added "PostgreSQL: Embedded vs External" section.
+
 ### Code Audit Fixes
 
 Performance, security, and code quality improvements from pre-release audit.

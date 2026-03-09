@@ -105,6 +105,7 @@ import { registerJiraRoutes } from '../integrations/jira/jira-routes.js';
 import { registerNotionRoutes } from '../integrations/notion/notion-routes.js';
 import { registerGoogleWorkspaceRoutes } from '../integrations/google-workspace-routes.js';
 import { registerTradingRoutes } from '../integrations/trading/trading-routes.js';
+import { registerPhotisnadiRoutes } from '../integrations/photisnadi/photisnadi-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -757,6 +758,13 @@ export class GatewayServer {
       registerNotionRoutes(this.app, { integrationManager: notionIm });
     } catch {
       // Notion routes are optional — skip on error
+    }
+
+    // Photisnadi task/ritual widget proxy routes
+    try {
+      registerPhotisnadiRoutes(this.app);
+    } catch {
+      // Photisnadi routes are optional — skip on error
     }
 
     // Trading & market data proxy routes

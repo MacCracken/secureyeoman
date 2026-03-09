@@ -135,6 +135,47 @@ node packages/core/dist/cli.js start
 sudo systemctl start secureyeoman
 ```
 
+## PostgreSQL: Embedded vs External
+
+The Docker image ships with an **embedded PostgreSQL 16** instance that starts automatically for single-node deployments. No separate database container or external PostgreSQL is required.
+
+| Mode | When | How |
+|------|------|-----|
+| **Embedded** (default) | `DATABASE_HOST` is unset, `localhost`, or `127.0.0.1` | PostgreSQL runs inside the container via supervisord. Data stored at `/var/lib/postgresql/data`. |
+| **External** | `DATABASE_HOST` set to any other hostname/IP | Embedded PG is skipped. The container connects to your external PostgreSQL. |
+
+**Embedded mode** — zero-config, ideal for development and single-node production:
+
+```bash
+docker run -d --name secureyeoman \
+  -p 18789:18789 \
+  -v pgdata:/var/lib/postgresql/data \
+  -v sydata:/home/secureyeoman/.secureyeoman \
+  -e SECUREYEOMAN_TOKEN_SECRET="$(openssl rand -base64 32)" \
+  -e SECUREYEOMAN_ADMIN_PASSWORD="your-password" \
+  secureyeoman:latest
+```
+
+**External mode** — for HA, replicated, or managed PostgreSQL (RDS, Cloud SQL, etc.):
+
+```bash
+docker run -d --name secureyeoman \
+  -p 18789:18789 \
+  -e DATABASE_HOST=db.example.com \
+  -e DATABASE_USER=secureyeoman \
+  -e DATABASE_NAME=secureyeoman \
+  -e POSTGRES_PASSWORD=your-db-password \
+  secureyeoman:latest
+```
+
+With `docker compose`, the `sy-pg` service is gated behind the `external-db` profile. To use it instead of embedded PG:
+
+```bash
+DATABASE_HOST=sy-pg docker compose --env-file .env.dev --profile dev --profile external-db up -d
+```
+
+---
+
 ## Docker
 
 Pre-built multi-arch images (linux/amd64, linux/arm64) are published to GHCR on every tagged release:

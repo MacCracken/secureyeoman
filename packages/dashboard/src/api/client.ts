@@ -6479,3 +6479,13 @@ export async function fetchInlineCompletion(params: {
     body: JSON.stringify(params),
   });
 }
+
+// ── Photisnadi ────────────────────────────────────────────────────────
+
+export async function fetchPhotisnadiWidget(): Promise<any> {
+  return request('/integrations/photisnadi/widget');
+}
+
+export async function fetchPhotisnadiHealth(): Promise<{ ok: boolean }> {
+  return request('/integrations/photisnadi/health');
+}
