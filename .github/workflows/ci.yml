@@ -178,4 +178,4 @@ jobs:
 
       - name: Sanity check (dev)
         run: |
-          docker run --rm secureyeoman:dev-test node -e "console.log('dev-image-ok')" | grep dev-image-ok
+          docker run --rm --entrypoint node secureyeoman:dev-test -e "console.log('dev-image-ok')" | grep dev-image-ok
