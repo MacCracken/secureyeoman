@@ -2,7 +2,7 @@
 
 > SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (13 AI providers), enterprise-grade security (RBAC, SSO/SAML, sandboxing, TEE-aware routing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 400+-tool MCP server, and a full ML lifecycle platform — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
 
-- Version: 2026.3.8
+- Version: 2026.3.9
 - 32 ADRs, 66 guides
 - 32 platform integrations, 400+ MCP tools, 56 CLI commands
 

@@ -1,564 +1,155 @@
-# Functionality Audit: SecureYeoman vs Competitors
+# Competitive Analysis
 
-> Comparative analysis as of **2026-03-06** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, Ironclaw, TrustClaw, Manus AI (Meta), Devin 2.0, OpenHands, OpenAI Frontier, ZeroClaw, and NanoBot.
+> Last updated: **2026-03-09** | SecureYeoman **v2026.3.9**
 
 ---
 
 ## Executive Summary
 
+SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that ships RBAC, SSO/SAML, multi-tenancy, cryptographic audit trails, Vault integration, OPA/CEL governance, DLP, and Kubernetes Helm in a single ~123 MB binary deployable fully air-gapped.
+
+No competitor matches this combination. The closest — Ironclaw — leads on Rust memory safety and TEE hardware attestation but requires cloud infrastructure (no air-gap) and lacks RBAC, SSO, multi-agent orchestration, and a dashboard.
+
+---
+
+## Landscape
+
 | | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |---|---|---|---|---|---|
-| **Vendor** | Open source | Open source (→ foundation; creator joined OpenAI Feb 14) | agent0ai | Sipeed (sipeed/picoclaw) | NEAR AI |
-| **Latest version** | 2026.3.6 | 2026.3.1 | v0.9.8.2 | v0.2.0 (Feb 28) | **v0.13.1** (Mar 2) |
-| **GitHub stars** | — | ~234K (1.36M npm/week) | ~15.7K | ~21.7K (launched Feb 9) | ~4K |
-| **Language** | TypeScript | TypeScript | Python | Go | **Rust** |
-| **Focus** | Enterprise self-hosted AI agent | Feature-rich personal AI | Personal assistant / agentic | Ultralight embedded AI | Privacy-first, TEE-backed runtime |
-| **Deployment** | Local / LAN / public TLS; K8s Helm | Local desktop / server | Docker | Single binary, $10 hardware | TEE on NEAR AI Cloud **(no air-gap)** |
-| **RAM** | ~1 GB | ~1.5 GB baseline (2 GB min; 8 GB for browser skills) | 4 GB recommended | **10–20 MB** (v0.1.2) | Not published |
-| **Startup** | ~30 s | ~6 s | > 30 s | **< 1 s** | Not published |
-| **Security** | ✅ RBAC · encryption · audit chain · sandboxing · SecretsManager/Vault · TLS lifecycle · ResponseGuard · OPA/CEL governance | ⚠️ CVE-2026-25253 RCE (CVSS 8.8) + CVE-2026-25157, CVE-2026-24763 + 6 more; 1,184+ malicious ClawHub skills (ClawHavoc); Cline supply chain; Gartner: "unacceptable enterprise risk" | Basic (Docker isolation) | Experimental; network security issues (self-disclosed) | ✅ TEE · WASM sandbox · AES-256-GCM · credential vault |
-| **MCP** | ✅ Full server + client (330 tools) | Limited client integration | ✅ Client + server | ✅ (v0.2.0) | ✅ As tool implementation path |
-| **Enterprise-ready** | ✅ RBAC · SSO/OIDC/SAML · multi-tenancy · K8s · Prometheus | ❌ | ❌ | ❌ | ❌ |
+| **Version** | 2026.3.9 | 2026.3.1 | v0.9.8.2 | v0.2.0 | v0.13.1 |
+| **Stars** | — | ~234K | ~15.7K | ~21.7K | ~4K |
+| **Language** | TypeScript | TypeScript | Python | Go | Rust |
+| **Focus** | Enterprise self-hosted | Personal AI | Personal assistant | Embedded/edge | Privacy-first TEE |
+| **RAM** | ~1 GB | ~1.5 GB | 4 GB | **10-20 MB** | Unknown |
+| **Startup** | ~30 s | ~6 s | > 30 s | **< 1 s** | Unknown |
+
+### New entrants (2026)
+
+| | TrustClaw | Manus AI (Meta) | OpenAI Frontier | Devin 2.0 | OpenHands | ZeroClaw | NanoBot |
+|---|---|---|---|---|---|---|---|
+| **Type** | OpenClaw fork | SaaS (acquired ~$2B) | Enterprise SaaS | AI coding agent | OSS code agent | Rust edge agent | Research agent |
+| **Threat** | High | Medium-High | High | Medium | Medium | Low | Low |
+| **Self-hosted** | No (cloud sandbox) | No | No | No | Yes | Yes | Yes |
 
 ---
 
-## Competitor Profiles
+## Competitors
 
-### OpenClaw
-Open-source AI agent at **~234,621 GitHub stars** (43,412 forks; 1.36 million npm downloads/week) as of March 2, 2026 — one of the fastest-growing open source projects in history. Written in TypeScript (~430,000 lines). Latest release: `2026.3.1`. Creator Peter Steinberger announced joining OpenAI on **February 14, 2026** (Sam Altman personally announced it on X); project transitioning to an open-source foundation with OpenAI as sponsor. Active development continues, but serious and ongoing security and governance concerns:
+**OpenClaw** (~234K stars) — Most popular agent by adoption, but severe ongoing security issues: 9+ CVEs in 2026 including an RCE (CVSS 8.8), 1,184+ malicious skills in ClawHub (ClawHavoc), 135,000+ publicly exposed instances. Gartner rated it "unacceptable cybersecurity risk." Creator joined OpenAI (Feb 2026); project transitioning to foundation. $300-750/month typical API cost. Unrestricted host access by default. Android native app added.
 
-- **CVE-2026-25253** (CVSS 8.8) — one-click RCE. The Control UI trusted `gatewayUrl` from query strings without validation and forwarded auth tokens over WebSocket. Clicking a single link fully compromises the instance. Patched in `2026.1.29`.
-- **CVE-2026-25157** and **CVE-2026-24763** — two additional command injection CVEs published the same week. A subsequent Endor Labs audit found **6 more** issues (SSRF, missing auth, path traversal).
-- **ClawHavoc supply chain attack** — Koi Security initially found 341 malicious skills in ClawHub; by Feb 16, 2026, confirmed malicious count grew to **824–1,184+** across an expanded registry of 13,729+ skills (Bitdefender: ~900, ≈ 20% of ecosystem at time of audit). A separate `Cline CLI 2.3.0` supply chain attack installed OpenClaw on developer systems without consent — delivered as a payload masquerading as Cline updates. **135,000+ publicly exposed instances** detected (Censys: 21,639 by Jan 31, growing to 40,000+ by mid-Feb, **135,000+** by March 2026).
-- **Snyk ToxicSkills study** — prompt injection found in 36% of examined skills; 1,467 malicious payloads identified across the skill supply chain.
-- **Gartner rating**: "unacceptable cybersecurity risk" — immediate enterprise ban recommended.
-- **Palo Alto Networks**: called it "the potential biggest insider threat of 2026."
-- **Creator departure**: primary author Peter Steinberger moved to OpenAI (announced Feb 14, 2026); project transitioning to an independent open source foundation that OpenAI will support.
-- **135,000+ exposed instances** detected in the wild (Censys: 21,639 by Jan 31, 40,000+ by mid-Feb, **135,000+** by March 2026).
-- **Cost**: $300–750/month in API tokens for the Claude Opus "proactive assistant" experience.
-- ~1.5 GB baseline RAM; hard floor 2 GB (crashes during onboarding below this); 8 GB for browser automation skills; gateway peaks at 6 GB under sustained load (GitHub issue #24689).
-- Runs with **unrestricted host-machine access** by default; Docker sandbox is opt-in only.
-- **ClawHub**: **13,729 total skills** (up from 5,705 pre-ClawHavoc); validated count post-cleanup lower but registry continues rapid growth.
-- **Android**: native 4-step onboarding flow and 5-tab interface (Connect, Chat, Voice, Screen, Settings) added in 2026.2.23.
-- Security analyses published by: **ExtraHop**, **Kaspersky**, **Jamf Threat Labs**, **Immersive Labs**, **Adversa AI**, **Trend Micro** (Atomic MacOS Stealer distribution via skills), **Bitdefender**, **Authmind**, **Snyk**, **Aryaka**, **Conscia**, **SecurityWeek** — all highlighting enterprise risk.
+**Agent Zero** (~15.7K stars) — Python framework, major v0.9.8 release with new Skills framework, WebSocket sync, MCP client + server, UI redesign. No enterprise features (RBAC, SSO, encryption). Docker, 4 GB minimum.
 
-### Agent Zero
-Python-based general-purpose agent framework. Latest release: **v0.9.8.2** (February 2026 — described as "one of the largest releases in Agent Zero history"). ~**15,700 GitHub stars** (up from ~13.5K). Key state:
+**PicoClaw** (~21.7K stars) — Go binary, 10-20 MB, < 1 s startup on $10 hardware. MCP client in v0.2.0. Growing fast but lacks security, RBAC, persistent memory.
 
-- v0.9.8 introduced: **Skills framework** replacing legacy Instruments (new `SKILL.md` standard for portable skills), **real-time WebSocket state sync** replacing polling, **complete UI redesign** with process groups, message queue, and Git project support, **4 new LLM providers**.
-- **17 new features, 13 improvements, 37 bug fixes** in v0.9.8.
-- Full **MCP client + server** integration (use thousands of external MCP tools; expose Agent Zero as an MCP server).
-- Default model changed to **claude-sonnet-4-6** (previously Claude 3.5 Sonnet).
-- TTS/STT speech capabilities; web UI and Docker-based deployment.
-- **Projects Management System** (v0.9.7, Nov 2025) — per-project custom instructions, memory, knowledge, files, and secrets.
-- **Welcome screen** redesigned with security info/warning banners (missing API keys, system resources).
-- No RBAC, SSO, or persistent encryption — experimental status.
-- Docker recommended with **4 GB RAM** minimum (unchanged); local models require 8 GB+.
+**Ironclaw** (~4K stars) — Rust, NEAR AI. TEE + WASM execution. AES-256-GCM encryption. Cannot self-host air-gapped (requires NEAR AI Cloud). No RBAC, SSO, K8s, or dashboard.
 
-### PicoClaw
-Ultra-lightweight Go binary by Sipeed, launched **2026-02-09**. Current version: **v0.2.0** (released Feb 28, 2026). ~**21,700 GitHub stars** (2,600+ forks) — 5,000 stars in 4 days, 12,000 in one week:
+**TrustClaw** — Hardened OpenClaw fork with cloud sandbox and managed vault. Trades one cloud dependency for two. Keys still pass through a third party — fails data residency for regulated industries.
 
-- Single binary **10–20 MB** (originally <10 MB; grew with added features); targets RISC-V, ARM, x86 — runs on $10 Sipeed LicheeRV-Nano (256 MB DDR3). Boot time: < 1 s even on 0.6 GHz single-core.
-- **MCP support merged** in v0.2.0 — full MCP client integration; connects to Google Drive, Slack, GitHub, local databases via MCP servers.
-- **v0.1.1 (Feb 13)**: Ollama local AI, I2C/SPI hardware tools, K8s health check endpoints, 32-bit arch support, Discord typing indicator, skill validation, Goreleaser CI/CD (270+ merged PRs).
-- **v0.1.2 (Feb 17)**: Heartbeat improvements, cron re-enabled, concurrency/persistence safety fixes, GitHub Copilot provider, **symlink workspace escape security fix**.
-- **v0.2.0 (Feb 28)**: **MCP PR merged** (major milestone), **WhatsApp channel** added, **4 new LLM providers**, **web launcher UI** (basic browser-based setup), **multi-agent routing** (experimental), improved embedded hardware support.
-- Messaging: Telegram, Discord, QQ, DingTalk, LINE, WeCom, Slack, **WhatsApp** (v0.2.0).
-- Web launcher UI is basic — not a full dashboard. No browser automation. No persistent memory. No RBAC, no SSO.
-- Positioned as a constrained assistant growing toward agentic capability. Not an enterprise competitor but MCP support closes a major gap.
+**Manus AI** — Was a $100M ARR cloud agent; acquired by Meta (~$2B, March 2026). Data now flows through Meta infrastructure. Zero-viable for GDPR/HIPAA organizations.
 
-### Ironclaw
-NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23**. Latest version: **v0.13.1** (released Mar 2, 2026). ~**4,037 GitHub stars**:
+**OpenAI Frontier** — Enterprise agent platform (Feb 2026). OpenAI models only, premium subscription, cloud-hosted. Strong brand but vendor lock-in and no data sovereignty.
 
-- Deployed inside encrypted **TEEs (Trusted Execution Environments)** on NEAR AI Cloud. **Cannot be self-hosted in an air-gapped environment** — requires NEAR AI Cloud infrastructure for TEE execution (dealbreaker for regulated industries).
-- All tools run in **WASM containers** (wasmtime) with capability-based permissions; endpoint allowlisting enforced. Dynamic tool building: describe what you need, system builds it as a WASM tool at runtime.
-- **v0.4.0 (Feb 17)**: Per-invocation approval checks, boot screen polish, lifecycle hooks system (6 interception points), tool-message sanitization, multi-tool approval resume flow.
-- **v0.12.0 (Feb 26)**: Web improvements for WASM channel setup, **Signal channel implemented**, OpenRouter preset in setup wizard, thread session resolution improvements, sandbox config defaults updated.
-- **v0.13.1 (Mar 2)**: **`web_fetch` built-in tool** (no WASM needed), **Jobs tab** with scheduler for recurring tasks, **CLI tool setup** wizard, **Brave Search WASM** tool, **TLS for PostgreSQL** connections, Signal attachment support, improved error handling.
-- **NVIDIA Inception program** membership for hardware isolation and privacy verification.
-- **Confidential GPU marketplace** — TEE-secured compute network for enterprise/government AI; hardware-signed attestation in < 30 s.
-- **Multimodal Confidential Inference** — vision/audio models inside TEEs.
-- RAM and startup benchmarks not published; Rust static binary expected well below 200 MB.
-- Local PostgreSQL encrypted with **AES-256-GCM**; credentials isolated in an encrypted vault; secrets never passed to the model. **TLS for PostgreSQL** connections added in v0.13.1.
-- Audit log stored in local DB — functional but not cryptographically chained.
-- No RBAC, SSO/OIDC, Kubernetes, or dashboard (Jobs tab is the closest to workflow management).
-- Messaging integrations: Telegram WASM, Slack WASM, **Signal** (v0.12.0, attachments v0.13.1).
-- Free Starter tier (one hosted agent instance) on NEAR AI Cloud.
+**Devin 2.0** — AI coding agent, price dropped to $20/mo. Acquired Windsurf IDE. Cloud-only, single-agent, code-specific.
+
+**OpenHands** — OSS code agent (MIT), Kubernetes-native. Strongest OSS alternative for coding workflows. Minimal enterprise features.
 
 ---
 
-## Feature Comparison
+## Feature Matrix
 
-### 1 · Core Architecture
+**Y** = shipped, **P** = partial, **-** = absent
 
-| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
-|---------|:---:|:---:|:---:|:---:|:---:|
-| Language | TypeScript | TypeScript | Python | Go | **Rust** |
-| Database | PostgreSQL + SQLite | File-based (Markdown) | File-based | File-based | PostgreSQL + libSQL |
-| AI providers | 13 | Multiple | Multiple | 9+ | 5 (NEAR AI, Tinfoil TEE, OpenAI, Anthropic, Ollama) |
-| MCP server + client | ✅ **330** tools | Limited | ✅ | ✅ (v0.2.0 client) | ✅ |
-| RAM footprint | ~1 GB | ~1.5 GB (8 GB for browser skills; peaks 6 GB under load) | 4 GB recommended | **10–20 MB** | Not published |
-| Startup time | ~30 s | ~6 s | > 30 s | **< 1 s** | Not published |
-| Enterprise-ready | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Single binary | ✅ ~123 MB (100 MB Bun runtime) | ❌ | ❌ | ✅ < 10 MB | ✅ Rust static |
-| Multi-tenancy | ✅ RLS-enforced tenant isolation | ❌ | ❌ | ❌ | ❌ |
-
-### 2 · Security & Compliance
-
-| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
-|---------|:---:|:---:|:---:|:---:|:---:|
-| RBAC | ✅ Admin / Operator / Auditor / Viewer | ❌ | ❌ | ❌ | ❌ |
-| Encryption at rest | ✅ AES-256-GCM | ❌ | ❌ | ❌ | ✅ AES-256-GCM |
-| Secrets management | ✅ SecretsManager — env / keyring / file / Vault / OpenBao backends | ❌ | ❌ | ❌ | ✅ Encrypted credential vault in TEE |
-| TLS lifecycle | ✅ Auto-generate dev certs; expiry monitoring; cert status API | ❌ | ❌ | ❌ | ❌ |
-| Audit chain | ✅ HMAC-SHA256 cryptographic chain | ❌ | ❌ | ❌ | Local DB log (not cryptographic) |
-| Correlation IDs | ✅ UUIDv7 via AsyncLocalStorage; `X-Correlation-ID` header; auto-enriched in audit entries | ❌ | ❌ | ❌ | ❌ |
-| Credential redaction | ✅ ToolOutputScanner — 20 patterns; `[REDACTED:<type>]` on every LLM response | ❌ | ❌ | ❌ | ✅ LeakDetector at tool output + LLM response |
-| Output safety scanner | ✅ ResponseGuard — 6 injection patterns; block/warn/disabled modes | ❌ | ❌ | ❌ | ❌ |
-| Governance / OPA | ✅ OPA sidecar; CEL policy evaluator; hard boundaries + soft policies; output compliance | ❌ | ❌ | ❌ | ❌ |
-| LLM-as-Judge | ✅ Secondary LLM review for high-autonomy tool calls | ❌ | ❌ | ❌ | ❌ |
-| Sandboxing | ✅ Landlock / seccomp / namespaces (Linux); sandbox-exec (macOS); gVisor; WASM; **4 built-in profiles** (dev/staging/prod/high-security) | Docker opt-in | Docker-only | Workspace restriction | ✅ WASM (wasmtime) + Docker + outbound proxy |
-| Outbound credential proxy | ✅ `CredentialProxy` — injects `Authorization` for known hosts; HTTPS CONNECT allowlist | ❌ | ❌ | ❌ | ✅ Credential injection at proxy; endpoint allowlist |
-| Skill trust tiers | ✅ Community skills: read-only tool access; 26-prefix allow-list | ❌ | ❌ | ❌ | ✅ Trusted vs Installed tiers |
-| Rate limiting | ✅ Per-user / per-IP / global; login, refresh, password-reset buckets with Retry-After | Configurable | ❌ | ❌ | ✅ WASM fuel metering |
-| mTLS | ✅ | ❌ | ❌ | ❌ | ❌ |
-| SSO / OIDC | ✅ Okta · Azure AD · Auth0 · any OIDC | ❌ | ❌ | ❌ | ❌ |
-| SAML 2.0 | ✅ SP-initiated SSO; group→role mapping | ❌ | ❌ | ❌ | ❌ |
-| Multi-tenancy | ✅ RLS-enforced tenant isolation; tenant CRUD API | ❌ | ❌ | ❌ | ❌ |
-| Security policy flags | ✅ Per-feature toggles in Settings → Security | ❌ | ❌ | ❌ | ❌ |
-| Risk assessment | ✅ 5-domain composite score (0–100); findings lifecycle; external feeds | ❌ | ❌ | ❌ | ❌ |
-| Known CVEs | — | **CVE-2026-25253** RCE CVSS 8.8 + **CVE-2026-25157**, **CVE-2026-24763** + 6 more; 824–1,184+ malicious ClawHub skills (ClawHavoc + ToxicSkills) | — | Network security issues (self-disclosed; pre-v1.0) | — |
-
-### 3 · Memory & Knowledge
-
-| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
-|---------|:---:|:---:|:---:|:---:|:---:|
-| Vector memory | ✅ FAISS / Qdrant / ChromaDB | ❌ | ✅ FAISS | ❌ | ✅ pgvector |
-| Full-text search | ✅ tsvector GIN index | ❌ | ❌ | ❌ | ✅ tsvector |
-| Hybrid FTS + vector (RRF) | ✅ Reciprocal Rank Fusion | ❌ | ❌ | ❌ | ✅ RRF |
-| Content chunking | ✅ 800 tokens / 15% overlap; per-chunk FTS + vector | ❌ | ❌ | ❌ | ✅ 800 tokens / 15% overlap (flexible dims in v0.8.0) |
-| Per-personality memory scoping | ✅ `personalityId` scoped recall; omnipresent mind toggle | ❌ | ❌ | ❌ | ❌ |
-| Memory consolidation | ✅ LLM-driven | ✅ File-based | ✅ | ❌ | ❌ |
-| Context compaction | ✅ Proactive at 80% window fill | ✅ | ❌ | ❌ | ✅ |
-| Workspace memory | ✅ | ✅ | ✅ | ✅ MEMORY.md | ✅ SOUL.md / AGENTS.md / USER.md |
-
-### 4 · Tools & Automation
-
-| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
-|---------|:---:|:---:|:---:|:---:|:---:|
-| MCP tool count | ✅ **330** | Limited | External via MCP | ✅ MCP client (v0.2.0) | Via MCP path |
-| Browser automation | ✅ Playwright | ✅ Built-in | ✅ browser-use (Playwright) | ❌ | ❌ |
-| Shell execution | ✅ Sandboxed; cd navigation fixed | ✅ | ✅ | ✅ Restricted | ✅ Sandboxed |
-| Code execution | ✅ Python / Node.js / shell, sandboxed | ✅ | ✅ | ❌ | ✅ Docker (3 isolation policies) |
-| Network security toolkit | ✅ 38 tools — device discovery · port scan · SSH · NetBox · NVD/CVE · PCAP | ❌ | ❌ | ❌ | ❌ |
-| Twingate zero-trust proxy | ✅ 13 tools — GraphQL tenant mgmt + private MCP proxy | ❌ | ❌ | ❌ | ❌ |
-| Kali security toolkit | ✅ `sec_*` tools (nmap, nuclei, sqlmap, gobuster, hydra, etc.) | ❌ | ❌ | ❌ | ❌ |
-| DAG workflow orchestration | ✅ 19 step types; ReactFlow visual builder; `allowWorkflows` gate | ❌ | ❌ | ❌ | ❌ |
-| Agent swarms | ✅ Sequential / parallel / dynamic | ❌ | ✅ | ❌ | ❌ |
-| Sub-agent spawn | ✅ Budget + depth controls | ✅ Workspaces | ✅ Hierarchical | ✅ | ❌ |
-| A2A protocol | ✅ mDNS/DNS-SD peer discovery; manual `.well-known` discovery | ❌ | ✅ | ❌ | ❌ |
-| Dynamic tool creation | ✅ Policy-gated | ❌ | ✅ | ❌ | ❌ |
-| Cron / scheduling | ✅ | ❌ | ✅ (redesigned scheduler in v0.9.8) | ✅ | ✅ Routines |
-| Self-repairing tasks | ✅ `TaskLoop` — stuck detection + recovery prompt | ❌ | ❌ | ❌ | ✅ Stuck detection + re-analysis |
-| LLM response cache | ✅ Hash-keyed; configurable TTL; off by default | ❌ | ❌ | ❌ | ✅ Hash-keyed |
-| Skill routing | ✅ `useWhen` / `doNotUseWhen` / `successCriteria` / `routing` / `linkedWorkflowId` | ❌ | ❌ | ❌ | ❌ |
-| Custom skills | ✅ 24 builtin + 87 community skills (13 categories); 7 workflows; 2 swarm + 2 council templates; 7 security templates; 3 personalities; 3 themes; 1,310 validation tests | ✅ ~3,286 ClawHub (post-cleanup) | ✅ Dynamic (`SKILL.md` standard) | ✅ | ✅ SKILL.md + ClawHub registry |
-| WASM sandbox | ✅ Policy flag (off by default) | ❌ | ❌ | ❌ | ✅ First-class (wasmtime + fuel metering) |
-| Backup & DR | ✅ `pg_dump`/`pg_restore`; 6 REST endpoints; dashboard Backup tab | ❌ | ❌ | ❌ | ❌ |
-| Audit log export | ✅ JSONL / CSV / syslog RFC 5424; streamed; no buffering | ❌ | ❌ | ❌ | ❌ |
-
-### 5 · Messaging & Integrations
-
-| Platform | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
-|---------|:---:|:---:|:---:|:---:|:---:|
-| **Telegram** | ✅ | ✅ | ❌ | ✅ | ✅ WASM |
-| **Discord** | ✅ | ✅ | ❌ | ✅ | ❌ |
-| **Slack** | ✅ | ✅ | ❌ | ❌ | ✅ WASM |
-| **WhatsApp** | ✅ | ✅ | ❌ | ✅ (v0.2.0) | ❌ |
-| **Signal** | ✅ | ✅ | ❌ | ❌ | ✅ (v0.12.0, Feb 26) |
-| **MS Teams** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Google Chat / Gmail / Calendar** | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Email (SMTP/IMAP)** | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **GitHub / GitLab** | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Jira / Notion / AWS** | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Azure DevOps** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **SSO / OIDC** | ✅ Okta · Azure AD · Auth0 | ❌ | ❌ | ❌ | ❌ |
-| **OAuth2 (Google)** | ✅ Auto token refresh | ❌ | ❌ | ❌ | ❌ |
-| **Webhook** | ✅ | ✅ | ❌ | ❌ | ✅ Triggers |
-| **Per-user notification prefs** | ✅ Quiet hours, min level, fan-out dispatch | ❌ | ❌ | ❌ | ❌ |
-| **Total platforms** | **32** | **23+** | CLI / Web | **11+** | **4 stable** |
-
-### 6 · Dashboard & UX
-
-| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
-|---------|:---:|:---:|:---:|:---:|:---:|
-| Web dashboard | ✅ React SPA | ✅ | ✅ Web (redesigned v0.9.8) | ❌ CLI only | ✅ Web gateway |
-| Terminal UI (TUI) | ✅ `secureyeoman tui` — full-screen, Ctrl+R/L/↑↓ | ❌ | ❌ | ❌ | ✅ Ratatui (approval overlays) |
-| Rich chat rendering | ✅ Markdown · Prism · Mermaid · KaTeX · GitHub alerts | ✅ | ❌ | ❌ | Basic |
-| IDE integration | ✅ Monaco editor (Standard + Advanced Editor modes) | ❌ | ❌ | ❌ | ❌ |
-| Workflow visual builder | ✅ ReactFlow DAG, 19 step types | ❌ | ❌ | ❌ | ❌ |
-| WebGL graph | ✅ Sigma.js + Graphology | ❌ | ❌ | ❌ | ❌ |
-| Voice (STT / TTS) | ✅ Push-to-talk; per-personality voice; streaming binary TTS; Whisper model selector | ✅ | ✅ | ❌ | ❌ |
-| Image generation | ✅ DALL-E | ✅ | ❌ | ❌ | ❌ |
-| Multi-theme system | ✅ 42 built-in themes; CSS variable overrides; floating theme picker | ❌ | ❌ | ❌ | ❌ |
-| Mission Control | ✅ Multi-panel command-center: KPI bar, topology, live feeds, resource monitoring, audit stream | ❌ | ❌ | ❌ | ❌ |
-| Accessibility | ✅ jsx-a11y; focus-visible ring; 44px touch targets; axe-core smoke tests | ❌ | ❌ | ❌ | ❌ |
-| Global navigate/create | ✅ Shortcut dialog — Chat / Skill / Workflow / Personality / Task | ❌ | ❌ | ❌ | ❌ |
-| Network mode badge | ✅ Live: Local Only / Network (No TLS) / Public (TLS Secured) | ❌ | ❌ | ❌ | ❌ |
-| Collaborative editing | ✅ Yjs CRDT; presence indicators; group chat | ❌ | ❌ | ❌ | ❌ |
-| Inline AI completion | ✅ Copilot-style ghost text; 500ms debounce; personality-aware | ❌ | ❌ | ❌ | ❌ |
-| Multi-file search & replace | ✅ Regex, glob filter, batch replace, path traversal protection | ❌ | ❌ | ❌ | ❌ |
-| Configurable keybindings | ✅ 12 bindings, conflict detection, per-user localStorage | ❌ | ❌ | ❌ | ❌ |
-| AI plan panel | ✅ Step-by-step approval, progress bar, token counter, context badges | ❌ | ❌ | ❌ | ❌ |
-| Training annotations | ✅ Right-click context menu, label+export as JSONL/CSV for fine-tuning | ❌ | ❌ | ❌ | ❌ |
-| Mobile | ❌ (roadmap Tier 3) | ✅ Android native (4-step onboarding, 5-tab interface; added v2026.2.23) | ❌ | ❌ | ❌ |
-
-### 7 · Enterprise & Deployment
-
-| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
-|---------|:---:|:---:|:---:|:---:|:---:|
-| Kubernetes / Helm | ✅ HPA · PDB · NetworkPolicies | Community operator | ❌ | ❌ (K8s health checks added) | ❌ |
-| Prometheus / Grafana | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Multi-user workspaces | ✅ | ❌ | ✅ | ❌ | ❌ |
-| SSO / OIDC + SAML 2.0 | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Multi-tenancy | ✅ RLS-enforced; tenant CRUD; slug validation | ❌ | ❌ | ❌ | ❌ |
-| Single binary | ✅ ~123 MB | ❌ | ❌ | ✅ 10–20 MB | ✅ Rust static |
-| Docker | ✅ ~123 MB | ✅ | ✅ | ❌ | ✅ |
-| Dual DB backend | ✅ PostgreSQL + SQLite | ❌ | ❌ | ❌ | ✅ PostgreSQL + libSQL |
-| CLI | ✅ 41 commands; completions; `--json`; 5-step init wizard | ✅ | ✅ | ✅ | ✅ REPL |
-| Lite binary (edge/IoT) | ✅ SQLite tier | ❌ | ❌ | ✅ (standard binary is 10–20 MB) | ✅ libSQL backend |
-| Air-gap / offline | ✅ Full self-hosted | ✅ | ✅ | ✅ | ❌ Requires NEAR AI Cloud |
-| Backup & DR | ✅ Automated `pg_dump`/`pg_restore`; download + restore API | ❌ | ❌ | ❌ | ❌ |
-| Audit log export | ✅ JSONL / CSV / syslog; filtered streaming | ❌ | ❌ | ❌ | ❌ |
-
-### 8 · Testing & Quality
-
-| | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
-|--|--|--|--|--|--|
-| Test count | **~16,100** | Limited (community-driven) | Minimal | Minimal | Not published (Rust type safety provides baseline) |
-| Line coverage | **87.2%** | Not tracked | Not tracked | Not tracked | Not tracked |
-| Test files | **~752** | Unknown | Unknown | Unknown | Unknown |
-| ADR records | **29** | Unknown | Unknown | Unknown | Unknown |
-| CI/CD | ✅ lint · typecheck · test · build · security audit · docker-push · helm-lint | ✅ | Basic | Minimal | ✅ Cargo CI |
-| Security test suite | ✅ Dedicated security + chaos suites; vitest-axe a11y smoke tests | ❌ Multiple CVEs 2026 | ❌ | ❌ | ✅ Memory-safe by language; WASM sandbox tests |
-| Storybook | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Category | Feature | SY | OC | AZ | PC | IC |
+|----------|---------|:--:|:--:|:--:|:--:|:--:|
+| **Security** | RBAC (4 levels) | Y | - | - | - | - |
+| | SSO/OIDC + SAML 2.0 | Y | - | - | - | - |
+| | Encryption at rest (AES-256-GCM) | Y | - | - | - | Y |
+| | Secrets management (Vault/OpenBao) | Y | - | - | - | P |
+| | TLS lifecycle + mTLS | Y | - | - | - | - |
+| | Cryptographic audit (HMAC-SHA256) | Y | - | - | - | - |
+| | Credential redaction (20 patterns) | Y | - | - | - | Y |
+| | Output injection scanner | Y | - | - | - | - |
+| | OPA + CEL governance | Y | - | - | - | - |
+| | Sandboxing (Landlock/seccomp/WASM/gVisor) | Y | P | P | P | Y |
+| | DLP (classification, egress, watermarking) | Y | - | - | - | - |
+| | Supply chain (SBOM, SLSA L3, cosign) | Y | - | - | - | - |
+| | Multi-tenancy (PostgreSQL RLS) | Y | - | - | - | - |
+| | Chaos engineering | Y | - | - | - | - |
+| **Knowledge** | Vector memory (FAISS/Qdrant/ChromaDB) | Y | - | Y | - | Y |
+| | Hybrid FTS + vector (RRF) | Y | - | - | - | Y |
+| | Per-personality memory scoping | Y | - | - | - | - |
+| | Proactive context compaction | Y | Y | - | - | Y |
+| **Orchestration** | MCP tools | 400+ | P | P | P | P |
+| | DAG workflow engine (19 step types) | Y | - | - | - | - |
+| | Visual workflow builder (ReactFlow) | Y | - | - | - | - |
+| | Agent swarms (3 strategies) | Y | - | Y | - | - |
+| | A2A protocol | Y | - | Y | - | - |
+| | Agent evaluation harness | Y | - | - | - | - |
+| | Browser automation (Playwright) | Y | Y | Y | - | - |
+| | Network security toolkit (38 tools) | Y | - | - | - | - |
+| **Integrations** | Platform count | 32 | 23+ | 2 | 11+ | 4 |
+| | OAuth2 auto-refresh | Y | - | - | - | - |
+| | Per-user notification prefs | Y | - | - | - | - |
+| **Dashboard** | Web dashboard | Y | Y | Y | - | Y |
+| | Terminal UI (TUI) | Y | - | - | - | Y |
+| | CLI commands | 56 | Y | Y | Y | REPL |
+| | Monaco code editor | Y | - | - | - | - |
+| | Inline AI completion | Y | - | - | - | - |
+| | Mission Control | Y | - | - | - | - |
+| | 42 themes | Y | - | - | - | - |
+| | CRDT collaborative editing | Y | - | - | - | - |
+| | Mobile app | - | Y | - | - | - |
+| **Enterprise** | Kubernetes / Helm | Y | P | - | - | - |
+| | Prometheus / Grafana | Y | - | - | - | - |
+| | Multi-region HA | Y | - | - | - | - |
+| | Backup & DR API | Y | - | - | - | - |
+| | Single binary | Y | - | - | Y | Y |
+| | Docker (GHCR, multi-arch, cosign) | Y | Y | Y | - | Y |
+| | Air-gap / offline | Y | Y | Y | Y | - |
+| | Dual DB (PostgreSQL + SQLite) | Y | - | - | - | Y |
+| **Quality** | Tests | ~20,500 | Limited | Minimal | Minimal | Unknown |
+| | Coverage | ~89% | - | - | - | - |
+| | ADRs | 32 | - | - | - | - |
 
 ---
 
 ## Where SecureYeoman Leads
 
-No other framework in this competitive set offers the capabilities listed below. Grouped by domain:
+Capabilities no other framework in this competitive set offers:
 
-### Security & Governance (18 capabilities)
+- **Governance stack** — RBAC + SSO/OIDC/SAML + multi-tenancy + OPA/CEL + DLP + cryptographic audit + compliance reporting
+- **DAG workflow orchestration** — 19 step types with visual ReactFlow builder and human approval gates
+- **Agent evaluation harness** — structured scenarios with expected/forbidden tool calls and multi-metric scoring
+- **Network security toolkit** — 38 tools (device discovery, port scan, SSH, NetBox, NVD/CVE, PCAP) + Kali toolkit
+- **Twingate zero-trust MCP proxy** — 13 tools for private network access without VPN
+- **Community skills ecosystem** — 87 community skills, 7 workflows, security templates, personality presets, all with Trust Tier enforcement
+- **Mission Control dashboard** — multi-panel command center with KPI bar, topology, live feeds, resource monitoring
+- **Training pipeline** — distillation + LoRA fine-tuning + pre-training from scratch + LLM-as-Judge + federated learning
 
-| Capability | Detail |
-|-----------|--------|
-| **RBAC + SSO/OIDC + SAML 2.0** | Admin / Operator / Auditor / Viewer; Okta, Azure AD, Auth0; SP-initiated SAML with group→role mapping |
-| **SecretsManager + Vault/OpenBao** | env / keyring / file / vault / auto backends; process.env mirroring |
-| **TLS lifecycle + mTLS** | Auto-generate dev certs; expiry monitoring; mutual TLS for service-to-service |
-| **ToolOutputScanner** | 20-pattern credential redaction on every LLM response |
-| **ResponseGuard** | Output-side injection scanner — 6 pattern types (instruction injection, cross-turn influence, self-escalation, role confusion, base64/hex exfiltration); block/warn/disabled modes |
-| **OPA + CEL governance** | OPA sidecar for hard boundaries; CEL policy evaluator; output compliance via `IntentManager`; LLM-as-Judge for high-autonomy calls |
-| **Admin Security Policy UI** | Per-feature toggles: `allowWorkflows`, `allowSubAgents`, `allowA2A`, `sandboxWasm`, `sandboxGvisor`, `allowCodeEditor`, `allowAdvancedEditor`, and more |
-| **HMAC-SHA256 audit chain** | Cryptographically verifiable event log; self-healing `repair()` + `createSnapshot()` |
-| **Audit Log Export** | JSONL / CSV / syslog RFC 5424; filtered streaming; no server-side buffering |
-| **Correlation IDs** | UUIDv7 per request via AsyncLocalStorage; `X-Correlation-ID` header; auto-enriched in audit entries |
-| **Risk Assessment & Reporting** | 5-domain composite score (0–100); findings lifecycle; external feeds; JSON/HTML/MD/CSV export |
-| **Data Loss Prevention** | Content classification (PII regex + keyword + custom pattern, 4-tier levels), DLP policy engine (block/warn/log), egress scanning with z-score anomaly, data retention, invisible watermarking (3 algorithms), 22 REST endpoints, 6 MCP tools |
-| **Supply Chain Security** | SBOM (CycloneDX), SLSA Level 3 provenance (Sigstore), signed releases (cosign), compliance mapping (NIST 800-53, SOC 2, ISO 27001, HIPAA, EU AI Act), dependency provenance (Socket.dev) |
-| **Compliance Reporting** | Cross-reference audit chain, DLP egress, content classifications into unified reports. Multi-format (JSON, HTML, CSV, Markdown) |
-| **Event Subscription System** | 14 lifecycle event types, HMAC-SHA256 signed webhook delivery, exponential backoff retry, subscription CRUD |
-| **Outbound Credential Proxy** | `CredentialProxy` injects `Authorization` headers; HTTPS CONNECT allowlist — key material never leaves your perimeter |
-| **Sandbox Profiles** | 4 built-in profiles (dev/staging/prod/high-security) with configurable filesystem, resource limits, network policies, tool allow/blocklists |
-| **Chaos Engineering** | 8 fault types, 7 target types, scheduled experiments with auto-rollback, aggregate metrics (recovery rate, MTTR, circuit breaker trips) |
+## Known Gaps
 
-### Knowledge & Memory (4 capabilities)
-
-| Capability | Detail |
-|-----------|--------|
-| **Hybrid FTS + RRF** | tsvector GIN + pgvector merged via Reciprocal Rank Fusion |
-| **Content-chunked indexing** | 800-token overlapping chunks with independent FTS + vector indexes |
-| **Per-personality memory scoping** | `personalityId` scoped recall; omnipresent mind toggle; personality-scoped vector search |
-| **Proactive context compaction** | Summarises older turns at 80% context window fill |
-
-### Agent Orchestration & Tools (9 capabilities)
-
-| Capability | Detail |
-|-----------|--------|
-| **DAG Workflow Orchestration** | 19 step types; Mustache data-flow; ReactFlow visual builder; `allowWorkflows` gate |
-| **Self-repairing TaskLoop** | Timeout + repeated-call detection; `buildRecoveryPrompt()` |
-| **Skill routing** | `useWhen` / `doNotUseWhen` / `successCriteria` / `linkedWorkflowId` per skill |
-| **Network Security Toolkit** | 38 MCP tools — device discovery, port scanning, SSH, NetBox, NVD/CVE, PCAP |
-| **Twingate zero-trust MCP proxy** | 13 tools — GraphQL tenant management + private MCP server proxy |
-| **Kali Security Toolkit** | `sec_*` MCP tools + `secureyeoman security` CLI (nmap, nuclei, sqlmap, gobuster, hydra) |
-| **Agnostic QA Bridge** | 10 `agnostic_*` MCP tools + A2A delegation |
-| **Agent Evaluation Harness** | Structured eval scenarios with expected/forbidden tool calls, output assertions, budget constraints, multi-turn. Suites with concurrency. 8 MCP tools, 12 REST endpoints. No competitor offers this. |
-| **Chaos Engineering Toolkit** | 8 fault types (latency, error, timeout, resource exhaustion, dependency failure, data corruption, circuit breaker trip, rate limit), 7 target types, scheduled experiments, auto-rollback, aggregate metrics. 9 REST endpoints |
-| **Community Repository** | 87 community skills (13 categories); 7 workflows; 2 swarm + 2 council templates; 7 security templates; 3 personalities; 3 themes; 1,310 validation tests |
-
-### Enterprise & Deployment (6 capabilities)
-
-| Capability | Detail |
-|-----------|--------|
-| **Multi-tenancy** | RLS-enforced tenant isolation on all user-data tables; tenant CRUD API |
-| **Kubernetes production readiness** | Helm, HPA, PDBs, NetworkPolicies, ExternalSecret CRD |
-| **Multi-Region & HA** | Read replica routing, cross-cluster A2A federation with data residency, backup replication (S3/Azure/GCS/local), enhanced health checks |
-| **Backup & DR API** | `pg_dump`/`pg_restore`; 6 REST endpoints; download + restore with confirm guard |
-| **Flexible network deployment** | `gateway.host` + `gateway.tls` switch local / LAN / public; `/health` returns `networkMode` |
-| **Startup & Resource Optimization** | Conditional module loading, 20 dynamic route imports, cold-start CLI (`liteBootstrap()` + `--local`), memory profiling |
-
-### Dashboard & UX (6 capabilities)
-
-| Capability | Detail |
-|-----------|--------|
-| **32 messaging integrations** | vs ~2–3 for nearest competitor; fan-out dispatch with quiet hours and per-user prefs |
-| **Per-user notification preferences** | Quiet hours (UTC, overnight wrap), min level, fan-out across integrations; retention cleanup job |
-| **Multi-Theme System** | 42 built-in themes; CSS variable overrides; floating theme picker |
-| **Accessibility compliance** | eslint-plugin-jsx-a11y; focus-visible ring; 44px touch targets; axe-core smoke tests |
-| **DAG visual builder** | ReactFlow editor with 19 step types — only framework in this category with this feature |
-| **Mission Control** | Multi-panel command-center: KPI bar, topology, live feeds, resource monitoring, audit stream |
+| Gap | Leader | SY status |
+|-----|--------|-----------|
+| Community skill volume | OpenClaw (13,729 ClawHub) | 87 community + 24 builtin (Trust Tier advantage offsets volume gap) |
+| Native mobile app | OpenClaw (Android) | Web/CLI only (roadmap Tier 3) |
+| Ultra-low resource / edge | PicoClaw (10-20 MB, < 1 s) | Lite binary 123 MB — design trade-off for enterprise features |
+| TEE hardware attestation | Ironclaw (NEAR AI Cloud) | Not applicable (local-first, no cloud dependency) |
+| Startup time | PicoClaw (< 1 s) | ~30 s — conditional module loading helps |
 
 ---
 
-## Gaps & Opportunities
-
-### vs OpenClaw — What We Lack
-- **Community skill volume** — 13,729 total ClawHub skills (growing rapidly despite ClawHavoc cleanup) vs SecureYeoman's 87 community skills + 24 builtins (111 total items including 7 workflows, 2 swarm templates, 2 council templates, 7 security templates, 3 personalities, 3 themes). The ongoing supply-chain attacks (ClawHavoc 1,184+ malicious; Snyk ToxicSkills at 36% injection rate; Cline supply chain) underscore SecureYeoman's Skill Trust Tier advantage, but volume gap remains.
-- **Native mobile app** — OpenClaw added Android native (4-step onboarding, 5-tab) in v2026.2.23; SecureYeoman remains web/CLI only (roadmap Tier 3).
-- **Governance uncertainty** — Creator Peter Steinberger joined OpenAI (Feb 14, 2026); project in foundation transition. This cuts both ways: less continuity risk for SecureYeoman, but also possible enterprise hesitation about OpenClaw's roadmap.
-
-### vs PicoClaw — By Design Trade-offs
-- **Ultra-low memory / sub-second startup** — 10–20 MB / < 1 s is a Go + embedded-first trade-off that conflicts with the enterprise feature set. The SecureYeoman Lite binary (SQLite, ~123 MB) partially addresses this for edge deployments. PicoClaw's v0.2.0 MCP support closes its biggest integration gap, and WhatsApp + multi-agent routing show accelerating feature velocity. Still lacks security, RBAC, and persistent memory.
-
-### vs Ironclaw — Gaps Already Resolved
-
-| Gap | Ironclaw approach | SecureYeoman status |
-|-----|------------------|---------------------|
-| LLM response caching | Hash-keyed cache (model + system prompt + messages) | ✅ `ResponseCache` — configurable TTL; off by default |
-| Outbound credential proxy | HTTP proxy in sandbox network namespace | ✅ `CredentialProxy` |
-| Flexible embedding dimensions | V9 migration | ✅ Configurable via vector backend |
-| Confidential GPU access | Decentralized GPU marketplace on NEAR AI Cloud | Not applicable (local-first; no cloud dependency) |
-| Signal channel | Added v0.12.0 (Feb 26) | ✅ Already shipped |
-| Dynamic tool building | WASM tool generated at runtime from description | ✅ `allowDynamicTools` policy flag |
-| Jobs / scheduling | Jobs tab + scheduler (v0.13.1) | ✅ Cron scheduling + DAG workflows |
-| Built-in web fetch | `web_fetch` tool (v0.13.1) | ✅ `http_*` MCP tools |
-| PostgreSQL TLS | Added v0.13.1 | ✅ Already shipped |
-
-**Where SecureYeoman leads over Ironclaw**: RBAC, SSO/OIDC/SAML, mTLS, HMAC audit chain, multi-tenancy, backup & DR, Kubernetes, air-gap / on-premises deployment, personality system with active hours and presets, multi-agent (A2A, swarms, DAG orchestration, Agnostic QA bridge), 32 integrations, workflow visual builder, React dashboard, community marketplace, ResponseGuard, OPA/CEL governance, risk assessment, multi-theme system, correlation IDs.
-
-**Where Ironclaw leads over SecureYeoman**: Rust memory safety (~200 MB estimated, < 10 ms startup), TEE-backed execution with hardware attestation, WASM tool sandboxing as the default (not a policy flag), Confidential GPU marketplace.
-
-### vs Market
-- **Native mobile app** — iOS/Android (roadmap Tier 3); OpenClaw has Android native
-
----
-
-## 2026 Emerging Competitor Analysis
-
-Four new entrants in early 2026 tighten specific competitive dimensions. None yet offer the full enterprise stack, but each targets a genuine pain-point.
-
-### TrustClaw — Security-Focused OpenClaw Fork
-
-**Threat level: HIGH — most direct architectural competitor.**
-
-TrustClaw is a hardened fork of OpenClaw that strips the consumer-facing feature set in exchange for security primitives: Remote Sandboxing (agent code executes inside a cloud-isolated VM, not the user's machine) and Encrypted Credentials (a dedicated credential vault managed by TrustClaw's SaaS layer).
-
-| | TrustClaw | SecureYeoman |
-|---|---|---|
-| **Architecture** | Cloud-backed "remote sandbox" (agent runs on TrustClaw servers) | Fully local / air-gapped — agent runs on your infrastructure |
-| **Credential storage** | TrustClaw-managed cloud vault | SecretsManager: env / OS keyring / encrypted file / Vault / OpenBao — keys never leave your perimeter |
-| **Data residency** | Encrypted in transit, TrustClaw holds keys | 100% local; no third party |
-| **RBAC / SSO** | Basic role assignment, no OIDC/SAML | Full 4-level RBAC + Okta / Azure AD / Auth0 + SAML 2.0 |
-| **Audit trail** | Structured JSON log (not cryptographic) | HMAC-SHA256 cryptographic chain + JSONL/CSV/syslog export |
-| **Air-gap** | ❌ Requires TrustClaw cloud | ✅ Full self-hosted |
-| **Multi-tenancy** | Single-tenant per account | PostgreSQL RLS multi-tenancy |
-| **Open source** | Fork of OpenClaw (MIT) | AGPL-3.0 + Commercial |
-
-**SecureYeoman positioning vs TrustClaw**: The core argument is **sovereignty**. TrustClaw trades one cloud dependency (the AI provider) for two (AI provider + TrustClaw's own sandbox and vault). Every secret still passes through a third party. SecureYeoman's credential proxy keeps key material inside the customer's perimeter at every hop. For regulated industries (HIPAA, GDPR, financial services), TrustClaw's "remote sandbox" fails the data residency test that SecureYeoman passes.
-
----
-
-### Manus AI — Cloud SaaS Agent Platform (Acquired by Meta)
-
-**Threat level: MEDIUM-HIGH — Meta acquisition transforms competitive dynamics.**
-
-Manus AI was a fully managed cloud agent service: no installation, browser-based, connected to user accounts via OAuth. **Acquired by Meta for ~$2 billion** (reported March 2026) after hitting $100M ARR in approximately 8 months — one of the fastest enterprise SaaS ramps in history. The acquisition validates the AI agent market but fundamentally changes Manus's competitive posture: it will likely be absorbed into Meta's enterprise AI stack rather than continuing as an independent product.
-
-| | Manus AI | SecureYeoman |
-|---|---|---|
-| **Deployment** | SaaS (Manus-hosted cloud → Meta infrastructure) | Self-hosted: binary / Docker / Kubernetes |
-| **Setup time** | ~3 min (OAuth sign-in) | ~15 min (binary) to ~30 min (Kubernetes) |
-| **Data residency** | Meta holds all conversation data and credentials | 100% local / sovereign |
-| **RBAC** | Workspace-level sharing | 4-level RBAC + SSO/OIDC/SAML |
-| **Air-gap** | ❌ Cloud-only | ✅ |
-| **Enterprise auth** | Google/GitHub OAuth | Okta / Azure AD / Auth0 / SAML 2.0 |
-| **Audit** | Activity log (non-cryptographic) | HMAC-SHA256 audit chain + export |
-| **Price** | Subscription / consumption billing | Infrastructure cost only (open source) |
-| **Compliance** | SOC 2 certification (claimed) | Technical controls for GDPR, SOC 2, HIPAA, EU AI Act |
-| **Status** | **Acquired by Meta (~$2B, Mar 2026)** | Independent, dual-licensed |
-
-**SecureYeoman positioning vs Manus AI**: The Meta acquisition reinforces SecureYeoman's sovereignty argument. Organizations wary of cloud vendor lock-in now face Manus data flowing through Meta's infrastructure. For any organization subject to GDPR, CCPA, HIPAA, or sector-specific data residency rules, "zero-setup" becomes zero-viable — now with additional concerns about Meta's data practices. SecureYeoman's sovereign architecture is the counter-argument: the same assistant capability, every byte under your control, with a Kubernetes Helm chart that enterprise platform teams can deploy and operate using existing tooling.
-
----
-
-### ZeroClaw — Rust Performance / Edge Agent
-
-**Threat level: MEDIUM-LOW — competes on binary size and startup, not feature depth.**
-
-ZeroClaw is a Rust implementation targeting the performance and edge market: tiny binary, sub-second cold start, minimal memory footprint. It targets IoT gateways, CI runners, and developer workstations where the overhead of a Node.js or Python runtime is a blocker.
-
-| | ZeroClaw | SecureYeoman |
-|---|---|---|
-| **Language** | Rust | TypeScript (Bun runtime) |
-| **Binary size** | ~12 MB (estimated) | ~123 MB |
-| **Startup time** | < 500 ms (estimated) | ~30 s |
-| **RAM** | ~50 MB (estimated) | ~1 GB |
-| **RBAC / SSO** | ❌ | ✅ Full enterprise auth stack |
-| **Dashboard** | ❌ CLI only | ✅ React SPA |
-| **MCP tools** | Minimal set | 330 tools |
-| **Database** | File-based | PostgreSQL + SQLite |
-| **Air-gap** | ✅ | ✅ |
-| **Multi-agent** | ❌ | ✅ Swarms, Teams, DAG, A2A |
-
-**SecureYeoman positioning vs ZeroClaw**: ZeroClaw is PicoClaw's Rust cousin — a valid choice for resource-constrained single-agent deployments. The SecureYeoman Lite binary (SQLite backend, ~123 MB) partially bridges the gap for edge scenarios. For any use case requiring RBAC, audit, SSO, multi-agent orchestration, or a management dashboard, ZeroClaw has no answer. The competitive conversation reduces to: "Do you need one fast agent, or a governed fleet?"
-
----
-
-### NanoBot — Minimal Research-Oriented Agent
-
-**Threat level: LOW — targets academic / individual researcher segment.**
-
-NanoBot is a deliberately small (~3,000 line) Python codebase designed to be fully readable and auditable by a single developer in an afternoon. It is popular in academic and research communities where the ability to understand and modify every line of the agent loop matters more than production features.
-
-| | NanoBot | SecureYeoman |
-|---|---|---|
-| **Language** | Python | TypeScript |
-| **Codebase size** | ~3,000 lines (intentional) | ~430,000+ lines |
-| **Setup** | `pip install nanobot` | `curl install` / Docker / Helm |
-| **RBAC / SSO** | ❌ | ✅ |
-| **Audit trail** | Print-based logging | HMAC-SHA256 cryptographic chain |
-| **Enterprise auth** | ❌ | Okta / Azure AD / Auth0 / SAML 2.0 |
-| **MCP** | Basic client | 330 server tools |
-| **Skill marketplace** | ❌ | 24 builtin + 87 community skills; Trust Tiers |
-| **Multi-agent** | ❌ | Swarms, Teams, DAG, A2A, Federation |
-| **Target user** | Researchers, educators | Enterprise security / ops teams |
-
-**SecureYeoman positioning vs NanoBot**: NanoBot is not a direct competitive threat — it serves a different buyer entirely. The overlap risk is in the early-stage adoption funnel: a developer prototyping with NanoBot may never graduate to SecureYeoman if they perceive it as "too complex." The response is the `secureyeoman init` single-command onboarding wizard and the binary quick-start (`curl -fsSL https://secureyeoman.ai/install | bash`). The feature gap (SSO, RBAC, audit, multi-agent orchestration) becomes self-evident at enterprise pilot stage.
-
----
-
-### Devin 2.0 — AI Software Engineer (Cognition Labs)
-
-**Threat level: MEDIUM — price collapse expands addressable market; acquisition spree signals platform ambitions.**
-
-Devin is Cognition Labs' autonomous AI software engineer. Devin 2.0 launched in early 2026 with a dramatic price drop from **$500/month to $20/month** (Teams plan), signaling a shift from enterprise-only to mass-market adoption. Cognition also **acquired Windsurf** (formerly Codeium IDE) to integrate agentic AI directly into development environments.
-
-| | Devin 2.0 | SecureYeoman |
-|---|---|---|
-| **Deployment** | SaaS (Cognition cloud) | Self-hosted: binary / Docker / Kubernetes |
-| **Price** | $20/mo (Teams); Enterprise tier | Infrastructure cost only (open source) |
-| **Focus** | Autonomous coding agent | General-purpose AI agent platform |
-| **Data residency** | Cognition holds code + conversation data | 100% local / sovereign |
-| **Air-gap** | ❌ Cloud-only | ✅ |
-| **RBAC / SSO** | Teams workspace roles | Full 4-level RBAC + SSO/OIDC/SAML |
-| **IDE integration** | ✅ Windsurf (acquired) + VS Code | ✅ Monaco editor (Standard + Advanced) |
-| **Multi-agent** | Single-agent workflows | ✅ Swarms, Teams, DAG, A2A |
-| **MCP** | Limited | ✅ 330 tools |
-| **Audit** | Activity log | HMAC-SHA256 cryptographic chain |
-
-**SecureYeoman positioning vs Devin**: Different target markets — Devin is a coding-specific autonomous agent; SecureYeoman is a general-purpose platform. Overlap occurs when DevSecOps teams evaluate both for CI/CD automation. SecureYeoman's code execution is sandboxed and policy-gated; Devin's is cloud-hosted. The $20/mo price point makes Devin extremely accessible but creates cloud dependency. The Windsurf acquisition suggests Cognition is building toward a platform play.
-
----
-
-### OpenHands — Open-Source AI Software Agent
-
-**Threat level: MEDIUM — strongest OSS alternative for code-focused agent workflows.**
-
-OpenHands (formerly OpenDevin) is an open-source autonomous AI software engineer. Latest release: **v1.4.0** (Feb 17, 2026). Kubernetes-native deployment model with sandboxed execution environments.
-
-| | OpenHands | SecureYeoman |
-|---|---|---|
-| **Deployment** | Kubernetes-native; Docker; local | Self-hosted: binary / Docker / Kubernetes |
-| **Language** | Python | TypeScript |
-| **Focus** | Autonomous software engineering | General-purpose AI agent platform |
-| **Sandboxing** | Docker-based isolation | Landlock / seccomp / WASM / gVisor |
-| **RBAC / SSO** | Basic workspace auth | Full 4-level RBAC + SSO/OIDC/SAML |
-| **Multi-agent** | Task delegation | ✅ Swarms, Teams, DAG, A2A |
-| **MCP** | Limited integration | ✅ 330 tools |
-| **Audit** | Structured logs | HMAC-SHA256 cryptographic chain |
-| **Enterprise features** | Minimal | Full stack (multi-tenancy, Vault, K8s Helm, backup & DR) |
-| **Open source** | ✅ MIT | ✅ AGPL-3.0 + Commercial |
-
-**SecureYeoman positioning vs OpenHands**: OpenHands is code-focused; SecureYeoman is platform-focused. OpenHands competes with Devin on coding autonomy; SecureYeoman competes on governed enterprise automation across all domains. For teams that want a self-hosted coding agent, OpenHands is strong. For teams that need security, compliance, multi-agent orchestration, and 32 platform integrations alongside code automation — SecureYeoman is the only option.
-
----
-
-### OpenAI Frontier — Enterprise Agent Platform
-
-**Threat level: HIGH — OpenAI's enterprise brand and distribution create serious top-of-funnel competition.**
-
-OpenAI Frontier launched **February 5, 2026** as OpenAI's enterprise-focused autonomous agent platform. Positioned for large organizations with existing OpenAI API relationships.
-
-| | OpenAI Frontier | SecureYeoman |
-|---|---|---|
-| **Deployment** | SaaS (OpenAI-hosted) | Self-hosted: binary / Docker / Kubernetes |
-| **AI providers** | OpenAI models only | 13 providers (Anthropic, OpenAI, Gemini, Ollama, etc.) |
-| **Data residency** | OpenAI holds data (Enterprise tier: data not used for training) | 100% local / sovereign |
-| **Air-gap** | ❌ Cloud-only | ✅ |
-| **RBAC / SSO** | Enterprise SSO via OpenAI org | Full 4-level RBAC + SSO/OIDC/SAML |
-| **Multi-agent** | Agent orchestration | ✅ Swarms, Teams, DAG, A2A |
-| **Audit** | Enterprise compliance features | HMAC-SHA256 cryptographic chain + export |
-| **Price** | Enterprise subscription (premium) | Infrastructure cost only (open source) |
-| **Open source** | ❌ Proprietary | ✅ AGPL-3.0 + Commercial |
-
-**SecureYeoman positioning vs OpenAI Frontier**: OpenAI's enterprise brand is its primary weapon — CISOs and CTOs already have OpenAI contracts. The counter-arguments are: (1) vendor lock-in to a single model provider vs SecureYeoman's 13-provider flexibility, (2) data sovereignty — OpenAI holds the data even in Enterprise tier, (3) cost — open-source vs premium subscription, (4) air-gap capability for regulated industries. OpenAI Frontier is the most dangerous competitor for net-new enterprise deals, but cannot compete on sovereignty, model flexibility, or self-hosted compliance.
-
----
-
-### Expanded Competitive Summary
-
-| | SecureYeoman | TrustClaw | Manus AI | Devin 2.0 | OpenHands | OpenAI Frontier | ZeroClaw | NanoBot |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Self-hosted / air-gap** | ✅ | ❌ cloud sandbox | ❌ SaaS (Meta) | ❌ SaaS | ✅ | ❌ SaaS | ✅ | ✅ |
-| **Data sovereignty** | ✅ Full | ⚠️ Keys at TrustClaw | ❌ Meta holds data | ❌ Cognition holds data | ✅ | ❌ OpenAI holds data | ✅ | ✅ |
-| **RBAC + SSO/SAML** | ✅ | ❌ | Basic | Teams workspace | Basic | Enterprise SSO | ❌ | ❌ |
-| **Cryptographic audit** | ✅ HMAC-SHA256 | ❌ JSON log | ❌ | ❌ | ❌ | Enterprise features | ❌ | ❌ |
-| **Multi-tenancy** | ✅ RLS | ❌ | Per-account | Per-workspace | ❌ | Enterprise tier | ❌ | ❌ |
-| **Vault / SecretsManager** | ✅ env/keyring/Vault/OpenBao | Cloud vault | OAuth tokens | ❌ | ❌ | Enterprise vault | ❌ | ❌ |
-| **Multi-agent (swarms/teams)** | ✅ | ❌ | ❌ | Single-agent | Task delegation | Agent orchestration | ❌ | ❌ |
-| **330 MCP tools** | ✅ | Limited | Limited | Limited | Limited | Limited | Minimal | Basic |
-| **Kubernetes / Helm** | ✅ | ❌ | N/A | N/A | ✅ | N/A | ❌ | ❌ |
-| **Open source** | ✅ AGPL-3.0 + Commercial | ✅ MIT fork | ❌ Proprietary (Meta) | ❌ Proprietary | ✅ MIT | ❌ Proprietary | ✅ | ✅ |
-| **Binary size** | ~123 MB | Unknown | N/A | N/A | N/A | N/A | ~12 MB | N/A |
-| **Primary threat** | — | Data residency framing | Meta acquisition + zero-setup | $20/mo price + Windsurf | OSS code-agent mindshare | Enterprise brand + distribution | Edge/IoT hardware | Research mindshare |
-
----
-
-## Competitive Positioning
+## Market Positioning
 
 | Segment | Position | Rationale |
 |---------|----------|-----------|
-| **Enterprise self-hosted AI** | **Leader** | Only option with RBAC, SSO/OIDC/SAML, multi-tenancy, HMAC audit, Vault, K8s Helm, Twingate, network security toolkit, OPA/CEL governance, backup & DR, and correlation ID observability |
-| **Developer automation** | Challenger | OpenClaw leads on community volume (despite supply chain incidents); Devin 2.0 at $20/mo captures individual developers; OpenHands is the strongest OSS coding agent. SecureYeoman leads on security posture, enterprise auth, and observability |
-| **Privacy-first / high-security** | **Co-leader** | Ironclaw wins on Rust memory safety + TEE + confidential GPU; SecureYeoman wins on feature breadth, enterprise auth, multi-agent orchestration, and full dashboard. TrustClaw claims security but outsources key management to its own cloud |
-| **Embedded / IoT AI** | Challenger | PicoClaw (now with MCP) and ZeroClaw lead on hardware constraints; SecureYeoman Lite binary available for edge deployments |
-| **Managed SaaS** | Not positioned | Self-hosted only by design; OpenAI Frontier targets enterprise SaaS; Manus AI (acquired by Meta) shifts to Meta's platform; Ironclaw offers cloud-hosted TEE |
-| **Research / education** | Not positioned | NanoBot serves this segment; SecureYeoman is overkill for single-researcher use |
+| **Enterprise self-hosted** | **Leader** | Only platform combining full security + governance + orchestration + deployment stack |
+| **Developer automation** | Challenger | OpenClaw leads on community; Devin at $20/mo captures individuals; SY leads on security posture |
+| **Privacy-first** | **Co-leader** | Ironclaw: Rust + TEE. SY: feature breadth + enterprise auth + air-gap + dashboard |
+| **Embedded / IoT** | Challenger | PicoClaw + ZeroClaw lead on constraints; SY Lite available |
+| **Managed SaaS** | Not positioned | Self-hosted by design |
 
-**Key differentiator**: SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that ships all of the following in a single ~123 MB binary deployable fully air-gapped:
-
-- **Security**: RBAC/SSO/SAML, multi-tenancy, cryptographic audit chain, Vault/OpenBao, ResponseGuard, OPA/CEL governance, DLP, supply chain provenance (SLSA L3)
-- **Networking**: Twingate zero-trust proxy, 38 network security tools, 15 Kali tools, mTLS, credential proxy
-- **Knowledge**: Hybrid FTS+RRF vector memory, per-personality scoping, content chunking, context compaction
-- **Orchestration**: DAG workflows (19 step types, visual builder), swarms, teams, A2A federation, agent evaluation harness
-- **AI/ML**: 13 providers, training pipeline (distillation + LoRA + pre-training from scratch + LLM-as-Judge), federated learning (6 aggregation strategies, differential privacy), ML lifecycle (A/B testing, experiment registry), inline AI completion
-- **Operations**: Backup & DR, audit log export, compliance reporting, event subscriptions, Kubernetes Helm, multi-region HA
-- **Ecosystem**: 330 MCP tools, 32 integrations, 87 community skills, 42 themes, React dashboard with Mission Control
-
-Backed by ~16,100 tests across core, dashboard, and MCP packages.
-
-**The sovereignty argument**: Every new competitor — TrustClaw, Manus AI (now Meta), OpenAI Frontier, Devin — that claims "security" or "enterprise-ready" while routing data through its own cloud reinforces SecureYeoman's core position. The answer to "but Manus AI is easier to set up" is `curl -fsSL https://secureyeoman.ai/install | bash && secureyeoman init`. The answer to "but OpenAI Frontier has enterprise brand" is model-provider lock-in, data sovereignty, and the fact that SecureYeoman supports 13 providers including fully local models via Ollama and LM Studio. The answer to "but TrustClaw is more secure" is the cryptographic audit chain, OPA governance, DLP egress scanning, and the fact that SecureYeoman's Outbound Credential Proxy means neither TrustClaw nor any other third party ever sees your key material.
+**The sovereignty argument**: Every competitor claiming "enterprise-ready" while routing data through its own cloud reinforces SecureYeoman's position. The answer to "easier setup" is `curl -fsSL https://secureyeoman.ai/install | bash`. The answer to "bigger brand" is vendor lock-in and 13 providers including fully local models. The answer to "more secure" is: your key material never leaves your perimeter.
 
 ---
 
-*Updated: 2026-03-06*
+*Updated: 2026-03-09*
