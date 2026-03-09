@@ -112,6 +112,7 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Agnostic embedded services | Done (2026-03-09) | Redis + PostgreSQL + Caddy TLS embedded in container via supervisord. External URLs override embedded services for HA. Remove `agnostic-redis` from docker-compose |
 | SY TLS via Caddy reverse proxy | Done (2026-03-09) | Supervisord + Caddy in Docker images. 3 modes: provided certs, auto ACME, HTTP passthrough. Fastify stays HTTP on 127.0.0.1, Caddy handles :443. Fastify TLS kept as fallback for bare-metal |
 | Unified TLS env vars | Done (2026-03-09) | `TLS_ENABLED`, `TLS_CERT_PATH`, `TLS_KEY_PATH`, `TLS_DOMAIN`, `TLS_PORT` shared across SY, Agnostic, AGNOS. Legacy `SECUREYEOMAN_TLS_*` still supported with lower precedence |
+| Docker image CI/CD — GHCR push | Done (2026-03-09) | Multi-arch (amd64 + arm64) image build in release pipeline. Push to `ghcr.io/maccracken/secureyeoman`. Cosign-signed. CI build test on every push/PR |
 | SY embedded PostgreSQL | Draft | Move `sy-pg` into the SY container (supervisord). Same pattern as Agnostic: skip embedded when `DATABASE_HOST` points to external. Removes mandatory sidecar for single-node deployments |
 | Merge agnostic into agnosticos | Future | Agnostic becomes a package within agnosticos — collapses to single service |
 

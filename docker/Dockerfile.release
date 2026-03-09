@@ -1,0 +1,65 @@
+# Dockerfile.release — Multi-arch binary-based image for CI release
+#
+# Expects pre-built binaries placed in ./binaries/ by the CI pipeline.
+# Usage:
+#   docker build -f docker/Dockerfile.release --build-arg TARGETARCH=amd64 -t secureyeoman .
+#   docker build -f docker/Dockerfile.release --build-arg TARGETARCH=arm64 -t secureyeoman .
+
+ARG AGNOSTICOS_IMAGE=ghcr.io/maccracken/agnosticos:latest
+FROM ${AGNOSTICOS_IMAGE}
+
+ARG TARGETARCH=amd64
+ARG VERSION=dev
+
+LABEL org.opencontainers.image.source="https://github.com/MacCracken/secureyeoman"
+LABEL org.opencontainers.image.description="SecureYeoman — Secure, local-first AI assistant (on AGNOS)"
+LABEL org.opencontainers.image.licenses="AGPL-3.0"
+LABEL org.opencontainers.image.version="${VERSION}"
+
+USER root
+
+RUN apt-get update && apt-get install -y --no-install-recommends git wget gettext-base supervisor \
+ && rm -rf /var/lib/apt/lists/* \
+ && groupadd -r secureyeoman && useradd -r -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
+ && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
+ && chown -R secureyeoman:secureyeoman /home/secureyeoman \
+ && mkdir -p /usr/share/secureyeoman/community-repo \
+ && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman \
+ && chown -R secureyeoman:agnos /run/agnos /var/lib/agnos /var/log/agnos /etc/agnos
+
+# Install Caddy static binary (arch-aware)
+RUN CADDY_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
+ && curl -fsSL "https://caddyserver.com/api/download?os=linux&arch=${CADDY_ARCH}" -o /usr/local/bin/caddy \
+ && chmod +x /usr/local/bin/caddy
+
+ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-repo
+
+# Copy the pre-built binary (placed by CI into ./binaries/)
+COPY binaries/secureyeoman /usr/local/bin/secureyeoman
+RUN chmod +x /usr/local/bin/secureyeoman
+
+# SQL migration files
+COPY binaries/migrations/ /usr/local/bin/migrations/
+
+# Supervisord + Caddy config
+COPY docker/supervisord.conf /etc/supervisord.conf
+COPY docker/Caddyfile.template /etc/caddy/Caddyfile.template
+RUN mkdir -p /var/log/supervisor /etc/caddy /data/caddy \
+ && chown -R secureyeoman:secureyeoman /etc/caddy /data/caddy /var/log/supervisor
+
+# Combined entrypoint: configures TLS + supervisord
+COPY docker/entrypoint-combined.sh /usr/local/bin/entrypoint-combined.sh
+RUN chmod +x /usr/local/bin/entrypoint-combined.sh
+
+# Use JSON log format (pino-pretty not bundled in standalone binary)
+ENV SECUREYEOMAN_LOG_FORMAT=json
+
+EXPOSE 18789 443 8088 8090
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD secureyeoman health --json || exit 1
+
+USER secureyeoman
+
+ENTRYPOINT ["tini", "--", "/usr/local/bin/entrypoint-combined.sh"]
+CMD ["secureyeoman", "start"]

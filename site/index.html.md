@@ -150,6 +150,9 @@ Preference annotation, experiment registry, model versioning, A/B testing, and c
 # One-line install
 curl -fsSL https://secureyeoman.ai/install.sh | bash
 
+# Or pull the Docker image (multi-arch: amd64 + arm64)
+docker pull ghcr.io/maccracken/secureyeoman:latest
+
 # Or clone and build
 git clone https://github.com/MacCracken/secureyeoman.git
 cd secureyeoman && npm install && npm run build

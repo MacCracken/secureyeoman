@@ -20,10 +20,15 @@ permissions:
   contents: write       # creating GitHub releases and uploading assets
   id-token: write       # Sigstore OIDC token for keyless signing
   attestations: write   # SLSA provenance attestations
+  packages: write       # push Docker images to GHCR
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: maccracken/secureyeoman
 
 jobs:
   # Quality gate — run CI checks before building release
@@ -54,6 +59,9 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - name: Checkout
@@ -136,6 +144,16 @@ jobs:
             dist/secureyeoman-lite-linux-arm64
             dist/secureyeoman-lite-windows-x64.exe
 
+      - name: Upload Linux binaries + migrations (for container job)
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: |
+            dist/secureyeoman-linux-x64
+            dist/secureyeoman-linux-arm64
+            dist/migrations/
+          retention-days: 1
+
       - name: Generate release notes
         id: notes
         run: |
@@ -168,12 +186,23 @@ jobs:
             echo "| \`secureyeoman-windows-x64.exe\` | Windows x64 | Full binary (PostgreSQL) |"
             echo "| \`secureyeoman-lite-*\` | Various | SQLite fallback (no PostgreSQL required) |"
             echo ""
+            echo "### Docker"
+            echo ""
+            echo "\`\`\`bash"
+            echo "docker pull ghcr.io/maccracken/secureyeoman:${VERSION}"
+            echo "\`\`\`"
+            echo ""
+            echo "Multi-arch image (linux/amd64, linux/arm64) pushed to \`ghcr.io/maccracken/secureyeoman\`."
+            echo ""
             echo "### Verification"
             echo ""
-            echo "Each binary is signed with Sigstore cosign (keyless) and includes SLSA provenance attestations."
+            echo "Each binary and container image is signed with Sigstore cosign (keyless) and includes SLSA provenance attestations."
             echo "\`\`\`bash"
-            echo "# Verify signature"
+            echo "# Verify binary signature"
             echo "cosign verify-blob --certificate secureyeoman-linux-x64.cert --signature secureyeoman-linux-x64.sig secureyeoman-linux-x64"
+            echo ""
+            echo "# Verify container image"
+            echo "cosign verify ghcr.io/maccracken/secureyeoman:${VERSION} --certificate-identity-regexp='github.com/MacCracken/secureyeoman' --certificate-oidc-issuer='https://token.actions.githubusercontent.com'"
             echo ""
             echo "# Verify checksum"
             echo "sha256sum -c SHA256SUMS"
@@ -202,3 +231,110 @@ jobs:
             dist/*.cert
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Multi-arch Docker image build & push to GHCR ──────────────────────────
+  container:
+    name: Docker (${{ matrix.arch }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            binary: secureyeoman-linux-x64
+          - arch: arm64
+            binary: secureyeoman-linux-arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Linux binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-binaries
+          path: artifact
+
+      - name: Prepare build context
+        run: |
+          mkdir -p binaries/migrations
+          cp "artifact/${{ matrix.binary }}" binaries/secureyeoman
+          cp -r artifact/migrations/ binaries/migrations/
+          chmod +x binaries/secureyeoman
+          ls -lh binaries/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU (for arm64 emulation)
+        if: matrix.arch == 'arm64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (${{ matrix.arch }})
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.release
+          platforms: linux/${{ matrix.arch }}
+          push: true
+          build-args: |
+            TARGETARCH=${{ matrix.arch }}
+            VERSION=${{ needs.build.outputs.version }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.version }}-${{ matrix.arch }}
+          labels: |
+            org.opencontainers.image.version=${{ needs.build.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  # ── Create multi-arch manifest and sign ────────────────────────────────────
+  manifest:
+    name: Multi-arch manifest
+    needs: [build, container]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create multi-arch manifests
+        run: |
+          VERSION="${{ needs.build.outputs.version }}"
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+          for TAG in "${VERSION}" "latest"; do
+            docker buildx imagetools create \
+              --tag "${IMAGE}:${TAG}" \
+              "${IMAGE}:${VERSION}-amd64" \
+              "${IMAGE}:${VERSION}-arm64"
+            echo "==> Created manifest: ${IMAGE}:${TAG}"
+          done
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign container image (keyless)
+        run: |
+          VERSION="${{ needs.build.outputs.version }}"
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+          # Sign the versioned tag (covers both arches via manifest)
+          cosign sign --yes "${IMAGE}:${VERSION}"
+          echo "==> Signed: ${IMAGE}:${VERSION}"

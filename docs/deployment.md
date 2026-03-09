@@ -137,12 +137,20 @@ sudo systemctl start secureyeoman
 
 ## Docker
 
-Two Dockerfiles are provided:
+Pre-built multi-arch images (linux/amd64, linux/arm64) are published to GHCR on every tagged release:
+
+```bash
+docker pull ghcr.io/maccracken/secureyeoman:latest
+docker pull ghcr.io/maccracken/secureyeoman:2026.3.9  # pinned version
+```
+
+Three Dockerfiles are provided:
 
 | File | Use | Build process |
 |------|-----|---------------|
 | `Dockerfile.dev` | Local development (`docker compose up`) | Self-contained Node.js multi-stage build |
-| `Dockerfile` | Production image | Requires pre-built binary (`npm run build:binary`) |
+| `Dockerfile` | Production image (local build) | Requires pre-built binary (`npm run build:binary`) |
+| `docker/Dockerfile.release` | CI release (multi-arch) | Accepts pre-built binaries from CI artifacts |
 
 ### Development (docker compose up)
 

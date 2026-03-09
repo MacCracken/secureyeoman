@@ -163,3 +163,19 @@ jobs:
 
       - name: Template dry-run
         run: helm template secureyeoman deploy/helm/secureyeoman -f deploy/helm/secureyeoman/values-production.yaml
+
+  container-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    # Non-blocking — verifies the Dockerfile builds but does not push
+    continue-on-error: true
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build dev image
+        run: docker build -f Dockerfile.dev -t secureyeoman:dev-test .
+
+      - name: Sanity check (dev)
+        run: |
+          docker run --rm secureyeoman:dev-test node -e "console.log('dev-image-ok')" | grep dev-image-ok

@@ -26,7 +26,12 @@ curl -fsSL https://secureyeoman.ai/install | bash
 secureyeoman init
 ```
 
-**Option B — Docker Compose:**
+**Option B — Docker (pre-built image):**
+```bash
+docker pull ghcr.io/maccracken/secureyeoman:latest
+```
+
+**Option C — Docker Compose (build from source):**
 ```bash
 git clone https://github.com/MacCracken/secureyeoman.git
 cd secureyeoman
@@ -34,7 +39,7 @@ cp .env.example .env   # edit with your API key + security keys
 docker compose up -d
 ```
 
-**Option C — From source:**
+**Option D — From source:**
 ```bash
 git clone https://github.com/MacCracken/secureyeoman.git
 cd secureyeoman

@@ -691,9 +691,8 @@ SecureYeoman supports production deployment on Kubernetes via Helm charts locate
 
 | Deployment | Image | Port | Purpose |
 |-----------|-------|------|---------|
-| `secureyeoman-core` | `ghcr.io/maccracken/secureyeoman-core` | 18789 | Gateway, agent engine, API, WebSocket |
-| `secureyeoman-mcp` | `ghcr.io/maccracken/secureyeoman-mcp` | 3001 | MCP server (optional) |
-| `secureyeoman-dashboard` | `ghcr.io/maccracken/secureyeoman-dashboard` | 80 | Nginx serving SPA, proxying API/WS to core |
+| `secureyeoman` | `ghcr.io/maccracken/secureyeoman` | 18789, 443 | Gateway + dashboard (SPA via @fastify/static) + AGNOS (LLM Gateway 8088, Agent Runtime 8090) |
+| `secureyeoman-mcp` | `ghcr.io/maccracken/secureyeoman` | 3001 | MCP server (same image, different entrypoint) |
 
 ### Key Features
 

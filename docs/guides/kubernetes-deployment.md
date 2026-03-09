@@ -53,13 +53,21 @@ helm install secureyeoman deploy/helm/secureyeoman \
 
 ## Image Pull from GHCR
 
-Images are published to GHCR on tagged releases:
+A single multi-arch image (linux/amd64, linux/arm64) is published to GHCR on tagged releases:
 
-- `ghcr.io/maccracken/secureyeoman-core:<version>`
-- `ghcr.io/maccracken/secureyeoman-mcp:<version>`
-- `ghcr.io/maccracken/secureyeoman-dashboard:<version>`
+```bash
+docker pull ghcr.io/maccracken/secureyeoman:<version>
+docker pull ghcr.io/maccracken/secureyeoman:latest
+```
 
-> **Note:** GitHub Container Registry requires all-lowercase image names. The paths above are already lowercase — if you customize the image name, ensure it remains lowercase or `docker pull` will fail.
+The same image is used for both the core gateway and the MCP sidecar (different entrypoint/command). The dashboard is served by the core gateway via `@fastify/static` — no separate dashboard image.
+
+> **Note:** Each release image is signed with Sigstore cosign (keyless). Verify with:
+> ```bash
+> cosign verify ghcr.io/maccracken/secureyeoman:<version> \
+>   --certificate-identity-regexp='github.com/MacCracken/secureyeoman' \
+>   --certificate-oidc-issuer='https://token.actions.githubusercontent.com'
+> ```
 
 For private repositories, create an image pull secret:
 

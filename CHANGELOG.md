@@ -4,6 +4,19 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.9]
+
+### Docker Image CI/CD — Multi-Arch GHCR Push
+
+Added automated multi-arch Docker image builds to the release pipeline, inspired by the agnosticos CI/CD pattern.
+
+- **Release pipeline** (`release-binary.yml`): New `container` matrix job builds per-arch images (linux/amd64, linux/arm64) from pre-built binaries. New `manifest` job creates multi-arch manifests and signs the image with cosign (keyless). Tags: version, `latest`. Pushed to `ghcr.io/maccracken/secureyeoman`.
+- **Release Dockerfile** (`docker/Dockerfile.release`): Arch-aware release image that accepts pre-built binaries from CI artifacts. Uses `TARGETARCH` build arg for Caddy binary download. Identical runtime layout to production `Dockerfile`.
+- **CI build test** (`ci.yml`): New `container-build` job verifies `Dockerfile.dev` builds on every push/PR (non-blocking, `continue-on-error: true`).
+- **Release notes**: Updated to include `docker pull` command and cosign container verification instructions.
+
+---
+
 ## [2026.3.8]
 
 ### TLS via Caddy Reverse Proxy
