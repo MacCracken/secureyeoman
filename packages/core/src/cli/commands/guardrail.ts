@@ -102,7 +102,9 @@ async function runFilters(
   ctx.stdout.write(`\n  ${c.bold('Guardrail Filters')} (${filters.length})\n\n`);
   for (const f of filters) {
     const status = f.enabled ? c.green('enabled') : c.red('disabled');
-    ctx.stdout.write(`  ${c.cyan(f.id)}  ${f.name ?? ''}  ${status}  priority=${f.priority ?? 0}\n`);
+    ctx.stdout.write(
+      `  ${c.cyan(f.id)}  ${f.name ?? ''}  ${status}  priority=${f.priority ?? 0}\n`
+    );
   }
   ctx.stdout.write('\n');
   return 0;
@@ -210,9 +212,7 @@ async function runTest(
   const content = restArgs[0];
 
   if (!content) {
-    ctx.stderr.write(
-      'Usage: secureyeoman guardrail test <content> [--direction input|output]\n'
-    );
+    ctx.stderr.write('Usage: secureyeoman guardrail test <content> [--direction input|output]\n');
     return 1;
   }
 

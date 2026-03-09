@@ -98,7 +98,7 @@ See [.env.example](.env.example) and the [Configuration Reference](docs/configur
 
 **Dashboard** — http://localhost:18789 for chat, tasks, security events, personality editor, and settings.
 
-**CLI (54 commands):**
+**CLI (56 commands):**
 ```bash
 secureyeoman start                              # start the server
 secureyeoman health                             # check server health
@@ -114,7 +114,7 @@ secureyeoman guardrail filters                  # guardrail pipeline
 secureyeoman replay list                        # agent trace debugging
 secureyeoman observe costs                      # observability & costs
 secureyeoman skill list                         # marketplace skills
-secureyeoman help                               # all 54 commands
+secureyeoman help                               # all 56 commands
 ```
 
 **MCP Integration** — Connect to any MCP-compatible client (Claude Desktop, etc.):
@@ -158,7 +158,7 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | **[Security Model](docs/security/security-model.md)** | Threat model and security controls |
 | **[White Paper](docs/white-paper.md)** | Architectural sovereignty & agentic governance |
 | **[Architecture](docs/development/architecture.md)** | System architecture overview |
-| **[ADRs](docs/adr/)** | 31 Architecture Decision Records |
+| **[ADRs](docs/adr/)** | 32 Architecture Decision Records |
 | **[Roadmap](docs/development/roadmap.md)** | Development roadmap |
 | **[Changelog](CHANGELOG.md)** | Release history |
 

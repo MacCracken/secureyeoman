@@ -5,12 +5,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import {
-  extractBoolFlag,
-  extractCommonFlags,
-  apiCall,
-  colorContext,
-} from '../utils.js';
+import { extractBoolFlag, extractCommonFlags, apiCall, colorContext } from '../utils.js';
 
 const USAGE = `
 Usage: secureyeoman dlp <subcommand> [options]
@@ -98,12 +93,7 @@ async function runClassifications(
   const c = colorContext(ctx.stdout);
   ctx.stdout.write(`\n  ${c.bold('Content Classifications')} (${classifications.length})\n\n`);
   for (const cl of classifications) {
-    const levelColor =
-      cl.level === 'public'
-        ? c.green
-        : cl.level === 'internal'
-          ? c.yellow
-          : c.red;
+    const levelColor = cl.level === 'public' ? c.green : cl.level === 'internal' ? c.yellow : c.red;
     ctx.stdout.write(`  ${levelColor(cl.level)}  ${cl.name ?? cl.id ?? ''}\n`);
   }
   ctx.stdout.write('\n');

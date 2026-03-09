@@ -32,10 +32,7 @@ Options:
   -h, --help        Show this help
 `;
 
-function statusColor(
-  c: ReturnType<typeof colorContext>,
-  status: string
-): string {
+function statusColor(c: ReturnType<typeof colorContext>, status: string): string {
   switch (status) {
     case 'active':
     case 'running':

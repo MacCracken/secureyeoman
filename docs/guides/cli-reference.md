@@ -52,6 +52,7 @@ secureyeoman <command> --help  # command-specific help
 | `tee` | `confidential` | Confidential Computing / TEE status and verification (`status`, `verify`, `hardware`) |
 | `athi` | `threat` | ATHI threat governance framework (`list`, `show`, `create`, `matrix`, `summary`) |
 | `risk` | `rsk` | Departmental risk register (`departments`, `register`, `heatmap`, `summary`, `report`) |
+| `chaos` | — | Chaos engineering experiments (`list`, `show`, `run`, `abort`, `results`, `status`) |
 
 ### Workflows
 

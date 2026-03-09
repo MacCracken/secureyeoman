@@ -109,8 +109,7 @@ async function runList(
   const c = colorContext(ctx.stdout);
   ctx.stdout.write(`\n  ${c.bold('Workflows')} (${workflows.length})\n\n`);
   for (const wf of workflows) {
-    const statusColor =
-      wf.status === 'active' ? c.green : wf.status === 'error' ? c.red : c.yellow;
+    const statusColor = wf.status === 'active' ? c.green : wf.status === 'error' ? c.red : c.yellow;
     const steps = wf.stepCount ?? wf.steps?.length ?? 0;
     ctx.stdout.write(
       `  ${c.cyan(wf.id)}  ${wf.name ?? 'unnamed'}  ${statusColor(wf.status ?? 'unknown')}  ${steps} steps\n`

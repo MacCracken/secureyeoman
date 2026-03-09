@@ -28,7 +28,7 @@ Standardized `TLS_ENABLED`, `TLS_CERT_PATH`, `TLS_KEY_PATH`, `TLS_DOMAIN`, `TLS_
 
 ### CLI Feature Parity — 14 New Commands (339 tests)
 
-Full CLI coverage for all major features that previously had API routes but no CLI command. Total: **54 commands** (was 40).
+Full CLI coverage for all major features that previously had API routes but no CLI command. Total: **56 commands** (was 42).
 
 | Command | Alias | Subcommands | Feature |
 |---------|-------|-------------|---------|

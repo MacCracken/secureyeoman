@@ -5,12 +5,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import {
-  extractBoolFlag,
-  extractCommonFlags,
-  apiCall,
-  colorContext,
-} from '../utils.js';
+import { extractBoolFlag, extractCommonFlags, apiCall, colorContext } from '../utils.js';
 
 const USAGE = `
 Usage: secureyeoman replay <subcommand> [options]
@@ -103,9 +98,7 @@ async function runList(
   ctx.stdout.write(`\n  ${c.bold('Agent Traces')} (${traces.length})\n\n`);
   for (const t of traces) {
     const id = (t.id ?? '').slice(0, 8);
-    ctx.stdout.write(
-      `  ${c.cyan(id)}  ${t.status ?? 'unknown'}  ${t.agentId ?? ''}\n`
-    );
+    ctx.stdout.write(`  ${c.cyan(id)}  ${t.status ?? 'unknown'}  ${t.agentId ?? ''}\n`);
   }
   ctx.stdout.write('\n');
   return 0;

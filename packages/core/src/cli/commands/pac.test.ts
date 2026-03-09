@@ -77,9 +77,7 @@ describe('pac CLI command', () => {
       mockApiCall.mockResolvedValue({
         ok: true,
         data: {
-          bundles: [
-            { id: 'b1', name: 'security-baseline', version: '1.0.0', status: 'active' },
-          ],
+          bundles: [{ id: 'b1', name: 'security-baseline', version: '1.0.0', status: 'active' }],
         },
       } as any);
       const ctx = makeCtx(['bundles']);
@@ -255,7 +253,11 @@ describe('pac CLI command', () => {
         ok: true,
         data: {
           deployments: [
-            { id: 'abc12345-1234-1234-1234-1234567890ab', bundleName: 'baseline', status: 'active' },
+            {
+              id: 'abc12345-1234-1234-1234-1234567890ab',
+              bundleName: 'baseline',
+              status: 'active',
+            },
           ],
         },
       } as any);

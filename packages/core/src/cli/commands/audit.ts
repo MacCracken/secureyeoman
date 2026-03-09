@@ -104,8 +104,7 @@ async function runReports(
   }
   ctx.stdout.write(`\n  ${c.bold('Audit Reports')} (${reports.length})\n\n`);
   for (const r of reports) {
-    const statusColor =
-      r.status === 'passed' ? c.green : r.status === 'failed' ? c.red : c.yellow;
+    const statusColor = r.status === 'passed' ? c.green : r.status === 'failed' ? c.red : c.yellow;
     ctx.stdout.write(
       `  ${c.cyan((r.id ?? '').slice(0, 8))}  ${statusColor(r.status ?? 'unknown')}  ${r.scope ?? ''}  ${r.createdAt ?? ''}\n`
     );
@@ -236,7 +235,9 @@ async function runHealth(
   const health = (res.data as any)?.health ?? res.data;
   const c = colorContext(ctx.stdout);
   ctx.stdout.write(`\n  ${c.bold('Memory Health')}\n\n`);
-  ctx.stdout.write(`  Status:       ${health.status === 'healthy' ? c.green(health.status) : c.red(health.status ?? 'unknown')}\n`);
+  ctx.stdout.write(
+    `  Status:       ${health.status === 'healthy' ? c.green(health.status) : c.red(health.status ?? 'unknown')}\n`
+  );
   ctx.stdout.write(`  Memory Used:  ${health.memoryUsed ?? 'N/A'}\n`);
   ctx.stdout.write(`  Uptime:       ${health.uptime ?? 'N/A'}\n`);
   if (health.lastAudit) {

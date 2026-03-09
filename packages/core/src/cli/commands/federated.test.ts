@@ -247,9 +247,7 @@ describe('federated CLI command', () => {
       mockApiCall.mockResolvedValue({
         ok: true,
         data: {
-          participants: [
-            { id: 'p1-full-uuid-here', status: 'active', name: 'Node A' },
-          ],
+          participants: [{ id: 'p1-full-uuid-here', status: 'active', name: 'Node A' }],
         },
       } as any);
       const ctx = makeCtx(['participants']);

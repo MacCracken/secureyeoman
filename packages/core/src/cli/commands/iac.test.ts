@@ -77,9 +77,7 @@ describe('iac CLI command', () => {
       mockApiCall.mockResolvedValue({
         ok: true,
         data: {
-          templates: [
-            { id: 'tpl-1', name: 'VPC Setup', provider: 'aws', status: 'active' },
-          ],
+          templates: [{ id: 'tpl-1', name: 'VPC Setup', provider: 'aws', status: 'active' }],
         },
       } as any);
       const ctx = makeCtx(['templates']);
