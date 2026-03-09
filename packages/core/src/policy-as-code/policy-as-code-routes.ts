@@ -6,7 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { BundleManager } from './bundle-manager.js';
 import { sendError, errorToString } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface PolicyAsCodeRouteOptions {
   bundleManager: BundleManager;
@@ -18,15 +18,7 @@ export function registerPolicyAsCodeRoutes(
   opts: PolicyAsCodeRouteOptions
 ): void {
   const { bundleManager, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('compliance_governance', secureYeoman);
 
   // ── List bundles ────────────────────────────────────────────────────
 

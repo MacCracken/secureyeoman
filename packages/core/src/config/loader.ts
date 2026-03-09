@@ -494,10 +494,11 @@ export function requireSecret(envVarName: string): string {
 export function validateSecrets(config: Config): void {
   const requiredSecrets: string[] = [];
 
-  // Always require signing key for audit chain
-  if (config.logging.audit.enabled) {
-    requiredSecrets.push(config.logging.audit.signingKeyEnv);
-  }
+  // TOKEN_SECRET and SIGNING_KEY are auto-generated in SecurityModule.initEarly() if not
+  // set externally — no longer required as environment secrets.
+
+  // Encryption key is auto-generated in SecurityModule.initEarly() if not set externally.
+  // No longer required as an environment secret.
 
   // Warn (don't fail) on missing AI provider API keys.
   // The server starts without them; chat is disabled in the dashboard until a key
@@ -526,16 +527,8 @@ export function validateSecrets(config: Config): void {
     }
   }
 
-  // Token secret for JWT
-  requiredSecrets.push(config.gateway.auth.tokenSecret);
-
-  // Admin password for bootstrap auth
+  // Admin password for bootstrap auth — always required (users must set their own)
   requiredSecrets.push(config.gateway.auth.adminPasswordEnv);
-
-  // Check encryption key if enabled
-  if (config.security.encryption.enabled) {
-    requiredSecrets.push(config.security.encryption.keyEnv);
-  }
 
   const missing = requiredSecrets.filter((name) => !getSecret(name));
 

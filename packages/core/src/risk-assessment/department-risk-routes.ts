@@ -13,7 +13,7 @@ import {
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 import {
   DepartmentCreateSchema,
   DepartmentUpdateSchema,
@@ -31,15 +31,7 @@ export function registerDepartmentRiskRoutes(
   opts: DepartmentRiskRoutesOptions
 ): void {
   const { departmentRiskManager: mgr, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('compliance_governance', secureYeoman);
 
   // ── Department CRUD ──────────────────────────────────────────
 

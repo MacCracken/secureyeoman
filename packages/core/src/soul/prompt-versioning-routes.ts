@@ -11,7 +11,7 @@ import type { PromptTemplateEngine, TemplateVariable } from './prompt-template.j
 import type { PromptLinter } from './prompt-linter.js';
 import type { PromptChangelog, ChangeCategory } from './prompt-changelog.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
 export interface PromptVersioningRoutesOptions {
@@ -28,15 +28,7 @@ export async function registerPromptVersioningRoutes(
 ): Promise<void> {
   const { abTestManager, templateEngine, linter, changelog, secureYeoman } = opts;
 
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('prompt_engineering', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('prompt_engineering', secureYeoman);
 
   // ── A/B Testing ──────────────────────────────────────────
 

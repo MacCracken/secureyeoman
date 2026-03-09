@@ -6,7 +6,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { BrowserSessionStorage } from './storage.js';
 import { sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
 export function registerBrowserRoutes(
@@ -19,11 +19,7 @@ export function registerBrowserRoutes(
 ): void {
   const { browserSessionStorage, browserConfig, secureYeoman } = opts;
 
-  const featureGuardOpts = (
-    secureYeoman
-      ? { preHandler: [requiresLicense('computer_use', () => secureYeoman.getLicenseManager())] }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('computer_use', secureYeoman);
 
   // List sessions
   app.get('/api/v1/browser/sessions', async (request) => {

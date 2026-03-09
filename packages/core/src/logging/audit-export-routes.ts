@@ -20,7 +20,7 @@ import {
 } from './audit-export.js';
 import { sendError } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface AuditExportRoutesOptions {
   auditStorage: SQLiteAuditStorage;
@@ -33,11 +33,7 @@ export function registerAuditExportRoutes(
   opts: AuditExportRoutesOptions
 ): void {
   const { auditStorage, hostname, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? { preHandler: [requiresLicense('audit_export', () => secureYeoman.getLicenseManager())] }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('audit_export', secureYeoman);
 
   app.post(
     '/api/v1/audit/export',

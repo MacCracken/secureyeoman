@@ -11,7 +11,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse, checkHttpOk } from './tool-utils.js';
 
 const NORTHFLANK_BASE = 'https://api.northflank.com/v1';
 
@@ -69,11 +69,8 @@ export function registerNorthflankTools(
     },
     wrapToolHandler('northflank_list_services', middleware, async ({ projectId }) => {
       if (!config.exposeNorthflank) return disabled();
-      const { ok, status, body } = await northflankFetch(config, `/projects/${projectId}/services`);
-      if (!ok) {
-        return errorResponse(`Northflank API error ${status}: ${JSON.stringify(body)}`);
-      }
-      return jsonResponse(body);
+      const result = await northflankFetch(config, `/projects/${projectId}/services`);
+      return checkHttpOk(result, 'Northflank API error') ?? jsonResponse(result.body);
     })
   );
 
@@ -95,7 +92,7 @@ export function registerNorthflankTools(
         const payload: Record<string, string> = {};
         if (branch) payload.branch = branch;
         if (sha) payload.sha = sha;
-        const { ok, status, body } = await northflankFetch(
+        const result = await northflankFetch(
           config,
           `/projects/${projectId}/services/${serviceId}/builds`,
           {
@@ -103,10 +100,7 @@ export function registerNorthflankTools(
             body: JSON.stringify(payload),
           }
         );
-        if (!ok) {
-          return errorResponse(`Northflank API error ${status}: ${JSON.stringify(body)}`);
-        }
-        return jsonResponse(body);
+        return checkHttpOk(result, 'Northflank API error') ?? jsonResponse(result.body);
       }
     )
   );
@@ -125,14 +119,11 @@ export function registerNorthflankTools(
       middleware,
       async ({ projectId, serviceId, buildId }) => {
         if (!config.exposeNorthflank) return disabled();
-        const { ok, status, body } = await northflankFetch(
+        const result = await northflankFetch(
           config,
           `/projects/${projectId}/services/${serviceId}/builds/${buildId}`
         );
-        if (!ok) {
-          return errorResponse(`Northflank API error ${status}: ${JSON.stringify(body)}`);
-        }
-        return jsonResponse(body);
+        return checkHttpOk(result, 'Northflank API error') ?? jsonResponse(result.body);
       }
     )
   );
@@ -146,14 +137,8 @@ export function registerNorthflankTools(
     },
     wrapToolHandler('northflank_list_deployments', middleware, async ({ projectId }) => {
       if (!config.exposeNorthflank) return disabled();
-      const { ok, status, body } = await northflankFetch(
-        config,
-        `/projects/${projectId}/deployments`
-      );
-      if (!ok) {
-        return errorResponse(`Northflank API error ${status}: ${JSON.stringify(body)}`);
-      }
-      return jsonResponse(body);
+      const result = await northflankFetch(config, `/projects/${projectId}/deployments`);
+      return checkHttpOk(result, 'Northflank API error') ?? jsonResponse(result.body);
     })
   );
 
@@ -173,7 +158,7 @@ export function registerNorthflankTools(
         if (!config.exposeNorthflank) return disabled();
         const payload: Record<string, string> = {};
         if (imageTag) payload.imageTag = imageTag;
-        const { ok, status, body } = await northflankFetch(
+        const result = await northflankFetch(
           config,
           `/projects/${projectId}/deployments/${deploymentId}/deploy`,
           {
@@ -181,10 +166,7 @@ export function registerNorthflankTools(
             body: JSON.stringify(payload),
           }
         );
-        if (!ok) {
-          return errorResponse(`Northflank API error ${status}: ${JSON.stringify(body)}`);
-        }
-        return jsonResponse(body);
+        return checkHttpOk(result, 'Northflank API error') ?? jsonResponse(result.body);
       }
     )
   );

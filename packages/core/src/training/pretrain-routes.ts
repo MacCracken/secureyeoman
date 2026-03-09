@@ -7,7 +7,7 @@ import type { PretrainManager } from './pretrain-manager.js';
 import type { CorpusLoader } from './corpus-loader.js';
 import { sendError } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface PretrainRouteOptions {
   pretrainManager: PretrainManager;
@@ -17,15 +17,7 @@ export interface PretrainRouteOptions {
 
 export function registerPretrainRoutes(app: FastifyInstance, opts: PretrainRouteOptions): void {
   const { pretrainManager, corpusLoader, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('adaptive_learning', secureYeoman);
 
   // ── Jobs ──────────────────────────────────────────────────────────
 

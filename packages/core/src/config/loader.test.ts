@@ -415,6 +415,7 @@ describe('validateSecrets', () => {
     delete process.env[config.model.apiKeyEnv];
     delete process.env[config.gateway.auth.tokenSecret];
     delete process.env[config.security.encryption.keyEnv];
+    delete process.env[config.gateway.auth.adminPasswordEnv];
 
     try {
       validateSecrets(config);
@@ -423,10 +424,12 @@ describe('validateSecrets', () => {
       expect(error).toBeInstanceOf(Error);
       const message = (error as Error).message;
       expect(message).toContain('Missing required secrets');
-      expect(message).toContain(config.logging.audit.signingKeyEnv);
-      // API key is no longer required — it's a warning, not fatal
+      // Only ADMIN_PASSWORD is required — crypto keys are auto-generated internally
+      expect(message).toContain(config.gateway.auth.adminPasswordEnv);
       expect(message).not.toContain(config.model.apiKeyEnv);
-      expect(message).toContain(config.gateway.auth.tokenSecret);
+      // Signing key and token secret are now optional (auto-generated)
+      expect(message).not.toContain(config.logging.audit.signingKeyEnv);
+      expect(message).not.toContain(config.gateway.auth.tokenSecret);
     }
   });
 });

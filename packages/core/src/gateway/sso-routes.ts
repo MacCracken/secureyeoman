@@ -15,7 +15,7 @@ import type { SsoManager } from '../security/sso-manager.js';
 import type { SsoStorage } from '../security/sso-storage.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface SsoRoutesOptions {
   ssoManager: SsoManager;
@@ -26,11 +26,7 @@ export interface SsoRoutesOptions {
 
 export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions): void {
   const { ssoManager, ssoStorage, dashboardUrl, secureYeoman } = opts;
-  const ssoGuardOpts = (
-    secureYeoman
-      ? { preHandler: [requiresLicense('sso_saml', () => secureYeoman.getLicenseManager())] }
-      : {}
-  ) as Record<string, unknown>;
+  const ssoGuardOpts = licenseGuard('sso_saml', secureYeoman);
 
   // ── Provider discovery (public) ──────────────────────────────────
 

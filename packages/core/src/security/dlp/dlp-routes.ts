@@ -15,7 +15,7 @@ import type { RetentionManager } from './retention-manager.js';
 import type { ClassificationLevel } from './types.js';
 import { sendError, toErrorMessage } from '../../utils/errors.js';
 import type { SecureYeoman } from '../../secureyeoman.js';
-import { requiresLicense } from '../../licensing/license-guard.js';
+import { licenseGuard } from '../../licensing/license-guard.js';
 
 export interface DlpRouteDeps {
   classificationEngine: ClassificationEngine;
@@ -43,11 +43,7 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
     retentionManager,
     secureYeoman,
   } = deps;
-  const featureGuardOpts = (
-    secureYeoman
-      ? { preHandler: [requiresLicense('dlp_security', () => secureYeoman.getLicenseManager())] }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('dlp_security', secureYeoman);
 
   // ── POST /api/v1/security/dlp/classify ──────────────────────────────────
 

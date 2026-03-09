@@ -6,7 +6,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ProviderAccountManager } from './provider-account-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
 export interface ProviderAccountRoutesOptions {
@@ -20,15 +20,7 @@ export function registerProviderAccountRoutes(
 ): void {
   const { providerAccountManager, secureYeoman } = opts;
 
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('provider_management', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('provider_management', secureYeoman);
 
   // ── Create account ───────────────────────────────────────────
   app.post(

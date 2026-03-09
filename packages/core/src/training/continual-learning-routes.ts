@@ -5,7 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface ContinualLearningRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -17,9 +17,7 @@ export function registerContinualLearningRoutes(
 ): void {
   const { secureYeoman } = opts;
 
-  const adaptiveLearningGuardOpts = {
-    preHandler: [requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager())],
-  } as Record<string, unknown>;
+  const adaptiveLearningGuardOpts = licenseGuard('adaptive_learning', secureYeoman);
 
   // ── Dataset Refresh ──────────────────────────────────────────────────
 

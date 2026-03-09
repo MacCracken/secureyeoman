@@ -10,7 +10,7 @@ import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import { AthiScenarioCreateSchema, AthiScenarioUpdateSchema } from '@secureyeoman/shared';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface AthiRoutesOptions {
   athiManager: AthiManager;
@@ -19,15 +19,7 @@ export interface AthiRoutesOptions {
 
 export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions): void {
   const { athiManager: mgr, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('compliance_governance', secureYeoman);
 
   // ── POST /api/v1/security/athi/scenarios ─────────────────────────────────
 

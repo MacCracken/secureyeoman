@@ -24,6 +24,7 @@ import {
   registerApiProxyTool,
   labelledResponse,
   errorResponse,
+  checkHttpOk,
   registerDisabledStub,
   createHttpClient,
 } from './tool-utils.js';
@@ -132,9 +133,8 @@ export function registerAgnosticTools(
       inputSchema: {},
     },
     wrapToolHandler('agnostic_agents_status', middleware, async () => {
-      const { ok, status, body } = await agnosticRequest(config, 'get', '/api/agents');
-      if (!ok) return errorResponse(`Agents status failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return labelledResponse('Agnostic Agents', body);
+      const result = await agnosticRequest(config, 'get', '/api/agents');
+      return checkHttpOk(result, 'Agents status failed') ?? labelledResponse('Agnostic Agents', result.body);
     })
   );
 
@@ -147,9 +147,8 @@ export function registerAgnosticTools(
       inputSchema: {},
     },
     wrapToolHandler('agnostic_agents_queues', middleware, async () => {
-      const { ok, status, body } = await agnosticRequest(config, 'get', '/api/agents/queues');
-      if (!ok) return errorResponse(`Queue depths failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return labelledResponse('Agnostic Queue Depths', body);
+      const result = await agnosticRequest(config, 'get', '/api/agents/queues');
+      return checkHttpOk(result, 'Queue depths failed') ?? labelledResponse('Agnostic Queue Depths', result.body);
     })
   );
 
@@ -163,9 +162,8 @@ export function registerAgnosticTools(
       inputSchema: {},
     },
     wrapToolHandler('agnostic_dashboard', middleware, async () => {
-      const { ok, status, body } = await agnosticRequest(config, 'get', '/api/dashboard');
-      if (!ok) return errorResponse(`Dashboard failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return labelledResponse('Agnostic Dashboard', body);
+      const result = await agnosticRequest(config, 'get', '/api/dashboard');
+      return checkHttpOk(result, 'Dashboard failed') ?? labelledResponse('Agnostic Dashboard', result.body);
     })
   );
 
@@ -183,13 +181,12 @@ export function registerAgnosticTools(
     wrapToolHandler('agnostic_session_list', middleware, async (args) => {
       const limit = args.limit ?? 20;
       const offset = args.offset ?? 0;
-      const { ok, status, body } = await agnosticRequest(
+      const result = await agnosticRequest(
         config,
         'get',
         `/api/sessions?limit=${limit}&offset=${offset}`
       );
-      if (!ok) return errorResponse(`Sessions failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return labelledResponse('Agnostic Sessions', body);
+      return checkHttpOk(result, 'Sessions failed') ?? labelledResponse('Agnostic Sessions', result.body);
     })
   );
 
@@ -204,13 +201,12 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_session_detail', middleware, async (args) => {
-      const { ok, status, body } = await agnosticRequest(
+      const result = await agnosticRequest(
         config,
         'get',
         `/api/sessions/${encodeURIComponent(args.session_id)}`
       );
-      if (!ok) return errorResponse(`Session not found: HTTP ${status}`);
-      return labelledResponse(`Session: ${args.session_id}`, body);
+      return checkHttpOk(result, 'Session not found') ?? labelledResponse(`Session: ${args.session_id}`, result.body);
     })
   );
 
@@ -230,14 +226,12 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_generate_report', middleware, async (args) => {
-      const { ok, status, body } = await agnosticRequest(config, 'post', '/api/reports/generate', {
+      const result = await agnosticRequest(config, 'post', '/api/reports/generate', {
         session_id: args.session_id,
         report_type: args.report_type,
         format: args.format,
       });
-      if (!ok)
-        return errorResponse(`Report generation failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return labelledResponse('Report Generated', body);
+      return checkHttpOk(result, 'Report generation failed') ?? labelledResponse('Report Generated', result.body);
     })
   );
 
@@ -300,8 +294,8 @@ export function registerAgnosticTools(
         callback_secret: args.callback_secret,
       });
 
-      if (!ok)
-        return errorResponse(`Task submission failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      const err = checkHttpOk({ ok, status, body }, 'Task submission failed');
+      if (err) return err;
       return labelledResponse('Task Submitted', body);
     })
   );
@@ -319,15 +313,12 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_task_status', middleware, async (args) => {
-      const { ok, status, body } = await agnosticRequest(
+      const result = await agnosticRequest(
         config,
         'get',
         `/api/tasks/${encodeURIComponent(args.task_id)}`
       );
-
-      if (!ok)
-        return errorResponse(`Task status failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return labelledResponse(`Task: ${args.task_id}`, body);
+      return checkHttpOk(result, 'Task status failed') ?? labelledResponse(`Task: ${args.task_id}`, result.body);
     })
   );
 
@@ -427,16 +418,14 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_session_diff', middleware, async (args) => {
-      const { ok, status, body } = await agnosticRequest(
+      const result = await agnosticRequest(
         config,
         'get',
         `/api/test-sessions/diff?base=${encodeURIComponent(args.base_session_id)}&compare=${encodeURIComponent(args.compare_session_id)}`
       );
-      if (!ok)
-        return errorResponse(`Session diff failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return labelledResponse(
+      return checkHttpOk(result, 'Session diff failed') ?? labelledResponse(
         `Session Diff: ${args.base_session_id} → ${args.compare_session_id}`,
-        body
+        result.body
       );
     })
   );
@@ -460,14 +449,12 @@ export function registerAgnosticTools(
     },
     wrapToolHandler('agnostic_structured_results', middleware, async (args) => {
       const query = args.result_type ? `?result_type=${args.result_type}` : '';
-      const { ok, status, body } = await agnosticRequest(
+      const result = await agnosticRequest(
         config,
         'get',
         `/api/results/structured/${encodeURIComponent(args.session_id)}${query}`
       );
-      if (!ok)
-        return errorResponse(`Structured results failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return labelledResponse(`Structured Results: ${args.session_id}`, body);
+      return checkHttpOk(result, 'Structured results failed') ?? labelledResponse(`Structured Results: ${args.session_id}`, result.body);
     })
   );
 
@@ -491,14 +478,12 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_quality_trends', middleware, async (args) => {
-      const { ok, status, body } = await agnosticRequest(
+      const result = await agnosticRequest(
         config,
         'get',
         `/api/test-metrics/trends?days=${args.days}`
       );
-      if (!ok)
-        return errorResponse(`Quality trends failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return labelledResponse(`Quality Trends (${args.days} days)`, body);
+      return checkHttpOk(result, 'Quality trends failed') ?? labelledResponse(`Quality Trends (${args.days} days)`, result.body);
     })
   );
 
@@ -516,16 +501,16 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_security_findings', middleware, async (args) => {
-      const { ok, status, body } = await agnosticRequest(
+      const result = await agnosticRequest(
         config,
         'get',
         `/api/results/structured/${encodeURIComponent(args.session_id)}?result_type=security`
       );
-      if (!ok)
-        return errorResponse(`Security findings failed: HTTP ${status}\n${JSON.stringify(body)}`);
+      const httpErr = checkHttpOk(result, 'Security findings failed');
+      if (httpErr) return httpErr;
 
       // Extract findings array for easier consumption
-      const data = body as Record<string, unknown>;
+      const data = result.body as Record<string, unknown>;
       const action = data?.action as Record<string, unknown> | undefined;
       const results = action?.results as Record<string, unknown> | undefined;
       const security = results?.security as Record<string, unknown> | undefined;
@@ -578,7 +563,7 @@ export function registerAgnosticTools(
       if (args.run_qa_analyst) agents.push('qa-analyst');
       if (args.run_qa_manager) agents.push('qa-manager');
 
-      const { ok, status, body } = await agnosticRequest(config, 'post', '/api/tasks', {
+      const result = await agnosticRequest(config, 'post', '/api/tasks', {
         title: args.title,
         description: args.description,
         target_url: args.target_url,
@@ -586,12 +571,9 @@ export function registerAgnosticTools(
         agents: agents.length === 6 ? [] : agents, // empty = all
         standards: args.standards,
       });
-
-      if (!ok)
-        return errorResponse(`QA orchestration failed: HTTP ${status}\n${JSON.stringify(body)}`);
-      return labelledResponse(
+      return checkHttpOk(result, 'QA orchestration failed') ?? labelledResponse(
         `QA Orchestrated (agents: ${agents.length ? agents.join(', ') : 'all'})`,
-        body
+        result.body
       );
     })
   );
@@ -713,20 +695,15 @@ export function registerAgnosticTools(
         timestamp: Date.now(),
       };
 
-      const { ok, status, body } = await agnosticRequest(
+      const result = await agnosticRequest(
         config,
         'post',
         '/api/v1/a2a/receive',
         message
       );
-
-      if (!ok)
-        return errorResponse(
-          `Credential provisioning failed: HTTP ${status}\n${JSON.stringify(body)}`
-        );
-      return labelledResponse(
+      return checkHttpOk(result, 'Credential provisioning failed') ?? labelledResponse(
         `Credentials provisioned for "${args.provider}" (message_id: ${messageId})`,
-        body
+        result.body
       );
     })
   );
@@ -768,20 +745,15 @@ export function registerAgnosticTools(
         timestamp: Date.now(),
       };
 
-      const { ok, status, body } = await agnosticRequest(
+      const result = await agnosticRequest(
         config,
         'post',
         '/api/v1/a2a/receive',
         message
       );
-
-      if (!ok)
-        return errorResponse(
-          `Credential revocation failed: HTTP ${status}\n${JSON.stringify(body)}`
-        );
-      return labelledResponse(
+      return checkHttpOk(result, 'Credential revocation failed') ?? labelledResponse(
         `Credentials revoked for "${args.provider}" (message_id: ${messageId})`,
-        body
+        result.body
       );
     })
   );

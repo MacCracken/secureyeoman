@@ -120,6 +120,7 @@ import type {
 import type { McpStorage } from './mcp/storage.js';
 import type { McpClientManager } from './mcp/client.js';
 import type { McpServer } from './mcp/server.js';
+import type { McpCredentialManager } from './mcp/credential-manager.js';
 import type { DashboardManager } from './dashboard/manager.js';
 import type { WorkspaceManager } from './workspace/manager.js';
 import type { ExperimentManager } from './experiment/manager.js';
@@ -1216,6 +1217,14 @@ export class SecureYeoman {
         this.auditChain
       ) ?? null
     );
+  }
+
+  /**
+   * Register the MCP credential manager with the security module so that
+   * TOKEN_SECRET rotation can re-encrypt stored credentials.
+   */
+  setMcpCredentialManager(mgr: McpCredentialManager): void {
+    this.securityMod?.setMcpCredentialManager(mgr);
   }
 
   // ------------------------------------------------------------------

@@ -6,7 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { FederatedManager } from './federated-manager.js';
 import { sendError } from '../../utils/errors.js';
 import type { SecureYeoman } from '../../secureyeoman.js';
-import { requiresLicense } from '../../licensing/license-guard.js';
+import { licenseGuard } from '../../licensing/license-guard.js';
 
 export interface FederatedRouteOptions {
   federatedManager: FederatedManager;
@@ -15,15 +15,7 @@ export interface FederatedRouteOptions {
 
 export function registerFederatedRoutes(app: FastifyInstance, opts: FederatedRouteOptions): void {
   const { federatedManager, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('adaptive_learning', secureYeoman);
 
   // ── Sessions ───────────────────────────────────────────────────
 

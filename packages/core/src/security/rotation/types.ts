@@ -15,8 +15,13 @@ export interface SecretMetadata {
 
 export interface RotationStatus {
   name: string;
+  category: SecretMetadata['category'];
+  source: SecretMetadata['source'];
   status: 'ok' | 'expiring_soon' | 'expired' | 'rotation_due';
   daysUntilExpiry: number | null;
   lastRotatedAt: number | null;
   autoRotate: boolean;
+  rotationIntervalDays: number | null;
+  expiresAt: number | null;
+  createdAt: number;
 }

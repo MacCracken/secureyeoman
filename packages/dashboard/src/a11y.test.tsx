@@ -156,6 +156,8 @@ vi.mock('./api/client', () => ({
   reindexBrain: vi.fn(),
   fetchIntegrations: vi.fn(),
   fetchAvailablePlatforms: vi.fn(),
+  fetchKeyRotationStatus: vi.fn(),
+  rotateKey: vi.fn(),
 }));
 
 import * as api from './api/client';
@@ -295,6 +297,7 @@ beforeEach(() => {
   vi.mocked(api.fetchKnowledge).mockResolvedValue({ entries: [], total: 0 } as any);
   vi.mocked(api.fetchIntegrations).mockResolvedValue({ integrations: [] } as any);
   vi.mocked(api.fetchAvailablePlatforms).mockResolvedValue({ platforms: [] } as any);
+  vi.mocked(api.fetchKeyRotationStatus).mockResolvedValue({ statuses: [] } as any);
 });
 
 describe('a11y smoke tests (axe-core)', () => {

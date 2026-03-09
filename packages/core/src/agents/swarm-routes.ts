@@ -8,22 +8,14 @@ import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { SwarmTemplateExport } from '@secureyeoman/shared';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export function registerSwarmRoutes(
   app: FastifyInstance,
   opts: { swarmManager: SwarmManager; secureYeoman?: SecureYeoman }
 ): void {
   const { swarmManager, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('swarm_orchestration', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('swarm_orchestration', secureYeoman);
 
   // ── Template routes ──────────────────────────────────────────
 

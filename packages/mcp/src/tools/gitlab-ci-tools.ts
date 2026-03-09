@@ -11,7 +11,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse, checkHttpOk, textResponse } from './tool-utils.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -92,18 +92,8 @@ export function registerGitlabCiTools(
         const params = new URLSearchParams({ per_page: String(perPage) });
         if (ref) params.set('ref', ref);
         if (status) params.set('status', status);
-        const {
-          ok,
-          status: s,
-          body,
-        } = await gitlabFetch(config, `/api/v4/projects/${projectId}/pipelines?${params}`);
-        if (!ok) {
-          return {
-            content: [{ type: 'text', text: `GitLab API error ${s}: ${JSON.stringify(body)}` }],
-            isError: true,
-          };
-        }
-        return jsonResponse(body);
+        const result = await gitlabFetch(config, `/api/v4/projects/${projectId}/pipelines?${params}`);
+        return checkHttpOk(result, 'GitLab API error') ?? jsonResponse(result.body);
       }
     )
   );
@@ -125,7 +115,7 @@ export function registerGitlabCiTools(
       middleware,
       async ({ projectId, ref, variables }) => {
         if (!config.exposeGitlabCi) return errorResponse(GITLAB_DISABLED_MSG);
-        const { ok, status, body } = await gitlabFetch(
+        const result = await gitlabFetch(
           config,
           `/api/v4/projects/${projectId}/pipeline`,
           {
@@ -133,15 +123,7 @@ export function registerGitlabCiTools(
             body: JSON.stringify({ ref, variables }),
           }
         );
-        if (!ok) {
-          return {
-            content: [
-              { type: 'text', text: `GitLab API error ${status}: ${JSON.stringify(body)}` },
-            ],
-            isError: true,
-          };
-        }
-        return jsonResponse(body);
+        return checkHttpOk(result, 'GitLab API error') ?? jsonResponse(result.body);
       }
     )
   );
@@ -156,17 +138,8 @@ export function registerGitlabCiTools(
     },
     wrapToolHandler('gitlab_get_pipeline', middleware, async ({ projectId, pipelineId }) => {
       if (!config.exposeGitlabCi) return errorResponse(GITLAB_DISABLED_MSG);
-      const { ok, status, body } = await gitlabFetch(
-        config,
-        `/api/v4/projects/${projectId}/pipelines/${pipelineId}`
-      );
-      if (!ok) {
-        return {
-          content: [{ type: 'text', text: `GitLab API error ${status}: ${JSON.stringify(body)}` }],
-          isError: true,
-        };
-      }
-      return jsonResponse(body);
+      const result = await gitlabFetch(config, `/api/v4/projects/${projectId}/pipelines/${pipelineId}`);
+      return checkHttpOk(result, 'GitLab API error') ?? jsonResponse(result.body);
     })
   );
 
@@ -180,17 +153,8 @@ export function registerGitlabCiTools(
     },
     wrapToolHandler('gitlab_get_job_log', middleware, async ({ projectId, jobId }) => {
       if (!config.exposeGitlabCi) return errorResponse(GITLAB_DISABLED_MSG);
-      const { ok, status, body } = await gitlabFetch(
-        config,
-        `/api/v4/projects/${projectId}/jobs/${jobId}/trace`
-      );
-      if (!ok) {
-        return {
-          content: [{ type: 'text', text: `GitLab API error ${status}: ${JSON.stringify(body)}` }],
-          isError: true,
-        };
-      }
-      return { content: [{ type: 'text', text: String(body) }] };
+      const result = await gitlabFetch(config, `/api/v4/projects/${projectId}/jobs/${jobId}/trace`);
+      return checkHttpOk(result, 'GitLab API error') ?? textResponse(String(result.body));
     })
   );
 
@@ -204,18 +168,12 @@ export function registerGitlabCiTools(
     },
     wrapToolHandler('gitlab_cancel_pipeline', middleware, async ({ projectId, pipelineId }) => {
       if (!config.exposeGitlabCi) return errorResponse(GITLAB_DISABLED_MSG);
-      const { ok, status, body } = await gitlabFetch(
+      const result = await gitlabFetch(
         config,
         `/api/v4/projects/${projectId}/pipelines/${pipelineId}/cancel`,
         { method: 'POST' }
       );
-      if (!ok) {
-        return {
-          content: [{ type: 'text', text: `GitLab API error ${status}: ${JSON.stringify(body)}` }],
-          isError: true,
-        };
-      }
-      return jsonResponse(body);
+      return checkHttpOk(result, 'GitLab API error') ?? jsonResponse(result.body);
     })
   );
 }

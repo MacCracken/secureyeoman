@@ -10,7 +10,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, textResponse } from './tool-utils.js';
 import { ProxyManager, detectCaptcha, RetryableError } from './proxy-manager.js';
 
 const MAX_OUTPUT_BYTES = 500 * 1024; // 500KB output cap
@@ -832,7 +832,7 @@ export function registerWebTools(
         header += `**Page metadata:** ${JSON.stringify(metadata)}\n\n`;
       }
       const output = truncateOutput(`${header}${mdBody}\n\n*Token estimate: ${tokenCount}*`);
-      return { content: [{ type: 'text' as const, text: output }] };
+      return textResponse(output);
     })
   );
 
@@ -862,9 +862,7 @@ export function registerWebTools(
       });
       const html = args.selector ? extractWithSelector(body, args.selector) : body;
       const output = truncateOutput(html);
-      return {
-        content: [{ type: 'text' as const, text: `<!-- Source: ${finalUrl} -->\n${output}` }],
-      };
+      return textResponse(`<!-- Source: ${finalUrl} -->\n${output}`);
     })
   );
 
@@ -904,7 +902,7 @@ export function registerWebTools(
         })
         .join('\n\n---\n\n');
 
-      return { content: [{ type: 'text' as const, text: truncateOutput(output) }] };
+      return textResponse(truncateOutput(output));
     })
   );
 
@@ -954,11 +952,7 @@ export function registerWebTools(
       // Include a text summary for AI processing
       extracted._pageText = text.slice(0, 10000);
 
-      return {
-        content: [
-          { type: 'text' as const, text: truncateOutput(JSON.stringify(extracted, null, 2)) },
-        ],
-      };
+      return textResponse(truncateOutput(JSON.stringify(extracted, null, 2)));
     })
   );
 
@@ -994,14 +988,7 @@ export function registerWebTools(
               .map((r, i) => `${i + 1}. **${r.title}**\n   ${r.url}\n   ${r.snippet}`)
               .join('\n\n');
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `## Search: "${args.query}"\n\nProvider: ${config.webSearchProvider}\n\n${output}`,
-          },
-        ],
-      };
+      return textResponse(`## Search: "${args.query}"\n\nProvider: ${config.webSearchProvider}\n\n${output}`);
     })
   );
 
@@ -1033,7 +1020,7 @@ export function registerWebTools(
         ...upstreamMeta,
       });
       const output = truncateOutput(frontMatter + mdBody);
-      return { content: [{ type: 'text' as const, text: output }] };
+      return textResponse(output);
     })
   );
 
@@ -1086,7 +1073,7 @@ export function registerWebTools(
         })
         .join('\n\n---\n\n');
 
-      return { content: [{ type: 'text' as const, text: truncateOutput(output) }] };
+      return textResponse(truncateOutput(output));
     })
   );
 
@@ -1203,7 +1190,7 @@ export function registerWebTools(
           .join('\n\n');
       }
 
-      return { content: [{ type: 'text' as const, text: truncateOutput(output) }] };
+      return textResponse(truncateOutput(output));
     })
   );
 }

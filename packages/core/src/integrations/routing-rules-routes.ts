@@ -17,7 +17,7 @@ import type { RoutingRulesManager } from './routing-rules-manager.js';
 import type { RoutingRuleCreate, RoutingRuleUpdate, RoutingRuleDryRun } from '@secureyeoman/shared';
 import { sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
 export interface RoutingRulesRoutesOptions {
@@ -32,15 +32,7 @@ export function registerRoutingRulesRoutes(
 ): void {
   const { storage, manager, secureYeoman } = opts;
 
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('custom_integrations', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('custom_integrations', secureYeoman);
 
   // ── List ──────────────────────────────────────────────────────────────────
 

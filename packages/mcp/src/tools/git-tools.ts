@@ -14,7 +14,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, textResponse } from './tool-utils.js';
 
 const MAX_OUTPUT = 100_000; // truncate output at 100KB
 
@@ -92,7 +92,7 @@ export function registerGitTools(
       const gitArgs = ['status'];
       if (args.short) gitArgs.push('--short');
       const { stdout, stderr } = await exec('git', gitArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -113,7 +113,7 @@ export function registerGitTools(
       if (args.oneline) gitArgs.push('--oneline');
       if (args.branch) gitArgs.push(args.branch);
       const { stdout, stderr } = await exec('git', gitArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -143,7 +143,7 @@ export function registerGitTools(
         gitArgs.push(args.path);
       }
       const { stdout, stderr } = await exec('git', gitArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -161,7 +161,7 @@ export function registerGitTools(
       const gitArgs = ['branch', '-v'];
       if (args.all) gitArgs.push('-a');
       const { stdout, stderr } = await exec('git', gitArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -195,7 +195,7 @@ export function registerGitTools(
       const { stdout, stderr } = await exec('git', commitArgs, cwd);
       results.push(formatResult(stdout, stderr));
 
-      return { content: [{ type: 'text' as const, text: results.join('\n\n') }] };
+      return textResponse(results.join('\n\n'));
     })
   );
 
@@ -215,7 +215,7 @@ export function registerGitTools(
       if (args.create) gitArgs.push('-b');
       gitArgs.push(args.ref);
       const { stdout, stderr } = await exec('git', gitArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -235,7 +235,7 @@ export function registerGitTools(
       if (args.stat) gitArgs.push('--stat');
       gitArgs.push(args.ref);
       const { stdout, stderr } = await exec('git', gitArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -262,7 +262,7 @@ export function registerGitTools(
       if (args.author) ghArgs.push('--author', args.author);
       if (args.label) ghArgs.push('--label', args.label);
       const { stdout, stderr } = await exec('gh', ghArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -281,7 +281,7 @@ export function registerGitTools(
       const ghArgs = ['pr', 'view', String(args.number)];
       if (args.comments) ghArgs.push('--comments');
       const { stdout, stderr } = await exec('gh', ghArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -307,7 +307,7 @@ export function registerGitTools(
         ghArgs.push('--label', label);
       }
       const { stdout, stderr } = await exec('gh', ghArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -324,7 +324,7 @@ export function registerGitTools(
       const cwd = validateCwd(args.cwd, config);
       const ghArgs = ['pr', 'diff', String(args.number)];
       const { stdout, stderr } = await exec('gh', ghArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -346,7 +346,7 @@ export function registerGitTools(
       if (args.assignee) ghArgs.push('--assignee', args.assignee);
       if (args.label) ghArgs.push('--label', args.label);
       const { stdout, stderr } = await exec('gh', ghArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -365,7 +365,7 @@ export function registerGitTools(
       const ghArgs = ['issue', 'view', String(args.number)];
       if (args.comments) ghArgs.push('--comments');
       const { stdout, stderr } = await exec('gh', ghArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -391,7 +391,7 @@ export function registerGitTools(
         ghArgs.push('--assignee', assignee);
       }
       const { stdout, stderr } = await exec('gh', ghArgs, cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 
@@ -406,7 +406,7 @@ export function registerGitTools(
     wrapToolHandler('github_repo_view', middleware, async (args) => {
       const cwd = validateCwd(args.cwd, config);
       const { stdout, stderr } = await exec('gh', ['repo', 'view'], cwd);
-      return { content: [{ type: 'text' as const, text: formatResult(stdout, stderr) }] };
+      return textResponse(formatResult(stdout, stderr));
     })
   );
 }

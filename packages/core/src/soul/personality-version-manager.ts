@@ -66,7 +66,7 @@ export class PersonalityVersionManager {
     }
 
     const snapshotMd = this.serializer.toMarkdown(personality);
-    const snapshot = JSON.parse(JSON.stringify(personality)) as Record<string, unknown>;
+    const snapshot = structuredClone(personality) as Record<string, unknown>;
 
     // Compute diff against previous version
     const previous = await this.versionStorage.getLatestVersion(personalityId);
@@ -200,7 +200,7 @@ export class PersonalityVersionManager {
     }
 
     const currentMd = this.serializer.toMarkdown(personality);
-    const currentSnapshot = JSON.parse(JSON.stringify(personality)) as Record<string, unknown>;
+    const currentSnapshot = structuredClone(personality) as Record<string, unknown>;
 
     const changedFields = detectChangedFields(lastTagged.snapshot, currentSnapshot);
 

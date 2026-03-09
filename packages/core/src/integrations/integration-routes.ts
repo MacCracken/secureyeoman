@@ -22,7 +22,7 @@ import { toErrorMessage, sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import { sanitizeForLogging } from '../utils/crypto.js';
 import { assertPublicUrl } from '../utils/ssrf-guard.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
 function maskIntegration<T extends { config?: Record<string, unknown> }>(integration: T): T {
@@ -53,15 +53,7 @@ export function registerIntegrationRoutes(
     secureYeoman,
   } = opts;
 
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('custom_integrations', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('custom_integrations', secureYeoman);
   const webhookTransformer = webhookTransformStorage
     ? new WebhookTransformer(webhookTransformStorage)
     : null;

@@ -17,7 +17,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler, errorResponse } from './tool-utils.js';
+import { wrapToolHandler, errorResponse, jsonResponse } from './tool-utils.js';
 
 const TERMINAL_DISABLED_MSG = 'Terminal tools are disabled. Set MCP_EXPOSE_TERMINAL=true to enable.';
 
@@ -97,9 +97,7 @@ export function registerTerminalTools(
 
       const result = await client.get('/api/v1/terminal/tech-stack', query);
 
-      return {
-        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-      };
+      return jsonResponse(result);
     })
   );
 }

@@ -5,7 +5,7 @@ import { CostAttributionTracker } from './cost-attribution.js';
 import { SloMonitor } from './slo-monitor.js';
 
 vi.mock('../licensing/license-guard.js', () => ({
-  requiresLicense: () => async () => {},
+  licenseGuard: () => ({}),
 }));
 
 const mockLogger = {

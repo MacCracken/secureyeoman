@@ -9,7 +9,7 @@ import type { RiskAssessmentManager } from './risk-assessment-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface RiskAssessmentRoutesOptions {
   riskAssessmentManager: RiskAssessmentManager;
@@ -31,15 +31,7 @@ export function registerRiskAssessmentRoutes(
   opts: RiskAssessmentRoutesOptions
 ): void {
   const { riskAssessmentManager: mgr, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('compliance_governance', secureYeoman);
 
   // ── POST /api/v1/risk/assessments ─────────────────────────────────────────
 

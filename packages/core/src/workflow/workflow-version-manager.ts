@@ -59,7 +59,7 @@ export class WorkflowVersionManager {
       throw new Error(`Workflow not found: ${workflowId}`);
     }
 
-    const snapshot = JSON.parse(JSON.stringify(workflow)) as Record<string, unknown>;
+    const snapshot = structuredClone(workflow) as Record<string, unknown>;
     const snapshotText = snapshotToText(snapshot);
 
     // Compute diff against previous version
@@ -183,7 +183,7 @@ export class WorkflowVersionManager {
       };
     }
 
-    const currentSnapshot = JSON.parse(JSON.stringify(workflow)) as Record<string, unknown>;
+    const currentSnapshot = structuredClone(workflow) as Record<string, unknown>;
     const currentText = snapshotToText(currentSnapshot);
     const taggedText = snapshotToText(lastTagged.snapshot);
 

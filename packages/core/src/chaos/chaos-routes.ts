@@ -7,7 +7,7 @@ import type { ChaosManager } from './chaos-manager.js';
 import type { ChaosExperimentStatus } from '@secureyeoman/shared';
 import { sendError } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface ChaosRouteOptions {
   chaosManager: ChaosManager;
@@ -16,15 +16,7 @@ export interface ChaosRouteOptions {
 
 export function registerChaosRoutes(app: FastifyInstance, opts: ChaosRouteOptions): void {
   const { chaosManager, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('compliance_governance', secureYeoman);
 
   // ── List experiments ───────────────────────────────────────────
 

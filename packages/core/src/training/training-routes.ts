@@ -26,7 +26,7 @@ import type {
   TrainingExperimentCreate,
   SideBySideRating,
 } from '@secureyeoman/shared';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 import { parsePagination } from '../utils/pagination.js';
 
 export interface TrainingRoutesOptions {
@@ -104,9 +104,7 @@ function toRawText(conversationId: string, messages: { role: string; content: st
 
 export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoutesOptions): void {
   const { secureYeoman } = opts;
-  const adaptiveLearningGuardOpts = {
-    preHandler: [requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager())],
-  } as Record<string, unknown>;
+  const adaptiveLearningGuardOpts = licenseGuard('adaptive_learning', secureYeoman);
 
   /**
    * POST /api/v1/training/export

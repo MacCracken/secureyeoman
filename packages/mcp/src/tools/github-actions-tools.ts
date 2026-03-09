@@ -12,7 +12,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse, checkHttpOk } from './tool-utils.js';
 
 const GHA_BASE = 'https://api.github.com';
 
@@ -72,17 +72,8 @@ export function registerGithubActionsTools(
     },
     wrapToolHandler('gha_list_workflows', middleware, async ({ owner, repo }) => {
       if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
-      const { ok, status, body } = await ghaFetch(
-        config,
-        `/repos/${owner}/${repo}/actions/workflows`
-      );
-      if (!ok) {
-        return {
-          content: [{ type: 'text', text: `GitHub API error ${status}: ${JSON.stringify(body)}` }],
-          isError: true,
-        };
-      }
-      return jsonResponse(body);
+      const result = await ghaFetch(config, `/repos/${owner}/${repo}/actions/workflows`);
+      return checkHttpOk(result, 'GitHub API error') ?? jsonResponse(result.body);
     })
   );
 
@@ -108,7 +99,7 @@ export function registerGithubActionsTools(
       middleware,
       async ({ owner, repo, workflowId, ref, inputs }) => {
         if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
-        const { ok, status, body } = await ghaFetch(
+        const result = await ghaFetch(
           config,
           `/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`,
           {
@@ -117,14 +108,8 @@ export function registerGithubActionsTools(
             body: JSON.stringify({ ref, inputs }),
           }
         );
-        if (!ok) {
-          return {
-            content: [
-              { type: 'text', text: `GitHub API error ${status}: ${JSON.stringify(body)}` },
-            ],
-            isError: true,
-          };
-        }
+        const err = checkHttpOk(result, 'GitHub API error');
+        if (err) return err;
         // 204 No Content on success
         return jsonResponse({ dispatched: true, owner, repo, workflowId, ref, inputs });
       }
@@ -153,17 +138,8 @@ export function registerGithubActionsTools(
         const params = new URLSearchParams({ per_page: String(perPage) });
         if (branch) params.set('branch', branch);
         if (status) params.set('status', status);
-        const { ok, st, body } = await ghaFetch(
-          config,
-          `/repos/${owner}/${repo}/actions/runs?${params}`
-        ).then((r) => ({ ...r, st: r.status }));
-        if (!ok) {
-          return {
-            content: [{ type: 'text', text: `GitHub API error ${st}: ${JSON.stringify(body)}` }],
-            isError: true,
-          };
-        }
-        return jsonResponse(body);
+        const result = await ghaFetch(config, `/repos/${owner}/${repo}/actions/runs?${params}`);
+        return checkHttpOk(result, 'GitHub API error') ?? jsonResponse(result.body);
       }
     )
   );
@@ -179,17 +155,8 @@ export function registerGithubActionsTools(
     },
     wrapToolHandler('gha_get_run', middleware, async ({ owner, repo, runId }) => {
       if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
-      const { ok, status, body } = await ghaFetch(
-        config,
-        `/repos/${owner}/${repo}/actions/runs/${runId}`
-      );
-      if (!ok) {
-        return {
-          content: [{ type: 'text', text: `GitHub API error ${status}: ${JSON.stringify(body)}` }],
-          isError: true,
-        };
-      }
-      return jsonResponse(body);
+      const result = await ghaFetch(config, `/repos/${owner}/${repo}/actions/runs/${runId}`);
+      return checkHttpOk(result, 'GitHub API error') ?? jsonResponse(result.body);
     })
   );
 
@@ -204,17 +171,13 @@ export function registerGithubActionsTools(
     },
     wrapToolHandler('gha_cancel_run', middleware, async ({ owner, repo, runId }) => {
       if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
-      const { ok, status, body } = await ghaFetch(
+      const result = await ghaFetch(
         config,
         `/repos/${owner}/${repo}/actions/runs/${runId}/cancel`,
         { method: 'POST' }
       );
-      if (!ok) {
-        return {
-          content: [{ type: 'text', text: `GitHub API error ${status}: ${JSON.stringify(body)}` }],
-          isError: true,
-        };
-      }
+      const err = checkHttpOk(result, 'GitHub API error');
+      if (err) return err;
       return jsonResponse({ cancelled: true, owner, repo, runId });
     })
   );

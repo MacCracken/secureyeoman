@@ -8,7 +8,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { GuardrailPipeline } from './guardrail-pipeline.js';
 import { sendError } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface GuardrailPipelineRouteOptions {
   pipeline: GuardrailPipeline;
@@ -20,15 +20,7 @@ export function registerGuardrailPipelineRoutes(
   opts: GuardrailPipelineRouteOptions
 ): void {
   const { pipeline, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('compliance_governance', secureYeoman);
 
   // ── List registered filters ────────────────────────────────────────
 

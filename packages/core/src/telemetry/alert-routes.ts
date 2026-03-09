@@ -19,7 +19,7 @@ import type { AlertManager } from './alert-manager.js';
 import type { CreateAlertRuleData, AlertRule } from './alert-storage.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface AlertRoutesOptions {
   alertManager: AlertManager;
@@ -28,15 +28,7 @@ export interface AlertRoutesOptions {
 
 export function registerAlertRoutes(app: FastifyInstance, opts: AlertRoutesOptions): void {
   const { alertManager, secureYeoman } = opts;
-  const alertGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('advanced_observability', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const alertGuardOpts = licenseGuard('advanced_observability', secureYeoman);
 
   // GET /api/v1/alerts/rules
   app.get('/api/v1/alerts/rules', async (_request, reply: FastifyReply) => {

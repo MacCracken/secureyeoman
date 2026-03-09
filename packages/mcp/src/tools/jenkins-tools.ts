@@ -11,7 +11,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler, jsonResponse, errorResponse } from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, errorResponse, checkHttpOk, textResponse } from './tool-utils.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -68,17 +68,8 @@ export function registerJenkinsTools(
     {},
     wrapToolHandler('jenkins_list_jobs', middleware, async () => {
       if (!config.exposeJenkins) return errorResponse(JENKINS_DISABLED_MSG);
-      const { ok, status, body } = await jenkinsFetch(
-        config,
-        '/api/json?tree=jobs[name,url,color]'
-      );
-      if (!ok) {
-        return {
-          content: [{ type: 'text', text: `Jenkins API error ${status}: ${JSON.stringify(body)}` }],
-          isError: true,
-        };
-      }
-      return jsonResponse(body);
+      const result = await jenkinsFetch(config, '/api/json?tree=jobs[name,url,color]');
+      return checkHttpOk(result, 'Jenkins API error') ?? jsonResponse(result.body);
     })
   );
 
@@ -108,17 +99,8 @@ export function registerJenkinsTools(
         headers,
         body,
       });
-      if (!res.ok) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Jenkins API error ${res.status}: ${JSON.stringify(res.body)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
+      const err = checkHttpOk(res, 'Jenkins API error');
+      if (err) return err;
       return jsonResponse({ triggered: true, jobName, parameters });
     })
   );
@@ -137,17 +119,8 @@ export function registerJenkinsTools(
     },
     wrapToolHandler('jenkins_get_build', middleware, async ({ jobName, buildNumber }) => {
       if (!config.exposeJenkins) return errorResponse(JENKINS_DISABLED_MSG);
-      const { ok, status, body } = await jenkinsFetch(
-        config,
-        `/job/${jobName}/${buildNumber}/api/json`
-      );
-      if (!ok) {
-        return {
-          content: [{ type: 'text', text: `Jenkins API error ${status}: ${JSON.stringify(body)}` }],
-          isError: true,
-        };
-      }
-      return jsonResponse(body);
+      const result = await jenkinsFetch(config, `/job/${jobName}/${buildNumber}/api/json`);
+      return checkHttpOk(result, 'Jenkins API error') ?? jsonResponse(result.body);
     })
   );
 
@@ -174,16 +147,10 @@ export function registerJenkinsTools(
           startByte > 0
             ? `/job/${jobName}/${buildNumber}/logText/progressiveText?start=${startByte}`
             : `/job/${jobName}/${buildNumber}/consoleText`;
-        const { ok, status, body } = await jenkinsFetch(config, path);
-        if (!ok) {
-          return {
-            content: [
-              { type: 'text', text: `Jenkins API error ${status}: ${JSON.stringify(body)}` },
-            ],
-            isError: true,
-          };
-        }
-        return { content: [{ type: 'text', text: String(body) }] };
+        const result = await jenkinsFetch(config, path);
+        const err = checkHttpOk(result, 'Jenkins API error');
+        if (err) return err;
+        return textResponse(String(result.body));
       }
     )
   );
@@ -201,14 +168,8 @@ export function registerJenkinsTools(
     },
     wrapToolHandler('jenkins_queue_item', middleware, async ({ itemId }) => {
       if (!config.exposeJenkins) return errorResponse(JENKINS_DISABLED_MSG);
-      const { ok, status, body } = await jenkinsFetch(config, `/queue/item/${itemId}/api/json`);
-      if (!ok) {
-        return {
-          content: [{ type: 'text', text: `Jenkins API error ${status}: ${JSON.stringify(body)}` }],
-          isError: true,
-        };
-      }
-      return jsonResponse(body);
+      const result = await jenkinsFetch(config, `/queue/item/${itemId}/api/json`);
+      return checkHttpOk(result, 'Jenkins API error') ?? jsonResponse(result.body);
     })
   );
 }

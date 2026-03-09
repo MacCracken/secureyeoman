@@ -6489,3 +6489,30 @@ export async function fetchPhotisnadiWidget(): Promise<any> {
 export async function fetchPhotisnadiHealth(): Promise<{ ok: boolean }> {
   return request('/integrations/photisnadi/health');
 }
+
+// ── Key Rotation ─────────────────────────────────────────────────────
+
+export interface RotationStatus {
+  name: string;
+  category: string;
+  source: string;
+  status: 'ok' | 'expiring_soon' | 'expired' | 'rotation_due';
+  autoRotate: boolean;
+  lastRotatedAt: number | null;
+  expiresAt: number | null;
+  rotationIntervalDays: number | null;
+  daysUntilExpiry: number | null;
+  createdAt: number;
+}
+
+export async function fetchKeyRotationStatus(): Promise<{ statuses: RotationStatus[] }> {
+  return request('/admin/key-rotation');
+}
+
+export async function rotateKey(
+  name: string
+): Promise<{ rotated: boolean; status: RotationStatus | null }> {
+  return request(`/admin/key-rotation/${encodeURIComponent(name)}/rotate`, {
+    method: 'POST',
+  });
+}

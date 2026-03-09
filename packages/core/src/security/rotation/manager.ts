@@ -75,10 +75,15 @@ export class SecretRotationManager {
 
       return {
         name: m.name,
+        category: m.category,
+        source: m.source,
         status,
         daysUntilExpiry,
         lastRotatedAt: m.rotatedAt,
         autoRotate: m.autoRotate,
+        rotationIntervalDays: m.rotationIntervalDays,
+        expiresAt: m.expiresAt,
+        createdAt: m.createdAt,
       };
     });
   }

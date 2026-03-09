@@ -8,18 +8,14 @@ import type { TrustLevel } from './types.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export function registerA2ARoutes(
   app: FastifyInstance,
   opts: { a2aManager: A2AManager; secureYeoman?: SecureYeoman }
 ): void {
   const { a2aManager, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? { preHandler: [requiresLicense('a2a_federation', () => secureYeoman.getLicenseManager())] }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('a2a_federation', secureYeoman);
 
   // ── Peer routes ────────────────────────────────────────────
 

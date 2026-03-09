@@ -83,6 +83,7 @@ import { registerNotificationRoutes } from '../notifications/notification-routes
 // registerAthiRoutes, registerSraRoutes, registerConstitutionalRoutes — dynamic import (startup optimization)
 import { registerTeeRoutes } from '../security/tee-routes.js';
 import { registerDlpRoutes } from '../security/dlp/dlp-routes.js';
+import { registerRotationRoutes } from '../security/rotation/rotation-routes.js';
 import { TeeAttestationVerifier } from '../security/tee-attestation.js';
 import { registerAuditExportRoutes } from '../logging/audit-export-routes.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
@@ -837,6 +838,8 @@ export class GatewayServer {
           getNetBoxWriteAllowed: () =>
             this.secureYeoman.getConfig().security.allowNetBoxWrite ?? false,
         });
+        // Register credential manager with security module for TOKEN_SECRET rotation re-encryption
+        this.secureYeoman.setMcpCredentialManager(credentialManager);
         this.getLogger().info('MCP routes registered');
       } else {
         this.getLogger().warn('MCP routes skipped — MCP system not initialized');
@@ -1201,6 +1204,10 @@ export class GatewayServer {
         'DLP routes skipped'
       );
     }
+
+    // Key rotation admin routes
+    registerRotationRoutes(this.app, this.secureYeoman);
+    this.getLogger().info('Key rotation routes registered');
 
     // Extension routes
     try {

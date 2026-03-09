@@ -78,6 +78,82 @@ export class McpCredentialManager {
   }
 
   /**
+   * Update the internal encryption key (e.g. after TOKEN_SECRET rotation).
+   */
+  updateEncryptionKey(newTokenSecret: string): void {
+    this.encryptionKey = createHash('sha256')
+      .update(newTokenSecret + KEY_SALT)
+      .digest();
+  }
+
+  /**
+   * Re-encrypt all stored credentials when the TOKEN_SECRET rotates.
+   *
+   * 1. Derives old key from oldTokenSecret
+   * 2. Derives new key from newTokenSecret
+   * 3. Reads all stored credentials
+   * 4. Decrypts each with old key, re-encrypts with new key
+   * 5. Stores the updated encrypted values
+   *
+   * Returns the count of re-encrypted credentials.
+   */
+  async reEncrypt(oldTokenSecret: string, newTokenSecret: string): Promise<number> {
+    const oldKey = createHash('sha256')
+      .update(oldTokenSecret + KEY_SALT)
+      .digest();
+    const newKey = createHash('sha256')
+      .update(newTokenSecret + KEY_SALT)
+      .digest();
+
+    const allCreds = await this.storage.listAllCredentials();
+    if (allCreds.length === 0) {
+      this.logger.info('No MCP credentials to re-encrypt');
+      return 0;
+    }
+
+    let reEncrypted = 0;
+    for (const cred of allCreds) {
+      try {
+        // Decrypt with old key
+        const combined = Buffer.from(cred.encryptedValue, 'base64');
+        const iv = combined.subarray(0, IV_LENGTH);
+        const authTag = combined.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
+        const encrypted = combined.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
+        const decipher = createDecipheriv(ALGORITHM, oldKey, iv);
+        decipher.setAuthTag(authTag);
+        const plaintext = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString(
+          'utf8'
+        );
+
+        // Re-encrypt with new key
+        const newIv = randomBytes(IV_LENGTH);
+        const cipher = createCipheriv(ALGORITHM, newKey, newIv);
+        const newEncrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+        const newAuthTag = cipher.getAuthTag();
+        const newCombined = Buffer.concat([newIv, newAuthTag, newEncrypted]);
+        const newEncoded = newCombined.toString('base64');
+
+        await this.storage.saveCredential(cred.serverId, cred.key, newEncoded);
+        reEncrypted++;
+      } catch (err) {
+        this.logger.warn(
+          { serverId: cred.serverId, key: cred.key, error: String(err) },
+          'Failed to re-encrypt credential, skipping'
+        );
+      }
+    }
+
+    // Update the internal key to use the new secret going forward
+    this.encryptionKey = newKey;
+
+    this.logger.info(
+      { total: allCreds.length, reEncrypted },
+      'MCP credential re-encryption complete'
+    );
+    return reEncrypted;
+  }
+
+  /**
    * Inject decrypted credentials into an environment map for server spawn.
    * Keys are prefixed with MCP_CRED_ to avoid collisions.
    */

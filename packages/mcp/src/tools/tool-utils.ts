@@ -112,6 +112,20 @@ export function errorResponse(message: string): ToolResult {
   return { content: [{ type: 'text' as const, text: message }], isError: true };
 }
 
+/**
+ * Check an HttpResult and return an error ToolResult if the request failed,
+ * or null if it succeeded.  Eliminates the repeated
+ *   `if (!ok) return errorResponse(\`… failed: HTTP ${status}\n${JSON.stringify(body)}\`)`
+ * boilerplate across tool files.
+ */
+export function checkHttpOk(
+  result: HttpResult,
+  context: string
+): ToolResult | null {
+  if (result.ok) return null;
+  return errorResponse(`${context}: HTTP ${result.status}\n${JSON.stringify(result.body)}`);
+}
+
 // ── Query Builder ───────────────────────────────────────────────────────────
 
 /**

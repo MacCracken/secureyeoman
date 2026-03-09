@@ -9,7 +9,7 @@ import type { FastifyInstance } from 'fastify';
 import { TeeAttestationVerifier } from './tee-attestation.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface TeeRouteDeps {
   teeVerifier: TeeAttestationVerifier;
@@ -18,15 +18,7 @@ export interface TeeRouteDeps {
 
 export function registerTeeRoutes(app: FastifyInstance, deps: TeeRouteDeps): void {
   const { teeVerifier, secureYeoman } = deps;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('confidential_computing', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('confidential_computing', secureYeoman);
 
   // ── GET /api/v1/security/tee/providers ──────────────────────────────────
 

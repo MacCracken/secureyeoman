@@ -68,6 +68,7 @@ import {
 import { AuditChainTab } from './AuditChainTab';
 import { SoulSystemTab } from './SoulSystemTab';
 import { RateLimitingTab } from './RateLimitingTab';
+import { KeyRotationCard } from './KeyRotationCard';
 
 type TabType =
   | 'general'
@@ -1326,6 +1327,7 @@ function GeneralTab() {
   return (
     <div className="space-y-6">
       <LicenseCard />
+      <KeyRotationCard />
       <AuditChainTab />
       <RateLimitingTab />
       <LogRetentionSettings />

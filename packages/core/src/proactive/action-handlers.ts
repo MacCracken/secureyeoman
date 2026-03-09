@@ -11,6 +11,7 @@ import type {
 } from '@secureyeoman/shared';
 import type { ActionResult, ProactiveManagerDeps } from './types.js';
 import { errorToString } from '../utils/errors.js';
+import { withRetry } from '../ai/retry-manager.js';
 
 export async function executeMessageAction(
   action: MessageAction,
@@ -69,49 +70,53 @@ export async function executeWebhookAction(
   deps: ProactiveManagerDeps
 ): Promise<ActionResult> {
   const { logger } = deps;
-  const maxRetries = 2;
-  let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, action.timeoutMs ?? 5000);
+  try {
+    const response = await withRetry(
+      async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, action.timeoutMs ?? 5000);
 
-      const response = await fetch(action.url, {
-        method: action.method ?? 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...action.headers,
-        },
-        body:
-          action.body ??
-          JSON.stringify({ source: 'secureyeoman-proactive', timestamp: Date.now() }),
-        signal: controller.signal,
-      });
+        const res = await fetch(action.url, {
+          method: action.method ?? 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...action.headers,
+          },
+          body:
+            action.body ??
+            JSON.stringify({ source: 'secureyeoman-proactive', timestamp: Date.now() }),
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+
+        return res;
+      },
+      {
+        maxRetries: 2,
+        baseDelayMs: 1000,
+        maxDelayMs: 5000,
+        shouldRetry: () => true, // Original retried all errors unconditionally
       }
+    );
 
-      logger.info({ url: action.url, attempt: attempt + 1 }, 'Proactive webhook executed');
-      return { success: true, message: `Webhook OK (${response.status})` };
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-      if (attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-      }
-    }
+    logger.info({ url: action.url }, 'Proactive webhook executed');
+    return { success: true, message: `Webhook OK (${response.status})` };
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    return {
+      success: false,
+      message: 'Webhook failed after retries',
+      error: error.message,
+    };
   }
-
-  return {
-    success: false,
-    message: 'Webhook failed after retries',
-    error: lastError?.message,
-  };
 }
 
 export async function executeRemindAction(

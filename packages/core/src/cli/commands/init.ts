@@ -23,6 +23,7 @@ import {
   promptChoice,
   apiCall,
 } from '../utils.js';
+import { VaultBackend } from '../../security/vault-backend.js';
 
 // ─── Provider defaults ────────────────────────────────────────────────────────
 
@@ -45,12 +46,31 @@ const PROVIDER_DEFAULTS: Record<
   mistral: { model: 'mistral-large-latest', apiKeyEnv: 'MISTRAL_API_KEY', needsBaseUrl: false },
 };
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function extractStringFlag(
+  argv: string[],
+  name: string,
+  short?: string
+): { value: string | undefined; rest: string[] } {
+  const rest: string[] = [];
+  let value: string | undefined;
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === `--${name}` || (short && argv[i] === `-${short}`)) {
+      value = argv[++i];
+    } else {
+      rest.push(argv[i]!);
+    }
+  }
+  return { value, rest };
+}
+
 // ─── Command ──────────────────────────────────────────────────────────────────
 
 export const initCommand: Command = {
   name: 'init',
   description: 'Interactive onboarding wizard',
-  usage: 'secureyeoman init [--url URL] [--non-interactive] [--env-only]',
+  usage: 'secureyeoman init [--url URL] [--non-interactive] [--env-only] [--vault]',
 
   async run(ctx: CommandContext): Promise<number> {
     let argv = ctx.argv;
@@ -73,6 +93,11 @@ Options:
       --url <url>         Server URL for API calls (default: http://127.0.0.1:3000)
       --non-interactive   Use all defaults without prompting
       --env-only          Only generate .env file (skip personality/policy steps)
+      --vault             Push generated keys to Vault/OpenBao instead of .env
+      --vault-addr <url>  Vault address (default: VAULT_ADDR or http://127.0.0.1:8200)
+      --vault-token <tok> Vault token (default: VAULT_TOKEN env var)
+      --vault-mount <m>   KV v2 mount path (default: secret)
+      --vault-prefix <p>  Key prefix in Vault (default: secureyeoman/)
   -h, --help              Show this help
 \n`);
       return 0;
@@ -84,6 +109,21 @@ Options:
     const nonInteractive = extractBoolFlag(argv, 'non-interactive');
     argv = nonInteractive.rest;
     const envOnly = extractBoolFlag(argv, 'env-only');
+    argv = envOnly.rest;
+    const useVault = extractBoolFlag(argv, 'vault');
+    argv = useVault.rest;
+    const vaultAddrFlag = extractStringFlag(argv, 'vault-addr');
+    argv = vaultAddrFlag.rest;
+    const vaultTokenFlag = extractStringFlag(argv, 'vault-token');
+    argv = vaultTokenFlag.rest;
+    const vaultMountFlag = extractStringFlag(argv, 'vault-mount');
+    argv = vaultMountFlag.rest;
+    const vaultPrefixFlag = extractStringFlag(argv, 'vault-prefix');
+
+    const vaultAddr = vaultAddrFlag.value ?? process.env.VAULT_ADDR ?? 'http://127.0.0.1:8200';
+    const vaultToken = vaultTokenFlag.value ?? process.env.VAULT_TOKEN;
+    const vaultMount = vaultMountFlag.value ?? 'secret';
+    const vaultPrefix = vaultPrefixFlag.value ?? 'secureyeoman/';
 
     ctx.stdout.write(`
   ╔════════════════════════════════════════════════╗
@@ -310,10 +350,13 @@ Options:
 
     const keys: Record<string, string> = {};
     if (generateKeys) {
+      keys.SECUREYEOMAN_ADMIN_PASSWORD = generateSecretKey(16);
+      // Crypto keys are auto-generated at runtime when not set.
+      // Only generate them explicitly when the user is pushing to Vault
+      // (so they have a known starting value) or for .env convenience.
       keys.SECUREYEOMAN_SIGNING_KEY = generateSecretKey(32);
       keys.SECUREYEOMAN_TOKEN_SECRET = generateSecretKey(32);
       keys.SECUREYEOMAN_ENCRYPTION_KEY = generateSecretKey(32);
-      keys.SECUREYEOMAN_ADMIN_PASSWORD = generateSecretKey(16);
 
       ctx.stdout.write('\n  Generated security keys:\n');
       for (const [k, v] of Object.entries(keys)) {
@@ -321,9 +364,53 @@ Options:
       }
     }
 
+    // ── Push to Vault ─────────────────────────────────────────────────────────
+
+    if (useVault.value && generateKeys) {
+      if (!vaultToken) {
+        ctx.stdout.write(
+          '\n  Error: --vault requires a token. Set VAULT_TOKEN or pass --vault-token.\n'
+        );
+        return 1;
+      }
+
+      ctx.stdout.write(`\n  Pushing keys to Vault at ${vaultAddr} (mount: ${vaultMount})...\n`);
+
+      const vault = new VaultBackend({
+        address: vaultAddr,
+        mount: vaultMount,
+        token: vaultToken,
+      });
+
+      let vaultOk = true;
+      for (const [k, v] of Object.entries(keys)) {
+        const vaultKey = `${vaultPrefix}${k}`;
+        try {
+          await vault.set(vaultKey, v);
+          ctx.stdout.write(`    ✓ ${vaultKey}\n`);
+        } catch (err) {
+          ctx.stdout.write(
+            `    ✗ ${vaultKey}: ${err instanceof Error ? err.message : String(err)}\n`
+          );
+          vaultOk = false;
+        }
+      }
+
+      if (vaultOk) {
+        ctx.stdout.write('\n  All keys stored in Vault.\n');
+        ctx.stdout.write('  Configure your .env with:\n');
+        ctx.stdout.write(`    VAULT_ADDR=${vaultAddr}\n`);
+        ctx.stdout.write(`    VAULT_TOKEN=<your-token>\n`);
+        ctx.stdout.write('  Then set secrets backend to "vault" in secureyeoman.yaml.\n');
+      } else {
+        ctx.stdout.write('\n  Some keys failed to store — check Vault connectivity.\n');
+        return 1;
+      }
+    }
+
     // ── Write .env file ───────────────────────────────────────────────────────
 
-    if (generateKeys && writeEnvFile) {
+    if (generateKeys && writeEnvFile && !useVault.value) {
       const envPath = '.env';
       const existingEnv: Record<string, string> = {};
 
@@ -340,7 +427,10 @@ Options:
         }
       }
 
-      const envAdditions: Record<string, string> = { ...keys };
+      // Only ADMIN_PASSWORD goes in .env; crypto keys are auto-managed at runtime
+      const envAdditions: Record<string, string> = {
+        SECUREYEOMAN_ADMIN_PASSWORD: keys.SECUREYEOMAN_ADMIN_PASSWORD!,
+      };
 
       const pDef = PROVIDER_DEFAULTS[provider];
       if (!pDef.needsBaseUrl && pDef.apiKeyEnv && apiKey) {
@@ -358,6 +448,9 @@ Options:
 
       writeFileSync(envPath, envContent, 'utf-8');
       ctx.stdout.write(`\n  .env file written to ${envPath}\n`);
+      ctx.stdout.write('  Note: Crypto keys (SIGNING_KEY, TOKEN_SECRET, ENCRYPTION_KEY) are\n');
+      ctx.stdout.write('  auto-generated and rotation-managed at runtime. Only ADMIN_PASSWORD\n');
+      ctx.stdout.write('  is written to .env.\n');
     }
 
     // ── Complete onboarding via API or write config file ──────────────────────

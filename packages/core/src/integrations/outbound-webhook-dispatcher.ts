@@ -86,7 +86,17 @@ export class OutboundWebhookDispatcher {
     }
   }
 
-  /** Deliver to a single webhook with retries. */
+  /**
+   * Deliver to a single webhook with retries.
+   *
+   * NOTE: This method intentionally uses a manual retry loop instead of the
+   * shared `withRetry()` helper because it needs per-attempt state that
+   * `withRetry()` does not support:
+   *   1. Tracks `lastStatus` across attempts (non-ok HTTP responses don't throw)
+   *   2. Calls `storage.recordSuccess()` / `storage.recordFailure()` with the
+   *      HTTP status code from the final attempt
+   *   3. Logs attempt numbers on each retry with webhook-specific context
+   */
   private async deliverWithRetry(
     wh: OutboundWebhook,
     payload: OutboundWebhookPayload

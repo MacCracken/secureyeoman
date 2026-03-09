@@ -13,7 +13,7 @@ import type { TenantManager } from './tenant-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface TenantRoutesOptions {
   tenantManager: TenantManager;
@@ -22,11 +22,7 @@ export interface TenantRoutesOptions {
 
 export function registerTenantRoutes(app: FastifyInstance, opts: TenantRoutesOptions): void {
   const { tenantManager, secureYeoman } = opts;
-  const tenantGuardOpts = (
-    secureYeoman
-      ? { preHandler: [requiresLicense('multi_tenancy', () => secureYeoman.getLicenseManager())] }
-      : {}
-  ) as Record<string, unknown>;
+  const tenantGuardOpts = licenseGuard('multi_tenancy', secureYeoman);
 
   app.get(
     '/api/v1/admin/tenants',

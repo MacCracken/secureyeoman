@@ -8,7 +8,7 @@ import type { IacManager } from './iac-manager.js';
 import { IacDeploymentStatusSchema } from '@secureyeoman/shared';
 import { sendError, errorToString } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface IacRouteOptions {
   iacManager: IacManager;
@@ -17,15 +17,7 @@ export interface IacRouteOptions {
 
 export function registerIacRoutes(app: FastifyInstance, opts: IacRouteOptions): void {
   const { iacManager, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('compliance_governance', secureYeoman);
 
   // ── List templates ─────────────────────────────────────────────────
 

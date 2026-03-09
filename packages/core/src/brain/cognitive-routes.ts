@@ -10,7 +10,7 @@ import type { BrainManager } from './manager.js';
 import type { RagEvalEngine } from './rag-eval.js';
 import type { SchemaClusteringManager } from './schema-clustering.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
 export interface CognitiveRoutesOptions {
@@ -26,11 +26,7 @@ export async function registerCognitiveRoutes(
 ): Promise<void> {
   const { brainManager, ragEvalEngine, schemaClusteringManager, secureYeoman } = opts;
 
-  const featureGuardOpts = (
-    secureYeoman
-      ? { preHandler: [requiresLicense('advanced_brain', () => secureYeoman.getLicenseManager())] }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('advanced_brain', secureYeoman);
 
   // ── RAG Evaluation ──────────────────────────────────────────
 

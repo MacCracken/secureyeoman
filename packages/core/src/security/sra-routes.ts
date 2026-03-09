@@ -10,7 +10,7 @@ import type { SraManager } from './sra-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 import {
   SraBlueprintCreateSchema,
   SraBlueprintUpdateSchema,
@@ -25,15 +25,7 @@ export interface SraRoutesOptions {
 
 export function registerSraRoutes(app: FastifyInstance, opts: SraRoutesOptions): void {
   const { sraManager: mgr, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('compliance_governance', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('compliance_governance', secureYeoman);
 
   // ── POST /api/v1/security/sra/blueprints ─────────────────────────────────
 

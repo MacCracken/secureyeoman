@@ -8,7 +8,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, textResponse, jsonResponse } from './tool-utils.js';
 
 const MAX_READ_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_WRITE_SIZE = 1 * 1024 * 1024; // 1MB
@@ -66,7 +66,7 @@ export function registerFilesystemTools(
         throw new Error(`File too large (${stat.size} bytes, max ${MAX_READ_SIZE})`);
       }
       const content = await fs.readFile(filePath, 'utf-8');
-      return { content: [{ type: 'text' as const, text: content }] };
+      return textResponse(content);
     })
   );
 
@@ -85,14 +85,7 @@ export function registerFilesystemTools(
       }
       const filePath = await validateRealPath(args.path);
       await fs.writeFile(filePath, args.content, 'utf-8');
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Written ${Buffer.byteLength(args.content)} bytes to ${filePath}`,
-          },
-        ],
-      };
+      return textResponse(`Written ${Buffer.byteLength(args.content)} bytes to ${filePath}`);
     })
   );
 
@@ -109,7 +102,7 @@ export function registerFilesystemTools(
         name: e.name,
         type: e.isDirectory() ? 'directory' : e.isFile() ? 'file' : 'other',
       }));
-      return { content: [{ type: 'text' as const, text: JSON.stringify(listing, null, 2) }] };
+      return jsonResponse(listing);
     })
   );
 
@@ -146,7 +139,7 @@ export function registerFilesystemTools(
       }
 
       await walk(basePath);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(results, null, 2) }] };
+      return jsonResponse(results);
     })
   );
 }

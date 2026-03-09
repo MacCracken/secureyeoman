@@ -9,7 +9,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, errorResponse, jsonResponse, textResponse } from './tool-utils.js';
 import { BrowserPool } from './browser-pool.js';
 import { ProxyManager } from './proxy-manager.js';
 
@@ -81,7 +81,7 @@ export function registerBrowserTools(
     },
     wrapToolHandler('browser_navigate', middleware, async (args) => {
       if (!config.exposeBrowser) {
-        return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
+        return errorResponse(NOT_AVAILABLE_MSG);
       }
 
       const startTime = Date.now();
@@ -112,11 +112,7 @@ export function registerBrowserTools(
           durationMs: Date.now() - startTime,
         });
 
-        return {
-          content: [
-            { type: 'text' as const, text: JSON.stringify({ title, url, snippet }, null, 2) },
-          ],
-        };
+        return jsonResponse({ title, url, snippet });
       } catch (err) {
         emit({
           type: 'fail',
@@ -145,7 +141,7 @@ export function registerBrowserTools(
     },
     wrapToolHandler('browser_screenshot', middleware, async (args) => {
       if (!config.exposeBrowser) {
-        return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
+        return errorResponse(NOT_AVAILABLE_MSG);
       }
 
       const startTime = Date.now();
@@ -218,7 +214,7 @@ export function registerBrowserTools(
     },
     wrapToolHandler('browser_click', middleware, async (args) => {
       if (!config.exposeBrowser) {
-        return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
+        return errorResponse(NOT_AVAILABLE_MSG);
       }
 
       const startTime = Date.now();
@@ -239,9 +235,7 @@ export function registerBrowserTools(
           durationMs: Date.now() - startTime,
         });
 
-        return {
-          content: [{ type: 'text' as const, text: `Clicked element matching "${args.selector}"` }],
-        };
+        return textResponse(`Clicked element matching "${args.selector}"`);
       } catch (err) {
         emit({
           type: 'fail',
@@ -267,7 +261,7 @@ export function registerBrowserTools(
     },
     wrapToolHandler('browser_fill', middleware, async (args) => {
       if (!config.exposeBrowser) {
-        return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
+        return errorResponse(NOT_AVAILABLE_MSG);
       }
 
       const startTime = Date.now();
@@ -285,14 +279,7 @@ export function registerBrowserTools(
           durationMs: Date.now() - startTime,
         });
 
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Filled "${args.selector}" with value (${args.value.length} chars)`,
-            },
-          ],
-        };
+        return textResponse(`Filled "${args.selector}" with value (${args.value.length} chars)`);
       } catch (err) {
         emit({
           type: 'fail',
@@ -317,7 +304,7 @@ export function registerBrowserTools(
     },
     wrapToolHandler('browser_evaluate', middleware, async (args) => {
       if (!config.exposeBrowser) {
-        return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
+        return errorResponse(NOT_AVAILABLE_MSG);
       }
 
       const startTime = Date.now();
@@ -335,9 +322,7 @@ export function registerBrowserTools(
           durationMs: Date.now() - startTime,
         });
 
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-        };
+        return jsonResponse(result);
       } catch (err) {
         emit({
           type: 'fail',
@@ -363,7 +348,7 @@ export function registerBrowserTools(
     },
     wrapToolHandler('browser_pdf', middleware, async (args) => {
       if (!config.exposeBrowser) {
-        return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
+        return errorResponse(NOT_AVAILABLE_MSG);
       }
 
       const startTime = Date.now();

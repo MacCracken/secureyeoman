@@ -6,7 +6,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface BatchInferenceRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -18,9 +18,7 @@ export function registerBatchInferenceRoutes(
 ): void {
   const { secureYeoman } = opts;
 
-  const batchGuardOpts = {
-    preHandler: [requiresLicense('batch_inference', () => secureYeoman.getLicenseManager())],
-  } as Record<string, unknown>;
+  const batchGuardOpts = licenseGuard('batch_inference', secureYeoman);
 
   // ── Batch Inference ──────────────────────────────────────────────────
 

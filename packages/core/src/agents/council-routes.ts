@@ -7,22 +7,14 @@ import type { CouncilManager } from './council-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export function registerCouncilRoutes(
   app: FastifyInstance,
   opts: { councilManager: CouncilManager; secureYeoman?: SecureYeoman }
 ): void {
   const { councilManager, secureYeoman } = opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? {
-          preHandler: [
-            requiresLicense('swarm_orchestration', () => secureYeoman.getLicenseManager()),
-          ],
-        }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('swarm_orchestration', secureYeoman);
 
   // ── Catalog routes ─────────────────────────────────────────────
 

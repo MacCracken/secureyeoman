@@ -13,7 +13,7 @@ import { parsePagination } from '../utils/pagination.js';
 import type { FederationManager } from './federation-manager.js';
 import type { FederationStorage } from './federation-storage.js';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { requiresLicense } from '../licensing/license-guard.js';
+import { licenseGuard } from '../licensing/license-guard.js';
 
 export interface FederationRoutesOptions {
   federationManager: FederationManager;
@@ -63,11 +63,7 @@ export function registerFederationRoutes(
 ): void {
   const { federationManager, federationStorage, brainManager, marketplaceManager, secureYeoman } =
     opts;
-  const featureGuardOpts = (
-    secureYeoman
-      ? { preHandler: [requiresLicense('a2a_federation', () => secureYeoman.getLicenseManager())] }
-      : {}
-  ) as Record<string, unknown>;
+  const featureGuardOpts = licenseGuard('a2a_federation', secureYeoman);
 
   // ── Authenticated outward routes ──────────────────────────────────────────
 

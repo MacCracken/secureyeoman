@@ -14,6 +14,7 @@ const {
   mockPrompt,
   mockPromptChoice,
   mockCreateInterface,
+  mockVaultSet,
 } = vi.hoisted(() => {
   const flagCallCount = 0;
 
@@ -56,6 +57,7 @@ const {
         Promise.resolve(choices[defIdx])
       ),
     mockCreateInterface: vi.fn().mockReturnValue({ close: vi.fn() }),
+    mockVaultSet: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -67,6 +69,12 @@ vi.mock('node:fs', () => ({
   writeFileSync: mockWriteFileSync,
   readFileSync: mockReadFileSync,
   existsSync: mockExistsSync,
+}));
+
+vi.mock('../../security/vault-backend.js', () => ({
+  VaultBackend: function VaultBackend() {
+    return { set: mockVaultSet, get: vi.fn() };
+  },
 }));
 
 vi.mock('../utils.js', () => ({
@@ -166,7 +174,7 @@ describe('initCommand', () => {
       await initCommand.run(ctx as any);
       expect(mockWriteFileSync).toHaveBeenCalledWith(
         '.env',
-        expect.stringContaining('SECUREYEOMAN_SIGNING_KEY'),
+        expect.stringContaining('SECUREYEOMAN_ADMIN_PASSWORD'),
         'utf-8'
       );
     });
@@ -209,7 +217,7 @@ describe('initCommand', () => {
         (c: string[]) => c[0] === '.env'
       );
       expect(envWrite?.[1]).toContain('EXISTING_VAR=value');
-      expect(envWrite?.[1]).toContain('SECUREYEOMAN_SIGNING_KEY');
+      expect(envWrite?.[1]).toContain('SECUREYEOMAN_ADMIN_PASSWORD');
     });
 
     it('calls onboarding API if server is running', async () => {
@@ -446,7 +454,7 @@ describe('initCommand', () => {
       expect(content).not.toContain('# This is a comment');
     });
 
-    it('generates all 4 security keys', async () => {
+    it('generates all 4 security keys and displays them', async () => {
       const ctx = makeCtx(['--non-interactive']);
       await initCommand.run(ctx as any);
       expect(mockGenerateSecretKey).toHaveBeenCalledWith(32); // signing
@@ -456,6 +464,20 @@ describe('initCommand', () => {
       expect(out).toContain('SECUREYEOMAN_TOKEN_SECRET');
       expect(out).toContain('SECUREYEOMAN_ENCRYPTION_KEY');
       expect(out).toContain('SECUREYEOMAN_ADMIN_PASSWORD');
+    });
+
+    it('only writes ADMIN_PASSWORD to .env (crypto keys are auto-managed)', async () => {
+      mockExistsSync.mockReturnValue(false);
+      const ctx = makeCtx(['--non-interactive']);
+      await initCommand.run(ctx as any);
+      const envWrite = (mockWriteFileSync as ReturnType<typeof vi.fn>).mock.calls.find(
+        (c: string[]) => c[0] === '.env'
+      );
+      const content = envWrite?.[1] as string;
+      expect(content).toContain('SECUREYEOMAN_ADMIN_PASSWORD');
+      expect(content).not.toContain('SECUREYEOMAN_SIGNING_KEY');
+      expect(content).not.toContain('SECUREYEOMAN_TOKEN_SECRET');
+      expect(content).not.toContain('SECUREYEOMAN_ENCRYPTION_KEY');
     });
   });
 
@@ -798,6 +820,60 @@ describe('initCommand', () => {
         const yaml = yamlCall[1] as string;
         expect(yaml).toContain('baseUrl: "http://localhost:11434"');
       }
+    });
+  });
+
+  describe('--vault', () => {
+    beforeEach(() => {
+      mockVaultSet.mockResolvedValue(undefined);
+    });
+
+    it('requires --vault-token or VAULT_TOKEN', async () => {
+      delete process.env.VAULT_TOKEN;
+      const ctx = makeCtx(['--non-interactive', '--vault']);
+      const code = await initCommand.run(ctx as any);
+      expect(code).toBe(1);
+      expect(ctx.out.join('')).toContain('requires a token');
+    });
+
+    it('pushes all keys to Vault when token is provided', async () => {
+      process.env.VAULT_TOKEN = 'test-token';
+      const ctx = makeCtx(['--non-interactive', '--vault']);
+      const code = await initCommand.run(ctx as any);
+      expect(code).toBe(0);
+      expect(mockVaultSet).toHaveBeenCalledTimes(4);
+      expect(mockVaultSet).toHaveBeenCalledWith('secureyeoman/SECUREYEOMAN_ADMIN_PASSWORD', expect.any(String));
+      expect(mockVaultSet).toHaveBeenCalledWith('secureyeoman/SECUREYEOMAN_SIGNING_KEY', expect.any(String));
+      delete process.env.VAULT_TOKEN;
+    });
+
+    it('does not write .env when --vault is used', async () => {
+      process.env.VAULT_TOKEN = 'test-token';
+      const ctx = makeCtx(['--non-interactive', '--vault']);
+      await initCommand.run(ctx as any);
+      const envCalls = (mockWriteFileSync as ReturnType<typeof vi.fn>).mock.calls.filter(
+        (c: string[]) => c[0] === '.env'
+      );
+      expect(envCalls).toHaveLength(0);
+      delete process.env.VAULT_TOKEN;
+    });
+
+    it('reports error when Vault write fails', async () => {
+      process.env.VAULT_TOKEN = 'test-token';
+      mockVaultSet.mockRejectedValue(new Error('Vault unreachable'));
+      const ctx = makeCtx(['--non-interactive', '--vault']);
+      const code = await initCommand.run(ctx as any);
+      expect(code).toBe(1);
+      expect(ctx.out.join('')).toContain('Vault unreachable');
+      delete process.env.VAULT_TOKEN;
+    });
+
+    it('includes --vault in help text', async () => {
+      const ctx = makeCtx(['--help']);
+      await initCommand.run(ctx as any);
+      expect(ctx.out.join('')).toContain('--vault');
+      expect(ctx.out.join('')).toContain('--vault-addr');
+      expect(ctx.out.join('')).toContain('--vault-token');
     });
   });
 });

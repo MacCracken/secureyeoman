@@ -22,7 +22,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler, errorResponse } from './tool-utils.js';
+import { wrapToolHandler, errorResponse, jsonResponse, textResponse } from './tool-utils.js';
 
 const MAX_OUTPUT = 5 * 1024 * 1024; // 5MB
 const DEFAULT_TIMEOUT = 60_000; // 1 minute
@@ -100,18 +100,7 @@ export function registerDockerTools(
       } catch {
         containers = lines;
       }
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              { containers, count: containers.length, stderr: stderr || undefined },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({ containers, count: containers.length, stderr: stderr || undefined });
     })
   );
 
@@ -136,9 +125,7 @@ export function registerDockerTools(
       if (timestamps) args.push('--timestamps');
       args.push(container);
       const { stdout, stderr } = await runDocker(config, args);
-      return {
-        content: [{ type: 'text', text: stdout || stderr || '(no output)' }],
-      };
+      return textResponse(stdout || stderr || '(no output)');
     })
   );
 
@@ -155,9 +142,7 @@ export function registerDockerTools(
       const args =
         type === 'image' ? ['image', 'inspect', target] : ['container', 'inspect', target];
       const { stdout, stderr } = await runDocker(config, args);
-      return {
-        content: [{ type: 'text', text: stdout || stderr || '(no output)' }],
-      };
+      return textResponse(stdout || stderr || '(no output)');
     })
   );
 
@@ -185,18 +170,7 @@ export function registerDockerTools(
       } catch {
         stats = lines;
       }
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              { stats, count: stats.length, stderr: stderr || undefined },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({ stats, count: stats.length, stderr: stderr || undefined });
     })
   );
 
@@ -225,18 +199,7 @@ export function registerDockerTools(
       } catch {
         images = lines;
       }
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              { images, count: images.length, stderr: stderr || undefined },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonResponse({ images, count: images.length, stderr: stderr || undefined });
     })
   );
 
@@ -250,9 +213,7 @@ export function registerDockerTools(
     wrapToolHandler('docker_start', middleware, async ({ containers }) => {
       if (!config.exposeDockerTools) return disabled();
       const { stdout, stderr } = await runDocker(config, ['start', ...containers]);
-      return {
-        content: [{ type: 'text', text: stdout || stderr || '(started)' }],
-      };
+      return textResponse(stdout || stderr || '(started)');
     })
   );
 
@@ -278,9 +239,7 @@ export function registerDockerTools(
         String(timeout),
         ...containers,
       ]);
-      return {
-        content: [{ type: 'text', text: stdout || stderr || '(stopped)' }],
-      };
+      return textResponse(stdout || stderr || '(stopped)');
     })
   );
 
@@ -306,9 +265,7 @@ export function registerDockerTools(
         String(timeout),
         ...containers,
       ]);
-      return {
-        content: [{ type: 'text', text: stdout || stderr || '(restarted)' }],
-      };
+      return textResponse(stdout || stderr || '(restarted)');
     })
   );
 
@@ -332,9 +289,7 @@ export function registerDockerTools(
       if (user) args.push('--user', user);
       args.push(container, ...command);
       const { stdout, stderr } = await runDocker(config, args);
-      return {
-        content: [{ type: 'text', text: stdout || stderr || '(no output)' }],
-      };
+      return textResponse(stdout || stderr || '(no output)');
     })
   );
 
@@ -351,9 +306,7 @@ export function registerDockerTools(
     wrapToolHandler('docker_pull', middleware, async ({ image }) => {
       if (!config.exposeDockerTools) return disabled();
       const { stdout, stderr } = await runDocker(config, ['pull', image], COMPOSE_TIMEOUT);
-      return {
-        content: [{ type: 'text', text: stdout || stderr || '(pulled)' }],
-      };
+      return textResponse(stdout || stderr || '(pulled)');
     })
   );
 
@@ -376,14 +329,7 @@ export function registerDockerTools(
       } catch {
         parsed = stdout;
       }
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({ services: parsed, stderr: stderr || undefined }, null, 2),
-          },
-        ],
-      };
+      return jsonResponse({ services: parsed, stderr: stderr || undefined });
     })
   );
 
@@ -414,9 +360,7 @@ export function registerDockerTools(
         if (timestamps) args.push('--timestamps');
         if (service) args.push(service);
         const { stdout, stderr } = await runDocker(config, args);
-        return {
-          content: [{ type: 'text', text: stdout || stderr || '(no output)' }],
-        };
+        return textResponse(stdout || stderr || '(no output)');
       }
     )
   );
@@ -443,9 +387,7 @@ export function registerDockerTools(
       if (build) args.push('--build');
       args.push(...services);
       const { stdout, stderr } = await runDocker(config, args, COMPOSE_TIMEOUT);
-      return {
-        content: [{ type: 'text', text: stdout || stderr || '(started)' }],
-      };
+      return textResponse(stdout || stderr || '(started)');
     })
   );
 
@@ -473,9 +415,7 @@ export function registerDockerTools(
         if (volumes) args.push('--volumes');
         if (removeOrphans) args.push('--remove-orphans');
         const { stdout, stderr } = await runDocker(config, args, COMPOSE_TIMEOUT);
-        return {
-          content: [{ type: 'text', text: stdout || stderr || '(stopped)' }],
-        };
+        return textResponse(stdout || stderr || '(stopped)');
       }
     )
   );

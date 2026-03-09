@@ -138,6 +138,80 @@ describe('McpCredentialManager', () => {
     });
   });
 
+  describe('updateEncryptionKey', () => {
+    it('allows decryption with new key after update', async () => {
+      const newSecret = 'a-brand-new-secret-that-is-also-at-least-32-chars';
+      manager.updateEncryptionKey(newSecret);
+
+      // Store with new key
+      await manager.storeCredential('srv-1', 'KEY', 'new-value');
+      const retrieved = await manager.getCredential('srv-1', 'KEY');
+      expect(retrieved).toBe('new-value');
+    });
+
+    it('cannot decrypt old credentials after key update', async () => {
+      await manager.storeCredential('srv-1', 'KEY', 'old-value');
+
+      manager.updateEncryptionKey('completely-different-secret-at-least-32-chars');
+
+      const retrieved = await manager.getCredential('srv-1', 'KEY');
+      // Decryption fails with wrong key — returns null
+      expect(retrieved).toBeNull();
+    });
+  });
+
+  describe('reEncrypt', () => {
+    it('re-encrypts all credentials from old key to new key', async () => {
+      const OLD_SECRET = TEST_SECRET;
+      const NEW_SECRET = 'a-brand-new-secret-that-is-also-at-least-32-chars';
+
+      // Store credentials with old secret
+      await manager.storeCredential('srv-1', 'API_KEY', 'key-123');
+      await manager.storeCredential('srv-2', 'DB_PASS', 'dbpass-456');
+
+      // Mock listAllCredentials to return stored encrypted values
+      const saveCalls = (storage.saveCredential as ReturnType<typeof vi.fn>).mock.calls;
+      const allCreds = saveCalls.map((c: unknown[]) => ({
+        serverId: c[0] as string,
+        key: c[1] as string,
+        encryptedValue: c[2] as string,
+      }));
+      (storage as unknown as Record<string, unknown>).listAllCredentials = vi
+        .fn()
+        .mockResolvedValue(allCreds);
+
+      const count = await manager.reEncrypt(OLD_SECRET, NEW_SECRET);
+      expect(count).toBe(2);
+
+      // The internal key is now the new key — verify by storing/retrieving
+      await manager.storeCredential('srv-3', 'NEW_KEY', 'new-value');
+      const retrieved = await manager.getCredential('srv-3', 'NEW_KEY');
+      expect(retrieved).toBe('new-value');
+    });
+
+    it('returns 0 when no credentials exist', async () => {
+      (storage as unknown as Record<string, unknown>).listAllCredentials = vi
+        .fn()
+        .mockResolvedValue([]);
+
+      const count = await manager.reEncrypt(TEST_SECRET, 'new-secret-at-least-32-characters');
+      expect(count).toBe(0);
+    });
+
+    it('skips credentials that fail to decrypt and logs warning', async () => {
+      (storage as unknown as Record<string, unknown>).listAllCredentials = vi.fn().mockResolvedValue([
+        { serverId: 'srv-1', key: 'BAD', encryptedValue: 'totally-invalid-data!!' },
+      ]);
+
+      const count = await manager.reEncrypt(TEST_SECRET, 'new-secret-at-least-32-characters');
+      expect(count).toBe(0);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ serverId: 'srv-1', key: 'BAD' }),
+        'Failed to re-encrypt credential, skipping'
+      );
+    });
+  });
+
   describe('injectCredentials', () => {
     it('merges decrypted credentials into the env map', async () => {
       // Store two credentials via the real encrypt path

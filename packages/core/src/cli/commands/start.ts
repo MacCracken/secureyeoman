@@ -44,9 +44,9 @@ Options:
   -h, --help               Show this help
 
 Environment Variables:
-  SECUREYEOMAN_SIGNING_KEY       Audit chain signing key (required)
-  SECUREYEOMAN_TOKEN_SECRET      JWT token secret (required)
-  SECUREYEOMAN_ENCRYPTION_KEY    Encryption key (required)
+  SECUREYEOMAN_SIGNING_KEY       Audit chain signing key (optional; auto-generated if not set)
+  SECUREYEOMAN_TOKEN_SECRET      JWT token secret (optional; auto-generated if not set)
+  SECUREYEOMAN_ENCRYPTION_KEY    Encryption key (optional; auto-generated if not set)
   SECUREYEOMAN_ADMIN_PASSWORD    Admin password (required)
 
   ANTHROPIC_API_KEY              Anthropic API key

@@ -18,7 +18,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, textResponse, errorResponse } from './tool-utils.js';
 
 const MAX_OUTPUT = 10 * 1024 * 1024; // 10MB
 const TOOL_TIMEOUT = 120_000; // 2 minutes
@@ -346,10 +346,7 @@ export async function registerSecurityTools(
       server.registerTool(
         name,
         { description: `Security tool (disabled). ${DISABLED_MSG}`, inputSchema: {} },
-        wrapToolHandler(name, middleware, async () => ({
-          content: [{ type: 'text' as const, text: DISABLED_MSG }],
-          isError: true,
-        }))
+        wrapToolHandler(name, middleware, async () => errorResponse(DISABLED_MSG))
       );
     }
     return;
@@ -407,14 +404,7 @@ export async function registerSecurityTools(
         const cmd = buildCommandString(config, 'nmap', nmapArgs);
         const parsed = parseNmapXml(stdout);
         const envelope = buildEnvelope('nmap', args.target, cmd, parsed, 0);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('nmap', args.target, cmd, stdout, stderr, envelope),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('nmap', args.target, cmd, stdout, stderr, envelope));
       })
     );
   }
@@ -440,14 +430,7 @@ export async function registerSecurityTools(
         const cmd = buildCommandString(config, 'gobuster', gbArgs);
         const parsed = parseGobusterOutput(stdout, args.mode);
         const envelope = buildEnvelope('gobuster', args.target, cmd, parsed, 0);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('gobuster', args.target, cmd, stdout, stderr, envelope),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('gobuster', args.target, cmd, stdout, stderr, envelope));
       })
     );
   }
@@ -480,14 +463,7 @@ export async function registerSecurityTools(
         const { stdout, stderr } = await runTool(config, 'ffuf', ffufArgs);
         const cmd = buildCommandString(config, 'ffuf', ffufArgs);
         const envelope = buildEnvelope('ffuf', target, cmd, null, 0);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('ffuf', target, cmd, stdout, stderr, envelope),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('ffuf', target, cmd, stdout, stderr, envelope));
       })
     );
   }
@@ -529,14 +505,7 @@ export async function registerSecurityTools(
         const cmd = buildCommandString(config, 'sqlmap', sqlArgs);
         const parsed = parseSqlmapOutput(stdout);
         const envelope = buildEnvelope('sqlmap', target, cmd, parsed, 0);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('sqlmap', target, cmd, stdout, stderr, envelope),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('sqlmap', target, cmd, stdout, stderr, envelope));
       })
     );
   }
@@ -558,14 +527,7 @@ export async function registerSecurityTools(
         const { stdout, stderr } = await runTool(config, 'nikto', niktoArgs);
         const cmd = buildCommandString(config, 'nikto', niktoArgs);
         const envelope = buildEnvelope('nikto', args.target, cmd, null, 0);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('nikto', args.target, cmd, stdout, stderr, envelope),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('nikto', args.target, cmd, stdout, stderr, envelope));
       })
     );
   }
@@ -596,14 +558,7 @@ export async function registerSecurityTools(
         const cmd = buildCommandString(config, 'nuclei', nucleiArgs);
         const parsed = parseNucleiJsonl(stdout);
         const envelope = buildEnvelope('nuclei', scopeTarget, cmd, parsed, 0);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('nuclei', scopeTarget, cmd, stdout, stderr, envelope),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('nuclei', scopeTarget, cmd, stdout, stderr, envelope));
       })
     );
   }
@@ -625,14 +580,7 @@ export async function registerSecurityTools(
         const { stdout, stderr } = await runTool(config, 'whatweb', wwArgs);
         const cmd = buildCommandString(config, 'whatweb', wwArgs);
         const envelope = buildEnvelope('whatweb', args.target, cmd, null, 0);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('whatweb', args.target, cmd, stdout, stderr, envelope),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('whatweb', args.target, cmd, stdout, stderr, envelope));
       })
     );
   }
@@ -660,14 +608,7 @@ export async function registerSecurityTools(
         const { stdout, stderr } = await runTool(config, 'wpscan', wpArgs);
         const cmd = buildCommandString(config, 'wpscan', wpArgs);
         const envelope = buildEnvelope('wpscan', scopeTarget, cmd, null, 0);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('wpscan', scopeTarget, cmd, stdout, stderr, envelope),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('wpscan', scopeTarget, cmd, stdout, stderr, envelope));
       })
     );
   }
@@ -695,14 +636,7 @@ export async function registerSecurityTools(
         const hcArgs = ['-m', String(args.mode), args.hash, args.wordlist, '--quiet'];
         const { stdout, stderr } = await runTool(config, 'hashcat', hcArgs);
         const cmd = buildCommandString(config, 'hashcat', hcArgs);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('hashcat', '(offline)', cmd, stdout, stderr),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('hashcat', '(offline)', cmd, stdout, stderr));
       })
     );
   }
@@ -727,14 +661,7 @@ export async function registerSecurityTools(
         if (args.wordlist) johnArgs.push(`--wordlist=${args.wordlist}`);
         const { stdout, stderr } = await runTool(config, 'john', johnArgs);
         const cmd = buildCommandString(config, 'john', johnArgs);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('john', '(offline)', cmd, stdout, stderr),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('john', '(offline)', cmd, stdout, stderr));
       })
     );
   }
@@ -760,14 +687,7 @@ export async function registerSecurityTools(
         const thArgs = ['-d', args.domain, '-b', args.sources ?? 'google,bing,dnsdumpster'];
         const { stdout, stderr } = await runTool(config, 'theHarvester', thArgs);
         const cmd = buildCommandString(config, 'theHarvester', thArgs);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('theHarvester', args.domain, cmd, stdout, stderr),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('theHarvester', args.domain, cmd, stdout, stderr));
       })
     );
   }
@@ -792,14 +712,7 @@ export async function registerSecurityTools(
         const digArgs = [args.domain, args.type ?? 'A', '+short'];
         const { stdout, stderr } = await runTool(config, 'dig', digArgs);
         const cmd = buildCommandString(config, 'dig', digArgs);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('dig', args.domain, cmd, stdout, stderr),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('dig', args.domain, cmd, stdout, stderr));
       })
     );
   }
@@ -819,14 +732,7 @@ export async function registerSecurityTools(
         const whoisArgs = [args.domain];
         const { stdout, stderr } = await runTool(config, 'whois', whoisArgs);
         const cmd = buildCommandString(config, 'whois', whoisArgs);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('whois', args.domain, cmd, stdout, stderr),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('whois', args.domain, cmd, stdout, stderr));
       })
     );
   }
@@ -844,15 +750,7 @@ export async function registerSecurityTools(
       wrapToolHandler('sec_shodan', middleware, async (args) => {
         const apiKey = config.shodanApiKey;
         if (!apiKey) {
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: 'Shodan lookup requires SHODAN_API_KEY to be configured.',
-              },
-            ],
-            isError: true,
-          };
+          return errorResponse('Shodan lookup requires SHODAN_API_KEY to be configured.');
         }
         const url = `https://api.shodan.io/shodan/host/${encodeURIComponent(args.ip)}?key=${apiKey}`;
         const res = await fetch(url);
@@ -864,7 +762,7 @@ export async function registerSecurityTools(
           body,
           ''
         );
-        return { content: [{ type: 'text' as const, text }] };
+        return textResponse(text);
       })
     );
     // eslint-disable-next-line no-console
@@ -912,15 +810,7 @@ export async function registerSecurityTools(
       },
       wrapToolHandler('sec_hydra', middleware, async (args) => {
         if (!config.allowBruteForce) {
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: 'sec_hydra requires MCP_ALLOW_BRUTE_FORCE=true. This is a separate opt-in beyond MCP_EXPOSE_SECURITY_TOOLS.',
-              },
-            ],
-            isError: true,
-          };
+          return errorResponse('sec_hydra requires MCP_ALLOW_BRUTE_FORCE=true. This is a separate opt-in beyond MCP_EXPOSE_SECURITY_TOOLS.');
         }
         validateTarget(args.target, config);
         const hydraArgs = [
@@ -937,14 +827,7 @@ export async function registerSecurityTools(
         const cmd = buildCommandString(config, 'hydra', hydraArgs);
         const parsed = parseHydraOutput(stdout);
         const envelope = buildEnvelope('hydra', args.target, cmd, parsed, 0);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSecResult('hydra', args.target, cmd, stdout, stderr, envelope),
-            },
-          ],
-        };
+        return textResponse(formatSecResult('hydra', args.target, cmd, stdout, stderr, envelope));
       })
     );
   }

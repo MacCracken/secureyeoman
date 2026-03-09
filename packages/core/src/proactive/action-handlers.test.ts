@@ -330,7 +330,7 @@ describe('executeWebhookAction', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   }, 10000);
 
-  it('logs success with attempt number', async () => {
+  it('logs success with url', async () => {
     mockFetch.mockResolvedValue({ ok: true, status: 201, statusText: 'Created' });
 
     const action: WebhookAction = {
@@ -342,7 +342,7 @@ describe('executeWebhookAction', () => {
     await executeWebhookAction(action, makeDeps());
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      expect.objectContaining({ url: 'https://example.com/hook', attempt: 1 }),
+      expect.objectContaining({ url: 'https://example.com/hook' }),
       'Proactive webhook executed'
     );
   });
