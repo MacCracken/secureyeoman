@@ -3,6 +3,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { toTs, buildSet } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 import type {
   TeamDefinition,
@@ -44,12 +45,6 @@ interface TeamRunRow {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
-
-function toTs(val: string | number | null | undefined): number | null {
-  if (val === null || val === undefined) return null;
-  if (typeof val === 'number') return val;
-  return new Date(val).getTime();
-}
 
 function teamFromRow(row: TeamRow): TeamDefinition {
   return {
@@ -214,33 +209,20 @@ export class TeamStorage extends PgBaseStorage {
 
   async updateTeam(id: string, updates: TeamUpdate): Promise<TeamDefinition> {
     const now = Date.now();
-    const fields: string[] = ['updated_at = $1'];
-    const values: unknown[] = [now];
-    let i = 2;
-    if (updates.name !== undefined) {
-      fields.push(`name = $${i}`);
-      values.push(updates.name);
-      i++;
-    }
-    if (updates.description !== undefined) {
-      fields.push(`description = $${i}`);
-      values.push(updates.description);
-      i++;
-    }
-    if (updates.members !== undefined) {
-      fields.push(`members = $${i}`);
-      values.push(JSON.stringify(updates.members));
-      i++;
-    }
-    if (updates.coordinatorProfileName !== undefined) {
-      fields.push(`coordinator_profile_name = $${i}`);
-      values.push(updates.coordinatorProfileName);
-      i++;
-    }
-    values.push(id);
+    const { setClause, values, nextIdx } = buildSet(
+      [
+        { column: 'name', value: updates.name },
+        { column: 'description', value: updates.description },
+        { column: 'members', value: updates.members, json: true },
+        { column: 'coordinator_profile_name', value: updates.coordinatorProfileName },
+      ],
+      2
+    );
+    const allValues: unknown[] = [now, ...values, id];
+    const sets = setClause ? `updated_at = $1, ${setClause}` : 'updated_at = $1';
     const row = await this.queryOne<TeamRow>(
-      `UPDATE agents.teams SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,
-      values
+      `UPDATE agents.teams SET ${sets} WHERE id = $${nextIdx} RETURNING *`,
+      allValues
     );
     if (!row) throw new Error(`Team not found: ${id}`);
     return teamFromRow(row);
@@ -332,52 +314,21 @@ export class TeamStorage extends PgBaseStorage {
       completedAt: number;
     }>
   ): Promise<void> {
-    const fields: string[] = [];
-    const values: unknown[] = [];
-    let i = 1;
-    if (updates.status !== undefined) {
-      fields.push(`status = $${i}`);
-      values.push(updates.status);
-      i++;
-    }
-    if ('result' in updates) {
-      fields.push(`result = $${i}`);
-      values.push(updates.result);
-      i++;
-    }
-    if ('error' in updates) {
-      fields.push(`error = $${i}`);
-      values.push(updates.error);
-      i++;
-    }
-    if ('coordinatorReasoning' in updates) {
-      fields.push(`coordinator_reasoning = $${i}`);
-      values.push(updates.coordinatorReasoning);
-      i++;
-    }
-    if (updates.assignedMembers !== undefined) {
-      fields.push(`assigned_members = $${i}`);
-      values.push(JSON.stringify(updates.assignedMembers));
-      i++;
-    }
-    if (updates.tokensUsed !== undefined) {
-      fields.push(`tokens_used = $${i}`);
-      values.push(updates.tokensUsed);
-      i++;
-    }
-    if (updates.startedAt !== undefined) {
-      fields.push(`started_at = $${i}`);
-      values.push(updates.startedAt);
-      i++;
-    }
-    if (updates.completedAt !== undefined) {
-      fields.push(`completed_at = $${i}`);
-      values.push(updates.completedAt);
-      i++;
-    }
-    if (fields.length === 0) return;
+    const { setClause, values, nextIdx, hasUpdates } = buildSet(
+      [
+        { column: 'status', value: updates.status },
+        { column: 'result', value: updates.result },
+        { column: 'error', value: updates.error },
+        { column: 'coordinator_reasoning', value: updates.coordinatorReasoning },
+        { column: 'assigned_members', value: updates.assignedMembers, json: true },
+        { column: 'tokens_used', value: updates.tokensUsed },
+        { column: 'started_at', value: updates.startedAt },
+        { column: 'completed_at', value: updates.completedAt },
+      ],
+    );
+    if (!hasUpdates) return;
     values.push(id);
-    await this.execute(`UPDATE agents.team_runs SET ${fields.join(', ')} WHERE id = $${i}`, values);
+    await this.execute(`UPDATE agents.team_runs SET ${setClause} WHERE id = $${nextIdx}`, values);
   }
 
   async listRuns(

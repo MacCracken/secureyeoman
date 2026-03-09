@@ -3,6 +3,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, parseCount } from '../storage/query-helpers.js';
 import type { ExecutionTrace, TraceStep } from '@secureyeoman/shared';
 
 function rowToTrace(row: Record<string, unknown>): ExecutionTrace {
@@ -89,36 +90,32 @@ export class TraceStore extends PgBaseStorage {
       offset?: number;
     } = {}
   ): Promise<{ items: ExecutionTrace[]; total: number }> {
-    const conditions = ['tenant_id = $1'];
-    const values: unknown[] = [opts.tenantId ?? 'default'];
-    let idx = 2;
-
-    if (opts.conversationId) {
-      conditions.push(`conversation_id = $${idx++}`);
-      values.push(opts.conversationId);
-    }
-    if (opts.personalityId) {
-      conditions.push(`personality_id = $${idx++}`);
-      values.push(opts.personalityId);
-    }
-    if (opts.isReplay !== undefined) {
-      conditions.push(`is_replay = $${idx++}`);
-      values.push(opts.isReplay);
-    }
-    if (opts.tags && opts.tags.length > 0) {
-      conditions.push(`tags ?| $${idx++}`);
-      values.push(opts.tags);
-    }
-
-    const where = conditions.join(' AND ');
-    const countResult = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*)::TEXT AS count FROM agent_replay.traces WHERE ${where}`,
-      values
+    // tenant_id is always present as $1; optional filters start at $2
+    const tenantId = opts.tenantId ?? 'default';
+    const { where: optWhere, values: optValues, nextIdx } = buildWhere(
+      [
+        { column: 'conversation_id', value: opts.conversationId },
+        { column: 'personality_id', value: opts.personalityId },
+        { column: 'is_replay', value: opts.isReplay },
+        { column: 'tags', value: opts.tags?.length ? opts.tags : undefined, op: '?|' },
+      ],
+      2
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+
+    const allValues: unknown[] = [tenantId, ...optValues];
+    const where = optWhere
+      ? `WHERE tenant_id = $1 AND ${optWhere.slice(6)}` // strip "WHERE " prefix
+      : 'WHERE tenant_id = $1';
+
+    const countResult = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*)::TEXT AS count FROM agent_replay.traces ${where}`,
+      allValues
+    );
+    const total = parseCount(countResult);
 
     const limit = Math.min(opts.limit ?? 50, 200);
     const offset = opts.offset ?? 0;
+    let idx = nextIdx;
 
     // List view omits steps for performance
     const rows = await this.queryMany<Record<string, unknown>>(
@@ -127,9 +124,9 @@ export class TraceStore extends PgBaseStorage {
               total_duration_ms, total_input_tokens, total_output_tokens,
               total_cost_usd, tool_iterations, success, error_message,
               tags, label, is_replay, source_trace_id, created_at, tenant_id
-       FROM agent_replay.traces WHERE ${where}
+       FROM agent_replay.traces ${where}
        ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
-      [...values, limit, offset]
+      [...allValues, limit, offset]
     );
 
     return { items: rows.map(rowToTrace), total };

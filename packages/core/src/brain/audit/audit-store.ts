@@ -5,6 +5,7 @@
  */
 
 import { PgBaseStorage } from '../../storage/pg-base.js';
+import { buildWhere, buildSet } from '../../storage/query-helpers.js';
 import { uuidv7 } from '../../utils/crypto.js';
 import type {
   MemoryAuditReport,
@@ -102,49 +103,23 @@ export class MemoryAuditStorage extends PgBaseStorage {
       error?: string;
     }
   ): Promise<MemoryAuditReport | null> {
-    const sets: string[] = [];
-    const vals: unknown[] = [];
-    let idx = 1;
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'status', value: updates.status },
+      { column: 'completed_at', value: updates.completedAt },
+      { column: 'pre_snapshot', value: updates.preSnapshot, json: true },
+      { column: 'post_snapshot', value: updates.postSnapshot, json: true },
+      { column: 'compression_summary', value: updates.compressionSummary, json: true },
+      { column: 'reorganization_summary', value: updates.reorganizationSummary, json: true },
+      { column: 'maintenance_summary', value: updates.maintenanceSummary, json: true },
+      { column: 'error', value: updates.error },
+    ]);
 
-    if (updates.status !== undefined) {
-      sets.push(`status = $${idx++}`);
-      vals.push(updates.status);
-    }
-    if (updates.completedAt !== undefined) {
-      sets.push(`completed_at = $${idx++}`);
-      vals.push(updates.completedAt);
-    }
-    if (updates.preSnapshot !== undefined) {
-      sets.push(`pre_snapshot = $${idx++}`);
-      vals.push(JSON.stringify(updates.preSnapshot));
-    }
-    if (updates.postSnapshot !== undefined) {
-      sets.push(`post_snapshot = $${idx++}`);
-      vals.push(JSON.stringify(updates.postSnapshot));
-    }
-    if (updates.compressionSummary !== undefined) {
-      sets.push(`compression_summary = $${idx++}`);
-      vals.push(JSON.stringify(updates.compressionSummary));
-    }
-    if (updates.reorganizationSummary !== undefined) {
-      sets.push(`reorganization_summary = $${idx++}`);
-      vals.push(JSON.stringify(updates.reorganizationSummary));
-    }
-    if (updates.maintenanceSummary !== undefined) {
-      sets.push(`maintenance_summary = $${idx++}`);
-      vals.push(JSON.stringify(updates.maintenanceSummary));
-    }
-    if (updates.error !== undefined) {
-      sets.push(`error = $${idx++}`);
-      vals.push(updates.error);
-    }
+    if (!hasUpdates) return this.getReport(id);
 
-    if (sets.length === 0) return this.getReport(id);
-
-    vals.push(id);
+    values.push(id);
     const row = await this.queryOne<AuditReportRow>(
-      `UPDATE brain.audit_reports SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
-      vals
+      `UPDATE brain.audit_reports SET ${setClause} WHERE id = $${nextIdx} RETURNING *`,
+      values
     );
     return row ? rowToReport(row) : null;
   }
@@ -164,30 +139,18 @@ export class MemoryAuditStorage extends PgBaseStorage {
     limit?: number;
     offset?: number;
   }): Promise<MemoryAuditReport[]> {
-    const conditions: string[] = [];
-    const vals: unknown[] = [];
-    let idx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'scope', value: opts?.scope },
+      { column: 'personality_id', value: opts?.personalityId },
+      { column: 'status', value: opts?.status },
+    ]);
 
-    if (opts?.scope) {
-      conditions.push(`scope = $${idx++}`);
-      vals.push(opts.scope);
-    }
-    if (opts?.personalityId) {
-      conditions.push(`personality_id = $${idx++}`);
-      vals.push(opts.personalityId);
-    }
-    if (opts?.status) {
-      conditions.push(`status = $${idx++}`);
-      vals.push(opts.status);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limit = Math.min(opts?.limit ?? 50, 200);
     const offset = opts?.offset ?? 0;
 
     const rows = await this.queryMany<AuditReportRow>(
-      `SELECT * FROM brain.audit_reports ${where} ORDER BY started_at DESC LIMIT $${idx++} OFFSET $${idx}`,
-      [...vals, limit, offset]
+      `SELECT * FROM brain.audit_reports ${where} ORDER BY started_at DESC LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
+      [...values, limit, offset]
     );
     return rows.map(rowToReport);
   }

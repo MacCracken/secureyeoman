@@ -3,6 +3,7 @@
  */
 
 import { PgBaseStorage } from '../../storage/pg-base.js';
+import { buildWhere, parseCount } from '../../storage/query-helpers.js';
 import { uuidv7 as generateId } from '../../utils/id.js';
 import type { EgressEvent, DlpFinding } from './types.js';
 
@@ -45,32 +46,14 @@ export class EgressStore extends PgBaseStorage {
   async queryEgress(
     filters?: EgressQueryFilters
   ): Promise<{ events: EgressEvent[]; total: number }> {
-    const conditions: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'destination_type', value: filters?.destinationType },
+      { column: 'action_taken', value: filters?.actionTaken },
+      { column: 'created_at', value: filters?.fromTime, op: '>=' },
+      { column: 'created_at', value: filters?.toTime, op: '<=' },
+      { column: 'tenant_id', value: filters?.tenantId },
+    ]);
 
-    if (filters?.destinationType) {
-      conditions.push(`destination_type = $${idx++}`);
-      values.push(filters.destinationType);
-    }
-    if (filters?.actionTaken) {
-      conditions.push(`action_taken = $${idx++}`);
-      values.push(filters.actionTaken);
-    }
-    if (filters?.fromTime !== undefined) {
-      conditions.push(`created_at >= $${idx++}`);
-      values.push(filters.fromTime);
-    }
-    if (filters?.toTime !== undefined) {
-      conditions.push(`created_at <= $${idx++}`);
-      values.push(filters.toTime);
-    }
-    if (filters?.tenantId) {
-      conditions.push(`tenant_id = $${idx++}`);
-      values.push(filters.tenantId);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limit = filters?.limit ?? 50;
     const offset = filters?.offset ?? 0;
 
@@ -78,7 +61,7 @@ export class EgressStore extends PgBaseStorage {
       `SELECT COUNT(*) as count FROM dlp.egress_log ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const events = await this.queryMany<EgressEvent>(
       `SELECT id, destination_type as "destinationType", destination_id as "destinationId",
@@ -89,7 +72,7 @@ export class EgressStore extends PgBaseStorage {
               created_at as "createdAt", tenant_id as "tenantId"
        FROM dlp.egress_log ${where}
        ORDER BY created_at DESC
-       LIMIT $${idx++} OFFSET $${idx++}`,
+       LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...values, limit, offset]
     );
 

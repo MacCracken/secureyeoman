@@ -3,6 +3,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, buildSet, parseCount } from '../storage/query-helpers.js';
 import type { IacTemplate, IacDeployment, IacDeploymentStatus } from '@secureyeoman/shared';
 
 function rowToTemplate(row: Record<string, unknown>): IacTemplate {
@@ -111,33 +112,18 @@ export class IacTemplateStore extends PgBaseStorage {
       offset?: number;
     } = {}
   ): Promise<{ items: IacTemplate[]; total: number }> {
-    const conditions = ['1=1'];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'tool', value: opts.tool },
+      { column: 'cloud_provider', value: opts.cloudProvider },
+      { column: 'category', value: opts.category },
+      { column: 'sra_control_ids', value: opts.sraControlId, op: '?' },
+    ]);
 
-    if (opts.tool) {
-      conditions.push(`tool = $${idx++}`);
-      values.push(opts.tool);
-    }
-    if (opts.cloudProvider) {
-      conditions.push(`cloud_provider = $${idx++}`);
-      values.push(opts.cloudProvider);
-    }
-    if (opts.category) {
-      conditions.push(`category = $${idx++}`);
-      values.push(opts.category);
-    }
-    if (opts.sraControlId) {
-      conditions.push(`sra_control_ids ? $${idx++}`);
-      values.push(opts.sraControlId);
-    }
-
-    const where = conditions.join(' AND ');
     const countResult = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*)::TEXT AS count FROM iac.templates WHERE ${where}`,
+      `SELECT COUNT(*)::TEXT AS count FROM iac.templates ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const limit = Math.min(opts.limit ?? 50, 200);
     const offset = opts.offset ?? 0;
@@ -148,8 +134,8 @@ export class IacTemplateStore extends PgBaseStorage {
               version, '[]'::jsonb AS files, variables, tags,
               sra_control_ids, policy_bundle_name, commit_sha, ref,
               compiled_at, valid, validation_errors, is_builtin, tenant_id
-       FROM iac.templates WHERE ${where}
-       ORDER BY compiled_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+       FROM iac.templates ${where}
+       ORDER BY compiled_at DESC LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...values, limit, offset]
     );
 
@@ -199,18 +185,13 @@ export class IacTemplateStore extends PgBaseStorage {
   }
 
   async listDeployments(templateName?: string, limit = 50): Promise<IacDeployment[]> {
-    const conditions = ['1=1'];
-    const values: unknown[] = [];
-    let idx = 1;
-
-    if (templateName) {
-      conditions.push(`template_name = $${idx++}`);
-      values.push(templateName);
-    }
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'template_name', value: templateName },
+    ]);
 
     const rows = await this.queryMany<Record<string, unknown>>(
-      `SELECT * FROM iac.deployments WHERE ${conditions.join(' AND ')}
-       ORDER BY deployed_at DESC LIMIT $${idx++}`,
+      `SELECT * FROM iac.deployments ${where}
+       ORDER BY deployed_at DESC LIMIT $${nextIdx}`,
       [...values, Math.min(limit, 200)]
     );
 
@@ -222,27 +203,15 @@ export class IacTemplateStore extends PgBaseStorage {
     status: IacDeploymentStatus,
     output?: { planOutput?: string; applyOutput?: string; errors?: string[] }
   ): Promise<void> {
-    const sets = ['status = $1'];
-    const values: unknown[] = [status];
-    let idx = 2;
-
-    if (output?.planOutput !== undefined) {
-      sets.push(`plan_output = $${idx++}`);
-      values.push(output.planOutput);
-    }
-    if (output?.applyOutput !== undefined) {
-      sets.push(`apply_output = $${idx++}`);
-      values.push(output.applyOutput);
-    }
-    if (output?.errors !== undefined) {
-      sets.push(`errors = $${idx++}`);
-      values.push(JSON.stringify(output.errors));
-    }
-
-    await this.execute(`UPDATE iac.deployments SET ${sets.join(', ')} WHERE id = $${idx}`, [
-      ...values,
-      id,
+    const { setClause, values, nextIdx } = buildSet([
+      { column: 'status', value: status },
+      { column: 'plan_output', value: output?.planOutput },
+      { column: 'apply_output', value: output?.applyOutput },
+      { column: 'errors', value: output?.errors, json: true },
     ]);
+
+    values.push(id);
+    await this.execute(`UPDATE iac.deployments SET ${setClause} WHERE id = $${nextIdx}`, values);
   }
 
   async deleteOldDeployments(templateName: string, retain: number): Promise<number> {

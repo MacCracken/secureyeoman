@@ -3,6 +3,7 @@
  */
 
 import { PgBaseStorage } from '../../storage/pg-base.js';
+import { buildWhere, parseCount } from '../../storage/query-helpers.js';
 import { uuidv7 as generateId } from '../../utils/id.js';
 import type { WatermarkRecord } from './types.js';
 
@@ -44,28 +45,13 @@ export class WatermarkStore extends PgBaseStorage {
     limit?: number;
     offset?: number;
   }): Promise<{ records: WatermarkRecord[]; total: number }> {
-    const conditions: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'tenant_id', value: filters?.tenantId },
+      { column: 'algorithm', value: filters?.algorithm },
+      { column: 'created_at', value: filters?.fromTime, op: '>=' },
+      { column: 'created_at', value: filters?.toTime, op: '<=' },
+    ]);
 
-    if (filters?.tenantId) {
-      conditions.push(`tenant_id = $${idx++}`);
-      values.push(filters.tenantId);
-    }
-    if (filters?.algorithm) {
-      conditions.push(`algorithm = $${idx++}`);
-      values.push(filters.algorithm);
-    }
-    if (filters?.fromTime != null) {
-      conditions.push(`created_at >= $${idx++}`);
-      values.push(filters.fromTime);
-    }
-    if (filters?.toTime != null) {
-      conditions.push(`created_at <= $${idx++}`);
-      values.push(filters.toTime);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limit = filters?.limit ?? 50;
     const offset = filters?.offset ?? 0;
 
@@ -73,7 +59,7 @@ export class WatermarkStore extends PgBaseStorage {
       `SELECT COUNT(*) as count FROM dlp.watermarks ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const records = await this.queryMany<WatermarkRecord>(
       `SELECT id, content_id as "contentId", content_type as "contentType",
@@ -81,7 +67,7 @@ export class WatermarkStore extends PgBaseStorage {
               created_at as "createdAt", tenant_id as "tenantId"
        FROM dlp.watermarks ${where}
        ORDER BY created_at DESC
-       LIMIT $${idx++} OFFSET $${idx++}`,
+       LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...values, limit, offset]
     );
 

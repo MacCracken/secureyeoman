@@ -6,6 +6,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, parseCount } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 
 export interface HeartbeatLogEntry {
@@ -50,34 +51,25 @@ export class HeartbeatLogStorage extends PgBaseStorage {
   async list(
     filter: HeartbeatLogFilter = {}
   ): Promise<{ entries: HeartbeatLogEntry[]; total: number }> {
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-
-    if (filter.checkName) {
-      params.push(filter.checkName);
-      conditions.push(`check_name = $${params.length}`);
-    }
-    if (filter.status) {
-      params.push(filter.status);
-      conditions.push(`status = $${params.length}`);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'check_name', value: filter.checkName },
+      { column: 'status', value: filter.status },
+    ]);
     const limit = Math.min(filter.limit ?? 20, 200);
     const offset = filter.offset ?? 0;
 
     const countRow = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) AS count FROM proactive.heartbeat_log ${where}`,
-      params
+      values
     );
-    const total = parseInt(countRow?.count ?? '0', 10);
+    const total = parseCount(countRow);
 
     const rows = await this.queryMany<Record<string, unknown>>(
       `SELECT id, check_name, personality_id, ran_at, status, message, duration_ms, error_detail
          FROM proactive.heartbeat_log ${where}
          ORDER BY ran_at DESC
-         LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-      [...params, limit, offset]
+         LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
+      [...values, limit, offset]
     );
 
     const entries = rows.map((r) => ({

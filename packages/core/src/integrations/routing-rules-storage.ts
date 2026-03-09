@@ -5,6 +5,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 import type { RoutingRule, RoutingRuleCreate, RoutingRuleUpdate } from '@secureyeoman/shared';
 
@@ -64,21 +65,15 @@ export class RoutingRulesStorage extends PgBaseStorage {
     total: number;
   }> {
     const { enabled, limit = 100, offset = 0 } = opts;
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-    let p = 1;
 
-    if (enabled !== undefined) {
-      conditions.push(`enabled = $${p++}`);
-      params.push(enabled);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const { where, values: params, nextIdx } = buildWhere([
+      { column: 'enabled', value: enabled },
+    ]);
 
     const rows = await this.queryMany<DbRow>(
       `SELECT * FROM routing_rules ${where}
        ORDER BY priority ASC, created_at ASC
-       LIMIT $${p++} OFFSET $${p++}`,
+       LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...params, limit, offset]
     );
 

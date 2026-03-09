@@ -7,6 +7,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, buildSet, parseCount } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 import type { EventType, EventPayload, EventSubscription, EventDelivery } from './types.js';
 
@@ -160,76 +161,48 @@ export class EventSubscriptionStore extends PgBaseStorage {
     limit?: number;
     offset?: number;
   }): Promise<{ subscriptions: EventSubscription[]; total: number }> {
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'tenant_id', value: opts?.tenantId },
+    ]);
 
-    if (opts?.tenantId) {
-      conditions.push(`tenant_id = $${idx++}`);
-      params.push(opts.tenantId);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 
     const countResult = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM events.subscriptions ${where}`,
-      params
+      values
     );
-    const total = Number(countResult?.count ?? 0);
+    const total = parseCount(countResult);
 
+    let idx = nextIdx;
     const rows = await this.queryMany<SubscriptionRow>(
       `SELECT * FROM events.subscriptions ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
-      [...params, limit, offset]
+      [...values, limit, offset]
     );
 
     return { subscriptions: rows.map(rowToSubscription), total };
   }
 
   async updateSubscription(id: string, changes: UpdateSubscriptionInput): Promise<number> {
-    const sets: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'name', value: changes.name },
+      { column: 'event_types', value: changes.eventTypes },
+      { column: 'webhook_url', value: changes.webhookUrl },
+      { column: 'secret', value: changes.secret },
+      { column: 'enabled', value: changes.enabled },
+      { column: 'headers', value: changes.headers, json: true },
+      { column: 'retry_policy', value: changes.retryPolicy, json: true },
+    ]);
 
-    if (changes.name !== undefined) {
-      sets.push(`name = $${idx++}`);
-      params.push(changes.name);
-    }
-    if (changes.eventTypes !== undefined) {
-      sets.push(`event_types = $${idx++}`);
-      params.push(changes.eventTypes);
-    }
-    if (changes.webhookUrl !== undefined) {
-      sets.push(`webhook_url = $${idx++}`);
-      params.push(changes.webhookUrl);
-    }
-    if (changes.secret !== undefined) {
-      sets.push(`secret = $${idx++}`);
-      params.push(changes.secret);
-    }
-    if (changes.enabled !== undefined) {
-      sets.push(`enabled = $${idx++}`);
-      params.push(changes.enabled);
-    }
-    if (changes.headers !== undefined) {
-      sets.push(`headers = $${idx++}::jsonb`);
-      params.push(JSON.stringify(changes.headers));
-    }
-    if (changes.retryPolicy !== undefined) {
-      sets.push(`retry_policy = $${idx++}::jsonb`);
-      params.push(JSON.stringify(changes.retryPolicy));
-    }
+    if (!hasUpdates) return 0;
 
-    if (sets.length === 0) return 0;
-
-    sets.push(`updated_at = $${idx++}`);
-    params.push(Date.now());
-    params.push(id);
+    let idx = nextIdx;
+    values.push(Date.now());
+    values.push(id);
 
     return this.execute(
-      `UPDATE events.subscriptions SET ${sets.join(', ')} WHERE id = $${idx}`,
-      params
+      `UPDATE events.subscriptions SET ${setClause}, updated_at = $${idx++} WHERE id = $${idx}`,
+      values
     );
   }
 
@@ -273,45 +246,22 @@ export class EventSubscriptionStore extends PgBaseStorage {
   }
 
   async updateDelivery(id: string, changes: UpdateDeliveryInput): Promise<number> {
-    const sets: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'status', value: changes.status },
+      { column: 'attempts', value: changes.attempts },
+      { column: 'last_attempt_at', value: changes.lastAttemptAt },
+      { column: 'next_retry_at', value: changes.nextRetryAt },
+      { column: 'response_status', value: changes.responseStatus },
+      { column: 'response_body', value: changes.responseBody },
+      { column: 'error', value: changes.error },
+    ]);
 
-    if (changes.status !== undefined) {
-      sets.push(`status = $${idx++}`);
-      params.push(changes.status);
-    }
-    if (changes.attempts !== undefined) {
-      sets.push(`attempts = $${idx++}`);
-      params.push(changes.attempts);
-    }
-    if (changes.lastAttemptAt !== undefined) {
-      sets.push(`last_attempt_at = $${idx++}`);
-      params.push(changes.lastAttemptAt);
-    }
-    if (changes.nextRetryAt !== undefined) {
-      sets.push(`next_retry_at = $${idx++}`);
-      params.push(changes.nextRetryAt);
-    }
-    if (changes.responseStatus !== undefined) {
-      sets.push(`response_status = $${idx++}`);
-      params.push(changes.responseStatus);
-    }
-    if (changes.responseBody !== undefined) {
-      sets.push(`response_body = $${idx++}`);
-      params.push(changes.responseBody);
-    }
-    if (changes.error !== undefined) {
-      sets.push(`error = $${idx++}`);
-      params.push(changes.error);
-    }
+    if (!hasUpdates) return 0;
 
-    if (sets.length === 0) return 0;
-
-    params.push(id);
+    values.push(id);
     return this.execute(
-      `UPDATE events.deliveries SET ${sets.join(', ')} WHERE id = $${idx}`,
-      params
+      `UPDATE events.deliveries SET ${setClause} WHERE id = $${nextIdx}`,
+      values
     );
   }
 

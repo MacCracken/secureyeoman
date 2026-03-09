@@ -6,6 +6,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, buildSet } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 
 // ─── Domain Types ─────────────────────────────────────────────
@@ -137,20 +138,27 @@ export class WebhookTransformStorage extends PgBaseStorage {
    */
   async listRules(filter?: WebhookTransformFilter): Promise<WebhookTransformRule[]> {
     const pool = this.getPool();
+
+    // integrationId uses OR logic (match specific OR global), handle separately
     const conditions: string[] = [];
     const params: unknown[] = [];
     let idx = 1;
 
     if (filter?.integrationId !== undefined) {
-      conditions.push(`(integration_id = $${idx} OR integration_id IS NULL)`);
+      conditions.push(`(integration_id = $${idx++} OR integration_id IS NULL)`);
       params.push(filter.integrationId);
-      idx++;
     }
 
-    if (filter?.enabled !== undefined) {
-      conditions.push(`enabled = $${idx}`);
-      params.push(filter.enabled);
-      idx++;
+    // Use buildWhere for remaining standard filters
+    const { where: enabledWhere, values: enabledValues } = buildWhere(
+      [{ column: 'enabled', value: filter?.enabled }],
+      idx
+    );
+
+    if (enabledWhere) {
+      // Strip "WHERE " prefix and append as additional condition
+      conditions.push(enabledWhere.slice(6));
+      params.push(...enabledValues);
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -167,44 +175,22 @@ export class WebhookTransformStorage extends PgBaseStorage {
     update: WebhookTransformUpdate
   ): Promise<WebhookTransformRule | null> {
     const pool = this.getPool();
-    const sets: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
 
-    if (update.name !== undefined) {
-      sets.push(`name = $${idx++}`);
-      params.push(update.name);
-    }
-    if (update.matchEvent !== undefined) {
-      sets.push(`match_event = $${idx++}`);
-      params.push(update.matchEvent);
-    }
-    if (update.priority !== undefined) {
-      sets.push(`priority = $${idx++}`);
-      params.push(update.priority);
-    }
-    if (update.enabled !== undefined) {
-      sets.push(`enabled = $${idx++}`);
-      params.push(update.enabled);
-    }
-    if (update.extractRules !== undefined) {
-      sets.push(`extract_rules = $${idx++}::jsonb`);
-      params.push(JSON.stringify(update.extractRules));
-    }
-    if (update.template !== undefined) {
-      sets.push(`template = $${idx++}`);
-      params.push(update.template);
-    }
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'name', value: update.name },
+      { column: 'match_event', value: update.matchEvent },
+      { column: 'priority', value: update.priority },
+      { column: 'enabled', value: update.enabled },
+      { column: 'extract_rules', value: update.extractRules, json: true },
+      { column: 'template', value: update.template },
+    ]);
 
-    if (sets.length === 0) return this.getRule(id);
+    if (!hasUpdates) return this.getRule(id);
 
-    sets.push(`updated_at = $${idx++}`);
-    params.push(Date.now());
-    params.push(id);
-
+    values.push(Date.now(), id);
     const result = await pool.query<WebhookTransformRow>(
-      `UPDATE webhook_transform_rules SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
-      params
+      `UPDATE webhook_transform_rules SET ${setClause}, updated_at = $${nextIdx} WHERE id = $${nextIdx + 1} RETURNING *`,
+      values
     );
     return result.rows[0] ? rowToRule(result.rows[0]) : null;
   }

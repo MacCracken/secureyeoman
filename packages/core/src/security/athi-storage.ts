@@ -6,6 +6,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, buildSet, parseCount } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 import type {
   AthiScenario,
@@ -107,64 +108,26 @@ export class AthiStorage extends PgBaseStorage {
   }
 
   async updateScenario(id: string, data: AthiScenarioUpdate): Promise<AthiScenario | null> {
-    const sets: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'title', value: data.title },
+      { column: 'description', value: data.description },
+      { column: 'actor', value: data.actor },
+      { column: 'techniques', value: data.techniques, json: true },
+      { column: 'harms', value: data.harms, json: true },
+      { column: 'impacts', value: data.impacts, json: true },
+      { column: 'likelihood', value: data.likelihood },
+      { column: 'severity', value: data.severity },
+      { column: 'mitigations', value: data.mitigations, json: true },
+      { column: 'linked_event_ids', value: data.linkedEventIds },
+      { column: 'status', value: data.status },
+    ]);
 
-    if (data.title !== undefined) {
-      sets.push(`title = $${idx++}`);
-      params.push(data.title);
-    }
-    if (data.description !== undefined) {
-      sets.push(`description = $${idx++}`);
-      params.push(data.description);
-    }
-    if (data.actor !== undefined) {
-      sets.push(`actor = $${idx++}`);
-      params.push(data.actor);
-    }
-    if (data.techniques !== undefined) {
-      sets.push(`techniques = $${idx++}::jsonb`);
-      params.push(JSON.stringify(data.techniques));
-    }
-    if (data.harms !== undefined) {
-      sets.push(`harms = $${idx++}::jsonb`);
-      params.push(JSON.stringify(data.harms));
-    }
-    if (data.impacts !== undefined) {
-      sets.push(`impacts = $${idx++}::jsonb`);
-      params.push(JSON.stringify(data.impacts));
-    }
-    if (data.likelihood !== undefined) {
-      sets.push(`likelihood = $${idx++}`);
-      params.push(data.likelihood);
-    }
-    if (data.severity !== undefined) {
-      sets.push(`severity = $${idx++}`);
-      params.push(data.severity);
-    }
-    if (data.mitigations !== undefined) {
-      sets.push(`mitigations = $${idx++}::jsonb`);
-      params.push(JSON.stringify(data.mitigations));
-    }
-    if (data.linkedEventIds !== undefined) {
-      sets.push(`linked_event_ids = $${idx++}`);
-      params.push(data.linkedEventIds);
-    }
-    if (data.status !== undefined) {
-      sets.push(`status = $${idx++}`);
-      params.push(data.status);
-    }
+    if (!hasUpdates) return this.getScenario(id);
 
-    if (sets.length === 0) return this.getScenario(id);
-
-    sets.push(`updated_at = $${idx++}`);
-    params.push(Date.now());
-    params.push(id);
-
+    values.push(Date.now(), id);
     const row = await this.queryOne<AthiScenarioRow>(
-      `UPDATE security.athi_scenarios SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
-      params
+      `UPDATE security.athi_scenarios SET ${setClause}, updated_at = $${nextIdx} WHERE id = $${nextIdx + 1} RETURNING *`,
+      values
     );
     return row ? rowToScenario(row) : null;
   }
@@ -184,44 +147,32 @@ export class AthiStorage extends PgBaseStorage {
     } = {}
   ): Promise<{ items: AthiScenario[]; total: number }> {
     const { actor, status, orgId, limit = 50, offset = 0 } = opts;
-    const conditions: string[] = [];
-    const params: unknown[] = [];
 
-    if (actor) {
-      params.push(actor);
-      conditions.push(`actor = $${params.length}`);
-    }
-    if (status) {
-      params.push(status);
-      conditions.push(`status = $${params.length}`);
-    }
-    if (orgId) {
-      params.push(orgId);
-      conditions.push(`org_id = $${params.length}`);
-    }
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'actor', value: actor },
+      { column: 'status', value: status },
+      { column: 'org_id', value: orgId },
+    ]);
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const countParams = [...params];
-
-    params.push(limit);
-    params.push(offset);
+    const countValues = [...values];
+    values.push(limit, offset);
 
     const [rows, countRow] = await Promise.all([
       this.queryMany<AthiScenarioRow>(
         `SELECT * FROM security.athi_scenarios ${where}
          ORDER BY risk_score DESC, created_at DESC
-         LIMIT $${params.length - 1} OFFSET $${params.length}`,
-        params
+         LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
+        values
       ),
       this.queryOne<{ count: string }>(
         `SELECT COUNT(*) AS count FROM security.athi_scenarios ${where}`,
-        countParams
+        countValues
       ),
     ]);
 
     return {
       items: rows.map(rowToScenario),
-      total: Number(countRow?.count ?? 0),
+      total: parseCount(countRow),
     };
   }
 

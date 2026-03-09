@@ -3,6 +3,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, buildSet, parseCount } from '../storage/query-helpers.js';
 import type {
   ChaosExperiment,
   ChaosExperimentStatus,
@@ -101,27 +102,22 @@ export class ChaosStore extends PgBaseStorage {
       offset?: number;
     } = {}
   ): Promise<{ items: ChaosExperiment[]; total: number }> {
-    const conditions = ['1=1'];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'status', value: opts.status },
+    ]);
 
-    if (opts.status) {
-      conditions.push(`status = $${idx++}`);
-      values.push(opts.status);
-    }
-
-    const where = conditions.join(' AND ');
     const countResult = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*)::TEXT AS count FROM chaos.experiments WHERE ${where}`,
+      `SELECT COUNT(*)::TEXT AS count FROM chaos.experiments ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const limit = Math.min(opts.limit ?? 50, 200);
     const offset = opts.offset ?? 0;
+    let idx = nextIdx;
 
     const rows = await this.queryMany<Record<string, unknown>>(
-      `SELECT * FROM chaos.experiments WHERE ${where}
+      `SELECT * FROM chaos.experiments ${where}
        ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
       [...values, limit, offset]
     );
@@ -134,21 +130,17 @@ export class ChaosStore extends PgBaseStorage {
     status: ChaosExperimentStatus,
     timestamps: { startedAt?: number; completedAt?: number } = {}
   ): Promise<boolean> {
-    const sets = ['status = $2'];
-    const values: unknown[] = [id, status];
-    let idx = 3;
+    const { setClause, values, nextIdx } = buildSet(
+      [
+        { column: 'status', value: status },
+        { column: 'started_at', value: timestamps.startedAt },
+        { column: 'completed_at', value: timestamps.completedAt },
+      ],
+    );
 
-    if (timestamps.startedAt !== undefined) {
-      sets.push(`started_at = $${idx++}`);
-      values.push(timestamps.startedAt);
-    }
-    if (timestamps.completedAt !== undefined) {
-      sets.push(`completed_at = $${idx++}`);
-      values.push(timestamps.completedAt);
-    }
-
+    values.push(id);
     const count = await this.execute(
-      `UPDATE chaos.experiments SET ${sets.join(', ')} WHERE id = $1`,
+      `UPDATE chaos.experiments SET ${setClause} WHERE id = $${nextIdx}`,
       values
     );
     return count > 0;

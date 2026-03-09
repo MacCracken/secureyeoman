@@ -6,6 +6,7 @@
  */
 
 import { PgBaseStorage } from '../../storage/pg-base.js';
+import { buildSet, buildWhere, parseCount } from '../../storage/query-helpers.js';
 import { uuidv7 } from '../../utils/crypto.js';
 import type { RetentionPolicy, ClassificationLevel } from './types.js';
 
@@ -74,31 +75,22 @@ export class RetentionStore extends PgBaseStorage {
     id: string,
     changes: Partial<Pick<RetentionPolicy, 'retentionDays' | 'enabled' | 'classificationLevel'>>
   ): Promise<number> {
-    const setClauses: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'retention_days', value: changes.retentionDays },
+      { column: 'enabled', value: changes.enabled },
+      { column: 'classification_level', value: changes.classificationLevel },
+    ]);
 
-    if (changes.retentionDays !== undefined) {
-      setClauses.push(`retention_days = $${idx++}`);
-      values.push(changes.retentionDays);
-    }
-    if (changes.enabled !== undefined) {
-      setClauses.push(`enabled = $${idx++}`);
-      values.push(changes.enabled);
-    }
-    if (changes.classificationLevel !== undefined) {
-      setClauses.push(`classification_level = $${idx++}`);
-      values.push(changes.classificationLevel);
-    }
+    if (!hasUpdates) return 0;
 
-    if (setClauses.length === 0) return 0;
-
-    setClauses.push(`updated_at = $${idx++}`);
+    // Always update the timestamp when there are real changes
     values.push(Date.now());
-    values.push(id);
+    const fullSet = `${setClause}, updated_at = $${nextIdx}`;
+    const whereIdx = nextIdx + 1;
 
+    values.push(id);
     return this.execute(
-      `UPDATE dlp.retention_policies SET ${setClauses.join(', ')} WHERE id = $${idx}`,
+      `UPDATE dlp.retention_policies SET ${fullSet} WHERE id = $${whereIdx}`,
       values
     );
   }
@@ -125,9 +117,9 @@ export class RetentionStore extends PgBaseStorage {
     cutoff: number,
     classificationLevel?: ClassificationLevel | null
   ): Promise<number> {
-    const { conditions, values } = this.buildCriteria(contentType, cutoff, classificationLevel);
+    const { where, values } = this.buildCriteria(contentType, cutoff, classificationLevel);
     return this.execute(
-      `DELETE FROM dlp.classifications WHERE ${conditions.join(' AND ')}`,
+      `DELETE FROM dlp.classifications ${where}`,
       values
     );
   }
@@ -140,12 +132,12 @@ export class RetentionStore extends PgBaseStorage {
     cutoff: number,
     classificationLevel?: ClassificationLevel | null
   ): Promise<number> {
-    const { conditions, values } = this.buildCriteria(contentType, cutoff, classificationLevel);
+    const { where, values } = this.buildCriteria(contentType, cutoff, classificationLevel);
     const row = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*) as count FROM dlp.classifications WHERE ${conditions.join(' AND ')}`,
+      `SELECT COUNT(*) as count FROM dlp.classifications ${where}`,
       values
     );
-    return parseInt(row?.count ?? '0', 10);
+    return parseCount(row);
   }
 
   private buildCriteria(
@@ -153,21 +145,10 @@ export class RetentionStore extends PgBaseStorage {
     cutoff: number,
     classificationLevel?: ClassificationLevel | null
   ) {
-    const conditions: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
-
-    conditions.push(`content_type = $${idx++}`);
-    values.push(contentType);
-
-    conditions.push(`classified_at < $${idx++}`);
-    values.push(cutoff);
-
-    if (classificationLevel) {
-      conditions.push(`classification_level = $${idx++}`);
-      values.push(classificationLevel);
-    }
-
-    return { conditions, values };
+    return buildWhere([
+      { column: 'content_type', value: contentType },
+      { column: 'classified_at', value: cutoff, op: '<' },
+      { column: 'classification_level', value: classificationLevel },
+    ]);
   }
 }

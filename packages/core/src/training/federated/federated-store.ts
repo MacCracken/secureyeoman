@@ -4,6 +4,7 @@
  */
 
 import { PgBaseStorage } from '../../storage/pg-base.js';
+import { buildWhere, parseCount } from '../../storage/query-helpers.js';
 import type {
   FederatedSession,
   FederatedParticipant,
@@ -118,27 +119,22 @@ export class FederatedStore extends PgBaseStorage {
   async listSessions(
     opts: { status?: string; limit?: number; offset?: number } = {}
   ): Promise<{ items: FederatedSession[]; total: number }> {
-    const conditions = ['1=1'];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'status', value: opts.status },
+    ]);
 
-    if (opts.status) {
-      conditions.push(`status = $${idx++}`);
-      values.push(opts.status);
-    }
-
-    const where = conditions.join(' AND ');
     const countResult = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*)::TEXT AS count FROM federated.sessions WHERE ${where}`,
+      `SELECT COUNT(*)::TEXT AS count FROM federated.sessions ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const limit = Math.min(opts.limit ?? 50, 200);
     const offset = opts.offset ?? 0;
+    let idx = nextIdx;
 
     const rows = await this.queryMany<Record<string, unknown>>(
-      `SELECT * FROM federated.sessions WHERE ${where}
+      `SELECT * FROM federated.sessions ${where}
        ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
       [...values, limit, offset]
     );
@@ -188,21 +184,16 @@ export class FederatedStore extends PgBaseStorage {
   async listParticipants(
     opts: { status?: string; limit?: number } = {}
   ): Promise<FederatedParticipant[]> {
-    const conditions = ['1=1'];
-    const values: unknown[] = [];
-    let idx = 1;
-
-    if (opts.status) {
-      conditions.push(`status = $${idx++}`);
-      values.push(opts.status);
-    }
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'status', value: opts.status },
+    ]);
 
     const limit = Math.min(opts.limit ?? 100, 500);
 
     return (
       await this.queryMany<Record<string, unknown>>(
-        `SELECT * FROM federated.participants WHERE ${conditions.join(' AND ')}
-       ORDER BY registered_at DESC LIMIT $${idx++}`,
+        `SELECT * FROM federated.participants ${where}
+       ORDER BY registered_at DESC LIMIT $${nextIdx}`,
         [...values, limit]
       )
     ).map(rowToParticipant);

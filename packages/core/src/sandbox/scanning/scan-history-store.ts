@@ -6,6 +6,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { PgBaseStorage } from '../../storage/pg-base.js';
+import { buildWhere, parseCount } from '../../storage/query-helpers.js';
 import type { ScanResult, ScanHistoryRow } from '@secureyeoman/shared';
 
 export interface ScanHistoryRecordInput {
@@ -74,32 +75,14 @@ export class ScanHistoryStore extends PgBaseStorage {
   async list(
     opts: ScanHistoryListOptions = {}
   ): Promise<{ items: ScanHistoryRow[]; total: number }> {
-    const conditions: string[] = [];
-    const values: unknown[] = [];
-    let paramIdx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'verdict', value: opts.verdict },
+      { column: 'source_context', value: opts.sourceContext },
+      { column: 'personality_id', value: opts.personalityId },
+      { column: 'created_at', value: opts.from, op: '>=' },
+      { column: 'created_at', value: opts.to, op: '<=' },
+    ]);
 
-    if (opts.verdict) {
-      conditions.push(`verdict = $${paramIdx++}`);
-      values.push(opts.verdict);
-    }
-    if (opts.sourceContext) {
-      conditions.push(`source_context = $${paramIdx++}`);
-      values.push(opts.sourceContext);
-    }
-    if (opts.personalityId) {
-      conditions.push(`personality_id = $${paramIdx++}`);
-      values.push(opts.personalityId);
-    }
-    if (opts.from) {
-      conditions.push(`created_at >= $${paramIdx++}`);
-      values.push(opts.from);
-    }
-    if (opts.to) {
-      conditions.push(`created_at <= $${paramIdx++}`);
-      values.push(opts.to);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limit = opts.limit ?? 50;
     const offset = opts.offset ?? 0;
 
@@ -107,12 +90,12 @@ export class ScanHistoryStore extends PgBaseStorage {
       `SELECT COUNT(*)::text AS count FROM sandbox.scan_history ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const rows = await this.queryMany<Record<string, unknown>>(
       `SELECT * FROM sandbox.scan_history ${where}
        ORDER BY created_at DESC
-       LIMIT $${paramIdx++} OFFSET $${paramIdx}`,
+       LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...values, limit, offset]
     );
 

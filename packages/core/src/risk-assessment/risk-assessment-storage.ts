@@ -6,6 +6,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, parseCount } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 import type {
   RiskAssessment,
@@ -234,7 +235,7 @@ export class RiskAssessmentStorage extends PgBaseStorage {
 
     return {
       items: rows.map(rowToAssessment),
-      total: Number(countRow?.count ?? 0),
+      total: parseCount(countRow),
     };
   }
 
@@ -434,44 +435,32 @@ export class RiskAssessmentStorage extends PgBaseStorage {
     } = {}
   ): Promise<{ items: ExternalFinding[]; total: number }> {
     const { feedId, status, severity, limit = 50, offset = 0 } = opts;
-    const conditions: string[] = [];
-    const params: unknown[] = [];
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'feed_id', value: feedId },
+      { column: 'status', value: status },
+      { column: 'severity', value: severity },
+    ]);
 
-    if (feedId) {
-      params.push(feedId);
-      conditions.push(`feed_id = $${params.length}`);
-    }
-    if (status) {
-      params.push(status);
-      conditions.push(`status = $${params.length}`);
-    }
-    if (severity) {
-      params.push(severity);
-      conditions.push(`severity = $${params.length}`);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const countParams = [...params];
-
-    params.push(limit);
-    params.push(offset);
+    const countValues = [...values];
+    values.push(limit);
+    values.push(offset);
 
     const [rows, countRow] = await Promise.all([
       this.queryMany<FindingRow>(
         `SELECT * FROM risk.external_findings ${where}
          ORDER BY imported_at DESC
-         LIMIT $${params.length - 1} OFFSET $${params.length}`,
-        params
+         LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
+        values
       ),
       this.queryOne<{ count: string }>(
         `SELECT COUNT(*) AS count FROM risk.external_findings ${where}`,
-        countParams
+        countValues
       ),
     ]);
 
     return {
       items: rows.map(rowToFinding),
-      total: Number(countRow?.count ?? 0),
+      total: parseCount(countRow),
     };
   }
 

@@ -7,6 +7,7 @@
  */
 
 import type { Pool } from 'pg';
+import { buildWhere, parseCount } from '../storage/query-helpers.js';
 
 // ── Row types ────────────────────────────────────────────────────────────────
 
@@ -452,28 +453,22 @@ export class AnalyticsStorage {
     limit: number;
     anomalyType?: string;
   }): Promise<{ anomalies: UsageAnomalyRow[]; total: number }> {
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-
-    if (opts.anomalyType) {
-      params.push(opts.anomalyType);
-      conditions.push(`anomaly_type = $${params.length}`);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'anomaly_type', value: opts.anomalyType },
+    ]);
 
     const countResult = await this.pool.query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM analytics.usage_anomalies ${where}`,
-      [...params]
+      [...values]
     );
-    const total = Number(countResult.rows[0]?.count ?? 0);
+    const total = parseCount(countResult.rows[0]);
 
-    params.push(opts.limit);
+    values.push(opts.limit);
     const { rows } = await this.pool.query<UsageAnomalyRow>(
       `SELECT * FROM analytics.usage_anomalies ${where}
        ORDER BY detected_at DESC
-       LIMIT $${params.length}`,
-      params
+       LIMIT $${nextIdx}`,
+      values
     );
 
     return { anomalies: rows, total };

@@ -4,6 +4,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, buildSet, parseCount } from '../storage/query-helpers.js';
 import type {
   ProviderAccount,
   ProviderAccountCreate,
@@ -124,26 +125,15 @@ export class ProviderAccountStorage extends PgBaseStorage {
   }
 
   async updateAccount(id: string, update: ProviderAccountUpdate): Promise<ProviderAccount | null> {
-    const sets: string[] = ['updated_at = now()'];
-    const values: unknown[] = [];
-    let idx = 1;
-
-    if (update.label !== undefined) {
-      sets.push(`label = $${idx++}`);
-      values.push(update.label);
-    }
-    if (update.baseUrl !== undefined) {
-      sets.push(`base_url = $${idx++}`);
-      values.push(update.baseUrl);
-    }
-    if (update.status !== undefined) {
-      sets.push(`status = $${idx++}`);
-      values.push(update.status);
-    }
+    const { setClause, values, nextIdx } = buildSet([
+      { column: 'label', value: update.label },
+      { column: 'base_url', value: update.baseUrl },
+      { column: 'status', value: update.status },
+    ]);
 
     values.push(id);
     const row = await this.queryOne<ProviderAccountRow>(
-      `UPDATE ai.provider_accounts SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
+      `UPDATE ai.provider_accounts SET ${setClause ? `${setClause}, ` : ''}updated_at = now() WHERE id = $${nextIdx} RETURNING *`,
       values
     );
     return row ? rowToAccount(row) : null;
@@ -155,20 +145,11 @@ export class ProviderAccountStorage extends PgBaseStorage {
   }
 
   async listAccounts(provider?: string, tenantId?: string): Promise<ProviderAccount[]> {
-    const conditions: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { where, values } = buildWhere([
+      { column: 'provider', value: provider },
+      { column: 'tenant_id', value: tenantId, op: 'IS NOT DISTINCT FROM' },
+    ]);
 
-    if (provider) {
-      conditions.push(`provider = $${idx++}`);
-      values.push(provider);
-    }
-    if (tenantId !== undefined) {
-      conditions.push(`tenant_id IS NOT DISTINCT FROM $${idx++}`);
-      values.push(tenantId);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const rows = await this.queryMany<ProviderAccountRow>(
       `SELECT * FROM ai.provider_accounts ${where} ORDER BY provider, label`,
       values
@@ -362,16 +343,9 @@ export class ProviderAccountStorage extends PgBaseStorage {
   }
 
   async getTopAccounts(limit = 10, tenantId?: string): Promise<AccountCostSummary[]> {
-    const conditions: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
-
-    if (tenantId !== undefined) {
-      conditions.push(`r.tenant_id IS NOT DISTINCT FROM $${idx++}`);
-      values.push(tenantId);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'r.tenant_id', value: tenantId, op: 'IS NOT DISTINCT FROM' },
+    ]);
     values.push(limit);
 
     const rows = await this.queryMany<CostSummaryRow>(
@@ -385,7 +359,7 @@ export class ProviderAccountStorage extends PgBaseStorage {
        ${where}
        GROUP BY r.account_id, a.provider, a.label
        ORDER BY SUM(r.cost_usd) DESC
-       LIMIT $${idx}`,
+       LIMIT $${nextIdx}`,
       values
     );
     return rows.map(rowToCostSummary);

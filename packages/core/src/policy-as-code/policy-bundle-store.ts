@@ -3,6 +3,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, parseCount } from '../storage/query-helpers.js';
 import type { PolicyBundle, PolicyDeployment, BundleStatus } from '@secureyeoman/shared';
 
 function rowToBundle(row: Record<string, unknown>): PolicyBundle {
@@ -78,21 +79,15 @@ export class PolicyBundleStore extends PgBaseStorage {
   async listBundles(
     opts: { limit?: number; offset?: number; name?: string } = {}
   ): Promise<{ items: PolicyBundle[]; total: number }> {
-    const conditions = ['1=1'];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: "metadata->>'name'", value: opts.name },
+    ]);
 
-    if (opts.name) {
-      conditions.push(`metadata->>'name' = $${idx++}`);
-      values.push(opts.name);
-    }
-
-    const where = conditions.join(' AND ');
     const countResult = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*)::TEXT AS count FROM policy_as_code.bundles WHERE ${where}`,
+      `SELECT COUNT(*)::TEXT AS count FROM policy_as_code.bundles ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const limit = Math.min(opts.limit ?? 50, 200);
     const offset = opts.offset ?? 0;
@@ -101,8 +96,8 @@ export class PolicyBundleStore extends PgBaseStorage {
     const rows = await this.queryMany<Record<string, unknown>>(
       `SELECT id, metadata, '[]'::jsonb AS files, commit_sha, ref,
               compiled_at, valid, validation_errors, tenant_id
-       FROM policy_as_code.bundles WHERE ${where}
-       ORDER BY compiled_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+       FROM policy_as_code.bundles ${where}
+       ORDER BY compiled_at DESC LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...values, limit, offset]
     );
 
@@ -151,19 +146,13 @@ export class PolicyBundleStore extends PgBaseStorage {
   }
 
   async listDeployments(bundleName?: string, limit = 50): Promise<PolicyDeployment[]> {
-    const conditions = ['1=1'];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'bundle_name', value: bundleName },
+    ]);
 
-    if (bundleName) {
-      conditions.push(`bundle_name = $${idx++}`);
-      values.push(bundleName);
-    }
-
-    const where = conditions.join(' AND ');
     const rows = await this.queryMany<Record<string, unknown>>(
-      `SELECT * FROM policy_as_code.deployments WHERE ${where}
-       ORDER BY deployed_at DESC LIMIT $${idx++}`,
+      `SELECT * FROM policy_as_code.deployments ${where}
+       ORDER BY deployed_at DESC LIMIT $${nextIdx}`,
       [...values, Math.min(limit, 200)]
     );
 

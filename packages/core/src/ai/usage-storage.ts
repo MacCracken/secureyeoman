@@ -11,6 +11,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, parseCount } from '../storage/query-helpers.js';
 import type { UsageRecord } from './usage-tracker.js';
 import type { AIProviderName } from '@secureyeoman/shared';
 
@@ -248,7 +249,7 @@ export class UsageStorage extends PgBaseStorage {
     const row = await this.queryOne<{ count: string }>(
       'SELECT COUNT(*) AS count FROM usage_records'
     );
-    return Number(row?.count ?? 0);
+    return parseCount(row);
   }
 
   /** @deprecated Use loadToday() — kept for test compatibility only. */
@@ -313,31 +314,13 @@ export class UsageStorage extends PgBaseStorage {
   async queryHistory(filter: HistoryFilter = {}): Promise<HistoryRow[]> {
     const { from, to, provider, model, personalityId, groupBy = 'day' } = filter;
 
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-
-    if (from !== undefined) {
-      params.push(from);
-      conditions.push(`recorded_at >= $${params.length}`);
-    }
-    if (to !== undefined) {
-      params.push(to);
-      conditions.push(`recorded_at <= $${params.length}`);
-    }
-    if (provider) {
-      params.push(provider);
-      conditions.push(`provider = $${params.length}`);
-    }
-    if (model) {
-      params.push(`%${model}%`);
-      conditions.push(`model ILIKE $${params.length}`);
-    }
-    if (personalityId) {
-      params.push(personalityId);
-      conditions.push(`personality_id = $${params.length}`);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const { where, values: params } = buildWhere([
+      { column: 'recorded_at', value: from, op: '>=' },
+      { column: 'recorded_at', value: to, op: '<=' },
+      { column: 'provider', value: provider },
+      { column: 'model', value: model ? `%${model}%` : undefined, op: 'ILIKE' },
+      { column: 'personality_id', value: personalityId },
+    ]);
 
     // Truncate epoch-ms timestamp to day or hour bucket using integer arithmetic
     const bucketExpr =

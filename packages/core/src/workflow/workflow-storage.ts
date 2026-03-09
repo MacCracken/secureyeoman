@@ -3,6 +3,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { toTs } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 import { WorkflowEngine } from './workflow-engine.js';
 import type {
@@ -67,12 +68,6 @@ interface WorkflowStepRunRow {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
-
-function toTs(val: string | number | null | undefined): number | null {
-  if (val === null || val === undefined) return null;
-  if (typeof val === 'number') return val;
-  return new Date(val).getTime();
-}
 
 function definitionFromRow(row: WorkflowDefinitionRow): WorkflowDefinition {
   return {

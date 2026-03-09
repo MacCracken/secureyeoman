@@ -6,6 +6,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere } from '../storage/query-helpers.js';
 import type { GroupChatChannel, GroupChatMessage } from '@secureyeoman/shared';
 
 export class GroupChatStorage extends PgBaseStorage {
@@ -23,20 +24,10 @@ export class GroupChatStorage extends PgBaseStorage {
   ): Promise<{ channels: GroupChatChannel[]; total: number }> {
     const { limit = 50, offset = 0, platform, integrationId } = opts;
 
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-    let p = 1;
-
-    if (platform) {
-      conditions.push(`m.platform = $${p++}`);
-      params.push(platform);
-    }
-    if (integrationId) {
-      conditions.push(`m.integration_id = $${p++}`);
-      params.push(integrationId);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const { where, values: params, nextIdx } = buildWhere([
+      { column: 'm.platform', value: platform },
+      { column: 'm.integration_id', value: integrationId },
+    ]);
 
     const rows = await this.queryMany<{
       integration_id: string;
@@ -75,7 +66,7 @@ export class GroupChatStorage extends PgBaseStorage {
        ${where}
        GROUP BY m.integration_id, m.chat_id, m.platform, i.display_name
        ORDER BY last_message_at DESC NULLS LAST
-       LIMIT $${p++} OFFSET $${p++}`,
+       LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...params, limit, offset]
     );
 
@@ -129,16 +120,15 @@ export class GroupChatStorage extends PgBaseStorage {
   ): Promise<{ messages: GroupChatMessage[]; total: number }> {
     const { limit = 50, offset = 0, before } = opts;
 
-    const conditions = [`integration_id = $1`, `chat_id = $2`];
-    const params: unknown[] = [integrationId, chatId];
-    let p = 3;
-
-    if (before) {
-      conditions.push(`timestamp < $${p++}`);
-      params.push(before);
-    }
-
-    const where = `WHERE ${conditions.join(' AND ')}`;
+    // Fixed conditions for integration_id and chat_id, optional before filter
+    const { where: optWhere, values: optValues, nextIdx } = buildWhere(
+      [{ column: 'timestamp', value: before, op: '<' }],
+      3
+    );
+    const params: unknown[] = [integrationId, chatId, ...optValues];
+    const where = optWhere
+      ? `WHERE integration_id = $1 AND chat_id = $2 AND ${optWhere.slice(6)}`
+      : 'WHERE integration_id = $1 AND chat_id = $2';
 
     const rows = await this.queryMany<{
       id: string;
@@ -162,7 +152,7 @@ export class GroupChatStorage extends PgBaseStorage {
        FROM integration.messages
        ${where}
        ORDER BY timestamp DESC
-       LIMIT $${p++} OFFSET $${p++}`,
+       LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...params, limit, offset]
     );
 

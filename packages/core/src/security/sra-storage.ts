@@ -6,6 +6,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, buildSet, parseCount } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 import type {
   SraBlueprint,
@@ -150,48 +151,22 @@ export class SraStorage extends PgBaseStorage {
   }
 
   async updateBlueprint(id: string, data: SraBlueprintUpdate): Promise<SraBlueprint | null> {
-    const sets: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'name', value: data.name },
+      { column: 'description', value: data.description },
+      { column: 'provider', value: data.provider },
+      { column: 'framework', value: data.framework },
+      { column: 'controls', value: data.controls, json: true },
+      { column: 'status', value: data.status },
+      { column: 'metadata', value: data.metadata, json: true },
+    ]);
 
-    if (data.name !== undefined) {
-      sets.push(`name = $${idx++}`);
-      params.push(data.name);
-    }
-    if (data.description !== undefined) {
-      sets.push(`description = $${idx++}`);
-      params.push(data.description);
-    }
-    if (data.provider !== undefined) {
-      sets.push(`provider = $${idx++}`);
-      params.push(data.provider);
-    }
-    if (data.framework !== undefined) {
-      sets.push(`framework = $${idx++}`);
-      params.push(data.framework);
-    }
-    if (data.controls !== undefined) {
-      sets.push(`controls = $${idx++}::jsonb`);
-      params.push(JSON.stringify(data.controls));
-    }
-    if (data.status !== undefined) {
-      sets.push(`status = $${idx++}`);
-      params.push(data.status);
-    }
-    if (data.metadata !== undefined) {
-      sets.push(`metadata = $${idx++}::jsonb`);
-      params.push(JSON.stringify(data.metadata));
-    }
+    if (!hasUpdates) return this.getBlueprint(id);
 
-    if (sets.length === 0) return this.getBlueprint(id);
-
-    sets.push(`updated_at = $${idx++}`);
-    params.push(Date.now());
-    params.push(id);
-
+    values.push(Date.now(), id);
     const row = await this.queryOne<BlueprintRow>(
-      `UPDATE security.sra_blueprints SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
-      params
+      `UPDATE security.sra_blueprints SET ${setClause}, updated_at = $${nextIdx} WHERE id = $${nextIdx + 1} RETURNING *`,
+      values
     );
     return row ? rowToBlueprint(row) : null;
   }
@@ -212,48 +187,44 @@ export class SraStorage extends PgBaseStorage {
     } = {}
   ): Promise<{ items: SraBlueprint[]; total: number }> {
     const { provider, framework, status, orgId, limit = 50, offset = 0 } = opts;
-    const conditions: string[] = [];
-    const params: unknown[] = [];
 
-    if (provider) {
-      params.push(provider);
-      conditions.push(`provider = $${params.length}`);
-    }
-    if (framework) {
-      params.push(framework);
-      conditions.push(`framework = $${params.length}`);
-    }
-    if (status) {
-      params.push(status);
-      conditions.push(`status = $${params.length}`);
-    }
+    // orgId uses a special OR clause, so handle it separately from buildWhere
+    const { where: baseWhere, values, nextIdx } = buildWhere([
+      { column: 'provider', value: provider },
+      { column: 'framework', value: framework },
+      { column: 'status', value: status },
+    ]);
+
+    // Append orgId condition with OR logic
+    let where = baseWhere;
+    const countValues = [...values];
     if (orgId) {
-      params.push(orgId);
-      conditions.push(`(org_id = $${params.length} OR org_id IS NULL)`);
+      const orgCondition = `(org_id = $${nextIdx} OR org_id IS NULL)`;
+      where = where ? `${where} AND ${orgCondition}` : `WHERE ${orgCondition}`;
+      values.push(orgId);
+      countValues.push(orgId);
     }
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const countParams = [...params];
-
-    params.push(limit);
-    params.push(offset);
+    const limitIdx = values.length + 1;
+    const offsetIdx = values.length + 2;
+    values.push(limit, offset);
 
     const [rows, countRow] = await Promise.all([
       this.queryMany<BlueprintRow>(
         `SELECT * FROM security.sra_blueprints ${where}
          ORDER BY created_at DESC
-         LIMIT $${params.length - 1} OFFSET $${params.length}`,
-        params
+         LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+        values
       ),
       this.queryOne<{ count: string }>(
         `SELECT COUNT(*) AS count FROM security.sra_blueprints ${where}`,
-        countParams
+        countValues
       ),
     ]);
 
     return {
       items: rows.map(rowToBlueprint),
-      total: Number(countRow?.count ?? 0),
+      total: parseCount(countRow),
     };
   }
 
@@ -331,44 +302,21 @@ export class SraStorage extends PgBaseStorage {
   }
 
   async updateAssessment(id: string, data: SraAssessmentUpdate): Promise<SraAssessment | null> {
-    const sets: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'name', value: data.name },
+      { column: 'infrastructure_description', value: data.infrastructureDescription },
+      { column: 'control_results', value: data.controlResults, json: true },
+      { column: 'summary', value: data.summary, json: true },
+      { column: 'status', value: data.status },
+      { column: 'linked_risk_assessment_id', value: data.linkedRiskAssessmentId },
+    ]);
 
-    if (data.name !== undefined) {
-      sets.push(`name = $${idx++}`);
-      params.push(data.name);
-    }
-    if (data.infrastructureDescription !== undefined) {
-      sets.push(`infrastructure_description = $${idx++}`);
-      params.push(data.infrastructureDescription);
-    }
-    if (data.controlResults !== undefined) {
-      sets.push(`control_results = $${idx++}::jsonb`);
-      params.push(JSON.stringify(data.controlResults));
-    }
-    if (data.summary !== undefined) {
-      sets.push(`summary = $${idx++}::jsonb`);
-      params.push(JSON.stringify(data.summary));
-    }
-    if (data.status !== undefined) {
-      sets.push(`status = $${idx++}`);
-      params.push(data.status);
-    }
-    if (data.linkedRiskAssessmentId !== undefined) {
-      sets.push(`linked_risk_assessment_id = $${idx++}`);
-      params.push(data.linkedRiskAssessmentId);
-    }
+    if (!hasUpdates) return this.getAssessment(id);
 
-    if (sets.length === 0) return this.getAssessment(id);
-
-    sets.push(`updated_at = $${idx++}`);
-    params.push(Date.now());
-    params.push(id);
-
+    values.push(Date.now(), id);
     const row = await this.queryOne<AssessmentRow>(
-      `UPDATE security.sra_assessments SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
-      params
+      `UPDATE security.sra_assessments SET ${setClause}, updated_at = $${nextIdx} WHERE id = $${nextIdx + 1} RETURNING *`,
+      values
     );
     return row ? rowToAssessment(row) : null;
   }
@@ -383,44 +331,32 @@ export class SraStorage extends PgBaseStorage {
     } = {}
   ): Promise<{ items: SraAssessment[]; total: number }> {
     const { blueprintId, status, orgId, limit = 50, offset = 0 } = opts;
-    const conditions: string[] = [];
-    const params: unknown[] = [];
 
-    if (blueprintId) {
-      params.push(blueprintId);
-      conditions.push(`blueprint_id = $${params.length}`);
-    }
-    if (status) {
-      params.push(status);
-      conditions.push(`status = $${params.length}`);
-    }
-    if (orgId) {
-      params.push(orgId);
-      conditions.push(`org_id = $${params.length}`);
-    }
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'blueprint_id', value: blueprintId },
+      { column: 'status', value: status },
+      { column: 'org_id', value: orgId },
+    ]);
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const countParams = [...params];
-
-    params.push(limit);
-    params.push(offset);
+    const countValues = [...values];
+    values.push(limit, offset);
 
     const [rows, countRow] = await Promise.all([
       this.queryMany<AssessmentRow>(
         `SELECT * FROM security.sra_assessments ${where}
          ORDER BY created_at DESC
-         LIMIT $${params.length - 1} OFFSET $${params.length}`,
-        params
+         LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
+        values
       ),
       this.queryOne<{ count: string }>(
         `SELECT COUNT(*) AS count FROM security.sra_assessments ${where}`,
-        countParams
+        countValues
       ),
     ]);
 
     return {
       items: rows.map(rowToAssessment),
-      total: Number(countRow?.count ?? 0),
+      total: parseCount(countRow),
     };
   }
 
@@ -429,22 +365,14 @@ export class SraStorage extends PgBaseStorage {
   async getComplianceMappings(
     opts: { domain?: string; framework?: string } = {}
   ): Promise<SraComplianceMappingRecord[]> {
-    const conditions: string[] = [];
-    const params: unknown[] = [];
+    const { where, values } = buildWhere([
+      { column: 'domain', value: opts.domain },
+      { column: 'framework', value: opts.framework },
+    ]);
 
-    if (opts.domain) {
-      params.push(opts.domain);
-      conditions.push(`domain = $${params.length}`);
-    }
-    if (opts.framework) {
-      params.push(opts.framework);
-      conditions.push(`framework = $${params.length}`);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const rows = await this.queryMany<MappingRow>(
       `SELECT * FROM security.sra_compliance_mappings ${where} ORDER BY domain, framework, control_id`,
-      params
+      values
     );
     return rows.map(rowToMapping);
   }
@@ -487,7 +415,7 @@ export class SraStorage extends PgBaseStorage {
     for (const r of frameworkRows) byFramework[r.framework] = Number(r.count);
 
     return {
-      total: Number(totalRow?.count ?? 0),
+      total: parseCount(totalRow),
       byProvider,
       byFramework,
     };
@@ -524,7 +452,7 @@ export class SraStorage extends PgBaseStorage {
     }
 
     return {
-      total: Number(totalRow?.count ?? 0),
+      total: parseCount(totalRow),
       avgComplianceScore: avgRow?.avg ? Number(Number(avgRow.avg).toFixed(1)) : 0,
       topGaps,
       recent: recentRows.map(rowToAssessment),

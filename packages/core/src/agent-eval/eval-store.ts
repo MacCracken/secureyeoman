@@ -6,6 +6,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, buildSet, parseCount } from '../storage/query-helpers.js';
 import type {
   EvalScenario,
   EvalSuite,
@@ -143,26 +144,22 @@ export class EvalStore extends PgBaseStorage {
   async listScenarios(
     opts: { category?: string; tenantId?: string; limit?: number; offset?: number } = {}
   ): Promise<{ items: EvalScenario[]; total: number }> {
-    const conditions = ['tenant_id = $1'];
-    const values: unknown[] = [opts.tenantId ?? 'default'];
-    let idx = 2;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'tenant_id', value: opts.tenantId ?? 'default' },
+      { column: 'category', value: opts.category },
+    ]);
 
-    if (opts.category) {
-      conditions.push(`category = $${idx++}`);
-      values.push(opts.category);
-    }
-
-    const where = conditions.join(' AND ');
     const countResult = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*)::TEXT AS count FROM eval.scenarios WHERE ${where}`,
+      `SELECT COUNT(*)::TEXT AS count FROM eval.scenarios ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const limit = Math.min(opts.limit ?? 100, 500);
     const offset = opts.offset ?? 0;
+    let idx = nextIdx;
     const rows = await this.queryMany<Record<string, unknown>>(
-      `SELECT * FROM eval.scenarios WHERE ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      `SELECT * FROM eval.scenarios ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
       [...values, limit, offset]
     );
 
@@ -182,53 +179,38 @@ export class EvalStore extends PgBaseStorage {
     updates: Partial<EvalScenario>,
     tenantId = 'default'
   ): Promise<EvalScenario | null> {
-    const setClauses: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
+    const u = updates as Record<string, unknown>;
+    const has = (key: string) => (key in updates ? u[key] : undefined);
 
-    const fieldMap: Record<string, string> = {
-      name: 'name',
-      description: 'description',
-      category: 'category',
-      input: 'input',
-      orderedToolCalls: 'ordered_tool_calls',
-      maxTokens: 'max_tokens',
-      maxDurationMs: 'max_duration_ms',
-      personalityId: 'personality_id',
-      model: 'model',
-    };
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'name', value: has('name') },
+      { column: 'description', value: has('description') },
+      { column: 'category', value: has('category') },
+      { column: 'input', value: has('input') },
+      { column: 'ordered_tool_calls', value: has('orderedToolCalls') },
+      { column: 'max_tokens', value: has('maxTokens') },
+      { column: 'max_duration_ms', value: has('maxDurationMs') },
+      { column: 'personality_id', value: has('personalityId') },
+      { column: 'model', value: has('model') },
+      { column: 'tags', value: has('tags'), json: true },
+      { column: 'conversation_history', value: has('conversationHistory'), json: true },
+      { column: 'expected_tool_calls', value: has('expectedToolCalls'), json: true },
+      { column: 'forbidden_tool_calls', value: has('forbiddenToolCalls'), json: true },
+      { column: 'output_assertions', value: has('outputAssertions'), json: true },
+      { column: 'skill_ids', value: has('skillIds'), json: true },
+    ]);
 
-    const jsonFieldMap: Record<string, string> = {
-      tags: 'tags',
-      conversationHistory: 'conversation_history',
-      expectedToolCalls: 'expected_tool_calls',
-      forbiddenToolCalls: 'forbidden_tool_calls',
-      outputAssertions: 'output_assertions',
-      skillIds: 'skill_ids',
-    };
+    if (!hasUpdates) return this.getScenario(id, tenantId);
 
-    for (const [key, col] of Object.entries(fieldMap)) {
-      if (key in updates) {
-        setClauses.push(`${col} = $${idx++}`);
-        values.push((updates as Record<string, unknown>)[key]);
-      }
-    }
-
-    for (const [key, col] of Object.entries(jsonFieldMap)) {
-      if (key in updates) {
-        setClauses.push(`${col} = $${idx++}`);
-        values.push(JSON.stringify((updates as Record<string, unknown>)[key]));
-      }
-    }
-
-    if (setClauses.length === 0) return this.getScenario(id, tenantId);
-
-    setClauses.push(`updated_at = $${idx++}`);
+    // Append updated_at timestamp
+    const fullSetClause = `${setClause}, updated_at = $${nextIdx}`;
     values.push(Date.now());
+
+    let idx = nextIdx + 1;
     values.push(id, tenantId);
 
     await this.execute(
-      `UPDATE eval.scenarios SET ${setClauses.join(', ')} WHERE id = $${idx++} AND tenant_id = $${idx++}`,
+      `UPDATE eval.scenarios SET ${fullSetClause} WHERE id = $${idx++} AND tenant_id = $${idx++}`,
       values
     );
 
@@ -273,7 +255,7 @@ export class EvalStore extends PgBaseStorage {
       'SELECT COUNT(*)::TEXT AS count FROM eval.suites WHERE tenant_id = $1',
       [tenantId]
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const limit = Math.min(opts.limit ?? 100, 500);
     const offset = opts.offset ?? 0;
@@ -377,26 +359,22 @@ export class EvalStore extends PgBaseStorage {
   async listSuiteRuns(
     opts: { suiteId?: string; tenantId?: string; limit?: number; offset?: number } = {}
   ): Promise<{ items: SuiteRunResult[]; total: number }> {
-    const conditions = ['tenant_id = $1'];
-    const values: unknown[] = [opts.tenantId ?? 'default'];
-    let idx = 2;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'tenant_id', value: opts.tenantId ?? 'default' },
+      { column: 'suite_id', value: opts.suiteId },
+    ]);
 
-    if (opts.suiteId) {
-      conditions.push(`suite_id = $${idx++}`);
-      values.push(opts.suiteId);
-    }
-
-    const where = conditions.join(' AND ');
     const countResult = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*)::TEXT AS count FROM eval.suite_runs WHERE ${where}`,
+      `SELECT COUNT(*)::TEXT AS count FROM eval.suite_runs ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const limit = Math.min(opts.limit ?? 50, 200);
     const offset = opts.offset ?? 0;
+    let idx = nextIdx;
     const rows = await this.queryMany<Record<string, unknown>>(
-      `SELECT * FROM eval.suite_runs WHERE ${where} ORDER BY started_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      `SELECT * FROM eval.suite_runs ${where} ORDER BY started_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
       [...values, limit, offset]
     );
 

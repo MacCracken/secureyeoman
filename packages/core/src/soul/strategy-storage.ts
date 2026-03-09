@@ -5,6 +5,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, buildSet, parseCount } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 import type {
   ReasoningStrategy,
@@ -175,16 +176,9 @@ export class StrategyStorage extends PgBaseStorage {
     limit?: number;
     offset?: number;
   }): Promise<{ items: ReasoningStrategy[]; total: number }> {
-    const conditions: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
-
-    if (opts?.category) {
-      conditions.push(`category = $${paramIndex++}`);
-      values.push(opts.category);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'category', value: opts?.category },
+    ]);
     const limit = opts?.limit ?? 100;
     const offset = opts?.offset ?? 0;
 
@@ -192,12 +186,12 @@ export class StrategyStorage extends PgBaseStorage {
       `SELECT COUNT(*) as count FROM soul.reasoning_strategies ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const rows = await this.queryMany<StrategyRow>(
       `SELECT * FROM soul.reasoning_strategies ${where}
        ORDER BY is_builtin DESC, name ASC
-       LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+       LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...values, limit, offset]
     );
 
@@ -214,39 +208,22 @@ export class StrategyStorage extends PgBaseStorage {
       throw new Error('Cannot modify built-in strategies');
     }
 
-    const sets: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'name', value: data.name },
+      { column: 'slug', value: data.slug },
+      { column: 'description', value: data.description },
+      { column: 'prompt_prefix', value: data.promptPrefix },
+      { column: 'category', value: data.category },
+    ]);
 
-    if (data.name !== undefined) {
-      sets.push(`name = $${paramIndex++}`);
-      values.push(data.name);
-    }
-    if (data.slug !== undefined) {
-      sets.push(`slug = $${paramIndex++}`);
-      values.push(data.slug);
-    }
-    if (data.description !== undefined) {
-      sets.push(`description = $${paramIndex++}`);
-      values.push(data.description);
-    }
-    if (data.promptPrefix !== undefined) {
-      sets.push(`prompt_prefix = $${paramIndex++}`);
-      values.push(data.promptPrefix);
-    }
-    if (data.category !== undefined) {
-      sets.push(`category = $${paramIndex++}`);
-      values.push(data.category);
-    }
+    if (!hasUpdates) return existing;
 
-    if (sets.length === 0) return existing;
-
-    sets.push(`updated_at = $${paramIndex++}`);
+    // Append updated_at only when there are actual field changes
     values.push(Date.now());
     values.push(id);
 
     await this.execute(
-      `UPDATE soul.reasoning_strategies SET ${sets.join(', ')} WHERE id = $${paramIndex}`,
+      `UPDATE soul.reasoning_strategies SET ${setClause}, updated_at = $${nextIdx} WHERE id = $${nextIdx + 1}`,
       values
     );
 

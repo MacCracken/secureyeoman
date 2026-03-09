@@ -6,6 +6,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { buildWhere, buildSet } from '../storage/query-helpers.js';
 import { uuidv7 } from '../utils/crypto.js';
 
 // ─── Event Types ──────────────────────────────────────────────
@@ -138,19 +139,14 @@ export class OutboundWebhookStorage extends PgBaseStorage {
    */
   async listWebhooks(filter?: { enabled?: boolean }): Promise<OutboundWebhook[]> {
     const pool = this.getPool();
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
 
-    if (filter?.enabled !== undefined) {
-      conditions.push(`enabled = $${idx++}`);
-      params.push(filter.enabled);
-    }
+    const { where, values } = buildWhere([
+      { column: 'enabled', value: filter?.enabled },
+    ]);
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const result = await pool.query<OutboundWebhookRow>(
       `SELECT * FROM outbound_webhooks ${where} ORDER BY created_at ASC`,
-      params
+      values
     );
     return result.rows.map(rowToWebhook);
   }
@@ -173,40 +169,21 @@ export class OutboundWebhookStorage extends PgBaseStorage {
   /** Update a webhook. Returns null if not found. */
   async updateWebhook(id: string, update: OutboundWebhookUpdate): Promise<OutboundWebhook | null> {
     const pool = this.getPool();
-    const sets: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
 
-    if (update.name !== undefined) {
-      sets.push(`name = $${idx++}`);
-      params.push(update.name);
-    }
-    if (update.url !== undefined) {
-      sets.push(`url = $${idx++}`);
-      params.push(update.url);
-    }
-    if (update.secret !== undefined) {
-      sets.push(`secret = $${idx++}`);
-      params.push(update.secret);
-    }
-    if (update.events !== undefined) {
-      sets.push(`events = $${idx++}::jsonb`);
-      params.push(JSON.stringify(update.events));
-    }
-    if (update.enabled !== undefined) {
-      sets.push(`enabled = $${idx++}`);
-      params.push(update.enabled);
-    }
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'name', value: update.name },
+      { column: 'url', value: update.url },
+      { column: 'secret', value: update.secret },
+      { column: 'events', value: update.events, json: true },
+      { column: 'enabled', value: update.enabled },
+    ]);
 
-    if (sets.length === 0) return this.getWebhook(id);
+    if (!hasUpdates) return this.getWebhook(id);
 
-    sets.push(`updated_at = $${idx++}`);
-    params.push(Date.now());
-    params.push(id);
-
+    values.push(Date.now(), id);
     const result = await pool.query<OutboundWebhookRow>(
-      `UPDATE outbound_webhooks SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
-      params
+      `UPDATE outbound_webhooks SET ${setClause}, updated_at = $${nextIdx} WHERE id = $${nextIdx + 1} RETURNING *`,
+      values
     );
     return result.rows[0] ? rowToWebhook(result.rows[0]) : null;
   }

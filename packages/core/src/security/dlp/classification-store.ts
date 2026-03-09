@@ -3,6 +3,7 @@
  */
 
 import { PgBaseStorage } from '../../storage/pg-base.js';
+import { buildWhere, parseCount } from '../../storage/query-helpers.js';
 import { uuidv7 as generateId } from '../../utils/id.js';
 import type { ClassificationRecord, ClassificationLevel, ClassificationRule } from './types.js';
 
@@ -64,24 +65,12 @@ export class ClassificationStore extends PgBaseStorage {
     limit?: number;
     offset?: number;
   }): Promise<{ records: ClassificationRecord[]; total: number }> {
-    const conditions: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { where, values, nextIdx } = buildWhere([
+      { column: 'classification_level', value: opts.level },
+      { column: 'content_type', value: opts.contentType },
+      { column: 'tenant_id', value: opts.tenantId },
+    ]);
 
-    if (opts.level) {
-      conditions.push(`classification_level = $${idx++}`);
-      values.push(opts.level);
-    }
-    if (opts.contentType) {
-      conditions.push(`content_type = $${idx++}`);
-      values.push(opts.contentType);
-    }
-    if (opts.tenantId) {
-      conditions.push(`tenant_id = $${idx++}`);
-      values.push(opts.tenantId);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limit = opts.limit ?? 50;
     const offset = opts.offset ?? 0;
 
@@ -89,7 +78,7 @@ export class ClassificationStore extends PgBaseStorage {
       `SELECT COUNT(*) as count FROM dlp.classifications ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const records = await this.queryMany<ClassificationRecord>(
       `SELECT id, content_id as "contentId", content_type as "contentType",
@@ -99,7 +88,7 @@ export class ClassificationStore extends PgBaseStorage {
               tenant_id as "tenantId"
        FROM dlp.classifications ${where}
        ORDER BY classified_at DESC
-       LIMIT $${idx++} OFFSET $${idx++}`,
+       LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...values, limit, offset]
     );
 

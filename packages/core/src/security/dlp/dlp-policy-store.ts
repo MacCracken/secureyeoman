@@ -3,6 +3,7 @@
  */
 
 import { PgBaseStorage } from '../../storage/pg-base.js';
+import { buildSet, buildWhere, parseCount } from '../../storage/query-helpers.js';
 import { uuidv7 as generateId } from '../../utils/id.js';
 import type { DlpPolicy, DlpPolicyRule, ClassificationLevel } from './types.js';
 
@@ -51,24 +52,19 @@ export class DlpPolicyStore extends PgBaseStorage {
   }
 
   async list(filters?: DlpPolicyFilters): Promise<{ policies: DlpPolicy[]; total: number }> {
-    const conditions: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
+    // Note: appliesTo uses "$N = ANY(column)" which inverts the normal column/param order,
+    // so we handle it separately after the standard filters.
+    let { where, values, nextIdx } = buildWhere([
+      { column: 'enabled', value: filters?.active },
+      { column: 'tenant_id', value: filters?.tenantId },
+    ]);
 
-    if (filters?.active !== undefined) {
-      conditions.push(`enabled = $${idx++}`);
-      values.push(filters.active);
-    }
     if (filters?.appliesTo) {
-      conditions.push(`$${idx++} = ANY(applies_to)`);
+      const clause = `$${nextIdx++} = ANY(applies_to)`;
+      where = where ? `${where} AND ${clause}` : `WHERE ${clause}`;
       values.push(filters.appliesTo);
     }
-    if (filters?.tenantId) {
-      conditions.push(`tenant_id = $${idx++}`);
-      values.push(filters.tenantId);
-    }
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limit = filters?.limit ?? 50;
     const offset = filters?.offset ?? 0;
 
@@ -76,7 +72,7 @@ export class DlpPolicyStore extends PgBaseStorage {
       `SELECT COUNT(*) as count FROM dlp.policies ${where}`,
       values
     );
-    const total = parseInt(countResult?.count ?? '0', 10);
+    const total = parseCount(countResult);
 
     const policies = await this.queryMany<DlpPolicy>(
       `SELECT id, name, description, enabled, rules, action,
@@ -86,7 +82,7 @@ export class DlpPolicyStore extends PgBaseStorage {
               tenant_id as "tenantId"
        FROM dlp.policies ${where}
        ORDER BY created_at DESC
-       LIMIT $${idx++} OFFSET $${idx++}`,
+       LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
       [...values, limit, offset]
     );
 
@@ -108,46 +104,25 @@ export class DlpPolicyStore extends PgBaseStorage {
       >
     >
   ): Promise<number> {
-    const sets: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'name', value: changes.name },
+      { column: 'description', value: changes.description },
+      { column: 'enabled', value: changes.enabled },
+      { column: 'rules', value: changes.rules, json: true },
+      { column: 'action', value: changes.action },
+      { column: 'classification_levels', value: changes.classificationLevels },
+      { column: 'applies_to', value: changes.appliesTo },
+    ]);
 
-    if (changes.name !== undefined) {
-      sets.push(`name = $${idx++}`);
-      values.push(changes.name);
-    }
-    if (changes.description !== undefined) {
-      sets.push(`description = $${idx++}`);
-      values.push(changes.description);
-    }
-    if (changes.enabled !== undefined) {
-      sets.push(`enabled = $${idx++}`);
-      values.push(changes.enabled);
-    }
-    if (changes.rules !== undefined) {
-      sets.push(`rules = $${idx++}`);
-      values.push(JSON.stringify(changes.rules));
-    }
-    if (changes.action !== undefined) {
-      sets.push(`action = $${idx++}`);
-      values.push(changes.action);
-    }
-    if (changes.classificationLevels !== undefined) {
-      sets.push(`classification_levels = $${idx++}`);
-      values.push(changes.classificationLevels);
-    }
-    if (changes.appliesTo !== undefined) {
-      sets.push(`applies_to = $${idx++}`);
-      values.push(changes.appliesTo);
-    }
+    if (!hasUpdates) return 0;
 
-    if (sets.length === 0) return 0;
-
-    sets.push(`updated_at = $${idx++}`);
+    // Always update the timestamp when there are real changes
     values.push(Date.now());
+    const fullSet = `${setClause}, updated_at = $${nextIdx}`;
+    const whereIdx = nextIdx + 1;
 
     values.push(id);
-    return this.execute(`UPDATE dlp.policies SET ${sets.join(', ')} WHERE id = $${idx}`, values);
+    return this.execute(`UPDATE dlp.policies SET ${fullSet} WHERE id = $${whereIdx}`, values);
   }
 
   async delete(id: string): Promise<number> {
