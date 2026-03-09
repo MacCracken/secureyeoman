@@ -10,7 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 145 | Cross-Project MCP Expansion (Photisnadi widget) | P2 | 1 item remaining |
+| 145 | Cross-Project MCP Expansion (Photisnadi widget) | P2 | 1 item remaining + 3 draft TLS/infra items |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -109,7 +109,10 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Item | Status | Description |
 |------|--------|-------------|
 | Smoke-test AGNOS MCP tools | Done (2026-03-08) | All 20 `agnos_*` tools verified against live agnosticos container |
-| Agnostic embedded services | Next agnostic release | Redis + SQLite embedded in container — remove `agnostic-redis` from docker-compose |
+| Agnostic embedded services | Done (2026-03-09) | Redis + PostgreSQL + Caddy TLS embedded in container via supervisord. External URLs override embedded services for HA. Remove `agnostic-redis` from docker-compose |
+| SY TLS via Caddy reverse proxy | Draft | Replace direct Fastify TLS with embedded Caddy (supervisord-managed). Auto-HTTPS via ACME for standalone, provided certs for co-deployment. Matches Agnostic pattern. Fastify stays HTTP on 127.0.0.1, Caddy handles :443. Env: `TLS_ENABLED`, `TLS_CERT_PATH`, `TLS_KEY_PATH`, `TLS_DOMAIN`. Current Fastify TLS kept as fallback |
+| Unified TLS env vars | Draft | Standardize `TLS_ENABLED`, `TLS_CERT_PATH`, `TLS_KEY_PATH`, `TLS_DOMAIN` across SY, Agnostic, and AGNOS. Same cert volume pattern (`./certs:/app/certs:ro`). Shared certs in `docker-compose.unified.yml` |
+| SY embedded PostgreSQL | Draft | Move `sy-pg` into the SY container (supervisord). Same pattern as Agnostic: skip embedded when `DATABASE_HOST` points to external. Removes mandatory sidecar for single-node deployments |
 | Merge agnostic into agnosticos | Future | Agnostic becomes a package within agnosticos — collapses to single service |
 
 ---

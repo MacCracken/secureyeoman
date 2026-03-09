@@ -254,21 +254,21 @@ Open your browser and navigate to:
 2. Use the admin password you set in `SECUREYEOMAN_ADMIN_PASSWORD`
 3. Complete the onboarding wizard to set up your agent personality
 
-### 4. Create Your First Task
+### 4. Send Your First Message
 
 ```bash
 # Using the CLI
-npx secureyeoman task create \
-  --type execute \
-  --input '{"command": "echo Hello F.R.I.D.A.Y.!"}'
+secureyeoman chat "Hello F.R.I.D.A.Y.!"
+
+# Pipe input from stdin
+echo "Summarize this README" | secureyeoman chat -
 
 # Using the API
-curl -X POST http://localhost:18789/api/v1/tasks \
+curl -X POST http://localhost:18789/api/v1/chat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <your-jwt-token>" \
   -d '{
-    "type": "execute",
-    "input": {"command": "echo Hello F.R.I.D.A.Y.!"}
+    "message": "Hello F.R.I.D.A.Y.!"
   }'
 ```
 

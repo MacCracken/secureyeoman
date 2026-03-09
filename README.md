@@ -148,6 +148,7 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | | |
 |---|---|
 | **[Getting Started](docs/guides/getting-started.md)** | Installation, configuration, first steps |
+| **[CLI Reference](docs/guides/cli-reference.md)** | All 56 commands with examples |
 | **[Configuration Reference](docs/configuration.md)** | All YAML fields and environment variables |
 | **[Feature Reference](docs/features.md)** | Complete feature breakdown |
 | **[REST API](docs/api/rest-api.md)** | REST API reference |
@@ -161,7 +162,7 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | **[Roadmap](docs/development/roadmap.md)** | Development roadmap |
 | **[Changelog](CHANGELOG.md)** | Release history |
 
-**Guides** — See [`docs/guides/`](docs/guides/) for 65 topic guides including [AI Providers](docs/guides/ai-providers.md), [Integrations](docs/guides/integrations.md), [Knowledge & Memory](docs/guides/knowledge-memory.md), [Workflows](docs/guides/workflows.md), [Swarms](docs/guides/swarms.md), [SSO/SAML](docs/guides/sso-saml.md), [DLP](docs/guides/data-loss-prevention.md), [Multi-Region HA](docs/guides/multi-region-ha.md), [Observability](docs/guides/observability.md), [Security Testing](docs/guides/security-testing.md), and more.
+**Guides** — See [`docs/guides/`](docs/guides/) for 66 topic guides including [CLI Reference](docs/guides/cli-reference.md), [AI Providers](docs/guides/ai-providers.md), [Integrations](docs/guides/integrations.md), [Knowledge & Memory](docs/guides/knowledge-memory.md), [Workflows](docs/guides/workflows.md), [Swarms](docs/guides/swarms.md), [SSO/SAML](docs/guides/sso-saml.md), [DLP](docs/guides/data-loss-prevention.md), [Multi-Region HA](docs/guides/multi-region-ha.md), [Observability](docs/guides/observability.md), [Security Testing](docs/guides/security-testing.md), and more.
 
 ---
 
