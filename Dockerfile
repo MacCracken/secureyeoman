@@ -17,7 +17,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 
 USER root
 
-RUN apt-get update && apt-get install -y --no-install-recommends git wget \
+RUN apt-get update && apt-get install -y --no-install-recommends git wget gettext-base supervisor \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd -r secureyeoman && useradd -r -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
@@ -25,6 +25,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends git wget \
  && mkdir -p /usr/share/secureyeoman/community-repo \
  && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman \
  && chown -R secureyeoman:agnos /run/agnos /var/lib/agnos /var/log/agnos /etc/agnos
+
+# Install Caddy static binary
+RUN curl -fsSL "https://caddyserver.com/api/download?os=linux&arch=amd64" -o /usr/local/bin/caddy \
+ && chmod +x /usr/local/bin/caddy
 
 ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-repo
 
@@ -35,14 +39,20 @@ RUN chmod +x /usr/local/bin/secureyeoman
 # SQL migration files
 COPY dist/migrations/ /usr/local/bin/migrations/
 
-# Combined entrypoint: starts AGNOS services then SecureYeoman
+# Supervisord + Caddy config
+COPY docker/supervisord.conf /etc/supervisord.conf
+COPY docker/Caddyfile.template /etc/caddy/Caddyfile.template
+RUN mkdir -p /var/log/supervisor /etc/caddy /data/caddy \
+ && chown -R secureyeoman:secureyeoman /etc/caddy /data/caddy /var/log/supervisor
+
+# Combined entrypoint: configures TLS + supervisord
 COPY docker/entrypoint-combined.sh /usr/local/bin/entrypoint-combined.sh
 RUN chmod +x /usr/local/bin/entrypoint-combined.sh
 
 # Use JSON log format (pino-pretty not bundled in standalone binary)
 ENV SECUREYEOMAN_LOG_FORMAT=json
 
-EXPOSE 18789 8088 8090
+EXPOSE 18789 443 8088 8090
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD secureyeoman health --json || exit 1

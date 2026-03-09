@@ -1,0 +1,39 @@
+# SecureYeoman Caddy TLS Reverse Proxy
+#
+# This template is processed by envsubst in entrypoint-combined.sh.
+# Two modes supported:
+#
+#   Mode A — Provided certs (TLS_CERT_PATH + TLS_KEY_PATH set):
+#     Caddy uses the supplied certificate and key files.
+#
+#   Mode B — Auto HTTPS (TLS_DOMAIN set, no cert paths):
+#     Caddy obtains and renews certificates automatically via ACME.
+#
+#   Mode C — HTTP passthrough (TLS_ENABLED=false):
+#     Caddy is not started; Fastify serves HTTP directly.
+
+${TLS_DOMAIN}:${TLS_PORT} {
+    tls ${TLS_CERT_DIRECTIVE}
+
+    reverse_proxy 127.0.0.1:18789
+
+    # Access logging
+    log {
+        output stderr
+        format json
+    }
+}
+
+# Optional: proxy AGNOS if external access needed
+# (default: AGNOS binds to 127.0.0.1, not externally accessible)
+# Uncomment to expose LLM Gateway or Agent Runtime through Caddy:
+#
+# llm.{$TLS_DOMAIN}:{$TLS_PORT} {
+#     tls {$TLS_CERT_DIRECTIVE}
+#     reverse_proxy 127.0.0.1:8088
+# }
+#
+# agent.{$TLS_DOMAIN}:{$TLS_PORT} {
+#     tls {$TLS_CERT_DIRECTIVE}
+#     reverse_proxy 127.0.0.1:8090
+# }

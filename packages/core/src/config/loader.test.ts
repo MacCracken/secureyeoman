@@ -534,6 +534,29 @@ describe('loadEnvConfig branch coverage (Phase 105)', () => {
     expect(config.gateway.tls?.enabled).toBe(true);
   });
 
+  it('should prefer unified TLS_* vars over legacy SECUREYEOMAN_TLS_*', () => {
+    process.env.TLS_ENABLED = 'true';
+    process.env.TLS_CERT_PATH = '/unified/cert.pem';
+    process.env.TLS_KEY_PATH = '/unified/key.pem';
+    process.env.TLS_DOMAIN = 'secureyeoman.example.com';
+    process.env.SECUREYEOMAN_TLS_CERT_PATH = '/legacy/cert.pem';
+    const config = loadConfig();
+    expect(config.gateway.tls?.enabled).toBe(true);
+    expect(config.gateway.tls?.certPath).toBe('/unified/cert.pem');
+    expect(config.gateway.tls?.keyPath).toBe('/unified/key.pem');
+    expect(config.gateway.tls?.domain).toBe('secureyeoman.example.com');
+  });
+
+  it('should fall back to legacy SECUREYEOMAN_TLS_* when unified vars absent', () => {
+    process.env.SECUREYEOMAN_TLS_ENABLED = 'true';
+    process.env.SECUREYEOMAN_TLS_CERT_PATH = '/legacy/cert.pem';
+    process.env.SECUREYEOMAN_TLS_KEY_PATH = '/legacy/key.pem';
+    const config = loadConfig();
+    expect(config.gateway.tls?.enabled).toBe(true);
+    expect(config.gateway.tls?.certPath).toBe('/legacy/cert.pem');
+    expect(config.gateway.tls?.keyPath).toBe('/legacy/key.pem');
+  });
+
   it('should handle SECUREYEOMAN_CORS_ORIGINS with comma-separated values', () => {
     process.env.SECUREYEOMAN_CORS_ORIGINS = 'http://localhost:3000, https://example.com';
     const config = loadConfig();

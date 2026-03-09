@@ -190,22 +190,28 @@ function loadEnvConfig(): PartialConfig {
     gateway.allowRemoteAccess = process.env.SECUREYEOMAN_ALLOW_REMOTE_ACCESS === 'true';
   }
 
-  // TLS gateway settings
+  // TLS gateway settings — unified vars (TLS_*) take precedence over legacy (SECUREYEOMAN_TLS_*)
   const tls: Record<string, unknown> = {};
-  if (process.env.SECUREYEOMAN_TLS_ENABLED) {
-    tls.enabled = process.env.SECUREYEOMAN_TLS_ENABLED === 'true';
+  const tlsEnabled = process.env.TLS_ENABLED ?? process.env.SECUREYEOMAN_TLS_ENABLED;
+  if (tlsEnabled) {
+    tls.enabled = tlsEnabled === 'true';
   }
-  if (process.env.SECUREYEOMAN_TLS_CERT_PATH) {
-    tls.certPath = process.env.SECUREYEOMAN_TLS_CERT_PATH;
+  const tlsCertPath = process.env.TLS_CERT_PATH ?? process.env.SECUREYEOMAN_TLS_CERT_PATH;
+  if (tlsCertPath) {
+    tls.certPath = tlsCertPath;
   }
-  if (process.env.SECUREYEOMAN_TLS_KEY_PATH) {
-    tls.keyPath = process.env.SECUREYEOMAN_TLS_KEY_PATH;
+  const tlsKeyPath = process.env.TLS_KEY_PATH ?? process.env.SECUREYEOMAN_TLS_KEY_PATH;
+  if (tlsKeyPath) {
+    tls.keyPath = tlsKeyPath;
   }
   if (process.env.SECUREYEOMAN_TLS_CA_PATH) {
     tls.caPath = process.env.SECUREYEOMAN_TLS_CA_PATH;
   }
   if (process.env.SECUREYEOMAN_TLS_AUTO_GENERATE) {
     tls.autoGenerate = process.env.SECUREYEOMAN_TLS_AUTO_GENERATE === 'true';
+  }
+  if (process.env.TLS_DOMAIN) {
+    tls.domain = process.env.TLS_DOMAIN;
   }
   if (Object.keys(tls).length > 0) {
     gateway.tls = tls;

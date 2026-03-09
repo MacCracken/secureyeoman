@@ -1,8 +1,78 @@
 # TLS / HTTPS Certificates
 
-SecureYeoman's API gateway can serve over HTTPS. The `TlsManager` handles certificate lifecycle — loading configured certs, detecting expiry, and auto-generating development certs when needed.
+SecureYeoman supports two TLS modes:
 
-## Quick Start (Development)
+1. **Caddy reverse proxy** (recommended for Docker) — Caddy handles TLS termination; Fastify stays HTTP on `127.0.0.1`. Supports auto-HTTPS via ACME or provided certificates.
+2. **Direct Fastify TLS** (bare-metal / legacy) — Fastify handles HTTPS directly via the `TlsManager`.
+
+## Unified TLS Environment Variables
+
+These variables are shared across SecureYeoman, Agnostic, and AGNOS:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `TLS_ENABLED` | Enable Caddy TLS reverse proxy | `false` |
+| `TLS_CERT_PATH` | Path to PEM certificate file | — |
+| `TLS_KEY_PATH` | Path to PEM private key file | — |
+| `TLS_DOMAIN` | Domain for cert/ACME | `localhost` |
+| `TLS_PORT` | TLS listen port | `443` |
+
+Legacy `SECUREYEOMAN_TLS_*` variables are still supported; unified `TLS_*` vars take precedence.
+
+## Caddy TLS (Docker — Recommended)
+
+### Mode A — Provided Certificates
+
+Supply your cert and key. Caddy handles TLS termination, Fastify serves HTTP internally:
+
+```bash
+# .env.dev (or .env)
+TLS_ENABLED=true
+TLS_CERT_PATH=/app/certs/certificate.txt
+TLS_KEY_PATH=/app/certs/private_key_decrypted.txt
+TLS_DOMAIN=secureyeoman.example.com
+```
+
+The `./certs` directory is mounted read-only into the container at `/app/certs`.
+
+### Mode B — Auto HTTPS (ACME)
+
+Let Caddy obtain and renew certificates automatically via Let's Encrypt:
+
+```bash
+TLS_ENABLED=true
+TLS_DOMAIN=secureyeoman.example.com
+# No TLS_CERT_PATH / TLS_KEY_PATH — Caddy uses ACME
+```
+
+> Requires the domain to be publicly resolvable and port 443 reachable from the internet.
+
+### Mode C — HTTP (Default)
+
+When `TLS_ENABLED` is unset or `false`, Caddy is not started. Fastify serves HTTP directly on port 18789.
+
+### Architecture
+
+Inside the container, **supervisord** manages four processes:
+
+| Process | Port | Description |
+|---------|------|-------------|
+| `caddy` | 443 (configurable) | TLS reverse proxy (only when `TLS_ENABLED=true`) |
+| `llm_gateway` | 8088 | AGNOS LLM Gateway (127.0.0.1) |
+| `agent_runtime` | 8090 | AGNOS Agent Runtime (127.0.0.1) |
+| `secureyeoman` | 18789 | Main application (127.0.0.1 behind Caddy, or 0.0.0.0 without) |
+
+When TLS is enabled, the entrypoint:
+1. Generates a Caddyfile from the template using `envsubst`
+2. Sets `SECUREYEOMAN_HOST=127.0.0.1` (Fastify only listens locally)
+3. Disables Fastify's built-in TLS (`SECUREYEOMAN_TLS_ENABLED=false`)
+4. Enables the Caddy supervisord program
+
+## Direct Fastify TLS (Bare-Metal)
+
+For non-Docker deployments, Fastify can handle TLS directly:
+
+### Quick Start (Development)
 
 Enable TLS with automatic self-signed cert generation:
 
@@ -22,7 +92,7 @@ On first startup, SecureYeoman generates:
 > **Requires** `openssl` on `PATH`. Most systems have it pre-installed.
 > Self-signed certs will trigger browser warnings — trust the CA cert or use a proper cert for any shared environment.
 
-## Production (Bring Your Own Cert)
+### Production (Bring Your Own Cert)
 
 Supply your certificate and key files directly:
 

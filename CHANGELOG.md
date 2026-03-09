@@ -6,6 +6,26 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.8]
 
+### TLS via Caddy Reverse Proxy
+
+Replaced direct Fastify TLS with embedded Caddy reverse proxy (supervisord-managed) inside Docker containers. Matches the Agnostic pattern for unified TLS across the triangle.
+
+- **Supervisord process management** (`docker/supervisord.conf`): Manages 4 processes — Caddy, AGNOS LLM Gateway, AGNOS Agent Runtime, and SecureYeoman. Replaces the shell-script background process management in `entrypoint-combined.sh`.
+- **Caddy TLS termination** (`docker/Caddyfile.template`): Three modes — Mode A (provided certs), Mode B (auto ACME/Let's Encrypt), Mode C (HTTP passthrough, default).
+- **Entrypoint rewrite** (`docker/entrypoint-combined.sh`): Resolves unified TLS env vars, generates Caddyfile via `envsubst`, toggles Caddy on/off via supervisord include override, sets Fastify to HTTP-only behind Caddy.
+- **Dockerfile + Dockerfile.dev**: Added `supervisor`, `gettext-base`, and Caddy static binary. Exposed port 443.
+- **docker-compose.yml**: Port 443 mapped on `sy-core` and `secureyeoman` services.
+- **Fastify fallback preserved**: Direct Fastify TLS still works for bare-metal deployments via `SECUREYEOMAN_TLS_*` env vars.
+
+### Unified TLS Environment Variables
+
+Standardized `TLS_ENABLED`, `TLS_CERT_PATH`, `TLS_KEY_PATH`, `TLS_DOMAIN`, `TLS_PORT` across SecureYeoman, Agnostic, and AGNOS.
+
+- **Config loader** (`config/loader.ts`): Unified `TLS_*` vars take precedence over legacy `SECUREYEOMAN_TLS_*` vars. Added `domain` field to TLS config schema.
+- **Config schema** (`shared/types/config.ts`): Added optional `domain` field to `TlsConfigSchema`.
+- **`.env.dev.example`**: Documented unified vars with fallback to legacy.
+- **TLS guide** (`docs/guides/tls-certificates.md`): Comprehensive rewrite covering Caddy modes, supervisord architecture, unified env vars, and Fastify fallback.
+
 ### CLI Feature Parity — 14 New Commands (339 tests)
 
 Full CLI coverage for all major features that previously had API routes but no CLI command. Total: **54 commands** (was 40).

@@ -771,6 +771,8 @@ const TlsConfigSchema = z
     caPath: SafePathSchema.optional(),
     /** Auto-generate a self-signed dev cert when no certPath/keyPath are provided */
     autoGenerate: z.boolean().default(false),
+    /** Domain for TLS certificate (e.g. used by ACME / auto-generation) */
+    domain: z.string().optional(),
   })
   .default({});
 

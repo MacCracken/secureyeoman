@@ -48,7 +48,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
  && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
     > /etc/apt/sources.list.d/nodesource.list \
- && apt-get update && apt-get install -y --no-install-recommends nodejs \
+ && apt-get update && apt-get install -y --no-install-recommends nodejs gettext-base supervisor \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd -r secureyeoman && useradd -r -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
@@ -56,6 +56,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && mkdir -p /usr/share/secureyeoman/community-repo \
  && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman \
  && chown -R secureyeoman:agnos /run/agnos /var/lib/agnos /var/log/agnos /etc/agnos
+
+# Install Caddy static binary
+RUN curl -fsSL "https://caddyserver.com/api/download?os=linux&arch=amd64" -o /usr/local/bin/caddy \
+ && chmod +x /usr/local/bin/caddy
 
 ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-repo
 
@@ -82,11 +86,17 @@ COPY --from=builder /app/packages/mcp/node_modules packages/mcp/node_modules/
 # dashboard (served by core gateway via @fastify/static)
 COPY --from=builder /app/packages/dashboard/dist packages/dashboard/dist/
 
-# Combined entrypoint: starts AGNOS services then SecureYeoman
+# Supervisord + Caddy config
+COPY docker/supervisord.conf /etc/supervisord.conf
+COPY docker/Caddyfile.template /etc/caddy/Caddyfile.template
+RUN mkdir -p /var/log/supervisor /etc/caddy /data/caddy \
+ && chown -R secureyeoman:secureyeoman /etc/caddy /data/caddy /var/log/supervisor
+
+# Combined entrypoint: configures TLS + supervisord
 COPY docker/entrypoint-combined.sh /usr/local/bin/entrypoint-combined.sh
 RUN chmod +x /usr/local/bin/entrypoint-combined.sh
 
-EXPOSE 18789 8088 8090
+EXPOSE 18789 443 8088 8090
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD node /app/packages/core/dist/cli.js health --json || exit 1

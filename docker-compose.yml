@@ -27,6 +27,7 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "18789:18789"
+      - "${TLS_PORT:-443}:${TLS_PORT:-443}"
     volumes:
       - data:/home/secureyeoman/.secureyeoman
       - community-repo:/usr/share/secureyeoman/community-repo
@@ -39,6 +40,9 @@ services:
       DATABASE_HOST: sy-pg
       DATABASE_USER: secureyeoman
       DATABASE_NAME: secureyeoman
+      # Unified TLS env vars (Caddy reverse proxy). Loaded from env_file (.env.dev).
+      # Set TLS_ENABLED=true + TLS_CERT_PATH/TLS_KEY_PATH for provided certs,
+      # or TLS_ENABLED=true + TLS_DOMAIN for auto ACME.
       # OAuth credentials loaded from env_file (.env.dev) — do not re-declare here
       # as ${VAR:-} resolves against the host shell and overrides env_file values.
       # OPA sidecar for Rego policy evaluation (Phase 50).
@@ -132,6 +136,7 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "18789:18789"
+      - "${TLS_PORT:-443}:${TLS_PORT:-443}"
     volumes:
       - data:/home/secureyeoman/.secureyeoman
       - community-repo:/usr/share/secureyeoman/community-repo
