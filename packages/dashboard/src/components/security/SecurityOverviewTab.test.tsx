@@ -92,7 +92,7 @@ describe('SecurityOverviewTab', () => {
     renderTab({
       verificationResult: { valid: true, entriesChecked: 42 },
     });
-    expect(screen.getByText(/42/)).toBeInTheDocument();
+    expect(screen.getByText(/42 entries/)).toBeInTheDocument();
   });
 
   it('shows verification result when invalid', () => {
