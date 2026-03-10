@@ -439,6 +439,36 @@ export function getToolManifest(): ToolManifestEntry[] {
       category: 'desktop',
     },
 
+    // Video streaming tools
+    {
+      name: 'video_stream_start',
+      description:
+        'Start a real-time video streaming session from AGNOS remote screen, local camera, or local screen. Returns session ID for WebSocket subscription.',
+      category: 'video',
+    },
+    {
+      name: 'video_stream_stop',
+      description: 'Stop an active video streaming session by session ID.',
+      category: 'video',
+    },
+    {
+      name: 'video_stream_sessions',
+      description: 'List all active video streaming sessions.',
+      category: 'video',
+    },
+    {
+      name: 'video_stream_sources',
+      description:
+        'List available video sources (AGNOS remote, local camera, local screen) and their availability status.',
+      category: 'video',
+    },
+    {
+      name: 'video_stream_snapshot',
+      description:
+        'Capture a single frame from an active video stream session. Returns base64 image with optional AI vision analysis.',
+      category: 'video',
+    },
+
     // Network tools — device automation (46.1)
     {
       name: 'network_device_connect',

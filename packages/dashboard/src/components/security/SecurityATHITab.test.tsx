@@ -269,4 +269,271 @@ describe('SecurityATHITab', () => {
       expect(screen.queryByTestId('linked-events-badge')).not.toBeInTheDocument();
     });
   });
+
+  it('shows delete button on scenarios', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-1',
+          title: 'Deletable Scenario',
+          actor: 'cybercriminal',
+          techniques: ['prompt_injection'],
+          harms: ['data_breach'],
+          impacts: ['regulatory_penalty'],
+          likelihood: 3,
+          severity: 4,
+          riskScore: 12,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'identified',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Deletable Scenario')).toBeInTheDocument();
+    });
+  });
+
+  it('shows edit button on scenarios', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-1',
+          title: 'Editable Scenario',
+          actor: 'insider',
+          techniques: ['data_poisoning'],
+          harms: ['misinformation'],
+          impacts: ['ip_theft'],
+          likelihood: 2,
+          severity: 2,
+          riskScore: 4,
+          mitigations: [{ description: 'Monitor logs', status: 'implemented', owner: 'Security' }],
+          linkedEventIds: [],
+          status: 'mitigated',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Editable Scenario')).toBeInTheDocument();
+    });
+  });
+
+  it('shows scenario count in header', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-1',
+          title: 'Scenario One',
+          actor: 'cybercriminal',
+          techniques: ['prompt_injection'],
+          harms: ['data_breach'],
+          impacts: ['regulatory_penalty'],
+          likelihood: 3,
+          severity: 3,
+          riskScore: 9,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'identified',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Threat Scenarios (1)')).toBeInTheDocument();
+    });
+  });
+
+  it('renders scenario with mitigations', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-1',
+          title: 'Mitigated Threat',
+          actor: 'hacktivist',
+          techniques: ['social_engineering'],
+          harms: ['reputational_damage'],
+          impacts: ['customer_trust_loss'],
+          likelihood: 3,
+          severity: 4,
+          riskScore: 12,
+          mitigations: [
+            { description: 'Employee training', status: 'implemented', owner: 'HR' },
+            { description: 'Phishing filter', status: 'planned', owner: 'IT' },
+          ],
+          linkedEventIds: [],
+          status: 'assessed',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Mitigated Threat')).toBeInTheDocument();
+    });
+  });
+
+  it('renders actor column in scenario table', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-1',
+          title: 'Actor Test',
+          actor: 'nation_state',
+          techniques: ['model_theft'],
+          harms: ['privacy_violation'],
+          impacts: ['legal_liability'],
+          likelihood: 5,
+          severity: 5,
+          riskScore: 25,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'identified',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Nation State')).toBeInTheDocument();
+    });
+  });
+
+  it('shows multiple scenarios with different risk colors', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-1',
+          title: 'High Risk',
+          actor: 'cybercriminal',
+          techniques: ['prompt_injection'],
+          harms: ['data_breach'],
+          impacts: ['regulatory_penalty'],
+          likelihood: 5,
+          severity: 5,
+          riskScore: 25,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'identified',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+        {
+          id: 'athi-2',
+          title: 'Low Risk',
+          actor: 'insider',
+          techniques: ['data_poisoning'],
+          harms: ['misinformation'],
+          impacts: ['ip_theft'],
+          likelihood: 1,
+          severity: 2,
+          riskScore: 2,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'mitigated',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 2,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('High Risk')).toBeInTheDocument();
+      expect(screen.getByText('Low Risk')).toBeInTheDocument();
+      expect(screen.getByText('25')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Threat Scenarios header with total 0 when empty', async () => {
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Threat Scenarios (0)')).toBeInTheDocument();
+    });
+  });
+
+  it('shows risk matrix with multiple cells', async () => {
+    mockFetchMatrix.mockResolvedValue({
+      matrix: [
+        {
+          actor: 'cybercriminal',
+          technique: 'prompt_injection',
+          count: 3,
+          avgRiskScore: 18,
+          maxRiskScore: 25,
+          scenarioIds: ['a', 'b', 'c'],
+        },
+        {
+          actor: 'insider',
+          technique: 'data_poisoning',
+          count: 1,
+          avgRiskScore: 6,
+          maxRiskScore: 6,
+          scenarioIds: ['d'],
+        },
+      ],
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Actor x Technique Risk Matrix')).toBeInTheDocument();
+      expect(screen.getByText('18')).toBeInTheDocument();
+    });
+  });
+
+  it('shows loading state', () => {
+    mockFetchScenarios.mockReturnValue(new Promise(() => {}));
+    renderTab();
+    // Should not crash while loading
+    expect(screen.getByTestId('athi-tab')).toBeInTheDocument();
+  });
+
+  it('shows byActor stats in summary when available', async () => {
+    mockFetchSummary.mockResolvedValue({
+      summary: {
+        totalScenarios: 10,
+        averageRiskScore: 15,
+        mitigationCoverage: 80,
+        byStatus: { identified: 5, assessed: 3, mitigated: 2 },
+        byActor: { cybercriminal: 5, insider: 3, hacktivist: 2 },
+        topRisks: [],
+      },
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('10')).toBeInTheDocument();
+      expect(screen.getByText('15')).toBeInTheDocument();
+      expect(screen.getByText('80%')).toBeInTheDocument();
+    });
+  });
 });

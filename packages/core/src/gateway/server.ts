@@ -71,6 +71,7 @@ import { registerProactiveRoutes } from '../proactive/proactive-routes.js';
 import { registerDiagnosticRoutes } from '../diagnostics/diagnostic-routes.js';
 import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
 import { registerDesktopRoutes } from '../body/desktop-routes.js';
+import { registerVideoStreamRoutes } from '../body/video-stream-routes.js';
 import { registerCaptureConsentRoutes } from '../body/capture-consent-routes.js';
 import { registerBrowserRoutes } from '../browser/browser-routes.js';
 import { registerGroupChatRoutes } from '../integrations/group-chat-routes.js';
@@ -161,6 +162,7 @@ const CHANNEL_PERMISSIONS: Record<string, { resource: string; action: string }> 
   soul: { resource: 'soul', action: 'read' },
   group_chat: { resource: 'integrations', action: 'read' },
   notifications: { resource: 'notifications', action: 'read' },
+  video_stream: { resource: 'capture', action: 'read' },
 };
 
 export interface GatewayServerOptions {
@@ -1358,6 +1360,30 @@ export class GatewayServer {
           reason: errorToString(err),
         },
         'Desktop control routes skipped'
+      );
+    }
+
+    // Video Streaming routes
+    try {
+      registerVideoStreamRoutes(this.app, {
+        getAllowVideoStreaming: () =>
+          this.secureYeoman.getConfig().security.allowVideoStreaming ?? false,
+        getAllowDesktopControl: () =>
+          this.secureYeoman.getConfig().security.allowDesktopControl ?? false,
+        getVideoStreamManager: () => this.secureYeoman.getVideoStreamManager() ?? null,
+        isAgnosBridgeAvailable: () => {
+          const mgr = this.secureYeoman.getVideoStreamManager();
+          // The manager exists only when AGNOS URL was configured at init time
+          return !!mgr && !!process.env.AGNOS_RUNTIME_URL;
+        },
+      });
+      this.getLogger().info('Video streaming routes registered');
+    } catch (err) {
+      this.getLogger().debug(
+        {
+          reason: errorToString(err),
+        },
+        'Video streaming routes skipped'
       );
     }
 
@@ -3442,6 +3468,104 @@ export class GatewayServer {
             'Collab WebSocket error'
           );
         });
+      }
+    );
+
+    // ── Video stream WebSocket endpoint ──────────────────────────────────
+    // Path: /ws/video/:sessionId — subscribe to real-time video frames
+    this.app.get(
+      '/ws/video/:sessionId',
+      { websocket: true },
+      async (socket, request: FastifyRequest<{ Params: { sessionId: string } }>) => {
+        // Auth: same pattern as /ws/metrics
+        let authUser: { userId: string; role: string } | undefined;
+        if (this.authService) {
+          const url = new URL(request.url, `http://${request.hostname}`);
+          const protocols = request.headers['sec-websocket-protocol'];
+          const protocolToken =
+            typeof protocols === 'string'
+              ? protocols
+                  .split(',')
+                  .map((p) => p.trim())
+                  .find((p) => p.startsWith('token.'))
+                  ?.slice(6)
+              : undefined;
+          const token = protocolToken ?? url.searchParams.get('token');
+          if (!token) {
+            socket.close(4401, 'Missing authentication token');
+            return;
+          }
+          try {
+            const user = await this.authService.validateToken(token);
+            authUser = { userId: user.userId, role: user.role };
+          } catch {
+            socket.close(4401, 'Invalid authentication token');
+            return;
+          }
+        }
+
+        // Security: video streaming must be enabled
+        const security = this.secureYeoman.getConfig().security;
+        if (!security.allowVideoStreaming || !security.allowDesktopControl) {
+          socket.close(4403, 'Video streaming is disabled');
+          return;
+        }
+
+        const vsm = this.secureYeoman.getVideoStreamManager();
+        if (!vsm) {
+          socket.close(4503, 'Video stream manager not initialized');
+          return;
+        }
+
+        const { sessionId } = request.params;
+        const session = vsm.getSession(sessionId);
+        if (!session) {
+          socket.close(4404, 'Session not found');
+          return;
+        }
+
+        this.getLogger().debug(
+          { sessionId, userId: authUser?.userId },
+          'Video stream WebSocket client connected'
+        );
+
+        // Subscribe to frames
+        const unsubFrame = vsm.subscribeFrames(sessionId, (frame) => {
+          if (socket.readyState === 1 /* OPEN */) {
+            try {
+              socket.send(JSON.stringify({ type: 'frame', frame }));
+            } catch { /* client gone */ }
+          }
+        });
+
+        const unsubSession = vsm.subscribeSession(sessionId, (event) => {
+          if (socket.readyState === 1) {
+            try {
+              socket.send(JSON.stringify(event));
+            } catch { /* client gone */ }
+          }
+          if (event.type === 'session_stopped' || event.type === 'session_error') {
+            socket.close(1000, 'Session ended');
+          }
+        });
+
+        socket.on('close', () => {
+          unsubFrame();
+          unsubSession();
+          this.getLogger().debug({ sessionId }, 'Video stream WebSocket client disconnected');
+        });
+
+        socket.on('error', (error: Error) => {
+          this.getLogger().warn(
+            { sessionId, error: error.message },
+            'Video stream WebSocket error'
+          );
+          unsubFrame();
+          unsubSession();
+        });
+
+        // Send initial session state
+        socket.send(JSON.stringify({ type: 'session_started', session }));
       }
     );
   }

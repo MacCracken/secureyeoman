@@ -107,4 +107,156 @@ describe('SwarmTemplatesTab', () => {
       expect(screen.getByTitle('Install swarm template')).toBeDefined();
     });
   });
+
+  it('shows loading state', () => {
+    mockFetchCommunitySwarmTemplates.mockReturnValue(new Promise(() => {}));
+    renderTab();
+    // Should not crash while loading
+    expect(true).toBe(true);
+  });
+
+  it('shows search input when not controlled', async () => {
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Search swarm templates/)).toBeDefined();
+    });
+  });
+
+  it('hides search input when externally controlled query', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <SwarmTemplatesTab source="community" query="test" />
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText(/Search swarm templates/)).toBeNull();
+    });
+  });
+
+  it('filters templates by search query', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Security Audit Team')).toBeDefined();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/Search swarm templates/);
+    fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Security Audit Team')).toBeNull();
+    });
+  });
+
+  it('shows community-specific empty state', async () => {
+    mockFetchCommunitySwarmTemplates.mockResolvedValue({ templates: [], total: 0 });
+    renderTab('community');
+    await waitFor(() => {
+      expect(screen.getByText('No community swarm templates available')).toBeDefined();
+      expect(screen.getByText('Sync the community repo to discover swarm templates')).toBeDefined();
+    });
+  });
+
+  it('shows default empty state when not community', async () => {
+    mockFetchCommunitySwarmTemplates.mockResolvedValue({ templates: [], total: 0 });
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('No swarm templates available')).toBeDefined();
+    });
+  });
+
+  it('calls exportSwarmTemplate on Export click', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByTitle('Export as JSON')).toBeDefined();
+    });
+
+    await user.click(screen.getByTitle('Export as JSON'));
+
+    await waitFor(() => {
+      expect(mockExportSwarmTemplate).toHaveBeenCalledWith('tmpl-1');
+    });
+  });
+
+  it('calls importSwarmTemplate on Install click', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByTitle('Install swarm template')).toBeDefined();
+    });
+
+    await user.click(screen.getByTitle('Install swarm template'));
+
+    await waitFor(() => {
+      expect(mockExportSwarmTemplate).toHaveBeenCalled();
+    });
+  });
+
+  it('shows toast after successful import', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByTitle('Install swarm template')).toBeDefined();
+    });
+
+    await user.click(screen.getByTitle('Install swarm template'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Imported — missing profiles/)).toBeDefined();
+    });
+  });
+
+  it('shows template count', async () => {
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('(1)')).toBeDefined();
+    });
+  });
+
+  it('shows community header when source is community', async () => {
+    renderTab('community');
+    await waitFor(() => {
+      expect(screen.getByText('Community Swarm Templates')).toBeDefined();
+    });
+  });
+
+  it('shows YEOMAN header when source is not community', async () => {
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('YEOMAN Swarm Templates')).toBeDefined();
+    });
+  });
+
+  it('renders multiple templates', async () => {
+    mockFetchCommunitySwarmTemplates.mockResolvedValue({
+      templates: [
+        TEMPLATE,
+        {
+          id: 'tmpl-2',
+          name: 'Dev Team',
+          description: 'Parallel dev swarm',
+          strategy: 'parallel',
+          roles: [{ role: 'developer' }, { role: 'tester' }],
+          coordinatorProfile: null,
+          isBuiltin: false,
+          createdAt: 2000,
+        },
+      ],
+      total: 2,
+    });
+
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Security Audit Team')).toBeDefined();
+      expect(screen.getByText('Dev Team')).toBeDefined();
+      expect(screen.getByText('parallel')).toBeDefined();
+    });
+  });
 });

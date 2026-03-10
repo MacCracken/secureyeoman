@@ -266,4 +266,370 @@ describe('CommunityTab', () => {
     // Should not crash while loading
     expect(screen.getByPlaceholderText(/Search community skills/)).toBeInTheDocument();
   });
+
+  it('shows themes content type when clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent({ workflowsEnabled: true, subAgentsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Themes')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Themes'));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Search community themes/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows empty themes state', async () => {
+    const user = userEvent.setup();
+    renderComponent({ workflowsEnabled: true, subAgentsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Themes')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Themes'));
+    await waitFor(() => {
+      expect(screen.getByText('No community themes found')).toBeInTheDocument();
+    });
+  });
+
+  it('shows personalities content type when clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent({ workflowsEnabled: true, subAgentsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Personalities')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Personalities'));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Search community personalities/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows empty personalities state', async () => {
+    const user = userEvent.setup();
+    renderComponent({ workflowsEnabled: true, subAgentsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Personalities')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Personalities'));
+    await waitFor(() => {
+      expect(screen.getByText('No community personalities found')).toBeInTheDocument();
+    });
+  });
+
+  it('shows workflows content type with search', async () => {
+    const user = userEvent.setup();
+    renderComponent({ workflowsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Workflows')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Workflows'));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Search community workflows/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows swarm templates content type with search', async () => {
+    const user = userEvent.setup();
+    renderComponent({ subAgentsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Swarm Templates')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Swarm Templates'));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Search community swarm templates/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows sync result with errors', async () => {
+    const user = userEvent.setup();
+    const mockSync = vi.mocked(api.syncCommunitySkills);
+    mockSync.mockResolvedValue({
+      added: 1,
+      updated: 0,
+      skipped: 0,
+      removed: 0,
+      errors: ['Failed to parse skill.json'],
+    } as any);
+
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Sync')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Sync'));
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to parse skill.json/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows sync result with themes and workflows counts', async () => {
+    const user = userEvent.setup();
+    const mockSync = vi.mocked(api.syncCommunitySkills);
+    mockSync.mockResolvedValue({
+      added: 2,
+      updated: 1,
+      skipped: 0,
+      removed: 1,
+      errors: [],
+      themesAdded: 3,
+      themesUpdated: 1,
+      workflowsAdded: 2,
+      workflowsUpdated: 0,
+    } as any);
+
+    renderComponent({ workflowsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Sync')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Sync'));
+    await waitFor(() => {
+      expect(screen.getByText(/Themes: 3 added, 1 updated/)).toBeInTheDocument();
+      expect(screen.getByText(/Workflows: 2 added, 0 updated/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows Community Skills header with count when skills present', async () => {
+    mockFetchMarketplace.mockResolvedValue({
+      skills: [
+        {
+          id: 'cs1',
+          name: 'Test Skill',
+          description: 'desc',
+          version: '1.0.0',
+          author: 'community',
+          category: 'development',
+          tags: [],
+          downloadCount: 5,
+          source: 'community',
+          installed: false,
+          installedGlobally: false,
+          instructions: '',
+          triggerPatterns: [],
+          tools: [],
+          mcpToolsAllowed: [],
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    } as any);
+
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Community Skills')).toBeInTheDocument();
+      expect(screen.getByText('(1)')).toBeInTheDocument();
+    });
+  });
+
+  it('dismisses sync result when X clicked', async () => {
+    const user = userEvent.setup();
+    const mockSync = vi.mocked(api.syncCommunitySkills);
+    mockSync.mockResolvedValue({
+      added: 1,
+      updated: 0,
+      skipped: 0,
+      removed: 0,
+      errors: [],
+    } as any);
+
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Sync')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Sync'));
+    await waitFor(() => {
+      expect(screen.getByText('Sync complete')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTitle('Dismiss'));
+    await waitFor(() => {
+      expect(screen.queryByText('Sync complete')).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows themes list with theme cards', async () => {
+    const user = userEvent.setup();
+    mockFetchMarketplace.mockImplementation(
+      (_q, _s, _p, _u, _l, _o, category) => {
+        if (category === 'theme') {
+          return Promise.resolve({
+            skills: [
+              {
+                id: 'theme-1',
+                name: 'Dark Elegance',
+                description: 'A dark theme',
+                version: '1.0.0',
+                author: 'community',
+                category: 'theme',
+                tags: [],
+                downloadCount: 5,
+                source: 'community',
+                installed: false,
+                installedGlobally: false,
+                instructions: '',
+                triggerPatterns: [],
+                tools: [],
+                mcpToolsAllowed: [],
+                updatedAt: Date.now(),
+              },
+            ],
+            total: 1,
+          });
+        }
+        return Promise.resolve({ skills: [], total: 0 });
+      }
+    );
+
+    renderComponent({ workflowsEnabled: true, subAgentsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Themes')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Themes'));
+    await waitFor(() => {
+      expect(screen.getByText('Community Themes')).toBeInTheDocument();
+      expect(screen.getByText('Dark Elegance')).toBeInTheDocument();
+    });
+  });
+
+  it('shows personalities list with personality cards', async () => {
+    const user = userEvent.setup();
+    mockFetchMarketplace.mockImplementation(
+      (_q, _s, _p, _u, _l, _o, category) => {
+        if (category === 'personality') {
+          return Promise.resolve({
+            skills: [
+              {
+                id: 'pers-1',
+                name: 'Helpful Assistant',
+                description: 'A helpful personality',
+                version: '1.0.0',
+                author: 'community',
+                category: 'personality',
+                tags: ['personality:assistant'],
+                downloadCount: 20,
+                source: 'community',
+                installed: false,
+                installedGlobally: false,
+                instructions: '',
+                triggerPatterns: [],
+                tools: [],
+                mcpToolsAllowed: [],
+                updatedAt: Date.now(),
+              },
+            ],
+            total: 1,
+          });
+        }
+        return Promise.resolve({ skills: [], total: 0 });
+      }
+    );
+
+    renderComponent({ workflowsEnabled: true, subAgentsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Personalities')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Personalities'));
+    await waitFor(() => {
+      expect(screen.getByText('Community Personalities')).toBeInTheDocument();
+      expect(screen.getByText('Helpful Assistant')).toBeInTheDocument();
+    });
+  });
+
+  it('shows sync result with personalities counts', async () => {
+    const user = userEvent.setup();
+    const mockSync = vi.mocked(api.syncCommunitySkills);
+    mockSync.mockResolvedValue({
+      added: 1,
+      updated: 0,
+      skipped: 0,
+      removed: 0,
+      errors: [],
+      personalitiesAdded: 2,
+      personalitiesUpdated: 1,
+    } as any);
+
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Sync')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Sync'));
+    await waitFor(() => {
+      expect(screen.getByText(/Personalities: 2 added, 1 updated/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows sync result with swarms counts when subAgents enabled', async () => {
+    const user = userEvent.setup();
+    const mockSync = vi.mocked(api.syncCommunitySkills);
+    mockSync.mockResolvedValue({
+      added: 1,
+      updated: 0,
+      skipped: 0,
+      removed: 0,
+      errors: [],
+      swarmsAdded: 1,
+      swarmsUpdated: 0,
+    } as any);
+
+    renderComponent({ subAgentsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Sync')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Sync'));
+    await waitFor(() => {
+      expect(screen.getByText(/Swarm templates: 1 added, 0 updated/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows removed count in sync result', async () => {
+    const user = userEvent.setup();
+    const mockSync = vi.mocked(api.syncCommunitySkills);
+    mockSync.mockResolvedValue({
+      added: 0,
+      updated: 0,
+      skipped: 2,
+      removed: 3,
+      errors: [],
+    } as any);
+
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Sync')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Sync'));
+    await waitFor(() => {
+      expect(screen.getByText(/3 removed/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows skill description in community skills view', async () => {
+    mockFetchMarketplace.mockResolvedValue({
+      skills: [
+        {
+          id: 'cs1',
+          name: 'Code Helper',
+          description: 'Assists with code review',
+          version: '2.0.0',
+          author: 'dev-team',
+          category: 'development',
+          tags: ['code', 'review'],
+          downloadCount: 50,
+          source: 'community',
+          installed: false,
+          installedGlobally: false,
+          instructions: '',
+          triggerPatterns: [],
+          tools: [],
+          mcpToolsAllowed: [],
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    } as any);
+
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Code Helper')).toBeInTheDocument();
+    });
+  });
 });

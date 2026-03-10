@@ -244,4 +244,82 @@ describe('DocumentsPanel', () => {
       expect(screen.getByText('PDF, HTML, MD, TXT (max 20 MB)')).toBeInTheDocument();
     });
   });
+
+  it('shows multiple documents', async () => {
+    mockListDocuments.mockResolvedValue({
+      documents: [DOC_READY, DOC_ERROR, DOC_PROCESSING, DOC_PENDING],
+      total: 4,
+    });
+    renderPanel();
+    await waitFor(() => {
+      expect(screen.getByText('Test Document')).toBeInTheDocument();
+      expect(screen.getByText('Bad Document')).toBeInTheDocument();
+      expect(screen.getByText('Processing Doc')).toBeInTheDocument();
+      expect(screen.getByText('Pending Doc')).toBeInTheDocument();
+    });
+  });
+
+  it('shows all format badges', async () => {
+    mockListDocuments.mockResolvedValue({
+      documents: [
+        DOC_READY,
+        DOC_ERROR,
+        DOC_PROCESSING,
+        DOC_PENDING,
+      ],
+      total: 4,
+    });
+    renderPanel();
+    await waitFor(() => {
+      expect(screen.getByText('pdf')).toBeInTheDocument();
+      expect(screen.getByText('txt')).toBeInTheDocument();
+      expect(screen.getByText('md')).toBeInTheDocument();
+      expect(screen.getByText('html')).toBeInTheDocument();
+    });
+  });
+
+  it('filters documents by personality', async () => {
+    renderPanel();
+    await waitFor(() => {
+      expect(screen.getAllByText('FRIDAY').length).toBeGreaterThanOrEqual(1);
+    });
+    const selects = screen.getAllByRole('combobox');
+    fireEvent.change(selects[0], { target: { value: 'p1' } });
+    await waitFor(() => {
+      expect(mockListDocuments).toHaveBeenCalledWith(
+        expect.objectContaining({ personalityId: 'p1' })
+      );
+    });
+  });
+
+  it('shows upload personality selector', async () => {
+    renderPanel();
+    await waitFor(() => {
+      expect(screen.getByText('Global (All Personalities)')).toBeInTheDocument();
+    });
+  });
+
+  it('shows upload visibility options', async () => {
+    renderPanel();
+    await waitFor(() => {
+      expect(screen.getByText('Visibility')).toBeInTheDocument();
+      expect(screen.getByText('Private')).toBeInTheDocument();
+    });
+  });
+
+  it('shows url format badge', async () => {
+    mockListDocuments.mockResolvedValue({
+      documents: [{
+        ...DOC_READY,
+        id: 'doc-url',
+        title: 'Web Page',
+        format: 'url' as const,
+      }],
+      total: 1,
+    });
+    renderPanel();
+    await waitFor(() => {
+      expect(screen.getByText('url')).toBeInTheDocument();
+    });
+  });
 });

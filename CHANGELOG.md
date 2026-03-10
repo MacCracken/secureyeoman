@@ -61,6 +61,57 @@ Embedded PostgreSQL 16 + pgvector in the Docker container. Eliminates the mandat
 - **docker-compose**: `sy-pg` service gated behind `--profile external-db`. Default mode is embedded PG. `DATABASE_HOST` defaults to empty (triggers embedded).
 - **Deployment docs**: Added "PostgreSQL: Embedded vs External" section.
 
+### OpenAI WebSocket Transport for AI Providers
+
+Persistent WebSocket connections to the OpenAI Responses API (`wss://api.openai.com/v1/responses`), enabling ~40% faster multi-turn interactions for tool-heavy workloads. Opt-in via `useWebSocket: true` in ModelConfig.
+
+- **WebSocket transport** (`ai/transports/openai-ws-transport.ts`): Connection pool with configurable size (default 3), idle timeout (5 min), ping/pong keepalive (30s), hard lifetime cap (59 min, below OpenAI's 60 min limit). LRU eviction, auto-reconnect on transient close codes (1006, 1011, 1013).
+- **WebSocket provider** (`ai/providers/openai-ws.ts`): `OpenAIWsProvider` implements `AIProvider` with incremental turn submission via `previous_response_id` — only new messages sent after first turn. Automatic fallback to HTTP after 3 consecutive WS failures (60s cooldown).
+- **Config**: New `useWebSocket` boolean in `ModelConfig` (default: `false`). When enabled for `provider: 'openai'`, the AIClient factory selects `OpenAIWsProvider` over `OpenAIProvider`.
+- **Roadmap**: OpenAI WS marked done. Warm-up/pre-generation remains planned. Provider watch list: Anthropic, Google, Mistral, Groq, DeepSeek — all HTTP-only as of 2026-03.
+
+### Deep Security Audit (150 files)
+
+Comprehensive security audit across 5 domains — SSRF, injection, cryptography, access control, and resource exhaustion. 150 files changed, all code-fixable findings resolved. 16 architectural items tracked in roadmap for future design decisions.
+
+#### SSRF Protection
+- **Proactive webhook handler** (`proactive/action-handlers.ts`): Added `assertPublicUrl()` before user-controlled webhook URL fetch.
+- **Zapier adapter** (`integrations/zapier/adapter.ts`): Added `assertPublicUrl()` before outbound Zapier webhook dispatch.
+- **Workflow engine** (`workflow/workflow-engine.ts`): Added `assertPublicUrl()` before model endpoint fetch in evaluation steps and webhook URL in webhook steps.
+
+#### ReDoS Prevention
+- **DLP scanner** (`security/dlp/dlp-scanner.ts`): Added 500-char pattern length limit and 100KB input truncation for user-supplied regex patterns.
+- **Eval engine** (`agent-eval/eval-engine.ts`): Added 500-char limit on regex assertion patterns with graceful fallback on invalid regex.
+- **Routing rules** (`integrations/routing-rules-manager.ts`): Added 500-char limit; oversized patterns fall back to `string.includes()`.
+
+#### Command Injection Prevention
+- **Sandbox namespaces** (`sandbox/namespaces.ts`): Refactored `execSync(fullCmd)` string concatenation to `execFileSync('unshare', args)` with args array to prevent shell injection.
+- **Code execution runtimes** (`execution/runtimes.ts`): Expanded Node.js and shell dangerous-pattern blocklists — added `node:child_process`, `node:fs` import patterns, fork bomb detection, pipe-to-shell (`curl|sh`), setuid chmod, and netcat listener patterns.
+
+#### Fetch Timeout Enforcement
+- **60+ outbound HTTP calls** across AI providers (Anthropic, DeepSeek, Gemini, Grok, Letta, LM Studio, LocalAI, Mistral, Ollama, OpenAI, OpenCode), integration adapters (Gmail, Google Calendar, Linear, Jira, Slack, Discord, GitLab, Telegram, YouTube, Spotify, Stripe, Airtable, AWS, Azure, DingTalk, Google Chat, Zapier, Twitter), MCP tools (core-client, QuickBooks, Jenkins, GitLab CI, Northflank, GitHub Actions, Agnostic, network-tools), and CLI commands: Added `AbortSignal.timeout()` to prevent indefinite connection hangs.
+
+#### Cryptography & Authentication
+- **OAuth connection tokens** (`gateway/oauth-routes.ts`): Replaced `sha256(provider + userId + Date.now())` with `generateSecureToken(32)` (CSPRNG).
+- **SAML adapter** (`security/saml-adapter.ts`): Added `audience` validation, `wantAuthnResponseSigned: true`, and `maxAssertionAgeMs: 300_000`.
+- **Webhook verification** (`integrations/gitlab/adapter.ts`, `integrations/jira/adapter.ts`): Replaced `===` with `timingSafeEqual` for constant-time secret comparison.
+- **Error sanitization** (`integrations/gitlab/adapter.ts`, `integrations/jira/adapter.ts`, `integrations/gmail/adapter.ts`, `integrations/azure/adapter.ts`): Sanitized error messages to avoid leaking response bodies; log details at warn level, throw generic HTTP status.
+
+#### Sandbox & Isolation
+- **Dynamic tool VM** (`soul/dynamic-tool-manager.ts`): Added `Object.defineProperty(context, 'constructor', { value: undefined, writable: false })` to block prototype chain escapes.
+- **DB privilege** (`docker/entrypoint-combined.sh`): Added `ALTER ROLE ... WITH NOSUPERUSER` after migration completes — runtime database user no longer has superuser.
+
+#### Information Disclosure
+- **Health endpoint** (`gateway/server.ts`): Removed version string from unauthenticated `/health/live` response.
+- **Report download** (`reporting/report-routes.ts`): Sanitized `Content-Disposition` header with `.replace(/[\r\n"\\]/g, '_')` to prevent header injection.
+- **Google Chat adapter** (`integrations/googlechat/adapter.ts`): Removed token from URL query string — Authorization header already carries the credential.
+
+#### MCP Tool Integrity
+- **Desktop tools** (`mcp/tools/desktop-tools.ts`): Fixed 14 mismatched `desktopHandler()` name arguments to match their `registerTool()` names for correct rate limiting and audit logging.
+
+#### Cache & Resource Management
+- **MCP proxy auth** (`mcp/auth/proxy-auth.ts`): Added `MAX_CACHE_SIZE = 10_000` with LRU eviction to prevent unbounded memory growth from auth token caching.
+
 ### Code Audit Fixes
 
 Performance, security, and code quality improvements from pre-release audit.

@@ -225,6 +225,7 @@ export class SecureYeoman {
   private executionManager: CodeExecutionManager | null = null;
   private a2aStorage: A2AStorage | null = null;
   private a2aManager: A2AManager | null = null;
+  private videoStreamManager: import('./body/capture/video-stream-manager.js').VideoStreamManager | null = null;
 
   // CPU usage sampler — updated every getMetrics() call to compute a rolling delta
   private _lastCpuUsage: NodeJS.CpuUsage = process.cpuUsage();
@@ -610,6 +611,36 @@ export class SecureYeoman {
                 auditChain: this.auditChain!,
               });
               await this.a2aManager.initialize();
+            })
+          );
+        }
+
+        // Step 6.15: Initialize Video Stream Manager (if desktop control + video streaming enabled)
+        if (this.config.security.allowDesktopControl && this.config.security.allowVideoStreaming) {
+          parallelInits.push(
+            this.initOptional('Video stream manager', async () => {
+              const { VideoStreamManager } = await import('./body/capture/video-stream-manager.js');
+              const { AgnosVideoBridge } = await import('./body/capture/agnos-video-bridge.js');
+
+              // Build AGNOS bridge if AGNOS runtime is configured
+              let agnosBridge: InstanceType<typeof AgnosVideoBridge> | null = null;
+              const agnosUrl = process.env.AGNOS_RUNTIME_URL;
+              if (agnosUrl) {
+                const { getSecret } = await import('./config/loader.js');
+                agnosBridge = new AgnosVideoBridge(
+                  {
+                    agnosUrl,
+                    apiKey: getSecret('AGNOS_RUNTIME_API_KEY'),
+                  },
+                  this.logger!.child({ component: 'AgnosVideoBridge' })
+                );
+              }
+
+              this.videoStreamManager = new VideoStreamManager({
+                logger: this.logger!.child({ component: 'VideoStreamManager' }),
+                agnosBridge,
+                visionAnalyzer: this.multimodalManager ?? null,
+              });
             })
           );
         }
@@ -1614,6 +1645,9 @@ export class SecureYeoman {
   }
   getDesktopTrainingBridge(): DesktopTrainingBridge | null {
     return this.trainingMod?.getDesktopTrainingBridge() ?? null;
+  }
+  getVideoStreamManager() {
+    return this.videoStreamManager;
   }
   getCheckpointStore() {
     this.ensureInitialized();

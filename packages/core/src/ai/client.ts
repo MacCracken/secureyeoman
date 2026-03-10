@@ -27,6 +27,7 @@ import { ResponseCache, type CacheStats } from './response-cache.js';
 import type { AIProvider } from './providers/base.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { OpenAIProvider } from './providers/openai.js';
+import { OpenAIWsProvider } from './providers/openai-ws.js';
 import { GeminiProvider } from './providers/gemini.js';
 import { OllamaProvider } from './providers/ollama.js';
 import { OpenCodeProvider } from './providers/opencode.js';
@@ -511,6 +512,7 @@ export class AIClient {
       localFirst: this.primaryModelConfig.localFirst,
       confidentialCompute:
         fbConfig.confidentialCompute ?? this.primaryModelConfig.confidentialCompute,
+      useWebSocket: this.primaryModelConfig.useWebSocket,
     };
 
     const provider = this.createProvider({ model: fullModelConfig, retryConfig: this.retryConfig });
@@ -760,7 +762,9 @@ export class AIClient {
       case 'anthropic':
         return new AnthropicProvider(providerConfig, this.logger ?? undefined);
       case 'openai':
-        return new OpenAIProvider(providerConfig, this.logger ?? undefined);
+        return config.model.useWebSocket
+          ? new OpenAIWsProvider(providerConfig, this.logger ?? undefined)
+          : new OpenAIProvider(providerConfig, this.logger ?? undefined);
       case 'gemini':
         return new GeminiProvider(providerConfig, this.logger ?? undefined);
       case 'ollama':

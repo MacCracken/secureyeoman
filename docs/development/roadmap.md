@@ -10,7 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 145 | Cross-Project MCP Expansion (Photisnadi widget) | P2 | Widget done; 2 future items remaining |
+| 145 | Cross-Project MCP Expansion | P2 | 3 future items remaining |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -118,24 +118,43 @@ Items identified in the deep security audit that require design decisions or mul
 
 ---
 
-## Phase 145: Cross-Project MCP Expansion — Remaining
+## AGNOS Built-in Integration
 
-### Photisnadi Dashboard Widget
+SecureYeoman is being promoted from consumer project to **flagship built-in tool** on AGNOS. AGNOS-side recipe created (`recipes/marketplace/secureyeoman.toml`). Items below are SecureYeoman-side work.
 
 | Item | Effort | Status | Description |
 |------|--------|--------|-------------|
-| Photisnadi dashboard widget | 0.5 day | Done (2026-03-09) | `TaskTrackerWidget.tsx` showing task counts by status, ritual streaks, recent activity. Proxy route at `/api/v1/integrations/photisnadi/widget` |
+| Agent registration with daimon | 1 hour | Not started | On gateway startup, batch-register all active agent profiles with AGNOS via **`POST /v1/agents/register/batch`** (new endpoint). Send heartbeats every 30s. Deregister on shutdown. The batch endpoint is idempotent — safe to call on every restart |
+| MCP tool registration with daimon | 2 hours | Not started | Register SecureYeoman's MCP tools with daimon's MCP server (`POST /v1/mcp/tools`) so any AGNOS agent can discover and invoke them. Prioritize high-value tools: web_search, github_*, docker_*, knowledge_*, workflow_* |
+| Audit event forwarding | 1 hour | Not started | Forward SecureYeoman audit chain events to AGNOS audit subsystem (`POST /v1/audit/forward` @ port 8090) when `AGNOS_AUDIT_URL` is set. Reuse existing HMAC-SHA256 audit entries |
+| Add app icon for marketplace | 30 min | Not started | Create `assets/secureyeoman.png` (256x256+) and `.svg`. Copy to `$PKG/usr/share/icons/` in recipe install step |
+| Shared vector store bridge | 2 hours | Not started | When `AGNOS_RUNTIME_URL` is set, optionally use AGNOS vector store (`POST /v1/vectors/insert`, `POST /v1/vectors/search`) as a backend alongside local FAISS/Qdrant. Enables cross-project RAG (SecureYeoman knowledge accessible to other AGNOS agents) |
+| Verify sandbox in AGNOS | 2 hours | Not started | Test SecureYeoman inside AGNOS with Landlock/seccomp sandbox active. Verify all integration APIs work through allowed hosts. Verify PostgreSQL data persistence in `~/.local/share/secureyeoman/` |
+| Pre-configure AGNOS defaults | 30 min | Not started | On startup, call **`GET /v1/discover`** (new endpoint) to auto-detect AGNOS capabilities. Auto-enable AGNOS provider as primary, set `MCP_EXPOSE_AGNOS_TOOLS=true`, configure token budget reporting. No manual config needed |
+| Subscribe to AGNOS events | 1 hour | Not started | Connect to **`GET /v1/events/subscribe?topics=agent.*,task.*`** (new SSE endpoint) for real-time AGNOS event streaming. Wire events into SecureYeoman's extension hook system (`agent:after-delegate`, etc.) for cross-platform observability |
+| Publish events to AGNOS | 30 min | Not started | On swarm completion, task execution, and error events, publish to **`POST /v1/events/publish`** (new endpoint). Enables other AGNOS agents to react to SecureYeoman activity |
+| Query sandbox profiles | 30 min | Not started | On dashboard init, call **`GET /v1/sandbox/profiles/list`** (new endpoint) to show available AGNOS sandbox presets. Display in SecureYeoman's Execution settings panel |
 
-### Cross-Project — Future
+**AGNOS-side work (done):**
+- Marketplace recipe created (`recipes/marketplace/secureyeoman.toml`) with `flagship = true`
+- Sandbox profile: desktop seccomp, Landlock for data dir + IPC + fonts
+- Service ports declared (18789 core, 3000 dashboard, 3001 MCP)
+- Systemd user service unit included for headless mode
+- Depends on hoosh (llm-gateway) and daimon (agent-runtime)
+- **Handshake endpoints implemented** (6 new endpoints, 10 tests):
+  - `GET /v1/discover` — service discovery (capabilities, endpoints, companion services)
+  - `POST /v1/agents/register/batch` — batch agent registration (idempotent, up to 100)
+  - `GET /v1/events/subscribe` — SSE event stream with topic wildcards
+  - `POST /v1/events/publish` — publish events to pub/sub broker
+  - `GET /v1/events/topics` — list active topics with subscriber counts
+  - `GET /v1/sandbox/profiles/list` — list all sandbox presets
+
+---
+
+## Phase 145: Cross-Project MCP Expansion — Remaining
 
 | Item | Status | Description |
 |------|--------|-------------|
-| Smoke-test AGNOS MCP tools | Done (2026-03-08) | All 20 `agnos_*` tools verified against live agnosticos container |
-| Agnostic embedded services | Done (2026-03-09) | Redis + PostgreSQL + Caddy TLS embedded in container via supervisord. External URLs override embedded services for HA. Remove `agnostic-redis` from docker-compose |
-| SY TLS via Caddy reverse proxy | Done (2026-03-09) | Supervisord + Caddy in Docker images. 3 modes: provided certs, auto ACME, HTTP passthrough. Fastify stays HTTP on 127.0.0.1, Caddy handles :443. Fastify TLS kept as fallback for bare-metal |
-| Unified TLS env vars | Done (2026-03-09) | `TLS_ENABLED`, `TLS_CERT_PATH`, `TLS_KEY_PATH`, `TLS_DOMAIN`, `TLS_PORT` shared across SY, Agnostic, AGNOS. Legacy `SECUREYEOMAN_TLS_*` still supported with lower precedence |
-| Docker image CI/CD — GHCR push | Done (2026-03-09) | Multi-arch (amd64 + arm64) image build in release pipeline. Push to `ghcr.io/maccracken/secureyeoman`. Cosign-signed. CI build test on every push/PR |
-| SY embedded PostgreSQL | Done (2026-03-09) | Move `sy-pg` into the SY container (supervisord). Same pattern as Agnostic: skip embedded when `DATABASE_HOST` points to external. Removes mandatory sidecar for single-node deployments |
 | Merge agnostic into agnosticos | Future | Agnostic becomes a package within agnosticos — collapses to single service |
 | Photisnadi in SY container | Future | Photisnadi baked into agnosticos base image or run as separate container. User choice via `PHOTISNADI_ENABLED` flag. When embedded, supervisord manages Photisnadi process; when external, SY proxies via SUPABASE_URL |
 | Task tracker widget — third-party aggregator | Future | Extend TaskTrackerWidget to aggregate tasks from third-party trackers (Photisnadi, Trello, Jira, Linear, Todoist, Asana) via adapter interface. Unified view of all external task sources. Widget auto-selects adapters based on configured integrations |
@@ -201,14 +220,18 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ### WebSocket Mode for AI Providers
 
-*Demand-Gated — implement once adoption of multi-turn agentic workflows justifies the investment. OpenAI's WebSocket API (wss://api.openai.com/v1/responses) demonstrates up to ~40% faster end-to-end execution for tool-heavy rollouts (20+ tool calls) by maintaining persistent connections and sending only incremental inputs per turn.*
+*OpenAI WebSocket transport implemented (2026-03-09). Persistent connections via `wss://api.openai.com/v1/responses` with incremental turn submission, connection pooling, and automatic HTTP fallback. Enabled per-model via `useWebSocket: true` in ModelConfig.*
 
-- [ ] **WebSocket transport layer** — Abstract a `WebSocketTransport` alongside the existing HTTP transport in the AI client. Persistent connection (up to 60 min) with automatic reconnection and exponential backoff. Provider-agnostic interface so other providers can adopt WebSocket mode as they ship it.
-- [ ] **Incremental turn submission** — On subsequent turns within a connection, send only `previous_response_id` + new input items (tool outputs, user messages) instead of replaying the full conversation. Reduces payload size and provider-side reprocessing.
-- [ ] **Connection pooling & lifecycle** — Connection pool per provider account (configurable pool size). Idle timeout, health checks, and graceful drain on shutdown. Metrics: active connections, reconnection count, average turn latency.
+- [x] **WebSocket transport layer** — `OpenAIWsTransport` with persistent connections (up to 59 min), automatic reconnection on transient failures, and LRU pool eviction. Provider-agnostic `WsConnection` interface.
+- [x] **Incremental turn submission** — `previous_response_id` + delta-only input on subsequent turns. Full context sent only on first turn or after connection reset.
+- [x] **Connection pooling & lifecycle** — Configurable pool size (default 3), idle timeout (5 min), ping/pong keepalive (30s), hard lifetime cap (59 min). LRU eviction when pool is full.
 - [ ] **Warm-up / pre-generation** — Support `generate: false` mode to pre-load model state and tools on the connection before the first user message, reducing first-response latency for personality activations.
-- [ ] **Fallback to HTTP** — Automatic fallback to standard HTTP streaming when WebSocket connection fails or provider doesn't support it. Transparent to calling code — the AI client selects transport based on provider capability and connection health.
-- [ ] **Provider support matrix** — Initially OpenAI only. Track Anthropic, Google, and other provider WebSocket API availability. Feature-gated per provider in `AiProviderConfig`.
+- [x] **Fallback to HTTP** — Automatic fallback after 3 consecutive WS failures (60s cooldown). `OpenAIWsProvider` wraps `OpenAIProvider` as HTTP fallback — transparent to calling code.
+- [x] **Provider support matrix** — OpenAI implemented. Feature-gated via `ModelConfig.useWebSocket`. Watch list for other providers:
+  - **Anthropic** — No WebSocket API as of 2026-03. SSE streaming only.
+  - **Google Gemini** — No WebSocket API. Server-sent events via REST.
+  - **Mistral / Groq / DeepSeek** — HTTP-only. No announced plans.
+  - Track provider announcements — add support as APIs ship.
 
 ---
 
@@ -279,4 +302,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-09 (TaskTrackerWidget renamed from PhotisnadiWidget, SY embedded PostgreSQL done, Photisnadi env vars added to docker-compose). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-09 (Removed completed Phase 145 items, added Security Hardening — Architectural backlog from deep audit). See [Changelog](../../CHANGELOG.md) for full history.*

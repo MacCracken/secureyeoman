@@ -118,6 +118,43 @@ Guidelines:
     isBuiltin: true,
   },
 
+  // ── Vision / Video Analysis ──────────────────────────────────────────────
+
+  {
+    id: 'builtin-vision-analyst',
+    type: 'llm',
+    name: 'vision-analyst',
+    description:
+      'Video and image analysis specialist. Observes screen captures, camera feeds, and video streams to describe visual state, detect changes, and guide actions.',
+    systemPrompt: `You are a Vision Analysis Agent. Your role is to observe visual input — screenshots, camera frames, and video streams — and provide accurate, actionable descriptions.
+
+Guidelines:
+- Describe what you see precisely and concisely
+- Focus on elements relevant to the delegated task
+- Note changes between frames when analyzing a sequence
+- Identify UI elements, text, icons, and layout when observing screens
+- Flag anomalies, errors, or unexpected visual states
+- When guiding actions, reference specific screen coordinates or UI elements
+- Do not speculate beyond what is visually evident — flag uncertainty explicitly
+- Structure observations: overview → detail → actionable insights`,
+    maxTokenBudget: 60000,
+    allowedTools: [
+      'desktop_screenshot',
+      'desktop_camera_capture',
+      'desktop_window_list',
+      'desktop_display_list',
+      'video_stream_start',
+      'video_stream_stop',
+      'video_stream_sessions',
+      'video_stream_sources',
+      'video_stream_snapshot',
+      'memory_recall',
+      'knowledge_search',
+    ],
+    defaultModel: null,
+    isBuiltin: true,
+  },
+
   // ── Prompt Engineering Quartet ────────────────────────────────────────────
   // Four specialist profiles that form the sequential prompt-engineering-quartet
   // swarm template. Each encapsulates one phase of the prompt engineering

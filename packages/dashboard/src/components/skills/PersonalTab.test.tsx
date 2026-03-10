@@ -427,4 +427,273 @@ describe('PersonalTab', () => {
       expect(screen.getByText('Skill Two')).toBeInTheDocument();
     });
   });
+
+  it('shows edit form when edit button clicked', async () => {
+    const user = userEvent.setup();
+    mockFetchSkills.mockResolvedValue({
+      skills: [
+        {
+          id: 'sk1',
+          name: 'Editable Skill',
+          description: 'Can edit',
+          instructions: 'Do things',
+          status: 'active',
+          source: 'user',
+          enabled: true,
+          personalityId: 'p1',
+          triggerPatterns: ['/edit'],
+        },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Editable Skill')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTitle('Edit'));
+    await waitFor(() => {
+      expect(screen.getByText('Edit Skill')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Editable Skill')).toBeInTheDocument();
+    });
+  });
+
+  it('shows enable/disable toggle for active skills', async () => {
+    const user = userEvent.setup();
+    mockFetchSkills.mockResolvedValue({
+      skills: [
+        {
+          id: 'sk1',
+          name: 'Toggleable',
+          description: 'Toggle me',
+          instructions: '',
+          status: 'active',
+          source: 'user',
+          enabled: true,
+          personalityId: 'p1',
+          triggerPatterns: [],
+        },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Toggleable')).toBeInTheDocument();
+    });
+    const disableBtn = screen.getByTitle('Disable');
+    expect(disableBtn).toBeInTheDocument();
+    await user.click(disableBtn);
+    await waitFor(() => {
+      expect(vi.mocked(api.disableSkill)).toHaveBeenCalledWith('sk1');
+    });
+  });
+
+  it('shows enable button for disabled skills', async () => {
+    const user = userEvent.setup();
+    mockFetchSkills.mockResolvedValue({
+      skills: [
+        {
+          id: 'sk1',
+          name: 'Disabled One',
+          description: 'Off',
+          instructions: '',
+          status: 'active',
+          source: 'user',
+          enabled: false,
+          personalityId: 'p1',
+          triggerPatterns: [],
+        },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Disabled One')).toBeInTheDocument();
+    });
+    const enableBtn = screen.getByTitle('Enable');
+    expect(enableBtn).toBeInTheDocument();
+    await user.click(enableBtn);
+    await waitFor(() => {
+      expect(vi.mocked(api.enableSkill)).toHaveBeenCalledWith('sk1');
+    });
+  });
+
+  it('shows approve/reject buttons for pending skills', async () => {
+    const user = userEvent.setup();
+    mockFetchSkills.mockResolvedValue({
+      skills: [
+        {
+          id: 'sk1',
+          name: 'Pending One',
+          description: 'Needs approval',
+          instructions: '',
+          status: 'pending_approval',
+          source: 'ai_proposed',
+          enabled: false,
+          personalityId: 'p1',
+          triggerPatterns: [],
+        },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Pending One')).toBeInTheDocument();
+    });
+    expect(screen.getByTitle('Approve')).toBeInTheDocument();
+    expect(screen.getByTitle('Reject')).toBeInTheDocument();
+
+    await user.click(screen.getByTitle('Approve'));
+    await waitFor(() => {
+      expect(vi.mocked(api.approveSkill)).toHaveBeenCalledWith('sk1');
+    });
+  });
+
+  it('calls rejectSkill on reject button click', async () => {
+    const user = userEvent.setup();
+    mockFetchSkills.mockResolvedValue({
+      skills: [
+        {
+          id: 'sk1',
+          name: 'Reject Me',
+          description: 'Should reject',
+          instructions: '',
+          status: 'pending_approval',
+          source: 'ai_proposed',
+          enabled: false,
+          personalityId: 'p1',
+          triggerPatterns: [],
+        },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Reject Me')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTitle('Reject'));
+    await waitFor(() => {
+      expect(vi.mocked(api.rejectSkill)).toHaveBeenCalledWith('sk1');
+    });
+  });
+
+  it('shows delete confirm dialog when delete button clicked', async () => {
+    const user = userEvent.setup();
+    mockFetchSkills.mockResolvedValue({
+      skills: [
+        {
+          id: 'sk1',
+          name: 'Delete Me',
+          description: 'Should delete',
+          instructions: '',
+          status: 'active',
+          source: 'user',
+          enabled: true,
+          personalityId: 'p1',
+          triggerPatterns: [],
+        },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Delete Me')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTitle('Delete'));
+    await waitFor(() => {
+      expect(screen.getByText(/Are you sure you want to delete/)).toBeInTheDocument();
+    });
+  });
+
+  it('calls createSkill when create form submitted', async () => {
+    const { fireEvent: fe } = await import('@testing-library/react');
+    const user = userEvent.setup();
+    const mockCreate = vi.mocked(api.createSkill);
+    mockCreate.mockResolvedValue({ id: 'new-1', name: 'New Test' } as any);
+
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Add Skill')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Add Skill'));
+
+    const nameInput = screen.getByPlaceholderText('Skill name');
+    const descInput = screen.getByPlaceholderText('Description');
+    fe.change(nameInput, { target: { value: 'New Test' } });
+    fe.change(descInput, { target: { value: 'A test description' } });
+
+    await user.click(screen.getByText('Create'));
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'New Test', description: 'A test description' })
+      );
+    });
+  });
+
+  it('shows export button for AI source skills', async () => {
+    mockFetchSkills.mockResolvedValue({
+      skills: [
+        {
+          id: 'sk1',
+          name: 'AI Exportable',
+          description: 'AI learned skill',
+          instructions: 'Instructions here',
+          status: 'active',
+          source: 'ai_learned',
+          enabled: true,
+          personalityId: 'p1',
+          triggerPatterns: [],
+        },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('AI Exportable')).toBeInTheDocument();
+    });
+    expect(screen.getByTitle('Export as JSON')).toBeInTheDocument();
+  });
+
+  it('shows MCP restricted tools on skills', async () => {
+    mockFetchSkills.mockResolvedValue({
+      skills: [
+        {
+          id: 'sk1',
+          name: 'Restricted Skill',
+          description: 'Has MCP tools',
+          instructions: '',
+          status: 'active',
+          source: 'user',
+          enabled: true,
+          personalityId: 'p1',
+          triggerPatterns: [],
+          mcpToolsAllowed: ['web_search', 'file_read'],
+        },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Restricted Skill')).toBeInTheDocument();
+    });
+    expect(screen.getByText('MCP Restricted:')).toBeInTheDocument();
+    expect(screen.getByText('web_search')).toBeInTheDocument();
+    expect(screen.getByText('file_read')).toBeInTheDocument();
+  });
+
+  it('shows linked workflow ID on skills', async () => {
+    mockFetchSkills.mockResolvedValue({
+      skills: [
+        {
+          id: 'sk1',
+          name: 'Workflow Skill',
+          description: 'Has workflow',
+          instructions: '',
+          status: 'active',
+          source: 'user',
+          enabled: true,
+          personalityId: 'p1',
+          triggerPatterns: [],
+          linkedWorkflowId: 'wf-abc-123',
+        },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Workflow Skill')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Workflow:')).toBeInTheDocument();
+    expect(screen.getByText('wf-abc-123')).toBeInTheDocument();
+  });
 });

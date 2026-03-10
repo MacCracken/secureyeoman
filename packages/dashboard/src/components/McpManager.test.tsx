@@ -182,4 +182,163 @@ describe('McpManager', () => {
     await user.click(screen.getByText('Add Server'));
     expect(screen.getByText('+ Add Variable')).toBeInTheDocument();
   });
+
+  it('shows server transport type badge', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        { id: 's1', name: 'stdio-server', transport: 'stdio', command: 'npx @tool/mcp', enabled: true },
+      ],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('stdio')).toBeInTheDocument();
+    });
+  });
+
+  it('shows server command for stdio transport', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        { id: 's1', name: 'stdio-server', transport: 'stdio', command: 'npx @tool/mcp', enabled: true },
+      ],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('npx @tool/mcp')).toBeInTheDocument();
+    });
+  });
+
+  it('shows server URL for sse transport', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        { id: 's1', name: 'sse-server', transport: 'sse', url: 'https://mcp.example.com', enabled: true },
+      ],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('sse')).toBeInTheDocument();
+      expect(screen.getByText('https://mcp.example.com')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Remove button on server cards', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [{ id: 's1', name: 'test-server', transport: 'stdio', enabled: true }],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Remove')).toBeInTheDocument();
+    });
+  });
+
+  it('shows toggle button with correct state', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        { id: 's1', name: 'active', transport: 'stdio', enabled: true },
+      ],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByTitle('Click to disable')).toBeInTheDocument();
+    });
+  });
+
+  it('shows disabled toggle state', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        { id: 's1', name: 'inactive', transport: 'sse', enabled: false },
+      ],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByTitle('Click to enable')).toBeInTheDocument();
+    });
+  });
+
+  it('expands discovered tools section', async () => {
+    const user = userEvent.setup();
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [{ id: 's1', name: 'test-server', transport: 'stdio', enabled: true }],
+      total: 1,
+    } as any);
+    mockFetchMcpTools.mockResolvedValue({
+      tools: [
+        { serverId: 's1', serverName: 'test-server', name: 'read_file', description: 'Reads a file from disk' },
+        { serverId: 's1', serverName: 'test-server', name: 'write_file', description: 'Writes a file' },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Discovered Tools')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Discovered Tools'));
+    await waitFor(() => {
+      expect(screen.getByText('read_file')).toBeInTheDocument();
+      expect(screen.getByText('write_file')).toBeInTheDocument();
+      expect(screen.getByText('Reads a file from disk')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Configured Servers header when servers exist', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [{ id: 's1', name: 'test', transport: 'stdio', enabled: true }],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Configured Servers')).toBeInTheDocument();
+    });
+  });
+
+  it('shows server description when present', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        {
+          id: 's1',
+          name: 'db-server',
+          transport: 'stdio',
+          enabled: true,
+          description: 'Database management tools',
+        },
+      ],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Database management tools')).toBeInTheDocument();
+    });
+  });
+
+  it('shows tools grouped by server name in expanded view', async () => {
+    const user = userEvent.setup();
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        { id: 's1', name: 'server-alpha', transport: 'stdio', enabled: true },
+        { id: 's2', name: 'server-beta', transport: 'sse', enabled: true },
+      ],
+      total: 2,
+    } as any);
+    mockFetchMcpTools.mockResolvedValue({
+      tools: [
+        { serverId: 's1', serverName: 'server-alpha', name: 'alpha_tool', description: 'Alpha tool' },
+        { serverId: 's2', serverName: 'server-beta', name: 'beta_tool', description: 'Beta tool' },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Discovered Tools')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Discovered Tools'));
+    await waitFor(() => {
+      expect(screen.getByText('alpha_tool')).toBeInTheDocument();
+      expect(screen.getByText('beta_tool')).toBeInTheDocument();
+      expect(screen.getByText('Alpha tool')).toBeInTheDocument();
+      expect(screen.getByText('Beta tool')).toBeInTheDocument();
+    });
+  });
 });

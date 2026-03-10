@@ -164,4 +164,201 @@ describe('SearchPanel', () => {
       expect(screen.getByText('No results found.')).toBeInTheDocument();
     });
   });
+
+  it('toggles regex mode', async () => {
+    mockSearchFiles.mockResolvedValue({
+      matches: [
+        { file: 'a.ts', line: 1, column: 0, text: 'test', contextBefore: [], contextAfter: [] },
+      ],
+      fileCount: 1,
+      matchCount: 1,
+      truncated: false,
+    });
+
+    renderPanel();
+    const regexBtn = screen.getByTitle('Use regex');
+    await userEvent.click(regexBtn);
+    await userEvent.type(screen.getByTestId('search-input'), 'test{Enter}');
+
+    await waitFor(() => {
+      expect(mockSearchFiles).toHaveBeenCalledWith(
+        expect.objectContaining({ regex: true })
+      );
+    });
+  });
+
+  it('toggles case sensitive mode', async () => {
+    mockSearchFiles.mockResolvedValue({
+      matches: [
+        { file: 'a.ts', line: 1, column: 0, text: 'Test', contextBefore: [], contextAfter: [] },
+      ],
+      fileCount: 1,
+      matchCount: 1,
+      truncated: false,
+    });
+
+    renderPanel();
+    const caseBtn = screen.getByTitle('Match case');
+    await userEvent.click(caseBtn);
+    await userEvent.type(screen.getByTestId('search-input'), 'Test{Enter}');
+
+    await waitFor(() => {
+      expect(mockSearchFiles).toHaveBeenCalledWith(
+        expect.objectContaining({ caseSensitive: true })
+      );
+    });
+  });
+
+  it('passes glob filter to search', async () => {
+    mockSearchFiles.mockResolvedValue({
+      matches: [
+        { file: 'a.ts', line: 1, column: 0, text: 'match', contextBefore: [], contextAfter: [] },
+      ],
+      fileCount: 1,
+      matchCount: 1,
+      truncated: false,
+    });
+
+    renderPanel();
+    const globInput = screen.getByPlaceholderText('Files to include (e.g. *.ts, *.tsx)');
+    await userEvent.type(globInput, '*.ts');
+    await userEvent.type(screen.getByTestId('search-input'), 'match{Enter}');
+
+    await waitFor(() => {
+      expect(mockSearchFiles).toHaveBeenCalledWith(
+        expect.objectContaining({ glob: '*.ts' })
+      );
+    });
+  });
+
+  it('shows truncated indicator', async () => {
+    mockSearchFiles.mockResolvedValue({
+      matches: [
+        { file: 'a.ts', line: 1, column: 0, text: 'match', contextBefore: [], contextAfter: [] },
+      ],
+      fileCount: 1,
+      matchCount: 1,
+      truncated: true,
+    });
+
+    renderPanel();
+    await userEvent.type(screen.getByTestId('search-input'), 'match{Enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText(/truncated/)).toBeInTheDocument();
+    });
+  });
+
+  it('performs replace all in selected files', async () => {
+    mockSearchFiles.mockResolvedValue({
+      matches: [
+        { file: 'a.ts', line: 1, column: 0, text: 'foo', contextBefore: [], contextAfter: [] },
+      ],
+      fileCount: 1,
+      matchCount: 1,
+      truncated: false,
+    });
+
+    mockReplaceInFiles.mockResolvedValue({
+      totalReplacements: 1,
+      files: [{ file: 'a.ts', replacements: 1 }],
+    } as any);
+
+    renderPanel();
+    // Enable replace mode
+    await userEvent.click(screen.getByTitle('Toggle replace'));
+
+    // Search first
+    await userEvent.type(screen.getByTestId('search-input'), 'foo{Enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText('1 result in 1 file')).toBeInTheDocument();
+    });
+
+    // Type replacement
+    await userEvent.type(screen.getByTestId('replace-input'), 'bar');
+    // Click replace button
+    await userEvent.click(screen.getByTestId('replace-all-btn'));
+
+    await waitFor(() => {
+      expect(mockReplaceInFiles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          search: 'foo',
+          replace: 'bar',
+          files: ['a.ts'],
+        })
+      );
+    });
+  });
+
+  it('shows replace success message', async () => {
+    mockSearchFiles.mockResolvedValue({
+      matches: [
+        { file: 'a.ts', line: 1, column: 0, text: 'foo', contextBefore: [], contextAfter: [] },
+      ],
+      fileCount: 1,
+      matchCount: 1,
+      truncated: false,
+    });
+
+    mockReplaceInFiles.mockResolvedValue({
+      totalReplacements: 3,
+      files: [{ file: 'a.ts', replacements: 3 }],
+    } as any);
+
+    renderPanel();
+    await userEvent.click(screen.getByTitle('Toggle replace'));
+    await userEvent.type(screen.getByTestId('search-input'), 'foo{Enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText('1 result in 1 file')).toBeInTheDocument();
+    });
+
+    await userEvent.type(screen.getByTestId('replace-input'), 'bar');
+    await userEvent.click(screen.getByTestId('replace-all-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('replace-success')).toBeInTheDocument();
+      expect(screen.getByText(/Replaced 3 occurrences in 1 file/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows singular result text', async () => {
+    mockSearchFiles.mockResolvedValue({
+      matches: [
+        { file: 'a.ts', line: 1, column: 0, text: 'only', contextBefore: [], contextAfter: [] },
+      ],
+      fileCount: 1,
+      matchCount: 1,
+      truncated: false,
+    });
+
+    renderPanel();
+    await userEvent.type(screen.getByTestId('search-input'), 'only{Enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText('1 result in 1 file')).toBeInTheDocument();
+    });
+  });
+
+  it('shows select all/none buttons in replace mode with results', async () => {
+    mockSearchFiles.mockResolvedValue({
+      matches: [
+        { file: 'a.ts', line: 1, column: 0, text: 'foo', contextBefore: [], contextAfter: [] },
+        { file: 'b.ts', line: 1, column: 0, text: 'foo', contextBefore: [], contextAfter: [] },
+      ],
+      fileCount: 2,
+      matchCount: 2,
+      truncated: false,
+    });
+
+    renderPanel();
+    await userEvent.click(screen.getByTitle('Toggle replace'));
+    await userEvent.type(screen.getByTestId('search-input'), 'foo{Enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText('All')).toBeInTheDocument();
+      expect(screen.getByText('None')).toBeInTheDocument();
+    });
+  });
 });

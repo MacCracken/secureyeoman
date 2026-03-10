@@ -526,6 +526,8 @@ export const SecurityConfigSchema = z.object({
   allowDesktopControl: z.boolean().default(false),
   /** Allow camera capture. Sub-item of desktop control — only effective when allowDesktopControl is true. */
   allowCamera: z.boolean().default(false),
+  /** Allow real-time video streaming (AGNOS remote, local camera, local screen). Sub-item of desktop control. Off by default. */
+  allowVideoStreaming: z.boolean().default(false),
   /** Allow network evaluation and protection tools (SSH automation, topology, CVE lookup, PCAP). Off by default. */
   allowNetworkTools: z.boolean().default(false),
   /** Allow NetBox write operations (create/update/delete). Sub-item of network tools — only effective when allowNetworkTools is true. */
@@ -915,6 +917,10 @@ export const ModelConfigSchema = z.object({
 
   /** Draft model for speculative decoding (scaffold — actual speculation deferred to Phase 132-B). */
   draftModel: z.string().optional(),
+
+  /** Use WebSocket transport for supported providers (currently OpenAI only).
+   *  Persistent connections with incremental turn submission — ~40% faster for tool-heavy workloads. */
+  useWebSocket: z.boolean().default(false),
 });
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;

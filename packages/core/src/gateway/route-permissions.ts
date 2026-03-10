@@ -55,6 +55,7 @@ const PREFIX_RESOURCE_MAP: readonly [prefix: string, resource: string][] = [
   ['/api/v1/internal', 'integrations'],
   ['/api/v1/a2a', 'agents'],
   ['/api/v1/desktop', 'capture.screen'],
+  ['/api/v1/video/stream', 'capture.screen'],
   ['/api/v1/capture', 'capture.screen'],
   ['/api/v1/gateway', 'chat'],
   ['/api/v1/alerts', 'notifications'],
@@ -176,6 +177,13 @@ permit('/api/v1/capture/consent/:id', 'GET', 'capture.screen', 'capture');
 permit('/api/v1/capture/consent/:id/grant', 'POST', 'capture.screen', 'configure');
 permit('/api/v1/capture/consent/:id/deny', 'POST', 'capture.screen', 'configure');
 permit('/api/v1/capture/consent/:id/revoke', 'POST', 'capture.screen', 'configure');
+
+// ── Video streaming routes ──────────────────────────────────────────
+permit('/api/v1/video/stream/start', 'POST', 'capture.screen', 'stream');
+permit('/api/v1/video/stream/sessions', 'GET', 'capture.screen', 'capture');
+permit('/api/v1/video/stream/sources', 'GET', 'capture.screen', 'capture');
+permit('/api/v1/video/stream/:id', 'GET', 'capture.screen', 'capture');
+permit('/api/v1/video/stream/:id/stop', 'POST', 'capture.screen', 'configure');
 
 // ── Resolver ─────────────────────────────────────────────────────────
 

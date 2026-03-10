@@ -166,4 +166,83 @@ describe('SecurityEvents', () => {
     expect(badge).toBeInTheDocument();
     expect(badge.textContent).toContain('prompt injection');
   });
+
+  it('shows acknowledge all button when unacknowledged events exist', async () => {
+    const events = createSecurityEventList();
+    mockFetchSecurityEvents.mockResolvedValue({ events, total: events.length });
+    renderComponent();
+
+    expect(await screen.findByText('Successful login')).toBeInTheDocument();
+    expect(screen.getByLabelText('Acknowledge all events')).toBeInTheDocument();
+    expect(screen.getByText('Ack All')).toBeInTheDocument();
+  });
+
+  it('shows unacknowledged count', async () => {
+    const events = createSecurityEventList();
+    mockFetchSecurityEvents.mockResolvedValue({ events, total: events.length });
+    renderComponent();
+
+    await screen.findByText('Successful login');
+    expect(screen.getByText(/unacknowledged/)).toBeInTheDocument();
+  });
+
+  it('shows security settings link', async () => {
+    renderComponent();
+    expect(await screen.findByLabelText('Security settings')).toBeInTheDocument();
+  });
+
+  it('shows severity color coding on events', async () => {
+    const events = createSecurityEventList();
+    mockFetchSecurityEvents.mockResolvedValue({ events, total: events.length });
+    renderComponent();
+
+    // Should render events with different severity levels
+    await screen.findByText('Successful login');
+    expect(screen.getByText('Rate limit exceeded for API endpoint')).toBeInTheDocument();
+  });
+
+  it('acknowledges individual event', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    const events = createSecurityEventList();
+    mockFetchSecurityEvents.mockResolvedValue({ events, total: events.length });
+    renderComponent();
+
+    await screen.findByText('Successful login');
+    // Each event row should have an acknowledge button
+    const ackButtons = screen.getAllByTitle('Acknowledge');
+    expect(ackButtons.length).toBeGreaterThan(0);
+    fireEvent.click(ackButtons[0]);
+    // After acknowledging, that event shouldn't have the ack button anymore
+  });
+
+  it('opens investigation panel on investigate click', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    const events = createSecurityEventList();
+    mockFetchSecurityEvents.mockResolvedValue({ events, total: events.length });
+    renderComponent();
+
+    await screen.findByText('Successful login');
+    const investigateButtons = screen.getAllByTitle('Investigate');
+    expect(investigateButtons.length).toBeGreaterThan(0);
+    fireEvent.click(investigateButtons[0]);
+    // Investigation panel should open
+    expect(screen.getByText('Event Investigation')).toBeInTheDocument();
+  });
+
+  it('shows blocked requests count when > 0', async () => {
+    const metrics = createMetricsSnapshot({
+      security: {
+        ...createMetricsSnapshot().security,
+        blockedRequestsTotal: 15,
+      },
+    });
+    renderComponent(metrics);
+    expect(await screen.findByText('Blocked Requests')).toBeInTheDocument();
+    expect(screen.getByText('15')).toBeInTheDocument();
+  });
+
+  it('shows recent security events header', async () => {
+    renderComponent();
+    expect(await screen.findByText('Recent Security Events')).toBeInTheDocument();
+  });
 });

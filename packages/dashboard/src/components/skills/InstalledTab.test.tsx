@@ -444,4 +444,307 @@ describe('InstalledTab', () => {
       expect(screen.getByRole('button', { name: 'Swarm Templates' })).toBeInTheDocument();
     });
   });
+
+  it('should show Themes tab when both workflows and swarms enabled', async () => {
+    renderWithProviders(<InstalledTab workflowsEnabled subAgentsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Themes' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Personalities' })).toBeInTheDocument();
+    });
+  });
+
+  it('should show empty themes state', async () => {
+    renderWithProviders(<InstalledTab workflowsEnabled subAgentsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Themes' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Themes' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/No themes installed/)).toBeInTheDocument();
+    });
+  });
+
+  it('should show empty personalities state', async () => {
+    renderWithProviders(<InstalledTab workflowsEnabled subAgentsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Personalities' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Personalities' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/No personalities installed/)).toBeInTheDocument();
+    });
+  });
+
+  it('should show installed theme items', async () => {
+    vi.mocked(api.fetchSkills).mockResolvedValue({
+      skills: [
+        {
+          id: 'theme-1',
+          name: 'Dark Ocean',
+          description: 'A dark blue theme',
+          source: 'marketplace',
+          personalityId: 'p1',
+          enabled: true,
+          instructions: JSON.stringify({ themeId: 'dark-ocean', preview: ['#1a1a2e', '#16213e', '#0f3460'] }),
+        },
+      ],
+    } as never);
+    vi.mocked(api.fetchMarketplaceSkills).mockResolvedValue({
+      skills: [
+        { id: 'cat-1', name: 'Dark Ocean', category: 'theme', installed: true },
+      ],
+      total: 1,
+    } as never);
+
+    renderWithProviders(<InstalledTab workflowsEnabled subAgentsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Themes' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Themes' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Dark Ocean')).toBeInTheDocument();
+    });
+  });
+
+  it('should show installed personality items', async () => {
+    vi.mocked(api.fetchSkills).mockResolvedValue({
+      skills: [
+        {
+          id: 'pers-1',
+          name: 'Security Expert',
+          description: 'Security-focused persona',
+          source: 'marketplace',
+          personalityId: 'p1',
+          enabled: true,
+          instructions: '---\nname: Security Expert\npurpose: Security analysis',
+        },
+      ],
+    } as never);
+    vi.mocked(api.fetchMarketplaceSkills).mockResolvedValue({
+      skills: [
+        { id: 'cat-2', name: 'Security Expert', category: 'personality', installed: true },
+      ],
+      total: 1,
+    } as never);
+
+    renderWithProviders(<InstalledTab workflowsEnabled subAgentsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Personalities' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Personalities' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Security Expert')).toBeInTheDocument();
+    });
+  });
+
+  it('should show workflow with autonomy level badge', async () => {
+    vi.mocked(api.fetchWorkflows).mockResolvedValue({
+      definitions: [
+        {
+          id: 'w1',
+          name: 'Auto Scan',
+          description: 'Automated scanning',
+          steps: [{ id: 's1' }],
+          createdBy: 'user',
+          autonomyLevel: 'L3',
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<InstalledTab workflowsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Workflows' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Workflows' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Auto Scan')).toBeInTheDocument();
+      expect(screen.getByText('L3')).toBeInTheDocument();
+    });
+  });
+
+  it('should show workflow description', async () => {
+    vi.mocked(api.fetchWorkflows).mockResolvedValue({
+      definitions: [
+        {
+          id: 'w1',
+          name: 'Described Flow',
+          description: 'This workflow does things',
+          steps: [{ id: 's1' }],
+          createdBy: 'user',
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<InstalledTab workflowsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Workflows' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Workflows' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('This workflow does things')).toBeInTheDocument();
+    });
+  });
+
+  it('should show swarm template description', async () => {
+    vi.mocked(api.fetchSwarmTemplates).mockResolvedValue({
+      templates: [
+        {
+          id: 't1',
+          name: 'Team Alpha',
+          description: 'Alpha team description',
+          strategy: 'sequential',
+          isBuiltin: false,
+          roles: [{ role: 'lead' }],
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<InstalledTab subAgentsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Swarm Templates' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Swarm Templates' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha team description')).toBeInTheDocument();
+    });
+  });
+
+  it('should show 1 step singular for single step workflow', async () => {
+    vi.mocked(api.fetchWorkflows).mockResolvedValue({
+      definitions: [
+        {
+          id: 'w1',
+          name: 'Single Step',
+          description: 'One step',
+          steps: [{ id: 's1' }],
+          createdBy: 'user',
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<InstalledTab workflowsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Workflows' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Workflows' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('1 step')).toBeInTheDocument();
+    });
+  });
+
+  it('should navigate to marketplace from empty workflows', async () => {
+    const onNavigateTab = vi.fn();
+    renderWithProviders(<InstalledTab workflowsEnabled onNavigateTab={onNavigateTab} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Workflows' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Workflows' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/No workflows installed yet/)).toBeInTheDocument();
+    });
+
+    const marketplaceCards = screen.getAllByText('Marketplace');
+    fireEvent.click(marketplaceCards[0].closest('.card')!);
+    expect(onNavigateTab).toHaveBeenCalledWith('marketplace');
+  });
+
+  it('should navigate to community from empty workflows', async () => {
+    const onNavigateTab = vi.fn();
+    renderWithProviders(<InstalledTab workflowsEnabled onNavigateTab={onNavigateTab} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Workflows' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Workflows' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/No workflows installed yet/)).toBeInTheDocument();
+    });
+
+    const communityCards = screen.getAllByText('Community');
+    fireEvent.click(communityCards[0].closest('.card')!);
+    expect(onNavigateTab).toHaveBeenCalledWith('community');
+  });
+
+  it('should navigate to marketplace from empty swarms', async () => {
+    const onNavigateTab = vi.fn();
+    renderWithProviders(<InstalledTab subAgentsEnabled onNavigateTab={onNavigateTab} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Swarm Templates' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Swarm Templates' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/No swarm templates installed yet/)).toBeInTheDocument();
+    });
+
+    const marketplaceCards = screen.getAllByText('Marketplace');
+    fireEvent.click(marketplaceCards[0].closest('.card')!);
+    expect(onNavigateTab).toHaveBeenCalledWith('marketplace');
+  });
+
+  it('should exclude system workflow definitions from installed view', async () => {
+    vi.mocked(api.fetchWorkflows).mockResolvedValue({
+      definitions: [
+        {
+          id: 'w-system',
+          name: 'System Flow',
+          description: 'Built-in',
+          steps: [{ id: 's1' }],
+          createdBy: 'system',
+        },
+        {
+          id: 'w-user',
+          name: 'User Flow',
+          description: 'Custom',
+          steps: [{ id: 's1' }],
+          createdBy: 'user',
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<InstalledTab workflowsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Workflows' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Workflows' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('User Flow')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('System Flow')).not.toBeInTheDocument();
+  });
 });
