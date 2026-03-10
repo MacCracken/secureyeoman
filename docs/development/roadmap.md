@@ -10,11 +10,10 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 145 | Cross-Project MCP Expansion | P2 | 3 future items remaining |
-| — | AGNOS Built-in Integration | P2 | 3 remaining (PNG icon, sandbox handshake verify, dashboard profiles) |
+| — | AGNOS Built-in Integration | P2 | 2 remaining (sandbox handshake verify, dashboard profiles) |
 | — | Delta Integration | P2 | 3 remaining (docker-compose, dashboard panel, bootstrap discovery) |
-| — | Engineering Backlog (incl. Security Hardening) | Ongoing | 1 security item remaining (2FA DB hydration) |
-| Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
+| — | Engineering Backlog | Ongoing | Security hardening complete; test coverage improvements ongoing |
+| Future | LLM Providers, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -100,26 +99,6 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
 | Core E2E | Expand coverage | Currently 7 files / 53 tests; add training, delegation, analytics flows |
 
-### Code Quality — Completed (2026-03-10, 5 Audit Rounds)
-
-Five rounds of code audit across CLI, Dashboard, and MCP packages. All findings fixed, verified with typecheck (0 errors), lint (0 errors), and full test suites.
-
-| Category | Fixes Applied |
-|----------|--------------|
-| Memory leaks | Event listener cleanup in world.ts, tui.ts, provider.ts, chat.ts. Token cache eviction (agnostic-tools). Rate limiter bucket pruning (rate-limiter.ts). Browser pool shutdown export. Module-level interval cleanup for network-tools and twingate-tools wired into server.stop(). |
-| Performance | O(n²) cards.find() → Map lookup (world.ts). Rate limiter filter → splice pruning (web-tools.ts). useMemo for entry filtering (ConversationHistory.tsx). API response caching with 5-min TTL (desktop-tools.ts). CAPTCHA body clone only on non-success responses (proxy-manager.ts). |
-| Dead code | Removed unused imports (createInterface, getBrowserPool), dead sessionId variable (browser-tools.ts), unused _ALL_SERVICES constant (agnostic.ts). Added clearGlobalToolRegistry() export (tool-utils.ts). |
-| Resource management | SSH session hard cap of 100 (network-tools.ts). Child process error handlers (agnostic.ts). Timer cleanup on unmount (OnboardingWizard.tsx). readSecret end/error handlers with double-resolve guard (provider.ts). |
-| Robustness | Defensive Array.isArray() on API responses (role.ts). Shutdown hooks for all module-level intervals and sessions. |
-
-### Security Hardening — Remaining
-
-All 14 items from the 2026-03-09 audit are resolved (see ADR 035 + Changelog `[2026.3.10]`). One item has follow-up work:
-
-| Item | Severity | Status | Description |
-|------|----------|--------|-------------|
-| Persist 2FA state to DB | HIGH | **SCHEMA READY** | Tables created (`auth.two_factor` + `auth.recovery_codes`). DB load on startup not yet wired — in-memory cache is still authoritative until startup hydration is implemented. |
-
 ---
 
 ## AGNOS Built-in Integration — Remaining
@@ -128,19 +107,10 @@ Core integration complete (see ADR 036 + Changelog `[2026.3.10]`). Remaining ite
 
 | Item | Status | Description |
 |------|--------|-------------|
-| App icon — PNG rasterization | Not started | Rasterize `assets/secureyeoman.svg` to PNG sizes (64, 128, 256, 512). Add to AGNOS marketplace recipe install step. |
 | Verify sandbox handshake | Blocked | Handshake endpoints (discover, batch register, sandbox profiles, events) pending AGNOS 2026.3.10 release. Re-verify once available. |
 | Dashboard sandbox profiles | Not started | Display AGNOS sandbox profiles queried during bootstrap in dashboard UI. |
 
 ---
-
-## Phase 145: Cross-Project MCP Expansion — Remaining
-
-| Item | Status | Description |
-|------|--------|-------------|
-| Merge agnostic into agnosticos | Future | Agnostic becomes a package within agnosticos — collapses to single service |
-| Photisnadi in SY container | Future | Photisnadi baked into agnosticos base image or run as separate container. User choice via `PHOTISNADI_ENABLED` flag. When embedded, supervisord manages Photisnadi process; when external, SY proxies via SUPABASE_URL |
-| Task tracker widget — third-party aggregator | Future | Extend TaskTrackerWidget to aggregate tasks from third-party trackers (Photisnadi, Trello, Jira, Linear, Todoist, Asana) via adapter interface. Unified view of all external task sources. Widget auto-selects adapters based on configured integrations |
 
 ---
 
@@ -189,12 +159,10 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### Voice & Community
+### Community Marketplace
 
-*Demand-Gated — implement when voice profile and marketplace demand justifies the investment.*
+*Demand-Gated — implement when marketplace adoption justifies the investment.*
 
-- [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity.
-- [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call.
 - [ ] **Scheduled Auto-Sync** — Optional cron-style background sync from the configured community repo (configurable interval, off by default).
 - [ ] **Hosted Discovery API** — A lightweight read-only API for browsing available community skills without cloning.
 - [ ] **Cryptographic Skill Signing** — Authors sign skills with a keypair; SecureYeoman verifies signatures before installing. Reject unsigned skills in strict mode.
@@ -215,18 +183,9 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ### WebSocket Mode for AI Providers
 
-*OpenAI WebSocket transport implemented (2026-03-09). Persistent connections via `wss://api.openai.com/v1/responses` with incremental turn submission, connection pooling, and automatic HTTP fallback. Enabled per-model via `useWebSocket: true` in ModelConfig.*
+*OpenAI WebSocket transport implemented (2026-03-09). Remaining item:*
 
-- [x] **WebSocket transport layer** — `OpenAIWsTransport` with persistent connections (up to 59 min), automatic reconnection on transient failures, and LRU pool eviction. Provider-agnostic `WsConnection` interface.
-- [x] **Incremental turn submission** — `previous_response_id` + delta-only input on subsequent turns. Full context sent only on first turn or after connection reset.
-- [x] **Connection pooling & lifecycle** — Configurable pool size (default 3), idle timeout (5 min), ping/pong keepalive (30s), hard lifetime cap (59 min). LRU eviction when pool is full.
 - [ ] **Warm-up / pre-generation** — Support `generate: false` mode to pre-load model state and tools on the connection before the first user message, reducing first-response latency for personality activations.
-- [x] **Fallback to HTTP** — Automatic fallback after 3 consecutive WS failures (60s cooldown). `OpenAIWsProvider` wraps `OpenAIProvider` as HTTP fallback — transparent to calling code.
-- [x] **Provider support matrix** — OpenAI implemented. Feature-gated via `ModelConfig.useWebSocket`. Watch list for other providers:
-  - **Anthropic** — No WebSocket API as of 2026-03. SSE streaming only.
-  - **Google Gemini** — No WebSocket API. Server-sent events via REST.
-  - **Mistral / Groq / DeepSeek** — HTTP-only. No announced plans.
-  - Track provider announcements — add support as APIs ship.
 
 ---
 
@@ -246,6 +205,8 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 - [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
 - [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based graph layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
 - [ ] **Agent World — Configurable FPS** — fps slider in card settings popover (1–16 fps), persisted in layout config. Only worthwhile if users report animation overhead on low-power devices.
+- [ ] **Photisnadi in SY container** — Photisnadi baked into agnosticos base image or run as separate container. User choice via `PHOTISNADI_ENABLED` flag. When embedded, supervisord manages Photisnadi process; when external, SY proxies via SUPABASE_URL.
+- [ ] **Task tracker widget — third-party aggregator** — Extend TaskTrackerWidget to aggregate tasks from third-party trackers (Photisnadi, Trello, Jira, Linear, Todoist, Asana) via adapter interface. Unified view of all external task sources.
 
 ---
 
@@ -297,4 +258,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-10 (Cleaned completed items — security hardening, AGNOS integration, Delta integration, Phase 145 BullShift tools moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-10 (Added Phase 146 Voice & Speech Platform; moved Phase 145 to future; security hardening complete). See [Changelog](../../CHANGELOG.md) for full history.*

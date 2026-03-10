@@ -234,6 +234,8 @@ export const McpServiceConfigSchema = z.object({
   deltaUrl: z.string().optional(),
   /** API token for authenticating with Delta. */
   deltaApiToken: z.string().optional(),
+  /** Enable voice profile tools (voice_profile_*). On by default — voice is a core feature. Set MCP_EXPOSE_VOICE_TOOLS=false to disable. */
+  exposeVoiceTools: z.boolean().default(true),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

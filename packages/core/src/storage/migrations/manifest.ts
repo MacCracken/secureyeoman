@@ -56,4 +56,5 @@ export const MIGRATION_MANIFEST: MigrationEntry[] = [
   { id: '009_security_hardening', sql: readSql('009_security_hardening.sql'), tier: 'community' },
   { id: '010_encrypt_idp_secrets', sql: readSql('010_encrypt_idp_secrets.sql'), tier: 'community' },
   { id: '011_sso_auth_codes', sql: readSql('011_sso_auth_codes.sql'), tier: 'community' },
+  { id: '012_voice_profiles', sql: readSql('012_voice_profiles.sql'), tier: 'pro' },
 ];

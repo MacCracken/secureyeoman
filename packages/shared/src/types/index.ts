@@ -641,6 +641,7 @@ export {
   type MultimodalJobStatus,
   type MultimodalJob,
   type MultimodalConfig,
+  type VoiceProfile,
 } from './multimodal.js';
 
 // Risk Assessment types (Phase 53)

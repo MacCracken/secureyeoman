@@ -2548,5 +2548,23 @@ export function getToolManifest(): ToolManifestEntry[] {
       description: 'Create a commit status check on a specific SHA in a Delta repository',
       category: 'delta',
     },
+
+    // Voice profile tools
+    {
+      name: 'voice_profile_create',
+      description:
+        'Create a new voice profile with name, TTS provider, voice ID, and optional settings',
+      category: 'voice',
+    },
+    {
+      name: 'voice_profile_list',
+      description: 'List all voice profiles, optionally filtered by TTS provider',
+      category: 'voice',
+    },
+    {
+      name: 'voice_profile_switch',
+      description: 'Assign a voice profile to the current personality for TTS output',
+      category: 'voice',
+    },
   ];
 }

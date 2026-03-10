@@ -6550,3 +6550,72 @@ export async function rotateKey(
     method: 'POST',
   });
 }
+
+// ── Voice Profiles ────────────────────────────────────────────────────
+
+export interface VoiceProfile {
+  id: string;
+  name: string;
+  provider: string;
+  voiceId: string;
+  settings?: Record<string, unknown>;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function fetchVoiceProfiles(): Promise<{ profiles: VoiceProfile[] }> {
+  return request('/voice/profiles');
+}
+
+export async function createVoiceProfile(data: {
+  name: string;
+  provider: string;
+  voiceId: string;
+  settings?: Record<string, unknown>;
+}): Promise<VoiceProfile> {
+  return request('/voice/profiles', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateVoiceProfile(
+  id: string,
+  data: {
+    name?: string;
+    provider?: string;
+    voiceId?: string;
+    settings?: Record<string, unknown>;
+  }
+): Promise<VoiceProfile> {
+  return request(`/voice/profiles/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteVoiceProfile(id: string): Promise<void> {
+  await request(`/voice/profiles/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function previewVoiceProfile(
+  id: string,
+  text: string
+): Promise<{ audioBase64: string; format: string; durationMs: number }> {
+  return request(`/voice/profiles/${encodeURIComponent(id)}/preview`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  });
+}
+
+export async function cloneVoice(
+  name: string,
+  audioBase64: string
+): Promise<VoiceProfile> {
+  return request('/voice/profiles/clone', {
+    method: 'POST',
+    body: JSON.stringify({ name, audioBase64 }),
+  });
+}

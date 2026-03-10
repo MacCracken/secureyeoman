@@ -25,6 +25,11 @@ Deep security audit and remediation across authentication, authorization, encryp
 - **Nonce-based CSP**: Per-request nonce via `randomBytes(16)`. `script-src 'self' 'nonce-{n}' 'strict-dynamic'` replaces `'unsafe-inline'`.
 - **MCP service token least privilege**: `role: 'service'` with 6 scoped permissions (was `role: 'admin'` with 8).
 - **IDOR ownership guard**: `ownership-guard.ts` with `canAccessResource()`. Admin/operator/service bypass, others must match `createdBy`/`userId`/`personalityId`. Applied to document, memory, and knowledge routes. 12 tests.
+- **2FA DB persistence**: `AuthStorage` gains `saveTwoFactor`, `loadTwoFactor`, `deleteTwoFactor`, `saveRecoveryCodes`, `loadRecoveryCodes`, `markRecoveryCodeUsed`. `AuthService.hydrateTwoFactorState()` loads from DB on startup (non-fatal fallback). Secret encrypted at rest via AES-256-GCM. 7 new unit tests.
+
+### Code Quality — 5 Audit Rounds
+
+Five rounds of code audit across CLI, Dashboard, and MCP packages. All findings fixed. Memory leak cleanup (event listeners, cache eviction, interval cleanup). Performance fixes (O(n²) → Map lookups, useMemo, response caching). Dead code removal. Resource management (SSH session caps, child process handlers, timer cleanup). Defensive robustness (Array.isArray guards, shutdown hooks).
 
 ### AGNOS Built-in Integration
 
@@ -33,7 +38,7 @@ SecureYeoman promoted to flagship built-in tool on AGNOS. See ADR 036.
 - **Agent registration** (`integrations/agnos/agnos-lifecycle.ts`): `AgnosLifecycleManager` batch-registers agent profiles via `POST /v1/agents/register/batch`, 30s heartbeat, best-effort deregister on shutdown. 4 tests.
 - **MCP tool registration** (`integrations/agnos/agnos-bootstrap.ts`): `bootstrapAgnos()` calls `POST /v1/mcp/tools`, auto-sets `MCP_EXPOSE_AGNOS_TOOLS=true` on successful discovery. 9 tests.
 - **Audit event forwarding** (`integrations/agnos/agnos-hooks.ts`): Batched forwarding (size 50, flush 5s) to `POST /v1/audit/forward`. 13 tests.
-- **App icon**: `assets/secureyeoman.svg` — shield + Y letterform + lock accent, dark gradient palette.
+- **App icon**: `assets/secureyeoman.svg` + PNG rasterizations (64/128/256/512). Hicolor icon theme install step added to agnosticos marketplace recipe.
 - **Shared vector store bridge** (`brain/vector/agnos-store.ts`): `AgnosVectorStore` delegates to AGNOS runtime. Batches inserts in chunks of 100. 7 tests.
 - **AGNOS bootstrap discovery**: `bootstrapAgnos()` calls `GET /v1/discover` for auto-detection, loads sandbox profiles, registers MCP tools.
 - **Event subscription/publishing**: SSE subscription to `GET /v1/events/subscribe`, fire-and-forget publish to `POST /v1/events/publish` via observe-priority hooks.
@@ -48,6 +53,31 @@ Integration with Delta, a Rust-based self-hosted code forge (git hosting, PRs, C
 - **Delta HTTP client** (`integrations/delta/delta-client.ts`): 11 methods — `listRepos`, `getRepo`, `listPulls`, `getPull`, `mergePull`, `listPipelines`, `triggerPipeline`, `cancelPipeline`, `getJobLogs`, `createStatus`, `health`. 8 tests.
 - **10 MCP tools** (`mcp/tools/delta-tools.ts`): `delta_list_repos`, `delta_get_repo`, `delta_list_pulls`, `delta_get_pull`, `delta_merge_pull`, `delta_list_pipelines`, `delta_trigger_pipeline`, `delta_cancel_pipeline`, `delta_job_logs`, `delta_create_status`. Gated by `MCP_EXPOSE_DELTA_TOOLS`.
 - **MCP config**: `exposeDeltaTools`, `deltaUrl`, `deltaApiToken` added to `McpServiceConfig`. Secret mappings in `MCP_SECRET_MAPPINGS`.
+
+### Phase 146: Voice & Speech Platform
+
+Voice profiles, real-time streaming, self-hosted TTS/STT providers, and dashboard voice UX. Expands SecureYeoman from 11 to 14 TTS providers and 8 to 10 STT providers.
+
+**Voice Profiles & Identity:**
+- **Voice profile CRUD** (`multimodal/voice/voice-profile-store.ts`, `voice-profile-routes.ts`): `voice.profiles` table (migration `012_voice_profiles.sql`). 7 REST routes: CRUD + preview synthesis + ElevenLabs voice cloning. Per-personality `voiceProfileId` field added to `PersonalitySchema`. 23 tests.
+- **Voice profile MCP tools** (`mcp/tools/voice-tools.ts`): `voice_profile_create`, `voice_profile_list`, `voice_profile_switch`. Gated by `MCP_EXPOSE_VOICE_TOOLS` (default: true). 13 tests.
+- **Voice prompt cache** (`multimodal/voice/voice-cache.ts`): Two-tier LRU (in-memory, max 100) + disk (SHA-256 keyed, 24h TTL, 500MB max). Integrated into `MultimodalManager.speakWithProfile()`.
+
+**Real-Time Streaming:**
+- **WebSocket TTS streaming** (`multimodal/voice/voice-stream-routes.ts`): `WS /api/v1/multimodal/audio/stream` — binary audio chunks streamed as synthesized. Supports chunked HTTP fallback for non-streaming providers.
+- **WebSocket STT streaming**: `WS /api/v1/multimodal/audio/transcribe/stream` — client streams mic audio, server returns interim + final JSON transcripts. VAD-based silence detection with configurable timeout.
+- **Voice agent pipeline** (`multimodal/voice/voice-agent.ts`): `VoiceAgentSession` — full duplex STT→LLM→TTS with barge-in/interrupt support, conversation history, silence timeouts. `WS /api/v1/multimodal/audio/agent` endpoint. 16 tests.
+
+**Self-Hosted Model Expansion:**
+- **Orpheus TTS** (`multimodal/tts/orpheus.ts`): Local HTTP client for Orpheus TTS server. OpenAI-compatible API. Emotion markers (`<laugh>`, `<sigh>`, `<excited>`, `<whisper>`). `ORPHEUS_URL` env var. 10 tests.
+- **faster-whisper STT** (`multimodal/stt/faster-whisper.ts`): Local HTTP client for faster-whisper server. CTranslate2 backend (4x faster than Whisper). Model selection (tiny→large-v3). `FASTER_WHISPER_URL` env var. 13 tests.
+- **Piper TTS** (`multimodal/tts/piper.ts`): Local HTTP client for Piper TTS. ONNX-based, runs on CPU. 35+ languages. `PIPER_URL` env var. 9 tests.
+
+**Dashboard UX:**
+- **Voice provider picker** (`dashboard/components/voice/VoiceProviderPicker.tsx`): TTS/STT provider selection with health status indicators, "Test" buttons for preview. 14 TTS + 10 STT providers listed. 9 tests.
+- **Voice profile manager** (`dashboard/components/voice/VoiceProfileManager.tsx`): Profile list/create/edit/delete, audio preview, ElevenLabs voice cloning dialog, personality assignment. 12 tests.
+
+**Totals**: 132 new tests across 10 test files. 14 TTS providers (was 11), 10 STT providers (was 8), 3 new MCP tools (total 421+).
 
 ### Synapse LLM Controller Integration
 

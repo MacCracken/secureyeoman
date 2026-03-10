@@ -123,11 +123,12 @@ export class AuthService {
   private authSuccessTotal = 0;
   private authFailuresTotal = 0;
 
-  // 2FA state (in-memory cache — authoritative source is DB when available)
+  // 2FA state (in-memory cache backed by DB)
   private twoFactorSecret: string | null = null;
   private twoFactorEnabled = false;
   private recoveryCodes = new Set<string>();
   private pendingTwoFactorSecret: string | null = null;
+  private twoFactorHydrated = false;
 
   constructor(config: AuthServiceConfig, deps: AuthServiceDeps) {
     this.config = config;
@@ -135,6 +136,31 @@ export class AuthService {
     this.deps = deps;
     this.jwtIssuer = config.jwtIssuer ?? JWT_ISSUER_DEFAULT;
     this.jwtAudience = config.jwtAudience ?? JWT_AUDIENCE_DEFAULT;
+  }
+
+  /**
+   * Hydrate 2FA state from the database. Call once after construction
+   * when the DB pool is ready. Safe to call multiple times (no-ops after first).
+   */
+  async hydrateTwoFactorState(): Promise<void> {
+    if (this.twoFactorHydrated) return;
+    try {
+      const twoFa = await this.deps.storage.loadTwoFactor(ADMIN_USER_ID);
+      if (twoFa) {
+        this.twoFactorSecret = twoFa.secret;
+        this.twoFactorEnabled = twoFa.enabled;
+      }
+      const codeHashes = await this.deps.storage.loadRecoveryCodes(ADMIN_USER_ID);
+      if (codeHashes.length > 0) {
+        this.recoveryCodes = new Set(codeHashes);
+      }
+      this.twoFactorHydrated = true;
+      this.deps.logger.info({ enabled: this.twoFactorEnabled }, '2FA state hydrated from DB');
+    } catch (err) {
+      // Non-fatal — in-memory state remains as initialized (disabled).
+      // This allows the service to start even if the DB migration hasn't run.
+      this.deps.logger.warn({ err }, '2FA DB hydration failed — starting with 2FA disabled');
+    }
   }
 
   /**
@@ -545,6 +571,10 @@ export class AuthService {
     const rawCodes = recoveryCodes ?? [];
     this.recoveryCodes = new Set(rawCodes.map(hashRecoveryCode));
 
+    // Persist to DB
+    await this.deps.storage.saveTwoFactor(ADMIN_USER_ID, this.twoFactorSecret, true);
+    await this.deps.storage.saveRecoveryCodes(ADMIN_USER_ID, [...this.recoveryCodes]);
+
     await this.audit('auth_success', '2FA enabled', {
       userId: ADMIN_USER_ID,
     });
@@ -576,6 +606,8 @@ export class AuthService {
     const codeHash = hashRecoveryCode(code);
     if (this.recoveryCodes.has(codeHash)) {
       this.recoveryCodes.delete(codeHash);
+      // Mark used in DB
+      await this.deps.storage.markRecoveryCodeUsed(ADMIN_USER_ID, codeHash);
       await this.audit('auth_success', '2FA recovery code used', {
         userId: ADMIN_USER_ID,
         remainingRecoveryCodes: this.recoveryCodes.size,
@@ -594,6 +626,9 @@ export class AuthService {
     this.twoFactorEnabled = false;
     this.recoveryCodes.clear();
     this.pendingTwoFactorSecret = null;
+
+    // Remove from DB
+    await this.deps.storage.deleteTwoFactor(ADMIN_USER_ID);
 
     await this.audit('auth_success', '2FA disabled', {
       userId: ADMIN_USER_ID,

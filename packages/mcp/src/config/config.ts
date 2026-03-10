@@ -264,6 +264,7 @@ export function loadConfig(
     exposeDeltaTools: parseBool(env.MCP_EXPOSE_DELTA_TOOLS, false),
     deltaUrl: env.DELTA_URL ?? 'http://localhost:3000',
     deltaApiToken: env.DELTA_API_TOKEN,
+    exposeVoiceTools: parseBool(env.MCP_EXPOSE_VOICE_TOOLS, true),
   };
 
   return McpServiceConfigSchema.parse(raw);

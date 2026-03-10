@@ -62,6 +62,7 @@ import { registerTodoistTools } from './todoist-tools.js';
 import { registerJiraTools } from './jira-tools.js';
 import { registerNotionTools } from './notion-tools.js';
 import { registerGoogleWorkspaceTools } from './google-workspace-tools.js';
+import { registerVoiceTools } from './voice-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -148,4 +149,6 @@ export async function registerAllTools(
   registerNotionTools(server, client, middleware);
   // Google Workspace tools (Drive, Sheets, Docs)
   registerGoogleWorkspaceTools(server, client, middleware);
+  // Voice profile tools
+  registerVoiceTools(server, client, config, middleware);
 }

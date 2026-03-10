@@ -175,6 +175,20 @@ export const MultimodalConfigSchema = z
   })
   .default({});
 
+// ─── Voice Profile ──────────────────────────────────────────────────
+
+export interface VoiceProfile {
+  id: string;
+  name: string;
+  provider: string;
+  voiceId: string;
+  settings: Record<string, unknown>;
+  sampleAudioBase64?: string;
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 // ─── Inferred Types ─────────────────────────────────────────────────
 
 export type VisionRequest = z.infer<typeof VisionRequestSchema>;

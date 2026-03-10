@@ -78,6 +78,7 @@ const PREFIX_RESOURCE_MAP: readonly [prefix: string, resource: string][] = [
   ['/api/v1/secrets', 'secrets'],
   ['/api/v1/experiments', 'experiments'],
   ['/api/v1/marketplace', 'marketplace'],
+  ['/api/v1/voice', 'multimodal'],
   ['/api/v1/multimodal', 'multimodal'],
   ['/api/v1/spirit', 'spirit'],
   ['/api/v1/chat', 'chat'],

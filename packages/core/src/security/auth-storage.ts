@@ -7,6 +7,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { encryptToken, decryptToken, currentKeyId } from './token-encryption.js';
 import type { User, UserCreate, UserUpdate } from '@secureyeoman/shared';
 
 export interface ApiKeyRow {
@@ -229,6 +230,62 @@ export class AuthStorage extends PgBaseStorage {
       p50LatencyMs: r.p50 ? Math.round(parseFloat(r.p50)) : 0,
       p95LatencyMs: r.p95 ? Math.round(parseFloat(r.p95)) : 0,
     }));
+  }
+
+  // ── Two-Factor Authentication ────────────────────────────────────
+
+  async saveTwoFactor(userId: string, secret: string, enabled: boolean): Promise<void> {
+    const now = Date.now();
+    const secretEnc = encryptToken(secret);
+    const keyId = currentKeyId();
+    await this.execute(
+      `INSERT INTO auth.two_factor (user_id, secret_enc, enabled, secret_enc_key_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (user_id) DO UPDATE SET secret_enc = $2, enabled = $3, secret_enc_key_id = $4, updated_at = $6`,
+      [userId, secretEnc, enabled, keyId, now, now]
+    );
+  }
+
+  async loadTwoFactor(userId: string): Promise<{ secret: string; enabled: boolean } | null> {
+    const row = await this.queryOne<{ secret_enc: Buffer; enabled: boolean }>(
+      'SELECT secret_enc, enabled FROM auth.two_factor WHERE user_id = $1',
+      [userId]
+    );
+    if (!row) return null;
+    const secret = decryptToken(row.secret_enc);
+    if (!secret) return null;
+    return { secret, enabled: row.enabled };
+  }
+
+  async deleteTwoFactor(userId: string): Promise<void> {
+    await this.execute('DELETE FROM auth.two_factor WHERE user_id = $1', [userId]);
+  }
+
+  async saveRecoveryCodes(userId: string, codeHashes: string[]): Promise<void> {
+    const now = Date.now();
+    // Clear existing codes, then insert new ones
+    await this.execute('DELETE FROM auth.recovery_codes WHERE user_id = $1', [userId]);
+    for (const hash of codeHashes) {
+      await this.execute(
+        'INSERT INTO auth.recovery_codes (id, user_id, code_hash, created_at) VALUES ($1, $2, $3, $4)',
+        [uuidv7(), userId, hash, now]
+      );
+    }
+  }
+
+  async loadRecoveryCodes(userId: string): Promise<string[]> {
+    const rows = await this.queryMany<{ code_hash: string }>(
+      'SELECT code_hash FROM auth.recovery_codes WHERE user_id = $1 AND used_at IS NULL',
+      [userId]
+    );
+    return rows.map((r) => r.code_hash);
+  }
+
+  async markRecoveryCodeUsed(userId: string, codeHash: string): Promise<void> {
+    await this.execute(
+      'UPDATE auth.recovery_codes SET used_at = $1 WHERE user_id = $2 AND code_hash = $3 AND used_at IS NULL',
+      [Date.now(), userId, codeHash]
+    );
   }
 
   override close(): void {

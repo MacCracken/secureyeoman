@@ -71,6 +71,7 @@ import { registerA2ARoutes } from '../a2a/a2a-routes.js';
 import { registerProactiveRoutes } from '../proactive/proactive-routes.js';
 import { registerDiagnosticRoutes } from '../diagnostics/diagnostic-routes.js';
 import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
+import { registerVoiceStreamRoutes } from '../multimodal/voice/voice-stream-routes.js';
 import { registerDesktopRoutes } from '../body/desktop-routes.js';
 import { registerVideoStreamRoutes } from '../body/video-stream-routes.js';
 import { registerCaptureConsentRoutes } from '../body/capture-consent-routes.js';
@@ -1345,7 +1346,11 @@ export class GatewayServer {
           }
         });
         registerMultimodalRoutes(this.app, { multimodalManager });
-        this.getLogger().info('Multimodal routes registered');
+        registerVoiceStreamRoutes(this.app, {
+          multimodalManager,
+          voiceCache: (multimodalManager as any).deps?.voiceCache ?? null,
+        });
+        this.getLogger().info('Multimodal routes registered (incl. voice streaming)');
       }
     } catch (err) {
       this.getLogger().debug(

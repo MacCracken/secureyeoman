@@ -21,10 +21,15 @@ import type {
   AIResponse,
 } from '@secureyeoman/shared';
 import type { MultimodalStorage } from './storage.js';
+import type { VoiceProfileStore } from './voice/voice-profile-store.js';
+import type { VoicePromptCache } from './voice/voice-cache.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { HookPoint, HookContext, HookResult } from '../extensions/types.js';
 import { transcribeViaAWSTranscribe } from './stt/transcribe.js';
+import { transcribeFasterWhisper, isFasterWhisperAvailable } from './stt/faster-whisper.js';
 import { synthesizeViaPolly } from './tts/polly.js';
+import { synthesizeOrpheus, isOrpheusAvailable } from './tts/orpheus.js';
+import { synthesizePiper, isPiperAvailable } from './tts/piper.js';
 import { errorToString } from '../utils/errors.js';
 
 const MAX_BASE64_LENGTH = 20_971_520; // ~20MB encoded
@@ -53,8 +58,11 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
   playht: { label: 'Play.ht', category: 'cloud' },
   openedai: { label: 'OpenedAI Speech (local)', category: 'local' },
   kokoro: { label: 'Kokoro (local)', category: 'local' },
+  orpheus: { label: 'Orpheus (local)', category: 'local' },
+  piper: { label: 'Piper (local)', category: 'local' },
   // STT-only
   assemblyai: { label: 'AssemblyAI', category: 'cloud' },
+  'faster-whisper': { label: 'faster-whisper (local)', category: 'local' },
   // AWS
   polly: { label: 'AWS Polly', category: 'cloud' },
   transcribe: { label: 'AWS Transcribe', category: 'cloud' },
@@ -93,6 +101,8 @@ export interface MultimodalManagerDeps {
     emit: (hookPoint: HookPoint, context: HookContext) => Promise<HookResult>;
   } | null;
   prefsStorage?: SystemPreferencesStorage | null;
+  voiceProfileStore?: VoiceProfileStore | null;
+  voiceCache?: VoicePromptCache | null;
 }
 
 export class MultimodalManager {
@@ -134,6 +144,10 @@ export class MultimodalManager {
     if (pref) return pref.toLowerCase();
     // Auto-select Polly when POLLY_REGION is configured
     if (process.env.POLLY_REGION && process.env.AWS_ACCESS_KEY_ID) return 'polly';
+    // Auto-select Orpheus when its URL is explicitly configured
+    if (process.env.ORPHEUS_URL) return 'orpheus';
+    // Auto-select Piper when its URL is explicitly configured
+    if (process.env.PIPER_URL) return 'piper';
     return (this.config.tts.provider ?? 'openai').toLowerCase();
   }
 
@@ -144,6 +158,8 @@ export class MultimodalManager {
     if (pref) return pref.toLowerCase();
     // Auto-select Transcribe when TRANSCRIBE_REGION is configured
     if (process.env.TRANSCRIBE_REGION && process.env.AWS_ACCESS_KEY_ID) return 'transcribe';
+    // Auto-select faster-whisper when its URL is explicitly configured
+    if (process.env.FASTER_WHISPER_URL) return 'faster-whisper';
     return (this.config.stt.provider ?? 'openai').toLowerCase();
   }
 
@@ -236,10 +252,13 @@ export class MultimodalManager {
     const hasPolly = !!(process.env.POLLY_REGION && process.env.AWS_ACCESS_KEY_ID);
     const hasTranscribe = !!(process.env.TRANSCRIBE_REGION && process.env.AWS_ACCESS_KEY_ID);
 
-    const [voiceboxReachable, openedAIReachable, kokoroAvailable] = await Promise.all([
+    const [voiceboxReachable, openedAIReachable, kokoroAvailable, orpheusReachable, piperReachable, fasterWhisperReachable] = await Promise.all([
       this.isVoiceboxReachable(),
       this.isOpenedAIReachable(),
       this.isKokoroAvailable(),
+      isOrpheusAvailable(),
+      isPiperAvailable(),
+      isFasterWhisperAvailable(),
     ]);
     const voiceboxUrl = this.getVoiceboxUrl();
 
@@ -260,6 +279,8 @@ export class MultimodalManager {
     if (openedAIReachable) ttsConfigured.push('openedai');
     if (kokoroAvailable) ttsConfigured.push('kokoro');
     if (hasPolly) ttsConfigured.push('polly');
+    if (orpheusReachable) ttsConfigured.push('orpheus');
+    if (piperReachable) ttsConfigured.push('piper');
 
     const sttConfigured: string[] = [];
     if (hasOpenAI) sttConfigured.push('openai');
@@ -270,6 +291,7 @@ export class MultimodalManager {
     if (hasGoogleSpeech) sttConfigured.push('google');
     if (hasAzure) sttConfigured.push('azure');
     if (hasTranscribe) sttConfigured.push('transcribe');
+    if (fasterWhisperReachable) sttConfigured.push('faster-whisper');
 
     const [activeVision, activeTTS, activeSTT, activeSTTModel] = await Promise.all([
       this.resolveVisionProvider(),
@@ -304,6 +326,8 @@ export class MultimodalManager {
           'openedai',
           'kokoro',
           'polly',
+          'orpheus',
+          'piper',
         ],
         configured: ttsConfigured,
         active: activeTTS,
@@ -320,6 +344,7 @@ export class MultimodalManager {
           'google',
           'azure',
           'transcribe',
+          'faster-whisper',
         ],
         configured: sttConfigured,
         active: activeSTT,
@@ -1076,6 +1101,11 @@ export class MultimodalManager {
         case 'transcribe':
           data = await transcribeViaAWSTranscribe(request);
           break;
+        case 'faster-whisper': {
+          const audioBuffer = Buffer.from(request.audioBase64, 'base64');
+          data = await transcribeFasterWhisper(audioBuffer, request.format, request.language);
+          break;
+        }
         default: {
           // openai (default)
           const apiKey = process.env.OPENAI_API_KEY;
@@ -1172,6 +1202,10 @@ export class MultimodalManager {
             return this.synthesizeViaKokoro(request);
           case 'polly':
             return synthesizeViaPolly(request);
+          case 'orpheus':
+            return synthesizeOrpheus(request.text, request.voice, request.model);
+          case 'piper':
+            return synthesizePiper(request.text, request.voice, request.responseFormat);
           default: {
             // openai (default)
             const apiKey = process.env.OPENAI_API_KEY;
@@ -1266,6 +1300,8 @@ export class MultimodalManager {
         'openedai',
         'kokoro',
         'polly',
+        'orpheus',
+        'piper',
       ];
 
       if (!OTHER_PROVIDERS.includes(provider)) {
@@ -1326,6 +1362,12 @@ export class MultimodalManager {
             break;
           case 'polly':
             b64result = await synthesizeViaPolly(request);
+            break;
+          case 'orpheus':
+            b64result = await synthesizeOrpheus(request.text, request.voice, request.model);
+            break;
+          case 'piper':
+            b64result = await synthesizePiper(request.text, request.voice, request.responseFormat);
             break;
           default:
             throw new Error(`Unknown TTS provider: ${provider}`);
@@ -1502,6 +1544,56 @@ export class MultimodalManager {
   /** Get current config. */
   getConfig(): MultimodalConfig {
     return this.config;
+  }
+
+  /**
+   * Synthesize speech using a stored voice profile.
+   * Checks the voice cache first, falls back to TTS provider, then caches the result.
+   */
+  async speakWithProfile(
+    profileId: string,
+    text: string
+  ): Promise<TTSResult> {
+    const store = this.deps.voiceProfileStore;
+    if (!store) {
+      throw new Error('Voice profile store is not configured');
+    }
+
+    const profile = await store.getById(profileId);
+    if (!profile) {
+      throw new Error(`Voice profile not found: ${profileId}`);
+    }
+
+    // Check cache
+    const cache = this.deps.voiceCache;
+    if (cache) {
+      const cached = cache.get(profile.provider, profile.voiceId, text);
+      if (cached) {
+        this.deps.logger.info({ profileId, provider: profile.provider }, 'voice cache hit');
+        return { audioBase64: cached.toString('base64'), format: 'mp3', durationMs: 0 };
+      }
+    }
+
+    // Synthesize via the profile's provider and voice settings
+    const request: TTSRequest = {
+      text,
+      voice: profile.voiceId,
+      model: (profile.settings.model as string) ?? 'tts-1',
+      responseFormat: (profile.settings.responseFormat as 'mp3' | 'opus' | 'aac' | 'flac') ?? 'mp3',
+    };
+
+    const result = await this.synthesizeSpeech(request);
+
+    // Store in cache
+    if (cache && result.audioBase64) {
+      try {
+        cache.set(profile.provider, profile.voiceId, text, Buffer.from(result.audioBase64, 'base64'));
+      } catch {
+        // cache write failure is non-fatal
+      }
+    }
+
+    return result;
   }
 
   close(): void {

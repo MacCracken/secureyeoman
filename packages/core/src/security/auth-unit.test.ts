@@ -20,6 +20,12 @@ const mockStorage = vi.hoisted(() => ({
   createUser: vi.fn(),
   updateUser: vi.fn(),
   deleteUser: vi.fn(),
+  saveTwoFactor: vi.fn(),
+  loadTwoFactor: vi.fn().mockResolvedValue(null),
+  deleteTwoFactor: vi.fn(),
+  saveRecoveryCodes: vi.fn(),
+  loadRecoveryCodes: vi.fn().mockResolvedValue([]),
+  markRecoveryCodeUsed: vi.fn(),
 }));
 
 const mockAuditChain = vi.hoisted(() => ({
@@ -734,6 +740,84 @@ describe('AuthService (unit)', () => {
       await svc.disableTwoFactor();
       expect(svc.isTwoFactorEnabled()).toBe(false);
       expect(mockAuditChain.record).toHaveBeenCalled();
+    });
+  });
+
+  describe('hydrateTwoFactorState', () => {
+    it('loads 2FA state from DB on hydration', async () => {
+      mockStorage.loadTwoFactor.mockResolvedValue({ secret: 'DBSECRET', enabled: true });
+      mockStorage.loadRecoveryCodes.mockResolvedValue(['hash1', 'hash2']);
+
+      const svc = makeService();
+      await svc.hydrateTwoFactorState();
+
+      expect(svc.isTwoFactorEnabled()).toBe(true);
+      expect(mockStorage.loadTwoFactor).toHaveBeenCalledWith('admin');
+      expect(mockStorage.loadRecoveryCodes).toHaveBeenCalledWith('admin');
+    });
+
+    it('remains disabled when DB has no 2FA record', async () => {
+      mockStorage.loadTwoFactor.mockResolvedValue(null);
+      mockStorage.loadRecoveryCodes.mockResolvedValue([]);
+
+      const svc = makeService();
+      await svc.hydrateTwoFactorState();
+
+      expect(svc.isTwoFactorEnabled()).toBe(false);
+    });
+
+    it('is non-fatal when DB query fails', async () => {
+      mockStorage.loadTwoFactor.mockRejectedValue(new Error('relation does not exist'));
+
+      const svc = makeService();
+      await svc.hydrateTwoFactorState(); // should not throw
+
+      expect(svc.isTwoFactorEnabled()).toBe(false);
+    });
+
+    it('only hydrates once (idempotent)', async () => {
+      mockStorage.loadTwoFactor.mockResolvedValue({ secret: 'S', enabled: true });
+      mockStorage.loadRecoveryCodes.mockResolvedValue([]);
+
+      const svc = makeService();
+      await svc.hydrateTwoFactorState();
+      await svc.hydrateTwoFactorState();
+
+      expect(mockStorage.loadTwoFactor).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('2FA DB persistence', () => {
+    it('persists to DB on enable', async () => {
+      const svc = makeService();
+      await svc.setupTwoFactor();
+      await svc.verifyAndEnableTwoFactor('123456', ['RC1', 'RC2']);
+
+      expect(mockStorage.saveTwoFactor).toHaveBeenCalledWith('admin', 'JBSWY3DPEHPK3PXP', true);
+      expect(mockStorage.saveRecoveryCodes).toHaveBeenCalledWith('admin', expect.any(Array));
+    });
+
+    it('marks recovery code used in DB', async () => {
+      const svc = makeService();
+      await svc.setupTwoFactor();
+      await svc.verifyAndEnableTwoFactor('123456', ['RECOVERY1']);
+
+      mockTotp.verifyTOTP.mockReturnValue(false);
+      await svc.verifyTwoFactorCode('RECOVERY1');
+
+      expect(mockStorage.markRecoveryCodeUsed).toHaveBeenCalledWith(
+        'admin',
+        expect.any(String)
+      );
+    });
+
+    it('deletes from DB on disable', async () => {
+      const svc = makeService();
+      await svc.setupTwoFactor();
+      await svc.verifyAndEnableTwoFactor('123456');
+      await svc.disableTwoFactor();
+
+      expect(mockStorage.deleteTwoFactor).toHaveBeenCalledWith('admin');
     });
   });
 

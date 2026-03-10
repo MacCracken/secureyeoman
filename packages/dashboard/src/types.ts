@@ -150,6 +150,7 @@ export interface Personality {
   traits: Record<string, string>;
   sex: 'male' | 'female' | 'non-binary' | 'unspecified';
   voice: string;
+  voiceProfileId: string | null;
   preferredLanguage: string;
   defaultModel: DefaultModel | null;
   modelFallbacks: { provider: string; model: string }[];
@@ -269,6 +270,7 @@ export interface PersonalityCreate {
   traits?: Record<string, string>;
   sex?: 'male' | 'female' | 'non-binary' | 'unspecified';
   voice?: string;
+  voiceProfileId?: string | null;
   preferredLanguage?: string;
   defaultModel?: DefaultModel | null;
   modelFallbacks?: { provider: string; model: string }[];

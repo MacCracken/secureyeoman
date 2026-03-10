@@ -49,6 +49,8 @@ export class AuthModule extends BaseModule {
         logger: this.logger.child({ component: 'AuthService' }),
       }
     );
+    // Hydrate 2FA state from DB (non-fatal if migration not yet applied)
+    await this.authService.hydrateTwoFactorState();
     this.logger.debug('Auth service initialized');
   }
 
