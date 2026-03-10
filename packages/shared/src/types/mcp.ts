@@ -228,6 +228,12 @@ export const McpServiceConfigSchema = z.object({
   exposePhotisnadiTools: z.boolean().default(false),
   /** Enable Synapse LLM controller tools (synapse_*). Off by default. Set MCP_EXPOSE_SYNAPSE_TOOLS=true. */
   exposeSynapseTools: z.boolean().default(false),
+  /** Enable Delta self-hosted Git forge tools (delta_*). Off by default. Set MCP_EXPOSE_DELTA_TOOLS=true. */
+  exposeDeltaTools: z.boolean().default(false),
+  /** Base URL for the Delta instance. Default: http://localhost:3000 */
+  deltaUrl: z.string().optional(),
+  /** API token for authenticating with Delta. */
+  deltaApiToken: z.string().optional(),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

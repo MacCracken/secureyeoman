@@ -134,6 +134,21 @@ export const MCP_SECRET_MAPPINGS: {
     label: 'QuickBooks Refresh Token',
     category: 'QuickBooks',
   },
+  // Delta
+  {
+    secretName: 'DELTA_URL',
+    configKey: 'deltaUrl',
+    envVar: 'DELTA_URL',
+    label: 'Delta Instance URL',
+    category: 'Services',
+  },
+  {
+    secretName: 'DELTA_API_TOKEN',
+    configKey: 'deltaApiToken',
+    envVar: 'DELTA_API_TOKEN',
+    label: 'Delta API Token',
+    category: 'Services',
+  },
 ];
 
 import { readFileSync, unlinkSync } from 'node:fs';
@@ -246,6 +261,9 @@ export function loadConfig(
     exposeBullshiftTools: parseBool(env.MCP_EXPOSE_BULLSHIFT_TOOLS, false),
     exposePhotisnadiTools: parseBool(env.MCP_EXPOSE_PHOTISNADI_TOOLS, false),
     exposeSynapseTools: parseBool(env.MCP_EXPOSE_SYNAPSE_TOOLS, false),
+    exposeDeltaTools: parseBool(env.MCP_EXPOSE_DELTA_TOOLS, false),
+    deltaUrl: env.DELTA_URL ?? 'http://localhost:3000',
+    deltaApiToken: env.DELTA_API_TOKEN,
   };
 
   return McpServiceConfigSchema.parse(raw);

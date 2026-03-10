@@ -10,9 +10,10 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 145 | Cross-Project MCP Expansion | P2 | 4 BullShift tools done (already existed) + 3 future items |
-| — | AGNOS Built-in Integration | P2 | 8/10 code items done (icon + sandbox verify remain) |
-| — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
+| 145 | Cross-Project MCP Expansion | P2 | 3 future items remaining |
+| — | AGNOS Built-in Integration | P2 | 3 remaining (PNG icon, sandbox handshake verify, dashboard profiles) |
+| — | Delta Integration | P2 | 3 remaining (docker-compose, dashboard panel, bootstrap discovery) |
+| — | Engineering Backlog (incl. Security Hardening) | Ongoing | 1 security item remaining (2FA DB hydration) |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
@@ -111,60 +112,25 @@ Five rounds of code audit across CLI, Dashboard, and MCP packages. All findings 
 | Resource management | SSH session hard cap of 100 (network-tools.ts). Child process error handlers (agnostic.ts). Timer cleanup on unmount (OnboardingWizard.tsx). readSecret end/error handlers with double-resolve guard (provider.ts). |
 | Robustness | Defensive Array.isArray() on API responses (role.ts). Shutdown hooks for all module-level intervals and sessions. |
 
-### Security Hardening — Architectural (2026-03-09 Audit)
+### Security Hardening — Remaining
 
-Items identified in the deep security audit that require design decisions or multi-file refactors. Batch 1 (critical) resolved 2026-03-10. Batch 2 (medium) resolved 2026-03-10. Batch 3 (IDOR + vm sandbox) resolved 2026-03-10.
+All 14 items from the 2026-03-09 audit are resolved (see ADR 035 + Changelog `[2026.3.10]`). One item has follow-up work:
 
 | Item | Severity | Status | Description |
 |------|----------|--------|-------------|
-| Encrypt OAuth tokens at rest | CRITICAL | **DONE** | AES-256-GCM envelope encryption via `token-encryption.ts`. Encrypted columns `access_token_enc`/`refresh_token_enc` in `oauth_tokens`. Backward-compatible fallback to plaintext for pre-migration rows. Migration: `009_security_hardening.sql`. |
-| Move OAuth state to DB/Redis | CRITICAL | **DONE** | `OAuthStateStorage` (PostgreSQL). `auth.oauth_state` + `auth.pending_oauth_tokens` tables replace in-memory `OAUTH_STATES`/`PENDING_GMAIL_TOKENS`/`PENDING_OAUTH_USERINFO` maps. Pending tokens encrypted at rest. |
-| Persist 2FA state to DB | HIGH | **SCHEMA READY** | `auth.two_factor` + `auth.recovery_codes` tables created in migration. In-memory caching retained with DB as authoritative source (DB load on startup not yet wired). |
-| Add JWT aud/iss claims | HIGH | **DONE** | `iss: 'secureyeoman'`, `aud: 'secureyeoman-api'` added to all signed JWTs. Verification requires matching iss/aud. Backward-compatible fallback for pre-migration tokens without these claims. |
-| Hash recovery codes | HIGH | **DONE** | Recovery codes SHA-256 hashed before storage in `recoveryCodes` Set. Comparison uses hash-then-compare. |
-| Rate-limit 2FA verification | HIGH | **DONE** | `verifyTwoFactorCode()` now accepts `ip` param, checks `2fa_verify` rate limiter bucket before TOTP/recovery code verification. |
-| `rememberMe` token lifetime | LOW | **DONE** | Access token reduced from 30 days → 1 hour. Refresh token reduced from 60 days → 30 days. Short-lived access + long-lived refresh is the correct pattern. |
-| Require webhook secrets | MEDIUM | **DONE** | CI/CD webhook routes now return 503 when provider-specific secrets are not configured, instead of silently bypassing verification. |
-| Encrypt OIDC client secrets | HIGH | **DONE** | `client_secret_enc` (bytea) + `secret_enc_key_id` columns added to `auth.identity_providers`. SsoStorage encrypts on create/update, decrypts on read. Backward-compatible fallback to plaintext `client_secret` for pre-migration rows. Migration: `010_encrypt_idp_secrets.sql`. |
-| Replace `vm.runInNewContext` | HIGH | **DONE** | `isolated-vm` added as optional dependency. `isolated-executor.ts` provides true V8 isolate sandboxing (128 MB memory limit, per-call isolate disposal). `dynamic-tool-manager.ts` prefers `isolated-vm` when available, falls back to `vm.runInNewContext`. 12 tests. |
-| Implement PKCE for OAuth flows | MEDIUM | **DONE** | `generateCodeVerifier()`/`generateCodeChallenge()` (RFC 7636 S256) added to OAuth flows. `generateState()` now returns `{ state, codeVerifier }`, stored in `auth.oauth_state.code_verifier`. Authorization URL includes `code_challenge` + `code_challenge_method=S256`. Token exchange sends `code_verifier`. |
-| Authorization code pattern for SSO tokens | LOW | **DONE** | SSO callback no longer puts JWT tokens in URL fragment. Short-lived auth code (60s TTL) stored in `auth.sso_auth_codes` table. Frontend exchanges via `POST /api/v1/auth/sso/exchange`. Migration: `011_sso_auth_codes.sql`. |
-| Nonce-based CSP | MEDIUM | **DONE** | Per-request nonce generated via `randomBytes(16)`. `script-src 'self' 'nonce-{n}' 'strict-dynamic'` replaces `'unsafe-inline'`. Nonce injected into `<script>` tags when serving SPA shell. `style-src` retains `'unsafe-inline'` (CSS-in-JS/Tailwind). Dashboard CSP meta tag removed (server-side header is authoritative). |
-| MCP service token least privilege | MEDIUM | **DONE** | MCP service token changed from `role: 'admin'` to `role: 'service'` with 6 scoped permissions (was 8). New `service` role added to RBAC `DEFAULT_ROLES` and `RoleSchema`. Removed `audit:write` and `terminal:execute`. |
-| IDOR checks on document/memory ops | HIGH | **DONE** | `ownership-guard.ts` with `canAccessResource()` — admin/operator/service roles bypass, others must match `createdBy`/`userId`/`personalityId`. Applied to document GET/DELETE, document provenance GET/PUT, memory DELETE, knowledge PUT/DELETE. 12 tests. |
+| Persist 2FA state to DB | HIGH | **SCHEMA READY** | Tables created (`auth.two_factor` + `auth.recovery_codes`). DB load on startup not yet wired — in-memory cache is still authoritative until startup hydration is implemented. |
 
 ---
 
-## AGNOS Built-in Integration
+## AGNOS Built-in Integration — Remaining
 
-SecureYeoman is being promoted from consumer project to **flagship built-in tool** on AGNOS. AGNOS-side recipe created (`recipes/marketplace/secureyeoman.toml`). Items below are SecureYeoman-side work.
+Core integration complete (see ADR 036 + Changelog `[2026.3.10]`). Remaining items:
 
-| Item | Effort | Status | Description |
-|------|--------|--------|-------------|
-| Agent registration with daimon | 1 hour | **DONE** | `AgnosLifecycleManager` in `integrations/agnos/agnos-lifecycle.ts`. Batch-registers agent profiles via `POST /v1/agents/register/batch`, 30s heartbeat (unref'd), best-effort deregister on shutdown. 4 tests. |
-| MCP tool registration with daimon | 2 hours | **DONE** | `bootstrapAgnos()` in `integrations/agnos/agnos-bootstrap.ts` calls `POST /v1/mcp/tools` with high-value tool list. Auto-sets `MCP_EXPOSE_AGNOS_TOOLS=true` on successful discovery. 9 tests. |
-| Audit event forwarding | 1 hour | **DONE** | `registerAgnosHooks()` in `integrations/agnos/agnos-hooks.ts`. Batched forwarding (size 50, flush 5s) from security/task/agent hook points to `POST /v1/audit/forward`. 13 tests. |
-| Add app icon for marketplace | 30 min | **SVG DONE** | `assets/secureyeoman.svg` created (shield + Y letterform + lock accent, dark gradient palette). PNG rasterization and recipe install step TBD. |
-| Shared vector store bridge | 2 hours | **DONE** | `AgnosVectorStore` in `brain/vector/agnos-store.ts` implements `VectorStore` interface. Delegates insert/search to AGNOS runtime (`POST /v1/vectors/insert`, `POST /v1/vectors/search`). Batches inserts in chunks of 100. Added `'agnos'` backend to `createVectorStore` factory and `VectorConfigSchema`. 7 tests. |
-| Verify sandbox in AGNOS | 2 hours | **PARTIAL** | Container verification done: Runtime + Gateway healthy, seccomp available, PG persistence working, SY HTTPS serving. Landlock not available in Docker (expected — kernel LSM). Handshake endpoints (discover, batch register, sandbox profiles, events) pending AGNOS 2026.3.10. Entrypoint bugs fixed (PID cleanup, password escaping, SUPERUSER timing). |
-| Pre-configure AGNOS defaults | 30 min | **DONE** | `bootstrapAgnos()` calls `GET /v1/discover` to auto-detect capabilities. Loads sandbox profiles, registers MCP tools. Non-fatal — returns partial results on failure. |
-| Subscribe to AGNOS events | 1 hour | **DONE** | `registerAgnosHooks()` subscribes to `GET /v1/events/subscribe?topics=agent.*,task.*` (SSE). Events piped into extension hook system. Cleanup aborts SSE controller. |
-| Publish events to AGNOS | 30 min | **DONE** | `registerAgnosHooks()` publishes swarm/task/agent/error events to `POST /v1/events/publish` via observe-priority hooks. Non-fatal (fire-and-forget). |
-| Query sandbox profiles | 30 min | **DONE** | `bootstrapAgnos()` calls `GET /v1/sandbox/profiles/list` and returns profiles in `AgnosBootstrapResult`. Dashboard display TBD. |
-
-**AGNOS-side work (done):**
-- Marketplace recipe created (`recipes/marketplace/secureyeoman.toml`) with `flagship = true`
-- Sandbox profile: desktop seccomp, Landlock for data dir + IPC + fonts
-- Service ports declared (18789 core, 3000 dashboard, 3001 MCP)
-- Systemd user service unit included for headless mode
-- Depends on hoosh (llm-gateway) and daimon (agent-runtime)
-- **Handshake endpoints implemented** (6 new endpoints, 10 tests):
-  - `GET /v1/discover` — service discovery (capabilities, endpoints, companion services)
-  - `POST /v1/agents/register/batch` — batch agent registration (idempotent, up to 100)
-  - `GET /v1/events/subscribe` — SSE event stream with topic wildcards
-  - `POST /v1/events/publish` — publish events to pub/sub broker
-  - `GET /v1/events/topics` — list active topics with subscriber counts
-  - `GET /v1/sandbox/profiles/list` — list all sandbox presets
+| Item | Status | Description |
+|------|--------|-------------|
+| App icon — PNG rasterization | Not started | Rasterize `assets/secureyeoman.svg` to PNG sizes (64, 128, 256, 512). Add to AGNOS marketplace recipe install step. |
+| Verify sandbox handshake | Blocked | Handshake endpoints (discover, batch register, sandbox profiles, events) pending AGNOS 2026.3.10 release. Re-verify once available. |
+| Dashboard sandbox profiles | Not started | Display AGNOS sandbox profiles queried during bootstrap in dashboard UI. |
 
 ---
 
@@ -172,13 +138,21 @@ SecureYeoman is being promoted from consumer project to **flagship built-in tool
 
 | Item | Status | Description |
 |------|--------|-------------|
-| Register `bullshift_market_data` MCP tool | **DONE** | Already implemented as `bullshift_market_data` in `trading-tools.ts` (discovered during Phase 145 audit) |
-| Register `bullshift_algo_status` MCP tool | **DONE** | Already implemented as `bullshift_algo_strategies` in `trading-tools.ts` |
-| Register `bullshift_sentiment` MCP tool | **DONE** | Already implemented as `bullshift_sentiment` in `trading-tools.ts` |
-| Register `bullshift_alerts` MCP tool | **DONE** | Already implemented as `bullshift_alerts` in `trading-tools.ts` (GET + POST) |
 | Merge agnostic into agnosticos | Future | Agnostic becomes a package within agnosticos — collapses to single service |
 | Photisnadi in SY container | Future | Photisnadi baked into agnosticos base image or run as separate container. User choice via `PHOTISNADI_ENABLED` flag. When embedded, supervisord manages Photisnadi process; when external, SY proxies via SUPABASE_URL |
 | Task tracker widget — third-party aggregator | Future | Extend TaskTrackerWidget to aggregate tasks from third-party trackers (Photisnadi, Trello, Jira, Linear, Todoist, Asana) via adapter interface. Unified view of all external task sources. Widget auto-selects adapters based on configured integrations |
+
+---
+
+## Delta Integration — Remaining
+
+Delta is a Rust-based self-hosted code forge (git hosting, PRs, CI/CD, artifact registry) built for the AGNOS ecosystem. Core integration done (see ADR 037 + Changelog `[2026.3.10]`).
+
+| Item | Status | Description |
+|------|--------|-------------|
+| Docker-compose service | Not started | Add `delta` service to `docker-compose.yml` under `delta` and `full-dev` profiles. Image: `ghcr.io/maccracken/delta:latest`. Port 8070. Shared PG or embedded SQLite. Wire `DELTA_URL` env var into sy-core. |
+| Dashboard Delta panel | Future | Repository browser, PR list/review, pipeline status, artifact downloads. Reuse existing CI/CD dashboard patterns. |
+| AGNOS bootstrap discovery | Future | Extend `bootstrapAgnos()` to discover Delta via AGNOS service registry. Auto-set `DELTA_URL` and `MCP_EXPOSE_DELTA_TOOLS=true` when Delta is detected. |
 
 ---
 
@@ -323,4 +297,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-10 (Updated test coverage stats, added Code Quality audit summary from 5 audit rounds). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-10 (Cleaned completed items — security hardening, AGNOS integration, Delta integration, Phase 145 BullShift tools moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*

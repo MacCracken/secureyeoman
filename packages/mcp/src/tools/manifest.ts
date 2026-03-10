@@ -2491,5 +2491,62 @@ export function getToolManifest(): ToolManifestEntry[] {
       description: 'Cancel a running training job on the Synapse instance',
       category: 'synapse',
     },
+
+    // Delta self-hosted Git forge tools
+    {
+      name: 'delta_list_repos',
+      description:
+        'List repositories on the Delta instance with name, owner, description, stars, forks, and visibility',
+      category: 'delta',
+    },
+    {
+      name: 'delta_get_repo',
+      description:
+        'Get detailed information about a specific Delta repository including default branch, clone URLs, and statistics',
+      category: 'delta',
+    },
+    {
+      name: 'delta_list_pulls',
+      description:
+        'List pull requests for a Delta repository, filterable by state (open, closed, all)',
+      category: 'delta',
+    },
+    {
+      name: 'delta_get_pull',
+      description:
+        'Get detailed information about a specific pull request including diff stats, reviews, and CI checks',
+      category: 'delta',
+    },
+    {
+      name: 'delta_merge_pull',
+      description: 'Merge a pull request on Delta. Supports merge, rebase, and squash strategies',
+      category: 'delta',
+    },
+    {
+      name: 'delta_list_pipelines',
+      description: 'List CI/CD pipeline runs for a Delta repository, filterable by status',
+      category: 'delta',
+    },
+    {
+      name: 'delta_trigger_pipeline',
+      description:
+        'Trigger a CI/CD pipeline run on a Delta repository, optionally on a specific ref',
+      category: 'delta',
+    },
+    {
+      name: 'delta_cancel_pipeline',
+      description: 'Cancel a running CI/CD pipeline by its run ID on Delta',
+      category: 'delta',
+    },
+    {
+      name: 'delta_job_logs',
+      description: 'Get logs for a specific job within a CI/CD pipeline run on Delta',
+      category: 'delta',
+    },
+    {
+      name: 'delta_create_status',
+      description: 'Create a commit status check on a specific SHA in a Delta repository',
+      category: 'delta',
+    },
   ];
 }

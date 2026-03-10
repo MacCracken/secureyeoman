@@ -1,7 +1,7 @@
 /**
  * CI/CD Webhook Routes — unit tests
  *
- * Tests the inbound webhook normalizer for GitHub, Jenkins, GitLab, and Northflank.
+ * Tests the inbound webhook normalizer for GitHub, Jenkins, GitLab, Northflank, and Delta.
  * Verifies: signature verification, CiEvent normalization, workflow dispatch, 400 for unknown provider.
  */
 
@@ -22,6 +22,10 @@ function buildApp(workflowManager?: WorkflowManager) {
 
 function hmacSig(secret: string, body: string): string {
   return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
+}
+
+function hmacHex(secret: string, body: string): string {
+  return createHmac('sha256', secret).update(body).digest('hex');
 }
 
 function mockWorkflowManager(
@@ -227,6 +231,110 @@ describe('CI/CD Webhook Routes', () => {
       });
       expect(res.statusCode).toBe(503);
       expect(res.json().message).toContain('NORTHFLANK_WEBHOOK_SECRET');
+    });
+  });
+
+  describe('Delta provider', () => {
+    it('returns 200 when Delta HMAC signature is correct', async () => {
+      process.env.DELTA_WEBHOOK_SECRET = 'delta-secret';
+      const app = await buildApp();
+      const payloadBody = JSON.stringify({
+        ref: 'main',
+        repo_owner: 'acme',
+        repo_name: 'app',
+        pipeline: { id: 'pipe-1', status: 'passed', commit_ref: 'main' },
+      });
+      const sig = hmacHex('delta-secret', payloadBody);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/delta',
+        body: payloadBody,
+        headers: {
+          'content-type': 'application/json',
+          'x-delta-event': 'push',
+          'x-delta-signature': sig,
+        },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.provider).toBe('delta');
+      expect(body.event).toBe('push');
+    });
+
+    it('returns 401 when Delta signature is invalid', async () => {
+      process.env.DELTA_WEBHOOK_SECRET = 'delta-secret';
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/delta',
+        payload: { ref: 'main' },
+        headers: {
+          'x-delta-event': 'push',
+          'x-delta-signature': 'badhash',
+        },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('returns 503 when Delta webhook secret is not configured', async () => {
+      delete process.env.DELTA_WEBHOOK_SECRET;
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/delta',
+        payload: { ref: 'main' },
+        headers: { 'x-delta-event': 'push' },
+      });
+      expect(res.statusCode).toBe(503);
+      expect(res.json().message).toContain('DELTA_WEBHOOK_SECRET');
+    });
+
+    it('normalizes Delta pipeline event correctly', async () => {
+      process.env.DELTA_WEBHOOK_SECRET = 'delta-secret';
+      const manager = mockWorkflowManager([
+        {
+          id: 'wf-delta',
+          isEnabled: true,
+          triggers: [{ type: 'event', config: { event: 'pipeline_run' } }],
+        },
+      ]);
+      const app = await buildApp(manager);
+      const payloadBody = JSON.stringify({
+        ref: 'release/v2',
+        repo_owner: 'acme',
+        repo_name: 'infra',
+        pipeline: { id: 'pipe-99', status: 'failed', commit_ref: 'release/v2' },
+      });
+      const sig = hmacHex('delta-secret', payloadBody);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/delta',
+        body: payloadBody,
+        headers: {
+          'content-type': 'application/json',
+          'x-delta-event': 'pipeline_run',
+          'x-delta-signature': sig,
+        },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.provider).toBe('delta');
+      expect(body.event).toBe('pipeline_run');
+      // Verify workflow dispatch was triggered
+      await new Promise((r) => setTimeout(r, 10));
+      expect(manager.triggerRun).toHaveBeenCalledWith(
+        'wf-delta',
+        expect.objectContaining({
+          ciEvent: expect.objectContaining({
+            provider: 'delta',
+            conclusion: 'failure',
+            ref: 'release/v2',
+            runId: 'pipe-99',
+            repoUrl: 'delta://acme/infra',
+          }),
+        }),
+        'webhook:delta'
+      );
     });
   });
 

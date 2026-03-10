@@ -6,6 +6,49 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.10]
 
+### Security Hardening — Batches 1–3 (14 Items)
+
+Deep security audit and remediation across authentication, authorization, encryption, and sandboxing. See ADR 035.
+
+- **OAuth token encryption at rest**: AES-256-GCM envelope encryption via `token-encryption.ts`. Encrypted columns in `oauth_tokens`. Migration: `009_security_hardening.sql`.
+- **OAuth state persistence**: `OAuthStateStorage` (PostgreSQL) replaces in-memory maps. `auth.oauth_state` + `auth.pending_oauth_tokens` tables. Pending tokens encrypted.
+- **2FA state schema**: `auth.two_factor` + `auth.recovery_codes` tables created. DB as authoritative source.
+- **JWT audience/issuer claims**: `iss: 'secureyeoman'`, `aud: 'secureyeoman-api'` on all JWTs. Backward-compatible fallback for pre-migration tokens.
+- **Recovery code hashing**: SHA-256 hashed before storage. Hash-then-compare verification.
+- **2FA rate limiting**: `verifyTwoFactorCode()` accepts `ip` param, checks `2fa_verify` bucket before TOTP/recovery.
+- **Token lifetime reduction**: Access token 30d → 1h, refresh token 60d → 30d.
+- **Webhook secret enforcement**: CI/CD webhook routes return 503 when secrets missing, instead of bypassing verification.
+- **OIDC client secret encryption**: `client_secret_enc` (bytea) column in `auth.identity_providers`. Migration: `010_encrypt_idp_secrets.sql`.
+- **V8 isolate sandboxing**: `isolated-vm` replaces `vm.runInNewContext` for dynamic tool code. 128 MB memory limit, per-call isolate disposal. Falls back to `vm` when native module unavailable. 12 tests.
+- **PKCE for OAuth flows**: RFC 7636 S256 code challenge/verifier. Stored in `auth.oauth_state.code_verifier`.
+- **Authorization code pattern for SSO**: Short-lived auth codes (60s TTL) replace JWT-in-URL-fragment. Migration: `011_sso_auth_codes.sql`.
+- **Nonce-based CSP**: Per-request nonce via `randomBytes(16)`. `script-src 'self' 'nonce-{n}' 'strict-dynamic'` replaces `'unsafe-inline'`.
+- **MCP service token least privilege**: `role: 'service'` with 6 scoped permissions (was `role: 'admin'` with 8).
+- **IDOR ownership guard**: `ownership-guard.ts` with `canAccessResource()`. Admin/operator/service bypass, others must match `createdBy`/`userId`/`personalityId`. Applied to document, memory, and knowledge routes. 12 tests.
+
+### AGNOS Built-in Integration
+
+SecureYeoman promoted to flagship built-in tool on AGNOS. See ADR 036.
+
+- **Agent registration** (`integrations/agnos/agnos-lifecycle.ts`): `AgnosLifecycleManager` batch-registers agent profiles via `POST /v1/agents/register/batch`, 30s heartbeat, best-effort deregister on shutdown. 4 tests.
+- **MCP tool registration** (`integrations/agnos/agnos-bootstrap.ts`): `bootstrapAgnos()` calls `POST /v1/mcp/tools`, auto-sets `MCP_EXPOSE_AGNOS_TOOLS=true` on successful discovery. 9 tests.
+- **Audit event forwarding** (`integrations/agnos/agnos-hooks.ts`): Batched forwarding (size 50, flush 5s) to `POST /v1/audit/forward`. 13 tests.
+- **App icon**: `assets/secureyeoman.svg` — shield + Y letterform + lock accent, dark gradient palette.
+- **Shared vector store bridge** (`brain/vector/agnos-store.ts`): `AgnosVectorStore` delegates to AGNOS runtime. Batches inserts in chunks of 100. 7 tests.
+- **AGNOS bootstrap discovery**: `bootstrapAgnos()` calls `GET /v1/discover` for auto-detection, loads sandbox profiles, registers MCP tools.
+- **Event subscription/publishing**: SSE subscription to `GET /v1/events/subscribe`, fire-and-forget publish to `POST /v1/events/publish` via observe-priority hooks.
+- **Sandbox profiles**: `GET /v1/sandbox/profiles/list` queried during bootstrap. Dashboard display TBD.
+- **Entrypoint fixes** (`docker/entrypoint-combined.sh`): Stale PID cleanup, password escaping in psql, SUPERUSER timing correction.
+
+### Delta Code Forge Integration
+
+Integration with Delta, a Rust-based self-hosted code forge (git hosting, PRs, CI/CD). See ADR 037.
+
+- **CI/CD webhook provider** (`integrations/cicd/cicd-webhook-routes.ts`): Delta added as 5th provider. HMAC-SHA256 via `X-Delta-Signature`. Event header: `X-Delta-Event`. Secret: `DELTA_WEBHOOK_SECRET`. 4 tests.
+- **Delta HTTP client** (`integrations/delta/delta-client.ts`): 11 methods — `listRepos`, `getRepo`, `listPulls`, `getPull`, `mergePull`, `listPipelines`, `triggerPipeline`, `cancelPipeline`, `getJobLogs`, `createStatus`, `health`. 8 tests.
+- **10 MCP tools** (`mcp/tools/delta-tools.ts`): `delta_list_repos`, `delta_get_repo`, `delta_list_pulls`, `delta_get_pull`, `delta_merge_pull`, `delta_list_pipelines`, `delta_trigger_pipeline`, `delta_cancel_pipeline`, `delta_job_logs`, `delta_create_status`. Gated by `MCP_EXPOSE_DELTA_TOOLS`.
+- **MCP config**: `exposeDeltaTools`, `deltaUrl`, `deltaApiToken` added to `McpServiceConfig`. Secret mappings in `MCP_SECRET_MAPPINGS`.
+
 ### Synapse LLM Controller Integration
 
 Full integration with Synapse, the Rust-based local LLM controller for model management, inference, and training job orchestration. See ADR 034.

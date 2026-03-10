@@ -1,7 +1,7 @@
 /**
  * CI/CD Inbound Webhook Routes — Phase 90
  *
- * Normalises inbound CI/CD events from GitHub, Jenkins, GitLab, and Northflank
+ * Normalises inbound CI/CD events from GitHub, Jenkins, GitLab, Northflank, and Delta
  * into a canonical CiEvent, verifies platform-specific signatures, and dispatches
  * matching event-triggered workflow definitions.
  *
@@ -12,6 +12,7 @@
  *   Jenkins:    X-Jenkins-Crumb     — static token match against JENKINS_WEBHOOK_TOKEN
  *   GitLab:     X-Gitlab-Token      — static token match against GITLAB_WEBHOOK_TOKEN
  *   Northflank: X-Northflank-Signature — HMAC-SHA256 of body, key = NORTHFLANK_WEBHOOK_SECRET
+ *   Delta:      X-Delta-Signature   — HMAC-SHA256 of body, key = DELTA_WEBHOOK_SECRET
  */
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -25,7 +26,7 @@ import { getSecret } from '../../config/loader.js';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CiEvent {
-  provider: 'github' | 'jenkins' | 'gitlab' | 'northflank';
+  provider: 'github' | 'jenkins' | 'gitlab' | 'northflank' | 'delta';
   event: string; // e.g. 'workflow_run.completed', 'build.failed'
   ref: string; // branch/tag
   conclusion: string; // success | failure | cancelled | unknown
@@ -86,6 +87,17 @@ function verifyStaticToken(
   if (!expected) return 'no_secret';
   if (!provided) return 'invalid';
   return safeCompare(expected, provided) ? 'ok' : 'invalid';
+}
+
+function verifyDelta(
+  secret: string | undefined,
+  rawBody: string,
+  sig: string | undefined
+): 'ok' | 'no_secret' | 'invalid' {
+  if (!secret) return 'no_secret';
+  if (!sig) return 'invalid';
+  const expected = hmacSha256(secret, rawBody);
+  return safeCompare(expected, sig) ? 'ok' : 'invalid';
 }
 
 // ─── Normalizers ─────────────────────────────────────────────────────────────
@@ -185,6 +197,37 @@ function normalizeNorthflank(body: Record<string, unknown>): CiEvent {
   };
 }
 
+function normalizeDelta(eventHeader: string, body: Record<string, unknown>): CiEvent {
+  const event = eventHeader; // push, tag_create, tag_delete, pull_request, pull_request_review
+
+  // Pipeline run payload
+  const pipeline = body.pipeline as Record<string, unknown> | undefined;
+  const ref = String(body.ref ?? body.ref_name ?? pipeline?.commit_ref ?? '');
+  const status = String(pipeline?.status ?? body.conclusion ?? 'unknown');
+  const conclusion =
+    status === 'passed'
+      ? 'success'
+      : status === 'failed'
+        ? 'failure'
+        : status === 'cancelled'
+          ? 'cancelled'
+          : status;
+  const runId = String(pipeline?.id ?? body.run_id ?? '');
+  const repoOwner = String(body.repo_owner ?? '');
+  const repoName = String(body.repo_name ?? '');
+
+  return {
+    provider: 'delta',
+    event,
+    ref,
+    conclusion,
+    runId,
+    repoUrl: repoOwner && repoName ? `delta://${repoOwner}/${repoName}` : '',
+    logsUrl: undefined,
+    metadata: body,
+  };
+}
+
 // ─── Route Registration ───────────────────────────────────────────────────────
 
 export function registerCicdWebhookRoutes(
@@ -277,6 +320,22 @@ export function registerCicdWebhookRoutes(
             return sendError(reply, 401, 'Invalid Northflank webhook signature');
           }
           ciEvent = normalizeNorthflank(body);
+        } else if (provider === 'delta') {
+          const deltaSecret = getSecret('DELTA_WEBHOOK_SECRET');
+          const sig = request.headers['x-delta-signature'] as string | undefined;
+          const result = verifyDelta(deltaSecret, rawBody, sig);
+          if (result === 'no_secret') {
+            return sendError(
+              reply,
+              503,
+              'Delta webhook secret not configured (DELTA_WEBHOOK_SECRET)'
+            );
+          }
+          if (result === 'invalid') {
+            return sendError(reply, 401, 'Invalid Delta webhook signature');
+          }
+          const eventHeader = (request.headers['x-delta-event'] as string | undefined) ?? 'push';
+          ciEvent = normalizeDelta(eventHeader, body);
         } else {
           return sendError(reply, 400, `Unknown CI provider: ${provider}`);
         }
