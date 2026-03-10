@@ -390,7 +390,7 @@ export class WorkflowStorage extends PgBaseStorage {
     );
 
     const rows = await this.queryMany<WorkflowRunRow>(
-      `SELECT * FROM workflow.runs ${where} ORDER BY created_at DESC LIMIT $${p++} OFFSET $${p++}`,
+      `SELECT * FROM workflow.runs ${where} ORDER BY created_at DESC, id DESC LIMIT $${p++} OFFSET $${p++}`,
       [...values, limit, offset]
     );
 
