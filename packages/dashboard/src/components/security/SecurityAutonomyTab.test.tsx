@@ -251,4 +251,87 @@ describe('AutonomyTab', () => {
       expect(screen.getByText('Auto Deploy')).toBeInTheDocument();
     });
   });
+
+  it('starts an audit run when name provided and Start clicked', async () => {
+    const mockCreateRun = vi.mocked(api.createAuditRun);
+    mockCreateRun.mockResolvedValue({ id: 'run-new', name: 'Test Audit', checklist: [] } as any);
+
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Audit Wizard')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Audit Wizard'));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Audit name/)).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText(/Audit name/), 'Test Audit');
+    await user.click(screen.getByText('Start Audit'));
+
+    await waitFor(() => {
+      expect(mockCreateRun).toHaveBeenCalledWith('Test Audit');
+    });
+  });
+
+  it('shows emergency stop button for L5 items in registry', async () => {
+    const overviewWithL5 = {
+      totals: { L1: 0, L2: 0, L3: 0, L4: 0, L5: 1 },
+      byLevel: {
+        L1: [],
+        L2: [],
+        L3: [],
+        L4: [],
+        L5: [
+          { id: 's-5', name: 'Dangerous Bot', type: 'skill', autonomyLevel: 'L5', enabled: true },
+        ],
+      },
+    };
+    mockFetchOverview.mockResolvedValue(overviewWithL5 as any);
+
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Emergency Stop Registry')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Emergency Stop Registry'));
+    await waitFor(() => {
+      expect(screen.getByText('Dangerous Bot')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Stop Procedure column in overview', async () => {
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Stop Procedure')).toBeInTheDocument();
+    });
+  });
+
+  it('shows item type in overview table', async () => {
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('skill')).toBeInTheDocument();
+    });
+  });
+
+  it('renders with multi-level items', async () => {
+    const multiOverview = {
+      totals: { L1: 1, L2: 1, L3: 1, L4: 0, L5: 0 },
+      byLevel: {
+        L1: [{ id: 's-1', name: 'Basic', type: 'skill', autonomyLevel: 'L1', enabled: true }],
+        L2: [{ id: 's-2', name: 'Moderate', type: 'workflow', autonomyLevel: 'L2', enabled: true }],
+        L3: [{ id: 's-3', name: 'Advanced', type: 'skill', autonomyLevel: 'L3', enabled: true }],
+        L4: [],
+        L5: [],
+      },
+    };
+    mockFetchOverview.mockResolvedValue(multiOverview as any);
+
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Basic')).toBeInTheDocument();
+      expect(screen.getByText('Moderate')).toBeInTheDocument();
+      expect(screen.getByText('Advanced')).toBeInTheDocument();
+    });
+  });
 });
