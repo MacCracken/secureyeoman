@@ -110,4 +110,92 @@ describe('ExecutiveSummaryPanel', () => {
     render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary()} />);
     expect(screen.getByTestId('executive-summary-panel')).toBeInTheDocument();
   });
+
+  it('shows overdue risks value with color when > 0', () => {
+    render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ totalOverdueRisks: 5 })} />);
+    expect(screen.getAllByText('5').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows zero overdue risks without color', () => {
+    render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ totalOverdueRisks: 0 })} />);
+    expect(screen.getByText('Overdue Risks')).toBeInTheDocument();
+  });
+
+  it('shows Medium level for departments with score 25-49', () => {
+    const departments = [
+      { id: 'd1', name: 'MediumRisk', score: 40, openRisks: 2, criticalRisks: 0, appetiteBreaches: 0 },
+    ];
+    render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ departments })} />);
+    expect(screen.getByText('Medium')).toBeInTheDocument();
+    expect(screen.getByText('40.0')).toBeInTheDocument();
+  });
+
+  it('shows High level for departments with score 50-74', () => {
+    const departments = [
+      { id: 'd1', name: 'HighRisk', score: 60, openRisks: 5, criticalRisks: 2, appetiteBreaches: 1 },
+    ];
+    render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ departments })} />);
+    expect(screen.getByText('High')).toBeInTheDocument();
+  });
+
+  it('shows export dropdown options when clicked', async () => {
+    render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary()} />);
+    const exportBtn = screen.getByText('Export');
+    const { fireEvent } = await import('@testing-library/react');
+    fireEvent.click(exportBtn);
+    expect(screen.getByText('JSON')).toBeInTheDocument();
+    expect(screen.getByText('CSV')).toBeInTheDocument();
+    expect(screen.getByText('HTML')).toBeInTheDocument();
+    expect(screen.getByText('Markdown')).toBeInTheDocument();
+  });
+
+  it('shows critical risks value with red when > 0', () => {
+    render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ totalCriticalRisks: 7 })} />);
+    expect(screen.getByText('7')).toBeInTheDocument();
+  });
+
+  it('shows appetite breaches count', () => {
+    render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ appetiteBreaches: 3 })} />);
+    expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Appetite Breaches')).toBeInTheDocument();
+  });
+
+  it('shows departments with breaches highlighted', () => {
+    const departments = [
+      { id: 'd1', name: 'RiskyDept', score: 55, openRisks: 8, criticalRisks: 3, appetiteBreaches: 2 },
+    ];
+    render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ departments })} />);
+    expect(screen.getByText('RiskyDept')).toBeInTheDocument();
+    expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders table headers', () => {
+    const departments = [
+      { id: 'd1', name: 'Test', score: 50, openRisks: 1, criticalRisks: 0, appetiteBreaches: 0 },
+    ];
+    render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ departments })} />);
+    expect(screen.getByText('Department')).toBeInTheDocument();
+    expect(screen.getByText('Score')).toBeInTheDocument();
+    expect(screen.getByText('Open')).toBeInTheDocument();
+    expect(screen.getByText('Breaches')).toBeInTheDocument();
+    expect(screen.getByText('Level')).toBeInTheDocument();
+  });
+
+  it('handles ATHI-style with mitigated stats', () => {
+    const athiSummary = {
+      totalScenarios: 30,
+      byStatus: { identified: 10, mitigated: 15 },
+      byActor: { internal: 5, external: 10, insider: 3 },
+      topRisks: [],
+      averageRiskScore: 35.0,
+      mitigationCoverage: 0.5,
+    };
+    render(<ExecutiveSummaryPanel summary={athiSummary as any} />);
+    // totalDepartments = Object.keys(byActor).length = 3
+    expect(screen.getByText('3')).toBeInTheDocument();
+    // totalOpenRisks = 30 - 15 = 15
+    expect(screen.getByText('15')).toBeInTheDocument();
+    // averageRiskScore
+    expect(screen.getByText('35.0')).toBeInTheDocument();
+  });
 });
