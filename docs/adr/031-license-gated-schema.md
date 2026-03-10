@@ -1,6 +1,6 @@
 # ADR 031: License-Gated Database Schema
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-03-07
 
 ## Context

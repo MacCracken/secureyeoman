@@ -473,10 +473,12 @@ export class GatewayServer {
       let oauthPublicUrl = this.config.oauthRedirectBaseUrl || undefined;
       try {
         const prefs = this.secureYeoman.getSystemPreferences();
-        const storedExternalUrl = await prefs.get('external_url');
-        if (storedExternalUrl) baseUrl = storedExternalUrl;
-        const storedOauthUrl = await prefs.get('oauth_redirect_base_url');
-        if (storedOauthUrl) oauthPublicUrl = storedOauthUrl;
+        if (prefs) {
+          const storedExternalUrl = await prefs.get('external_url');
+          if (storedExternalUrl) baseUrl = storedExternalUrl;
+          const storedOauthUrl = await prefs.get('oauth_redirect_base_url');
+          if (storedOauthUrl) oauthPublicUrl = storedOauthUrl;
+        }
       } catch {
         // System preferences may not be initialized yet — use env/defaults
       }
@@ -797,7 +799,9 @@ export class GatewayServer {
     // Admin settings routes (system preferences)
     try {
       const systemPreferences = this.secureYeoman.getSystemPreferences();
-      registerAdminSettingsRoutes(this.app, { systemPreferences });
+      if (systemPreferences) {
+        registerAdminSettingsRoutes(this.app, { systemPreferences });
+      }
     } catch {
       // Admin settings routes are optional — skip if preferences not initialized
     }

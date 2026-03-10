@@ -274,7 +274,7 @@ Security telemetry is presented through a dedicated dashboard surface that aggre
 - Pattern-based detection (InputValidator, PromptGuard, ResponseGuard, ContentGuardrail) requires periodic updates as new attack techniques emerge. Regex patterns have inherent false positive and negative rates.
 - Skill trust tier classification relies on tool name prefixes; a write tool with a read-like name would be incorrectly permitted for community skills.
 - In-memory rate limiting and abuse detection state do not survive process restarts and are not distributed across instances. This is adequate for single-instance deployments.
-- TEE provider capabilities are maintained in a static table requiring manual updates as providers add TEE support. Remote attestation APIs are planned but not yet implemented.
+- TEE provider capabilities are maintained in a static table requiring manual updates as providers add TEE support. Remote attestation is implemented for Azure MAA, NVIDIA RAA, and AWS Nitro Enclaves.
 - The credential proxy protects the sandbox boundary but not the parent process; a compromised parent could still read credentials.
 - Content guardrail toxicity filtering depends on external classifier availability and operates fail-open.
 - Jailbreak scoring uses weighted regex as a deterministic proxy; an embedding-based classifier would provide stronger semantic coverage but adds inference latency.

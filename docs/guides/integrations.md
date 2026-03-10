@@ -37,8 +37,6 @@ SecureYeoman supports multiple platform integrations for receiving and respondin
 
 ### Dashboard tab organisation
 
-Integrations are grouped into sub-tabs in the Connections view:
-
 | Tab | Platforms |
 |-----|-----------|
 | **Messaging** | Telegram, Discord, Slack, WhatsApp, Signal, Teams, Google Chat, iMessage, QQ, DingTalk, Line, CLI, Webhook, Twitter/X |
@@ -50,9 +48,7 @@ Integrations are grouped into sub-tabs in the Connections view:
 
 ## Native MCP Integration Tools
 
-In addition to bidirectional messaging, six productivity platforms expose native MCP tools that let agents proactively interact with external APIs — creating issues, managing events, querying databases, and more.
-
-### Available tools by platform
+Six productivity platforms expose native MCP tools that let agents interact with external APIs — creating issues, managing events, querying databases, and more.
 
 | Platform | Tools | Auth method | Core route prefix |
 |----------|-------|-------------|-------------------|
@@ -89,13 +85,38 @@ Service API keys can be managed in two ways:
 
 The MCP service resolves secrets at startup via `enrichConfigWithSecrets()`, which calls the core's SecretsManager.
 
+---
+
+## Common Setup Pattern
+
+Most integrations follow the same lifecycle. Create via the dashboard or API, then test and start:
+
+```bash
+# Create an integration
+curl -X POST http://localhost:18789/api/v1/integrations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "<platform>",
+    "displayName": "<name>",
+    "enabled": true,
+    "config": { ... }
+  }'
+
+# Test credentials without starting
+POST /api/v1/integrations/:id/test
+
+# Start receiving/sending messages
+POST /api/v1/integrations/:id/start
+```
+
+Platform-specific `config` objects are documented in each section below.
+
+---
+
 ## Device Control
 
-### Overview
-
-The Device Control prebuilt connects to [`mcp-device-server`](https://github.com/akshitsinha/mcp-device-server) — a Python MCP server that exposes locally attached peripherals (webcams, printers, microphones, speakers, displays) as MCP tools. No API keys or credentials are required; the server auto-detects connected hardware.
-
-**Available tool categories:**
+The Device Control prebuilt connects to [`mcp-device-server`](https://github.com/akshitsinha/mcp-device-server) — a Python MCP server that exposes locally attached peripherals (webcams, printers, microphones, speakers, displays) as MCP tools. No API keys required; the server auto-detects connected hardware.
 
 | Category | Tools |
 |----------|-------|
@@ -106,291 +127,168 @@ The Device Control prebuilt connects to [`mcp-device-server`](https://github.com
 
 ### Prerequisites
 
-Install the following system dependencies before connecting:
-
-**uv** (Python package manager):
 ```bash
+# uv (Python package manager)
 curl -LsSf https://astral.sh/uv/install.sh | sh
-```
 
-**ffmpeg** (camera and screen recording):
-```bash
-# macOS
-brew install ffmpeg
+# ffmpeg (camera and screen recording)
+brew install ffmpeg            # macOS
+sudo apt install ffmpeg        # Ubuntu/Debian
+sudo dnf install ffmpeg        # Fedora
 
-# Ubuntu / Debian
-sudo apt install ffmpeg
-
-# Fedora
-sudo dnf install ffmpeg
-```
-
-**PortAudio** (audio recording/playback):
-```bash
-# macOS
-brew install portaudio
-
-# Ubuntu / Debian
-sudo apt install portaudio19-dev
-
-# Fedora
-sudo dnf install portaudio-devel
+# PortAudio (audio recording/playback)
+brew install portaudio         # macOS
+sudo apt install portaudio19-dev  # Ubuntu/Debian
+sudo dnf install portaudio-devel  # Fedora
 ```
 
 ### Setup
 
-In the Dashboard, go to **Connections → MCP** tab, find **Device Control**, click **Connect**, review the prerequisite note, then click **Connect** again. The server is added to your MCP client with `uvx mcp-device-server` as the startup command.
+In the Dashboard, go to **Connections > MCP** tab, find **Device Control**, click **Connect**, review the prerequisite note, then click **Connect** again. The server starts via `uvx mcp-device-server` over stdio.
 
-### How It Works
-
-- The MCP client spawns `uvx mcp-device-server` as a child process over stdio on first use
-- All 18+ hardware tools become available in your agent's tool roster
-- Feature flags (`ENABLE_CAMERA`, `ENABLE_PRINTER`, `ENABLE_AUDIO`, `ENABLE_SCREEN`) can be set in your shell environment to restrict which categories are loaded (all enabled by default)
+Feature flags (`ENABLE_CAMERA`, `ENABLE_PRINTER`, `ENABLE_AUDIO`, `ENABLE_SCREEN`) can be set in your shell environment to restrict categories (all enabled by default).
 
 ---
 
 ## CLI
 
-### Overview
-The CLI integration represents the built-in command-line / REST API interface as a dashboard-visible connection. It requires no external credentials — once connected, it shows as "online" to confirm the local API surface is active.
+The CLI integration represents the built-in REST API interface as a dashboard-visible connection. No external credentials needed.
 
-### Setup
-
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "cli",
-    "displayName": "SecureYeoman CLI",
-    "enabled": true,
-    "config": {}
-  }'
+```json
+{ "platform": "cli", "config": {} }
 ```
 
-### How It Works
-- **Inbound**: Messages arrive via the REST API or task executor directly
-- **Outbound**: `sendMessage()` is a no-op; CLI consumers read responses via API responses
-- Rate limit: 100 messages/second
+- **Inbound**: Messages arrive via REST API or task executor
+- **Outbound**: `sendMessage()` is a no-op; consumers read responses via API
+- Rate limit: 100 msg/s
 
 ## Telegram
 
-### Setup
-1. Create a bot via [@BotFather](https://t.me/BotFather)
-2. Copy the bot token
-3. Create an integration via the dashboard or API:
+1. Create a bot via [@BotFather](https://t.me/BotFather) and copy the token
 
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "telegram",
-    "displayName": "My SecureYeoman Bot",
-    "enabled": true,
-    "config": {
-      "botToken": "123456:ABC-DEF..."
-    }
-  }'
+```json
+{ "platform": "telegram", "config": { "botToken": "123456:ABC-DEF..." } }
 ```
 
-4. Test the connection: `POST /api/v1/integrations/:id/test` — validates credentials without starting
-5. Start the integration: `POST /api/v1/integrations/:id/start`
-
-### Commands
-- `/start` — Welcome message
-- `/help` — Available commands
-- `/status` — Agent status
+**Commands**: `/start` (welcome), `/help` (commands), `/status` (agent status)
 
 ## Discord
 
-### Setup
-1. Create an application at [Discord Developer Portal](https://discord.com/developers/applications)
+1. Create an app at [Discord Developer Portal](https://discord.com/developers/applications)
 2. Create a bot user and copy the token
 3. Enable **Message Content Intent** in Bot settings
-4. Invite the bot to your server with `applications.commands` and `bot` scopes
-5. Create an integration:
+4. Invite with `applications.commands` and `bot` scopes
 
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "discord",
-    "displayName": "SecureYeoman Discord",
-    "enabled": true,
-    "config": {
-      "botToken": "...",
-      "clientId": "...",
-      "guildId": "..."
-    }
-  }'
+```json
+{
+  "platform": "discord",
+  "config": { "botToken": "...", "clientId": "...", "guildId": "..." }
+}
 ```
 
-### Slash Commands
-- `/ask <question>` — Ask SecureYeoman a question
-- `/status` — Check agent status
-- `/help` — Show available commands
+**Slash commands**: `/ask <question>`, `/status`, `/help`
 
 ## Slack
 
-### Setup
 1. Create a Slack app at [api.slack.com](https://api.slack.com/apps)
 2. Enable **Socket Mode** and generate an app-level token (`xapp-...`)
 3. Add bot token scopes: `chat:write`, `app_mentions:read`, `im:history`
 4. Install to workspace and copy the bot token (`xoxb-...`)
-5. Create an integration:
 
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "slack",
-    "displayName": "SecureYeoman Slack",
-    "enabled": true,
-    "config": {
-      "botToken": "xoxb-...",
-      "appToken": "xapp-..."
-    }
-  }'
+```json
+{
+  "platform": "slack",
+  "config": { "botToken": "xoxb-...", "appToken": "xapp-..." }
+}
 ```
 
-### Slash Commands
-Register these in your Slack app settings:
-- `/secureyeoman <message>` — Send a message to SecureYeoman
-- `/secureyeoman-status` — Check agent status
+**Slash commands** (register in Slack app settings): `/secureyeoman <message>`, `/secureyeoman-status`
 
 ## GitHub
 
-### Setup
 1. Generate a [Personal Access Token](https://github.com/settings/tokens) with `repo` scope
-2. Create a webhook in your repository Settings > Webhooks
-3. Set the webhook URL to: `https://your-domain/api/v1/webhooks/github/:integrationId`
-4. Set Content type to `application/json`
-5. Create a webhook secret and note it
-6. Select events: Push, Pull requests, Issues, Issue comments
+2. Create a webhook: repo Settings > Webhooks
+3. URL: `https://your-domain/api/v1/webhooks/github/:integrationId`, Content-Type: `application/json`
+4. Select events: Push, Pull requests, Issues, Issue comments
 
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "github",
-    "displayName": "SecureYeoman GitHub",
-    "enabled": true,
-    "config": {
-      "personalAccessToken": "ghp_...",
-      "webhookSecret": "your-webhook-secret"
-    }
-  }'
+```json
+{
+  "platform": "github",
+  "config": { "personalAccessToken": "ghp_...", "webhookSecret": "your-webhook-secret" }
+}
 ```
 
-### Supported Events
-- `push` — Code push notifications
-- `pull_request` — PR opened, closed, merged
-- `issues` — Issue opened, closed, labeled
-- `issue_comment` — Comments on issues and PRs
+**Supported events**: `push`, `pull_request`, `issues`, `issue_comment`
 
-### Sending Responses
-SecureYeoman responds to GitHub events by posting comments. The `chatId` format is:
-`owner/repo/issues/123` or `owner/repo/pulls/456`
+**chatId format**: `owner/repo/issues/123` or `owner/repo/pulls/456`
 
 ## Gmail
 
-### Overview
-Gmail integration uses OAuth2 for secure access to your Gmail account. SecureYeoman polls for new messages using the Gmail History API and can send replies via the Gmail REST API.
+Gmail uses OAuth2 for secure access. SecureYeoman polls via the Gmail History API and sends via the Gmail REST API.
 
-### Setup
-1. Go to **Dashboard > Connections > Email** tab
-2. Click **Connect with Google** to start the OAuth flow
-3. Grant permissions to read and/or send emails
-4. Configure preferences: display name, read/send toggles, label filter
-5. Click **Finish Setup**
+### Dashboard Setup
+1. **Dashboard > Connections > Email** tab > **Connect with Google**
+2. Grant permissions, configure display name, read/send toggles, label filter
+3. Click **Finish Setup**
 
 ### Config Options
-- `enableRead` — Poll inbox for new messages (default: on)
-- `enableSend` — Allow sending replies (default: off)
-- `labelFilter` — `all` (entire inbox), `label` (existing Gmail label), or `custom` (auto-created label)
+- `enableRead` — Poll inbox (default: on)
+- `enableSend` — Allow sending (default: off)
+- `labelFilter` — `all`, `label` (existing), or `custom` (auto-created)
 - `labelName` — Label name when using `label` or `custom` filter
-- `pollIntervalMs` — Polling interval in milliseconds (default: 30000)
+- `pollIntervalMs` — Polling interval in ms (default: 30000)
 
 ### Prerequisites
-Set these in your `.env` file (or Docker environment):
 ```bash
 GMAIL_OAUTH_CLIENT_ID=<YOUR_GOOGLE_CLIENT_ID>
 GMAIL_OAUTH_CLIENT_SECRET=<YOUR_GOOGLE_CLIENT_SECRET>
 # Can reuse GOOGLE_OAUTH_CLIENT_ID/SECRET if same GCP project
 ```
 
-> **Docker users:** Pass `--env-file` when starting the stack so these values are picked up for variable substitution as well as container environment injection:
+> **Docker users:** Pass `--env-file` when starting the stack so these values are picked up for variable substitution:
 > ```bash
 > docker compose --env-file .env --profile dev up -d
 > ```
-> Without `--env-file`, the compose file's `${GMAIL_OAUTH_CLIENT_ID:-}` entries resolve to empty and override your `env_file:` values. See [Troubleshooting](../troubleshooting.md#oauth--docker-issues) for details.
+> Without `--env-file`, the compose file's `${GMAIL_OAUTH_CLIENT_ID:-}` entries resolve to empty. See [Troubleshooting](../troubleshooting.md#oauth--docker-issues).
 
 ### API Setup
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "gmail",
-    "displayName": "user@gmail.com",
-    "enabled": true,
-    "config": {
-      "accessToken": "ya29...",
-      "refreshToken": "1//...",
-      "email": "user@gmail.com",
-      "enableRead": true,
-      "enableSend": false,
-      "labelFilter": "all"
-    }
-  }'
+```json
+{
+  "platform": "gmail",
+  "config": {
+    "accessToken": "ya29...", "refreshToken": "1//...",
+    "email": "user@gmail.com",
+    "enableRead": true, "enableSend": false, "labelFilter": "all"
+  }
+}
 ```
 
-### Rate Limit
-- 2 messages/second
+Rate limit: 2 msg/s
 
 ---
 
 ## Email (IMAP/SMTP)
 
-### Overview
-The generic Email integration connects to any standard IMAP/SMTP mail server. This works with ProtonMail Bridge, Outlook, Yahoo Mail, Fastmail, self-hosted mail servers, and any provider that supports IMAP for reading and SMTP for sending.
+Connects to any standard IMAP/SMTP mail server (ProtonMail Bridge, Outlook, Yahoo, Fastmail, self-hosted). Uses IMAP IDLE for real-time notifications with fallback polling. Outbound via SMTP/nodemailer.
 
-SecureYeoman uses IMAP IDLE for real-time new mail notifications with a fallback polling interval. Outbound messages are sent via SMTP using nodemailer.
+### Dashboard Setup
+1. **Dashboard > Connections > Email** tab > **Connect** on Email (IMAP/SMTP)
+2. Select a provider preset or use Custom
+3. Fill in IMAP/SMTP host, port, username, password, TLS settings
+4. Click **Connect**
 
-### Setup via Dashboard
-1. Go to **Dashboard > Connections > Email** tab
-2. Click **Connect** on the **Email (IMAP/SMTP)** card
-3. Select a provider preset (ProtonMail Bridge, Outlook, Yahoo) or use Custom
-4. Fill in IMAP/SMTP host and port, username, and password
-5. Configure TLS, self-signed certs, read/send toggles
-6. Click **Connect**
-
-### Setup via API
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "email",
-    "displayName": "My ProtonMail",
-    "enabled": true,
-    "config": {
-      "imapHost": "127.0.0.1",
-      "imapPort": 1143,
-      "smtpHost": "127.0.0.1",
-      "smtpPort": 1025,
-      "username": "user@proton.me",
-      "password": "your-bridge-password",
-      "enableRead": true,
-      "enableSend": true,
-      "tls": false,
-      "rejectUnauthorized": false
-    }
-  }'
+### API Setup
+```json
+{
+  "platform": "email",
+  "config": {
+    "imapHost": "127.0.0.1", "imapPort": 1143,
+    "smtpHost": "127.0.0.1", "smtpPort": 1025,
+    "username": "user@proton.me", "password": "your-bridge-password",
+    "enableRead": true, "enableSend": true,
+    "tls": false, "rejectUnauthorized": false
+  }
+}
 ```
 
 ### Config Options
@@ -415,168 +313,100 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 
 #### ProtonMail Bridge
 
-[ProtonMail Bridge](https://proton.me/mail/bridge) is a desktop application that runs a local IMAP/SMTP server, allowing any standard email client (or SecureYeoman) to connect to your ProtonMail account.
+[ProtonMail Bridge](https://proton.me/mail/bridge) runs a local IMAP/SMTP server for your ProtonMail account.
 
-**Install ProtonMail Bridge:**
+```bash
+# Install
+sudo apt install protonmail-bridge    # Debian/Ubuntu
+yay -S protonmail-bridge              # Arch (AUR)
+brew install --cask protonmail-bridge  # macOS
+```
 
-1. Download from [proton.me/mail/bridge](https://proton.me/mail/bridge)
-   - **Linux**: Available as `.deb`, `.rpm`, or via Flatpak/Snap
-     ```bash
-     # Debian/Ubuntu
-     sudo apt install protonmail-bridge
-
-     # Arch (AUR)
-     yay -S protonmail-bridge
-
-     # Flatpak
-     flatpak install flathub me.proton.Mail.Bridge
-     ```
-   - **macOS**: Download `.dmg` from the website or `brew install --cask protonmail-bridge`
-   - **Windows**: Download `.exe` installer from the website
-
-2. Launch Bridge and sign in with your Proton account
-3. Bridge will display your **IMAP/SMTP credentials** (username and a generated password — this is *not* your Proton login password)
-4. Note the local server addresses:
-   - **IMAP**: `127.0.0.1:1143`
-   - **SMTP**: `127.0.0.1:1025`
-
-**Configure in SecureYeoman:**
+Launch Bridge, sign in, and note the generated credentials (not your Proton password).
 
 | Setting | Value |
 |---------|-------|
-| IMAP Host | `127.0.0.1` |
-| IMAP Port | `1143` |
-| SMTP Host | `127.0.0.1` |
-| SMTP Port | `1025` |
-| Username | *(shown in Bridge)* |
-| Password | *(generated by Bridge — not your Proton password)* |
+| IMAP Host / Port | `127.0.0.1` / `1143` |
+| SMTP Host / Port | `127.0.0.1` / `1025` |
 | TLS | Off |
 | Allow Self-Signed | On |
 
-> **Docker note**: If SecureYeoman runs in Docker and Bridge runs on the host, use `host.docker.internal` instead of `127.0.0.1` for the IMAP/SMTP host. The `docker-compose.yml` includes `extra_hosts: host.docker.internal:host-gateway` for Linux compatibility.
+> **Docker**: Use `host.docker.internal` instead of `127.0.0.1`. The `docker-compose.yml` includes `extra_hosts: host.docker.internal:host-gateway` for Linux.
 
-**Headless / server usage**: ProtonMail Bridge also supports a CLI mode for headless servers:
-```bash
-protonmail-bridge --cli
-# Then: login, info (to see credentials)
-```
+**Headless**: `protonmail-bridge --cli` then `login`, `info` to see credentials.
 
 #### Outlook / Office 365
 
 | Setting | Value |
 |---------|-------|
-| IMAP Host | `outlook.office365.com` |
-| IMAP Port | `993` |
-| SMTP Host | `smtp.office365.com` |
-| SMTP Port | `587` |
+| IMAP Host / Port | `outlook.office365.com` / `993` |
+| SMTP Host / Port | `smtp.office365.com` / `587` |
 | TLS | On |
-| Allow Self-Signed | Off |
 
-> You may need to generate an **app password** if your account has MFA enabled. Go to [Microsoft Account Security](https://account.microsoft.com/security) > Additional security options > App passwords.
+> With MFA, generate an **app password** at [Microsoft Account Security](https://account.microsoft.com/security) > App passwords.
 
 #### Yahoo Mail
 
 | Setting | Value |
 |---------|-------|
-| IMAP Host | `imap.mail.yahoo.com` |
-| IMAP Port | `993` |
-| SMTP Host | `smtp.mail.yahoo.com` |
-| SMTP Port | `465` |
+| IMAP Host / Port | `imap.mail.yahoo.com` / `993` |
+| SMTP Host / Port | `smtp.mail.yahoo.com` / `465` |
 | TLS | On |
-| Allow Self-Signed | Off |
 
-> Yahoo requires an **app password**. Go to Yahoo Account Security > Generate app password.
+> Requires an **app password** from Yahoo Account Security.
 
 #### Fastmail
 
 | Setting | Value |
 |---------|-------|
-| IMAP Host | `imap.fastmail.com` |
-| IMAP Port | `993` |
-| SMTP Host | `smtp.fastmail.com` |
-| SMTP Port | `465` |
+| IMAP Host / Port | `imap.fastmail.com` / `993` |
+| SMTP Host / Port | `smtp.fastmail.com` / `465` |
 | TLS | On |
-| Allow Self-Signed | Off |
 
-> Use an **app password** from Fastmail Settings > Privacy & Security > Integrations > App Passwords.
+> Use an **app password** from Fastmail Settings > Privacy & Security > App Passwords.
 
-### How It Works
-- **Inbound**: Connects via IMAP, uses IDLE for real-time new mail notifications, with a configurable fallback poll interval. Messages from your own address are automatically filtered out.
-- **Outbound**: Sends via SMTP with support for threading headers (`In-Reply-To`, `References`).
-- **Thread grouping**: Messages are grouped into conversations using `In-Reply-To` and `References` email headers.
-- **chatId**: Derived from the email thread's `In-Reply-To` header for consistent thread grouping. When sending, `chatId` is the recipient email address.
-
-### Rate Limit
-- 2 messages/second
+### Behavior
+- **Inbound**: IMAP IDLE with configurable fallback poll. Messages from own address filtered out.
+- **Outbound**: SMTP with threading headers (`In-Reply-To`, `References`).
+- **chatId**: Derived from `In-Reply-To` header; when sending, use the recipient email.
+- Rate limit: 2 msg/s
 
 ---
 
 ## Google Chat
 
-### Setup
-1. Create a Google Cloud project and enable the **Google Chat API**
-2. Create a **Chat app** with bot identity
-3. Configure authentication and get a **Bot Token**
-4. Add the bot to a Google Chat space
-5. Create an integration:
+1. Create a GCP project, enable **Google Chat API**, create a Chat app
+2. Get a Bot Token, add the bot to a space
 
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "googlechat",
-    "displayName": "SecureYeoman Google Chat",
-    "enabled": true,
-    "config": {
-      "botToken": "ya29...",
-      "spaceId": "spaces/..."
-    }
-  }'
+```json
+{
+  "platform": "googlechat",
+  "config": { "botToken": "ya29...", "spaceId": "spaces/..." }
+}
 ```
 
-### Config Options
-- `botToken` (required) — Google Chat API bot token
 - `spaceId` (optional) — Default space to post messages to
-
-### Features
-- Text messages to spaces
-- Card messages with interactive buttons
-- Thread replies
+- Features: text messages, card messages with buttons, thread replies
 
 ## Webhook
 
-### Overview
-The generic webhook integration provides a flexible HTTP-based bridge for connecting external services. Outbound messages are POSTed to a configurable URL; inbound messages are received via a dedicated webhook endpoint with optional HMAC-SHA256 signature verification.
+Generic HTTP bridge for external services. Outbound messages POSTed to a configurable URL; inbound via dedicated endpoint with optional HMAC-SHA256 verification.
 
-### Setup
-
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "webhook",
-    "displayName": "CI/CD Webhook",
-    "enabled": true,
-    "config": {
-      "webhookUrl": "https://your-service.com/hook",
-      "secret": "your-hmac-secret"
-    }
-  }'
+```json
+{
+  "platform": "webhook",
+  "config": { "webhookUrl": "https://your-service.com/hook", "secret": "your-hmac-secret" }
+}
 ```
 
-### Config Options
-- `webhookUrl` (optional) — URL to POST outbound messages to
-- `secret` (optional) — HMAC-SHA256 shared secret for signing/verifying payloads
+- `webhookUrl` (optional) — URL to POST outbound messages
+- `secret` (optional) — HMAC-SHA256 shared secret
 
 ### Inbound Webhooks
-External services can POST to:
 ```
 POST /api/v1/webhooks/custom/:integrationId
 ```
 
-**Request body** (JSON):
 ```json
 {
   "senderId": "external-system",
@@ -587,10 +417,10 @@ POST /api/v1/webhooks/custom/:integrationId
 }
 ```
 
-**Signature verification**: If a `secret` is configured, include an `X-Webhook-Signature` header with the HMAC-SHA256 signature: `sha256=<hex digest>`.
+If a `secret` is configured, include `X-Webhook-Signature: sha256=<hex digest>`.
 
 ### Outbound Messages
-When SecureYeoman sends a message via this integration, it POSTs to the configured `webhookUrl`:
+POSTed to `webhookUrl`:
 ```json
 {
   "chatId": "channel-1",
@@ -600,247 +430,146 @@ When SecureYeoman sends a message via this integration, it POSTs to the configur
 }
 ```
 
-### Rate Limit
-- 30 messages/second
+Rate limit: 30 msg/s
 
 ## iMessage (macOS)
 
-### Requirements
-- macOS with Messages.app
-- Full Disk Access permission granted to the SecureYeoman process (needed to read `~/Library/Messages/chat.db`)
-- `osascript` available in PATH
+**Requirements**: macOS with Messages.app, Full Disk Access for the process, `osascript` in PATH.
 
-### Setup
-
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "imessage",
-    "displayName": "SecureYeoman iMessage",
-    "enabled": true,
-    "config": {
-      "pollIntervalMs": 5000
-    }
-  }'
+```json
+{
+  "platform": "imessage",
+  "config": { "pollIntervalMs": 5000 }
+}
 ```
 
-### Config Options
-- `pollIntervalMs` (optional, default: 5000) — How often to check for new messages
-- `chatDb` (optional) — Custom path to the Messages database (defaults to `~/Library/Messages/chat.db`)
-
-### How It Works
-- **Inbound**: Polls `chat.db` for new messages at the configured interval
-- **Outbound**: Uses AppleScript (`osascript`) to send messages via Messages.app
-- **chatId**: The recipient's phone number or Apple ID email address
-
-### Limitations
-- macOS only — will not work on Linux or Windows
-- Requires Full Disk Access for the process
-- Rate limited to 5 messages/second to avoid overwhelming Messages.app
+- `pollIntervalMs` (default: 5000) — Poll interval for new messages
+- `chatDb` (optional) — Custom path to Messages database (default: `~/Library/Messages/chat.db`)
+- **Inbound**: Polls `chat.db` at the configured interval
+- **Outbound**: AppleScript via Messages.app
+- **chatId**: Recipient phone number or Apple ID email
+- Rate limit: 5 msg/s
 
 ## Google Calendar
 
-> **Dashboard location**: Connections → Integrations → **Productivity** tab
+> **Dashboard**: Connections > Integrations > **Productivity** tab
 
-### Requirements
-- Google Cloud project with Calendar API enabled
-- OAuth2 credentials (Web Application type)
-- Access and refresh tokens from the OAuth consent flow
+**Requirements**: GCP project with Calendar API enabled, OAuth2 credentials.
 
-### Setup
-
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "googlecalendar",
-    "displayName": "My Calendar",
-    "enabled": true,
-    "config": {
-      "accessToken": "ya29.a0...",
-      "refreshToken": "1//0d...",
-      "calendarId": "primary"
-    }
-  }'
+```json
+{
+  "platform": "googlecalendar",
+  "config": {
+    "accessToken": "ya29.a0...", "refreshToken": "1//0d...",
+    "calendarId": "primary"
+  }
+}
 ```
 
-### Config Options
-- `accessToken` (required) — OAuth2 access token
-- `refreshToken` (required) — OAuth2 refresh token for automatic renewal
-- `calendarId` (optional, default: `primary`) — Calendar ID to poll
-- `pollIntervalMs` (optional, default: 60000) — Polling interval in milliseconds
+- `calendarId` (default: `primary`) — Calendar to poll
+- `pollIntervalMs` (default: 60000) — Polling interval
+- **Env vars**: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`
+- **Inbound**: Polls for new/updated events
+- **Outbound**: Creates events via Quick Add API (natural language)
+- Rate limit: 10 req/s
 
-### Environment Variables
-- `GOOGLE_OAUTH_CLIENT_ID` — OAuth client ID for token refresh
-- `GOOGLE_OAUTH_CLIENT_SECRET` — OAuth client secret for token refresh
-
-> **Docker users:** See the [Gmail Prerequisites note](#prerequisites-1) above — the same `--env-file` requirement applies here.
-
-### How It Works
-- **Inbound**: Polls for new/updated events at the configured interval
-- **Outbound**: `sendMessage()` creates events via the Quick Add API (natural language)
-- Rate limit: 10 requests/second
+> **Docker users:** See the [Gmail Prerequisites note](#prerequisites-1) — the same `--env-file` requirement applies.
 
 ## Notion
 
-### Requirements
-- Notion account with an internal integration
-- Integration token from notion.so/my-integrations
-- Database/pages shared with the integration
+**Requirements**: Notion internal integration token from notion.so/my-integrations. Share target databases/pages with the integration.
 
-### Setup
-
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "notion",
-    "displayName": "My Notion",
-    "enabled": true,
-    "config": {
-      "apiKey": "ntn_...",
-      "databaseId": "your-database-id"
-    }
-  }'
+```json
+{
+  "platform": "notion",
+  "config": { "apiKey": "ntn_...", "databaseId": "your-database-id" }
+}
 ```
 
-### Config Options
-- `apiKey` (required) — Internal integration token
 - `databaseId` (optional) — Specific database to poll; omit to search workspace
-- `pollIntervalMs` (optional, default: 60000) — Polling interval in milliseconds
-
-### How It Works
-- **Inbound**: Polls for recently updated pages in the database or workspace
-- **Outbound**: `sendMessage()` creates a new page in the configured database
-- Rate limit: 3 requests/second (Notion has strict rate limits)
+- `pollIntervalMs` (default: 60000) — Polling interval
+- **Inbound**: Polls for recently updated pages
+- **Outbound**: Creates new page in configured database
+- Rate limit: 3 req/s (Notion has strict rate limits)
 
 ## GitLab
 
-### Requirements
-- GitLab Personal Access Token with `api` scope
-- Webhook secret token for verifying incoming events
+**Requirements**: PAT with `api` scope, webhook secret token.
 
-### Setup
-
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "gitlab",
-    "displayName": "My GitLab",
-    "enabled": true,
-    "config": {
-      "personalAccessToken": "glpat-...",
-      "webhookSecret": "your-secret",
-      "gitlabUrl": "https://gitlab.com"
-    }
-  }'
+```json
+{
+  "platform": "gitlab",
+  "config": {
+    "personalAccessToken": "glpat-...", "webhookSecret": "your-secret",
+    "gitlabUrl": "https://gitlab.com"
+  }
+}
 ```
 
-### Config Options
-- `personalAccessToken` (required) — PAT with `api` scope
-- `webhookSecret` (required) — Secret for webhook verification
-- `gitlabUrl` (optional, default: `https://gitlab.com`) — GitLab instance URL for self-hosted
+- `gitlabUrl` (default: `https://gitlab.com`) — For self-hosted instances
 
 ### Webhook Setup
-1. Go to your GitLab project > Settings > Webhooks
-2. Set URL to `https://your-secureyeoman.example.com/api/v1/webhooks/gitlab/<integration-id>`
-3. Set the Secret Token to match your `webhookSecret`
+1. Project > Settings > Webhooks
+2. URL: `https://your-secureyeoman.example.com/api/v1/webhooks/gitlab/<integration-id>`
+3. Set Secret Token to match `webhookSecret`
 4. Select events: Push, Merge Request, Issues, Note
 
-### How It Works
-- **Inbound**: Receives webhooks for push, merge_request, note, and issue events
-- **Outbound**: `sendMessage()` posts notes on issues or merge requests
 - **chatId format**: `namespace/project/issues/123` or `namespace/project/merge_requests/456`
-- Rate limit: 10 requests/second
+- Rate limit: 10 req/s
 
 ## Twitter / X
 
-### Requirements
-- Twitter Developer account at [developer.twitter.com](https://developer.twitter.com)
-- A Project + App with **Read and Write** permissions enabled
-- Bearer Token (required for all use; enables mention polling)
-- API Key, API Key Secret, Access Token, Access Token Secret (required for posting)
+**Requirements**: Twitter Developer account, Project + App with **Read and Write** permissions.
 
-> **API tier note**: Twitter's free tier allows approximately 1 mention lookup per 15-minute window and 17 posts per 24 hours. The default poll interval is 300 seconds (5 minutes). For heavier workloads upgrade to the Basic or Pro tier and lower `pollIntervalMs` accordingly.
+> **API tier note**: Free tier allows ~1 mention lookup/15min and ~17 posts/24h. Default poll interval is 300s. Upgrade to Basic/Pro tier for heavier workloads.
 
-### Setup
+1. Create project and app at [developer.twitter.com](https://developer.twitter.com)
+2. Copy **Bearer Token**, generate **Access Token & Secret**
 
-1. Go to [developer.twitter.com](https://developer.twitter.com) and create a project and app
-2. Set app permissions to **Read and Write**
-3. Copy the **Bearer Token** from the Keys and Tokens tab
-4. Under **Authentication Tokens**, generate **Access Token & Secret**
-5. Create an integration:
-
-```bash
-curl -X POST http://localhost:18789/api/v1/integrations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "twitter",
-    "displayName": "SecureYeoman Twitter",
-    "enabled": true,
-    "config": {
-      "bearerToken": "AAAA...",
-      "apiKey": "your-api-key",
-      "apiKeySecret": "your-api-key-secret",
-      "accessToken": "your-access-token",
-      "accessTokenSecret": "your-access-token-secret"
-    }
-  }'
-```
-
-**Read-only mode** (mention monitoring only, no posting):
 ```json
-{ "bearerToken": "AAAA..." }
+{
+  "platform": "twitter",
+  "config": {
+    "bearerToken": "AAAA...",
+    "apiKey": "...", "apiKeySecret": "...",
+    "accessToken": "...", "accessTokenSecret": "..."
+  }
+}
 ```
 
-### Config Options
+**Read-only mode** (mention monitoring only): `{ "bearerToken": "AAAA..." }`
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `bearerToken` | string | *(required)* | App-only Bearer Token for reading mentions |
-| `apiKey` | string | *(optional)* | OAuth 1.0a API Key (Consumer Key) |
-| `apiKeySecret` | string | *(optional)* | OAuth 1.0a API Key Secret |
+| `apiKey` | string | *(optional)* | OAuth 1.0a Consumer Key |
+| `apiKeySecret` | string | *(optional)* | OAuth 1.0a Consumer Secret |
 | `accessToken` | string | *(optional)* | OAuth 1.0a Access Token |
 | `accessTokenSecret` | string | *(optional)* | OAuth 1.0a Access Token Secret |
-| `pollIntervalMs` | number | `300000` | Mention polling interval in milliseconds |
+| `pollIntervalMs` | number | `300000` | Mention polling interval (ms) |
 
-### How It Works
-- **Inbound**: Polls `GET /2/users/:id/mentions` at the configured interval. `sinceId` tracking ensures no mention is delivered twice. Normalized to `UnifiedMessage` with `tw_` prefix.
-- **Outbound**: `sendMessage(tweetId, text)` posts a reply tweet using OAuth 1.0a. Throws if OAuth credentials are absent.
-- **chatId**: The tweet ID to reply to. Use the `tweetId` from inbound message metadata.
-- Rate limit: ~2 outbound posts/minute (`platformRateLimit.maxPerSecond = 0.033`)
+- **Inbound**: Polls `GET /2/users/:id/mentions` with `sinceId` tracking
+- **Outbound**: Reply tweet via OAuth 1.0a (throws if credentials absent)
+- **chatId**: The tweet ID to reply to
+- Rate limit: ~2 posts/min
 
 ---
 
 ## Home Assistant (MCP)
 
-Home Assistant ships a native MCP server since version 2025.2. Connect it via the MCP tab in Connections → Featured MCP Servers rather than as a native integration.
+Home Assistant ships a native MCP server since version 2025.2. Connect via **Connections > MCP** tab.
 
-### Setup via Dashboard
+### Dashboard Setup
+1. Find **Home Assistant** under Featured MCP Servers
+2. Enter your HA URL (e.g. `https://homeassistant.local:8123`)
+3. Generate a Long-Lived Access Token: HA Profile > Security > Create Token
+4. Paste token and click **Connect**
 
-1. Go to **Connections → MCP** tab
-2. Find **Home Assistant** under Featured MCP Servers
-3. Enter your Home Assistant URL (e.g. `https://homeassistant.local:8123`)
-4. Generate a Long-Lived Access Token in HA: Profile → Security → Long-Lived Access Tokens → Create Token
-5. Paste the token and click **Connect**
+### Home Assistant Setup
+1. Settings > Devices & Services > Add **Model Context Protocol Server**
+2. Expose entities via Settings > Voice assistants > Expose entities — only exposed entities appear as MCP tools
 
-### Setup in Home Assistant
-
-1. Go to Settings → Devices & Services → Add Integration
-2. Search for **Model Context Protocol Server**
-3. Expose entities via voice assistant settings (Settings → Voice assistants → Expose entities) — only exposed entities appear as MCP tools
-
-### What You Get
-Once connected, all exposed HA entities become MCP tools available to your agent: turn lights on/off, query sensor states, lock/unlock doors, run scripts and automations, etc.
-
-### Manual API setup
+### Manual API Setup
 ```bash
 curl -X POST http://localhost:18789/api/v1/mcp/servers \
   -H "Authorization: Bearer $TOKEN" \
@@ -858,102 +587,69 @@ curl -X POST http://localhost:18789/api/v1/mcp/servers \
 
 ## Coolify — MetaMCP (MCP)
 
-[MetaMCP](https://github.com/metatool-ai/metamcp) is an MCP aggregator that groups multiple MCP servers behind a single HTTP endpoint. Deploy it on Coolify to manage all your self-hosted MCP servers in one place.
+[MetaMCP](https://github.com/metatool-ai/metamcp) is an MCP aggregator that groups multiple MCP servers behind a single HTTP endpoint.
 
-### Setup via Dashboard
+1. Deploy MetaMCP on Coolify from the service catalog
+2. Note the endpoint URL and generate an API key
+3. **Connections > MCP** tab > **Coolify (MetaMCP)** > enter URL + API key > **Connect**
 
-1. Deploy MetaMCP on Coolify from the Coolify service catalog
-2. Note the MetaMCP endpoint URL (e.g. `https://metamcp.yourdomain.com/mcp/v1`)
-3. Generate an API key in the MetaMCP dashboard
-4. Go to **Connections → MCP** tab in SecureYeoman
-5. Find **Coolify (MetaMCP)** under Featured MCP Servers
-6. Enter the MetaMCP URL and API key, then click **Connect**
-
-### What You Get
-A single MCP connection that proxies all the MCP servers you have configured in MetaMCP — Coolify service monitoring, custom tools, and any other servers you add. Useful for managing infrastructure alongside agent tasks.
+Provides a single MCP connection proxying all servers configured in MetaMCP.
 
 ---
 
 ## Meilisearch (MCP)
 
-Meilisearch is a fast, self-hostable hybrid search engine combining BM25 full-text search with vector similarity. Connect it via the **MCP** tab using the official `meilisearch-mcp` Python package.
+Fast, self-hostable hybrid search engine (BM25 + vector). Uses the official `meilisearch-mcp` Python package.
 
-> **Prerequisite**: Install `uv` (Python package manager): `curl -LsSf https://astral.sh/uv/install.sh | sh`
-
-### Setup via Dashboard
+> **Prerequisite**: Install `uv`: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 
 1. Start Meilisearch: `docker run -p 7700:7700 getmeili/meilisearch`
-2. Go to **Connections → MCP** tab → Featured MCP Servers
-3. Find **Meilisearch** and click **Connect**
-4. Enter your Meilisearch URL (default: `http://localhost:7700`) and Master Key
-5. Click **Connect** — `uvx meilisearch-mcp` starts automatically
-
-### Config Options
+2. **Connections > MCP** tab > **Meilisearch** > enter URL + Master Key > **Connect**
 
 | Env var | Default | Description |
 |---------|---------|-------------|
 | `MEILI_HTTP_ADDR` | `http://localhost:7700` | Meilisearch instance URL |
-| `MEILI_MASTER_KEY` | *(optional for local)* | API key; required for remote/production instances |
+| `MEILI_MASTER_KEY` | *(optional for local)* | Required for remote/production |
 
-### What You Get
-MCP tools for: index management (create/delete/list), document operations (add, update, delete, bulk), search (standard, multi-search, facet search with filters and pagination), settings management.
+**Tools**: index management, document CRUD, search (standard, multi, facet), settings.
 
-### When to Use Meilisearch vs Brain Module
-- **Brain module** — semantic memory and knowledge base with LLM-powered consolidation; pure vector search
-- **Meilisearch** — existing application search infrastructure; hybrid BM25 + vector; typo tolerance; faceted filtering; multi-language
+**vs Brain module**: Brain is semantic memory with LLM consolidation (pure vector). Meilisearch is for application search with hybrid BM25 + vector, typo tolerance, facets, multi-language.
 
 ---
 
 ## Qdrant (MCP)
 
-Qdrant is a high-performance vector database. Connect it via the **MCP** tab using the official `mcp-server-qdrant` Python package to query collections independently of the Brain module's managed storage.
+High-performance vector database. Uses the official `mcp-server-qdrant` Python package.
 
-> **Prerequisite**: Install `uv` (Python package manager): `curl -LsSf https://astral.sh/uv/install.sh | sh`
-
-### Setup via Dashboard
+> **Prerequisite**: Install `uv`: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 
 1. Start Qdrant: `docker run -p 6333:6333 qdrant/qdrant`
-2. Go to **Connections → MCP** tab → Featured MCP Servers
-3. Find **Qdrant** and click **Connect**
-4. Enter your Qdrant URL (default: `http://localhost:6333`), API key (blank for local), and collection name
-5. Click **Connect** — `uvx mcp-server-qdrant` starts automatically
-
-### Config Options
+2. **Connections > MCP** tab > **Qdrant** > enter URL, API key, collection name > **Connect**
 
 | Env var | Default | Description |
 |---------|---------|-------------|
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant instance URL |
-| `QDRANT_API_KEY` | *(optional)* | API key; required for Qdrant Cloud |
-| `COLLECTION_NAME` | *(required)* | Collection to expose as the default search target |
+| `QDRANT_API_KEY` | *(optional)* | Required for Qdrant Cloud |
+| `COLLECTION_NAME` | *(required)* | Default search collection |
 
-### What You Get
-MCP tools for: storing memories/documents with embeddings (`qdrant-store`), semantic similarity search across the collection (`qdrant-find`), filtered queries by payload metadata.
+**Tools**: `qdrant-store` (store with embeddings), `qdrant-find` (semantic search), filtered queries by payload.
 
-### When to Use Qdrant MCP vs Brain Module
-- **Brain module** — managed semantic memory for the agent itself; automated consolidation and decay
-- **Qdrant MCP** — query your *own* application's Qdrant collections; access existing embeddings not managed by SecureYeoman
+**vs Brain module**: Brain is managed agent memory with automated consolidation/decay. Qdrant MCP queries your own application collections not managed by SecureYeoman.
 
 ---
 
 ## Obsidian Vault
 
-Obsidian vaults are plain Markdown files — no dedicated integration is required. Use SecureYeoman's built-in MCP filesystem tools to read, write, and search your vault directly.
+No dedicated integration needed — use built-in MCP filesystem tools.
 
-### Enable filesystem access
-
-Set in your `.env`:
 ```bash
 MCP_EXPOSE_FILESYSTEM=true
 MCP_ALLOWED_PATHS=/path/to/your/ObsidianVault
 ```
 
-### Available tools
-- `fs_read` — Read a note by path
-- `fs_write` — Create or update a note
-- `fs_list` — List files/folders in a directory
-- `fs_search` — Full-text search across the vault
+**Tools**: `fs_read`, `fs_write`, `fs_list`, `fs_search`
 
-Combine with the Brain module's semantic memory for richer recall: ingest vault content via `knowledge_store` and query it with `knowledge_search` / `memory_recall`.
+Combine with the Brain module for richer recall: ingest vault content via `knowledge_store` and query with `knowledge_search` / `memory_recall`.
 
 ---
 
@@ -995,47 +691,30 @@ POST /api/v1/webhooks/custom/:id
 
 ## MCP Service (`@secureyeoman/mcp`)
 
-### Overview
-The MCP service package (`@secureyeoman/mcp`) is a standalone MCP (Model Context Protocol) server that exposes SecureYeoman's internal capabilities as MCP tools, resources, and prompts. It supports Claude Desktop via stdio, browser-based clients via SSE, and API access via Streamable HTTP.
+The MCP service is a standalone MCP server exposing SecureYeoman's capabilities as MCP tools, resources, and prompts. Supports Claude Desktop (stdio), browser clients (SSE), and API access (Streamable HTTP).
 
 ### Prerequisites
 - A running SecureYeoman core instance
-- `SECUREYEOMAN_TOKEN_SECRET` set in your `.env` file (shared with core)
+- `SECUREYEOMAN_TOKEN_SECRET` set in `.env` (shared with core)
 
-### Step 1: Configure Environment
+### Quick Start
 
-The MCP service self-mints a service JWT on startup using the shared `SECUREYEOMAN_TOKEN_SECRET`. No manual token is needed.
-
-Add to your `.env` file (if not already set):
+The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET`. No manual token needed.
 
 ```bash
-MCP_ENABLED=true
-# SECUREYEOMAN_TOKEN_SECRET is already set for core — MCP uses it automatically
-```
-
-### Step 2: Start the MCP Service
-
-**Local development:**
-
-```bash
+# Local development
 npm run dev:mcp
-```
 
-**Docker Compose:**
-
-```bash
-# Start core + MCP
+# Docker (core + MCP)
 docker compose --env-file .env --profile mcp up
 
-# Or start everything (core + dashboard + MCP)
+# Docker (core + dashboard + MCP)
 docker compose --env-file .env --profile full up
 ```
 
-> In Docker, `MCP_CORE_URL` is automatically set to `http://core:18789` via the compose file. Do not override it in `.env` when using Docker.
+> In Docker, `MCP_CORE_URL` is automatically set to `http://core:18789`. Do not override in `.env`.
 
-**Claude Desktop (stdio):**
-
-Add to your Claude Desktop MCP config (`~/.config/claude/claude_desktop_config.json`):
+**Claude Desktop** (`~/.config/claude/claude_desktop_config.json`):
 
 ```json
 {
@@ -1052,30 +731,24 @@ Add to your Claude Desktop MCP config (`~/.config/claude/claude_desktop_config.j
 }
 ```
 
-### Step 3: Verify
+### Verify
 
 ```bash
-# Dashboard endpoint (returns server status)
-curl http://localhost:3001/dashboard
-
-# Check auto-registration with core
-curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:18789/api/v1/mcp/servers
+curl http://localhost:3001/dashboard                                    # Server status
+curl -H "Authorization: Bearer $TOKEN" http://localhost:18789/api/v1/mcp/servers  # Core registration
 ```
-
-The MCP service should appear in core's MCP server list and on the dashboard MCP Servers page.
 
 ### Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MCP_ENABLED` | `true` | Master kill switch — set to `false` to prevent startup |
+| `MCP_ENABLED` | `true` | Master kill switch |
 | `MCP_PORT` | `3001` | HTTP server port |
 | `MCP_HOST` | `127.0.0.1` | Bind address |
 | `MCP_TRANSPORT` | `streamable-http` | Transport: `stdio`, `sse`, `streamable-http` |
 | `MCP_AUTO_REGISTER` | `true` | Auto-register with core on startup |
 | `MCP_CORE_URL` | `http://127.0.0.1:18789` | Core gateway URL |
-| `SECUREYEOMAN_TOKEN_SECRET` | *(required)* | Shared JWT secret — MCP self-mints a service token |
+| `SECUREYEOMAN_TOKEN_SECRET` | *(required)* | Shared JWT secret |
 | `MCP_EXPOSE_FILESYSTEM` | `false` | Enable filesystem tools (admin-only) |
 | `MCP_ALLOWED_PATHS` | *(empty)* | Comma-separated allowed fs paths |
 | `MCP_RATE_LIMIT_PER_TOOL` | `30` | Max tool calls/second/tool |
@@ -1085,7 +758,7 @@ The MCP service should appear in core's MCP server list and on the dashboard MCP
 
 | Category | Tools | Description |
 |----------|-------|-------------|
-| **Brain** | `knowledge_search`, `knowledge_get`, `knowledge_store`, `memory_recall` | Search and manage SecureYeoman's knowledge base and memories |
+| **Brain** | `knowledge_search`, `knowledge_get`, `knowledge_store`, `memory_recall` | Search and manage knowledge base and memories |
 | **Tasks** | `task_create`, `task_list`, `task_get`, `task_cancel` | Create and manage agent tasks |
 | **System** | `system_health`, `system_metrics`, `system_config` | Monitor system health and configuration |
 | **Integrations** | `integration_list`, `integration_send`, `integration_status` | Manage platform integrations |
@@ -1116,13 +789,13 @@ The MCP service should appear in core's MCP server list and on the dashboard MCP
 
 ### Security
 
-- All tool calls are authenticated by delegating JWT validation to core's `POST /api/v1/auth/verify`
-- RBAC permissions are enforced per-tool using the same permission model as core API endpoints
-- Every tool call is logged to the audit chain
-- Tool outputs are passed through a secret-redactor that strips tokens, keys, and passwords
-- Filesystem tools are disabled by default and require `admin` role + explicit path allowlist
-- Input validation detects SQL injection, command injection, XSS, and template injection attempts
-- Rate limiting is applied per-tool (default: 30 calls/second)
+- All tool calls authenticated via core's `POST /api/v1/auth/verify` JWT validation
+- RBAC permissions enforced per-tool using the same model as core API endpoints
+- Every tool call logged to the audit chain
+- Tool outputs passed through a secret-redactor (strips tokens, keys, passwords)
+- Filesystem tools disabled by default; require `admin` role + explicit path allowlist
+- Input validation detects SQL injection, command injection, XSS, and template injection
+- Rate limiting applied per-tool (default: 30 calls/second)
 
 ### Troubleshooting
 
@@ -1132,8 +805,7 @@ The MCP service should appear in core's MCP server list and on the dashboard MCP
 - In Docker, use `http://core:18789` (not `localhost`)
 
 **Authentication failures:**
-- Ensure `SECUREYEOMAN_TOKEN_SECRET` matches the value used by core
-- The MCP service self-mints a service JWT on startup — no manual token management needed
+- Ensure `SECUREYEOMAN_TOKEN_SECRET` matches core's value
 
 **Auto-registration not working:**
 - Set `MCP_AUTO_REGISTER=true` (default)

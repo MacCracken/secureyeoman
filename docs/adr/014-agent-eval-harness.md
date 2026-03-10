@@ -8,7 +8,7 @@ Accepted
 
 No competitor in the AI agent space offers a structured evaluation framework for agent behavior. As organizations move from prototyping to production, they need a way to verify that agents behave reliably, safely, and consistently across model changes, prompt updates, and skill modifications. Without structured evaluation, regressions go undetected until users encounter them.
 
-The existing test suite (15,900+ tests) covers code correctness, but not agent behavior — the gap between "the code works" and "the agent does the right thing."
+The existing test suite (~20,500 tests) covers code correctness, but not agent behavior — the gap between "the code works" and "the agent does the right thing."
 
 ## Decisions
 

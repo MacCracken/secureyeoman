@@ -909,7 +909,7 @@ Split the monolithic `001_baseline.sql` into tier-separated baselines so the dat
 - **Migration**: `004_continual_learning.sql` — 4 new tables with indexes.
 - **Config**: `ContinualLearningConfigSchema` (datasetRefresh, driftDetection, onlineUpdates sub-schemas).
 - **Quality scorer**: Added `getScoreDistribution()` method for drift detection.
-- **Tests**: ~186 new tests across phases. **ADRs**: 203, 204, 205. **Guides**: `advanced-training.md`, `inference-optimization.md`, `continual-learning.md`.
+- **Tests**: ~186 new tests across phases. **ADRs**: 203, 204, 205. **Guides**: `training-ml.md` (Advanced Training section), `inference-optimization.md`, `continual-learning.md`.
 
 ### Confidential Computing — TEE Full Stack (Phase 129)
 
@@ -1084,7 +1084,7 @@ Applied 24 fixes across 11 files:
 - **Config**: `ContextRetrievalConfigSchema`, `WorkingMemoryConfigSchema`, `SalienceConfigSchema` added to `BrainConfigSchema`. All opt-in (default disabled).
 - **Future scaffolds**: `ReconsolidationManager` (LLM memory evolution — types + interface), `SchemaClusteringManager` (k-means embedding clustering + LLM labeling — algorithm implemented, pipeline pending), `RetrievalOptimizer` (Thompson Sampling bandit for scoring weights — arm selection/update implemented, integration pending). `kMeans()` and `sampleBeta()` are fully implemented pure functions.
 - **Tests**: 52 new tests across 5 files (context-retrieval 15, working-memory 14, salience 8, schema-clustering 6, retrieval-optimizer 9). All passing.
-- **Docs**: ADR 199, guide `cognitive-ml-memory.md`.
+- **Docs**: ADR 199, guide merged into `knowledge-memory.md` (section: Cognitive ML Memory Enhancements).
 
 ### Phase 125-C: Advanced Financial Charting
 

@@ -4,7 +4,7 @@
 
 ## Context
 
-SecureYeoman exposes a comprehensive Model Context Protocol (MCP) server with 330 tools, 9 resources, and 4 prompts. This ADR consolidates decisions governing the MCP service architecture, tool registration, transport layer, tool categories, and context optimization.
+SecureYeoman exposes a comprehensive Model Context Protocol (MCP) server with 400+ tools, 9 resources, and 4 prompts. This ADR consolidates decisions governing the MCP service architecture, tool registration, transport layer, tool categories, and context optimization.
 
 ## Decisions
 

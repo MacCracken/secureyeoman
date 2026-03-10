@@ -23,8 +23,8 @@ kill -9 <PID>
 export SECUREYEOMAN_GATEWAY_PORT=18790
 ```
 
-### "Database is locked"
-**Cause:** Another process has an exclusive lock on the SQLite database.
+### "Database is locked" (lite binary only)
+**Cause:** Another process has an exclusive lock on the SQLite database. This only applies to the `lite` binary variant; the standard binary uses PostgreSQL.
 **Fix:** Check for orphaned processes:
 ```bash
 ps aux | grep secureyeoman
@@ -110,9 +110,9 @@ docker compose --profile dev exec core env | grep GOOGLE_OAUTH
 ### Slow API responses
 **Cause:** Database queries running slow under load.
 **Fix:**
-1. Enable WAL mode (default): `PRAGMA journal_mode=WAL`
+1. Check connection pool utilization and increase `PG_POOL_MAX` if saturated
 2. Check disk I/O: `iostat -x 1`
-3. Consider enabling FTS for audit search queries
+3. Run `VACUUM ANALYZE` on large tables to update query planner statistics
 
 ### WebSocket disconnections
 **Cause:** Proxy timeout or network instability.
@@ -122,12 +122,12 @@ docker compose --profile dev exec core env | grep GOOGLE_OAUTH
 
 ## Database Issues
 
-### "SQLITE_CORRUPT" error
-**Cause:** Database file corruption (power loss, disk failure).
+### Database corruption
+**Cause:** Database corruption from power loss, disk failure, or hardware issues.
 **Fix:**
-1. Check integrity: `sqlite3 <db> "PRAGMA integrity_check"`
-2. If corrupt, restore from backup
-3. Delete WAL/SHM files and retry: `rm *.db-wal *.db-shm`
+1. Check PostgreSQL logs for corruption indicators
+2. Restore from backup: use the Backup & DR endpoints or `pg_restore`
+3. **Lite binary (SQLite) users:** check integrity with `sqlite3 <db> "PRAGMA integrity_check"`; delete WAL/SHM files and retry: `rm *.db-wal *.db-shm`
 
 ### Audit chain verification failed
 **Cause:** Entries were modified or deleted outside the application.
