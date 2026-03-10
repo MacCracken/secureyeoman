@@ -225,7 +225,9 @@ export class SecureYeoman {
   private executionManager: CodeExecutionManager | null = null;
   private a2aStorage: A2AStorage | null = null;
   private a2aManager: A2AManager | null = null;
-  private videoStreamManager: import('./body/capture/video-stream-manager.js').VideoStreamManager | null = null;
+  private videoStreamManager:
+    | import('./body/capture/video-stream-manager.js').VideoStreamManager
+    | null = null;
 
   // CPU usage sampler — updated every getMetrics() call to compute a rolling delta
   private _lastCpuUsage: NodeJS.CpuUsage = process.cpuUsage();

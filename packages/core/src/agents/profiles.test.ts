@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { BUILTIN_PROFILES } from './profiles.js';
 
 describe('BUILTIN_PROFILES', () => {
-  it('exports 8 built-in profiles', () => {
-    expect(BUILTIN_PROFILES).toHaveLength(8);
+  it('exports 9 built-in profiles', () => {
+    expect(BUILTIN_PROFILES).toHaveLength(9);
   });
 
   it('all profiles are marked as builtin', () => {

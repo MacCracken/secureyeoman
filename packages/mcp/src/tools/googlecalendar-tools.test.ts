@@ -91,10 +91,9 @@ describe('googlecalendar-tools', () => {
     const handler = globalToolRegistry.get('gcal_get_event')!;
     const result = await handler({ eventId: 'evt-1', calendarId: 'secondary' });
     expect(result.isError).toBeFalsy();
-    expect(client.get).toHaveBeenCalledWith(
-      '/api/v1/integrations/googlecalendar/events/evt-1',
-      { calendarId: 'secondary' }
-    );
+    expect(client.get).toHaveBeenCalledWith('/api/v1/integrations/googlecalendar/events/evt-1', {
+      calendarId: 'secondary',
+    });
   });
 
   // ── gcal_create_event ───────────────────────────────────────────
@@ -154,9 +153,7 @@ describe('googlecalendar-tools', () => {
     const handler = globalToolRegistry.get('gcal_delete_event')!;
     const result = await handler({ eventId: 'evt-1' });
     expect(result.isError).toBeFalsy();
-    expect(client.delete).toHaveBeenCalledWith(
-      '/api/v1/integrations/googlecalendar/events/evt-1'
-    );
+    expect(client.delete).toHaveBeenCalledWith('/api/v1/integrations/googlecalendar/events/evt-1');
   });
 
   it('gcal_delete_event appends calendarId as query param', async () => {

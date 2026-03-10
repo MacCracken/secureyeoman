@@ -10,7 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 145 | Cross-Project MCP Expansion | P2 | 3 future items remaining |
+| 145 | Cross-Project MCP Expansion | P2 | 4 BullShift MCP tools + 3 future items |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -171,6 +171,10 @@ SecureYeoman is being promoted from consumer project to **flagship built-in tool
 
 | Item | Status | Description |
 |------|--------|-------------|
+| Register `bullshift_market_data` MCP tool | Not started | Register proxy tool for BullShift `GET /v1/market/:symbol` in `trading-tools.ts` via `registerApiProxyTool()`. Endpoint ready on BullShift side |
+| Register `bullshift_algo_status` MCP tool | Not started | Register proxy tool for BullShift `GET /v1/algo/strategies` in `trading-tools.ts`. Endpoint ready on BullShift side |
+| Register `bullshift_sentiment` MCP tool | Not started | Register proxy tool for BullShift `GET /v1/sentiment` in `trading-tools.ts`. Endpoint ready on BullShift side |
+| Register `bullshift_alerts` MCP tool | Not started | Register proxy tool for BullShift `GET/POST /v1/alerts` in `trading-tools.ts`. Endpoint ready on BullShift side |
 | Merge agnostic into agnosticos | Future | Agnostic becomes a package within agnosticos — collapses to single service |
 | Photisnadi in SY container | Future | Photisnadi baked into agnosticos base image or run as separate container. User choice via `PHOTISNADI_ENABLED` flag. When embedded, supervisord manages Photisnadi process; when external, SY proxies via SUPABASE_URL |
 | Task tracker widget — third-party aggregator | Future | Extend TaskTrackerWidget to aggregate tasks from third-party trackers (Photisnadi, Trello, Jira, Linear, Todoist, Asana) via adapter interface. Unified view of all external task sources. Widget auto-selects adapters based on configured integrations |

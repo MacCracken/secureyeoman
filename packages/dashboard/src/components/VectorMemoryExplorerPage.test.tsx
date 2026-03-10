@@ -167,7 +167,11 @@ describe('VectorMemoryExplorerPage', () => {
     const user = userEvent.setup();
     mockSearchSimilar.mockResolvedValue({
       results: [
-        { id: 'vec-1', score: 0.95, metadata: { type: 'semantic', content: 'dark mode preference' } },
+        {
+          id: 'vec-1',
+          score: 0.95,
+          metadata: { type: 'semantic', content: 'dark mode preference' },
+        },
         { id: 'vec-2', score: 0.82, metadata: { type: 'episodic' } },
       ],
     } as any);

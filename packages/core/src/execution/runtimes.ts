@@ -125,10 +125,10 @@ const SHELL_DANGEROUS = [
   /\bdd\s+if=/,
   /:\(\)\s*\{\s*:\|:\s*&\s*\}\s*;/, // fork bomb
   /\b>\s*\/dev\/sd/,
-  /\bcurl\b.*\|\s*(?:sh|bash|zsh)\b/,  // pipe to shell
+  /\bcurl\b.*\|\s*(?:sh|bash|zsh)\b/, // pipe to shell
   /\bwget\b.*\|\s*(?:sh|bash|zsh)\b/,
-  /\bchmod\s+[0-7]*s/,                  // setuid
-  /\bnc\s+-[el]/,                        // netcat listener
+  /\bchmod\s+[0-7]*s/, // setuid
+  /\bnc\s+-[el]/, // netcat listener
 ];
 
 // ─── Node Runtime ───────────────────────────────────────────────────

@@ -134,7 +134,8 @@ export class OpenAIWsProvider extends BaseProvider {
 
   private async doChatWs(request: AIRequest): Promise<AIResponse> {
     const model = this.resolveModel(request);
-    const sessionKey = (request as Record<string, unknown>).conversationId as string | undefined ?? 'default';
+    const sessionKey =
+      ((request as Record<string, unknown>).conversationId as string | undefined) ?? 'default';
     const conn = await this.transport.acquire(sessionKey);
 
     const payload = this.buildWsPayload(model, request, conn.lastResponseId, false);
@@ -150,9 +151,15 @@ export class OpenAIWsProvider extends BaseProvider {
       this.processNonStreamEvent(
         event,
         { toolCalls, contentParts, model },
-        (u) => { usage = u; },
-        (id) => { responseId = id; },
-        (sr) => { stopReason = sr; }
+        (u) => {
+          usage = u;
+        },
+        (id) => {
+          responseId = id;
+        },
+        (sr) => {
+          stopReason = sr;
+        }
       );
 
       if (event.type === 'error') {
@@ -178,7 +185,8 @@ export class OpenAIWsProvider extends BaseProvider {
 
   private async *doChatStreamWs(request: AIRequest): AsyncGenerator<AIStreamChunk, void, unknown> {
     const model = this.resolveModel(request);
-    const sessionKey = (request as Record<string, unknown>).conversationId as string | undefined ?? 'default';
+    const sessionKey =
+      ((request as Record<string, unknown>).conversationId as string | undefined) ?? 'default';
     const conn = await this.transport.acquire(sessionKey);
 
     const payload = this.buildWsPayload(model, request, conn.lastResponseId, true);
@@ -288,51 +296,53 @@ export class OpenAIWsProvider extends BaseProvider {
   private mapInputMessages(messages: AIMessage[], incrementalOnly: boolean): unknown[] {
     const messagesToMap = incrementalOnly ? this.getIncrementalMessages(messages) : messages;
 
-    return messagesToMap.map((msg) => {
-      if (msg.role === 'system') {
-        return {
-          type: 'message',
-          role: 'system',
-          content: [{ type: 'input_text', text: msg.content ?? '' }],
-        };
-      }
-
-      if (msg.role === 'tool' && msg.toolResult) {
-        return {
-          type: 'function_call_output',
-          call_id: msg.toolResult.toolCallId,
-          output: msg.toolResult.content,
-        };
-      }
-
-      if (msg.role === 'assistant') {
-        const items: unknown[] = [];
-        if (msg.content) {
-          items.push({
+    return messagesToMap
+      .map((msg) => {
+        if (msg.role === 'system') {
+          return {
             type: 'message',
-            role: 'assistant',
-            content: [{ type: 'output_text', text: msg.content }],
-          });
+            role: 'system',
+            content: [{ type: 'input_text', text: msg.content ?? '' }],
+          };
         }
-        if (msg.toolCalls?.length) {
-          for (const tc of msg.toolCalls) {
+
+        if (msg.role === 'tool' && msg.toolResult) {
+          return {
+            type: 'function_call_output',
+            call_id: msg.toolResult.toolCallId,
+            output: msg.toolResult.content,
+          };
+        }
+
+        if (msg.role === 'assistant') {
+          const items: unknown[] = [];
+          if (msg.content) {
             items.push({
-              type: 'function_call',
-              call_id: tc.id,
-              name: tc.name,
-              arguments: JSON.stringify(tc.arguments),
+              type: 'message',
+              role: 'assistant',
+              content: [{ type: 'output_text', text: msg.content }],
             });
           }
+          if (msg.toolCalls?.length) {
+            for (const tc of msg.toolCalls) {
+              items.push({
+                type: 'function_call',
+                call_id: tc.id,
+                name: tc.name,
+                arguments: JSON.stringify(tc.arguments),
+              });
+            }
+          }
+          return items.length === 1 ? items[0] : items;
         }
-        return items.length === 1 ? items[0] : items;
-      }
 
-      return {
-        type: 'message',
-        role: 'user',
-        content: [{ type: 'input_text', text: msg.content ?? '' }],
-      };
-    }).flat();
+        return {
+          type: 'message',
+          role: 'user',
+          content: [{ type: 'input_text', text: msg.content ?? '' }],
+        };
+      })
+      .flat();
   }
 
   /**

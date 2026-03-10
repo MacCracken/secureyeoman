@@ -141,17 +141,16 @@ describe('notion-tools', () => {
   // ── notion_append_blocks ───────────────────────────────────
 
   it('notion_append_blocks calls POST with parsed children JSON', async () => {
-    const children = JSON.stringify([{ type: 'paragraph', paragraph: { text: [{ text: { content: 'Hello' } }] } }]);
+    const children = JSON.stringify([
+      { type: 'paragraph', paragraph: { text: [{ text: { content: 'Hello' } }] } },
+    ]);
     const handler = globalToolRegistry.get('notion_append_blocks')!;
     const result = await handler({ pageId: 'page-1', children });
     expect(result.isError).toBeFalsy();
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/integrations/notion/pages/page-1/blocks',
-      {
-        pageId: 'page-1',
-        children: [{ type: 'paragraph', paragraph: { text: [{ text: { content: 'Hello' } }] } }],
-      }
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/integrations/notion/pages/page-1/blocks', {
+      pageId: 'page-1',
+      children: [{ type: 'paragraph', paragraph: { text: [{ text: { content: 'Hello' } }] } }],
+    });
   });
 
   // ── notion_query_database ──────────────────────────────────
@@ -162,15 +161,12 @@ describe('notion-tools', () => {
     const handler = globalToolRegistry.get('notion_query_database')!;
     const result = await handler({ databaseId: 'db-1', filter, sorts, pageSize: 50 });
     expect(result.isError).toBeFalsy();
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/integrations/notion/databases/db-1/query',
-      {
-        databaseId: 'db-1',
-        filter: { property: 'Status', select: { equals: 'Done' } },
-        sorts: [{ property: 'Created', direction: 'descending' }],
-        pageSize: 50,
-      }
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/integrations/notion/databases/db-1/query', {
+      databaseId: 'db-1',
+      filter: { property: 'Status', select: { equals: 'Done' } },
+      sorts: [{ property: 'Created', direction: 'descending' }],
+      pageSize: 50,
+    });
   });
 
   it('notion_query_database defaults pageSize to 25', async () => {

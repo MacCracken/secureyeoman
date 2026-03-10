@@ -178,7 +178,10 @@ describe('GeminiProvider', () => {
       expect(models[0].id).toBe('gemini-2.0-flash');
       expect(models[0].displayName).toBe('Gemini 2.0 Flash');
       expect(models[1].id).toBe('gemini-2.5-pro-preview');
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('key=test-key'));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('key=test-key'),
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
 
     it('should return empty array on fetch failure', async () => {

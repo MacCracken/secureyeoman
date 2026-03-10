@@ -150,7 +150,10 @@ describe('OllamaProvider', () => {
       expect(models[0].id).toBe('llama3:latest');
       expect(models[0].size).toBe(4700000000);
       expect(models[1].id).toBe('codellama:7b');
-      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:11434/api/tags');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:11434/api/tags',
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
 
     it('should return empty array when Ollama is not running', async () => {

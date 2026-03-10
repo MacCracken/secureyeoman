@@ -321,8 +321,16 @@ export class A2AManager {
       { name: 'chat', description: 'Conversational AI', version: '1.0' },
       { name: 'task-execution', description: 'Task management and execution', version: '1.0' },
       { name: 'memory', description: 'Long-term memory and recall', version: '1.0' },
-      { name: 'video-streaming', description: 'Real-time video streaming intake and vision analysis', version: '1.0' },
-      { name: 'sub-agent-delegation', description: 'Delegate tasks to specialized sub-agents', version: '1.0' },
+      {
+        name: 'video-streaming',
+        description: 'Real-time video streaming intake and vision analysis',
+        version: '1.0',
+      },
+      {
+        name: 'sub-agent-delegation',
+        description: 'Delegate tasks to specialized sub-agents',
+        version: '1.0',
+      },
     ];
   }
 

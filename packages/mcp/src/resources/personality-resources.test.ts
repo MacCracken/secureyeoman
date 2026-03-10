@@ -63,7 +63,9 @@ describe('personality-resources', () => {
       const client = mockClient();
       const handlers = captureResourceHandlers(client);
 
-      const result = await handlers['personality-active'](new URL('secureyeoman://personality/active'));
+      const result = await handlers['personality-active'](
+        new URL('secureyeoman://personality/active')
+      );
 
       expect(client.get).toHaveBeenCalledWith('/api/v1/soul/personality');
       expect(result.contents).toHaveLength(1);

@@ -67,11 +67,21 @@ describe('google-workspace-tools', () => {
 
   it('gdrive_list_files calls GET with query params', async () => {
     const handler = globalToolRegistry.get('gdrive_list_files')!;
-    const result = await handler({ q: 'name contains "report"', pageSize: 30, folderId: 'folder-1', mimeType: 'application/pdf' });
+    const result = await handler({
+      q: 'name contains "report"',
+      pageSize: 30,
+      folderId: 'folder-1',
+      mimeType: 'application/pdf',
+    });
     expect(result.isError).toBeFalsy();
     expect(client.get).toHaveBeenCalledWith(
       '/api/v1/integrations/gdrive/files',
-      expect.objectContaining({ q: 'name contains "report"', pageSize: '30', folderId: 'folder-1', mimeType: 'application/pdf' })
+      expect.objectContaining({
+        q: 'name contains "report"',
+        pageSize: '30',
+        folderId: 'folder-1',
+        mimeType: 'application/pdf',
+      })
     );
   });
 
@@ -86,10 +96,10 @@ describe('google-workspace-tools', () => {
     const handler = globalToolRegistry.get('gdrive_search')!;
     const result = await handler({ query: 'quarterly report', pageSize: 10 });
     expect(result.isError).toBeFalsy();
-    expect(client.get).toHaveBeenCalledWith(
-      '/api/v1/integrations/gdrive/files/search',
-      { query: 'quarterly report', pageSize: '10' }
-    );
+    expect(client.get).toHaveBeenCalledWith('/api/v1/integrations/gdrive/files/search', {
+      query: 'quarterly report',
+      pageSize: '10',
+    });
   });
 
   it('gdrive_create_folder calls POST', async () => {
@@ -163,12 +173,21 @@ describe('google-workspace-tools', () => {
     const result = await handler({
       spreadsheetId: 'ss-1',
       range: 'Sheet1!A1:B2',
-      values: [['a', 'b'], ['c', 'd']],
+      values: [
+        ['a', 'b'],
+        ['c', 'd'],
+      ],
     });
     expect(result.isError).toBeFalsy();
     expect(client.put).toHaveBeenCalledWith(
       '/api/v1/integrations/gsheets/spreadsheets/ss-1/values',
-      { range: 'Sheet1!A1:B2', values: [['a', 'b'], ['c', 'd']] }
+      {
+        range: 'Sheet1!A1:B2',
+        values: [
+          ['a', 'b'],
+          ['c', 'd'],
+        ],
+      }
     );
   });
 
@@ -229,7 +248,9 @@ describe('google-workspace-tools', () => {
   });
 
   it('returns JSON response on success', async () => {
-    (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({ files: [{ id: 'f1', name: 'test.pdf' }] });
+    (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({
+      files: [{ id: 'f1', name: 'test.pdf' }],
+    });
     const handler = globalToolRegistry.get('gdrive_list_files')!;
     const result = await handler({});
     const parsed = JSON.parse(result.content[0].text);

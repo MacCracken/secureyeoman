@@ -261,12 +261,7 @@ describe('DocumentsPanel', () => {
 
   it('shows all format badges', async () => {
     mockListDocuments.mockResolvedValue({
-      documents: [
-        DOC_READY,
-        DOC_ERROR,
-        DOC_PROCESSING,
-        DOC_PENDING,
-      ],
+      documents: [DOC_READY, DOC_ERROR, DOC_PROCESSING, DOC_PENDING],
       total: 4,
     });
     renderPanel();
@@ -309,12 +304,14 @@ describe('DocumentsPanel', () => {
 
   it('shows url format badge', async () => {
     mockListDocuments.mockResolvedValue({
-      documents: [{
-        ...DOC_READY,
-        id: 'doc-url',
-        title: 'Web Page',
-        format: 'url' as const,
-      }],
+      documents: [
+        {
+          ...DOC_READY,
+          id: 'doc-url',
+          title: 'Web Page',
+          format: 'url' as const,
+        },
+      ],
       total: 1,
     });
     renderPanel();

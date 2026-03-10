@@ -1078,7 +1078,9 @@ describe('PersonalityEditor — personality list cards', () => {
     mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByLabelText(`Export personality ${MOCK_PERSONALITY.name}`)).toBeInTheDocument();
+      expect(
+        screen.getByLabelText(`Export personality ${MOCK_PERSONALITY.name}`)
+      ).toBeInTheDocument();
     });
   });
 
@@ -1087,7 +1089,9 @@ describe('PersonalityEditor — personality list cards', () => {
     mockFetchPersonalities.mockResolvedValue({ personalities: [disabled] });
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByLabelText(`Enable personality ${MOCK_PERSONALITY.name}`)).toBeInTheDocument();
+      expect(
+        screen.getByLabelText(`Enable personality ${MOCK_PERSONALITY.name}`)
+      ).toBeInTheDocument();
     });
   });
 

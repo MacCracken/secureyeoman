@@ -123,7 +123,14 @@ describe('ExecutiveSummaryPanel', () => {
 
   it('shows Medium level for departments with score 25-49', () => {
     const departments = [
-      { id: 'd1', name: 'MediumRisk', score: 40, openRisks: 2, criticalRisks: 0, appetiteBreaches: 0 },
+      {
+        id: 'd1',
+        name: 'MediumRisk',
+        score: 40,
+        openRisks: 2,
+        criticalRisks: 0,
+        appetiteBreaches: 0,
+      },
     ];
     render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ departments })} />);
     expect(screen.getByText('Medium')).toBeInTheDocument();
@@ -132,7 +139,14 @@ describe('ExecutiveSummaryPanel', () => {
 
   it('shows High level for departments with score 50-74', () => {
     const departments = [
-      { id: 'd1', name: 'HighRisk', score: 60, openRisks: 5, criticalRisks: 2, appetiteBreaches: 1 },
+      {
+        id: 'd1',
+        name: 'HighRisk',
+        score: 60,
+        openRisks: 5,
+        criticalRisks: 2,
+        appetiteBreaches: 1,
+      },
     ];
     render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ departments })} />);
     expect(screen.getByText('High')).toBeInTheDocument();
@@ -162,7 +176,14 @@ describe('ExecutiveSummaryPanel', () => {
 
   it('shows departments with breaches highlighted', () => {
     const departments = [
-      { id: 'd1', name: 'RiskyDept', score: 55, openRisks: 8, criticalRisks: 3, appetiteBreaches: 2 },
+      {
+        id: 'd1',
+        name: 'RiskyDept',
+        score: 55,
+        openRisks: 8,
+        criticalRisks: 3,
+        appetiteBreaches: 2,
+      },
     ];
     render(<ExecutiveSummaryPanel summary={makeDepartmentalSummary({ departments })} />);
     expect(screen.getByText('RiskyDept')).toBeInTheDocument();

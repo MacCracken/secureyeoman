@@ -334,7 +334,9 @@ describe('MLSecurityTab', () => {
       target: { value: 'sandbox_violation' },
     });
     await waitFor(() => {
-      expect(screen.getByText(/No ML events found for type "sandbox_violation"/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/No ML events found for type "sandbox_violation"/)
+      ).toBeInTheDocument();
     });
   });
 });

@@ -442,9 +442,9 @@ describe('EvaluationTab', () => {
     const user = userEvent.setup();
     wrap(<EvaluationTab />);
 
-    const thresholdInputs = screen.getAllByRole('spinbutton').filter(
-      (el) => el.getAttribute('min') === '1' && el.getAttribute('max') === '5'
-    );
+    const thresholdInputs = screen
+      .getAllByRole('spinbutton')
+      .filter((el) => el.getAttribute('min') === '1' && el.getAttribute('max') === '5');
 
     await user.clear(thresholdInputs[0]);
     await user.type(thresholdInputs[0], '4.0');
@@ -456,9 +456,9 @@ describe('EvaluationTab', () => {
     const user = userEvent.setup();
     wrap(<EvaluationTab />);
 
-    const thresholdInputs = screen.getAllByRole('spinbutton').filter(
-      (el) => el.getAttribute('min') === '1' && el.getAttribute('max') === '5'
-    );
+    const thresholdInputs = screen
+      .getAllByRole('spinbutton')
+      .filter((el) => el.getAttribute('min') === '1' && el.getAttribute('max') === '5');
 
     await user.clear(thresholdInputs[0]);
     await user.type(thresholdInputs[0], '4.5');

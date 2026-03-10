@@ -182,7 +182,11 @@ describe('AuditLogTab', () => {
   it('should call onMarkReviewed with page entry ids', async () => {
     const onMarkReviewed = vi.fn();
     renderWithProviders(
-      <AuditLogTab reviewed={new Set()} onMarkReviewed={onMarkReviewed} onMarkAllReviewed={vi.fn()} />
+      <AuditLogTab
+        reviewed={new Set()}
+        onMarkReviewed={onMarkReviewed}
+        onMarkAllReviewed={vi.fn()}
+      />
     );
 
     await waitFor(() => {
@@ -196,7 +200,11 @@ describe('AuditLogTab', () => {
   it('should mark entry as reviewed on expand', async () => {
     const onMarkReviewed = vi.fn();
     renderWithProviders(
-      <AuditLogTab reviewed={new Set()} onMarkReviewed={onMarkReviewed} onMarkAllReviewed={vi.fn()} />
+      <AuditLogTab
+        reviewed={new Set()}
+        onMarkReviewed={onMarkReviewed}
+        onMarkAllReviewed={vi.fn()}
+      />
     );
 
     await waitFor(() => {
@@ -209,7 +217,11 @@ describe('AuditLogTab', () => {
 
   it('should toggle expand off when clicking again', async () => {
     renderWithProviders(
-      <AuditLogTab reviewed={new Set(['a1'])} onMarkReviewed={vi.fn()} onMarkAllReviewed={vi.fn()} />
+      <AuditLogTab
+        reviewed={new Set(['a1'])}
+        onMarkReviewed={vi.fn()}
+        onMarkAllReviewed={vi.fn()}
+      />
     );
 
     await waitFor(() => {
@@ -237,7 +249,9 @@ describe('AuditLogTab', () => {
     fireEvent.change(levelSelect, { target: { value: 'error' } });
 
     await waitFor(() => {
-      expect(api.fetchAuditEntries).toHaveBeenCalledWith(expect.objectContaining({ level: 'error' }));
+      expect(api.fetchAuditEntries).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'error' })
+      );
     });
   });
 
@@ -254,7 +268,9 @@ describe('AuditLogTab', () => {
     fireEvent.change(eventSelect, { target: { value: 'auth_failure' } });
 
     await waitFor(() => {
-      expect(api.fetchAuditEntries).toHaveBeenCalledWith(expect.objectContaining({ event: 'auth_failure' }));
+      expect(api.fetchAuditEntries).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'auth_failure' })
+      );
     });
   });
 
@@ -413,7 +429,11 @@ describe('AuditLogTab', () => {
 
   it('should show unreviewed count', async () => {
     renderWithProviders(
-      <AuditLogTab reviewed={new Set(['a1'])} onMarkReviewed={vi.fn()} onMarkAllReviewed={vi.fn()} />
+      <AuditLogTab
+        reviewed={new Set(['a1'])}
+        onMarkReviewed={vi.fn()}
+        onMarkAllReviewed={vi.fn()}
+      />
     );
 
     await waitFor(() => {

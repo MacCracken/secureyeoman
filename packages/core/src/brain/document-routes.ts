@@ -332,11 +332,10 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
       if (!brainStorage) {
         return { averageScore: null, totalMessages: 0, lowGroundingCount: 0 };
       }
-      const days = windowDays ? Math.min(Math.max(parseInt(windowDays, 10) || 30, 1), 365) : undefined;
-      return brainStorage.getAverageGroundingScore(
-        personalityId,
-        days
-      );
+      const days = windowDays
+        ? Math.min(Math.max(parseInt(windowDays, 10) || 30, 1), 365)
+        : undefined;
+      return brainStorage.getAverageGroundingScore(personalityId, days);
     }
   );
 

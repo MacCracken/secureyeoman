@@ -64,9 +64,7 @@ describe('skill-resources', () => {
       const client = mockClient();
       const handlers = captureResourceHandlers(client);
 
-      const result = await handlers['skill-markdown'](
-        new URL('yeoman://skills/code-review')
-      );
+      const result = await handlers['skill-markdown'](new URL('yeoman://skills/code-review'));
 
       expect(client.get).toHaveBeenCalledWith('/api/v1/soul/skills/code-review');
       expect(result.contents).toHaveLength(1);
@@ -80,9 +78,7 @@ describe('skill-resources', () => {
       const client = mockClient();
       const handlers = captureResourceHandlers(client);
 
-      const result = await handlers['skill-markdown'](
-        new URL('yeoman://skills/code-review')
-      );
+      const result = await handlers['skill-markdown'](new URL('yeoman://skills/code-review'));
 
       const text = result.contents[0].text;
       expect(text).toContain('source:');
@@ -98,9 +94,7 @@ describe('skill-resources', () => {
       });
       const handlers = captureResourceHandlers(client);
 
-      const result = await handlers['skill-markdown'](
-        new URL('yeoman://skills/minimal')
-      );
+      const result = await handlers['skill-markdown'](new URL('yeoman://skills/minimal'));
 
       expect(result.contents[0].text).toContain('minimal');
       expect(result.contents[0].text).toContain('---');

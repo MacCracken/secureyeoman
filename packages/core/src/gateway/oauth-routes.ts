@@ -638,12 +638,13 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       } catch (err) {
         // Sanitize error — never leak internal details (stack traces, secrets) in redirect URLs
         const rawMessage = toErrorMessage(err);
-        const safeMessage = rawMessage.includes('client_secret') ||
+        const safeMessage =
+          rawMessage.includes('client_secret') ||
           rawMessage.includes('ECONNREFUSED') ||
           rawMessage.includes('ETIMEDOUT') ||
           rawMessage.length > 200
-          ? 'OAuth authentication failed. Please try again.'
-          : rawMessage;
+            ? 'OAuth authentication failed. Please try again.'
+            : rawMessage;
         if (providerId === 'gmail') {
           return reply.redirect(`${fe}/connections/email?error=${encodeURIComponent(safeMessage)}`);
         }

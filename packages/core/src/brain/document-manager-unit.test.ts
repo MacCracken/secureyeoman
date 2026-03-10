@@ -417,20 +417,20 @@ describe('DocumentManager', () => {
           name: 'README.md',
           path: 'README.md',
           type: 'file',
-          download_url: 'https://raw.test/README.md',
+          download_url: 'https://raw.githubusercontent.com/myorg/myrepo/main/README.md',
         },
         {
           name: 'guide.md',
           path: 'guide.md',
           type: 'file',
-          download_url: 'https://raw.test/guide.md',
+          download_url: 'https://raw.githubusercontent.com/myorg/myrepo/main/guide.md',
         },
         { name: 'src', path: 'src', type: 'dir', download_url: null },
         {
           name: 'config.json',
           path: 'config.json',
           type: 'file',
-          download_url: 'https://raw.test/config.json',
+          download_url: 'https://raw.githubusercontent.com/myorg/myrepo/main/config.json',
         },
       ];
 
@@ -448,7 +448,12 @@ describe('DocumentManager', () => {
     it('uses GITHUB_TOKEN from environment if no token provided', async () => {
       process.env.GITHUB_TOKEN = 'env-token';
       const items = [
-        { name: 'doc.md', path: 'doc.md', type: 'file', download_url: 'https://raw.test/doc.md' },
+        {
+          name: 'doc.md',
+          path: 'doc.md',
+          type: 'file',
+          download_url: 'https://raw.githubusercontent.com/myorg/myrepo/main/doc.md',
+        },
       ];
       mockFetch
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(items) })
@@ -547,7 +552,12 @@ describe('DocumentManager', () => {
           ok: true,
           json: () =>
             Promise.resolve([
-              { name: 'a.md', path: 'a.md', type: 'file', download_url: 'https://raw/a.md' },
+              {
+                name: 'a.md',
+                path: 'a.md',
+                type: 'file',
+                download_url: 'https://raw.githubusercontent.com/org/repo/main/a.md',
+              },
             ]),
         })
         .mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Error' });
@@ -563,8 +573,18 @@ describe('DocumentManager', () => {
           ok: true,
           json: () =>
             Promise.resolve([
-              { name: 'a.md', path: 'a.md', type: 'file', download_url: 'https://raw/a.md' },
-              { name: 'b.md', path: 'b.md', type: 'file', download_url: 'https://raw/b.md' },
+              {
+                name: 'a.md',
+                path: 'a.md',
+                type: 'file',
+                download_url: 'https://raw.githubusercontent.com/org/repo/main/a.md',
+              },
+              {
+                name: 'b.md',
+                path: 'b.md',
+                type: 'file',
+                download_url: 'https://raw.githubusercontent.com/org/repo/main/b.md',
+              },
             ]),
         })
         .mockRejectedValueOnce(new Error('timeout'))
@@ -589,7 +609,7 @@ describe('DocumentManager', () => {
                 name: 'GUIDE.MD',
                 path: 'GUIDE.MD',
                 type: 'file',
-                download_url: 'https://raw/GUIDE.MD',
+                download_url: 'https://raw.githubusercontent.com/org/repo/main/GUIDE.MD',
               },
               {
                 name: 'data.csv',

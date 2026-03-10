@@ -492,14 +492,15 @@ describe('InstalledTab', () => {
           source: 'marketplace',
           personalityId: 'p1',
           enabled: true,
-          instructions: JSON.stringify({ themeId: 'dark-ocean', preview: ['#1a1a2e', '#16213e', '#0f3460'] }),
+          instructions: JSON.stringify({
+            themeId: 'dark-ocean',
+            preview: ['#1a1a2e', '#16213e', '#0f3460'],
+          }),
         },
       ],
     } as never);
     vi.mocked(api.fetchMarketplaceSkills).mockResolvedValue({
-      skills: [
-        { id: 'cat-1', name: 'Dark Ocean', category: 'theme', installed: true },
-      ],
+      skills: [{ id: 'cat-1', name: 'Dark Ocean', category: 'theme', installed: true }],
       total: 1,
     } as never);
 
@@ -531,9 +532,7 @@ describe('InstalledTab', () => {
       ],
     } as never);
     vi.mocked(api.fetchMarketplaceSkills).mockResolvedValue({
-      skills: [
-        { id: 'cat-2', name: 'Security Expert', category: 'personality', installed: true },
-      ],
+      skills: [{ id: 'cat-2', name: 'Security Expert', category: 'personality', installed: true }],
       total: 1,
     } as never);
 

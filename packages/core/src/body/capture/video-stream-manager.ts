@@ -134,7 +134,9 @@ export class VideoStreamManager {
     }
 
     if (config.source === 'agnos' && !this.agnosBridge) {
-      throw new Error('AGNOS video bridge is not configured. Set AGNOS_RUNTIME_URL and enable the AGNOS ecosystem service.');
+      throw new Error(
+        'AGNOS video bridge is not configured. Set AGNOS_RUNTIME_URL and enable the AGNOS ecosystem service.'
+      );
     }
 
     const fps = Math.min(Math.max(config.fps ?? DEFAULT_FPS, 1), MAX_FPS);
@@ -195,7 +197,11 @@ export class VideoStreamManager {
 
     // Notify subscribers
     for (const cb of sessionSubscribers) {
-      try { cb({ type: 'session_started', session }); } catch { /* swallow */ }
+      try {
+        cb({ type: 'session_started', session });
+      } catch {
+        /* swallow */
+      }
     }
 
     return session;
@@ -212,7 +218,11 @@ export class VideoStreamManager {
     entry.session.stoppedAt = Date.now();
 
     // Stop AGNOS recording if we started one
-    if (entry.session.source === 'agnos' && entry.session.config.agnosSessionId && this.agnosBridge) {
+    if (
+      entry.session.source === 'agnos' &&
+      entry.session.config.agnosSessionId &&
+      this.agnosBridge
+    ) {
       try {
         await this.agnosBridge.stopRecording(entry.session.config.agnosSessionId);
       } catch (err) {
@@ -225,7 +235,11 @@ export class VideoStreamManager {
 
     // Notify subscribers
     for (const cb of entry.sessionSubscribers) {
-      try { cb({ type: 'session_stopped', session: entry.session }); } catch { /* swallow */ }
+      try {
+        cb({ type: 'session_stopped', session: entry.session });
+      } catch {
+        /* swallow */
+      }
     }
 
     this.sessions.delete(sessionId);
@@ -243,14 +257,18 @@ export class VideoStreamManager {
     const entry = this.sessions.get(sessionId);
     if (!entry) throw new Error(`Session ${sessionId} not found`);
     entry.frameSubscribers.add(callback);
-    return () => { entry.frameSubscribers.delete(callback); };
+    return () => {
+      entry.frameSubscribers.delete(callback);
+    };
   }
 
   subscribeSession(sessionId: string, callback: SessionCallback): () => void {
     const entry = this.sessions.get(sessionId);
     if (!entry) throw new Error(`Session ${sessionId} not found`);
     entry.sessionSubscribers.add(callback);
-    return () => { entry.sessionSubscribers.delete(callback); };
+    return () => {
+      entry.sessionSubscribers.delete(callback);
+    };
   }
 
   // ── Queries ────────────────────────────────────────────────────────────
@@ -297,7 +315,8 @@ export class VideoStreamManager {
             const result = await this.visionAnalyzer.analyzeImage({
               imageBase64: frame.imageBase64,
               mimeType: frame.mimeType,
-              prompt: entry.session.config.visionPrompt ?? 'Describe what you see in this video frame.',
+              prompt:
+                entry.session.config.visionPrompt ?? 'Describe what you see in this video frame.',
             });
             analysis = result.description;
           } catch (err) {
@@ -320,21 +339,24 @@ export class VideoStreamManager {
         };
 
         for (const cb of entry.frameSubscribers) {
-          try { cb(streamFrame); } catch { /* swallow per-subscriber errors */ }
+          try {
+            cb(streamFrame);
+          } catch {
+            /* swallow per-subscriber errors */
+          }
         }
       }
     } catch (err) {
-      this.logger.warn(
-        { sessionId, error: errorToString(err) },
-        'Video stream capture failed'
-      );
+      this.logger.warn({ sessionId, error: errorToString(err) }, 'Video stream capture failed');
       // Don't kill the session on transient errors
     }
   }
 
   private async captureFrames(
     entry: ActiveSession
-  ): Promise<{ imageBase64: string; mimeType: string; timestamp?: number; width?: number; height?: number }[]> {
+  ): Promise<
+    { imageBase64: string; mimeType: string; timestamp?: number; width?: number; height?: number }[]
+  > {
     const { session } = entry;
 
     switch (session.source) {
@@ -358,26 +380,28 @@ export class VideoStreamManager {
 
       case 'local_camera': {
         const frame: CameraFrame = await captureCamera(session.config.deviceId);
-        return [{
-          imageBase64: frame.imageBase64,
-          mimeType: frame.mimeType,
-          timestamp: Date.now(),
-        }];
+        return [
+          {
+            imageBase64: frame.imageBase64,
+            mimeType: frame.mimeType,
+            timestamp: Date.now(),
+          },
+        ];
       }
 
       case 'local_screen': {
         const result: CaptureResult = await captureScreen(
-          session.config.region
-            ? { target: { type: 'region', region: session.config.region } }
-            : {}
+          session.config.region ? { target: { type: 'region', region: session.config.region } } : {}
         );
-        return [{
-          imageBase64: result.imageBase64,
-          mimeType: result.mimeType,
-          timestamp: Date.now(),
-          width: result.width,
-          height: result.height,
-        }];
+        return [
+          {
+            imageBase64: result.imageBase64,
+            mimeType: result.mimeType,
+            timestamp: Date.now(),
+            width: result.width,
+            height: result.height,
+          },
+        ];
       }
 
       default:

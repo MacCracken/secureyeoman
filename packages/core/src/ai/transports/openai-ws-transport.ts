@@ -405,7 +405,10 @@ export class OpenAIWsTransport {
   private resetIdleTimer(conn: WsConnection): void {
     if (conn.idleTimer) clearTimeout(conn.idleTimer);
     conn.idleTimer = setTimeout(() => {
-      this.logger?.debug({ connId: conn.id, sessionKey: conn.sessionKey }, 'WS connection idle timeout');
+      this.logger?.debug(
+        { connId: conn.id, sessionKey: conn.sessionKey },
+        'WS connection idle timeout'
+      );
       this.destroyConnection(conn);
       this.pool.delete(conn.sessionKey);
     }, this.config.maxIdleMs);
@@ -442,8 +445,17 @@ export class OpenAIWsTransport {
   }
 
   private clearTimers(conn: WsConnection): void {
-    if (conn.pingTimer) { clearInterval(conn.pingTimer); conn.pingTimer = null; }
-    if (conn.idleTimer) { clearTimeout(conn.idleTimer); conn.idleTimer = null; }
-    if (conn.lifetimeTimer) { clearTimeout(conn.lifetimeTimer); conn.lifetimeTimer = null; }
+    if (conn.pingTimer) {
+      clearInterval(conn.pingTimer);
+      conn.pingTimer = null;
+    }
+    if (conn.idleTimer) {
+      clearTimeout(conn.idleTimer);
+      conn.idleTimer = null;
+    }
+    if (conn.lifetimeTimer) {
+      clearTimeout(conn.lifetimeTimer);
+      conn.lifetimeTimer = null;
+    }
   }
 }

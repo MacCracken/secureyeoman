@@ -992,7 +992,7 @@ describe('WorkflowEngine.execute — step dispatch: evaluation', () => {
       type: 'evaluation',
       config: {
         datasetPath: '/tmp/test.jsonl',
-        modelEndpoint: 'http://localhost:11434/generate',
+        modelEndpoint: 'https://model.example.com/generate',
         maxSamples: 50,
       },
     });
@@ -2337,14 +2337,14 @@ describe('WorkflowEngine deterministic dispatch', () => {
     const step = makeStep({
       id: 'det5',
       type: 'agent',
-      config: { deterministic: true, command: 'ls -la', timeoutMs: 5000 },
+      config: { deterministic: true, command: 'node -e "1"', timeoutMs: 5000 },
     });
     const def = makeDefinition([step]);
     const run = makeRun();
     await engine.execute(run, def);
     expect(mockExecFileSync).toHaveBeenCalledWith(
-      'ls',
-      ['-la'],
+      'node',
+      ['-e', '"1"'],
       expect.objectContaining({
         timeout: 5000,
       })
@@ -2352,17 +2352,17 @@ describe('WorkflowEngine deterministic dispatch', () => {
   });
 
   it('deterministic=true with command that has no args', async () => {
-    mockExecFileSync.mockReturnValue('whoami-output');
+    mockExecFileSync.mockReturnValue('date-output');
     const engine = makeEngine();
     const step = makeStep({
       id: 'det6',
       type: 'agent',
-      config: { deterministic: true, command: 'whoami' },
+      config: { deterministic: true, command: 'date' },
     });
     const def = makeDefinition([step]);
     const run = makeRun();
     await engine.execute(run, def);
-    expect(mockExecFileSync).toHaveBeenCalledWith('whoami', [], expect.any(Object));
+    expect(mockExecFileSync).toHaveBeenCalledWith('date', [], expect.any(Object));
   });
 });
 

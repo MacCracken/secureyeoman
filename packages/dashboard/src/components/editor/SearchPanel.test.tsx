@@ -181,9 +181,7 @@ describe('SearchPanel', () => {
     await userEvent.type(screen.getByTestId('search-input'), 'test{Enter}');
 
     await waitFor(() => {
-      expect(mockSearchFiles).toHaveBeenCalledWith(
-        expect.objectContaining({ regex: true })
-      );
+      expect(mockSearchFiles).toHaveBeenCalledWith(expect.objectContaining({ regex: true }));
     });
   });
 
@@ -225,9 +223,7 @@ describe('SearchPanel', () => {
     await userEvent.type(screen.getByTestId('search-input'), 'match{Enter}');
 
     await waitFor(() => {
-      expect(mockSearchFiles).toHaveBeenCalledWith(
-        expect.objectContaining({ glob: '*.ts' })
-      );
+      expect(mockSearchFiles).toHaveBeenCalledWith(expect.objectContaining({ glob: '*.ts' }));
     });
   });
 

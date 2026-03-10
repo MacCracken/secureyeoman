@@ -186,7 +186,13 @@ describe('McpManager', () => {
   it('shows server transport type badge', async () => {
     mockFetchMcpServers.mockResolvedValue({
       servers: [
-        { id: 's1', name: 'stdio-server', transport: 'stdio', command: 'npx @tool/mcp', enabled: true },
+        {
+          id: 's1',
+          name: 'stdio-server',
+          transport: 'stdio',
+          command: 'npx @tool/mcp',
+          enabled: true,
+        },
       ],
       total: 1,
     } as any);
@@ -199,7 +205,13 @@ describe('McpManager', () => {
   it('shows server command for stdio transport', async () => {
     mockFetchMcpServers.mockResolvedValue({
       servers: [
-        { id: 's1', name: 'stdio-server', transport: 'stdio', command: 'npx @tool/mcp', enabled: true },
+        {
+          id: 's1',
+          name: 'stdio-server',
+          transport: 'stdio',
+          command: 'npx @tool/mcp',
+          enabled: true,
+        },
       ],
       total: 1,
     } as any);
@@ -212,7 +224,13 @@ describe('McpManager', () => {
   it('shows server URL for sse transport', async () => {
     mockFetchMcpServers.mockResolvedValue({
       servers: [
-        { id: 's1', name: 'sse-server', transport: 'sse', url: 'https://mcp.example.com', enabled: true },
+        {
+          id: 's1',
+          name: 'sse-server',
+          transport: 'sse',
+          url: 'https://mcp.example.com',
+          enabled: true,
+        },
       ],
       total: 1,
     } as any);
@@ -236,9 +254,7 @@ describe('McpManager', () => {
 
   it('shows toggle button with correct state', async () => {
     mockFetchMcpServers.mockResolvedValue({
-      servers: [
-        { id: 's1', name: 'active', transport: 'stdio', enabled: true },
-      ],
+      servers: [{ id: 's1', name: 'active', transport: 'stdio', enabled: true }],
       total: 1,
     } as any);
     renderComponent();
@@ -249,9 +265,7 @@ describe('McpManager', () => {
 
   it('shows disabled toggle state', async () => {
     mockFetchMcpServers.mockResolvedValue({
-      servers: [
-        { id: 's1', name: 'inactive', transport: 'sse', enabled: false },
-      ],
+      servers: [{ id: 's1', name: 'inactive', transport: 'sse', enabled: false }],
       total: 1,
     } as any);
     renderComponent();
@@ -268,8 +282,18 @@ describe('McpManager', () => {
     } as any);
     mockFetchMcpTools.mockResolvedValue({
       tools: [
-        { serverId: 's1', serverName: 'test-server', name: 'read_file', description: 'Reads a file from disk' },
-        { serverId: 's1', serverName: 'test-server', name: 'write_file', description: 'Writes a file' },
+        {
+          serverId: 's1',
+          serverName: 'test-server',
+          name: 'read_file',
+          description: 'Reads a file from disk',
+        },
+        {
+          serverId: 's1',
+          serverName: 'test-server',
+          name: 'write_file',
+          description: 'Writes a file',
+        },
       ],
     } as any);
     renderComponent();
@@ -325,7 +349,12 @@ describe('McpManager', () => {
     } as any);
     mockFetchMcpTools.mockResolvedValue({
       tools: [
-        { serverId: 's1', serverName: 'server-alpha', name: 'alpha_tool', description: 'Alpha tool' },
+        {
+          serverId: 's1',
+          serverName: 'server-alpha',
+          name: 'alpha_tool',
+          description: 'Alpha tool',
+        },
         { serverId: 's2', serverName: 'server-beta', name: 'beta_tool', description: 'Beta tool' },
       ],
     } as any);
@@ -361,7 +390,7 @@ describe('McpManager', () => {
     });
     // Confirm removal — use the destructive-styled confirm button in the dialog
     const confirmBtns = screen.getAllByRole('button', { name: /remove/i });
-    const dialogConfirmBtn = confirmBtns.find(b => b.className.includes('destructive'));
+    const dialogConfirmBtn = confirmBtns.find((b) => b.className.includes('destructive'));
     await user.click(dialogConfirmBtn!);
     await waitFor(() => {
       expect(mockDeleteMcpServer).toHaveBeenCalledWith('s1');
@@ -404,7 +433,7 @@ describe('McpManager', () => {
     await user.type(screen.getByPlaceholderText('https://example.com/mcp'), 'https://mcp.test.com');
     // Submit — click the form submit button (not the header "Add Server" button)
     const addBtns = screen.getAllByRole('button', { name: /add server/i });
-    const submitBtn = addBtns.find(b => !b.className.includes('whitespace-nowrap'));
+    const submitBtn = addBtns.find((b) => !b.className.includes('whitespace-nowrap'));
     await user.click(submitBtn!);
     await waitFor(() => {
       expect(mockAddMcpServer).toHaveBeenCalledWith(

@@ -255,7 +255,7 @@ describe('CommunityTab', () => {
         undefined,
         expect.anything(),
         expect.anything(),
-        undefined,
+        undefined
       );
     });
   });
@@ -449,36 +449,34 @@ describe('CommunityTab', () => {
 
   it('shows themes list with theme cards', async () => {
     const user = userEvent.setup();
-    mockFetchMarketplace.mockImplementation(
-      (_q, _s, _p, _u, _l, _o, category) => {
-        if (category === 'theme') {
-          return Promise.resolve({
-            skills: [
-              {
-                id: 'theme-1',
-                name: 'Dark Elegance',
-                description: 'A dark theme',
-                version: '1.0.0',
-                author: 'community',
-                category: 'theme',
-                tags: [],
-                downloadCount: 5,
-                source: 'community',
-                installed: false,
-                installedGlobally: false,
-                instructions: '',
-                triggerPatterns: [],
-                tools: [],
-                mcpToolsAllowed: [],
-                updatedAt: Date.now(),
-              },
-            ],
-            total: 1,
-          });
-        }
-        return Promise.resolve({ skills: [], total: 0 });
+    mockFetchMarketplace.mockImplementation((_q, _s, _p, _u, _l, _o, category) => {
+      if (category === 'theme') {
+        return Promise.resolve({
+          skills: [
+            {
+              id: 'theme-1',
+              name: 'Dark Elegance',
+              description: 'A dark theme',
+              version: '1.0.0',
+              author: 'community',
+              category: 'theme',
+              tags: [],
+              downloadCount: 5,
+              source: 'community',
+              installed: false,
+              installedGlobally: false,
+              instructions: '',
+              triggerPatterns: [],
+              tools: [],
+              mcpToolsAllowed: [],
+              updatedAt: Date.now(),
+            },
+          ],
+          total: 1,
+        });
       }
-    );
+      return Promise.resolve({ skills: [], total: 0 });
+    });
 
     renderComponent({ workflowsEnabled: true, subAgentsEnabled: true });
     await waitFor(() => {
@@ -493,36 +491,34 @@ describe('CommunityTab', () => {
 
   it('shows personalities list with personality cards', async () => {
     const user = userEvent.setup();
-    mockFetchMarketplace.mockImplementation(
-      (_q, _s, _p, _u, _l, _o, category) => {
-        if (category === 'personality') {
-          return Promise.resolve({
-            skills: [
-              {
-                id: 'pers-1',
-                name: 'Helpful Assistant',
-                description: 'A helpful personality',
-                version: '1.0.0',
-                author: 'community',
-                category: 'personality',
-                tags: ['personality:assistant'],
-                downloadCount: 20,
-                source: 'community',
-                installed: false,
-                installedGlobally: false,
-                instructions: '',
-                triggerPatterns: [],
-                tools: [],
-                mcpToolsAllowed: [],
-                updatedAt: Date.now(),
-              },
-            ],
-            total: 1,
-          });
-        }
-        return Promise.resolve({ skills: [], total: 0 });
+    mockFetchMarketplace.mockImplementation((_q, _s, _p, _u, _l, _o, category) => {
+      if (category === 'personality') {
+        return Promise.resolve({
+          skills: [
+            {
+              id: 'pers-1',
+              name: 'Helpful Assistant',
+              description: 'A helpful personality',
+              version: '1.0.0',
+              author: 'community',
+              category: 'personality',
+              tags: ['personality:assistant'],
+              downloadCount: 20,
+              source: 'community',
+              installed: false,
+              installedGlobally: false,
+              instructions: '',
+              triggerPatterns: [],
+              tools: [],
+              mcpToolsAllowed: [],
+              updatedAt: Date.now(),
+            },
+          ],
+          total: 1,
+        });
       }
-    );
+      return Promise.resolve({ skills: [], total: 0 });
+    });
 
     renderComponent({ workflowsEnabled: true, subAgentsEnabled: true });
     await waitFor(() => {

@@ -108,18 +108,15 @@ export class GoogleChatIntegration implements Integration {
       message.cards = [metadata.card as GoogleChatCard];
     }
 
-    const response = await fetch(
-      `https://chat.googleapis.com/v1/spaces/${chatId}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.botToken}`,
-        },
-        body: JSON.stringify(message),
-        signal: AbortSignal.timeout(30_000),
-      }
-    );
+    const response = await fetch(`https://chat.googleapis.com/v1/spaces/${chatId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.botToken}`,
+      },
+      body: JSON.stringify(message),
+      signal: AbortSignal.timeout(30_000),
+    });
 
     if (!response.ok) {
       const error = await response.text();

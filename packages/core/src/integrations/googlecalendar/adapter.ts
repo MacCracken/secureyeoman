@@ -201,7 +201,10 @@ export class GoogleCalendarIntegration implements Integration {
 
       const resp = await fetch(
         `${CALENDAR_API}/calendars/${encodeURIComponent(this.calendarId)}/events?${params}`,
-        { headers: { Authorization: `Bearer ${this.accessToken}` }, signal: AbortSignal.timeout(30_000) }
+        {
+          headers: { Authorization: `Bearer ${this.accessToken}` },
+          signal: AbortSignal.timeout(30_000),
+        }
       );
 
       if (!resp.ok) {

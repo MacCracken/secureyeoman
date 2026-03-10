@@ -30,10 +30,7 @@ export interface VideoStreamRoutesOpts {
   isAgnosBridgeAvailable: () => boolean;
 }
 
-export function registerVideoStreamRoutes(
-  app: FastifyInstance,
-  opts: VideoStreamRoutesOpts
-): void {
+export function registerVideoStreamRoutes(app: FastifyInstance, opts: VideoStreamRoutesOpts): void {
   // ── Guards ───────────────────────────────────────────────────────────────
 
   function guardStreaming(reply: FastifyReply): boolean {
@@ -139,10 +136,7 @@ export function registerVideoStreamRoutes(
 
   app.post(
     '/api/v1/video/stream/:id/stop',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!guardStreaming(reply)) return;
       const mgr = getManager(reply);
       if (!mgr) return;
@@ -172,10 +166,7 @@ export function registerVideoStreamRoutes(
 
   app.get(
     '/api/v1/video/stream/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!guardStreaming(reply)) return;
       const mgr = getManager(reply);
       if (!mgr) return;
@@ -190,33 +181,30 @@ export function registerVideoStreamRoutes(
 
   // ── GET /api/v1/video/stream/sources ─────────────────────────────────
 
-  app.get(
-    '/api/v1/video/stream/sources',
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      if (!guardStreaming(reply)) return;
+  app.get('/api/v1/video/stream/sources', async (_request: FastifyRequest, reply: FastifyReply) => {
+    if (!guardStreaming(reply)) return;
 
-      const sources: { id: VideoSource; name: string; available: boolean; description: string }[] = [
-        {
-          id: 'agnos',
-          name: 'AGNOS Remote Screen',
-          available: opts.isAgnosBridgeAvailable(),
-          description: 'Stream screen frames from AGNOS daimon runtime (remote desktop recording).',
-        },
-        {
-          id: 'local_camera',
-          name: 'Local Camera',
-          available: true,
-          description: 'Capture frames from a local camera device via ffmpeg.',
-        },
-        {
-          id: 'local_screen',
-          name: 'Local Screen',
-          available: true,
-          description: 'Capture screenshots of the local display at configurable FPS.',
-        },
-      ];
+    const sources: { id: VideoSource; name: string; available: boolean; description: string }[] = [
+      {
+        id: 'agnos',
+        name: 'AGNOS Remote Screen',
+        available: opts.isAgnosBridgeAvailable(),
+        description: 'Stream screen frames from AGNOS daimon runtime (remote desktop recording).',
+      },
+      {
+        id: 'local_camera',
+        name: 'Local Camera',
+        available: true,
+        description: 'Capture frames from a local camera device via ffmpeg.',
+      },
+      {
+        id: 'local_screen',
+        name: 'Local Screen',
+        available: true,
+        description: 'Capture screenshots of the local display at configurable FPS.',
+      },
+    ];
 
-      return reply.send({ sources });
-    }
-  );
+    return reply.send({ sources });
+  });
 }

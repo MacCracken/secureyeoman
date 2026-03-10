@@ -3534,7 +3534,9 @@ export class GatewayServer {
           if (socket.readyState === 1 /* OPEN */) {
             try {
               socket.send(JSON.stringify({ type: 'frame', frame }));
-            } catch { /* client gone */ }
+            } catch {
+              /* client gone */
+            }
           }
         });
 
@@ -3542,7 +3544,9 @@ export class GatewayServer {
           if (socket.readyState === 1) {
             try {
               socket.send(JSON.stringify(event));
-            } catch { /* client gone */ }
+            } catch {
+              /* client gone */
+            }
           }
           if (event.type === 'session_stopped' || event.type === 'session_error') {
             socket.close(1000, 'Session ended');

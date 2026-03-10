@@ -61,10 +61,10 @@ describe('todoist-tools', () => {
     const handler = globalToolRegistry.get('todoist_list_tasks')!;
     const result = await handler({ projectId: 'proj-1', filter: 'today' });
     expect(result.isError).toBeFalsy();
-    expect(client.get).toHaveBeenCalledWith(
-      '/api/v1/integrations/todoist/tasks',
-      { projectId: 'proj-1', filter: 'today' }
-    );
+    expect(client.get).toHaveBeenCalledWith('/api/v1/integrations/todoist/tasks', {
+      projectId: 'proj-1',
+      filter: 'today',
+    });
   });
 
   it('todoist_list_tasks with no filters', async () => {
@@ -156,10 +156,7 @@ describe('todoist-tools', () => {
     const handler = globalToolRegistry.get('todoist_list_projects')!;
     const result = await handler({});
     expect(result.isError).toBeFalsy();
-    expect(client.get).toHaveBeenCalledWith(
-      '/api/v1/integrations/todoist/projects',
-      undefined
-    );
+    expect(client.get).toHaveBeenCalledWith('/api/v1/integrations/todoist/projects', undefined);
   });
 
   // ── Error handling ──────────────────────────────────────────────

@@ -546,7 +546,7 @@ describe('OAuthService unit tests', () => {
   it('generateOAuthConnectionToken returns a deterministic hash', () => {
     const svc = new OAuthService({});
     const token1 = svc.generateOAuthConnectionToken('google', 'user-1');
-    expect(token1).toHaveLength(64); // sha256 hex
+    expect(token1).toHaveLength(43); // base64url-encoded 32-byte token
   });
 
   it('validateState returns null for expired state', () => {

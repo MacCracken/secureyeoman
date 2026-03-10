@@ -544,9 +544,7 @@ describe('FederationTab', () => {
     const mockInstallSkill = vi.mocked(apiClient.installSkillFromPeer);
     mockInstallSkill.mockResolvedValue(undefined as any);
     mockFetchPeerMarketplace.mockResolvedValue({
-      skills: [
-        { id: 'sk-1', name: 'Web Search', description: 'Search the web' },
-      ],
+      skills: [{ id: 'sk-1', name: 'Web Search', description: 'Search the web' }],
     } as any);
 
     renderTab();

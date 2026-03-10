@@ -2183,7 +2183,9 @@ describe('Consolidation', () => {
 // ── Multimodal API ──────────────────────────────────────────────────
 describe('Multimodal API', () => {
   it('analyzeImage', async () => {
-    mockFetch.mockReturnValueOnce(jsonResponse({ description: 'a cat', labels: ['cat'], durationMs: 100 }));
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({ description: 'a cat', labels: ['cat'], durationMs: 100 })
+    );
     const result = await analyzeImage({ imageBase64: 'abc', mimeType: 'image/png' });
     expect(result.description).toBe('a cat');
   });
@@ -2197,7 +2199,9 @@ describe('Multimodal API', () => {
     expect(result.text).toBe('hello');
   });
   it('synthesizeSpeech', async () => {
-    mockFetch.mockReturnValueOnce(jsonResponse({ audioBase64: 'abc', format: 'mp3', durationMs: 100 }));
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({ audioBase64: 'abc', format: 'mp3', durationMs: 100 })
+    );
     const result = await synthesizeSpeech({ text: 'hello' });
     expect(result.format).toBe('mp3');
   });
@@ -2239,7 +2243,12 @@ describe('Cost Analytics', () => {
     expect(result.recommendations).toEqual([]);
   });
   it('fetchCostHistory', async () => {
-    mockFetch.mockReturnValueOnce(jsonResponse({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } }));
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({
+        records: [],
+        totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+      })
+    );
     const result = await fetchCostHistory({ from: '2025-01-01', provider: 'openai' });
     expect(result.records).toEqual([]);
   });
@@ -2293,7 +2302,11 @@ describe('Group Chat API', () => {
   });
   it('sendGroupChatMessage', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ message: { id: 'm1' } }));
-    const result = await sendGroupChatMessage({ channelId: 'ch1', content: 'hi', senderProfileName: 'user' });
+    const result = await sendGroupChatMessage({
+      channelId: 'ch1',
+      content: 'hi',
+      senderProfileName: 'user',
+    });
     expect(result).toHaveProperty('message');
   });
 });
@@ -2504,7 +2517,12 @@ describe('Reasoning Strategies', () => {
   });
   it('createStrategy', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ id: 's1' }));
-    await createStrategy({ name: 'test', slug: 'test', category: 'analytical', promptPrefix: 'Think step by step' });
+    await createStrategy({
+      name: 'test',
+      slug: 'test',
+      category: 'analytical',
+      promptPrefix: 'Think step by step',
+    });
   });
   it('updateStrategy', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ id: 's1' }));
@@ -2524,7 +2542,15 @@ describe('ATHI API', () => {
   });
   it('createAthiScenario', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ scenario: { id: 'a1' } }));
-    await createAthiScenario({ title: 'Test', actor: 'insider', techniques: [], harms: [], impacts: [], likelihood: 3, severity: 4 });
+    await createAthiScenario({
+      title: 'Test',
+      actor: 'insider',
+      techniques: [],
+      harms: [],
+      impacts: [],
+      likelihood: 3,
+      severity: 4,
+    });
   });
   it('updateAthiScenario', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ scenario: { id: 'a1' } }));
@@ -2627,7 +2653,9 @@ describe('Citation API', () => {
     await updateDocumentProvenance('d1', { accuracy: 0.9 });
   });
   it('fetchGroundingStats', async () => {
-    mockFetch.mockReturnValueOnce(jsonResponse({ averageScore: 0.85, totalMessages: 100, lowGroundingCount: 5 }));
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({ averageScore: 0.85, totalMessages: 100, lowGroundingCount: 5 })
+    );
     await fetchGroundingStats('p1');
   });
 });
@@ -2689,7 +2717,11 @@ describe('Sandbox Scanning', () => {
     expect(result.total).toBe(0);
   });
   it('fetchScanStats', async () => {
-    mockFetch.mockReturnValueOnce(jsonResponse({ stats: { total: 0, byVerdict: {}, bySeverity: {}, avgDurationMs: 0, last24h: 0 } }));
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({
+        stats: { total: 0, byVerdict: {}, bySeverity: {}, avgDurationMs: 0, last24h: 0 },
+      })
+    );
     await fetchScanStats();
   });
   it('fetchScanStats returns fallback on error', async () => {
@@ -2715,7 +2747,9 @@ describe('Sandbox Scanning', () => {
     await deleteQuarantine('q1');
   });
   it('fetchThreatIntelligence', async () => {
-    mockFetch.mockReturnValueOnce(jsonResponse({ patternCount: 10, categories: [], stages: [], patterns: [] }));
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({ patternCount: 10, categories: [], stages: [], patterns: [] })
+    );
     await fetchThreatIntelligence();
   });
   it('fetchThreatIntelligence returns fallback on error', async () => {
@@ -2737,7 +2771,9 @@ describe('Sandbox Scanning', () => {
 // ── Editor Search & Replace ──────────────────────────────────
 describe('Editor API', () => {
   it('searchFiles', async () => {
-    mockFetch.mockReturnValueOnce(jsonResponse({ matches: [], fileCount: 0, matchCount: 0, truncated: false }));
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({ matches: [], fileCount: 0, matchCount: 0, truncated: false })
+    );
     const result = await searchFiles({ query: 'foo' });
     expect(result.matchCount).toBe(0);
   });
@@ -2752,7 +2788,13 @@ describe('Editor API', () => {
   });
   it('createAnnotation', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ annotation: { id: 'a1' } }));
-    await createAnnotation({ filePath: '/test.ts', startLine: 1, endLine: 5, selectedText: 'code', label: 'good' } as any);
+    await createAnnotation({
+      filePath: '/test.ts',
+      startLine: 1,
+      endLine: 5,
+      selectedText: 'code',
+      label: 'good',
+    } as any);
   });
   it('deleteAnnotation', async () => {
     mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
@@ -2764,7 +2806,11 @@ describe('Editor API', () => {
   });
   it('fetchInlineCompletion', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ completion: 'console.log()' }));
-    const result = await fetchInlineCompletion({ prefix: 'const x = ', suffix: '', language: 'typescript' });
+    const result = await fetchInlineCompletion({
+      prefix: 'const x = ',
+      suffix: '',
+      language: 'typescript',
+    });
     expect(result.completion).toBe('console.log()');
   });
 });
@@ -2829,7 +2875,12 @@ describe('Preference Pairs API', () => {
   });
   it('createPreferencePair', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ pair: {} }));
-    await createPreferencePair({ prompt: 'Hi', chosen: 'Hello!', rejected: 'Go away', source: 'annotation' } as any);
+    await createPreferencePair({
+      prompt: 'Hi',
+      chosen: 'Hello!',
+      rejected: 'Go away',
+      source: 'annotation',
+    } as any);
   });
   it('deletePreferencePair', async () => {
     mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
@@ -2876,7 +2927,9 @@ describe('Training Experiments API', () => {
     await deleteTrainingExperiment('e1');
   });
   it('diffTrainingExperiments', async () => {
-    mockFetch.mockReturnValueOnce(jsonResponse({ hyperparamDiffs: {}, metricDiffs: {}, lossCurveA: [], lossCurveB: [] }));
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({ hyperparamDiffs: {}, metricDiffs: {}, lossCurveA: [], lossCurveB: [] })
+    );
     await diffTrainingExperiments('e1', 'e2');
   });
 });
@@ -2897,7 +2950,13 @@ describe('Model Deployment API', () => {
   });
   it('createAbTest', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ test: {} }));
-    await createAbTest({ name: 'test', personalityId: 'p1', modelA: 'a', modelB: 'b', trafficPctB: 50 });
+    await createAbTest({
+      name: 'test',
+      personalityId: 'p1',
+      modelA: 'a',
+      modelB: 'b',
+      trafficPctB: 50,
+    });
   });
   it('fetchAbTests', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ tests: [] }));
@@ -2916,7 +2975,9 @@ describe('Model Deployment API', () => {
     await cancelAbTest('t1');
   });
   it('evaluateAbTest', async () => {
-    mockFetch.mockReturnValueOnce(jsonResponse({ winner: 'a', avgQualityA: 0.9, avgQualityB: 0.8, totalA: 100, totalB: 100 }));
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({ winner: 'a', avgQualityA: 0.9, avgQualityB: 0.8, totalA: 100, totalB: 100 })
+    );
     const result = await evaluateAbTest('t1');
     expect(result.winner).toBe('a');
   });
@@ -3080,235 +3141,688 @@ import {
 
 describe('Bulk API coverage tests', () => {
   // Risk API
-  it('fetchRiskTrend', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ points: [] })); await fetchRiskTrend('d1', 30); });
-  it('fetchRiskSummary', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchRiskSummary(); });
-  it('fetchRiskFindings', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ findings: [] })); await fetchRiskFindings(); });
-  it('createRiskFinding', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ id: 'f1' })); await createRiskFinding({} as any); });
-  it('acknowledgeRiskFinding', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await acknowledgeRiskFinding('f1'); });
-  it('resolveRiskFinding', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await resolveRiskFinding('f1'); });
-  it('fetchRiskAssessment', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchRiskAssessment('d1'); });
-  it('runRiskAssessment', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await runRiskAssessment('d1'); });
+  it('fetchRiskTrend', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ points: [] }));
+    await fetchRiskTrend('d1', 30);
+  });
+  it('fetchRiskSummary', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchRiskSummary();
+  });
+  it('fetchRiskFindings', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ findings: [] }));
+    await fetchRiskFindings();
+  });
+  it('createRiskFinding', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'f1' }));
+    await createRiskFinding({} as any);
+  });
+  it('acknowledgeRiskFinding', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await acknowledgeRiskFinding('f1');
+  });
+  it('resolveRiskFinding', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await resolveRiskFinding('f1');
+  });
+  it('fetchRiskAssessment', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchRiskAssessment('d1');
+  });
+  it('runRiskAssessment', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await runRiskAssessment('d1');
+  });
 
   // Department API
-  it('createDepartment', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ id: 'd1' })); await createDepartment({} as any); });
-  it('updateDepartment', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateDepartment('d1', {} as any); });
-  it('deleteDepartment', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deleteDepartment('d1'); });
-  it('fetchDepartmentScorecard', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchDepartmentScorecard('d1'); });
-  it('fetchDepartmentReport', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchDepartmentReport('d1'); });
-  it('snapshotDepartment', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await snapshotDepartment('d1'); });
-  it('fetchHeatmap', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchHeatmap(); });
+  it('createDepartment', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'd1' }));
+    await createDepartment({} as any);
+  });
+  it('updateDepartment', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateDepartment('d1', {} as any);
+  });
+  it('deleteDepartment', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deleteDepartment('d1');
+  });
+  it('fetchDepartmentScorecard', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchDepartmentScorecard('d1');
+  });
+  it('fetchDepartmentReport', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchDepartmentReport('d1');
+  });
+  it('snapshotDepartment', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await snapshotDepartment('d1');
+  });
+  it('fetchHeatmap', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchHeatmap();
+  });
 
   // Register
-  it('createRegisterEntry', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ id: 'r1' })); await createRegisterEntry('d1', {} as any); });
-  it('updateRegisterEntry', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateRegisterEntry('d1', 'r1', {} as any); });
-  it('deleteRegisterEntry', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deleteRegisterEntry('d1', 'r1'); });
-  it('fetchRegisterReport', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchRegisterReport('d1'); });
-  it('downloadRiskReport', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await downloadRiskReport('json'); });
+  it('createRegisterEntry', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'r1' }));
+    await createRegisterEntry('d1', {} as any);
+  });
+  it('updateRegisterEntry', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateRegisterEntry('d1', 'r1', {} as any);
+  });
+  it('deleteRegisterEntry', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deleteRegisterEntry('d1', 'r1');
+  });
+  it('fetchRegisterReport', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchRegisterReport('d1');
+  });
+  it('downloadRiskReport', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await downloadRiskReport('json');
+  });
 
   // Risk Feeds
-  it('fetchRiskFeeds', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ feeds: [] })); await fetchRiskFeeds(); });
-  it('createRiskFeed', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ id: 'f1' })); await createRiskFeed({} as any); });
-  it('deleteRiskFeed', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deleteRiskFeed('f1'); });
-  it('ingestRiskFindings', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await ingestRiskFindings('f1'); });
+  it('fetchRiskFeeds', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ feeds: [] }));
+    await fetchRiskFeeds();
+  });
+  it('createRiskFeed', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'f1' }));
+    await createRiskFeed({} as any);
+  });
+  it('deleteRiskFeed', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deleteRiskFeed('f1');
+  });
+  it('ingestRiskFindings', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await ingestRiskFindings('f1');
+  });
 
   // Community
-  it('fetchCommunityStatus', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchCommunityStatus(); });
-  it('fetchCommunitySwarmTemplates', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ templates: [] })); await fetchCommunitySwarmTemplates(); });
-  it('fetchCommunityWorkflows', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ definitions: [] })); await fetchCommunityWorkflows(); });
-  it('exportSwarmTemplate', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await exportSwarmTemplate('t1'); });
-  it('importSwarmTemplate', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await importSwarmTemplate({} as any); });
+  it('fetchCommunityStatus', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchCommunityStatus();
+  });
+  it('fetchCommunitySwarmTemplates', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ templates: [] }));
+    await fetchCommunitySwarmTemplates();
+  });
+  it('fetchCommunityWorkflows', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ definitions: [] }));
+    await fetchCommunityWorkflows();
+  });
+  it('exportSwarmTemplate', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await exportSwarmTemplate('t1');
+  });
+  it('importSwarmTemplate', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await importSwarmTemplate({} as any);
+  });
 
   // Audit Reports
-  it('fetchAuditReports', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchAuditReports(); });
-  it('fetchAuditReport', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchAuditReport('r1'); });
-  it('approveAuditReport', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await approveAuditReport('r1'); });
-  it('fetchAuditSchedules', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchAuditSchedules(); });
-  it('updateAuditSchedule', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateAuditSchedule('s1', {} as any); });
-  it('exportAuditBackup', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await exportAuditBackup(); });
-  it('repairAuditChain', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await repairAuditChain(); });
+  it('fetchAuditReports', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchAuditReports();
+  });
+  it('fetchAuditReport', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchAuditReport('r1');
+  });
+  it('approveAuditReport', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await approveAuditReport('r1');
+  });
+  it('fetchAuditSchedules', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchAuditSchedules();
+  });
+  it('updateAuditSchedule', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateAuditSchedule('s1', {} as any);
+  });
+  it('exportAuditBackup', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await exportAuditBackup();
+  });
+  it('repairAuditChain', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await repairAuditChain();
+  });
 
   // Replay
-  it('fetchReplayJobs', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ jobs: [] })); await fetchReplayJobs(); });
-  it('fetchReplayJob', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchReplayJob('j1'); });
-  it('createReplayBatch', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ id: 'b1' })); await createReplayBatch({} as any); });
-  it('fetchReplayReport', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchReplayReport('j1'); });
+  it('fetchReplayJobs', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ jobs: [] }));
+    await fetchReplayJobs();
+  });
+  it('fetchReplayJob', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchReplayJob('j1');
+  });
+  it('createReplayBatch', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'b1' }));
+    await createReplayBatch({} as any);
+  });
+  it('fetchReplayReport', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchReplayReport('j1');
+  });
 
   // Branches
-  it('fetchBranches', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ branches: [] })); await fetchBranches('c1'); });
-  it('fetchBranchTree', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchBranchTree('c1'); });
-  it('branchFromMessage', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await branchFromMessage('c1', 'm1'); });
+  it('fetchBranches', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ branches: [] }));
+    await fetchBranches('c1');
+  });
+  it('fetchBranchTree', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchBranchTree('c1');
+  });
+  it('branchFromMessage', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await branchFromMessage('c1', 'm1');
+  });
 
   // Agent Profiles
-  it('fetchAgentProfiles', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ profiles: [] })); await fetchAgentProfiles(); });
-  it('createAgentProfile', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ id: 'p1' })); await createAgentProfile({} as any); });
-  it('updateAgentProfile', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateAgentProfile('p1', {} as any); });
-  it('deleteAgentProfile', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deleteAgentProfile('p1'); });
-  it('fetchProfileSkills', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ skills: [] })); await fetchProfileSkills('p1'); });
-  it('addProfileSkill', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await addProfileSkill('p1', 's1'); });
-  it('removeProfileSkill', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await removeProfileSkill('p1', 's1'); });
+  it('fetchAgentProfiles', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ profiles: [] }));
+    await fetchAgentProfiles();
+  });
+  it('createAgentProfile', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'p1' }));
+    await createAgentProfile({} as any);
+  });
+  it('updateAgentProfile', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateAgentProfile('p1', {} as any);
+  });
+  it('deleteAgentProfile', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deleteAgentProfile('p1');
+  });
+  it('fetchProfileSkills', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ skills: [] }));
+    await fetchProfileSkills('p1');
+  });
+  it('addProfileSkill', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await addProfileSkill('p1', 's1');
+  });
+  it('removeProfileSkill', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await removeProfileSkill('p1', 's1');
+  });
 
   // Ecosystem
-  it('fetchEcosystemServices', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchEcosystemServices(); });
-  it('enableEcosystemService', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await enableEcosystemService('svc1'); });
-  it('disableEcosystemService', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await disableEcosystemService('svc1'); });
-  it('probeEcosystemService', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await probeEcosystemService('svc1'); });
+  it('fetchEcosystemServices', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchEcosystemServices();
+  });
+  it('enableEcosystemService', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await enableEcosystemService('svc1');
+  });
+  it('disableEcosystemService', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await disableEcosystemService('svc1');
+  });
+  it('probeEcosystemService', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await probeEcosystemService('svc1');
+  });
 
   // Extensions
-  it('discoverExtensions', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await discoverExtensions(); });
-  it('fetchExtensionConfig', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchExtensionConfig('ext1'); });
-  it('fetchExtensionWebhooks', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchExtensionWebhooks('ext1'); });
-  it('registerExtensionWebhook', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await registerExtensionWebhook('ext1', {} as any); });
-  it('updateExtensionWebhook', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateExtensionWebhook('ext1', 'wh1', {} as any); });
-  it('removeExtensionWebhook', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await removeExtensionWebhook('ext1', 'wh1'); });
-  it('fetchHookExecutionLog', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchHookExecutionLog('ext1', 'wh1'); });
-  it('testHookPoint', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await testHookPoint('ext1', 'hp1'); });
+  it('discoverExtensions', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await discoverExtensions();
+  });
+  it('fetchExtensionConfig', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchExtensionConfig('ext1');
+  });
+  it('fetchExtensionWebhooks', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchExtensionWebhooks('ext1');
+  });
+  it('registerExtensionWebhook', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await registerExtensionWebhook('ext1', {} as any);
+  });
+  it('updateExtensionWebhook', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateExtensionWebhook('ext1', 'wh1', {} as any);
+  });
+  it('removeExtensionWebhook', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await removeExtensionWebhook('ext1', 'wh1');
+  });
+  it('fetchHookExecutionLog', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchHookExecutionLog('ext1', 'wh1');
+  });
+  it('testHookPoint', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await testHookPoint('ext1', 'hp1');
+  });
 
   // License
-  it('fetchLicenseStatus', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchLicenseStatus(); });
-  it('setLicenseKey', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await setLicenseKey('key123'); });
+  it('fetchLicenseStatus', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchLicenseStatus();
+  });
+  it('setLicenseKey', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await setLicenseKey('key123');
+  });
 
   // Federation
-  it('addFederationPeer', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ peer: {} })); await addFederationPeer({ url: 'http://peer', name: 'p1' } as any); });
-  it('removeFederationPeer', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await removeFederationPeer('peer1'); });
-  it('checkFederationPeerHealth', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await checkFederationPeerHealth('peer1'); });
-  it('updateFederationPeerFeatures', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateFederationPeerFeatures('peer1', ['f1']); });
+  it('addFederationPeer', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ peer: {} }));
+    await addFederationPeer({ url: 'http://peer', name: 'p1' } as any);
+  });
+  it('removeFederationPeer', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await removeFederationPeer('peer1');
+  });
+  it('checkFederationPeerHealth', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await checkFederationPeerHealth('peer1');
+  });
+  it('updateFederationPeerFeatures', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateFederationPeerFeatures('peer1', ['f1']);
+  });
 
   // Execution
-  it('fetchExecutionConfig', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchExecutionConfig(); });
-  it('approveExecution', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await approveExecution('e1'); });
-  it('rejectExecution', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await rejectExecution('e1'); });
-  it('fetchExecutionHistory', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchExecutionHistory(); });
-  it('fetchExecutionSession', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchExecutionSession('e1'); });
+  it('fetchExecutionConfig', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchExecutionConfig();
+  });
+  it('approveExecution', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await approveExecution('e1');
+  });
+  it('rejectExecution', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await rejectExecution('e1');
+  });
+  it('fetchExecutionHistory', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchExecutionHistory();
+  });
+  it('fetchExecutionSession', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchExecutionSession('e1');
+  });
 
   // Computer Use
-  it('fetchComputerUseEpisodes', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ episodes: [] })); await fetchComputerUseEpisodes(); });
-  it('fetchComputerUseStats', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchComputerUseStats(); });
-  it('recordComputerUseEpisode', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await recordComputerUseEpisode({} as any); });
-  it('deleteComputerUseEpisode', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deleteComputerUseEpisode('ep1'); });
+  it('fetchComputerUseEpisodes', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ episodes: [] }));
+    await fetchComputerUseEpisodes();
+  });
+  it('fetchComputerUseStats', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchComputerUseStats();
+  });
+  it('recordComputerUseEpisode', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await recordComputerUseEpisode({} as any);
+  });
+  it('deleteComputerUseEpisode', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deleteComputerUseEpisode('ep1');
+  });
 
   // Analytics
-  it('fetchAnomalies', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchAnomalies(); });
-  it('fetchTopEntities', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchTopEntities(); });
-  it('searchEntities', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await searchEntities('test'); });
-  it('fetchKeyPhrases', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchKeyPhrases(); });
-  it('fetchSentimentTrend', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchSentimentTrend(); });
-  it('fetchEngagementMetrics', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchEngagementMetrics(); });
+  it('fetchAnomalies', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchAnomalies();
+  });
+  it('fetchTopEntities', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchTopEntities();
+  });
+  it('searchEntities', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await searchEntities('test');
+  });
+  it('fetchKeyPhrases', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchKeyPhrases();
+  });
+  it('fetchSentimentTrend', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchSentimentTrend();
+  });
+  it('fetchEngagementMetrics', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchEngagementMetrics();
+  });
 
   // Conversations
-  it('renameConversation', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await renameConversation('c1', 'New Name'); });
-  it('replayConversation', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await replayConversation('c1'); });
+  it('renameConversation', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await renameConversation('c1', 'New Name');
+  });
+  it('replayConversation', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await replayConversation('c1');
+  });
 
   // Training
-  it('exportTrainingDataset', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await exportTrainingDataset('d1'); });
-  it('fetchEvalRunScores', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchEvalRunScores('r1'); });
+  it('exportTrainingDataset', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await exportTrainingDataset('d1');
+  });
+  it('fetchEvalRunScores', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchEvalRunScores('r1');
+  });
 
   // Tasks
-  it('fetchTask', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchTask('t1'); });
+  it('fetchTask', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchTask('t1');
+  });
 
   // Notifications
-  it('deleteNotification', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deleteNotification('n1'); });
-  it('markAllNotificationsRead', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await markAllNotificationsRead(); });
-  it('fetchNotificationCount', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ count: 0 })); await fetchNotificationCount(); });
+  it('deleteNotification', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deleteNotification('n1');
+  });
+  it('markAllNotificationsRead', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await markAllNotificationsRead();
+  });
+  it('fetchNotificationCount', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ count: 0 }));
+    await fetchNotificationCount();
+  });
 
   // Tech Stack
-  it('fetchTechStack', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchTechStack(); });
+  it('fetchTechStack', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchTechStack();
+  });
 
   // Alert Rules
-  it('patchAlertRule', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await patchAlertRule('r1', {} as any); });
-  it('testAlertRule', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await testAlertRule('r1'); });
+  it('patchAlertRule', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await patchAlertRule('r1', {} as any);
+  });
+  it('testAlertRule', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await testAlertRule('r1');
+  });
 
   // Users
-  it('createUser', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ id: 'u1' })); await createUser({} as any); });
-  it('updateUser', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateUser('u1', {} as any); });
-  it('deleteUser', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deleteUser('u1'); });
+  it('createUser', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'u1' }));
+    await createUser({} as any);
+  });
+  it('updateUser', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateUser('u1', {} as any);
+  });
+  it('deleteUser', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deleteUser('u1');
+  });
 
   // Tenant
-  it('updateTenant', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateTenant({} as any); });
-  it('deleteTenant', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deleteTenant(); });
+  it('updateTenant', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateTenant({} as any);
+  });
+  it('deleteTenant', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deleteTenant();
+  });
 
   // OAuth
-  it('fetchOAuthConfig', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchOAuthConfig(); });
-  it('reloadOAuthConfig', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await reloadOAuthConfig(); });
-  it('fetchOAuthTokens', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchOAuthTokens(); });
-  it('revokeOAuthToken', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await revokeOAuthToken('t1'); });
-  it('refreshOAuthToken', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await refreshOAuthToken('t1'); });
-  it('claimGmailOAuth', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await claimGmailOAuth('code1'); });
+  it('fetchOAuthConfig', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchOAuthConfig();
+  });
+  it('reloadOAuthConfig', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await reloadOAuthConfig();
+  });
+  it('fetchOAuthTokens', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchOAuthTokens();
+  });
+  it('revokeOAuthToken', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await revokeOAuthToken('t1');
+  });
+  it('refreshOAuthToken', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await refreshOAuthToken('t1');
+  });
+  it('claimGmailOAuth', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await claimGmailOAuth('code1');
+  });
 
   // Peer Marketplace
-  it('fetchPeerMarketplace', async () => { mockFetch.mockReturnValueOnce(jsonResponse({ skills: [] })); await fetchPeerMarketplace(); });
-  it('installSkillFromPeer', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await installSkillFromPeer('peer1', 's1'); });
+  it('fetchPeerMarketplace', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ skills: [] }));
+    await fetchPeerMarketplace();
+  });
+  it('installSkillFromPeer', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await installSkillFromPeer('peer1', 's1');
+  });
 
   // A2A
-  it('fetchA2AConfig', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchA2AConfig(); });
-  it('updateA2ATrust', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateA2ATrust('peer1', {} as any); });
-  it('delegateA2ATask', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await delegateA2ATask({} as any); });
-  it('fetchA2AMessages', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchA2AMessages('t1'); });
+  it('fetchA2AConfig', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchA2AConfig();
+  });
+  it('updateA2ATrust', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateA2ATrust('peer1', {} as any);
+  });
+  it('delegateA2ATask', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await delegateA2ATask({} as any);
+  });
+  it('fetchA2AMessages', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchA2AMessages('t1');
+  });
 
   // Delegation
-  it('fetchDelegation', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchDelegation('d1'); });
-  it('fetchDelegationMessages', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchDelegationMessages('d1'); });
+  it('fetchDelegation', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchDelegation('d1');
+  });
+  it('fetchDelegationMessages', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchDelegationMessages('d1');
+  });
 
   // Bullshift
-  it('fetchBullshiftAccount', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchBullshiftAccount(); });
-  it('fetchBullshiftHealth', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchBullshiftHealth(); });
-  it('fetchBullshiftPositions', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchBullshiftPositions(); });
-  it('fetchMarketQuote', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchMarketQuote('AAPL'); });
-  it('fetchMarketSearch', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchMarketSearch('AAPL'); });
-  it('fetchMarketHistorical', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchMarketHistorical('AAPL'); });
+  it('fetchBullshiftAccount', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchBullshiftAccount();
+  });
+  it('fetchBullshiftHealth', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchBullshiftHealth();
+  });
+  it('fetchBullshiftPositions', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchBullshiftPositions();
+  });
+  it('fetchMarketQuote', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchMarketQuote('AAPL');
+  });
+  it('fetchMarketSearch', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchMarketSearch('AAPL');
+  });
+  it('fetchMarketHistorical', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchMarketHistorical('AAPL');
+  });
 
   // Export/Import bundles
-  it('downloadReport', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await downloadReport('r1', 'json'); });
-  it('exportPersonalityBundle', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await exportPersonalityBundle('p1'); });
-  it('importPersonalityBundle', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await importPersonalityBundle({} as any); });
-  it('exportWorkflow', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await exportWorkflow('w1'); });
-  it('importWorkflow', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await importWorkflow({} as any); });
+  it('downloadReport', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await downloadReport('r1', 'json');
+  });
+  it('exportPersonalityBundle', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await exportPersonalityBundle('p1');
+  });
+  it('importPersonalityBundle', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await importPersonalityBundle({} as any);
+  });
+  it('exportWorkflow', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await exportWorkflow('w1');
+  });
+  it('importWorkflow', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await importWorkflow({} as any);
+  });
 
   // Memory
-  it('fetchMemoryHealth', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchMemoryHealth(); });
-  it('triggerMemoryAudit', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await triggerMemoryAudit(); });
-  it('triggerSummarize', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await triggerSummarize('c1'); });
-  it('updateExternalBrainConfig', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateExternalBrainConfig({} as any); });
+  it('fetchMemoryHealth', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchMemoryHealth();
+  });
+  it('triggerMemoryAudit', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await triggerMemoryAudit();
+  });
+  it('triggerSummarize', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await triggerSummarize('c1');
+  });
+  it('updateExternalBrainConfig', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateExternalBrainConfig({} as any);
+  });
 
   // Ollama
-  it('fetchOllamaPull', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchOllamaPull('llama3'); });
-  it('deleteOllamaModel', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deleteOllamaModel('llama3'); });
+  it('fetchOllamaPull', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchOllamaPull('llama3');
+  });
+  it('deleteOllamaModel', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deleteOllamaModel('llama3');
+  });
 
   // Finetune
-  it('registerFinetuneAdapter', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await registerFinetuneAdapter({} as any); });
-  it('runDistillationJob', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await runDistillationJob({} as any); });
+  it('registerFinetuneAdapter', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await registerFinetuneAdapter({} as any);
+  });
+  it('runDistillationJob', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await runDistillationJob({} as any);
+  });
 
   // Swarm Templates
-  it('updateSwarmTemplate', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateSwarmTemplate('t1', {} as any); });
+  it('updateSwarmTemplate', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateSwarmTemplate('t1', {} as any);
+  });
 
   // Terminal
-  it('executeTerminalCommand', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await executeTerminalCommand('ls'); });
+  it('executeTerminalCommand', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await executeTerminalCommand('ls');
+  });
 
   // Pairwise
-  it('fetchPairwiseComparisons', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await fetchPairwiseComparisons(); });
-  it('fetchPairwiseDetails', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await fetchPairwiseDetails('c1'); });
-  it('runPairwiseComparison', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await runPairwiseComparison({} as any); });
-  it('runPointwiseEval', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await runPointwiseEval({} as any); });
+  it('fetchPairwiseComparisons', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchPairwiseComparisons();
+  });
+  it('fetchPairwiseDetails', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await fetchPairwiseDetails('c1');
+  });
+  it('runPairwiseComparison', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await runPairwiseComparison({} as any);
+  });
+  it('runPointwiseEval', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await runPointwiseEval({} as any);
+  });
 
   // Personality Avatar
-  it('uploadPersonalityAvatar', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await uploadPersonalityAvatar('p1', new File([''], 'avatar.png')); });
-  it('deletePersonalityAvatar', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deletePersonalityAvatar('p1'); });
+  it('uploadPersonalityAvatar', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await uploadPersonalityAvatar('p1', new File([''], 'avatar.png'));
+  });
+  it('deletePersonalityAvatar', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deletePersonalityAvatar('p1');
+  });
 
   // Proactive
-  it('enableBuiltinTrigger', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await enableBuiltinTrigger('t1'); });
-  it('updateProactiveTrigger', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateProactiveTrigger('t1', {} as any); });
-  it('testProactiveTrigger', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await testProactiveTrigger('t1'); });
-  it('approveProactiveSuggestion', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await approveProactiveSuggestion('s1'); });
-  it('dismissProactiveSuggestion', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await dismissProactiveSuggestion('s1'); });
-  it('clearExpiredSuggestions', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await clearExpiredSuggestions(); });
+  it('enableBuiltinTrigger', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await enableBuiltinTrigger('t1');
+  });
+  it('updateProactiveTrigger', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateProactiveTrigger('t1', {} as any);
+  });
+  it('testProactiveTrigger', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await testProactiveTrigger('t1');
+  });
+  it('approveProactiveSuggestion', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await approveProactiveSuggestion('s1');
+  });
+  it('dismissProactiveSuggestion', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await dismissProactiveSuggestion('s1');
+  });
+  it('clearExpiredSuggestions', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await clearExpiredSuggestions();
+  });
 
   // Worktrees
-  it('listWorktrees', async () => { mockFetch.mockReturnValueOnce(jsonResponse([])); await listWorktrees(); });
-  it('createWorktree', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await createWorktree({} as any); });
-  it('deleteWorktree', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await deleteWorktree('w1'); });
+  it('listWorktrees', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await listWorktrees();
+  });
+  it('createWorktree', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await createWorktree({} as any);
+  });
+  it('deleteWorktree', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await deleteWorktree('w1');
+  });
 
   // CI/CD
-  it('updateCicdConfig', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await updateCicdConfig({} as any); });
+  it('updateCicdConfig', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateCicdConfig({} as any);
+  });
 
   // Backup
-  it('downloadBackup', async () => { mockFetch.mockReturnValueOnce(jsonResponse({})); await downloadBackup('b1'); });
+  it('downloadBackup', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await downloadBackup('b1');
+  });
 });

@@ -190,9 +190,7 @@ describe('usePushToTalk', () => {
   });
 
   it('should set error when getUserMedia fails', async () => {
-    (navigator.mediaDevices.getUserMedia as any).mockRejectedValue(
-      new Error('Permission denied')
-    );
+    (navigator.mediaDevices.getUserMedia as any).mockRejectedValue(new Error('Permission denied'));
 
     const { result } = renderHook(() => usePushToTalk());
 

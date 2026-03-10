@@ -196,10 +196,7 @@ describe('RiskTrendChart', () => {
     });
 
     renderWithProviders(
-      <RiskTrendChart
-        departmentId="d1"
-        compareDepartments={[{ id: 'd2', name: 'Empty Dept' }]}
-      />
+      <RiskTrendChart departmentId="d1" compareDepartments={[{ id: 'd2', name: 'Empty Dept' }]} />
     );
 
     await waitFor(() => {

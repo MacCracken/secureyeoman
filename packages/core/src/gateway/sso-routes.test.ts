@@ -107,9 +107,10 @@ describe('SSO Routes — authorization flow', () => {
       url: '/api/v1/auth/sso/authorize/idp-1',
       headers: { 'x-forwarded-proto': 'http', host: 'proxy.example.com' },
     });
+    // allowedHost is derived from dashboardUrl ('https://app.example.com/dashboard') not the request host
     expect(getAuthorizationUrl).toHaveBeenCalledWith(
       'idp-1',
-      'http://proxy.example.com/api/v1/auth/sso/callback/idp-1',
+      'http://app.example.com/api/v1/auth/sso/callback/idp-1',
       undefined
     );
   });
@@ -124,9 +125,10 @@ describe('SSO Routes — authorization flow', () => {
       url: '/api/v1/auth/sso/authorize/idp-1',
       headers: { 'x-forwarded-proto': 'https', host: 'secure.example.com' },
     });
+    // allowedHost is derived from dashboardUrl, not the request host header
     expect(getAuthorizationUrl).toHaveBeenCalledWith(
       'idp-1',
-      'https://secure.example.com/api/v1/auth/sso/callback/idp-1',
+      'https://app.example.com/api/v1/auth/sso/callback/idp-1',
       undefined
     );
   });

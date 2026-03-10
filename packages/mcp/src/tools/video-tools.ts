@@ -67,19 +67,12 @@ export function registerVideoStreamTools(
           .max(1800)
           .optional()
           .describe('Maximum duration in seconds (default: 600, max: 1800)'),
-        deviceId: z
-          .string()
-          .optional()
-          .describe('Camera device ID (for local_camera source)'),
+        deviceId: z.string().optional().describe('Camera device ID (for local_camera source)'),
         enableVisionAnalysis: z
           .boolean()
           .optional()
           .describe('Enable AI vision analysis on frames (default: false)'),
-        visionPrompt: z
-          .string()
-          .max(1000)
-          .optional()
-          .describe('Custom prompt for vision analysis'),
+        visionPrompt: z.string().max(1000).optional().describe('Custom prompt for vision analysis'),
         visionAnalyzeEveryN: z
           .number()
           .int()
@@ -90,14 +83,18 @@ export function registerVideoStreamTools(
       },
     },
     wrapToolHandler('video_stream_start', middleware, async (args) => {
-      if (!guard()) return { content: [{ type: 'text' as const, text: NOT_ENABLED_MSG }], isError: true };
+      if (!guard())
+        return { content: [{ type: 'text' as const, text: NOT_ENABLED_MSG }], isError: true };
       try {
         const result = await client.post('/api/v1/video/stream/start', args);
         await middleware.auditLogger.log({
           event: 'video_stream_start',
           level: 'info',
           message: `Video stream started: ${(args as Record<string, unknown>).source}`,
-          metadata: { tool: 'video_stream_start', source: (args as Record<string, unknown>).source },
+          metadata: {
+            tool: 'video_stream_start',
+            source: (args as Record<string, unknown>).source,
+          },
         });
         return textResponse(result);
       } catch (err) {
@@ -117,7 +114,8 @@ export function registerVideoStreamTools(
       },
     },
     wrapToolHandler('video_stream_stop', middleware, async (args) => {
-      if (!guard()) return { content: [{ type: 'text' as const, text: NOT_ENABLED_MSG }], isError: true };
+      if (!guard())
+        return { content: [{ type: 'text' as const, text: NOT_ENABLED_MSG }], isError: true };
       try {
         const { sessionId } = args as { sessionId: string };
         const result = await client.post(`/api/v1/video/stream/${sessionId}/stop`, {});
@@ -139,11 +137,13 @@ export function registerVideoStreamTools(
   server.registerTool(
     'video_stream_sessions',
     {
-      description: 'List all active video streaming sessions with their status, source, FPS, and frame count.',
+      description:
+        'List all active video streaming sessions with their status, source, FPS, and frame count.',
       inputSchema: {},
     },
     wrapToolHandler('video_stream_sessions', middleware, async () => {
-      if (!guard()) return { content: [{ type: 'text' as const, text: NOT_ENABLED_MSG }], isError: true };
+      if (!guard())
+        return { content: [{ type: 'text' as const, text: NOT_ENABLED_MSG }], isError: true };
       try {
         const result = await client.get('/api/v1/video/stream/sessions');
         return textResponse(result);
@@ -163,7 +163,8 @@ export function registerVideoStreamTools(
       inputSchema: {},
     },
     wrapToolHandler('video_stream_sources', middleware, async () => {
-      if (!guard()) return { content: [{ type: 'text' as const, text: NOT_ENABLED_MSG }], isError: true };
+      if (!guard())
+        return { content: [{ type: 'text' as const, text: NOT_ENABLED_MSG }], isError: true };
       try {
         const result = await client.get('/api/v1/video/stream/sources');
         return textResponse(result);
@@ -185,7 +186,8 @@ export function registerVideoStreamTools(
       },
     },
     wrapToolHandler('video_stream_snapshot', middleware, async (args) => {
-      if (!guard()) return { content: [{ type: 'text' as const, text: NOT_ENABLED_MSG }], isError: true };
+      if (!guard())
+        return { content: [{ type: 'text' as const, text: NOT_ENABLED_MSG }], isError: true };
       try {
         const { sessionId } = args as { sessionId: string };
         const result = await client.get(`/api/v1/video/stream/${sessionId}`);

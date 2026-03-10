@@ -116,10 +116,7 @@ export class AgnosVideoBridge {
 
   // ── Recording lifecycle ──────────────────────────────────────────────────
 
-  async startRecording(opts?: {
-    fps?: number;
-    agentId?: string;
-  }): Promise<AgnosRecordingSession> {
+  async startRecording(opts?: { fps?: number; agentId?: string }): Promise<AgnosRecordingSession> {
     const body = {
       agent_id: opts?.agentId ?? this.agentId,
       fps: opts?.fps ?? 10,
@@ -197,11 +194,7 @@ export class AgnosVideoBridge {
 
   // ── Internal fetch ───────────────────────────────────────────────────────
 
-  private async fetch(
-    path: string,
-    method: 'GET' | 'POST',
-    body?: unknown
-  ): Promise<Response> {
+  private async fetch(path: string, method: 'GET' | 'POST', body?: unknown): Promise<Response> {
     const url = `${this.baseUrl}${path}`;
 
     // SSRF guard — only allow localhost for AGNOS runtime
@@ -212,7 +205,7 @@ export class AgnosVideoBridge {
     }
 
     const headers: Record<string, string> = {
-      'Accept': 'application/json',
+      Accept: 'application/json',
     };
     if (this.apiKey) {
       headers['X-API-Key'] = this.apiKey;
@@ -229,7 +222,10 @@ export class AgnosVideoBridge {
         signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch (err) {
-      this.logger.warn({ url: path, error: errorToString(err) }, 'AGNOS video bridge request failed');
+      this.logger.warn(
+        { url: path, error: errorToString(err) },
+        'AGNOS video bridge request failed'
+      );
       throw new Error(`AGNOS video bridge: ${errorToString(err)}`);
     }
   }

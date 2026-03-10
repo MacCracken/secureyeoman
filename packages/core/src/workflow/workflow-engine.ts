@@ -465,9 +465,18 @@ export class WorkflowEngine {
           try {
             const cmdStr = String(cfg.command);
             const parts = cmdStr.split(/\s+/).filter(Boolean);
-            const ALLOWED_DETERMINISTIC_CMDS = new Set(['echo', 'date', 'curl', 'jq', 'python3', 'node']);
+            const ALLOWED_DETERMINISTIC_CMDS = new Set([
+              'echo',
+              'date',
+              'curl',
+              'jq',
+              'python3',
+              'node',
+            ]);
             if (!ALLOWED_DETERMINISTIC_CMDS.has(parts[0]!)) {
-              throw new Error(`Deterministic command '${parts[0]}' is not in the allowed commands list`);
+              throw new Error(
+                `Deterministic command '${parts[0]}' is not in the allowed commands list`
+              );
             }
             const timeoutMs = Number(cfg.timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS);
             const stdout = execFileSync(parts[0]!, parts.slice(1), {

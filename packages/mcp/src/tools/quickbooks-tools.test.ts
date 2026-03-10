@@ -89,7 +89,8 @@ function mockFetchForQbo(apiBody: unknown = {}): void {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () => Promise.resolve({ access_token: 'test-token-' + Date.now(), expires_in: 3600 }),
+          json: () =>
+            Promise.resolve({ access_token: 'test-token-' + Date.now(), expires_in: 3600 }),
           text: () => Promise.resolve(''),
         });
       }
@@ -132,8 +133,17 @@ describe('quickbooks-tools', () => {
 
     const registered = spy.mock.calls.map((c) => c[0] as string);
     const entities = [
-      'account', 'bill', 'billpayment', 'customer', 'employee',
-      'estimate', 'invoice', 'item', 'journalentry', 'purchase', 'vendor',
+      'account',
+      'bill',
+      'billpayment',
+      'customer',
+      'employee',
+      'estimate',
+      'invoice',
+      'item',
+      'journalentry',
+      'purchase',
+      'vendor',
     ];
     for (const e of entities) {
       for (const op of ['create', 'get', 'search', 'update']) {
@@ -168,7 +178,11 @@ describe('quickbooks-tools', () => {
 
   describe('qbo_health', () => {
     it('returns disabled message when feature is off', async () => {
-      registerQuickBooksTools(server, makeConfig({ exposeQuickBooksTools: false }), noopMiddleware());
+      registerQuickBooksTools(
+        server,
+        makeConfig({ exposeQuickBooksTools: false }),
+        noopMiddleware()
+      );
       const handler = globalToolRegistry.get('qbo_health')!;
       expect(handler).toBeDefined();
       const result = await handler({});
@@ -302,7 +316,8 @@ describe('quickbooks-tools', () => {
             return Promise.resolve({
               ok: true,
               status: 200,
-              json: () => Promise.resolve({ access_token: 'tok-err-' + Date.now(), expires_in: 3600 }),
+              json: () =>
+                Promise.resolve({ access_token: 'tok-err-' + Date.now(), expires_in: 3600 }),
               text: () => Promise.resolve(''),
             });
           }
@@ -334,7 +349,8 @@ describe('quickbooks-tools', () => {
             return Promise.resolve({
               ok: true,
               status: 200,
-              json: () => Promise.resolve({ access_token: 'tok-nj-' + Date.now(), expires_in: 3600 }),
+              json: () =>
+                Promise.resolve({ access_token: 'tok-nj-' + Date.now(), expires_in: 3600 }),
               text: () => Promise.resolve(''),
             });
           }
@@ -356,7 +372,11 @@ describe('quickbooks-tools', () => {
 
   describe('disabled stubs', () => {
     it('disabled entity stubs return error when invoked', async () => {
-      registerQuickBooksTools(server, makeConfig({ exposeQuickBooksTools: false }), noopMiddleware());
+      registerQuickBooksTools(
+        server,
+        makeConfig({ exposeQuickBooksTools: false }),
+        noopMiddleware()
+      );
       // When disabled, the shared disabled handler is registered for all entity tools
       // It returns a generic error response
       const handler = globalToolRegistry.get('qbo_account_disabled')!;

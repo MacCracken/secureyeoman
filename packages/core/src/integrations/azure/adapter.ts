@@ -130,7 +130,10 @@ export class AzureDevOpsIntegration implements WebhookIntegration {
 
     if (!resp.ok) {
       const err = await resp.text();
-      this.logger?.warn({ error: err, statusCode: resp.status }, 'Azure DevOps comment post failed');
+      this.logger?.warn(
+        { error: err, statusCode: resp.status },
+        'Azure DevOps comment post failed'
+      );
       throw new Error(`Failed to post Azure DevOps comment (HTTP ${resp.status})`);
     }
 

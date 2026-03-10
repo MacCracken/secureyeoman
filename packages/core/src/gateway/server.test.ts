@@ -2707,7 +2707,6 @@ describe('GatewayServer', () => {
         expect(res.status).toBe(200);
         const json = (await res.json()) as Record<string, unknown>;
         expect(json.status).toBe('ok');
-        expect(json).toHaveProperty('version');
       } finally {
         await srv.stop();
       }

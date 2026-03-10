@@ -233,7 +233,10 @@ describe('twitter-tools', () => {
   });
 
   it('returns JSON response on success', async () => {
-    (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({ username: 'test_user', followers: 100 });
+    (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({
+      username: 'test_user',
+      followers: 100,
+    });
     const handler = globalToolRegistry.get('twitter_profile')!;
     const result = await handler({});
     const parsed = JSON.parse(result.content[0].text);

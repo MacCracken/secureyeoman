@@ -63,10 +63,10 @@ describe('jira-tools', () => {
     const handler = globalToolRegistry.get('jira_search_issues')!;
     const result = await handler({ jql: 'project = PROJ AND status = Open', maxResults: 50 });
     expect(result.isError).toBeFalsy();
-    expect(client.get).toHaveBeenCalledWith(
-      '/api/v1/integrations/jira/issues/search',
-      { jql: 'project = PROJ AND status = Open', maxResults: '50' }
-    );
+    expect(client.get).toHaveBeenCalledWith('/api/v1/integrations/jira/issues/search', {
+      jql: 'project = PROJ AND status = Open',
+      maxResults: '50',
+    });
   });
 
   // ── jira_get_issue ─────────────────────────────────────────
@@ -75,10 +75,7 @@ describe('jira-tools', () => {
     const handler = globalToolRegistry.get('jira_get_issue')!;
     const result = await handler({ issueKey: 'PROJ-123' });
     expect(result.isError).toBeFalsy();
-    expect(client.get).toHaveBeenCalledWith(
-      '/api/v1/integrations/jira/issues/PROJ-123',
-      undefined
-    );
+    expect(client.get).toHaveBeenCalledWith('/api/v1/integrations/jira/issues/PROJ-123', undefined);
   });
 
   // ── jira_create_issue ──────────────────────────────────────
@@ -133,10 +130,10 @@ describe('jira-tools', () => {
     const handler = globalToolRegistry.get('jira_create_comment')!;
     const result = await handler({ issueKey: 'PROJ-123', body: 'A comment' });
     expect(result.isError).toBeFalsy();
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/integrations/jira/issues/PROJ-123/comments',
-      { issueKey: 'PROJ-123', body: 'A comment' }
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/integrations/jira/issues/PROJ-123/comments', {
+      issueKey: 'PROJ-123',
+      body: 'A comment',
+    });
   });
 
   // ── jira_list_projects ─────────────────────────────────────
@@ -145,10 +142,7 @@ describe('jira-tools', () => {
     const handler = globalToolRegistry.get('jira_list_projects')!;
     const result = await handler({});
     expect(result.isError).toBeFalsy();
-    expect(client.get).toHaveBeenCalledWith(
-      '/api/v1/integrations/jira/projects',
-      undefined
-    );
+    expect(client.get).toHaveBeenCalledWith('/api/v1/integrations/jira/projects', undefined);
   });
 
   // ── jira_get_transitions ───────────────────────────────────

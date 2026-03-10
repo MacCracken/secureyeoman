@@ -343,9 +343,27 @@ describe('AutonomyTab', () => {
       name: 'Test Audit',
       status: 'in_progress',
       items: [
-        { id: 'item-1', section: 'A', text: 'Verify all L5 items are inventoried', status: 'pending', note: '' },
-        { id: 'item-2', section: 'A', text: 'Confirm naming conventions', status: 'pending', note: '' },
-        { id: 'item-3', section: 'B', text: 'Review level assignments', status: 'pending', note: '' },
+        {
+          id: 'item-1',
+          section: 'A',
+          text: 'Verify all L5 items are inventoried',
+          status: 'pending',
+          note: '',
+        },
+        {
+          id: 'item-2',
+          section: 'A',
+          text: 'Confirm naming conventions',
+          status: 'pending',
+          note: '',
+        },
+        {
+          id: 'item-3',
+          section: 'B',
+          text: 'Review level assignments',
+          status: 'pending',
+          note: '',
+        },
       ],
     };
     mockCreateRun.mockResolvedValue(runData as any);
@@ -380,9 +398,7 @@ describe('AutonomyTab', () => {
       id: 'run-x',
       name: 'Nav Test',
       status: 'in_progress',
-      items: [
-        { id: 'item-1', section: 'A', text: 'Item A1', status: 'pending', note: '' },
-      ],
+      items: [{ id: 'item-1', section: 'A', text: 'Item A1', status: 'pending', note: '' }],
     };
     mockCreateRun.mockResolvedValue(runData as any);
     mockFetchRun.mockResolvedValue(runData as any);
@@ -449,9 +465,7 @@ describe('AutonomyTab', () => {
       name: 'Report Audit',
       status: 'completed',
       reportMarkdown: '# Report\nDetailed findings here.',
-      items: [
-        { id: 'i1', section: 'A', text: 'Check', status: 'pass', note: '' },
-      ],
+      items: [{ id: 'i1', section: 'A', text: 'Check', status: 'pass', note: '' }],
     } as any);
 
     const user = userEvent.setup();

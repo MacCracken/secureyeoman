@@ -153,10 +153,7 @@ describe('linear-tools', () => {
     const handler = globalToolRegistry.get('linear_list_teams')!;
     const result = await handler({});
     expect(result.isError).toBeFalsy();
-    expect(client.get).toHaveBeenCalledWith(
-      '/api/v1/integrations/linear/teams',
-      undefined
-    );
+    expect(client.get).toHaveBeenCalledWith('/api/v1/integrations/linear/teams', undefined);
   });
 
   // ── linear_search_issues ────────────────────────────────────────
@@ -182,7 +179,9 @@ describe('linear-tools', () => {
   });
 
   it('returns JSON response on success', async () => {
-    (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({ issues: [{ id: '1', title: 'Test' }] });
+    (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({
+      issues: [{ id: '1', title: 'Test' }],
+    });
     const handler = globalToolRegistry.get('linear_list_issues')!;
     const result = await handler({});
     const parsed = JSON.parse(result.content[0].text);
@@ -195,7 +194,7 @@ describe('linear-tools', () => {
   it('returns rate limit error when rate limiter blocks', async () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     const mw = noopMiddleware();
-    mw.rateLimiter.check = () => ({ allowed: false, retryAfterMs: 5000 } as any);
+    mw.rateLimiter.check = () => ({ allowed: false, retryAfterMs: 5000 }) as any;
     registerLinearTools(server, client, mw);
 
     const handler = globalToolRegistry.get('linear_list_issues')!;
@@ -210,7 +209,7 @@ describe('linear-tools', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     const mw = noopMiddleware();
     mw.inputValidator.validate = () =>
-      ({ valid: false, blocked: true, blockReason: 'Injection detected', warnings: [] } as any);
+      ({ valid: false, blocked: true, blockReason: 'Injection detected', warnings: [] }) as any;
     registerLinearTools(server, client, mw);
 
     const handler = globalToolRegistry.get('linear_list_issues')!;
