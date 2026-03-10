@@ -146,9 +146,7 @@ export class PolicyBundleStore extends PgBaseStorage {
   }
 
   async listDeployments(bundleName?: string, limit = 50): Promise<PolicyDeployment[]> {
-    const { where, values, nextIdx } = buildWhere([
-      { column: 'bundle_name', value: bundleName },
-    ]);
+    const { where, values, nextIdx } = buildWhere([{ column: 'bundle_name', value: bundleName }]);
 
     const rows = await this.queryMany<Record<string, unknown>>(
       `SELECT * FROM policy_as_code.deployments ${where}

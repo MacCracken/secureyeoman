@@ -89,11 +89,7 @@ export function registerPolicyAsCodeRoutes(
           })),
         });
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Sync failed: ${errorToString(err)}`
-        );
+        return sendError(reply, 500, `Sync failed: ${errorToString(err)}`);
       }
     }
   );
@@ -212,11 +208,7 @@ export function registerPolicyAsCodeRoutes(
         });
         return reply.send(result);
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Evaluation failed: ${errorToString(err)}`
-        );
+        return sendError(reply, 500, `Evaluation failed: ${errorToString(err)}`);
       }
     }
   );

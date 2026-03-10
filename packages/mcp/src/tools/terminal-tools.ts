@@ -19,7 +19,8 @@ import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler, errorResponse, jsonResponse } from './tool-utils.js';
 
-const TERMINAL_DISABLED_MSG = 'Terminal tools are disabled. Set MCP_EXPOSE_TERMINAL=true to enable.';
+const TERMINAL_DISABLED_MSG =
+  'Terminal tools are disabled. Set MCP_EXPOSE_TERMINAL=true to enable.';
 
 function disabled() {
   return errorResponse(TERMINAL_DISABLED_MSG);

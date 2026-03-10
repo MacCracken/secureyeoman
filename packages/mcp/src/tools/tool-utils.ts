@@ -118,10 +118,7 @@ export function errorResponse(message: string): ToolResult {
  *   `if (!ok) return errorResponse(\`… failed: HTTP ${status}\n${JSON.stringify(body)}\`)`
  * boilerplate across tool files.
  */
-export function checkHttpOk(
-  result: HttpResult,
-  context: string
-): ToolResult | null {
+export function checkHttpOk(result: HttpResult, context: string): ToolResult | null {
   if (result.ok) return null;
   return errorResponse(`${context}: HTTP ${result.status}\n${JSON.stringify(result.body)}`);
 }
@@ -187,10 +184,7 @@ export async function parseResponseBody(res: Response): Promise<unknown> {
  * Eliminates the repeated get/post/put/delete helpers in agnos-tools,
  * agnostic-tools, trading-tools, etc.
  */
-export function createHttpClient(
-  baseUrl: string,
-  defaultHeaders: Record<string, string> = {}
-) {
+export function createHttpClient(baseUrl: string, defaultHeaders: Record<string, string> = {}) {
   const base = baseUrl.replace(/\/$/, '');
   const headers = { 'Content-Type': 'application/json', ...defaultHeaders };
 

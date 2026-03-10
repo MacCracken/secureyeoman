@@ -189,7 +189,11 @@ export class SraStorage extends PgBaseStorage {
     const { provider, framework, status, orgId, limit = 50, offset = 0 } = opts;
 
     // orgId uses a special OR clause, so handle it separately from buildWhere
-    const { where: baseWhere, values, nextIdx } = buildWhere([
+    const {
+      where: baseWhere,
+      values,
+      nextIdx,
+    } = buildWhere([
       { column: 'provider', value: provider },
       { column: 'framework', value: framework },
       { column: 'status', value: status },

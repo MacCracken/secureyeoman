@@ -2122,6 +2122,38 @@ export async function updateMcpConfig(
   });
 }
 
+// ─── Ecosystem Services ────────────────────────────────────
+
+export interface EcosystemServiceInfo {
+  id: string;
+  displayName: string;
+  description: string;
+  url: string;
+  status: 'disconnected' | 'connected' | 'unreachable' | 'error';
+  enabled: boolean;
+  lastProbeAt: number | null;
+  lastProbeLatencyMs: number | null;
+  error: string | null;
+  secretsProvisioned: boolean;
+}
+
+export async function fetchEcosystemServices(): Promise<EcosystemServiceInfo[]> {
+  const res = await request<{ services: EcosystemServiceInfo[] }>('/ecosystem/services');
+  return res.services;
+}
+
+export async function probeEcosystemService(id: string): Promise<EcosystemServiceInfo> {
+  return request(`/ecosystem/services/${encodeURIComponent(id)}/probe`, { method: 'POST' });
+}
+
+export async function enableEcosystemService(id: string): Promise<EcosystemServiceInfo> {
+  return request(`/ecosystem/services/${encodeURIComponent(id)}/enable`, { method: 'POST' });
+}
+
+export async function disableEcosystemService(id: string): Promise<EcosystemServiceInfo> {
+  return request(`/ecosystem/services/${encodeURIComponent(id)}/disable`, { method: 'POST' });
+}
+
 // ─── Trading & Market Data ──────────────────────────────────
 
 export interface MarketQuoteResponse {

@@ -454,16 +454,17 @@ describe('initCommand', () => {
       expect(content).not.toContain('# This is a comment');
     });
 
-    it('generates all 4 security keys and displays them', async () => {
+    it('generates all 5 security keys and displays them', async () => {
       const ctx = makeCtx(['--non-interactive']);
       await initCommand.run(ctx as any);
-      expect(mockGenerateSecretKey).toHaveBeenCalledWith(32); // signing
+      expect(mockGenerateSecretKey).toHaveBeenCalledWith(32);
       expect(mockGenerateSecretKey).toHaveBeenCalledWith(16); // admin password
       const out = ctx.out.join('');
       expect(out).toContain('SECUREYEOMAN_SIGNING_KEY');
       expect(out).toContain('SECUREYEOMAN_TOKEN_SECRET');
       expect(out).toContain('SECUREYEOMAN_ENCRYPTION_KEY');
       expect(out).toContain('SECUREYEOMAN_ADMIN_PASSWORD');
+      expect(out).toContain('SECUREYEOMAN_WEBHOOK_SECRET');
     });
 
     it('only writes ADMIN_PASSWORD to .env (crypto keys are auto-managed)', async () => {
@@ -841,9 +842,19 @@ describe('initCommand', () => {
       const ctx = makeCtx(['--non-interactive', '--vault']);
       const code = await initCommand.run(ctx as any);
       expect(code).toBe(0);
-      expect(mockVaultSet).toHaveBeenCalledTimes(4);
-      expect(mockVaultSet).toHaveBeenCalledWith('secureyeoman/SECUREYEOMAN_ADMIN_PASSWORD', expect.any(String));
-      expect(mockVaultSet).toHaveBeenCalledWith('secureyeoman/SECUREYEOMAN_SIGNING_KEY', expect.any(String));
+      expect(mockVaultSet).toHaveBeenCalledTimes(5);
+      expect(mockVaultSet).toHaveBeenCalledWith(
+        'secureyeoman/SECUREYEOMAN_ADMIN_PASSWORD',
+        expect.any(String)
+      );
+      expect(mockVaultSet).toHaveBeenCalledWith(
+        'secureyeoman/SECUREYEOMAN_SIGNING_KEY',
+        expect.any(String)
+      );
+      expect(mockVaultSet).toHaveBeenCalledWith(
+        'secureyeoman/SECUREYEOMAN_WEBHOOK_SECRET',
+        expect.any(String)
+      );
       delete process.env.VAULT_TOKEN;
     });
 

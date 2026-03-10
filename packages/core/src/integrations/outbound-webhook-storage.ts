@@ -140,9 +140,7 @@ export class OutboundWebhookStorage extends PgBaseStorage {
   async listWebhooks(filter?: { enabled?: boolean }): Promise<OutboundWebhook[]> {
     const pool = this.getPool();
 
-    const { where, values } = buildWhere([
-      { column: 'enabled', value: filter?.enabled },
-    ]);
+    const { where, values } = buildWhere([{ column: 'enabled', value: filter?.enabled }]);
 
     const result = await pool.query<OutboundWebhookRow>(
       `SELECT * FROM outbound_webhooks ${where} ORDER BY created_at ASC`,

@@ -107,6 +107,8 @@ import { registerNotionRoutes } from '../integrations/notion/notion-routes.js';
 import { registerGoogleWorkspaceRoutes } from '../integrations/google-workspace-routes.js';
 import { registerTradingRoutes } from '../integrations/trading/trading-routes.js';
 import { registerPhotisnadiRoutes } from '../integrations/photisnadi/photisnadi-routes.js';
+import { registerEcosystemRoutes } from '../integrations/ecosystem-routes.js';
+import { ServiceDiscoveryManager } from '../integrations/service-discovery.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -115,6 +117,7 @@ import { VERSION } from '../version.js';
 import { otelFastifyPlugin } from '../telemetry/otel-fastify-plugin.js';
 import { registerAlertRoutes } from '../telemetry/alert-routes.js';
 import { registerCicdWebhookRoutes } from '../integrations/cicd/cicd-webhook-routes.js';
+import { registerAdminSettingsRoutes } from './admin-settings-routes.js';
 import { registerAnalyticsRoutes } from '../analytics/analytics-routes.js';
 import { registerScanningRoutes } from '../sandbox/scanning/scanning-routes.js';
 import { parsePagination } from '../utils/pagination.js';
@@ -464,10 +467,19 @@ export class GatewayServer {
       const oauthService = new OAuthService();
       const scheme = this.config.tls.enabled ? 'https' : 'http';
       const defaultBaseUrl = `${scheme}://${this.config.host === '0.0.0.0' ? 'localhost' : this.config.host}:${this.config.port}`;
-      const baseUrl = this.config.externalUrl || defaultBaseUrl;
-      // publicUrl = the origin registered in OAuth app consoles; may differ from baseUrl in dev
-      // (e.g. Vite proxy at port 3000 vs core API at port 18789).
-      const oauthPublicUrl = this.config.oauthRedirectBaseUrl || undefined;
+
+      // Resolve external URL: system preference → env var → computed default
+      let baseUrl = this.config.externalUrl || defaultBaseUrl;
+      let oauthPublicUrl = this.config.oauthRedirectBaseUrl || undefined;
+      try {
+        const prefs = this.secureYeoman.getSystemPreferences();
+        const storedExternalUrl = await prefs.get('external_url');
+        if (storedExternalUrl) baseUrl = storedExternalUrl;
+        const storedOauthUrl = await prefs.get('oauth_redirect_base_url');
+        if (storedOauthUrl) oauthPublicUrl = storedOauthUrl;
+      } catch {
+        // System preferences may not be initialized yet — use env/defaults
+      }
 
       // Unified OAuth token service — persists Google tokens across restarts
       const oauthTokenStorage = new OAuthTokenStorage();
@@ -766,6 +778,28 @@ export class GatewayServer {
       registerPhotisnadiRoutes(this.app);
     } catch {
       // Photisnadi routes are optional — skip on error
+    }
+
+    // Ecosystem service discovery routes (connection-driven enable/disable)
+    try {
+      const secretsManager = this.secureYeoman.getSecretsManager();
+      if (secretsManager) {
+        const discoveryManager = new ServiceDiscoveryManager({
+          secretsManager,
+          logger: this.getLogger().child({ component: 'ServiceDiscovery' }),
+        });
+        registerEcosystemRoutes(this.app, { discoveryManager });
+      }
+    } catch {
+      // Ecosystem routes are optional — skip on error
+    }
+
+    // Admin settings routes (system preferences)
+    try {
+      const systemPreferences = this.secureYeoman.getSystemPreferences();
+      registerAdminSettingsRoutes(this.app, { systemPreferences });
+    } catch {
+      // Admin settings routes are optional — skip if preferences not initialized
     }
 
     // Trading & market data proxy routes

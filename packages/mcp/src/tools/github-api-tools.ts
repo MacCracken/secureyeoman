@@ -515,7 +515,10 @@ export function registerGithubApiTools(
       })) as Record<string, unknown>;
 
       if (reg.preview) {
-        return jsonResponse({ preview: true, message: 'Draft mode — no key registered or revoked.' });
+        return jsonResponse({
+          preview: true,
+          message: 'Draft mode — no key registered or revoked.',
+        });
       }
 
       const newKeyId = reg.id!;

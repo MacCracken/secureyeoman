@@ -286,9 +286,7 @@ export class IntegrationManager {
     try {
       await entry.integration.stop();
     } catch (err) {
-      this.deps.logger.error(
-        `Error stopping integration ${id}: ${errorToString(err)}`
-      );
+      this.deps.logger.error(`Error stopping integration ${id}: ${errorToString(err)}`);
     }
 
     const stoppedConfig = entry.config;

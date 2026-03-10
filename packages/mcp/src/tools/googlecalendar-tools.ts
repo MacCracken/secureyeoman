@@ -41,7 +41,8 @@ export function registerGoogleCalendarTools(
       q: z.string().optional().describe('Free text search terms to find events'),
     },
     buildPath: () => '/api/v1/integrations/googlecalendar/events',
-    buildQuery: (args) => buildQueryFromArgs(args, ['calendarId', 'timeMin', 'timeMax', 'maxResults', 'q']),
+    buildQuery: (args) =>
+      buildQueryFromArgs(args, ['calendarId', 'timeMin', 'timeMax', 'maxResults', 'q']),
   });
 
   // ── gcal_get_event ──────────────────────────────────────────────

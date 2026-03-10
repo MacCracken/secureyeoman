@@ -192,9 +192,7 @@ export class MessageRouter {
             metadata.audioBase64 = ttsResult.audioBase64;
             metadata.audioFormat = ttsResult.format;
           } catch (err) {
-            logger.warn(
-              `TTS synthesis failed: ${errorToString(err)}`
-            );
+            logger.warn(`TTS synthesis failed: ${errorToString(err)}`);
           }
         }
 
@@ -218,9 +216,7 @@ export class MessageRouter {
           { error: errorMsg }
         );
       } catch (sendErr) {
-        logger.error(
-          `Failed to send error response: ${errorToString(sendErr)}`
-        );
+        logger.error(`Failed to send error response: ${errorToString(sendErr)}`);
       }
     }
   }

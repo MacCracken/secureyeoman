@@ -84,9 +84,7 @@ export const configCommand: Command = {
 
       return 0;
     } catch (err) {
-      ctx.stderr.write(
-        `Configuration error:\n${errorToString(err)}\n`
-      );
+      ctx.stderr.write(`Configuration error:\n${errorToString(err)}\n`);
       return 1;
     }
   },

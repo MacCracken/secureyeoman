@@ -54,10 +54,13 @@ export class DlpPolicyStore extends PgBaseStorage {
   async list(filters?: DlpPolicyFilters): Promise<{ policies: DlpPolicy[]; total: number }> {
     // Note: appliesTo uses "$N = ANY(column)" which inverts the normal column/param order,
     // so we handle it separately after the standard filters.
-    let { where, values, nextIdx } = buildWhere([
+    const result = buildWhere([
       { column: 'enabled', value: filters?.active },
       { column: 'tenant_id', value: filters?.tenantId },
     ]);
+    let { where } = result;
+    const { values } = result;
+    let nextIdx = result.nextIdx;
 
     if (filters?.appliesTo) {
       const clause = `$${nextIdx++} = ANY(applies_to)`;

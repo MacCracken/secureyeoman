@@ -102,7 +102,6 @@ export class RetryManager {
 
     return Math.floor(clampedDelay / 2 + jitter / 2);
   }
-
 }
 
 /**

@@ -1017,9 +1017,9 @@ export class MultimodalManager {
           data: { jobId, result },
           timestamp: Date.now(),
         })
-        .catch((err) =>
-          this.deps.logger.warn({ err }, 'Failed to emit multimodal:image-analyzed event')
-        );
+        .catch((err: unknown) => {
+          this.deps.logger.warn({ err }, 'Failed to emit multimodal:image-analyzed event');
+        });
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(errorToString(error));
@@ -1119,9 +1119,9 @@ export class MultimodalManager {
           data: { jobId, result },
           timestamp: Date.now(),
         })
-        .catch((err) =>
-          this.deps.logger.warn({ err }, 'Failed to emit multimodal:audio-transcribed event')
-        );
+        .catch((err: unknown) => {
+          this.deps.logger.warn({ err }, 'Failed to emit multimodal:audio-transcribed event');
+        });
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(errorToString(error));
@@ -1219,9 +1219,9 @@ export class MultimodalManager {
           data: { jobId, format: result.format },
           timestamp: Date.now(),
         })
-        .catch((err) =>
-          this.deps.logger.warn({ err }, 'Failed to emit multimodal:speech-generated event')
-        );
+        .catch((err: unknown) => {
+          this.deps.logger.warn({ err }, 'Failed to emit multimodal:speech-generated event');
+        });
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(errorToString(error));
@@ -1346,9 +1346,9 @@ export class MultimodalManager {
           data: { jobId, format },
           timestamp: Date.now(),
         })
-        .catch((err) =>
-          this.deps.logger.warn({ err }, 'Failed to emit multimodal:speech-generated event')
-        );
+        .catch((err: unknown) => {
+          this.deps.logger.warn({ err }, 'Failed to emit multimodal:speech-generated event');
+        });
       return { buffer, format, durationMs };
     } catch (error) {
       const msg = sanitizeErrorMessage(errorToString(error));
@@ -1430,9 +1430,9 @@ export class MultimodalManager {
           data: { jobId, result },
           timestamp: Date.now(),
         })
-        .catch((err) =>
-          this.deps.logger.warn({ err }, 'Failed to emit multimodal:image-generated event')
-        );
+        .catch((err: unknown) => {
+          this.deps.logger.warn({ err }, 'Failed to emit multimodal:image-generated event');
+        });
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(errorToString(error));
@@ -1482,9 +1482,9 @@ export class MultimodalManager {
           data: { jobId, pattern, patternMs, description: request.description },
           timestamp: Date.now(),
         })
-        .catch((err) =>
-          this.deps.logger.warn({ err }, 'Failed to emit multimodal:haptic-triggered event')
-        );
+        .catch((err: unknown) => {
+          this.deps.logger.warn({ err }, 'Failed to emit multimodal:haptic-triggered event');
+        });
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(errorToString(error));

@@ -55,6 +55,10 @@ vi.mock('../api/client', async (importOriginal) => {
     updateRoutingRule: vi.fn(),
     deleteRoutingRule: vi.fn(),
     testRoutingRule: vi.fn(),
+    fetchEcosystemServices: vi.fn().mockResolvedValue([]),
+    probeEcosystemService: vi.fn().mockResolvedValue({}),
+    enableEcosystemService: vi.fn().mockResolvedValue({}),
+    disableEcosystemService: vi.fn().mockResolvedValue({}),
   };
 });
 

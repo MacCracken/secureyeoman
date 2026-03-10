@@ -81,7 +81,22 @@ if [ "$_use_embedded_pg" = "true" ]; then
   export DATABASE_HOST="127.0.0.1"
   export DATABASE_USER="${DATABASE_USER:-secureyeoman}"
   export DATABASE_NAME="${DATABASE_NAME:-secureyeoman}"
-  _pg_pass="${POSTGRES_PASSWORD:-secureyeoman_dev}"
+
+  # Auto-generate POSTGRES_PASSWORD for embedded PG if not set.
+  # Persists to /var/lib/postgresql/.pg_password so it survives restarts.
+  _pg_pw_file="/var/lib/postgresql/.pg_password"
+  if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+    if [ -f "$_pg_pw_file" ]; then
+      _pg_pass="$(cat "$_pg_pw_file")"
+      echo "[entrypoint] Using persisted embedded PG password"
+    else
+      _pg_pass="$(head -c 32 /dev/urandom | base64 | tr -d '+/=' | head -c 32)"
+      echo "[entrypoint] Auto-generated embedded PG password"
+    fi
+    export POSTGRES_PASSWORD="$_pg_pass"
+  else
+    _pg_pass="$POSTGRES_PASSWORD"
+  fi
 
   # Ensure directories exist
   install -d -o postgres -g postgres -m 700 /var/lib/postgresql/data
@@ -94,6 +109,10 @@ if [ "$_use_embedded_pg" = "true" ]; then
     cp /etc/postgresql/postgresql.conf /var/lib/postgresql/data/postgresql.conf
     # Allow local connections from secureyeoman user
     echo "host all all 127.0.0.1/32 scram-sha-256" >> /var/lib/postgresql/data/pg_hba.conf
+    # Persist auto-generated password for volume-mounted restarts
+    printf '%s' "$_pg_pass" > "$_pg_pw_file"
+    chown postgres:postgres "$_pg_pw_file"
+    chmod 600 "$_pg_pw_file"
   fi
 
   # Start postgres temporarily to create user/database

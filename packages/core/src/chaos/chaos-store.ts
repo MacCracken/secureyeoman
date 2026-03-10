@@ -102,9 +102,7 @@ export class ChaosStore extends PgBaseStorage {
       offset?: number;
     } = {}
   ): Promise<{ items: ChaosExperiment[]; total: number }> {
-    const { where, values, nextIdx } = buildWhere([
-      { column: 'status', value: opts.status },
-    ]);
+    const { where, values, nextIdx } = buildWhere([{ column: 'status', value: opts.status }]);
 
     const countResult = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*)::TEXT AS count FROM chaos.experiments ${where}`,
@@ -130,13 +128,11 @@ export class ChaosStore extends PgBaseStorage {
     status: ChaosExperimentStatus,
     timestamps: { startedAt?: number; completedAt?: number } = {}
   ): Promise<boolean> {
-    const { setClause, values, nextIdx } = buildSet(
-      [
-        { column: 'status', value: status },
-        { column: 'started_at', value: timestamps.startedAt },
-        { column: 'completed_at', value: timestamps.completedAt },
-      ],
-    );
+    const { setClause, values, nextIdx } = buildSet([
+      { column: 'status', value: status },
+      { column: 'started_at', value: timestamps.startedAt },
+      { column: 'completed_at', value: timestamps.completedAt },
+    ]);
 
     values.push(id);
     const count = await this.execute(

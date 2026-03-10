@@ -112,9 +112,7 @@ export class BundleCompiler {
         await this.opaClient.uploadPolicy(tempId, source);
         await this.opaClient.deletePolicy(tempId);
       } catch (err) {
-        errors.push(
-          `${path}: OPA compile error — ${errorToString(err)}`
-        );
+        errors.push(`${path}: OPA compile error — ${errorToString(err)}`);
       }
     }
 
@@ -137,9 +135,7 @@ export class BundleCompiler {
       try {
         evalCel(line, {});
       } catch (err) {
-        errors.push(
-          `${path}:${i + 1}: CEL parse error — ${errorToString(err)}`
-        );
+        errors.push(`${path}:${i + 1}: CEL parse error — ${errorToString(err)}`);
       }
     }
 

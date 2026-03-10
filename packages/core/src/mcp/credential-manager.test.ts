@@ -199,9 +199,11 @@ describe('McpCredentialManager', () => {
     });
 
     it('skips credentials that fail to decrypt and logs warning', async () => {
-      (storage as unknown as Record<string, unknown>).listAllCredentials = vi.fn().mockResolvedValue([
-        { serverId: 'srv-1', key: 'BAD', encryptedValue: 'totally-invalid-data!!' },
-      ]);
+      (storage as unknown as Record<string, unknown>).listAllCredentials = vi
+        .fn()
+        .mockResolvedValue([
+          { serverId: 'srv-1', key: 'BAD', encryptedValue: 'totally-invalid-data!!' },
+        ]);
 
       const count = await manager.reEncrypt(TEST_SECRET, 'new-secret-at-least-32-characters');
       expect(count).toBe(0);

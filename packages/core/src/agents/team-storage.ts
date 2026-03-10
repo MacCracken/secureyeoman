@@ -314,18 +314,16 @@ export class TeamStorage extends PgBaseStorage {
       completedAt: number;
     }>
   ): Promise<void> {
-    const { setClause, values, nextIdx, hasUpdates } = buildSet(
-      [
-        { column: 'status', value: updates.status },
-        { column: 'result', value: updates.result },
-        { column: 'error', value: updates.error },
-        { column: 'coordinator_reasoning', value: updates.coordinatorReasoning },
-        { column: 'assigned_members', value: updates.assignedMembers, json: true },
-        { column: 'tokens_used', value: updates.tokensUsed },
-        { column: 'started_at', value: updates.startedAt },
-        { column: 'completed_at', value: updates.completedAt },
-      ],
-    );
+    const { setClause, values, nextIdx, hasUpdates } = buildSet([
+      { column: 'status', value: updates.status },
+      { column: 'result', value: updates.result },
+      { column: 'error', value: updates.error },
+      { column: 'coordinator_reasoning', value: updates.coordinatorReasoning },
+      { column: 'assigned_members', value: updates.assignedMembers, json: true },
+      { column: 'tokens_used', value: updates.tokensUsed },
+      { column: 'started_at', value: updates.startedAt },
+      { column: 'completed_at', value: updates.completedAt },
+    ]);
     if (!hasUpdates) return;
     values.push(id);
     await this.execute(`UPDATE agents.team_runs SET ${setClause} WHERE id = $${nextIdx}`, values);

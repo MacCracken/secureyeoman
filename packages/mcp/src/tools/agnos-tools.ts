@@ -69,7 +69,10 @@ export function registerAgnosTools(
     wrapToolHandler('agnos_runtime_health', middleware, async () => {
       try {
         const result = await runtime.get('/v1/health');
-        return checkHttpOk(result, 'AGNOS runtime health failed') ?? labelledResponse('AGNOS Runtime Health', result.body);
+        return (
+          checkHttpOk(result, 'AGNOS runtime health failed') ??
+          labelledResponse('AGNOS Runtime Health', result.body)
+        );
       } catch (err) {
         return errorResponse(
           `Cannot reach AGNOS runtime at ${config.agnosRuntimeUrl}: ${err instanceof Error ? err.message : String(err)}`
@@ -89,7 +92,10 @@ export function registerAgnosTools(
     wrapToolHandler('agnos_gateway_health', middleware, async () => {
       try {
         const result = await gateway.get('/v1/health');
-        return checkHttpOk(result, 'AGNOS gateway health failed') ?? labelledResponse('AGNOS LLM Gateway Health', result.body);
+        return (
+          checkHttpOk(result, 'AGNOS gateway health failed') ??
+          labelledResponse('AGNOS LLM Gateway Health', result.body)
+        );
       } catch (err) {
         return errorResponse(
           `Cannot reach AGNOS gateway at ${config.agnosGatewayUrl}: ${err instanceof Error ? err.message : String(err)}`
@@ -108,7 +114,10 @@ export function registerAgnosTools(
     },
     wrapToolHandler('agnos_agents_list', middleware, async () => {
       const result = await runtime.get('/v1/agents');
-      return checkHttpOk(result, 'AGNOS agents list failed') ?? labelledResponse('AGNOS Agents', result.body);
+      return (
+        checkHttpOk(result, 'AGNOS agents list failed') ??
+        labelledResponse('AGNOS Agents', result.body)
+      );
     })
   );
 
@@ -124,10 +133,11 @@ export function registerAgnosTools(
       },
     },
     wrapToolHandler('agnos_agent_detail', middleware, async (args) => {
-      const result = await runtime.get(
-        `/v1/agents/${encodeURIComponent(args.agent_id)}`
+      const result = await runtime.get(`/v1/agents/${encodeURIComponent(args.agent_id)}`);
+      return (
+        checkHttpOk(result, 'AGNOS agent detail failed') ??
+        labelledResponse(`AGNOS Agent: ${args.agent_id}`, result.body)
       );
-      return checkHttpOk(result, 'AGNOS agent detail failed') ?? labelledResponse(`AGNOS Agent: ${args.agent_id}`, result.body);
     })
   );
 
@@ -150,7 +160,10 @@ export function registerAgnosTools(
         capabilities: args.capabilities,
         metadata: args.metadata,
       });
-      return checkHttpOk(result, 'AGNOS agent register failed') ?? labelledResponse('AGNOS Agent Registered', result.body);
+      return (
+        checkHttpOk(result, 'AGNOS agent register failed') ??
+        labelledResponse('AGNOS Agent Registered', result.body)
+      );
     })
   );
 
@@ -165,10 +178,11 @@ export function registerAgnosTools(
       },
     },
     wrapToolHandler('agnos_agent_deregister', middleware, async (args) => {
-      const result = await runtime.delete(
-        `/v1/agents/${encodeURIComponent(args.agent_id)}`
+      const result = await runtime.delete(`/v1/agents/${encodeURIComponent(args.agent_id)}`);
+      return (
+        checkHttpOk(result, 'AGNOS agent deregister failed') ??
+        labelledResponse('AGNOS Agent Deregistered', result.body)
       );
-      return checkHttpOk(result, 'AGNOS agent deregister failed') ?? labelledResponse('AGNOS Agent Deregistered', result.body);
     })
   );
 
@@ -183,10 +197,11 @@ export function registerAgnosTools(
       },
     },
     wrapToolHandler('agnos_agent_memory_list', middleware, async (args) => {
-      const result = await runtime.get(
-        `/v1/agents/${encodeURIComponent(args.agent_id)}/memory`
+      const result = await runtime.get(`/v1/agents/${encodeURIComponent(args.agent_id)}/memory`);
+      return (
+        checkHttpOk(result, 'AGNOS memory list failed') ??
+        labelledResponse(`Agent Memory Keys: ${args.agent_id}`, result.body)
       );
-      return checkHttpOk(result, 'AGNOS memory list failed') ?? labelledResponse(`Agent Memory Keys: ${args.agent_id}`, result.body);
     })
   );
 
@@ -205,7 +220,10 @@ export function registerAgnosTools(
       const result = await runtime.get(
         `/v1/agents/${encodeURIComponent(args.agent_id)}/memory/${encodeURIComponent(args.key)}`
       );
-      return checkHttpOk(result, 'AGNOS memory get failed') ?? labelledResponse(`Memory: ${args.key}`, result.body);
+      return (
+        checkHttpOk(result, 'AGNOS memory get failed') ??
+        labelledResponse(`Memory: ${args.key}`, result.body)
+      );
     })
   );
 
@@ -227,7 +245,10 @@ export function registerAgnosTools(
         `/v1/agents/${encodeURIComponent(args.agent_id)}/memory/${encodeURIComponent(args.key)}`,
         { value: args.value, tags: args.tags }
       );
-      return checkHttpOk(result, 'AGNOS memory set failed') ?? labelledResponse(`Memory Stored: ${args.key}`, result.body);
+      return (
+        checkHttpOk(result, 'AGNOS memory set failed') ??
+        labelledResponse(`Memory Stored: ${args.key}`, result.body)
+      );
     })
   );
 
@@ -246,7 +267,10 @@ export function registerAgnosTools(
       const result = await runtime.delete(
         `/v1/agents/${encodeURIComponent(args.agent_id)}/memory/${encodeURIComponent(args.key)}`
       );
-      return checkHttpOk(result, 'AGNOS memory delete failed') ?? labelledResponse(`Memory Deleted: ${args.key}`, result.body);
+      return (
+        checkHttpOk(result, 'AGNOS memory delete failed') ??
+        labelledResponse(`Memory Deleted: ${args.key}`, result.body)
+      );
     })
   );
 
@@ -260,7 +284,10 @@ export function registerAgnosTools(
     },
     wrapToolHandler('agnos_runtime_metrics', middleware, async () => {
       const result = await runtime.get('/v1/metrics');
-      return checkHttpOk(result, 'AGNOS metrics failed') ?? labelledResponse('AGNOS Runtime Metrics', result.body);
+      return (
+        checkHttpOk(result, 'AGNOS metrics failed') ??
+        labelledResponse('AGNOS Runtime Metrics', result.body)
+      );
     })
   );
 
@@ -274,7 +301,10 @@ export function registerAgnosTools(
     },
     wrapToolHandler('agnos_gateway_metrics', middleware, async () => {
       const result = await gateway.get('/v1/metrics');
-      return checkHttpOk(result, 'AGNOS gateway metrics failed') ?? labelledResponse('AGNOS LLM Gateway Metrics', result.body);
+      return (
+        checkHttpOk(result, 'AGNOS gateway metrics failed') ??
+        labelledResponse('AGNOS LLM Gateway Metrics', result.body)
+      );
     })
   );
 
@@ -289,7 +319,10 @@ export function registerAgnosTools(
     },
     wrapToolHandler('agnos_gateway_models', middleware, async () => {
       const result = await gateway.get('/v1/models');
-      return checkHttpOk(result, 'AGNOS models failed') ?? labelledResponse('AGNOS LLM Models', result.body);
+      return (
+        checkHttpOk(result, 'AGNOS models failed') ??
+        labelledResponse('AGNOS LLM Models', result.body)
+      );
     })
   );
 
@@ -374,7 +407,10 @@ export function registerAgnosTools(
         source: args.source,
         correlation_id: args.correlation_id,
       });
-      return checkHttpOk(result, 'AGNOS audit forward failed') ?? labelledResponse('Audit Events Forwarded', result.body);
+      return (
+        checkHttpOk(result, 'AGNOS audit forward failed') ??
+        labelledResponse('Audit Events Forwarded', result.body)
+      );
     })
   );
 
@@ -398,7 +434,10 @@ export function registerAgnosTools(
       const qs = params.toString();
       const path = `/v1/audit${qs ? `?${qs}` : ''}`;
       const result = await runtime.get(path);
-      return checkHttpOk(result, 'AGNOS audit query failed') ?? labelledResponse('AGNOS Audit Log', result.body);
+      return (
+        checkHttpOk(result, 'AGNOS audit query failed') ??
+        labelledResponse('AGNOS Audit Log', result.body)
+      );
     })
   );
 
@@ -437,7 +476,10 @@ export function registerAgnosTools(
         result: args.result,
         duration_ms: args.duration_ms,
       });
-      return checkHttpOk(result, 'AGNOS trace submit failed') ?? labelledResponse('Reasoning Trace Submitted', result.body);
+      return (
+        checkHttpOk(result, 'AGNOS trace submit failed') ??
+        labelledResponse('Reasoning Trace Submitted', result.body)
+      );
     })
   );
 
@@ -456,7 +498,10 @@ export function registerAgnosTools(
         ? `/v1/traces?agent_id=${encodeURIComponent(args.agent_id)}`
         : '/v1/traces';
       const result = await runtime.get(path);
-      return checkHttpOk(result, 'AGNOS traces query failed') ?? labelledResponse('AGNOS Reasoning Traces', result.body);
+      return (
+        checkHttpOk(result, 'AGNOS traces query failed') ??
+        labelledResponse('AGNOS Reasoning Traces', result.body)
+      );
     })
   );
 
@@ -478,7 +523,10 @@ export function registerAgnosTools(
         events: args.events,
         secret: args.secret,
       });
-      return checkHttpOk(result, 'AGNOS webhook register failed') ?? labelledResponse('AGNOS Webhook Registered', result.body);
+      return (
+        checkHttpOk(result, 'AGNOS webhook register failed') ??
+        labelledResponse('AGNOS Webhook Registered', result.body)
+      );
     })
   );
 

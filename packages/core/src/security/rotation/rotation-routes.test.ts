@@ -35,9 +35,7 @@ function makeManager(overrides: Record<string, unknown> = {}) {
 
 function buildApp(manager: ReturnType<typeof makeManager> | null = makeManager()) {
   const app = Fastify({ logger: false });
-  const secureYeoman = manager
-    ? ({ getRotationManager: () => manager } as any)
-    : null;
+  const secureYeoman = manager ? ({ getRotationManager: () => manager } as any) : null;
   registerRotationRoutes(app, secureYeoman);
   return { app, manager };
 }

@@ -192,5 +192,4 @@ export class WindowsPermissionManager implements PlatformPermissionManager {
       this.pollInterval = null;
     }
   }
-
 }

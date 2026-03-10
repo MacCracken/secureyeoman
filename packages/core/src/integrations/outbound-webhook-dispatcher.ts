@@ -175,5 +175,4 @@ export class OutboundWebhookDispatcher {
   private sign(payload: string, secret: string): string {
     return `sha256=${createHmac('sha256', secret).update(payload).digest('hex')}`;
   }
-
 }

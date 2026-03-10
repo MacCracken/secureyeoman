@@ -170,17 +170,11 @@ export class DiscordIntegration implements Integration {
           }
           await this.deps!.onMessage(unified);
         })().catch((err: unknown) => {
-          this.logger?.error(
-            { error: errorToString(err) },
-            'Vision processing / onMessage failed'
-          );
+          this.logger?.error({ error: errorToString(err) }, 'Vision processing / onMessage failed');
         });
       } else {
         this.deps!.onMessage(unified).catch((err: unknown) => {
-          this.logger?.error(
-            { error: errorToString(err) },
-            'onMessage handler failed'
-          );
+          this.logger?.error({ error: errorToString(err) }, 'onMessage handler failed');
         });
       }
     });
@@ -194,10 +188,7 @@ export class DiscordIntegration implements Integration {
         modal
           .reply({ content: 'Thank you for your feedback!', ephemeral: true })
           .catch((err: unknown) => {
-            this.logger?.warn(
-              { error: errorToString(err) },
-              'Discord modal reply failed'
-            );
+            this.logger?.warn({ error: errorToString(err) }, 'Discord modal reply failed');
           });
 
         const unified: UnifiedMessage = {
@@ -220,10 +211,7 @@ export class DiscordIntegration implements Integration {
         };
 
         this.deps!.onMessage(unified).catch((err: unknown) => {
-          this.logger?.error(
-            { error: errorToString(err) },
-            'onMessage handler failed'
-          );
+          this.logger?.error({ error: errorToString(err) }, 'onMessage handler failed');
         });
         return;
       }
@@ -251,10 +239,7 @@ export class DiscordIntegration implements Integration {
             ],
           })
           .catch((err: unknown) => {
-            this.logger?.warn(
-              { error: errorToString(err) },
-              'Discord help reply failed'
-            );
+            this.logger?.warn({ error: errorToString(err) }, 'Discord help reply failed');
           });
         return;
       }
@@ -274,10 +259,7 @@ export class DiscordIntegration implements Integration {
             ],
           })
           .catch((err: unknown) => {
-            this.logger?.warn(
-              { error: errorToString(err) },
-              'Discord status reply failed'
-            );
+            this.logger?.warn({ error: errorToString(err) }, 'Discord status reply failed');
           });
         return;
       }
@@ -296,10 +278,7 @@ export class DiscordIntegration implements Integration {
 
         modal.addComponents(row);
         (cmd as any).showModal(modal).catch((err: unknown) => {
-          this.logger?.warn(
-            { error: errorToString(err) },
-            'Discord showModal failed'
-          );
+          this.logger?.warn({ error: errorToString(err) }, 'Discord showModal failed');
         });
         return;
       }
@@ -307,10 +286,7 @@ export class DiscordIntegration implements Integration {
       if (commandName === 'ask') {
         const question = cmd.options.getString('question', true);
         cmd.deferReply().catch((err: unknown) => {
-          this.logger?.warn(
-            { error: errorToString(err) },
-            'Discord deferReply failed'
-          );
+          this.logger?.warn({ error: errorToString(err) }, 'Discord deferReply failed');
         });
 
         const unified: UnifiedMessage = {
@@ -333,10 +309,7 @@ export class DiscordIntegration implements Integration {
         };
 
         this.deps!.onMessage(unified).catch((err: unknown) => {
-          this.logger?.error(
-            { error: errorToString(err) },
-            'onMessage handler failed'
-          );
+          this.logger?.error({ error: errorToString(err) }, 'onMessage handler failed');
         });
       }
     });

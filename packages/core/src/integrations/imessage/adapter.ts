@@ -106,9 +106,7 @@ export class IMessageIntegration implements Integration {
       this.lastRowId = row?.maxId ?? 0;
       db.close();
     } catch (err) {
-      throw new Error(
-        `Failed to read iMessage database: ${toErrorMessage(err)}`
-      );
+      throw new Error(`Failed to read iMessage database: ${toErrorMessage(err)}`);
     }
 
     this.logger.info({ chatDbPath: this.chatDbPath }, 'iMessage integration initialized');
@@ -163,9 +161,7 @@ export class IMessageIntegration implements Integration {
       const messageId = `imsg_${Date.now()}`;
       return messageId;
     } catch (err) {
-      throw new Error(
-        `Failed to send iMessage: ${toErrorMessage(err)}`
-      );
+      throw new Error(`Failed to send iMessage: ${toErrorMessage(err)}`);
     }
   }
 

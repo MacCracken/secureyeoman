@@ -389,10 +389,14 @@ export function registerQuickBooksTools(
     },
     wrapToolHandler('qbo_health', middleware, async () => {
       if (!config.exposeQuickBooksTools) {
-        return errorResponse('QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true to enable.');
+        return errorResponse(
+          'QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true to enable.'
+        );
       }
       if (!config.quickBooksRealmId) {
-        return errorResponse('QUICKBOOKS_REALM_ID is not set. Find your Realm ID in the QBO URL: intuit.com/app/qbo/company/{realmId}/...');
+        return errorResponse(
+          'QUICKBOOKS_REALM_ID is not set. Find your Realm ID in the QBO URL: intuit.com/app/qbo/company/{realmId}/...'
+        );
       }
       const result = await qboFetch(
         config,
@@ -407,7 +411,9 @@ export function registerQuickBooksTools(
     for (const ec of ENTITIES) {
       const eLower = ec.entity.toLowerCase();
       const disabledHandler = wrapToolHandler(`qbo_${eLower}_disabled`, middleware, async () =>
-        errorResponse('QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true and provide credentials.')
+        errorResponse(
+          'QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true and provide credentials.'
+        )
       );
       for (const op of ['create', 'get', 'search', 'update', ...(ec.deletable ? ['delete'] : [])]) {
         server.registerTool(

@@ -161,9 +161,7 @@ export class EventSubscriptionStore extends PgBaseStorage {
     limit?: number;
     offset?: number;
   }): Promise<{ subscriptions: EventSubscription[]; total: number }> {
-    const { where, values, nextIdx } = buildWhere([
-      { column: 'tenant_id', value: opts?.tenantId },
-    ]);
+    const { where, values, nextIdx } = buildWhere([{ column: 'tenant_id', value: opts?.tenantId }]);
 
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
@@ -259,10 +257,7 @@ export class EventSubscriptionStore extends PgBaseStorage {
     if (!hasUpdates) return 0;
 
     values.push(id);
-    return this.execute(
-      `UPDATE events.deliveries SET ${setClause} WHERE id = $${nextIdx}`,
-      values
-    );
+    return this.execute(`UPDATE events.deliveries SET ${setClause} WHERE id = $${nextIdx}`, values);
   }
 
   async getPendingRetries(now: number): Promise<EventDelivery[]> {

@@ -170,10 +170,7 @@ export class CollabManager {
       if (entry.saveTimer) clearTimeout(entry.saveTimer);
       this.docs.delete(docId);
       this.persistNow(docId, entry).catch((err: unknown) => {
-        getLogger().warn(
-          { docId, error: errorToString(err) },
-          'Collab persist on leave failed'
-        );
+        getLogger().warn({ docId, error: errorToString(err) }, 'Collab persist on leave failed');
       });
     } else {
       // Let remaining peers know this client's awareness is gone

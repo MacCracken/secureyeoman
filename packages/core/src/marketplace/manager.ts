@@ -418,9 +418,7 @@ export class MarketplaceManager {
 
         syncedNames.add(data.name);
       } catch (err) {
-        result.errors.push(
-          `Error processing ${filePath}: ${errorToString(err)}`
-        );
+        result.errors.push(`Error processing ${filePath}: ${errorToString(err)}`);
       }
     }
 
@@ -499,9 +497,7 @@ export class MarketplaceManager {
             }
             syncedWorkflowNames.add(workflowName);
           } catch (err) {
-            result.errors.push(
-              `Error processing workflow ${filePath}: ${errorToString(err)}`
-            );
+            result.errors.push(`Error processing workflow ${filePath}: ${errorToString(err)}`);
           }
         }
 
@@ -578,9 +574,7 @@ export class MarketplaceManager {
             }
             syncedWorkflowNames.add(workflowName);
           } catch (err) {
-            result.errors.push(
-              `Error processing workflow dir ${dirPath}: ${errorToString(err)}`
-            );
+            result.errors.push(`Error processing workflow dir ${dirPath}: ${errorToString(err)}`);
           }
         }
 
@@ -649,9 +643,7 @@ export class MarketplaceManager {
             }
             syncedSwarmNames.add(swarmName);
           } catch (err) {
-            result.errors.push(
-              `Error processing swarm ${filePath}: ${errorToString(err)}`
-            );
+            result.errors.push(`Error processing swarm ${filePath}: ${errorToString(err)}`);
           }
         }
 
@@ -721,9 +713,7 @@ export class MarketplaceManager {
             }
             syncedSwarmNames.add(swarmName);
           } catch (err) {
-            result.errors.push(
-              `Error processing swarm dir ${dirPath}: ${errorToString(err)}`
-            );
+            result.errors.push(`Error processing swarm dir ${dirPath}: ${errorToString(err)}`);
           }
         }
       }
@@ -803,9 +793,7 @@ export class MarketplaceManager {
             }
             syncedCouncilNames.add(councilName);
           } catch (err) {
-            result.errors.push(
-              `Error processing council ${filePath}: ${errorToString(err)}`
-            );
+            result.errors.push(`Error processing council ${filePath}: ${errorToString(err)}`);
           }
         }
       }
@@ -1001,9 +989,7 @@ export class MarketplaceManager {
 
             syncedNames.add(skillData.name!);
           } catch (err) {
-            result.errors.push(
-              `Error processing personality ${filePath}: ${errorToString(err)}`
-            );
+            result.errors.push(`Error processing personality ${filePath}: ${errorToString(err)}`);
           }
         }
       }
@@ -1070,9 +1056,7 @@ export class MarketplaceManager {
           // Track for prune protection
           syncedNames.add(data.name);
         } catch (err) {
-          result.errors.push(
-            `Error processing theme ${filePath}: ${errorToString(err)}`
-          );
+          result.errors.push(`Error processing theme ${filePath}: ${errorToString(err)}`);
         }
       }
     }

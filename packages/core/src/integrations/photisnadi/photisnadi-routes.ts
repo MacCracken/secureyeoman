@@ -26,7 +26,7 @@ function getPhotisnadiConfig(): PhotisnadiConfig | null {
 async function supabaseQuery(
   config: PhotisnadiConfig,
   table: string,
-  queryParams: string = ''
+  queryParams = ''
 ): Promise<unknown> {
   const url = `${config.supabaseUrl}/rest/v1/${table}?${queryParams}`;
   const res = await fetch(url, {

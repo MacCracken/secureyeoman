@@ -185,6 +185,13 @@ router.registerLazy({
 });
 
 router.registerLazy({
+  name: 'config',
+  description: 'View and manage runtime admin settings (external URL, OAuth redirect)',
+  usage: 'secureyeoman config <get|set> [options]',
+  loader: () => import('./cli/commands/config-settings.js').then((m) => m.configSettingsCommand),
+});
+
+router.registerLazy({
   name: 'completion',
   description: 'Generate shell completion scripts',
   usage: 'secureyeoman completion <bash|zsh|fish>',

@@ -223,10 +223,7 @@ export class RoutingRulesManager {
           logger.warn(`Routing rule "${rule.name}" (${rule.id}): unknown action type`);
       }
     } catch (err) {
-      logger.error(
-        `Routing rule "${rule.name}" (${rule.id}) action failed: ` +
-          (errorToString(err))
-      );
+      logger.error(`Routing rule "${rule.name}" (${rule.id}) action failed: ` + errorToString(err));
     }
   }
 

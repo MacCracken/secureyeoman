@@ -351,12 +351,13 @@ Options:
     const keys: Record<string, string> = {};
     if (generateKeys) {
       keys.SECUREYEOMAN_ADMIN_PASSWORD = generateSecretKey(16);
-      // Crypto keys are auto-generated at runtime when not set.
+      // Crypto keys and integration secrets are auto-generated at runtime when not set.
       // Only generate them explicitly when the user is pushing to Vault
       // (so they have a known starting value) or for .env convenience.
       keys.SECUREYEOMAN_SIGNING_KEY = generateSecretKey(32);
       keys.SECUREYEOMAN_TOKEN_SECRET = generateSecretKey(32);
       keys.SECUREYEOMAN_ENCRYPTION_KEY = generateSecretKey(32);
+      keys.SECUREYEOMAN_WEBHOOK_SECRET = generateSecretKey(32);
 
       ctx.stdout.write('\n  Generated security keys:\n');
       for (const [k, v] of Object.entries(keys)) {

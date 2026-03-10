@@ -134,7 +134,10 @@ export function registerAgnosticTools(
     },
     wrapToolHandler('agnostic_agents_status', middleware, async () => {
       const result = await agnosticRequest(config, 'get', '/api/agents');
-      return checkHttpOk(result, 'Agents status failed') ?? labelledResponse('Agnostic Agents', result.body);
+      return (
+        checkHttpOk(result, 'Agents status failed') ??
+        labelledResponse('Agnostic Agents', result.body)
+      );
     })
   );
 
@@ -148,7 +151,10 @@ export function registerAgnosticTools(
     },
     wrapToolHandler('agnostic_agents_queues', middleware, async () => {
       const result = await agnosticRequest(config, 'get', '/api/agents/queues');
-      return checkHttpOk(result, 'Queue depths failed') ?? labelledResponse('Agnostic Queue Depths', result.body);
+      return (
+        checkHttpOk(result, 'Queue depths failed') ??
+        labelledResponse('Agnostic Queue Depths', result.body)
+      );
     })
   );
 
@@ -163,7 +169,10 @@ export function registerAgnosticTools(
     },
     wrapToolHandler('agnostic_dashboard', middleware, async () => {
       const result = await agnosticRequest(config, 'get', '/api/dashboard');
-      return checkHttpOk(result, 'Dashboard failed') ?? labelledResponse('Agnostic Dashboard', result.body);
+      return (
+        checkHttpOk(result, 'Dashboard failed') ??
+        labelledResponse('Agnostic Dashboard', result.body)
+      );
     })
   );
 
@@ -186,7 +195,9 @@ export function registerAgnosticTools(
         'get',
         `/api/sessions?limit=${limit}&offset=${offset}`
       );
-      return checkHttpOk(result, 'Sessions failed') ?? labelledResponse('Agnostic Sessions', result.body);
+      return (
+        checkHttpOk(result, 'Sessions failed') ?? labelledResponse('Agnostic Sessions', result.body)
+      );
     })
   );
 
@@ -206,7 +217,10 @@ export function registerAgnosticTools(
         'get',
         `/api/sessions/${encodeURIComponent(args.session_id)}`
       );
-      return checkHttpOk(result, 'Session not found') ?? labelledResponse(`Session: ${args.session_id}`, result.body);
+      return (
+        checkHttpOk(result, 'Session not found') ??
+        labelledResponse(`Session: ${args.session_id}`, result.body)
+      );
     })
   );
 
@@ -231,7 +245,10 @@ export function registerAgnosticTools(
         report_type: args.report_type,
         format: args.format,
       });
-      return checkHttpOk(result, 'Report generation failed') ?? labelledResponse('Report Generated', result.body);
+      return (
+        checkHttpOk(result, 'Report generation failed') ??
+        labelledResponse('Report Generated', result.body)
+      );
     })
   );
 
@@ -318,7 +335,10 @@ export function registerAgnosticTools(
         'get',
         `/api/tasks/${encodeURIComponent(args.task_id)}`
       );
-      return checkHttpOk(result, 'Task status failed') ?? labelledResponse(`Task: ${args.task_id}`, result.body);
+      return (
+        checkHttpOk(result, 'Task status failed') ??
+        labelledResponse(`Task: ${args.task_id}`, result.body)
+      );
     })
   );
 
@@ -389,9 +409,9 @@ export function registerAgnosticTools(
         if (status === 404) {
           return errorResponse(
             `A2A endpoint not found (HTTP 404). Agnostic P8 (POST /api/v1/a2a/receive) ` +
-            `is not yet implemented on the Agnostic side.\n` +
-            `Use agnostic_submit_qa for REST-based submission.\n\n` +
-            `A2A message that would be sent:\n${JSON.stringify(message, null, 2)}`
+              `is not yet implemented on the Agnostic side.\n` +
+              `Use agnostic_submit_qa for REST-based submission.\n\n` +
+              `A2A message that would be sent:\n${JSON.stringify(message, null, 2)}`
           );
         }
         return errorResponse(`A2A delegation failed: HTTP ${status}\n${JSON.stringify(body)}`);
@@ -423,9 +443,12 @@ export function registerAgnosticTools(
         'get',
         `/api/test-sessions/diff?base=${encodeURIComponent(args.base_session_id)}&compare=${encodeURIComponent(args.compare_session_id)}`
       );
-      return checkHttpOk(result, 'Session diff failed') ?? labelledResponse(
-        `Session Diff: ${args.base_session_id} → ${args.compare_session_id}`,
-        result.body
+      return (
+        checkHttpOk(result, 'Session diff failed') ??
+        labelledResponse(
+          `Session Diff: ${args.base_session_id} → ${args.compare_session_id}`,
+          result.body
+        )
       );
     })
   );
@@ -454,7 +477,10 @@ export function registerAgnosticTools(
         'get',
         `/api/results/structured/${encodeURIComponent(args.session_id)}${query}`
       );
-      return checkHttpOk(result, 'Structured results failed') ?? labelledResponse(`Structured Results: ${args.session_id}`, result.body);
+      return (
+        checkHttpOk(result, 'Structured results failed') ??
+        labelledResponse(`Structured Results: ${args.session_id}`, result.body)
+      );
     })
   );
 
@@ -483,7 +509,10 @@ export function registerAgnosticTools(
         'get',
         `/api/test-metrics/trends?days=${args.days}`
       );
-      return checkHttpOk(result, 'Quality trends failed') ?? labelledResponse(`Quality Trends (${args.days} days)`, result.body);
+      return (
+        checkHttpOk(result, 'Quality trends failed') ??
+        labelledResponse(`Quality Trends (${args.days} days)`, result.body)
+      );
     })
   );
 
@@ -571,9 +600,12 @@ export function registerAgnosticTools(
         agents: agents.length === 6 ? [] : agents, // empty = all
         standards: args.standards,
       });
-      return checkHttpOk(result, 'QA orchestration failed') ?? labelledResponse(
-        `QA Orchestrated (agents: ${agents.length ? agents.join(', ') : 'all'})`,
-        result.body
+      return (
+        checkHttpOk(result, 'QA orchestration failed') ??
+        labelledResponse(
+          `QA Orchestrated (agents: ${agents.length ? agents.join(', ') : 'all'})`,
+          result.body
+        )
       );
     })
   );
@@ -695,15 +727,13 @@ export function registerAgnosticTools(
         timestamp: Date.now(),
       };
 
-      const result = await agnosticRequest(
-        config,
-        'post',
-        '/api/v1/a2a/receive',
-        message
-      );
-      return checkHttpOk(result, 'Credential provisioning failed') ?? labelledResponse(
-        `Credentials provisioned for "${args.provider}" (message_id: ${messageId})`,
-        result.body
+      const result = await agnosticRequest(config, 'post', '/api/v1/a2a/receive', message);
+      return (
+        checkHttpOk(result, 'Credential provisioning failed') ??
+        labelledResponse(
+          `Credentials provisioned for "${args.provider}" (message_id: ${messageId})`,
+          result.body
+        )
       );
     })
   );
@@ -745,15 +775,13 @@ export function registerAgnosticTools(
         timestamp: Date.now(),
       };
 
-      const result = await agnosticRequest(
-        config,
-        'post',
-        '/api/v1/a2a/receive',
-        message
-      );
-      return checkHttpOk(result, 'Credential revocation failed') ?? labelledResponse(
-        `Credentials revoked for "${args.provider}" (message_id: ${messageId})`,
-        result.body
+      const result = await agnosticRequest(config, 'post', '/api/v1/a2a/receive', message);
+      return (
+        checkHttpOk(result, 'Credential revocation failed') ??
+        labelledResponse(
+          `Credentials revoked for "${args.provider}" (message_id: ${messageId})`,
+          result.body
+        )
       );
     })
   );

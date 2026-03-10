@@ -192,5 +192,4 @@ export class DarwinPermissionManager implements PlatformPermissionManager {
       this.pollInterval = null;
     }
   }
-
 }

@@ -158,6 +158,10 @@ vi.mock('./api/client', () => ({
   fetchAvailablePlatforms: vi.fn(),
   fetchKeyRotationStatus: vi.fn(),
   rotateKey: vi.fn(),
+  fetchEcosystemServices: vi.fn().mockResolvedValue([]),
+  probeEcosystemService: vi.fn().mockResolvedValue({}),
+  enableEcosystemService: vi.fn().mockResolvedValue({}),
+  disableEcosystemService: vi.fn().mockResolvedValue({}),
 }));
 
 import * as api from './api/client';

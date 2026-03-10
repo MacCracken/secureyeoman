@@ -66,9 +66,7 @@ export class RoutingRulesStorage extends PgBaseStorage {
   }> {
     const { enabled, limit = 100, offset = 0 } = opts;
 
-    const { where, values: params, nextIdx } = buildWhere([
-      { column: 'enabled', value: enabled },
-    ]);
+    const { where, values: params, nextIdx } = buildWhere([{ column: 'enabled', value: enabled }]);
 
     const rows = await this.queryMany<DbRow>(
       `SELECT * FROM routing_rules ${where}

@@ -270,20 +270,14 @@ export class EventBridge {
     if (this.config.agnosticSseUrl) {
       void this.subscribe('agnostic', this.config.agnosticSseUrl, this.config.agnosticApiKey).catch(
         (err: unknown) => {
-          this.logger.warn(
-            { error: errorToString(err) },
-            'Agnostic SSE subscription failed'
-          );
+          this.logger.warn({ error: errorToString(err) }, 'Agnostic SSE subscription failed');
         }
       );
     }
     if (this.config.agnosSseUrl) {
       void this.subscribe('agnos', this.config.agnosSseUrl, this.config.agnosApiKey).catch(
         (err: unknown) => {
-          this.logger.warn(
-            { error: errorToString(err) },
-            'Agnos SSE subscription failed'
-          );
+          this.logger.warn({ error: errorToString(err) }, 'Agnos SSE subscription failed');
         }
       );
     }

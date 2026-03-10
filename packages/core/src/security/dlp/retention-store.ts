@@ -118,10 +118,7 @@ export class RetentionStore extends PgBaseStorage {
     classificationLevel?: ClassificationLevel | null
   ): Promise<number> {
     const { where, values } = this.buildCriteria(contentType, cutoff, classificationLevel);
-    return this.execute(
-      `DELETE FROM dlp.classifications ${where}`,
-      values
-    );
+    return this.execute(`DELETE FROM dlp.classifications ${where}`, values);
   }
 
   /**

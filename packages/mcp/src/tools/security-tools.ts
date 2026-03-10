@@ -430,7 +430,9 @@ export async function registerSecurityTools(
         const cmd = buildCommandString(config, 'gobuster', gbArgs);
         const parsed = parseGobusterOutput(stdout, args.mode);
         const envelope = buildEnvelope('gobuster', args.target, cmd, parsed, 0);
-        return textResponse(formatSecResult('gobuster', args.target, cmd, stdout, stderr, envelope));
+        return textResponse(
+          formatSecResult('gobuster', args.target, cmd, stdout, stderr, envelope)
+        );
       })
     );
   }
@@ -810,7 +812,9 @@ export async function registerSecurityTools(
       },
       wrapToolHandler('sec_hydra', middleware, async (args) => {
         if (!config.allowBruteForce) {
-          return errorResponse('sec_hydra requires MCP_ALLOW_BRUTE_FORCE=true. This is a separate opt-in beyond MCP_EXPOSE_SECURITY_TOOLS.');
+          return errorResponse(
+            'sec_hydra requires MCP_ALLOW_BRUTE_FORCE=true. This is a separate opt-in beyond MCP_EXPOSE_SECURITY_TOOLS.'
+          );
         }
         validateTarget(args.target, config);
         const hydraArgs = [

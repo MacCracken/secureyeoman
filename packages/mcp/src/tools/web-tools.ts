@@ -988,7 +988,9 @@ export function registerWebTools(
               .map((r, i) => `${i + 1}. **${r.title}**\n   ${r.url}\n   ${r.snippet}`)
               .join('\n\n');
 
-      return textResponse(`## Search: "${args.query}"\n\nProvider: ${config.webSearchProvider}\n\n${output}`);
+      return textResponse(
+        `## Search: "${args.query}"\n\nProvider: ${config.webSearchProvider}\n\n${output}`
+      );
     })
   );
 

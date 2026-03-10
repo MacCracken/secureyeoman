@@ -6,6 +6,24 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.9]
 
+### Secret Internalization & Vault Support
+
+All cryptographic keys and integration secrets are now auto-generated at startup, stored in SecretsManager, and rotation-managed. Only `SECUREYEOMAN_ADMIN_PASSWORD` remains required in `.env`. See ADR 033.
+
+- **Auto-generated keys**: `SECUREYEOMAN_SIGNING_KEY`, `SECUREYEOMAN_TOKEN_SECRET`, `SECUREYEOMAN_ENCRYPTION_KEY`, and `SECUREYEOMAN_WEBHOOK_SECRET` are generated on first boot if not externally provided. Externally-set keys disable auto-rotation for that secret.
+- **`secureyeoman init --vault`**: New CLI flags (`--vault-addr`, `--vault-token`, `--vault-mount`, `--vault-prefix`) push all generated keys to HashiCorp Vault / OpenBao KV v2 instead of writing a `.env` file.
+- **CI/CD webhook routes**: `cicd-webhook-routes.ts` and `integration-routes.ts` now resolve secrets via `getSecret()` (SecretsManager-backed) instead of raw `process.env`.
+- **`.env` cleanup**: All three `.env` files (`.env.example`, `.env.dev.example`, `.env.dev`) updated to document optional auto-generated secrets. Added missing BullShift, Photisnadi, and unified TLS sections to examples.
+
+### Connection-Driven Ecosystem Service Discovery
+
+Ecosystem service integrations (Agnostic QA, AGNOS Runtime) now use on-demand activation instead of blind startup key generation. See ADR 033.
+
+- **ServiceDiscoveryManager** (`integrations/service-discovery.ts`): Connection-driven lifecycle — probe health endpoint, generate API keys only when service is reachable, store in SecretsManager. Disable clears secrets.
+- **Ecosystem REST API** (`integrations/ecosystem-routes.ts`): 5 endpoints under `/api/v1/ecosystem/services` — list, get, probe, enable, disable.
+- **Dashboard UI** (`ConnectionsPage.tsx`): New "Ecosystem Services" section in Connections > MCP > YEOMAN MCP. Toggle cards with status indicators, latency display, and enable/disable switches.
+- **Route permissions**: `ecosystem` routes gated under `integrations` RBAC resource.
+
 ### Docker Image CI/CD — Multi-Arch GHCR Push
 
 Added automated multi-arch Docker image builds to the release pipeline, inspired by the agnosticos CI/CD pattern.

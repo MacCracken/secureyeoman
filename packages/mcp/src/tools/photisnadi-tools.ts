@@ -86,7 +86,10 @@ export function registerPhotisnadiTools(
       params.push(`limit=${args.limit ?? 50}`);
 
       const res = await client.get(`/tasks?${params.join('&')}`);
-      if (!res.ok) throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`);
+      if (!res.ok)
+        throw new Error(
+          `Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`
+        );
       return jsonResponse(res.body);
     })
   );
@@ -132,7 +135,10 @@ export function registerPhotisnadiTools(
       if (args.tags) task.tags = args.tags;
 
       const res = await client.post('/tasks', task);
-      if (!res.ok) throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`);
+      if (!res.ok)
+        throw new Error(
+          `Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`
+        );
       return jsonResponse(res.body);
     })
   );
@@ -173,7 +179,10 @@ export function registerPhotisnadiTools(
 
       const query = `id=eq.${args.task_id}&user_id=eq.${sb.userId}`;
       const res = await client.patch(`/tasks?${query}`, updates);
-      if (!res.ok) throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`);
+      if (!res.ok)
+        throw new Error(
+          `Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`
+        );
       return jsonResponse(res.body);
     })
   );
@@ -202,7 +211,10 @@ export function registerPhotisnadiTools(
       if (args.frequency) params.push(`frequency=eq.${args.frequency}`);
 
       const res = await client.get(`/rituals?${params.join('&')}`);
-      if (!res.ok) throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`);
+      if (!res.ok)
+        throw new Error(
+          `Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`
+        );
       return jsonResponse(res.body);
     })
   );
@@ -222,8 +234,13 @@ export function registerPhotisnadiTools(
       if (!sb) return textResponse(NO_SUPABASE_MSG);
 
       const client = createSupabaseClient(sb);
-      const res = await client.get(`/tasks?user_id=eq.${sb.userId}&select=status,priority,due_date`);
-      if (!res.ok) throw new Error(`Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`);
+      const res = await client.get(
+        `/tasks?user_id=eq.${sb.userId}&select=status,priority,due_date`
+      );
+      if (!res.ok)
+        throw new Error(
+          `Photisnadi Supabase error (HTTP ${res.status}): ${JSON.stringify(res.body)}`
+        );
       const tasks = res.body as { status: string; priority: string; due_date: string | null }[];
 
       const now = new Date();
@@ -274,7 +291,10 @@ export function registerPhotisnadiTools(
       // Check Photisnadi web UI availability (raw fetch — one-off HEAD check)
       let webUiStatus = 'unknown';
       try {
-        const uiRes = await fetch('http://photisnadi:8080/', { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+        const uiRes = await fetch('http://photisnadi:8080/', {
+          method: 'HEAD',
+          signal: AbortSignal.timeout(5000),
+        });
         webUiStatus = uiRes.ok ? 'reachable' : `HTTP ${uiRes.status}`;
       } catch {
         webUiStatus = 'unreachable';
@@ -295,8 +315,14 @@ export function registerPhotisnadiTools(
         client.get(`/tasks?user_id=eq.${sb.userId}&select=id`),
         client.get(`/rituals?user_id=eq.${sb.userId}&select=id`),
       ]);
-      if (!tasksRes.ok) throw new Error(`Photisnadi Supabase error (HTTP ${tasksRes.status}): ${JSON.stringify(tasksRes.body)}`);
-      if (!ritualsRes.ok) throw new Error(`Photisnadi Supabase error (HTTP ${ritualsRes.status}): ${JSON.stringify(ritualsRes.body)}`);
+      if (!tasksRes.ok)
+        throw new Error(
+          `Photisnadi Supabase error (HTTP ${tasksRes.status}): ${JSON.stringify(tasksRes.body)}`
+        );
+      if (!ritualsRes.ok)
+        throw new Error(
+          `Photisnadi Supabase error (HTTP ${ritualsRes.status}): ${JSON.stringify(ritualsRes.body)}`
+        );
       const tasks = tasksRes.body as unknown[];
       const rituals = ritualsRes.body as unknown[];
 

@@ -176,9 +176,7 @@ export class StrategyStorage extends PgBaseStorage {
     limit?: number;
     offset?: number;
   }): Promise<{ items: ReasoningStrategy[]; total: number }> {
-    const { where, values, nextIdx } = buildWhere([
-      { column: 'category', value: opts?.category },
-    ]);
+    const { where, values, nextIdx } = buildWhere([{ column: 'category', value: opts?.category }]);
     const limit = opts?.limit ?? 100;
     const offset = opts?.offset ?? 0;
 

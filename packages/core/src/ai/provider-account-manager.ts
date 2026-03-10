@@ -85,14 +85,12 @@ export class ProviderAccountManager {
     if (!account) return false;
 
     // Remove the stored secret
-    await this.secretsManager
-      .delete(account.secretName)
-      .catch((err) =>
-        getLogger().warn(
-          { err, secretName: account.secretName },
-          'Failed to delete provider account secret'
-        )
+    await this.secretsManager.delete(account.secretName).catch((err: unknown) => {
+      getLogger().warn(
+        { err, secretName: account.secretName },
+        'Failed to delete provider account secret'
       );
+    });
 
     const deleted = await this.storage.deleteAccount(id);
     if (deleted) {

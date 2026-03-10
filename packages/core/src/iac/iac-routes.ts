@@ -93,11 +93,7 @@ export function registerIacRoutes(app: FastifyInstance, opts: IacRouteOptions): 
           errors: result.errors,
         });
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Sync failed: ${errorToString(err)}`
-        );
+        return sendError(reply, 500, `Sync failed: ${errorToString(err)}`);
       }
     }
   );

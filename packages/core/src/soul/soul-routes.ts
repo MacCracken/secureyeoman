@@ -1058,9 +1058,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
 
       // Check if the stream was truncated (file too large)
       if (data.file.truncated) {
-        await unlink(destPath).catch((err) =>
-          request.log.warn({ err, destPath }, 'Failed to delete oversized avatar file')
-        );
+        await unlink(destPath).catch((err: unknown) => {
+          request.log.warn({ err, destPath }, 'Failed to delete oversized avatar file');
+        });
         return sendError(reply, 413, 'File too large (max 2 MB)');
       }
 

@@ -115,7 +115,7 @@ export function TaskTrackerWidget() {
       {/* Error state */}
       {isError && !isLoading && (
         <div className="text-xs text-red-500 py-2">
-          {(error as Error)?.message ?? 'Failed to load Photisnadi data'}
+          {error?.message ?? 'Failed to load Photisnadi data'}
         </div>
       )}
 
@@ -135,7 +135,7 @@ export function TaskTrackerWidget() {
                 count > 0 ? (
                   <div
                     key={status}
-                    className={`${STATUS_COLORS[status] ?? 'bg-gray-400'}`}
+                    className={STATUS_COLORS[status] ?? 'bg-gray-400'}
                     style={{ width: `${(count / Math.max(data.tasks.total, 1)) * 100}%` }}
                     title={`${STATUS_LABELS[status] ?? status}: ${count}`}
                   />

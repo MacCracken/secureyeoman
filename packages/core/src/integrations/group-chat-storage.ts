@@ -24,7 +24,11 @@ export class GroupChatStorage extends PgBaseStorage {
   ): Promise<{ channels: GroupChatChannel[]; total: number }> {
     const { limit = 50, offset = 0, platform, integrationId } = opts;
 
-    const { where, values: params, nextIdx } = buildWhere([
+    const {
+      where,
+      values: params,
+      nextIdx,
+    } = buildWhere([
       { column: 'm.platform', value: platform },
       { column: 'm.integration_id', value: integrationId },
     ]);
@@ -121,10 +125,11 @@ export class GroupChatStorage extends PgBaseStorage {
     const { limit = 50, offset = 0, before } = opts;
 
     // Fixed conditions for integration_id and chat_id, optional before filter
-    const { where: optWhere, values: optValues, nextIdx } = buildWhere(
-      [{ column: 'timestamp', value: before, op: '<' }],
-      3
-    );
+    const {
+      where: optWhere,
+      values: optValues,
+      nextIdx,
+    } = buildWhere([{ column: 'timestamp', value: before, op: '<' }], 3);
     const params: unknown[] = [integrationId, chatId, ...optValues];
     const where = optWhere
       ? `WHERE integration_id = $1 AND chat_id = $2 AND ${optWhere.slice(6)}`

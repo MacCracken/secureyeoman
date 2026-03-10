@@ -20,6 +20,7 @@ import type { WorkflowManager } from '../../workflow/workflow-manager.js';
 import type { SecureYeoman } from '../../secureyeoman.js';
 import { requiresLicense } from '../../licensing/license-guard.js';
 import { sendError, toErrorMessage } from '../../utils/errors.js';
+import { getSecret } from '../../config/loader.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -202,7 +203,7 @@ export function registerCicdWebhookRoutes(
       const rawBody = JSON.stringify(request.body);
       const body = (request.body ?? {}) as Record<string, unknown>;
 
-      const webhookSecret = process.env.SECUREYEOMAN_WEBHOOK_SECRET;
+      const webhookSecret = getSecret('SECUREYEOMAN_WEBHOOK_SECRET');
 
       let ciEvent: CiEvent;
 
@@ -231,7 +232,7 @@ export function registerCicdWebhookRoutes(
             (request.headers['x-gitlab-event'] as string | undefined) ?? 'Pipeline Hook';
           ciEvent = normalizeGitlab(eventHeader, body);
         } else if (provider === 'northflank') {
-          const northflankSecret = process.env.NORTHFLANK_WEBHOOK_SECRET;
+          const northflankSecret = getSecret('NORTHFLANK_WEBHOOK_SECRET');
           const sig = request.headers['x-northflank-signature'] as string | undefined;
           if (!verifyHmac(northflankSecret, rawBody, sig)) {
             return sendError(reply, 401, 'Invalid Northflank webhook signature');

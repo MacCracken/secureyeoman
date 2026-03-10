@@ -85,7 +85,11 @@ import {
   createApiKey,
   fetchApiKeys,
   revokeApiKey,
+  fetchEcosystemServices,
+  enableEcosystemService,
+  disableEcosystemService,
 } from '../api/client';
+import type { EcosystemServiceInfo } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type {
   McpServerConfig,
@@ -1278,6 +1282,30 @@ export function ConnectionsPage() {
     },
   });
 
+  const ecosystemQuery = useQuery({
+    queryKey: ['ecosystemServices'],
+    queryFn: fetchEcosystemServices,
+    refetchInterval: 30_000,
+  });
+
+  const enableServiceMut = useMutation({
+    mutationFn: enableEcosystemService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ecosystemServices'] });
+      queryClient.invalidateQueries({ queryKey: ['mcpConfig'] });
+      queryClient.invalidateQueries({ queryKey: ['mcpTools'] });
+    },
+  });
+
+  const disableServiceMut = useMutation({
+    mutationFn: disableEcosystemService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ecosystemServices'] });
+      queryClient.invalidateQueries({ queryKey: ['mcpConfig'] });
+      queryClient.invalidateQueries({ queryKey: ['mcpTools'] });
+    },
+  });
+
   const addMcpMut = useMutation({
     mutationFn: () => {
       const envRecord: Record<string, string> = {};
@@ -1646,6 +1674,64 @@ export function ConnectionsPage() {
       {activeTab === 'mcp' && (
         <>
           <McpPrebuilts />
+
+          {/* Ecosystem Services */}
+          {(ecosystemQuery.data ?? []).length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                Ecosystem Services
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(ecosystemQuery.data ?? []).map((svc: EcosystemServiceInfo) => (
+                  <div key={svc.id} className="card p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{
+                            background:
+                              svc.status === 'connected'
+                                ? '#22c55e'
+                                : svc.status === 'unreachable'
+                                  ? '#ef4444'
+                                  : svc.status === 'error'
+                                    ? '#f59e0b'
+                                    : '#64748b',
+                          }}
+                        />
+                        <span className="text-sm font-medium">{svc.displayName}</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={svc.enabled}
+                          onChange={() => {
+                            if (svc.enabled) {
+                              disableServiceMut.mutate(svc.id);
+                            } else {
+                              enableServiceMut.mutate(svc.id);
+                            }
+                          }}
+                          disabled={enableServiceMut.isPending || disableServiceMut.isPending}
+                          className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                        />
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-1">{svc.description}</p>
+                    <p className="text-[10px] text-muted-foreground/70">
+                      {svc.status === 'connected' &&
+                        svc.lastProbeLatencyMs != null &&
+                        `Connected (${svc.lastProbeLatencyMs}ms)`}
+                      {svc.status === 'unreachable' && 'Service unreachable'}
+                      {svc.status === 'error' && (svc.error ?? 'Connection error')}
+                      {svc.status === 'disconnected' && 'Not connected'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <McpTab
             servers={servers}
             externalServers={externalServers}

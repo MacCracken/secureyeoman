@@ -430,14 +430,14 @@ export class McpStorage extends PgBaseStorage {
   /**
    * List all stored credentials across all servers (for bulk re-encryption).
    */
-  async listAllCredentials(): Promise<
-    { serverId: string; key: string; encryptedValue: string }[]
-  > {
+  async listAllCredentials(): Promise<{ serverId: string; key: string; encryptedValue: string }[]> {
     const rows = await this.queryMany<{
       server_id: string;
       key: string;
       encrypted_value: string;
-    }>('SELECT server_id, key, encrypted_value FROM mcp.server_credentials ORDER BY server_id, key');
+    }>(
+      'SELECT server_id, key, encrypted_value FROM mcp.server_credentials ORDER BY server_id, key'
+    );
     return rows.map((r) => ({
       serverId: r.server_id,
       key: r.key,

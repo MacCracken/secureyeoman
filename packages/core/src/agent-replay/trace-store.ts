@@ -92,7 +92,11 @@ export class TraceStore extends PgBaseStorage {
   ): Promise<{ items: ExecutionTrace[]; total: number }> {
     // tenant_id is always present as $1; optional filters start at $2
     const tenantId = opts.tenantId ?? 'default';
-    const { where: optWhere, values: optValues, nextIdx } = buildWhere(
+    const {
+      where: optWhere,
+      values: optValues,
+      nextIdx,
+    } = buildWhere(
       [
         { column: 'conversation_id', value: opts.conversationId },
         { column: 'personality_id', value: opts.personalityId },

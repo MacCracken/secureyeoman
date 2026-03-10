@@ -19,6 +19,7 @@ import type {
   OutboundWebhookUpdate,
 } from './outbound-webhook-storage.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { getSecret } from '../config/loader.js';
 import { parsePagination } from '../utils/pagination.js';
 import { sanitizeForLogging } from '../utils/crypto.js';
 import { assertPublicUrl } from '../utils/ssrf-guard.js';
@@ -621,7 +622,7 @@ export function registerIntegrationRoutes(
 
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const apiKey = process.env.AGNOSTIC_API_KEY;
+      const apiKey = getSecret('AGNOSTIC_API_KEY');
       if (apiKey) headers['X-API-Key'] = apiKey;
 
       const res = await fetch(`${agnosticUrl}/api/dashboard/widget`, {

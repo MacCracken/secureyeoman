@@ -145,8 +145,7 @@ export function KeyRotationCard() {
                 {statuses.map((s) => {
                   const canRotate = s.source === 'internal' && s.autoRotate;
                   const isRotating =
-                    rotateMutation.isPending &&
-                    rotateMutation.variables === s.name;
+                    rotateMutation.isPending && rotateMutation.variables === s.name;
                   return (
                     <tr key={s.name} className="align-middle">
                       <td className="py-2.5 pr-4">
@@ -159,9 +158,7 @@ export function KeyRotationCard() {
                       <td className="py-2.5 pr-4 text-muted-foreground">
                         {relativeTime(s.lastRotatedAt)}
                       </td>
-                      <td className="py-2.5 pr-4 text-muted-foreground">
-                        {nextRotation(s)}
-                      </td>
+                      <td className="py-2.5 pr-4 text-muted-foreground">{nextRotation(s)}</td>
                       <td className="py-2.5 pr-4">{sourceBadge(s.source)}</td>
                       <td className="py-2.5 text-right">
                         {canRotate ? (
@@ -172,9 +169,7 @@ export function KeyRotationCard() {
                             disabled={isRotating}
                             className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                           >
-                            <RefreshCw
-                              className={`w-3 h-3 ${isRotating ? 'animate-spin' : ''}`}
-                            />
+                            <RefreshCw className={`w-3 h-3 ${isRotating ? 'animate-spin' : ''}`} />
                             {isRotating ? 'Rotating...' : 'Rotate Now'}
                           </button>
                         ) : (

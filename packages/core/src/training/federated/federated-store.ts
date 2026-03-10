@@ -119,9 +119,7 @@ export class FederatedStore extends PgBaseStorage {
   async listSessions(
     opts: { status?: string; limit?: number; offset?: number } = {}
   ): Promise<{ items: FederatedSession[]; total: number }> {
-    const { where, values, nextIdx } = buildWhere([
-      { column: 'status', value: opts.status },
-    ]);
+    const { where, values, nextIdx } = buildWhere([{ column: 'status', value: opts.status }]);
 
     const countResult = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*)::TEXT AS count FROM federated.sessions ${where}`,
@@ -184,9 +182,7 @@ export class FederatedStore extends PgBaseStorage {
   async listParticipants(
     opts: { status?: string; limit?: number } = {}
   ): Promise<FederatedParticipant[]> {
-    const { where, values, nextIdx } = buildWhere([
-      { column: 'status', value: opts.status },
-    ]);
+    const { where, values, nextIdx } = buildWhere([{ column: 'status', value: opts.status }]);
 
     const limit = Math.min(opts.limit ?? 100, 500);
 

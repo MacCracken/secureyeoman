@@ -199,7 +199,9 @@ Respond ONLY with JSON (no markdown, no explanation): {"assignTo": ["profileName
             reasoning: decision.reasoning,
           },
         })
-        .catch((err) => this.logger.warn({ err }, 'Failed to record team_coordinator_assigned audit'));
+        .catch((err: unknown) => {
+          this.logger.warn({ err }, 'Failed to record team_coordinator_assigned audit');
+        });
 
       // Step 4: Dispatch delegations
       const delegationResults: string[] = [];

@@ -227,7 +227,10 @@ export function registerSearchRoutes(app: FastifyInstance): void {
           const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
           const fileSize = statSync(fullPath).size;
           if (fileSize > MAX_FILE_SIZE) {
-            log.warn({ file, fileSize }, 'Skipping file exceeding 10 MB size limit in search-replace');
+            log.warn(
+              { file, fileSize },
+              'Skipping file exceeding 10 MB size limit in search-replace'
+            );
             results.push({ file, replacements: 0, skipped: 'File exceeds 10 MB limit' });
             continue;
           }

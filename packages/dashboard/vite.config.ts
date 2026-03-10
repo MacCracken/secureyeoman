@@ -27,7 +27,18 @@ function micromarkResolve(): Plugin {
 export default defineConfig(({ mode }) => {
   const env = { ...loadEnv(mode, resolve(__dirname, '../..'), ''), ...process.env };
   const GATEWAY_URL = env.VITE_GATEWAY_URL || 'http://127.0.0.1:18789';
-  const allowedHosts = env.VITE_ALLOWED_HOSTS ? env.VITE_ALLOWED_HOSTS.split(',') : [];
+
+  // Derive allowed hosts from SECUREYEOMAN_EXTERNAL_URL if VITE_ALLOWED_HOSTS not set
+  let allowedHosts: string[] = [];
+  if (env.VITE_ALLOWED_HOSTS) {
+    allowedHosts = env.VITE_ALLOWED_HOSTS.split(',');
+  } else if (env.SECUREYEOMAN_EXTERNAL_URL) {
+    try {
+      allowedHosts = [new URL(env.SECUREYEOMAN_EXTERNAL_URL).hostname];
+    } catch {
+      // Invalid URL — skip
+    }
+  }
 
   return {
     plugins: [micromarkResolve(), react()],
@@ -72,13 +83,14 @@ export default defineConfig(({ mode }) => {
         usePolling: true,
         interval: 300,
       },
-      https:
-        env.VITE_TLS_CERT && env.VITE_TLS_KEY
-          ? {
-              cert: resolve(__dirname, '../..', env.VITE_TLS_CERT),
-              key: resolve(__dirname, '../..', env.VITE_TLS_KEY),
-            }
-          : undefined,
+      https: (() => {
+        // Explicit VITE_TLS_* vars take precedence, then derive from TLS_CERT_PATH (strip /app/ container prefix)
+        const cert = env.VITE_TLS_CERT || (env.TLS_CERT_PATH ?? '').replace(/^\/app\//, '');
+        const key = env.VITE_TLS_KEY || (env.TLS_KEY_PATH ?? '').replace(/^\/app\//, '');
+        return cert && key
+          ? { cert: resolve(__dirname, '../..', cert), key: resolve(__dirname, '../..', key) }
+          : undefined;
+      })(),
       // Proxy API requests to the gateway
       proxy: {
         '/api': {
