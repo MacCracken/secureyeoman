@@ -39,7 +39,7 @@ describe('route-permissions', () => {
     });
 
     it('should return null for unmapped paths', () => {
-      expect(resolvePermission('/api/v1/admin/danger', 'GET')).toBeNull();
+      expect(resolvePermission('/api/v1/unknown/danger', 'GET')).toBeNull();
     });
 
     it('should return null for unknown HTTP methods', () => {
