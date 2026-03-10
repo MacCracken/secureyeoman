@@ -97,10 +97,16 @@ async function* spawnAndStream(
 
 const NODE_DANGEROUS = [
   /\brequire\s*\(\s*['"]child_process['"]\s*\)/,
+  /\bimport\s*\(\s*['"]child_process['"]\s*\)/,
+  /\brequire\s*\(\s*['"]node:child_process['"]\s*\)/,
+  /\bimport\s*\(\s*['"]node:child_process['"]\s*\)/,
   /\bprocess\.exit\b/,
+  /\bprocess\.mainModule\b/,
   /\bexecSync\b/,
   /\bspawnSync\b/,
   /\bfs\s*\.\s*(?:rm|rmdir|unlink|writeFile)Sync\b/,
+  /\brequire\s*\(\s*['"]node:fs['"]\s*\)/,
+  /\bimport\s*\(\s*['"]node:fs['"]\s*\)/,
 ];
 
 const PYTHON_DANGEROUS = [
@@ -114,10 +120,15 @@ const PYTHON_DANGEROUS = [
 
 const SHELL_DANGEROUS = [
   /\brm\s+-rf\s+\//,
+  /\brm\s+-rf\s+~/,
   /\bmkfs\b/,
   /\bdd\s+if=/,
   /:\(\)\s*\{\s*:\|:\s*&\s*\}\s*;/, // fork bomb
   /\b>\s*\/dev\/sd/,
+  /\bcurl\b.*\|\s*(?:sh|bash|zsh)\b/,  // pipe to shell
+  /\bwget\b.*\|\s*(?:sh|bash|zsh)\b/,
+  /\bchmod\s+[0-7]*s/,                  // setuid
+  /\bnc\s+-[el]/,                        // netcat listener
 ];
 
 // ─── Node Runtime ───────────────────────────────────────────────────

@@ -66,7 +66,7 @@ export class EngagementMetricsService {
          FROM   chat.conversations c
          JOIN   chat.messages m ON m.conversation_id = c.id
          WHERE  c.created_at >= NOW() - ($1 || ' days')::interval
-           AND  c.updated_at < NOW() - '${ABANDONMENT_STALE_HOURS} hours'::interval
+           AND  c.updated_at < NOW() - interval '24 hours'
            ${personalityFilter}
          GROUP BY c.id, c.updated_at
          HAVING COUNT(m.id) <= 2

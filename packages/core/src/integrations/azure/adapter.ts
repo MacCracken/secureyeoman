@@ -125,11 +125,13 @@ export class AzureDevOpsIntegration implements WebhookIntegration {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) {
       const err = await resp.text();
-      throw new Error(`Failed to post Azure DevOps comment: ${err}`);
+      this.logger?.warn({ error: err, statusCode: resp.status }, 'Azure DevOps comment post failed');
+      throw new Error(`Failed to post Azure DevOps comment (HTTP ${resp.status})`);
     }
 
     const comment = (await resp.json()) as { id: number };
@@ -148,6 +150,7 @@ export class AzureDevOpsIntegration implements WebhookIntegration {
           Authorization: `Basic ${Buffer.from(`:${this.personalAccessToken}`).toString('base64')}`,
           Accept: 'application/json',
         },
+        signal: AbortSignal.timeout(30_000),
       });
 
       if (!resp.ok) {

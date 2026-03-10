@@ -51,7 +51,7 @@ export class LocalAIProvider extends BaseProvider {
    */
   static async fetchAvailableModels(baseUrl = LOCALAI_BASE_URL): Promise<LocalAIModelInfo[]> {
     try {
-      const res = await fetch(`${baseUrl}/models`);
+      const res = await fetch(`${baseUrl}/models`, { signal: AbortSignal.timeout(15_000) });
       if (!res.ok) return [];
       const data = (await res.json()) as { data?: { id: string; owned_by: string }[] };
       return (data.data ?? []).map((m) => ({

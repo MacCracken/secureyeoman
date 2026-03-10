@@ -102,6 +102,7 @@ export class VaultBackend {
       method: 'POST',
       headers: this.baseHeaders(false),
       body: JSON.stringify({ role_id: this.config.roleId, secret_id: this.config.secretId }),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!res.ok) {
@@ -135,6 +136,7 @@ export class VaultBackend {
       method,
       headers: { ...this.baseHeaders(false), 'X-Vault-Token': token },
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(10_000),
     });
 
     // On 403 with AppRole auth, the short-lived token may have expired; refresh once

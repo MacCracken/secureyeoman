@@ -49,11 +49,23 @@ Examples:
 function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    process.stdin.on('data', (chunk: Buffer) => chunks.push(chunk));
-    process.stdin.on('end', () => {
+    const onData = (chunk: Buffer) => chunks.push(chunk);
+    const onEnd = () => {
+      cleanup();
       resolve(Buffer.concat(chunks).toString('utf-8').trim());
-    });
-    process.stdin.on('error', reject);
+    };
+    const onError = (err: Error) => {
+      cleanup();
+      reject(err);
+    };
+    const cleanup = () => {
+      process.stdin.removeListener('data', onData);
+      process.stdin.removeListener('end', onEnd);
+      process.stdin.removeListener('error', onError);
+    };
+    process.stdin.on('data', onData);
+    process.stdin.on('end', onEnd);
+    process.stdin.on('error', onError);
   });
 }
 

@@ -83,23 +83,23 @@ export function detectNamespaceSupport(): NamespaceCapabilities {
 /**
  * Build an unshare command with the specified namespace flags
  */
-export function buildUnshareCommand(command: string, opts: NamespaceOptions = {}): string {
+export function buildUnshareArgs(command: string, opts: NamespaceOptions = {}): string[] {
   const flags: string[] = ['--user']; // Always use user namespace for unprivileged operation
 
   if (opts.pid) flags.push('--pid', '--fork');
   if (opts.network) flags.push('--net');
   if (opts.mount) flags.push('--mount');
 
-  const parts = ['unshare', ...flags];
+  const args = [...flags];
 
   if (opts.mount && opts.workDir) {
     // Mount proc for PID namespace visibility
-    parts.push('--mount-proc');
+    args.push('--mount-proc');
   }
 
-  parts.push('--', command);
+  args.push('--', command);
 
-  return parts.join(' ');
+  return args;
 }
 
 /**
@@ -120,10 +120,10 @@ export function runInNamespace(command: string, opts: NamespaceOptions = {}): st
     );
   }
 
-  const fullCmd = buildUnshareCommand(command, opts);
+  const args = buildUnshareArgs(command, opts);
 
   try {
-    return execSync(fullCmd, {
+    return execFileSync('unshare', args, {
       encoding: 'utf-8',
       timeout: 30_000,
     }).trim();

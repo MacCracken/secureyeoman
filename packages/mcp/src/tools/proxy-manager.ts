@@ -155,21 +155,24 @@ export async function fetchWithRetry(
     try {
       const response = await fetchFn();
 
-      // Clone so we can read the body for CAPTCHA detection without consuming it
-      const cloned = response.clone();
-      const body = await cloned.text();
+      // Only clone and scan for CAPTCHA on non-success or retryable statuses
+      // to avoid wasting memory on every successful response
+      if (!response.ok || retryableStatuses.includes(response.status)) {
+        const cloned = response.clone();
+        const body = await cloned.text();
 
-      if (detectCaptcha(body, response.status)) {
-        onCaptcha?.(attempt);
-        if (attempt < maxRetries) {
-          await delay(computeDelay(attempt, baseDelayMs, maxDelayMs));
-          continue;
+        if (detectCaptcha(body, response.status)) {
+          onCaptcha?.(attempt);
+          if (attempt < maxRetries) {
+            await delay(computeDelay(attempt, baseDelayMs, maxDelayMs));
+            continue;
+          }
+          throw new RetryableError(
+            `CAPTCHA detected after ${maxRetries + 1} attempts`,
+            response.status,
+            true
+          );
         }
-        throw new RetryableError(
-          `CAPTCHA detected after ${maxRetries + 1} attempts`,
-          response.status,
-          true
-        );
       }
 
       if (retryableStatuses.includes(response.status)) {

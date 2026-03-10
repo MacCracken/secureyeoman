@@ -132,7 +132,7 @@ describe('POST /api/v1/auth/login', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
-      payload: { password: 'wrong' },
+      payload: { password: 'wrong-password' },
     });
     expect(res.statusCode).toBe(401);
   });
@@ -142,7 +142,7 @@ describe('POST /api/v1/auth/login', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
-      payload: { password: 'test' },
+      payload: { password: 'test-password-long' },
     });
     expect(res.statusCode).toBe(500);
   });
@@ -210,7 +210,7 @@ describe('POST /api/v1/auth/reset-password', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/reset-password',
-      payload: { currentPassword: 'old', newPassword: 'new123456' },
+      payload: { currentPassword: 'old-password-valid', newPassword: 'new-password-valid-long' },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().message).toContain('reset');
@@ -221,7 +221,7 @@ describe('POST /api/v1/auth/reset-password', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/reset-password',
-      payload: { newPassword: 'new' },
+      payload: { newPassword: 'new-password-valid-long' },
     });
     expect(res.statusCode).toBe(400);
   });
@@ -231,7 +231,7 @@ describe('POST /api/v1/auth/reset-password', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/reset-password',
-      payload: { currentPassword: 'old' },
+      payload: { currentPassword: 'old-password-valid' },
     });
     expect(res.statusCode).toBe(400);
   });

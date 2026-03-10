@@ -144,6 +144,7 @@ export class GoogleCalendarIntegration implements Integration {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({ text }),
+        signal: AbortSignal.timeout(30_000),
       }
     );
 
@@ -165,6 +166,7 @@ export class GoogleCalendarIntegration implements Integration {
       await this.ensureValidToken();
       const resp = await fetch(`${CALENDAR_API}/users/me/calendarList?maxResults=1`, {
         headers: { Authorization: `Bearer ${this.accessToken}` },
+        signal: AbortSignal.timeout(30_000),
       });
 
       if (!resp.ok) {
@@ -199,7 +201,7 @@ export class GoogleCalendarIntegration implements Integration {
 
       const resp = await fetch(
         `${CALENDAR_API}/calendars/${encodeURIComponent(this.calendarId)}/events?${params}`,
-        { headers: { Authorization: `Bearer ${this.accessToken}` } }
+        { headers: { Authorization: `Bearer ${this.accessToken}` }, signal: AbortSignal.timeout(30_000) }
       );
 
       if (!resp.ok) {
@@ -286,6 +288,7 @@ export class GoogleCalendarIntegration implements Integration {
         refresh_token: this.refreshToken,
         grant_type: 'refresh_token',
       }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) {

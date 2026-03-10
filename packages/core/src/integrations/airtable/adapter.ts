@@ -114,6 +114,7 @@ export class AirtableIntegration implements Integration {
     try {
       const resp = await fetch('https://api.airtable.com/v0/meta/whoami', {
         headers: { Authorization: `Bearer ${this.apiKey}` },
+        signal: AbortSignal.timeout(30_000),
       });
       if (!resp.ok) return { ok: false, message: `Airtable API error: ${resp.statusText}` };
       const data = (await resp.json()) as AirtableWhoAmI;
@@ -186,6 +187,7 @@ export class AirtableIntegration implements Integration {
         'Content-Type': 'application/json',
         ...((init?.headers ?? {}) as Record<string, string>),
       },
+      signal: AbortSignal.timeout(30_000),
     });
   }
 }

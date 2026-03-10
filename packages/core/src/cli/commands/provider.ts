@@ -11,15 +11,74 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractBoolFlag, extractCommonFlags, apiCall, colorContext } from '../utils.js';
+import {
+  extractFlag,
+  extractBoolFlag,
+  extractCommonFlags,
+  apiCall,
+  colorContext,
+} from '../utils.js';
 import { errorToString } from '../../utils/errors.js';
+
+/** Read a secret interactively (no echo). Returns empty string when not a TTY. */
+async function readSecret(label: string): Promise<string> {
+  // Only prompt interactively when connected to a terminal
+  if (!process.stdin.isTTY) {
+    return '';
+  }
+  return new Promise((resolve) => {
+    process.stdout.write(`${label}: `);
+    const stdin = process.stdin as NodeJS.ReadStream & { setRawMode?: (v: boolean) => void };
+    stdin.setRawMode?.(true);
+    let secret = '';
+    let resolved = false;
+
+    const cleanup = () => {
+      process.stdin.removeListener('data', onData);
+      process.stdin.removeListener('end', onEnd);
+      process.stdin.removeListener('error', onError);
+      stdin.setRawMode?.(false);
+    };
+    const finish = (value: string) => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      process.stdout.write('\n');
+      resolve(value);
+    };
+
+    const onData = (ch: Buffer) => {
+      const c = ch.toString();
+      if (c === '\n' || c === '\r') {
+        finish(secret);
+      } else if (c === '\u007F' || c === '\b') {
+        secret = secret.slice(0, -1);
+      } else if (c === '\u0003') {
+        // Ctrl+C
+        finish('');
+      } else {
+        secret += c;
+      }
+    };
+    const onEnd = () => {
+      finish(secret);
+    };
+    const onError = () => {
+      finish('');
+    };
+
+    process.stdin.on('data', onData);
+    process.stdin.on('end', onEnd);
+    process.stdin.on('error', onError);
+  });
+}
 
 const USAGE = `
 Usage: secureyeoman provider <subcommand> [options]
 
 Subcommands:
   list                     List all provider accounts
-  add <provider>           Add a new provider account (prompts for key)
+  add <provider>           Add a new provider account (prompts for key securely)
   validate <id>            Validate a provider account's API key
   set-default <id>         Set an account as the default for its provider
   costs                    Show per-account cost summary
@@ -31,28 +90,11 @@ Options:
   --json                   Output raw JSON
   --provider <name>        Filter by provider (for list/costs)
   --label <label>          Account label (for add)
-  --key <key>              API key (for add/rotate)
+  --key <key>              API key (for add/rotate, prefer interactive prompt)
   --default                Set as default (for add)
   --days <n>               Cost trend period (default: 30)
   -h, --help               Show this help
 `;
-
-function extractStringFlag(
-  argv: string[],
-  name: string,
-  short?: string
-): { value: string | undefined; rest: string[] } {
-  const rest: string[] = [];
-  let value: string | undefined;
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === `--${name}` || (short && argv[i] === `-${short}`)) {
-      value = argv[++i];
-    } else {
-      rest.push(argv[i]!);
-    }
-  }
-  return { value, rest };
-}
 
 export const providerCommand: Command = {
   name: 'provider',
@@ -106,7 +148,7 @@ async function runList(
   jsonOutput: boolean,
   argv: string[]
 ): Promise<number> {
-  const { value: provider } = extractStringFlag(argv, 'provider');
+  const { value: provider } = extractFlag(argv, 'provider');
   const qs = provider ? `?provider=${encodeURIComponent(provider)}` : '';
 
   try {
@@ -155,22 +197,36 @@ async function runAdd(
 ): Promise<number> {
   const provider = argv[0];
   if (!provider) {
-    ctx.stderr.write('Usage: secureyeoman provider add <provider> --label <name> --key <key>\n');
+    ctx.stderr.write('Usage: secureyeoman provider add <provider> --label <name> [--key <key>]\n');
     return 1;
   }
 
   let restArgs = argv.slice(1);
-  const labelResult = extractStringFlag(restArgs, 'label');
+  const labelResult = extractFlag(restArgs, 'label');
   restArgs = labelResult.rest;
-  const keyResult = extractStringFlag(restArgs, 'key');
+  const keyResult = extractFlag(restArgs, 'key');
   restArgs = keyResult.rest;
   const defaultResult = extractBoolFlag(restArgs, 'default');
 
   const label = labelResult.value;
-  const apiKey = keyResult.value;
+  let apiKey = keyResult.value;
 
-  if (!label || !apiKey) {
-    ctx.stderr.write('--label and --key are required\n');
+  if (!label) {
+    ctx.stderr.write('--label is required\n');
+    return 1;
+  }
+
+  if (!apiKey) {
+    try {
+      apiKey = await readSecret(`  API key for ${provider}`);
+    } catch {
+      ctx.stderr.write('Failed to read API key\n');
+      return 1;
+    }
+  }
+
+  if (!apiKey) {
+    ctx.stderr.write('API key is required (use interactive prompt or --key)\n');
     return 1;
   }
 
@@ -289,7 +345,7 @@ async function runCosts(
   jsonOutput: boolean,
   argv: string[]
 ): Promise<number> {
-  const { value: provider } = extractStringFlag(argv, 'provider');
+  const { value: provider } = extractFlag(argv, 'provider');
   const qs = provider ? `?accountId=${encodeURIComponent(provider)}` : '';
 
   try {
@@ -350,13 +406,21 @@ async function runRotate(
 ): Promise<number> {
   const id = argv[0];
   if (!id) {
-    ctx.stderr.write('Usage: secureyeoman provider rotate <account-id> --key <new-key>\n');
+    ctx.stderr.write('Usage: secureyeoman provider rotate <account-id> [--key <new-key>]\n');
     return 1;
   }
 
-  const { value: newKey } = extractStringFlag(argv.slice(1), 'key');
+  let newKey = extractFlag(argv.slice(1), 'key').value;
   if (!newKey) {
-    ctx.stderr.write('--key <new-key> is required\n');
+    try {
+      newKey = await readSecret('  New API key');
+    } catch {
+      ctx.stderr.write('Failed to read API key\n');
+      return 1;
+    }
+  }
+  if (!newKey) {
+    ctx.stderr.write('New API key is required (use interactive prompt or --key)\n');
     return 1;
   }
 

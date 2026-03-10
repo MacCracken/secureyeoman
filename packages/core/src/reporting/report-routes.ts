@@ -86,7 +86,7 @@ export function registerReportRoutes(app: FastifyInstance, opts: ReportRoutesOpt
       const ext = report.format === 'html' ? 'html' : report.format === 'csv' ? 'csv' : 'json';
       return reply
         .header('Content-Type', contentType)
-        .header('Content-Disposition', `attachment; filename="report-${report.id}.${ext}"`)
+        .header('Content-Disposition', `attachment; filename="report-${report.id.replace(/[\r\n"\\]/g, '_')}.${ext}"`)
         .send(report.content);
     }
   );

@@ -152,6 +152,7 @@ export class LettaProvider extends BaseProvider {
           { label: 'human', value: 'The user is interacting via SecureYeoman.' },
         ],
       }),
+      signal: AbortSignal.timeout(60_000),
     });
 
     if (!response.ok) {
@@ -173,6 +174,7 @@ export class LettaProvider extends BaseProvider {
         method: 'POST',
         headers: this.buildHeaders(),
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(60_000),
       });
 
       if (!response.ok) {
@@ -202,6 +204,7 @@ export class LettaProvider extends BaseProvider {
         method: 'POST',
         headers: this.buildHeaders(),
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(60_000),
       });
     } catch (error) {
       throw this.mapError(error);
@@ -289,6 +292,7 @@ export class LettaProvider extends BaseProvider {
           Authorization: `Bearer ${key}`,
           'Content-Type': 'application/json',
         },
+        signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) return [];
 

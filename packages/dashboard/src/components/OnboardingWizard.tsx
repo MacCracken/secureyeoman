@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sparkles, ArrowRight, ArrowLeft, Check, Cpu, Key, Shield, Copy } from 'lucide-react';
 import {
@@ -16,7 +16,7 @@ interface OnboardingWizardProps {
 
 type Step = 'personality' | 'api-keys' | 'security' | 'model' | 'done';
 
-const STEPS: Step[] = ['personality', 'api-keys', 'security', 'model', 'done'];
+const STEPS: Step[] = ['personality', 'model', 'security', 'api-keys', 'done'];
 
 const TRAIT_OPTIONS: Record<string, string[]> = {
   formality: ['casual', 'balanced', 'formal'],
@@ -28,9 +28,9 @@ const PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'deepseek', 'mistr
 type Provider = (typeof PROVIDERS)[number];
 
 const PROVIDER_DEFAULTS: Record<Provider, string> = {
-  anthropic: 'claude-sonnet-4-20250514',
+  anthropic: 'claude-sonnet-4-6',
   openai: 'gpt-4o',
-  gemini: 'gemini-1.5-pro',
+  gemini: 'gemini-2.0-flash',
   ollama: 'llama3.2',
   deepseek: 'deepseek-chat',
   mistral: 'mistral-large-latest',
@@ -76,6 +76,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   });
   const [selectedProvider, setSelectedProvider] = useState<Provider>('anthropic');
   const [modelName, setModelName] = useState(PROVIDER_DEFAULTS.anthropic);
+  const [providerApiKey, setProviderApiKey] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // API Keys step state
@@ -83,6 +84,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [newKeyExpiry, setNewKeyExpiry] = useState('');
   const [createdKeyValue, setCreatedKeyValue] = useState<string | null>(null);
   const [keyCopied, setKeyCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up copy timer on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   // Security step state
   const [securityDirty, setSecurityDirty] = useState(false);
@@ -180,6 +189,18 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const handleNext = async () => {
     setError(null);
+    if (step === 'model' && providerApiKey && selectedProvider !== 'ollama') {
+      // Save provider API key via secrets manager
+      try {
+        await fetch('/api/v1/internal/secrets/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: `${selectedProvider}_api_key`, value: providerApiKey }),
+        });
+      } catch {
+        // non-fatal — user can configure later in Settings
+      }
+    }
     if (step === 'security' && securityDirty) {
       try {
         await securityMutation.mutateAsync(securityToggles);
@@ -206,8 +227,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     if (createdKeyValue) {
       await navigator.clipboard.writeText(createdKeyValue);
       setKeyCopied(true);
-      setTimeout(() => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => {
         setKeyCopied(false);
+        copyTimerRef.current = null;
       }, 2000);
     }
   };
@@ -325,16 +348,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             </div>
           )}
 
-          {/* Step 2: Connect AI providers (API keys) */}
+          {/* Step 4: Dashboard API keys */}
           {step === 'api-keys' && (
             <div className="space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Key className="w-4 h-4 text-muted-foreground" />
-                  <h2 className="text-lg font-semibold">Connect AI providers</h2>
+                  <h2 className="text-lg font-semibold">Dashboard API key</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Create a dashboard API key. You can skip this and do it later in Settings.
+                  Create a dashboard API key for programmatic access. You can skip this and do it
+                  later in Settings.
                 </p>
               </div>
 
@@ -435,7 +459,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             </div>
           )}
 
-          {/* Step 3: Security policy */}
+          {/* Step 3: Security policy (unchanged position) */}
           {step === 'security' && (
             <div className="space-y-4">
               <div>
@@ -476,17 +500,16 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             </div>
           )}
 
-          {/* Step 4: Default model */}
+          {/* Step 2: Default model & provider key */}
           {step === 'model' && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <Cpu className="w-4 h-4 text-muted-foreground" />
-                <h2 className="text-lg font-semibold">Default model</h2>
+                <h2 className="text-lg font-semibold">AI provider & model</h2>
               </div>
               <p className="text-xs text-muted-foreground">
-                Choose the AI provider and model for this personality. The provider's API key must
-                be set in your <code className="font-mono">.env</code> file before starting the
-                server. You can skip this step to use the server default.
+                Choose the AI provider, model, and enter your provider API key. You can skip this
+                step to configure later in Settings.
               </p>
 
               <div>
@@ -532,10 +555,37 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </p>
               </div>
 
+              {/* Provider API key input (not shown for Ollama) */}
+              {selectedProvider !== 'ollama' && (
+                <div>
+                  <label
+                    className="block text-xs text-muted-foreground mb-1"
+                    htmlFor="provider-api-key"
+                  >
+                    API Key
+                  </label>
+                  <input
+                    id="provider-api-key"
+                    type="password"
+                    value={providerApiKey}
+                    onChange={(e) => {
+                      setProviderApiKey(e.target.value);
+                    }}
+                    className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                    placeholder="sk-... (leave blank to set later)"
+                    autoComplete="off"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Stored securely on the server. Leave blank to configure later in Settings.
+                  </p>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => {
                   setModelName('');
+                  setProviderApiKey('');
                 }}
                 className="text-xs text-muted-foreground underline hover:text-foreground"
               >
@@ -590,8 +640,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Skip button for api-keys and security steps */}
-            {(step === 'api-keys' || step === 'security') && (
+            {/* Skip button for model, security, and api-keys steps */}
+            {(step === 'model' || step === 'api-keys' || step === 'security') && (
               <button
                 type="button"
                 onClick={handleSkip}

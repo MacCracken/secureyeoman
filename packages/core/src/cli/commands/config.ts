@@ -1,15 +1,25 @@
 /**
- * Config Command — Validate configuration and check secrets.
+ * Config Command — Unified config management.
  *
  * Subcommands:
  *   (none)     Show current config values
  *   validate   Run a full pre-startup validation check (config + secrets)
+ *   get        Show runtime admin settings (requires running server)
+ *   set        Update a runtime admin setting (requires running server)
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, colorContext } from '../utils.js';
+import {
+  extractFlag,
+  extractBoolFlag,
+  extractCommonFlags,
+  colorContext,
+  apiCall,
+} from '../utils.js';
 import { loadConfig, validateSecrets } from '../../config/loader.js';
 import { errorToString } from '../../utils/errors.js';
+
+const KNOWN_SETTINGS = ['external_url', 'oauth_redirect_base_url'] as const;
 
 const USAGE = `
 Usage: secureyeoman config [subcommand] [options]
@@ -17,19 +27,24 @@ Usage: secureyeoman config [subcommand] [options]
 Subcommands:
   (none)      Show current configuration values
   validate    Run pre-startup validation check (config structure + secrets)
+  get         Show runtime admin settings (requires running server)
+  set <k> <v> Update a runtime admin setting (requires running server)
+              Keys: ${KNOWN_SETTINGS.join(', ')}
 
 Options:
   -c, --config <path>    Config file path (YAML)
       --check-secrets    Validate required environment variables (default command only)
-      --json             Output validation result as JSON (validate subcommand only)
+      --json             Output result as JSON
+      --url <url>        Server URL for get/set (default: http://127.0.0.1:3000)
+      --token <token>    Auth token for get/set
   -h, --help             Show this help
 `;
 
 export const configCommand: Command = {
   name: 'config',
   aliases: ['cfg'],
-  description: 'Validate configuration and check secrets',
-  usage: 'secureyeoman config [validate] [--config PATH]',
+  description: 'Validate configuration and manage settings',
+  usage: 'secureyeoman config [validate|get|set] [options]',
 
   async run(ctx: CommandContext): Promise<number> {
     let argv = ctx.argv;
@@ -44,6 +59,12 @@ export const configCommand: Command = {
     // Route to subcommand if first positional arg matches
     if (argv[0] === 'validate') {
       return runValidate(ctx, argv.slice(1));
+    }
+    if (argv[0] === 'get') {
+      return runSettingsGet(ctx, argv.slice(1));
+    }
+    if (argv[0] === 'set') {
+      return runSettingsSet(ctx, argv.slice(1));
     }
 
     // Default: show config info (existing behaviour)
@@ -175,4 +196,82 @@ Options:
   }
 
   return allPassed ? 0 : 1;
+}
+
+// ---------------------------------------------------------------------------
+// Runtime settings subcommands (get / set) — require a running server
+// ---------------------------------------------------------------------------
+
+async function runSettingsGet(ctx: CommandContext, argv: string[]): Promise<number> {
+  const { baseUrl, token, json: jsonOutput } = extractCommonFlags(argv);
+
+  try {
+    const result = await apiCall(baseUrl, '/api/v1/admin/settings', { token });
+    if (!result.ok) {
+      ctx.stderr.write(`Failed to get settings (HTTP ${String(result.status)})\n`);
+      return 1;
+    }
+
+    const data = (result.data as { settings: Record<string, string | null> }).settings;
+
+    if (jsonOutput) {
+      ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
+      return 0;
+    }
+
+    for (const key of KNOWN_SETTINGS) {
+      const val = data[key];
+      ctx.stdout.write(`${key.padEnd(30)} ${val ?? '(not set)'}\n`);
+    }
+    return 0;
+  } catch (err) {
+    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    return 1;
+  }
+}
+
+async function runSettingsSet(ctx: CommandContext, argv: string[]): Promise<number> {
+  const { baseUrl, token, json: jsonOutput, rest: argvRest } = extractCommonFlags(argv);
+
+  const [key, ...valueParts] = argvRest;
+  if (!key || valueParts.length === 0) {
+    ctx.stderr.write('Usage: secureyeoman config set <key> <value>\n');
+    ctx.stderr.write(`Valid keys: ${KNOWN_SETTINGS.join(', ')}\n`);
+    return 1;
+  }
+
+  if (!(KNOWN_SETTINGS as readonly string[]).includes(key)) {
+    ctx.stderr.write(`Unknown setting: ${key}\n`);
+    ctx.stderr.write(`Valid keys: ${KNOWN_SETTINGS.join(', ')}\n`);
+    return 1;
+  }
+
+  const value = valueParts.join(' ');
+  const body = { [key]: value === '""' || value === '' ? null : value };
+
+  try {
+    const result = await apiCall(baseUrl, '/api/v1/admin/settings', {
+      method: 'PATCH',
+      body,
+      token,
+    });
+
+    if (!result.ok) {
+      const err = (result.data as Record<string, string>)?.error ?? `HTTP ${String(result.status)}`;
+      ctx.stderr.write(`Failed to update setting: ${err}\n`);
+      return 1;
+    }
+
+    if (jsonOutput) {
+      ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
+      return 0;
+    }
+
+    const display = value === '""' || value === '' ? '(cleared)' : value;
+    ctx.stdout.write(`${key} set to ${display}\n`);
+    return 0;
+  } catch (err) {
+    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    return 1;
+  }
 }

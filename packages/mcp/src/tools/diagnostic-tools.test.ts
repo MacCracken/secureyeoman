@@ -1,5 +1,5 @@
 /**
- * Tests for diagnostic-tools.ts — Phase 39 Channel B MCP tools.
+ * Tests for diagnostic-tools.ts — Channel B MCP tools.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -27,7 +27,7 @@ function mockClientWithDiagnostics(hasCap = true): CoreApiClient {
       if (url === '/api/v1/diagnostics/ping-integrations') {
         return Promise.resolve({
           personality: 'TestAgent',
-          integrations: [],
+          integrations: [{ name: 'slack', status: 'ok' }],
           mcpServers: [],
           checkedAt: new Date().toISOString(),
         });
@@ -44,7 +44,9 @@ function mockClientWithDiagnostics(hasCap = true): CoreApiClient {
 function noopMiddleware(): ToolMiddleware {
   return {
     rateLimiter: { check: () => ({ allowed: true }), reset: vi.fn(), wrap: vi.fn() },
-    inputValidator: { validate: () => ({ valid: true, blocked: false, warnings: [] }) },
+    inputValidator: {
+      validate: () => ({ valid: true, blocked: false, warnings: [], injectionScore: 0 }),
+    },
     auditLogger: {
       log: vi.fn().mockResolvedValue(undefined),
       wrap: (_t: string, _a: unknown, fn: () => unknown) => fn(),
@@ -58,6 +60,7 @@ describe('diagnostic-tools', () => {
 
   beforeEach(() => {
     server = new McpServer({ name: 'test', version: '1.0.0' });
+    vi.clearAllMocks();
   });
 
   it('registers all three diagnostic tools', () => {
@@ -66,54 +69,119 @@ describe('diagnostic-tools', () => {
     ).not.toThrow();
   });
 
-  it('returns capability_disabled when diagnostics capability is absent', async () => {
-    const client = mockClientWithDiagnostics(false);
-    const middleware = noopMiddleware();
-    registerDiagnosticTools(server, client, middleware);
+  describe('diag_report_status', () => {
+    it('posts agent status when diagnostics capability is present', async () => {
+      const client = mockClientWithDiagnostics(true);
+      const mw = noopMiddleware();
+      registerDiagnosticTools(server, client, mw);
 
-    // Simulate direct handler call via client — capability check returns false
-    const result = await client.get('/api/v1/soul/personality');
-    const caps: string[] = (result as any)?.personality?.body?.capabilities ?? [];
-    expect(caps.includes('diagnostics')).toBe(false);
-  });
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      const handler = globalToolRegistry.get('diag_report_status')!;
+      const result = await handler({
+        agentId: 'agent-1',
+        uptime: 60,
+        taskCount: 3,
+        notes: 'All good',
+      });
 
-  it('emits diagnostic_call audit event for diag_ping_integrations', async () => {
-    const client = mockClientWithDiagnostics(true);
-    const middleware = noopMiddleware();
-    registerDiagnosticTools(server, client, middleware);
-
-    // Verify the audit logger mock exists and can be called
-    expect(middleware.auditLogger.log).toBeDefined();
-  });
-
-  it('calls correct endpoint for diag_report_status', async () => {
-    const client = mockClientWithDiagnostics(true);
-    registerDiagnosticTools(server, client, noopMiddleware());
-
-    await client.post('/api/v1/diagnostics/agent-report', {
-      agentId: 'agent-1',
-      uptime: 60,
+      expect(result.isError).toBeFalsy();
+      expect(client.post).toHaveBeenCalledWith('/api/v1/diagnostics/agent-report', {
+        agentId: 'agent-1',
+        uptime: 60,
+        taskCount: 3,
+        notes: 'All good',
+      });
+      expect(mw.auditLogger.log).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'diagnostic_call' })
+      );
     });
 
-    expect(client.post).toHaveBeenCalledWith('/api/v1/diagnostics/agent-report', {
-      agentId: 'agent-1',
-      uptime: 60,
+    it('returns capability_disabled when diagnostics not enabled', async () => {
+      const client = mockClientWithDiagnostics(false);
+      registerDiagnosticTools(server, client, noopMiddleware());
+
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      const handler = globalToolRegistry.get('diag_report_status')!;
+      const result = await handler({ agentId: 'agent-1', uptime: 60 });
+
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.error).toBe('capability_disabled');
     });
   });
 
-  it('calls correct endpoint for diag_query_agent', async () => {
-    const client = mockClientWithDiagnostics(true);
-    registerDiagnosticTools(server, client, noopMiddleware());
+  describe('diag_query_agent', () => {
+    it('queries agent status when diagnostics capability is present', async () => {
+      const client = mockClientWithDiagnostics(true);
+      const mw = noopMiddleware();
+      registerDiagnosticTools(server, client, mw);
 
-    const result = await client.get('/api/v1/diagnostics/agent-report/agent-1');
-    expect((result as any).report.agentId).toBe('agent-1');
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      const handler = globalToolRegistry.get('diag_query_agent')!;
+      const result = await handler({ agentId: 'agent-1' });
+
+      expect(result.isError).toBeFalsy();
+      expect(client.get).toHaveBeenCalledWith('/api/v1/diagnostics/agent-report/agent-1');
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.report.agentId).toBe('agent-1');
+    });
+
+    it('returns capability_disabled when diagnostics not enabled', async () => {
+      const client = mockClientWithDiagnostics(false);
+      registerDiagnosticTools(server, client, noopMiddleware());
+
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      const handler = globalToolRegistry.get('diag_query_agent')!;
+      const result = await handler({ agentId: 'agent-1' });
+
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.error).toBe('capability_disabled');
+    });
   });
 
-  it('calls correct endpoint for diag_ping_integrations', async () => {
-    const client = mockClientWithDiagnostics(true);
-    registerDiagnosticTools(server, client, noopMiddleware());
+  describe('diag_ping_integrations', () => {
+    it('pings integrations when diagnostics capability is present', async () => {
+      const client = mockClientWithDiagnostics(true);
+      const mw = noopMiddleware();
+      registerDiagnosticTools(server, client, mw);
 
-    const result = await client.get('/api/v1/diagnostics/ping-integrations');
-    expect((result as any).personality).toBe('TestAgent');
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      const handler = globalToolRegistry.get('diag_ping_integrations')!;
+      const result = await handler({});
+
+      expect(result.isError).toBeFalsy();
+      expect(client.get).toHaveBeenCalledWith('/api/v1/diagnostics/ping-integrations');
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.personality).toBe('TestAgent');
+      expect(parsed.integrations).toHaveLength(1);
+    });
+
+    it('returns capability_disabled when diagnostics not enabled', async () => {
+      const client = mockClientWithDiagnostics(false);
+      registerDiagnosticTools(server, client, noopMiddleware());
+
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      const handler = globalToolRegistry.get('diag_ping_integrations')!;
+      const result = await handler({});
+
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.error).toBe('capability_disabled');
+    });
+  });
+
+  describe('error handling', () => {
+    it('returns error when hasDiagnosticsCapability call fails', async () => {
+      const client = mockClientWithDiagnostics(true);
+      // Override to throw on personality fetch
+      (client.get as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Timeout'));
+      registerDiagnosticTools(server, client, noopMiddleware());
+
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      const handler = globalToolRegistry.get('diag_report_status')!;
+      const result = await handler({ agentId: 'agent-1', uptime: 60 });
+
+      // hasDiagnosticsCapability catches errors and returns false
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.error).toBe('capability_disabled');
+    });
   });
 });

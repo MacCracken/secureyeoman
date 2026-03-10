@@ -116,7 +116,7 @@ export class YouTubeIntegration implements Integration {
     try {
       const channelId = this.youtubeConfig.channelId ?? 'UCxxxxxxxxxxxxxx';
       const url = `${YOUTUBE_API}/channels?part=snippet&id=${channelId}&key=${this.youtubeConfig.apiKey}`;
-      const resp = await fetch(url);
+      const resp = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!resp.ok) return { ok: false, message: `YouTube API error: ${resp.statusText}` };
       const data = (await resp.json()) as YouTubeChannelResponse;
       const title = data.items?.[0]?.snippet?.title ?? 'unknown channel';
@@ -186,7 +186,7 @@ export class YouTubeIntegration implements Integration {
     const url =
       `${YOUTUBE_API}/search?part=snippet&channelId=${this.youtubeConfig.channelId}` +
       `&type=video&order=date&maxResults=${maxResults}&key=${this.youtubeConfig.apiKey}`;
-    const resp = await fetch(url);
+    const resp = await fetch(url, { signal: AbortSignal.timeout(30_000) });
     if (!resp.ok) {
       this.logger?.warn({ status: resp.status }, 'YouTube search failed');
       return [];

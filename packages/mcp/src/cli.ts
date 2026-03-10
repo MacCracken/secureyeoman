@@ -45,6 +45,7 @@ export async function runMcpServer(_argv: string[] = []): Promise<number> {
     const coreClient = new CoreApiClient({
       coreUrl: config.coreUrl,
       coreToken,
+      tokenSecret: config.tokenSecret,
     });
 
     // Enrich config with secrets from core's SecretsManager (env vars take precedence)
@@ -90,6 +91,7 @@ export async function runMcpServer(_argv: string[] = []): Promise<number> {
   const coreClient = new CoreApiClient({
     coreUrl: config.coreUrl,
     coreToken,
+    tokenSecret: config.tokenSecret,
   });
 
   // Enrich config with secrets from core's SecretsManager (env vars take precedence)

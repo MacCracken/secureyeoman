@@ -3,7 +3,7 @@
  * Shows messages (green), topics (blue), and bulk (gray) summaries.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   MessageSquare,
@@ -69,11 +69,19 @@ export function ConversationHistory({ conversationId }: { conversationId: string
   });
 
   const entries = historyData?.entries ?? [];
-  const messageEntries = entries.filter((e: HistoryEntry) => e.tier === 'message');
-  const topicEntries = entries.filter((e: HistoryEntry) => e.tier === 'topic');
-  const bulkEntries = entries.filter((e: HistoryEntry) => e.tier === 'bulk');
-
-  const totalTokens = entries.reduce((sum: number, e: HistoryEntry) => sum + e.tokenCount, 0);
+  const { messageEntries, topicEntries, bulkEntries, totalTokens } = useMemo(() => {
+    const message: HistoryEntry[] = [];
+    const topic: HistoryEntry[] = [];
+    const bulk: HistoryEntry[] = [];
+    let tokens = 0;
+    for (const e of entries) {
+      tokens += e.tokenCount;
+      if (e.tier === 'message') message.push(e);
+      else if (e.tier === 'topic') topic.push(e);
+      else if (e.tier === 'bulk') bulk.push(e);
+    }
+    return { messageEntries: message, topicEntries: topic, bulkEntries: bulk, totalTokens: tokens };
+  }, [entries]);
 
   const toggleExpanded = (id: string) => {
     setExpandedEntries((prev) => {

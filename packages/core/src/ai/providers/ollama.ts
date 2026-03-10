@@ -77,7 +77,7 @@ export class OllamaProvider extends BaseProvider {
    */
   static async fetchAvailableModels(baseUrl = DEFAULT_BASE_URL): Promise<OllamaModelInfo[]> {
     try {
-      const res = await fetch(`${baseUrl}/api/tags`);
+      const res = await fetch(`${baseUrl}/api/tags`, { signal: AbortSignal.timeout(15_000) });
       if (!res.ok) return [];
       const data = (await res.json()) as { models?: { name: string; size: number }[] };
       return (data.models ?? []).map((m) => ({
@@ -102,6 +102,7 @@ export class OllamaProvider extends BaseProvider {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model, stream: true }),
+      signal: AbortSignal.timeout(60_000),
     });
 
     if (!res.ok) {
@@ -155,6 +156,7 @@ export class OllamaProvider extends BaseProvider {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: model }),
+      signal: AbortSignal.timeout(15_000),
     });
 
     if (res.status === 404) {

@@ -152,9 +152,11 @@ export class DlpScanner {
         }
 
         case 'pattern': {
+          if (rule.value.length > 500) break; // Prevent ReDoS from overly long patterns
           try {
             const re = new RegExp(rule.value, 'gi');
-            if (re.test(content)) {
+            // Test against first 100KB to limit ReDoS exposure
+            if (re.test(content.slice(0, 100_000))) {
               findings.push({
                 type: 'pattern',
                 description: `Pattern '${rule.value}' matched in content`,

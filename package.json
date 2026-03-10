@@ -57,7 +57,10 @@
       "undici": "6.23.0"
     },
     "dompurify": "3.3.2",
-    "nanoid": "5.1.6"
+    "nanoid": "5.1.6",
+    "@excalidraw/mermaid-to-excalidraw": {
+      "mermaid": "10.9.5"
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

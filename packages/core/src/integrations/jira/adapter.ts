@@ -6,6 +6,7 @@
  * Normalizes inbound webhook payloads to UnifiedMessage.
  */
 
+import { timingSafeEqual } from 'node:crypto';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
@@ -124,12 +125,14 @@ export class JiraIntegration implements WebhookIntegration {
             content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
           },
         }),
+        signal: AbortSignal.timeout(30_000),
       }
     );
 
     if (!resp.ok) {
       const err = await resp.text();
-      throw new Error(`Failed to post Jira comment: ${err}`);
+      this.logger?.warn({ error: err, statusCode: resp.status }, 'Jira comment post failed');
+      throw new Error(`Failed to post Jira comment (HTTP ${resp.status})`);
     }
 
     const comment = (await resp.json()) as { id: string };
@@ -147,6 +150,7 @@ export class JiraIntegration implements WebhookIntegration {
           Authorization: `Basic ${Buffer.from(`${this.email}:${this.apiToken}`).toString('base64')}`,
           Accept: 'application/json',
         },
+        signal: AbortSignal.timeout(30_000),
       });
 
       if (!resp.ok) {
@@ -169,7 +173,11 @@ export class JiraIntegration implements WebhookIntegration {
 
   verifyWebhook(_payload: string, signature: string): boolean {
     if (!this.webhookSecret) return true;
-    return signature === this.webhookSecret;
+    try {
+      return timingSafeEqual(Buffer.from(signature), Buffer.from(this.webhookSecret));
+    } catch {
+      return false;
+    }
   }
 
   async handleWebhook(eventName: string, payloadStr: string, token: string): Promise<void> {

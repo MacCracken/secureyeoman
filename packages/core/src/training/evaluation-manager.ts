@@ -232,6 +232,7 @@ async function fetchEmbedding(url: string, text: string): Promise<number[] | nul
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: 'nomic-embed-text', prompt: text }),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) return null;
   const data = (await res.json()) as { embedding?: number[] };

@@ -53,6 +53,14 @@ export function getBrowserPool(): BrowserPool | null {
   return _pool;
 }
 
+/** Shut down the browser pool singleton and release resources. */
+export async function shutdownBrowserPool(): Promise<void> {
+  if (_pool) {
+    await _pool.shutdown();
+    _pool = null;
+  }
+}
+
 export function registerBrowserTools(
   server: McpServer,
   config: McpServiceConfig,
@@ -86,7 +94,6 @@ export function registerBrowserTools(
 
       const startTime = Date.now();
       emit({ type: 'create', toolName: 'browser_navigate', url: args.url });
-      let sessionId: string | undefined;
 
       const pool = getPool(config);
       const page = await pool.getPage();
@@ -105,7 +112,6 @@ export function registerBrowserTools(
 
         emit({
           type: 'complete',
-          id: sessionId,
           toolName: 'browser_navigate',
           url,
           title,
@@ -116,13 +122,12 @@ export function registerBrowserTools(
       } catch (err) {
         emit({
           type: 'fail',
-          id: sessionId,
           toolName: 'browser_navigate',
           error: err instanceof Error ? err.message : String(err),
         });
         throw err;
       } finally {
-        emit({ type: 'close', id: sessionId });
+        emit({ type: 'close' });
         await pool.releasePage(page);
       }
     })

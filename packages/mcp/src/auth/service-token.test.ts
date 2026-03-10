@@ -18,7 +18,16 @@ describe('mintServiceToken', () => {
 
     expect(payload.sub).toBe('mcp-service');
     expect(payload.role).toBe('admin');
-    expect(payload.permissions).toEqual(['*:*']);
+    expect(payload.permissions).toEqual([
+      'mcp:execute',
+      'mcp:read',
+      'audit:write',
+      'brain:read',
+      'brain:write',
+      'soul:read',
+      'terminal:execute',
+      'internal:read',
+    ]);
     expect(payload.type).toBe('access');
     expect(payload.jti).toBeDefined();
     expect(typeof payload.jti).toBe('string');
@@ -26,16 +35,16 @@ describe('mintServiceToken', () => {
     expect(payload.exp).toBeDefined();
   });
 
-  it('should set expiry ~365 days in the future', async () => {
+  it('should set expiry ~1 hour in the future', async () => {
     const token = await mintServiceToken(TEST_SECRET);
     const secret = new TextEncoder().encode(TEST_SECRET);
     const { payload } = await jwtVerify(token, secret);
 
     const now = Math.floor(Date.now() / 1000);
-    const oneYearSeconds = 365 * 24 * 60 * 60;
+    const oneHourSeconds = 60 * 60;
     // Allow 10 second tolerance
-    expect(payload.exp! - now).toBeGreaterThan(oneYearSeconds - 10);
-    expect(payload.exp! - now).toBeLessThanOrEqual(oneYearSeconds + 10);
+    expect(payload.exp! - now).toBeGreaterThan(oneHourSeconds - 10);
+    expect(payload.exp! - now).toBeLessThanOrEqual(oneHourSeconds + 10);
   });
 
   it('should generate unique jti on each call', async () => {

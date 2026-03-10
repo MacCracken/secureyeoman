@@ -1,11 +1,32 @@
-import { describe, it, expect, vi } from 'vitest';
+/**
+ * Skill Resources — unit tests
+ *
+ * Verifies that skill-markdown resource handler works correctly
+ * by capturing and invoking it.
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerSkillResources } from './skill-resources.js';
 import type { CoreApiClient } from '../core-client.js';
 
-function mockClient(skills: unknown[] = []): CoreApiClient {
+type ResourceHandler = (uri: URL) => Promise<{
+  contents: { uri: string; mimeType: string; text: string }[];
+}>;
+
+function mockClient(): CoreApiClient {
   return {
-    get: vi.fn().mockResolvedValue({ skills }),
+    get: vi.fn().mockResolvedValue({
+      name: 'code-review',
+      description: 'Reviews code for quality and security',
+      instructions: 'Review the code carefully for bugs and security issues.',
+      source: 'built-in',
+      status: 'active',
+      routing: 'fuzzy',
+      useWhen: 'User asks for code review',
+      doNotUseWhen: 'User is just chatting',
+      successCriteria: 'Identified at least one issue or confirmed no issues',
+    }),
     post: vi.fn().mockResolvedValue({}),
     delete: vi.fn().mockResolvedValue({}),
     put: vi.fn().mockResolvedValue({}),
@@ -13,42 +34,86 @@ function mockClient(skills: unknown[] = []): CoreApiClient {
   } as unknown as CoreApiClient;
 }
 
+function captureResourceHandlers(client: CoreApiClient): Record<string, ResourceHandler> {
+  const server = new McpServer({ name: 'test', version: '1.0.0' });
+  const handlers: Record<string, ResourceHandler> = {};
+
+  vi.spyOn(server, 'resource').mockImplementation(
+    (name: string, _uri: unknown, _meta: unknown, handler: unknown) => {
+      handlers[name] = handler as ResourceHandler;
+      return server as any;
+    }
+  );
+
+  registerSkillResources(server, client);
+  return handlers;
+}
+
 describe('skill-resources', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('registers skill-markdown resource without error', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() => registerSkillResources(server, mockClient())).not.toThrow();
   });
 
-  it('registers without throwing when client returns empty skills list', () => {
-    const server = new McpServer({ name: 'test', version: '1.0.0' });
-    const client = mockClient([]);
-    expect(() => registerSkillResources(server, client)).not.toThrow();
-  });
+  describe('skill-markdown handler', () => {
+    it('calls GET /api/v1/soul/skills/:id and returns markdown', async () => {
+      const client = mockClient();
+      const handlers = captureResourceHandlers(client);
 
-  it('handles core client error gracefully at registration time', () => {
-    const server = new McpServer({ name: 'test', version: '1.0.0' });
-    const client = mockClient();
-    (client.get as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('API error'));
-    // Registration itself should not throw; handler errors occur at resource call time
-    expect(() => registerSkillResources(server, client)).not.toThrow();
-  });
+      const result = await handlers['skill-markdown'](
+        new URL('yeoman://skills/code-review')
+      );
 
-  it('uses mimeType text/markdown', () => {
-    const server = new McpServer({ name: 'test', version: '1.0.0' });
-    registerSkillResources(server, mockClient());
-    // Registration completes — mimeType is set declaratively at register time
-    expect(true).toBe(true);
-  });
+      expect(client.get).toHaveBeenCalledWith('/api/v1/soul/skills/code-review');
+      expect(result.contents).toHaveLength(1);
+      expect(result.contents[0].mimeType).toBe('text/markdown');
+      expect(result.contents[0].text).toContain('---');
+      expect(result.contents[0].text).toContain('code-review');
+      expect(result.contents[0].text).toContain('Review the code carefully');
+    });
 
-  it('uses yeoman://skills/{id} URI pattern', () => {
-    const server = new McpServer({ name: 'test', version: '1.0.0' });
-    // Should not throw — the URI template is yeoman://skills/{id}
-    expect(() => registerSkillResources(server, mockClient())).not.toThrow();
-  });
+    it('includes all front matter fields', async () => {
+      const client = mockClient();
+      const handlers = captureResourceHandlers(client);
 
-  it('registers without error alongside personality resources', () => {
-    const server = new McpServer({ name: 'test', version: '1.0.0' });
-    const client = mockClient([{ id: 'skill-1', name: 'Test Skill', instructions: 'Do stuff.' }]);
-    expect(() => registerSkillResources(server, client)).not.toThrow();
+      const result = await handlers['skill-markdown'](
+        new URL('yeoman://skills/code-review')
+      );
+
+      const text = result.contents[0].text;
+      expect(text).toContain('source:');
+      expect(text).toContain('status:');
+      expect(text).toContain('routing:');
+      expect(text).toContain('tokens:');
+    });
+
+    it('handles skill with minimal fields', async () => {
+      const client = mockClient();
+      (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({
+        name: 'minimal',
+      });
+      const handlers = captureResourceHandlers(client);
+
+      const result = await handlers['skill-markdown'](
+        new URL('yeoman://skills/minimal')
+      );
+
+      expect(result.contents[0].text).toContain('minimal');
+      expect(result.contents[0].text).toContain('---');
+    });
+
+    it('throws when skill is null', async () => {
+      const client = mockClient();
+      (client.get as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      const handlers = captureResourceHandlers(client);
+
+      await expect(
+        handlers['skill-markdown'](new URL('yeoman://skills/nonexistent'))
+      ).rejects.toThrow('not found');
+    });
   });
 });

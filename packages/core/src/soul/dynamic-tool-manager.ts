@@ -430,6 +430,9 @@ export class DynamicToolManager {
 
     const context = vm.createContext(sandbox);
 
+    // Block prototype chain escapes (e.g., this.constructor.constructor('return process')())
+    Object.defineProperty(context, 'constructor', { value: undefined, writable: false });
+
     // runInNewContext with a short compilation timeout to catch infinite loops
     // at parse/compile time.  This does NOT time out the async execution —
     // that is handled by runWithTimeout().

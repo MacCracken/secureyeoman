@@ -726,9 +726,12 @@ class WorldRenderer {
       }
     }
 
+    // Build lookup map to avoid O(n²) cards.find() per agent
+    const cardsByPid = new Map(cards.map((c) => [c.personality.id, c]));
+
     // 4. Desk glow: agent at home desk and typing
     for (const [pid, ap] of agentPositions) {
-      const card = cards.find((c) => c.personality.id === pid);
+      const card = cardsByPid.get(pid);
       if (card?.state === 'typing' && ap.pos.row === ap.home.row && ap.pos.col === ap.home.col) {
         this.write(moveTo(MAP_START_ROW + ap.pos.row, ap.pos.col) + A.brightCyan + '*' + A.reset);
       }
@@ -736,7 +739,7 @@ class WorldRenderer {
 
     // 5. Agent sprites: [face] with state color
     for (const [pid, ap] of agentPositions) {
-      const card = cards.find((c) => c.personality.id === pid);
+      const card = cardsByPid.get(pid);
       if (!card) continue;
       const f = FRAMES[card.state][card.frame % 4]!;
       const sc = STATE_COLOR[card.state];
@@ -1300,7 +1303,7 @@ Options:
     }, frameMs);
 
     // ── Resize handler ──────────────────────────────────────────────────────
-    process.stdout.on('resize', () => {
+    const onResize = () => {
       renderer.onResize();
       const cards = buildCards();
       renderer.setAgents(cards);
@@ -1318,10 +1321,11 @@ Options:
       } else {
         renderer.render();
       }
-    });
+    };
+    process.stdout.on('resize', onResize);
 
     // ── Keypress handler ────────────────────────────────────────────────────
-    process.stdin.on('keypress', (_ch, key) => {
+    const onKeypress = (_ch: string, key: { ctrl?: boolean; name?: string }) => {
       if (!key) return;
 
       if ((key.ctrl && key.name === 'c') || key.name === 'q') {
@@ -1390,7 +1394,8 @@ Options:
         }
         return;
       }
-    });
+    };
+    process.stdin.on('keypress', onKeypress);
 
     // ── Wait until quit ─────────────────────────────────────────────────────
     await new Promise<void>((resolve) => {
@@ -1407,6 +1412,8 @@ Options:
     clearInterval(taskPoll);
     clearInterval(auditPoll);
     clearInterval(personalityPoll);
+    process.stdout.removeListener('resize', onResize);
+    process.stdin.removeListener('keypress', onKeypress);
     if (process.stdin.isTTY) process.stdin.setRawMode(false);
     out.write(A.altScreenOff);
     process.stdin.pause();

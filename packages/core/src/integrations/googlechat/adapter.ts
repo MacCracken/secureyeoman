@@ -109,7 +109,7 @@ export class GoogleChatIntegration implements Integration {
     }
 
     const response = await fetch(
-      `https://chat.googleapis.com/v1/spaces/${chatId}/messages?key=${this.botToken}&token=${this.botToken}`,
+      `https://chat.googleapis.com/v1/spaces/${chatId}/messages`,
       {
         method: 'POST',
         headers: {
@@ -117,6 +117,7 @@ export class GoogleChatIntegration implements Integration {
           Authorization: `Bearer ${this.botToken}`,
         },
         body: JSON.stringify(message),
+        signal: AbortSignal.timeout(30_000),
       }
     );
 

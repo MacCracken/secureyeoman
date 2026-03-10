@@ -10,6 +10,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import { assertPublicUrl } from '../../utils/ssrf-guard.js';
 
 interface ZapierConfig {
   webhookSecret?: string;
@@ -53,11 +54,13 @@ export class ZapierIntegration implements WebhookIntegration {
     const outboundUrl =
       (metadata?.outboundUrl as string | undefined) ?? this.zapierConfig?.outboundUrl;
     if (!outboundUrl) throw new Error('No Zapier outbound webhook URL configured');
+    assertPublicUrl(outboundUrl, 'Zapier Webhook URL');
     const payload = { message: text, ...metadata };
     const resp = await fetch(outboundUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30_000),
     });
     if (!resp.ok) throw new Error(`Zapier webhook dispatch failed: ${resp.status}`);
     return `zapier_out_${Date.now()}`;

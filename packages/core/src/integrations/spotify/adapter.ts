@@ -202,6 +202,7 @@ export class SpotifyIntegration implements Integration {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: body.toString(),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) throw new Error(`Spotify token refresh failed: ${await resp.text()}`);
@@ -224,6 +225,7 @@ export class SpotifyIntegration implements Integration {
         'Content-Type': 'application/json',
         ...((init?.headers ?? {}) as Record<string, string>),
       },
+      signal: AbortSignal.timeout(30_000),
     });
   }
 }

@@ -56,6 +56,7 @@ export class AnthropicProvider extends BaseProvider {
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
         },
+        signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) return [];
       const data = (await res.json()) as { data?: { id: string; display_name?: string }[] };

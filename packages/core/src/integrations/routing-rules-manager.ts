@@ -32,8 +32,9 @@ function renderTemplate(template: string, msg: UnifiedMessage): string {
 
 function matchesPattern(pattern: string | null, value: string): boolean {
   if (pattern === null) return true; // wildcard
+  if (pattern.length > 500) return value.includes(pattern); // too long for regex
   try {
-    return new RegExp(pattern, 'i').test(value);
+    return new RegExp(pattern, 'i').test(value.slice(0, 10_000));
   } catch {
     // Treat invalid regex as literal substring match
     return value.includes(pattern);

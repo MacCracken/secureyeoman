@@ -35,6 +35,7 @@ async function supabaseQuery(
       Authorization: `Bearer ${config.supabaseKey}`,
       Accept: 'application/json',
     },
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) throw new Error(`Supabase error: HTTP ${res.status}`);
   return await res.json();

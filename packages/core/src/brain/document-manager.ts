@@ -211,6 +211,16 @@ export class DocumentManager {
 
     for (const file of mdFiles) {
       if (!file.download_url) continue;
+      // Validate download URL is from GitHub to prevent SSRF via crafted API responses
+      try {
+        const dlHost = new URL(file.download_url).hostname;
+        if (!dlHost.endsWith('.githubusercontent.com') && !dlHost.endsWith('.github.com')) {
+          this.logger.warn({ url: file.download_url }, 'Skipping non-GitHub download URL');
+          continue;
+        }
+      } catch {
+        continue;
+      }
       try {
         const fileResponse = await fetch(file.download_url, {
           headers,

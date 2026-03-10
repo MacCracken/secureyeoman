@@ -52,6 +52,7 @@ export class OpenAIProvider extends BaseProvider {
     try {
       const res = await fetch('https://api.openai.com/v1/models', {
         headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) return [];
       const data = (await res.json()) as { data?: { id: string; owned_by: string }[] };

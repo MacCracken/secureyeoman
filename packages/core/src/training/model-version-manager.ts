@@ -48,6 +48,7 @@ export class ModelVersionManager {
             source: opts.modelName,
             destination: `${opts.modelName}-${Date.now()}`,
           }),
+          signal: AbortSignal.timeout(30_000),
         });
         if (!response.ok) {
           logger.warn(`Ollama copy returned non-200: ${response.status}`);

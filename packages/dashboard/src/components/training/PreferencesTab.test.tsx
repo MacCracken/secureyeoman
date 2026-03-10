@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PreferencesTab } from './PreferencesTab';
 
@@ -17,6 +18,7 @@ vi.mock('../../api/client', async (importOriginal) => {
 import * as api from '../../api/client';
 const mockFetch = vi.mocked(api.fetchPreferencePairs);
 const mockDelete = vi.mocked(api.deletePreferencePair);
+const mockExport = vi.mocked(api.exportPreferencesAsDpo);
 
 function createQC() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
@@ -123,6 +125,109 @@ describe('PreferencesTab', () => {
     renderTab();
     await waitFor(() => {
       expect(screen.getAllByTitle('Delete').length).toBe(2);
+    });
+  });
+
+  it('calls deletePreferencePair when delete button clicked', async () => {
+    const user = userEvent.setup();
+    mockFetch.mockResolvedValue({ pairs: mockPairs } as any);
+    mockDelete.mockResolvedValue(undefined as any);
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getAllByTitle('Delete').length).toBe(2);
+    });
+    await user.click(screen.getAllByTitle('Delete')[0]);
+    await waitFor(() => {
+      expect(mockDelete).toHaveBeenCalledWith('p1', expect.anything());
+    });
+  });
+
+  it('calls exportPreferencesAsDpo on Export DPO click', async () => {
+    const user = userEvent.setup();
+    const mockBlob = new Blob(['test'], { type: 'application/jsonl' });
+    mockExport.mockResolvedValue({ blob: () => Promise.resolve(mockBlob) } as any);
+    mockFetch.mockResolvedValue({ pairs: mockPairs } as any);
+
+    const mockCreateObjectURL = vi.fn(() => 'blob:test');
+    const mockRevokeObjectURL = vi.fn();
+    globalThis.URL.createObjectURL = mockCreateObjectURL;
+    globalThis.URL.revokeObjectURL = mockRevokeObjectURL;
+
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Export DPO')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Export DPO'));
+    await waitFor(() => {
+      expect(mockExport).toHaveBeenCalled();
+    });
+  });
+
+  it('handles export error gracefully', async () => {
+    const user = userEvent.setup();
+    mockExport.mockRejectedValue(new Error('Network error'));
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Export DPO')).toBeInTheDocument();
+    });
+    // Should not throw
+    await user.click(screen.getByText('Export DPO'));
+    // Component still renders fine
+    expect(screen.getByText('Preference Pairs (DPO)')).toBeInTheDocument();
+  });
+
+  it('filters by source when source filter changed', async () => {
+    const user = userEvent.setup();
+    mockFetch.mockResolvedValue({ pairs: mockPairs } as any);
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('All sources')).toBeInTheDocument();
+    });
+    await user.selectOptions(screen.getByDisplayValue('All sources'), 'annotation');
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith({ source: 'annotation', limit: 200 });
+    });
+  });
+
+  it('renders filter options for all source types', async () => {
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('All sources')).toBeInTheDocument();
+    });
+    const select = screen.getByDisplayValue('All sources');
+    const options = select.querySelectorAll('option');
+    const values = Array.from(options).map((o) => o.getAttribute('value'));
+    expect(values).toContain('');
+    expect(values).toContain('annotation');
+    expect(values).toContain('comparison');
+    expect(values).toContain('multi_turn');
+  });
+
+  it('shows Prompt label for each pair', async () => {
+    mockFetch.mockResolvedValue({ pairs: mockPairs } as any);
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getAllByText('Prompt').length).toBe(2);
+    });
+  });
+
+  it('renders multiple source count chips when pairs have different sources', async () => {
+    const mixedPairs = [
+      ...mockPairs,
+      { id: 'p3', prompt: 'Test', chosen: 'A', rejected: 'B', source: 'annotation' },
+    ];
+    mockFetch.mockResolvedValue({ pairs: mixedPairs } as any);
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('annotation: 2')).toBeInTheDocument();
+      expect(screen.getByText('comparison: 1')).toBeInTheDocument();
+    });
+  });
+
+  it('passes source: undefined when All sources selected', async () => {
+    renderTab();
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith({ source: undefined, limit: 200 });
     });
   });
 });

@@ -54,7 +54,7 @@ export class GeminiProvider extends BaseProvider {
    */
   static async fetchAvailableModels(apiKey: string): Promise<GeminiModelInfo[]> {
     const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=100`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
     if (!res.ok) return [];
     const data = (await res.json()) as { models?: Record<string, unknown>[] };
     return (data.models ?? [])

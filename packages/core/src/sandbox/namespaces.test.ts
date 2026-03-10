@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   detectNamespaceSupport,
-  buildUnshareCommand,
+  buildUnshareArgs,
   runInNamespace,
   isCommandAvailable,
   NamespaceError,
@@ -17,29 +17,28 @@ describe('namespaces', () => {
     expect(caps).toHaveProperty('unshareAvailable');
   });
 
-  it('should build unshare command with PID namespace', () => {
-    const cmd = buildUnshareCommand('echo hello', { pid: true });
-    expect(cmd).toContain('unshare');
-    expect(cmd).toContain('--user');
-    expect(cmd).toContain('--pid');
-    expect(cmd).toContain('--fork');
-    expect(cmd).toContain('echo hello');
+  it('should build unshare args with PID namespace', () => {
+    const args = buildUnshareArgs('echo hello', { pid: true });
+    expect(args).toContain('--user');
+    expect(args).toContain('--pid');
+    expect(args).toContain('--fork');
+    expect(args).toContain('echo hello');
   });
 
-  it('should build unshare command with network namespace', () => {
-    const cmd = buildUnshareCommand('ls', { network: true });
-    expect(cmd).toContain('--net');
+  it('should build unshare args with network namespace', () => {
+    const args = buildUnshareArgs('ls', { network: true });
+    expect(args).toContain('--net');
   });
 
-  it('should build unshare command with mount namespace', () => {
-    const cmd = buildUnshareCommand('ls', { mount: true, workDir: '/tmp' });
-    expect(cmd).toContain('--mount');
-    expect(cmd).toContain('--mount-proc');
+  it('should build unshare args with mount namespace', () => {
+    const args = buildUnshareArgs('ls', { mount: true, workDir: '/tmp' });
+    expect(args).toContain('--mount');
+    expect(args).toContain('--mount-proc');
   });
 
   it('should always include --user flag', () => {
-    const cmd = buildUnshareCommand('echo test');
-    expect(cmd).toContain('--user');
+    const args = buildUnshareArgs('echo test');
+    expect(args).toContain('--user');
   });
 
   it('should gracefully handle non-Linux platforms', () => {
@@ -50,15 +49,15 @@ describe('namespaces', () => {
     }
   });
 
-  it('should build unshare command with mount but no workDir (no --mount-proc)', () => {
-    const cmd = buildUnshareCommand('ls', { mount: true });
-    expect(cmd).toContain('--mount');
-    expect(cmd).not.toContain('--mount-proc');
+  it('should build unshare args with mount but no workDir (no --mount-proc)', () => {
+    const args = buildUnshareArgs('ls', { mount: true });
+    expect(args).toContain('--mount');
+    expect(args).not.toContain('--mount-proc');
   });
 
-  it('should build basic command with no options', () => {
-    const cmd = buildUnshareCommand('date');
-    expect(cmd).toBe('unshare --user -- date');
+  it('should build basic args with no options', () => {
+    const args = buildUnshareArgs('date');
+    expect(args).toEqual(['--user', '--', 'date']);
   });
 });
 

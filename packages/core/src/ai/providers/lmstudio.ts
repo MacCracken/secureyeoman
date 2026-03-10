@@ -51,7 +51,7 @@ export class LMStudioProvider extends BaseProvider {
    */
   static async fetchAvailableModels(baseUrl = LMSTUDIO_BASE_URL): Promise<LMStudioModelInfo[]> {
     try {
-      const res = await fetch(`${baseUrl}/models`);
+      const res = await fetch(`${baseUrl}/models`, { signal: AbortSignal.timeout(15_000) });
       if (!res.ok) return [];
       const data = (await res.json()) as { data?: { id: string; owned_by: string }[] };
       return (data.data ?? []).map((m) => ({

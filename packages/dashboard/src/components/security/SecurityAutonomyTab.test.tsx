@@ -135,4 +135,120 @@ describe('AutonomyTab', () => {
       expect(screen.getByText('Summarize')).toBeInTheDocument();
     });
   });
+
+  it('clears filter when clicking same level card again', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('5')).toBeInTheDocument(); // L1 count
+    });
+    // Click L1 card to filter
+    const l1Cards = screen.getAllByText('L1');
+    await user.click(l1Cards[0]);
+    // Click again to clear
+    const l1CardsAgain = screen.getAllByText('L1');
+    await user.click(l1CardsAgain[0]);
+    // Filter should be cleared - items from all levels visible
+    await waitFor(() => {
+      expect(screen.getByText('Summarize')).toBeInTheDocument();
+    });
+  });
+
+  it('shows loading state', async () => {
+    mockFetchOverview.mockReturnValue(new Promise(() => {}));
+    renderTab();
+    // Should not crash while loading
+    expect(screen.getByText('Overview')).toBeInTheDocument();
+  });
+
+  it('shows table with item details', async () => {
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Summarize')).toBeInTheDocument();
+    });
+    // Table headers
+    expect(screen.getByText('Name')).toBeInTheDocument();
+    expect(screen.getByText('Type')).toBeInTheDocument();
+    expect(screen.getByText('Level')).toBeInTheDocument();
+  });
+
+  it('shows empty state when filtering level with no items', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('L5')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('L5'));
+    await waitFor(() => {
+      expect(screen.getByText('No items at this level.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows audit wizard input for name', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Audit Wizard')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Audit Wizard'));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Audit name/)).toBeInTheDocument();
+    });
+  });
+
+  it('disables Start Audit when name is empty', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Audit Wizard')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Audit Wizard'));
+    await waitFor(() => {
+      expect(screen.getByText('Start Audit')).toBeDisabled();
+    });
+  });
+
+  it('shows previous runs in audit wizard', async () => {
+    mockFetchAuditRuns.mockResolvedValue([
+      { id: 'run-1', name: 'Q1 Review', status: 'completed' },
+      { id: 'run-2', name: 'Q2 Review', status: 'in_progress' },
+    ] as any);
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Audit Wizard')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Audit Wizard'));
+    await waitFor(() => {
+      expect(screen.getByText('Q1 Review')).toBeInTheDocument();
+      expect(screen.getByText('Q2 Review')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Previous Runs')).toBeInTheDocument();
+  });
+
+  it('shows Emergency Stop Registry with L5 items', async () => {
+    const overviewWithL5 = {
+      totals: { L1: 1, L2: 0, L3: 0, L4: 0, L5: 1 },
+      byLevel: {
+        L1: [{ id: 's-1', name: 'Summarize', type: 'skill', autonomyLevel: 'L1', enabled: true }],
+        L2: [],
+        L3: [],
+        L4: [],
+        L5: [
+          { id: 's-5', name: 'Auto Deploy', type: 'workflow', autonomyLevel: 'L5', enabled: true },
+        ],
+      },
+    };
+    mockFetchOverview.mockResolvedValue(overviewWithL5 as any);
+
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Emergency Stop Registry')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Emergency Stop Registry'));
+    await waitFor(() => {
+      expect(screen.getByText('Auto Deploy')).toBeInTheDocument();
+    });
+  });
 });

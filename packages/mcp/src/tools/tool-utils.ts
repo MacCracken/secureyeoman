@@ -17,6 +17,11 @@ export const globalToolRegistry = new Map<
   (args: Record<string, unknown>) => Promise<ToolResult>
 >();
 
+/** Clear the global tool registry. Call on server re-init to prevent stale entries. */
+export function clearGlobalToolRegistry(): void {
+  globalToolRegistry.clear();
+}
+
 export interface ToolResult {
   [key: string]: unknown;
   content: { type: 'text'; text: string }[];

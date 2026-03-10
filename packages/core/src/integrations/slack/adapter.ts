@@ -85,6 +85,7 @@ export class SlackIntegration implements Integration {
             try {
               const resp = await fetch(att.url, {
                 headers: { Authorization: `Bearer ${config.config.botToken as string}` },
+                signal: AbortSignal.timeout(30_000),
               });
               const buf = Buffer.from(await resp.arrayBuffer());
               const result = await mmManager.analyzeImage({

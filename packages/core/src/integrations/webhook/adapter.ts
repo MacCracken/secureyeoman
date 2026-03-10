@@ -83,6 +83,7 @@ export class GenericWebhookIntegration implements WebhookIntegration {
       method: 'POST',
       headers,
       body: payload,
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!response.ok) {

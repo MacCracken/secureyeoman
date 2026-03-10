@@ -164,7 +164,7 @@ describe('provider command', () => {
       stderr,
     });
     expect(code).toBe(1);
-    expect(getStderr()).toContain('--label and --key are required');
+    expect(getStderr()).toContain('API key is required');
   });
 
   it('add errors when provider missing', async () => {
@@ -313,6 +313,6 @@ describe('provider command', () => {
       stderr,
     });
     expect(code).toBe(1);
-    expect(getStderr()).toContain('--key');
+    expect(getStderr()).toContain('New API key is required');
   });
 });

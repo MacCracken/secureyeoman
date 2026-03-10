@@ -165,6 +165,7 @@ export class StripeIntegration implements WebhookIntegration {
     try {
       const resp = await fetch(`${STRIPE_API}/account`, {
         headers: { Authorization: `Bearer ${this.stripeConfig?.secretKey ?? ''}` },
+        signal: AbortSignal.timeout(30_000),
       });
       if (!resp.ok) return { ok: false, message: `Stripe API error: ${resp.status}` };
       const account = (await resp.json()) as { id: string; business_profile?: { name?: string } };

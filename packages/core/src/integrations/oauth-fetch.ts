@@ -38,9 +38,11 @@ export async function fetchWithOAuthRetry(
 ): Promise<Response> {
   const baseHeaders = opts.headers as Record<string, string> | undefined;
 
+  const timeout = AbortSignal.timeout(30_000);
   let resp = await fetch(url, {
     ...opts,
     headers: { ...baseHeaders, ...authHeaders },
+    signal: timeout,
   });
 
   if (resp.status === 401) {
@@ -53,6 +55,7 @@ export async function fetchWithOAuthRetry(
       resp = await fetch(url, {
         ...opts,
         headers: { ...baseHeaders, ...retryHeaders },
+        signal: AbortSignal.timeout(30_000),
       });
     }
   }

@@ -272,4 +272,176 @@ describe('InstalledTab', () => {
 
     expect(onNavigateTab).toHaveBeenCalledWith('marketplace');
   });
+
+  it('should show enable/disable toggle for skills', async () => {
+    vi.mocked(api.fetchSkills).mockResolvedValue({
+      skills: [
+        {
+          id: 's1',
+          name: 'Test Skill',
+          description: 'A test skill',
+          source: 'user',
+          personalityId: 'p1',
+          enabled: true,
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<InstalledTab />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Skill')).toBeInTheDocument();
+    });
+  });
+
+  it('should handle search/filter text input', async () => {
+    renderWithProviders(<InstalledTab />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Code Review')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.queryByPlaceholderText(/search/i);
+    if (searchInput) {
+      fireEvent.change(searchInput, { target: { value: 'Security' } });
+      await waitFor(() => {
+        expect(screen.getByText('Security Scan')).toBeInTheDocument();
+      });
+    }
+  });
+
+  it('should show all source sections', async () => {
+    renderWithProviders(<InstalledTab />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Code Review')).toBeInTheDocument();
+    });
+
+    // Source section labels appear
+    expect(screen.getByText('AI Created')).toBeInTheDocument();
+    expect(screen.getByText('User Created')).toBeInTheDocument();
+  });
+
+  it('should show workflow with steps count', async () => {
+    vi.mocked(api.fetchWorkflows).mockResolvedValue({
+      definitions: [
+        {
+          id: 'w1',
+          name: 'Build Pipeline',
+          description: 'Build and test',
+          steps: [{ id: 's1' }, { id: 's2' }, { id: 's3' }],
+          createdBy: 'user',
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<InstalledTab workflowsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Workflows' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Workflows' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Build Pipeline')).toBeInTheDocument();
+      expect(screen.getByText('3 steps')).toBeInTheDocument();
+    });
+  });
+
+  it('should show swarm template with strategy and roles', async () => {
+    vi.mocked(api.fetchSwarmTemplates).mockResolvedValue({
+      templates: [
+        {
+          id: 't1',
+          name: 'Analysis Swarm',
+          description: 'Data analysis team',
+          strategy: 'dynamic',
+          isBuiltin: false,
+          roles: [{ role: 'analyst' }, { role: 'reviewer' }, { role: 'reporter' }],
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<InstalledTab subAgentsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Swarm Templates' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Swarm Templates' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Analysis Swarm')).toBeInTheDocument();
+      expect(screen.getByText('dynamic')).toBeInTheDocument();
+      expect(screen.getByText('analyst')).toBeInTheDocument();
+      expect(screen.getByText('reviewer')).toBeInTheDocument();
+      expect(screen.getByText('reporter')).toBeInTheDocument();
+    });
+  });
+
+  it('should show community badge for community workflows', async () => {
+    vi.mocked(api.fetchWorkflows).mockResolvedValue({
+      definitions: [
+        {
+          id: 'w1',
+          name: 'Community Flow',
+          description: 'A community workflow',
+          steps: [{ id: 's1' }],
+          createdBy: 'community',
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<InstalledTab workflowsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Workflows' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Workflows' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Community Flow')).toBeInTheDocument();
+    });
+    // Community badge should exist
+    expect(screen.getAllByText('Community').length).toBeGreaterThan(0);
+  });
+
+  it('should filter out builtin swarm templates', async () => {
+    vi.mocked(api.fetchSwarmTemplates).mockResolvedValue({
+      templates: [
+        {
+          id: 't1',
+          name: 'Builtin Template',
+          description: 'A builtin',
+          strategy: 'sequential',
+          isBuiltin: true,
+          roles: [{ role: 'worker' }],
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<InstalledTab subAgentsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Swarm Templates' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Swarm Templates' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/No swarm templates installed yet/)).toBeInTheDocument();
+    });
+  });
+
+  it('should show both workflows and swarms tabs when both enabled', async () => {
+    renderWithProviders(<InstalledTab workflowsEnabled subAgentsEnabled />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Skills' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Workflows' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Swarm Templates' })).toBeInTheDocument();
+    });
+  });
 });

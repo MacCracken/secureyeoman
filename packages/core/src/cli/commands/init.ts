@@ -3,9 +3,9 @@
  *
  * Follows the same 5-step flow as the dashboard OnboardingWizard:
  *   1. Personality  — agent name, description, style traits
- *   2. API Keys     — create a dashboard API key (skippable)
+ *   2. Model        — AI provider, model name, provider API key
  *   3. Security     — 5 key policy toggles (skippable)
- *   4. Model        — AI provider, model name, provider API key
+ *   4. API Keys     — create a dashboard API key (skippable)
  *   5. Done         — gateway port, database, security key generation
  *
  * Generates a .env file and a secureyeoman.yaml config file.
@@ -16,6 +16,7 @@ import { createInterface } from 'node:readline';
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import type { Command, CommandContext } from '../router.js';
 import {
+  extractFlag,
   extractBoolFlag,
   extractCommonFlags,
   generateSecretKey,
@@ -30,40 +31,14 @@ import { VaultBackend } from '../../security/vault-backend.js';
 const PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'deepseek', 'mistral'] as const;
 type Provider = (typeof PROVIDERS)[number];
 
-const PROVIDER_DEFAULTS: Record<
-  Provider,
-  { model: string; apiKeyEnv: string; needsBaseUrl: boolean }
-> = {
-  anthropic: {
-    model: 'claude-sonnet-4-6',
-    apiKeyEnv: 'ANTHROPIC_API_KEY',
-    needsBaseUrl: false,
-  },
-  openai: { model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY', needsBaseUrl: false },
-  gemini: { model: 'gemini-2.0-flash', apiKeyEnv: 'GEMINI_API_KEY', needsBaseUrl: false },
-  ollama: { model: 'llama3.2', apiKeyEnv: '', needsBaseUrl: true },
-  deepseek: { model: 'deepseek-chat', apiKeyEnv: 'DEEPSEEK_API_KEY', needsBaseUrl: false },
-  mistral: { model: 'mistral-large-latest', apiKeyEnv: 'MISTRAL_API_KEY', needsBaseUrl: false },
+const PROVIDER_DEFAULTS: Record<Provider, { model: string; needsBaseUrl: boolean }> = {
+  anthropic: { model: 'claude-sonnet-4-6', needsBaseUrl: false },
+  openai: { model: 'gpt-4o', needsBaseUrl: false },
+  gemini: { model: 'gemini-2.0-flash', needsBaseUrl: false },
+  ollama: { model: 'llama3.2', needsBaseUrl: true },
+  deepseek: { model: 'deepseek-chat', needsBaseUrl: false },
+  mistral: { model: 'mistral-large-latest', needsBaseUrl: false },
 };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function extractStringFlag(
-  argv: string[],
-  name: string,
-  short?: string
-): { value: string | undefined; rest: string[] } {
-  const rest: string[] = [];
-  let value: string | undefined;
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === `--${name}` || (short && argv[i] === `-${short}`)) {
-      value = argv[++i];
-    } else {
-      rest.push(argv[i]!);
-    }
-  }
-  return { value, rest };
-}
 
 // ─── Command ──────────────────────────────────────────────────────────────────
 
@@ -84,9 +59,9 @@ Usage: ${this.usage}
 Set up a new SecureYeoman instance interactively.
 Mirrors the 5-step dashboard wizard:
   1. Personality — agent name & style
-  2. API Keys    — dashboard API key (skippable)
+  2. Model       — AI provider & model
   3. Security    — capability toggles (skippable)
-  4. Model       — AI provider & model
+  4. API Keys    — dashboard API key (skippable)
   5. Done        — port, database, security keys
 
 Options:
@@ -112,13 +87,13 @@ Options:
     argv = envOnly.rest;
     const useVault = extractBoolFlag(argv, 'vault');
     argv = useVault.rest;
-    const vaultAddrFlag = extractStringFlag(argv, 'vault-addr');
+    const vaultAddrFlag = extractFlag(argv, 'vault-addr');
     argv = vaultAddrFlag.rest;
-    const vaultTokenFlag = extractStringFlag(argv, 'vault-token');
+    const vaultTokenFlag = extractFlag(argv, 'vault-token');
     argv = vaultTokenFlag.rest;
-    const vaultMountFlag = extractStringFlag(argv, 'vault-mount');
+    const vaultMountFlag = extractFlag(argv, 'vault-mount');
     argv = vaultMountFlag.rest;
-    const vaultPrefixFlag = extractStringFlag(argv, 'vault-prefix');
+    const vaultPrefixFlag = extractFlag(argv, 'vault-prefix');
 
     const vaultAddr = vaultAddrFlag.value ?? process.env.VAULT_ADDR ?? 'http://127.0.0.1:8200';
     const vaultToken = vaultTokenFlag.value ?? process.env.VAULT_TOKEN;
@@ -158,7 +133,7 @@ Options:
     let modelName = PROVIDER_DEFAULTS.anthropic.model;
     let apiKey = '';
     let ollamaBaseUrl = 'http://localhost:11434';
-    let gatewayPort = 3000;
+    let gatewayPort = 18789;
     let dbBackend: 'sqlite' | 'postgresql' = 'sqlite';
     let databaseUrl = '';
     let generateKeys = true;
@@ -218,34 +193,36 @@ Options:
             1
           )) as typeof verbosity;
 
-          // ── Step 2: API Keys — Connect AI providers ─────────────────────────
-          step(2, 'API Keys — Connect AI providers');
-          if (serverReachable) {
-            ctx.stdout.write('  The server is running. You can create a dashboard API key now.\n');
-            const createDashKey = await prompt(rl, '  Create a dashboard API key? (y/n/skip)', 'n');
-            if (createDashKey.toLowerCase() === 'y') {
-              const keyName = await prompt(rl, '  Key name', `${agentName}-cli`);
-              try {
-                const result = await apiCall(baseUrl, '/api/v1/auth/api-keys', {
-                  method: 'POST',
-                  body: { name: keyName },
-                });
-                if (result.ok && (result as { ok: boolean; data?: { key?: string } }).data?.key) {
-                  ctx.stdout.write(`\n  Dashboard API key created (save this — shown once):\n`);
-                  ctx.stdout.write(
-                    `    ${String((result as { ok: boolean; data?: { key?: string } }).data?.key)}\n`
-                  );
-                }
-              } catch {
-                ctx.stdout.write('  (Could not create dashboard API key — skipping)\n');
-              }
-            } else {
-              ctx.stdout.write('  Skipping dashboard API key creation.\n');
-            }
+          // ── Step 2: Model — Default model ────────────────────────────────
+          step(2, 'Model — Default model');
+          provider = (await promptChoice(rl, '  AI provider?', [...PROVIDERS], 0)) as Provider;
+
+          const pDef2 = PROVIDER_DEFAULTS[provider];
+          const modelInput2 = await prompt(rl, '  Model name', pDef2.model);
+          modelName = modelInput2 || pDef2.model;
+
+          if (pDef2.needsBaseUrl) {
+            ollamaBaseUrl = await prompt(rl, '  Ollama base URL', ollamaBaseUrl);
           } else {
-            ctx.stdout.write('  Provider API keys will be prompted in the Model step (Step 4).\n');
-            ctx.stdout.write('  Press Enter to continue or type "skip" to skip this step.\n');
-            await prompt(rl, '  [Enter to continue]', '');
+            apiKey = await prompt(rl, `  ${provider} API key (leave blank to skip)`, '');
+          }
+
+          // Store provider API key via secrets API or Vault
+          if (apiKey && serverReachable) {
+            ctx.stdout.write('  Storing provider API key...');
+            try {
+              const storeResult = await apiCall(baseUrl, '/api/v1/internal/secrets/resolve', {
+                method: 'POST',
+                body: { key: `${provider}_api_key`, value: apiKey },
+              });
+              if (storeResult.ok) {
+                ctx.stdout.write(' stored securely.\n');
+              } else {
+                ctx.stdout.write(' could not store (non-fatal).\n');
+              }
+            } catch {
+              ctx.stdout.write(' could not store (non-fatal).\n');
+            }
           }
 
           // ── Step 3: Security — Security policy ─────────────────────────────
@@ -283,24 +260,58 @@ Options:
           }
         }
 
-        // ── Step 4 (full) / Step 1 (env-only): Model — Default model ─────────
-        step(envOnly.value ? 1 : 4, 'Model — Default model');
-        provider = (await promptChoice(rl, '  AI provider?', [...PROVIDERS], 0)) as Provider;
+        // ── Step 4 (full) / Step 1 (env-only): API Keys — Dashboard key ──────
+        if (!envOnly.value) {
+          step(4, 'API Keys — Dashboard access');
+          if (serverReachable) {
+            ctx.stdout.write('  Create a dashboard API key for programmatic access.\n');
+            const createDashKey = await prompt(rl, '  Create a dashboard API key? (y/n/skip)', 'n');
+            if (createDashKey.toLowerCase() === 'y') {
+              const keyName = await prompt(rl, '  Key name', `${agentName}-cli`);
+              try {
+                const result = await apiCall(baseUrl, '/api/v1/auth/api-keys', {
+                  method: 'POST',
+                  body: { name: keyName },
+                });
+                if (result.ok && (result as { ok: boolean; data?: { key?: string } }).data?.key) {
+                  ctx.stdout.write(`\n  Dashboard API key created (save this — shown once):\n`);
+                  ctx.stdout.write(
+                    `    ${String((result as { ok: boolean; data?: { key?: string } }).data?.key)}\n`
+                  );
+                }
+              } catch {
+                ctx.stdout.write('  (Could not create dashboard API key — skipping)\n');
+              }
+            } else {
+              ctx.stdout.write('  Skipping dashboard API key creation.\n');
+            }
+          } else {
+            ctx.stdout.write('  Dashboard API keys can be created after starting the server.\n');
+            ctx.stdout.write('  Press Enter to continue or type "skip" to skip.\n');
+            await prompt(rl, '  [Enter to continue]', '');
+          }
+        }
 
-        const pDef = PROVIDER_DEFAULTS[provider];
-        const modelInput = await prompt(rl, '  Model name', pDef.model);
-        modelName = modelInput || pDef.model;
+        if (envOnly.value) {
+          // env-only mode: prompt for provider + model first
+          step(1, 'Model — Default model');
+          provider = (await promptChoice(rl, '  AI provider?', [...PROVIDERS], 0)) as Provider;
 
-        if (pDef.needsBaseUrl) {
-          ollamaBaseUrl = await prompt(rl, '  Ollama base URL', ollamaBaseUrl);
-        } else if (pDef.apiKeyEnv) {
-          apiKey = await prompt(rl, `  ${pDef.apiKeyEnv} (leave blank to skip)`, '');
+          const pDef = PROVIDER_DEFAULTS[provider];
+          const modelInput = await prompt(rl, '  Model name', pDef.model);
+          modelName = modelInput || pDef.model;
+
+          if (pDef.needsBaseUrl) {
+            ollamaBaseUrl = await prompt(rl, '  Ollama base URL', ollamaBaseUrl);
+          } else {
+            apiKey = await prompt(rl, `  ${provider} API key (leave blank to skip)`, '');
+          }
         }
 
         // ── Step 5 (full) / Step 2 (env-only): Infrastructure & keys ─────────
         step(envOnly.value ? 2 : 5, 'Done — Server & security keys');
-        const portInput = await prompt(rl, '  Gateway port', '3000');
-        gatewayPort = Math.max(1024, Math.min(65535, parseInt(portInput, 10) || 3000));
+        const portInput = await prompt(rl, '  Gateway port', '18789');
+        gatewayPort = Math.max(1024, Math.min(65535, parseInt(portInput, 10) || 18789));
 
         const dbChoices = ['sqlite', 'postgresql'];
         dbBackend = (await promptChoice(rl, '  Database backend?', dbChoices, 0)) as
@@ -361,8 +372,10 @@ Options:
 
       ctx.stdout.write('\n  Generated security keys:\n');
       for (const [k, v] of Object.entries(keys)) {
-        ctx.stdout.write(`    ${k}=${v}\n`);
+        const masked = v.slice(0, 4) + '…' + v.slice(-4);
+        ctx.stdout.write(`    ${k}=${masked}\n`);
       }
+      ctx.stdout.write('  (Full values written to .env or Vault — not displayed for security)\n');
     }
 
     // ── Push to Vault ─────────────────────────────────────────────────────────
@@ -383,8 +396,14 @@ Options:
         token: vaultToken,
       });
 
+      // Include provider API key in Vault storage if provided
+      const vaultEntries = { ...keys };
+      if (apiKey) {
+        vaultEntries[`${provider}_api_key`] = apiKey;
+      }
+
       let vaultOk = true;
-      for (const [k, v] of Object.entries(keys)) {
+      for (const [k, v] of Object.entries(vaultEntries)) {
         const vaultKey = `${vaultPrefix}${k}`;
         try {
           await vault.set(vaultKey, v);
@@ -433,10 +452,6 @@ Options:
         SECUREYEOMAN_ADMIN_PASSWORD: keys.SECUREYEOMAN_ADMIN_PASSWORD!,
       };
 
-      const pDef = PROVIDER_DEFAULTS[provider];
-      if (!pDef.needsBaseUrl && pDef.apiKeyEnv && apiKey) {
-        envAdditions[pDef.apiKeyEnv] = apiKey;
-      }
       if (dbBackend === 'postgresql' && databaseUrl) {
         envAdditions.DATABASE_URL = databaseUrl;
       }
@@ -492,9 +507,7 @@ Options:
         'model:',
         `  provider: "${provider}"`,
         `  model: "${modelName}"`,
-        pDef.needsBaseUrl
-          ? `  baseUrl: "${ollamaBaseUrl}"`
-          : `  apiKeyEnv: "${pDef.apiKeyEnv || 'ANTHROPIC_API_KEY'}"`,
+        ...(pDef.needsBaseUrl ? [`  baseUrl: "${ollamaBaseUrl}"`] : []),
         '',
         'gateway:',
         `  port: ${String(gatewayPort)}`,

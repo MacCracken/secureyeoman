@@ -43,7 +43,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
           required: ['password'],
           additionalProperties: false,
           properties: {
-            password: { type: 'string', minLength: 1 },
+            password: { type: 'string', minLength: 8 },
             rememberMe: { type: 'boolean' },
           },
         },
@@ -132,8 +132,8 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
           required: ['currentPassword', 'newPassword'],
           additionalProperties: false,
           properties: {
-            currentPassword: { type: 'string', minLength: 1 },
-            newPassword: { type: 'string', minLength: 1 },
+            currentPassword: { type: 'string', minLength: 8 },
+            newPassword: { type: 'string', minLength: 12 },
           },
         },
       },
@@ -189,6 +189,27 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
       reply: FastifyReply
     ) => {
       const { name, role, expiresInDays } = request.body;
+
+      // Prevent privilege escalation: users cannot create API keys with higher privileges
+      // than their own role. Role hierarchy: admin > operator > auditor > viewer.
+      const ROLE_HIERARCHY: Record<string, number> = {
+        viewer: 0,
+        capture_operator: 1,
+        voice_operator: 1,
+        auditor: 2,
+        security_auditor: 2,
+        operator: 3,
+        admin: 4,
+      };
+      const callerLevel = ROLE_HIERARCHY[request.authUser?.role ?? ''] ?? 0;
+      const requestedLevel = ROLE_HIERARCHY[role] ?? 0;
+      if (requestedLevel > callerLevel) {
+        return sendError(
+          reply,
+          403,
+          `Cannot create API key with role '${role}': exceeds your permission level`
+        );
+      }
 
       try {
         const result = await authService.createApiKey({
@@ -351,6 +372,23 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
   // ── PUT /api/v1/auth/roles/:id ─────────────────────────────────────
   app.put(
     '/api/v1/auth/roles/:id',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            name: { type: 'string', minLength: 1 },
+            description: { type: 'string' },
+            permissions: {
+              type: 'array',
+              items: { type: 'object' },
+            },
+            inheritFrom: { type: 'array', items: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Params: { id: string };

@@ -48,6 +48,7 @@ async function linearGraphQL(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(30_000),
   });
 
   if (!res.ok) {

@@ -1,11 +1,16 @@
 /**
- * Rate Limiter Middleware — token bucket per-tool rate limiting.
+ * Rate Limiter Middleware — token bucket rate limiting keyed by session + tool.
+ *
+ * Bucket keys combine a session/connection identifier with the tool name so that
+ * one session's burst does not exhaust the budget for other sessions.  When no
+ * session context is available, the tool name alone is used (backwards-compatible).
  */
 
 export interface RateLimiterMiddleware {
-  check(toolName: string): { allowed: boolean; retryAfterMs?: number };
-  reset(toolName: string): void;
-  wrap<T>(toolName: string, fn: () => Promise<T>): Promise<T>;
+  check(toolName: string, sessionId?: string): { allowed: boolean; retryAfterMs?: number };
+  reset(toolName: string, sessionId?: string): void;
+  prune(): void;
+  wrap<T>(toolName: string, fn: () => Promise<T>, sessionId?: string): Promise<T>;
 }
 
 interface TokenBucket {
@@ -15,12 +20,18 @@ interface TokenBucket {
 
 export function createRateLimiter(maxPerSecond: number): RateLimiterMiddleware {
   const buckets = new Map<string, TokenBucket>();
+  const BUCKET_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour
 
-  function getBucket(toolName: string): TokenBucket {
-    let bucket = buckets.get(toolName);
+  function bucketKey(toolName: string, sessionId?: string): string {
+    return sessionId ? `${sessionId}:${toolName}` : toolName;
+  }
+
+  function getBucket(toolName: string, sessionId?: string): TokenBucket {
+    const key = bucketKey(toolName, sessionId);
+    let bucket = buckets.get(key);
     if (!bucket) {
       bucket = { tokens: maxPerSecond, lastRefill: Date.now() };
-      buckets.set(toolName, bucket);
+      buckets.set(key, bucket);
     }
 
     // Refill tokens based on time elapsed
@@ -34,8 +45,8 @@ export function createRateLimiter(maxPerSecond: number): RateLimiterMiddleware {
   }
 
   return {
-    check(toolName: string): { allowed: boolean; retryAfterMs?: number } {
-      const bucket = getBucket(toolName);
+    check(toolName: string, sessionId?: string): { allowed: boolean; retryAfterMs?: number } {
+      const bucket = getBucket(toolName, sessionId);
       if (bucket.tokens >= 1) {
         bucket.tokens -= 1;
         return { allowed: true };
@@ -44,12 +55,20 @@ export function createRateLimiter(maxPerSecond: number): RateLimiterMiddleware {
       return { allowed: false, retryAfterMs };
     },
 
-    reset(toolName: string): void {
-      buckets.delete(toolName);
+    reset(toolName: string, sessionId?: string): void {
+      buckets.delete(bucketKey(toolName, sessionId));
     },
 
-    async wrap<T>(toolName: string, fn: () => Promise<T>): Promise<T> {
-      const result = this.check(toolName);
+    /** Remove stale buckets that haven't been refilled in over an hour. */
+    prune(): void {
+      const cutoff = Date.now() - BUCKET_MAX_AGE_MS;
+      for (const [key, bucket] of buckets) {
+        if (bucket.lastRefill < cutoff) buckets.delete(key);
+      }
+    },
+
+    async wrap<T>(toolName: string, fn: () => Promise<T>, sessionId?: string): Promise<T> {
+      const result = this.check(toolName, sessionId);
       if (!result.allowed) {
         throw new RateLimitError(toolName, result.retryAfterMs ?? 1000);
       }

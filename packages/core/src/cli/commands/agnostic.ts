@@ -44,8 +44,6 @@ const AGENT_SERVICES = [
 
 const INFRA_SERVICES = ['redis', 'rabbitmq', 'webgui'] as const;
 
-const _ALL_SERVICES = [...INFRA_SERVICES, ...AGENT_SERVICES] as const;
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function compose(
@@ -331,6 +329,10 @@ Environment variables (set after start to wire MCP tools):
           });
           child.stdout.on('data', (chunk: Buffer) => ctx.stdout.write(chunk.toString()));
           child.stderr.on('data', (chunk: Buffer) => ctx.stdout.write(chunk.toString()));
+          child.on('error', (err) => {
+            ctx.stderr.write(`Failed to spawn docker compose: ${err.message}\n`);
+            resolve(1);
+          });
           child.on('close', (code) => {
             resolve(code ?? 0);
           });

@@ -66,6 +66,7 @@ export class ApiEmbeddingProvider extends BaseEmbeddingProvider {
         input: texts,
         model: this.model,
       }),
+      signal: AbortSignal.timeout(60_000),
     });
 
     if (!response.ok) {
@@ -96,6 +97,7 @@ export class ApiEmbeddingProvider extends BaseEmbeddingProvider {
             content: { parts: [{ text }] },
           })),
         }),
+        signal: AbortSignal.timeout(60_000),
       }
     );
 

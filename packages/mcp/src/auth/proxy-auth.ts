@@ -12,6 +12,7 @@ export interface AuthResult {
 }
 
 export class ProxyAuth {
+  private static readonly MAX_CACHE_SIZE = 10_000;
   private readonly client: CoreApiClient;
   private readonly cache = new Map<string, { result: AuthResult; expiresAt: number }>();
   private readonly cacheTtlMs: number;
@@ -37,6 +38,10 @@ export class ProxyAuth {
 
       // Cache successful validations
       if (result.valid) {
+        if (this.cache.size >= ProxyAuth.MAX_CACHE_SIZE) {
+          const oldest = this.cache.keys().next().value;
+          if (oldest !== undefined) this.cache.delete(oldest);
+        }
         this.cache.set(token, {
           result,
           expiresAt: Date.now() + this.cacheTtlMs,

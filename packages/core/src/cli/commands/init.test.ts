@@ -378,7 +378,7 @@ describe('initCommand', () => {
         (c: string[]) => c[0] === 'secureyeoman.yaml'
       );
       const yaml = yamlCall?.[1] as string;
-      expect(yaml).toContain('port: 3000');
+      expect(yaml).toContain('port: 18789');
     });
 
     it('includes security defaults in yaml', async () => {
@@ -454,7 +454,8 @@ describe('initCommand', () => {
       expect(content).not.toContain('# This is a comment');
     });
 
-    it('generates all 5 security keys and displays them', async () => {
+    it('generates all 5 security keys and displays masked values', async () => {
+      mockGenerateSecretKey.mockImplementation((n: number) => `secret-value-${n}-abcdef`);
       const ctx = makeCtx(['--non-interactive']);
       await initCommand.run(ctx as any);
       expect(mockGenerateSecretKey).toHaveBeenCalledWith(32);
@@ -465,6 +466,12 @@ describe('initCommand', () => {
       expect(out).toContain('SECUREYEOMAN_ENCRYPTION_KEY');
       expect(out).toContain('SECUREYEOMAN_ADMIN_PASSWORD');
       expect(out).toContain('SECUREYEOMAN_WEBHOOK_SECRET');
+      // Full secret values must NOT appear in stdout
+      expect(out).not.toContain('secret-value-32-abcdef');
+      expect(out).not.toContain('secret-value-16-abcdef');
+      // Masked format should be present
+      expect(out).toContain('…');
+      expect(out).toContain('not displayed for security');
     });
 
     it('only writes ADMIN_PASSWORD to .env (crypto keys are auto-managed)', async () => {
@@ -658,12 +665,12 @@ describe('initCommand', () => {
       const ctx = makeCtx([]);
       await initCommand.run(ctx as any);
       const apiKeyPrompt = mockPrompt.mock.calls.find((c: unknown[]) =>
-        (c[1] as string).includes('OPENAI_API_KEY')
+        (c[1] as string).includes('openai API key')
       );
       expect(apiKeyPrompt).toBeTruthy();
     });
 
-    it('writes API key to .env when provided', async () => {
+    it('does not write provider API key to .env (stored via secrets API)', async () => {
       mockPromptChoice.mockImplementation(
         (_rl: any, q: string, choices: string[], defIdx: number) => {
           if (q.includes('AI provider')) return Promise.resolve('openai');
@@ -671,7 +678,7 @@ describe('initCommand', () => {
         }
       );
       mockPrompt.mockImplementation((_rl: any, q: string, def: string) => {
-        if (q.includes('OPENAI_API_KEY')) return Promise.resolve('sk-test123');
+        if (q.includes('openai API key')) return Promise.resolve('sk-test123');
         return Promise.resolve(def);
       });
       mockExistsSync.mockReturnValue(false);
@@ -680,7 +687,8 @@ describe('initCommand', () => {
       const envWrite = (mockWriteFileSync as ReturnType<typeof vi.fn>).mock.calls.find(
         (c: string[]) => c[0] === '.env'
       );
-      expect(envWrite?.[1]).toContain('OPENAI_API_KEY=sk-test123');
+      // Provider key should NOT be in .env — it's stored via secrets API
+      expect(envWrite?.[1]).not.toContain('sk-test123');
     });
 
     it('prompts for postgresql DATABASE_URL when postgresql is selected', async () => {
@@ -790,7 +798,7 @@ describe('initCommand', () => {
       );
       if (yamlCall) {
         const yaml = yamlCall[1] as string;
-        expect(yaml).toContain('port: 3000');
+        expect(yaml).toContain('port: 18789');
       }
     });
 

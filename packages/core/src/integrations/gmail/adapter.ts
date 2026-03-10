@@ -221,11 +221,13 @@ export class GmailIntegration implements Integration {
         Authorization: `Bearer ${this.accessToken}`,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Failed to send Gmail message: ${error}`);
+      this.logger?.warn({ error, statusCode: response.status }, 'Gmail send failed');
+      throw new Error(`Failed to send Gmail message (HTTP ${response.status})`);
     }
 
     const result = (await response.json()) as { id?: string };
@@ -251,6 +253,7 @@ export class GmailIntegration implements Integration {
 
       const resp = await fetch(historyUrl.toString(), {
         headers: { Authorization: `Bearer ${this.accessToken}` },
+        signal: AbortSignal.timeout(30_000),
       });
 
       if (resp.status === 404) {
@@ -299,6 +302,7 @@ export class GmailIntegration implements Integration {
   private async processMessage(messageId: string): Promise<void> {
     const resp = await fetch(`${GMAIL_API}/messages/${messageId}?format=full`, {
       headers: { Authorization: `Bearer ${this.accessToken}` },
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) return;
@@ -395,6 +399,7 @@ export class GmailIntegration implements Integration {
         refresh_token: this.refreshToken,
         grant_type: 'refresh_token',
       }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) {
@@ -415,6 +420,7 @@ export class GmailIntegration implements Integration {
   private async fetchProfile(): Promise<GmailProfile> {
     const resp = await fetch(`${GMAIL_API}/profile`, {
       headers: { Authorization: `Bearer ${this.accessToken}` },
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) {
@@ -428,6 +434,7 @@ export class GmailIntegration implements Integration {
   private async resolveLabelId(labelName: string): Promise<string | null> {
     const resp = await fetch(`${GMAIL_API}/labels`, {
       headers: { Authorization: `Bearer ${this.accessToken}` },
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) return null;
@@ -449,6 +456,7 @@ export class GmailIntegration implements Integration {
         labelListVisibility: 'labelShow',
         messageListVisibility: 'show',
       }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) {

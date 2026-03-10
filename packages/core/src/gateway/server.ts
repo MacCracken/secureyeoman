@@ -1703,7 +1703,7 @@ export class GatewayServer {
 
     this.app.get('/health/live', async (_request, reply) => {
       reply.code(200);
-      return { status: 'ok', version: VERSION };
+      return { status: 'ok' };
     });
 
     this.app.get('/health/ready', async (_request, reply) => {

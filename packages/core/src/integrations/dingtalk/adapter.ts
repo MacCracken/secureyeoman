@@ -86,6 +86,7 @@ export class DingTalkIntegration implements WebhookIntegration {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30_000),
     });
     if (!resp.ok) throw new Error(`DingTalk send failed: ${resp.status}`);
     return `dingtalk_${Date.now()}`;
@@ -161,6 +162,7 @@ export class DingTalkIntegration implements WebhookIntegration {
         const resp = await fetch(`${DINGTALK_API}/robot/sendBySession`, {
           method: 'GET',
           headers: { 'x-acs-dingtalk-access-token': this.dtConfig.appKey },
+          signal: AbortSignal.timeout(30_000),
         });
         return {
           ok: resp.status !== 401,

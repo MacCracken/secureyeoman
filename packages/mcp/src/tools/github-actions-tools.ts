@@ -41,6 +41,7 @@ async function ghaFetch(
   const res = await fetch(url, {
     ...options,
     headers: { ...ghaHeaders(config), ...(options.headers as Record<string, string> | undefined) },
+    signal: AbortSignal.timeout(30_000),
   });
   let body: unknown;
   const ct = res.headers.get('content-type') ?? '';
@@ -200,6 +201,7 @@ export function registerGithubActionsTools(
         method: 'GET',
         redirect: 'manual',
         headers: ghaHeaders(config),
+        signal: AbortSignal.timeout(30_000),
       });
       if (res.status === 302) {
         const logsUrl = res.headers.get('location') ?? '';

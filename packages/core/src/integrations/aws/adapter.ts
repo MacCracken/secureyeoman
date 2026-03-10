@@ -87,6 +87,7 @@ export class AwsIntegration implements Integration {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body,
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) {
@@ -108,7 +109,7 @@ export class AwsIntegration implements Integration {
       const path = '/?Action=GetCallerIdentity&Version=2011-06-15';
       const headers = this.signRequest('GET', host, path, '', 'sts');
 
-      const resp = await fetch(`https://${host}${path}`, { headers });
+      const resp = await fetch(`https://${host}${path}`, { headers, signal: AbortSignal.timeout(30_000) });
 
       if (!resp.ok) {
         const err = await resp.text();

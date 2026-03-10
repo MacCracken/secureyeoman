@@ -63,6 +63,145 @@ import {
   // Export/Import
   exportPersonality,
   importPersonality,
+  // Multimodal
+  analyzeImage,
+  updateMultimodalProvider,
+  transcribeAudio,
+  synthesizeSpeech,
+  generateImage,
+  updateMultimodalModel,
+  fetchBrowserSession,
+  fetchCostBreakdown,
+  fetchCostHistory,
+  resetUsageStat,
+  executeSwarm,
+  fetchSwarmRun,
+  cancelSwarmRun,
+  fetchGroupChatChannels,
+  fetchGroupChatMessages,
+  sendGroupChatMessage,
+  fetchRoutingRules,
+  createRoutingRule,
+  updateRoutingRule,
+  deleteRoutingRule,
+  testRoutingRule,
+  updateWorkspace,
+  deleteWorkspace,
+  addWorkspaceMember,
+  updateWorkspaceMemberRole,
+  removeWorkspaceMember,
+  fetchWorkflow,
+  createWorkflow,
+  updateWorkflow,
+  deleteWorkflow,
+  triggerWorkflow,
+  fetchWorkflowRun,
+  cancelWorkflowRun,
+  fetchSoulApprovals,
+  fetchSoulApprovalCount,
+  approveSoulAction,
+  rejectSoulAction,
+  checkSecret,
+  generateTlsCert,
+  fetchActiveIntent,
+  activateIntent,
+  fetchEnforcementLog,
+  readSignal,
+  fetchGoalTimeline,
+  createAuditRun,
+  fetchAuditRun,
+  updateAuditItem,
+  finalizeAuditRun,
+  emergencyStop,
+  fetchPendingConsents,
+  grantConsent,
+  denyConsent,
+  revokeConsent,
+  fetchActiveRecordings,
+  stopRecording,
+  fetchStrategies,
+  fetchStrategy,
+  createStrategy,
+  updateStrategy,
+  deleteStrategy,
+  fetchAthiScenarios,
+  createAthiScenario,
+  updateAthiScenario,
+  deleteAthiScenario,
+  fetchAthiMatrix,
+  fetchAthiTopRisks,
+  fetchAthiSummary,
+  fetchAthiScenariosByTechnique,
+  linkEventsToAthiScenario,
+  fetchPersonalityVersion,
+  deletePersonalityTag,
+  rollbackPersonality,
+  fetchPersonalityDrift,
+  fetchPersonalityVersionDiff,
+  fetchWorkflowVersions,
+  fetchWorkflowVersion,
+  tagWorkflowRelease,
+  rollbackWorkflow,
+  fetchWorkflowDrift,
+  fetchWorkflowVersionDiff,
+  fetchCitationFeedback,
+  submitCitationFeedback,
+  fetchDocumentProvenance,
+  updateDocumentProvenance,
+  fetchGroundingStats,
+  fetchProviderAccounts,
+  createProviderAccount,
+  updateProviderAccount,
+  deleteProviderAccount,
+  setDefaultProviderAccount,
+  validateProviderAccount,
+  rotateProviderAccountKey,
+  validateAllProviderAccounts,
+  fetchAccountCosts,
+  fetchAccountCostTrend,
+  fetchScanHistory,
+  fetchScanStats,
+  fetchQuarantineItems,
+  approveQuarantine,
+  deleteQuarantine,
+  fetchThreatIntelligence,
+  fetchSandboxPolicy,
+  searchFiles,
+  replaceInFiles,
+  fetchAnnotations,
+  createAnnotation,
+  deleteAnnotation,
+  exportAnnotationsAsDataset,
+  fetchInlineCompletion,
+  fetchPhotisnadiWidget,
+  fetchPhotisnadiHealth,
+  fetchKeyRotationStatus,
+  rotateKey,
+  fetchProactivePatterns,
+  convertPatternToTrigger,
+  fetchProactiveConfig,
+  fetchPreferencePairs,
+  createPreferencePair,
+  deletePreferencePair,
+  rateSideBySide,
+  previewCuratedDataset,
+  createCuratedDataset,
+  fetchCuratedDatasets,
+  deleteCuratedDataset,
+  fetchTrainingExperiments,
+  createTrainingExperiment,
+  getTrainingExperiment,
+  deleteTrainingExperiment,
+  diffTrainingExperiments,
+  deployModel,
+  rollbackModel,
+  fetchModelVersions,
+  createAbTest,
+  fetchAbTests,
+  getAbTest,
+  completeAbTest,
+  cancelAbTest,
+  evaluateAbTest,
 } from './client';
 
 // ── Setup ────────────────────────────────────────────────────────────
@@ -2038,5 +2177,747 @@ describe('Consolidation', () => {
   it('runConsolidation', async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({ report: {} }));
     await runConsolidation();
+  });
+});
+
+// ── Multimodal API ──────────────────────────────────────────────────
+describe('Multimodal API', () => {
+  it('analyzeImage', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ description: 'a cat', labels: ['cat'], durationMs: 100 }));
+    const result = await analyzeImage({ imageBase64: 'abc', mimeType: 'image/png' });
+    expect(result.description).toBe('a cat');
+  });
+  it('updateMultimodalProvider', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateMultimodalProvider('vision', 'openai');
+  });
+  it('transcribeAudio', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ text: 'hello', durationMs: 50 }));
+    const result = await transcribeAudio({ audioBase64: 'abc' });
+    expect(result.text).toBe('hello');
+  });
+  it('synthesizeSpeech', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ audioBase64: 'abc', format: 'mp3', durationMs: 100 }));
+    const result = await synthesizeSpeech({ text: 'hello' });
+    expect(result.format).toBe('mp3');
+  });
+  it('generateImage', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ imageUrl: 'http://img.png', durationMs: 200 }));
+    const result = await generateImage({ prompt: 'a sunset' });
+    expect(result.imageUrl).toBe('http://img.png');
+  });
+  it('updateMultimodalModel', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    await updateMultimodalModel('tts', 'whisper');
+  });
+});
+
+// ── Browser API ──────────────────────────────────────────────────
+describe('Browser API', () => {
+  it('fetchBrowserSession', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 's1', status: 'active' }));
+    const result = await fetchBrowserSession('s1');
+    expect(result).toHaveProperty('id', 's1');
+  });
+  it('fetchBrowserSession returns null on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('Not found', 404));
+    const result = await fetchBrowserSession('bad');
+    expect(result).toBeNull();
+  });
+});
+
+// ── Cost Analytics ──────────────────────────────────────────────
+describe('Cost Analytics', () => {
+  it('fetchCostBreakdown', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ byProvider: {}, recommendations: [] }));
+    const result = await fetchCostBreakdown();
+    expect(result.byProvider).toEqual({});
+  });
+  it('fetchCostBreakdown returns fallback on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('error', 500));
+    const result = await fetchCostBreakdown();
+    expect(result.recommendations).toEqual([]);
+  });
+  it('fetchCostHistory', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } }));
+    const result = await fetchCostHistory({ from: '2025-01-01', provider: 'openai' });
+    expect(result.records).toEqual([]);
+  });
+  it('fetchCostHistory returns fallback on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('error', 500));
+    const result = await fetchCostHistory();
+    expect(result.totals.costUsd).toBe(0);
+  });
+  it('resetUsageStat', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ success: true }));
+    const result = await resetUsageStat('errors');
+    expect(result.success).toBe(true);
+  });
+});
+
+// ── Swarm API ──────────────────────────────────────────────────
+describe('Swarm API', () => {
+  it('executeSwarm', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ run: { id: 'r1' } }));
+    const result = await executeSwarm({ templateId: 't1', taskDescription: 'test' });
+    expect(result).toHaveProperty('run');
+  });
+  it('fetchSwarmRun', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ run: { id: 'r1' } }));
+    const result = await fetchSwarmRun('r1');
+    expect(result).toHaveProperty('run');
+  });
+  it('fetchSwarmRun returns null on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('not found', 404));
+    const result = await fetchSwarmRun('bad');
+    expect(result).toBeNull();
+  });
+  it('cancelSwarmRun', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ success: true }));
+    const result = await cancelSwarmRun('r1');
+    expect(result.success).toBe(true);
+  });
+});
+
+// ── Group Chat API ──────────────────────────────────────────────
+describe('Group Chat API', () => {
+  it('fetchGroupChatChannels', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ channels: [] }));
+    const result = await fetchGroupChatChannels();
+    expect(result.channels).toEqual([]);
+  });
+  it('fetchGroupChatMessages', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ messages: [] }));
+    const result = await fetchGroupChatMessages('ch1');
+    expect(result.messages).toEqual([]);
+  });
+  it('sendGroupChatMessage', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ message: { id: 'm1' } }));
+    const result = await sendGroupChatMessage({ channelId: 'ch1', content: 'hi', senderProfileName: 'user' });
+    expect(result).toHaveProperty('message');
+  });
+});
+
+// ── Routing Rules API ──────────────────────────────────────────
+describe('Routing Rules API', () => {
+  it('fetchRoutingRules', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ rules: [] }));
+    const result = await fetchRoutingRules();
+    expect(result.rules).toEqual([]);
+  });
+  it('createRoutingRule', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ rule: {} }));
+    await createRoutingRule({ name: 'r1' } as any);
+  });
+  it('updateRoutingRule', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ rule: {} }));
+    await updateRoutingRule('r1', { name: 'r2' } as any);
+  });
+  it('deleteRoutingRule', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deleteRoutingRule('r1');
+  });
+  it('testRoutingRule', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ matched: true }));
+    await testRoutingRule({ ruleId: 'r1', testMessage: 'hello' } as any);
+  });
+});
+
+// ── Workspace API ──────────────────────────────────────────────
+describe('Workspace API', () => {
+  it('updateWorkspace', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ workspace: {} }));
+    await updateWorkspace('w1', { name: 'ws' });
+  });
+  it('deleteWorkspace', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deleteWorkspace('w1');
+  });
+  it('addWorkspaceMember', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ member: {} }));
+    await addWorkspaceMember('w1', { userId: 'u1', role: 'member' });
+  });
+  it('updateWorkspaceMemberRole', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ member: {} }));
+    await updateWorkspaceMemberRole('w1', 'u1', 'admin');
+  });
+  it('removeWorkspaceMember', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await removeWorkspaceMember('w1', 'u1');
+  });
+});
+
+// ── Workflow API ──────────────────────────────────────────────
+describe('Workflow API', () => {
+  it('fetchWorkflow', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ definition: {} }));
+    const result = await fetchWorkflow('wf1');
+    expect(result).toHaveProperty('definition');
+  });
+  it('createWorkflow', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ definition: {} }));
+    await createWorkflow({ name: 'wf' } as any);
+  });
+  it('updateWorkflow', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ definition: {} }));
+    await updateWorkflow('wf1', { name: 'wf2' } as any);
+  });
+  it('deleteWorkflow', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deleteWorkflow('wf1');
+  });
+  it('triggerWorkflow', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ run: {} }));
+    await triggerWorkflow('wf1');
+  });
+  it('fetchWorkflowRun', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ run: {} }));
+    await fetchWorkflowRun('wf1', 'run1');
+  });
+  it('cancelWorkflowRun', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ run: {} }));
+    await cancelWorkflowRun('run1');
+  });
+});
+
+// ── Soul Approvals API ──────────────────────────────────────────
+describe('Soul Approvals API', () => {
+  it('fetchSoulApprovals', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ approvals: [] }));
+    await fetchSoulApprovals();
+  });
+  it('fetchSoulApprovalCount', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ count: 5 }));
+    // Returns the count number
+    await fetchSoulApprovalCount();
+  });
+  it('approveSoulAction', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ approval: {} }));
+    await approveSoulAction('a1');
+  });
+  it('rejectSoulAction', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ approval: {} }));
+    await rejectSoulAction('a1');
+  });
+});
+
+// ── Secrets & TLS API ──────────────────────────────────────────
+describe('Secrets & TLS', () => {
+  it('checkSecret', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ name: 'key1', exists: true }));
+    const result = await checkSecret('key1');
+    expect(result.exists).toBe(true);
+  });
+  it('generateTlsCert', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ generated: true, paths: {} }));
+    const result = await generateTlsCert();
+    expect(result.generated).toBe(true);
+  });
+});
+
+// ── Intent API ──────────────────────────────────────────────────
+describe('Intent API', () => {
+  it('fetchActiveIntent', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ intent: {} }));
+    await fetchActiveIntent();
+  });
+  it('activateIntent', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ success: true }));
+    await activateIntent('i1');
+  });
+  it('fetchEnforcementLog', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ entries: [] }));
+    await fetchEnforcementLog();
+  });
+  it('readSignal', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ signal: {} }));
+    await readSignal('s1');
+  });
+  it('fetchGoalTimeline', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ timeline: [] }));
+    await fetchGoalTimeline('g1');
+  });
+});
+
+// ── Audit API ──────────────────────────────────────────────────
+describe('Audit API', () => {
+  it('createAuditRun', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ run: { id: 'run1', name: 'Q1 Audit' } }));
+    const result = await createAuditRun('Q1 Audit');
+    expect(result).toHaveProperty('id');
+  });
+  it('fetchAuditRun', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ run: { id: 'run1' } }));
+    await fetchAuditRun('run1');
+  });
+  it('updateAuditItem', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ item: {} }));
+    await updateAuditItem('run1', 'item1', { status: 'pass' });
+  });
+  it('finalizeAuditRun', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'run1', status: 'finalized' }));
+    await finalizeAuditRun('run1');
+  });
+  it('emergencyStop', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await emergencyStop('skill', 's1');
+  });
+});
+
+// ── Capture Management API ──────────────────────────────────────
+describe('Capture Management', () => {
+  it('fetchPendingConsents', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ consents: [] }));
+    await fetchPendingConsents();
+  });
+  it('grantConsent', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'c1', status: 'granted' }));
+    await grantConsent('c1');
+  });
+  it('denyConsent', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'c1', status: 'denied' }));
+    await denyConsent('c1', 'No reason');
+  });
+  it('revokeConsent', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'c1', status: 'revoked' }));
+    await revokeConsent('c1');
+  });
+  it('fetchActiveRecordings', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ recordings: [] }));
+    await fetchActiveRecordings();
+  });
+  it('stopRecording', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'r1', status: 'stopped' }));
+    await stopRecording('session1');
+  });
+});
+
+// ── Reasoning Strategies ──────────────────────────────────────
+describe('Reasoning Strategies', () => {
+  it('fetchStrategies', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ items: [], total: 0 }));
+    await fetchStrategies('analytical');
+  });
+  it('fetchStrategy', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 's1', name: 'chain-of-thought' }));
+    await fetchStrategy('s1');
+  });
+  it('createStrategy', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 's1' }));
+    await createStrategy({ name: 'test', slug: 'test', category: 'analytical', promptPrefix: 'Think step by step' });
+  });
+  it('updateStrategy', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 's1' }));
+    await updateStrategy('s1', { name: 'updated' });
+  });
+  it('deleteStrategy', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deleteStrategy('s1');
+  });
+});
+
+// ── ATHI Threat Governance ──────────────────────────────────────
+describe('ATHI API', () => {
+  it('fetchAthiScenarios', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ items: [], total: 0 }));
+    await fetchAthiScenarios({ actor: 'insider', limit: 10 });
+  });
+  it('createAthiScenario', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ scenario: { id: 'a1' } }));
+    await createAthiScenario({ title: 'Test', actor: 'insider', techniques: [], harms: [], impacts: [], likelihood: 3, severity: 4 });
+  });
+  it('updateAthiScenario', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ scenario: { id: 'a1' } }));
+    await updateAthiScenario('a1', { title: 'Updated' });
+  });
+  it('deleteAthiScenario', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deleteAthiScenario('a1');
+  });
+  it('fetchAthiMatrix', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ matrix: [] }));
+    await fetchAthiMatrix();
+  });
+  it('fetchAthiTopRisks', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ topRisks: [] }));
+    await fetchAthiTopRisks(5);
+  });
+  it('fetchAthiSummary', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ summary: {} }));
+    await fetchAthiSummary();
+  });
+  it('fetchAthiScenariosByTechnique', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ scenarios: [] }));
+    await fetchAthiScenariosByTechnique('prompt-injection');
+  });
+  it('linkEventsToAthiScenario', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ scenario: { id: 'a1' } }));
+    await linkEventsToAthiScenario('a1', ['e1', 'e2']);
+  });
+});
+
+// ── Personality Versioning ──────────────────────────────────────
+describe('Personality Versioning', () => {
+  it('fetchPersonalityVersion', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'v1' }));
+    await fetchPersonalityVersion('p1', 'v1');
+  });
+  it('deletePersonalityTag', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'v1' }));
+    await deletePersonalityTag('p1', 'v1');
+  });
+  it('rollbackPersonality', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'v1' }));
+    await rollbackPersonality('p1', 'v1');
+  });
+  it('fetchPersonalityDrift', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ drift: 0.05 }));
+    await fetchPersonalityDrift('p1');
+  });
+  it('fetchPersonalityVersionDiff', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ diff: '--- a\n+++ b' }));
+    await fetchPersonalityVersionDiff('p1', 'v1', 'v2');
+  });
+});
+
+// ── Workflow Versioning ──────────────────────────────────────
+describe('Workflow Versioning', () => {
+  it('fetchWorkflowVersions', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ versions: [], total: 0 }));
+    await fetchWorkflowVersions('wf1');
+  });
+  it('fetchWorkflowVersion', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'v1' }));
+    await fetchWorkflowVersion('wf1', 'v1');
+  });
+  it('tagWorkflowRelease', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'v1', tag: 'v1.0.0' }));
+    await tagWorkflowRelease('wf1', 'v1.0.0');
+  });
+  it('rollbackWorkflow', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'v1' }));
+    await rollbackWorkflow('wf1', 'v1');
+  });
+  it('fetchWorkflowDrift', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ drift: 0.1 }));
+    await fetchWorkflowDrift('wf1');
+  });
+  it('fetchWorkflowVersionDiff', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ diff: 'changes' }));
+    await fetchWorkflowVersionDiff('wf1', 'v1', 'v2');
+  });
+});
+
+// ── Citation API ──────────────────────────────────────────────
+describe('Citation API', () => {
+  it('fetchCitationFeedback', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ messageId: 'm1', feedback: [] }));
+    await fetchCitationFeedback('m1');
+  });
+  it('submitCitationFeedback', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'f1' }));
+    await submitCitationFeedback('m1', { citationIndex: 0, sourceId: 's1', relevant: true });
+  });
+  it('fetchDocumentProvenance', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ sourceQuality: null, trustScore: 0.8 }));
+    await fetchDocumentProvenance('d1');
+  });
+  it('updateDocumentProvenance', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ document: {} }));
+    await updateDocumentProvenance('d1', { accuracy: 0.9 });
+  });
+  it('fetchGroundingStats', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ averageScore: 0.85, totalMessages: 100, lowGroundingCount: 5 }));
+    await fetchGroundingStats('p1');
+  });
+});
+
+// ── Provider Accounts ──────────────────────────────────────────
+describe('Provider Accounts', () => {
+  it('fetchProviderAccounts', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchProviderAccounts('openai');
+  });
+  it('createProviderAccount', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'pa1' }));
+    await createProviderAccount({ provider: 'openai', label: 'main', apiKey: 'sk-xxx' });
+  });
+  it('updateProviderAccount', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'pa1' }));
+    await updateProviderAccount('pa1', { label: 'updated' });
+  });
+  it('deleteProviderAccount', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deleteProviderAccount('pa1');
+  });
+  it('setDefaultProviderAccount', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'pa1', isDefault: true }));
+    await setDefaultProviderAccount('pa1');
+  });
+  it('validateProviderAccount', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'pa1', status: 'active' }));
+    await validateProviderAccount('pa1');
+  });
+  it('rotateProviderAccountKey', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'pa1' }));
+    await rotateProviderAccountKey('pa1', 'new-key');
+  });
+  it('validateAllProviderAccounts', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ total: 3, valid: 2, invalid: 1 }));
+    const result = await validateAllProviderAccounts();
+    expect(result.total).toBe(3);
+  });
+  it('fetchAccountCosts', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchAccountCosts({ from: 1000, to: 2000 });
+  });
+  it('fetchAccountCostTrend', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse([]));
+    await fetchAccountCostTrend({ days: 30 });
+  });
+});
+
+// ── Sandbox Scanning ──────────────────────────────────────────
+describe('Sandbox Scanning', () => {
+  it('fetchScanHistory', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ rows: [], total: 0 }));
+    await fetchScanHistory({ limit: 10, verdict: 'safe' });
+  });
+  it('fetchScanHistory returns fallback on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('error', 500));
+    const result = await fetchScanHistory();
+    expect(result.total).toBe(0);
+  });
+  it('fetchScanStats', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ stats: { total: 0, byVerdict: {}, bySeverity: {}, avgDurationMs: 0, last24h: 0 } }));
+    await fetchScanStats();
+  });
+  it('fetchScanStats returns fallback on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('error', 500));
+    const result = await fetchScanStats();
+    expect(result.stats.total).toBe(0);
+  });
+  it('fetchQuarantineItems', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ items: [] }));
+    await fetchQuarantineItems();
+  });
+  it('fetchQuarantineItems returns fallback on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('error', 500));
+    const result = await fetchQuarantineItems();
+    expect(result.items).toEqual([]);
+  });
+  it('approveQuarantine', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await approveQuarantine('q1');
+  });
+  it('deleteQuarantine', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deleteQuarantine('q1');
+  });
+  it('fetchThreatIntelligence', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ patternCount: 10, categories: [], stages: [], patterns: [] }));
+    await fetchThreatIntelligence();
+  });
+  it('fetchThreatIntelligence returns fallback on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('error', 500));
+    const result = await fetchThreatIntelligence();
+    expect(result.patternCount).toBe(0);
+  });
+  it('fetchSandboxPolicy', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ policy: { enabled: true } }));
+    await fetchSandboxPolicy();
+  });
+  it('fetchSandboxPolicy returns fallback on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('error', 500));
+    const result = await fetchSandboxPolicy();
+    expect(result.policy.enabled).toBe(false);
+  });
+});
+
+// ── Editor Search & Replace ──────────────────────────────────
+describe('Editor API', () => {
+  it('searchFiles', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ matches: [], fileCount: 0, matchCount: 0, truncated: false }));
+    const result = await searchFiles({ query: 'foo' });
+    expect(result.matchCount).toBe(0);
+  });
+  it('replaceInFiles', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ files: [], totalReplacements: 0 }));
+    const result = await replaceInFiles({ search: 'foo', replace: 'bar', files: ['a.ts'] });
+    expect(result.totalReplacements).toBe(0);
+  });
+  it('fetchAnnotations', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ annotations: [] }));
+    await fetchAnnotations({ filePath: '/test.ts' });
+  });
+  it('createAnnotation', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ annotation: { id: 'a1' } }));
+    await createAnnotation({ filePath: '/test.ts', startLine: 1, endLine: 5, selectedText: 'code', label: 'good' } as any);
+  });
+  it('deleteAnnotation', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deleteAnnotation('a1');
+  });
+  it('exportAnnotationsAsDataset', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse('jsonl data'));
+    await exportAnnotationsAsDataset({ format: 'jsonl' });
+  });
+  it('fetchInlineCompletion', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ completion: 'console.log()' }));
+    const result = await fetchInlineCompletion({ prefix: 'const x = ', suffix: '', language: 'typescript' });
+    expect(result.completion).toBe('console.log()');
+  });
+});
+
+// ── Photisnadi ──────────────────────────────────────────────
+describe('Photisnadi', () => {
+  it('fetchPhotisnadiWidget', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ widget: {} }));
+    await fetchPhotisnadiWidget();
+  });
+  it('fetchPhotisnadiHealth', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ ok: true }));
+    const result = await fetchPhotisnadiHealth();
+    expect(result.ok).toBe(true);
+  });
+});
+
+// ── Key Rotation ──────────────────────────────────────────────
+describe('Key Rotation', () => {
+  it('fetchKeyRotationStatus', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ statuses: [] }));
+    await fetchKeyRotationStatus();
+  });
+  it('rotateKey', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ rotated: true, status: null }));
+    const result = await rotateKey('api-key');
+    expect(result.rotated).toBe(true);
+  });
+});
+
+// ── Proactive Patterns & Config ──────────────────────────────
+describe('Proactive Patterns', () => {
+  it('fetchProactivePatterns', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ patterns: [] }));
+    await fetchProactivePatterns();
+  });
+  it('fetchProactivePatterns returns fallback on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('error', 500));
+    const result = await fetchProactivePatterns();
+    expect(result.patterns).toEqual([]);
+  });
+  it('convertPatternToTrigger', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 't1' }));
+    await convertPatternToTrigger('p1');
+  });
+  it('fetchProactiveConfig', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ config: {} }));
+    await fetchProactiveConfig();
+  });
+  it('fetchProactiveConfig returns fallback on error', async () => {
+    mockFetch.mockReturnValueOnce(errorResponse('error', 500));
+    const result = await fetchProactiveConfig();
+    expect(result.config).toEqual({});
+  });
+});
+
+// ── Training: Preference Pairs ──────────────────────────────
+describe('Preference Pairs API', () => {
+  it('fetchPreferencePairs', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ pairs: [] }));
+    await fetchPreferencePairs({ source: 'annotation', limit: 100 });
+  });
+  it('createPreferencePair', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ pair: {} }));
+    await createPreferencePair({ prompt: 'Hi', chosen: 'Hello!', rejected: 'Go away', source: 'annotation' } as any);
+  });
+  it('deletePreferencePair', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deletePreferencePair('p1');
+  });
+  it('rateSideBySide', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ pair: {} }));
+    await rateSideBySide({ prompt: 'Hi', responseA: 'A', responseB: 'B', winner: 'a' } as any);
+  });
+  it('previewCuratedDataset', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ preview: [] }));
+    await previewCuratedDataset({ personalityId: 'p1' } as any);
+  });
+  it('createCuratedDataset', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ dataset: {} }));
+    await createCuratedDataset({ personalityId: 'p1' } as any);
+  });
+  it('fetchCuratedDatasets', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ datasets: [] }));
+    await fetchCuratedDatasets();
+  });
+  it('deleteCuratedDataset', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deleteCuratedDataset('d1');
+  });
+});
+
+// ── Training: Experiments ──────────────────────────────────
+describe('Training Experiments API', () => {
+  it('fetchTrainingExperiments', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ experiments: [] }));
+    await fetchTrainingExperiments({ status: 'running' });
+  });
+  it('createTrainingExperiment', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ experiment: {} }));
+    await createTrainingExperiment({ name: 'Test' });
+  });
+  it('getTrainingExperiment', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 'e1' }));
+    await getTrainingExperiment('e1');
+  });
+  it('deleteTrainingExperiment', async () => {
+    mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+    await deleteTrainingExperiment('e1');
+  });
+  it('diffTrainingExperiments', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ hyperparamDiffs: {}, metricDiffs: {}, lossCurveA: [], lossCurveB: [] }));
+    await diffTrainingExperiments('e1', 'e2');
+  });
+});
+
+// ── Model Deployment ──────────────────────────────────────
+describe('Model Deployment API', () => {
+  it('deployModel', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ version: {} }));
+    await deployModel({ personalityId: 'p1', modelName: 'model:latest' });
+  });
+  it('rollbackModel', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ version: {} }));
+    await rollbackModel('p1');
+  });
+  it('fetchModelVersions', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ versions: [] }));
+    await fetchModelVersions('p1');
+  });
+  it('createAbTest', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ test: {} }));
+    await createAbTest({ name: 'test', personalityId: 'p1', modelA: 'a', modelB: 'b', trafficPctB: 50 });
+  });
+  it('fetchAbTests', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ tests: [] }));
+    await fetchAbTests();
+  });
+  it('getAbTest', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 't1' }));
+    await getAbTest('t1');
+  });
+  it('completeAbTest', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 't1' }));
+    await completeAbTest('t1', 'a');
+  });
+  it('cancelAbTest', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ id: 't1' }));
+    await cancelAbTest('t1');
+  });
+  it('evaluateAbTest', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ winner: 'a', avgQualityA: 0.9, avgQualityB: 0.8, totalA: 100, totalB: 100 }));
+    const result = await evaluateAbTest('t1');
+    expect(result.winner).toBe('a');
   });
 });

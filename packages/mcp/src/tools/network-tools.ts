@@ -123,6 +123,21 @@ function pruneSessions(): void {
 const _pruneInterval = setInterval(pruneSessions, 2 * 60 * 1000);
 _pruneInterval.unref(); // don't prevent process exit
 
+const MAX_SSH_SESSIONS = 100;
+
+/** Clean up all SSH sessions and stop the prune timer. Call on server shutdown. */
+export function shutdownNetworkTools(): void {
+  clearInterval(_pruneInterval);
+  for (const [id, sess] of sshSessions) {
+    try {
+      sess.client.end();
+    } catch {
+      // ignore
+    }
+    sshSessions.delete(id);
+  }
+}
+
 async function loadSsh2(): Promise<{ Client: new () => unknown } | null> {
   try {
     const mod = await import('ssh2');
@@ -166,6 +181,15 @@ async function openSshSession(
 
     client.on('ready', () => {
       clearTimeout(timer);
+      if (sshSessions.size >= MAX_SSH_SESSIONS) {
+        client.end();
+        reject(
+          new Error(
+            `SSH session limit reached (${MAX_SSH_SESSIONS}). Close existing sessions first.`
+          )
+        );
+        return;
+      }
       const sessionId = randomUUID();
       sshSessions.set(sessionId, {
         client,
@@ -290,6 +314,7 @@ async function netboxFetch(
       Accept: 'application/json',
     },
     body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -310,7 +335,7 @@ async function nvdFetch(
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (config.nvdApiKey) headers.apiKey = config.nvdApiKey;
 
-  const res = await fetch(url, { headers });
+  const res = await fetch(url, { headers, signal: AbortSignal.timeout(10_000) });
   if (!res.ok) {
     if (res.status === 429) {
       throw new Error(

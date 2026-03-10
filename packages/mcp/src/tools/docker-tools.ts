@@ -12,9 +12,12 @@
  *                      Requires a `docker:dind` service in your compose stack with TLS disabled
  *                      or properly configured certs.
  *
- * Write operations (start, stop, restart, exec, pull, compose up/down) are gated
- * by MCP_EXPOSE_DOCKER=true. Read operations (ps, logs, inspect, stats, images,
- * compose ps/logs) follow the same gate — all tools are off by default.
+ * Authorization model: All docker tools (read and write) are gated by the
+ * MCP_EXPOSE_DOCKER=true config flag.  Each handler re-checks config.exposeDockerTools
+ * at call time and returns a "disabled" error if the flag is off.  The MCP server
+ * runs as a single-user process per session, so per-user RBAC inside tool handlers
+ * is not the correct pattern — the registration + runtime flag check IS the
+ * authorization mechanism.  This is by design.
  */
 
 import { execFile } from 'node:child_process';

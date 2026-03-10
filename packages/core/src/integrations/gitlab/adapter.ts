@@ -6,6 +6,7 @@
  * Normalizes inbound webhook payloads to UnifiedMessage.
  */
 
+import { timingSafeEqual } from 'node:crypto';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
@@ -164,11 +165,13 @@ export class GitLabIntegration implements WebhookIntegration {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ body: text }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) {
       const err = await resp.text();
-      throw new Error(`Failed to post GitLab note: ${err}`);
+      this.logger?.warn({ error: err, statusCode: resp.status }, 'GitLab note post failed');
+      throw new Error(`Failed to post GitLab note (HTTP ${resp.status})`);
     }
 
     const note = (await resp.json()) as { id: number };
@@ -183,6 +186,7 @@ export class GitLabIntegration implements WebhookIntegration {
     try {
       const resp = await fetch(`${this.gitlabUrl}/api/v4/user`, {
         headers: { 'PRIVATE-TOKEN': this.personalAccessToken },
+        signal: AbortSignal.timeout(30_000),
       });
 
       if (!resp.ok) {
@@ -205,7 +209,11 @@ export class GitLabIntegration implements WebhookIntegration {
 
   verifyWebhook(_payload: string, signature: string): boolean {
     // GitLab uses a shared secret token via X-Gitlab-Token header
-    return signature === this.webhookSecret;
+    try {
+      return timingSafeEqual(Buffer.from(signature), Buffer.from(this.webhookSecret));
+    } catch {
+      return false;
+    }
   }
 
   /**

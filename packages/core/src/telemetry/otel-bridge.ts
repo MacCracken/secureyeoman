@@ -109,7 +109,11 @@ export async function tracedFetch(
   );
 
   try {
-    const response = await fetch(url, { ...init, headers: enrichedHeaders });
+    const response = await fetch(url, {
+      ...init,
+      headers: enrichedHeaders,
+      signal: init?.signal ?? AbortSignal.timeout(15_000),
+    });
 
     span.setAttribute('http.status_code', response.status);
     span.setAttribute('http.url', url);

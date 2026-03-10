@@ -57,6 +57,7 @@ export class OpenCodeProvider extends BaseProvider {
     try {
       const res = await fetch(`${baseUrl}/models`, {
         headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) return [];
       const data = (await res.json()) as { data?: { id: string; owned_by: string }[] };

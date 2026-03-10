@@ -122,10 +122,30 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
         return sendError(reply, 400, 'url is required');
       }
 
+      let parsedUrl: URL;
       try {
-        new URL(url);
+        parsedUrl = new URL(url);
       } catch {
         return sendError(reply, 400, 'Invalid URL');
+      }
+
+      // SSRF protection: only allow http(s) and block internal/private networks
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        return sendError(reply, 400, 'Only HTTP(S) URLs are allowed');
+      }
+      const hostname = parsedUrl.hostname;
+      if (
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '::1' ||
+        hostname === '0.0.0.0' ||
+        hostname.startsWith('10.') ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('172.') ||
+        hostname.endsWith('.internal') ||
+        hostname.endsWith('.local')
+      ) {
+        return sendError(reply, 400, 'URLs pointing to internal networks are not allowed');
       }
 
       const vis: DocumentVisibility = visibility === 'shared' ? 'shared' : 'private';
@@ -193,6 +213,11 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
       }
       if (!repo || typeof repo !== 'string') {
         return sendError(reply, 400, 'repo is required');
+      }
+      // Prevent path traversal in GitHub API URL construction
+      const ghNameRe = /^[a-zA-Z0-9._-]+$/;
+      if (!ghNameRe.test(owner) || !ghNameRe.test(repo)) {
+        return sendError(reply, 400, 'Invalid owner or repo name');
       }
 
       const docs = await documentManager.ingestGithubWiki(owner, repo, personalityId ?? null);
@@ -307,9 +332,10 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
       if (!brainStorage) {
         return { averageScore: null, totalMessages: 0, lowGroundingCount: 0 };
       }
+      const days = windowDays ? Math.min(Math.max(parseInt(windowDays, 10) || 30, 1), 365) : undefined;
       return brainStorage.getAverageGroundingScore(
         personalityId,
-        windowDays ? parseInt(windowDays, 10) : undefined
+        days
       );
     }
   );
@@ -422,6 +448,12 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
           return sendError(reply, 400, 'pdfBase64 (string) is required');
         }
 
+        // Reject oversized payloads before decoding (50 MB base64 ≈ 37.5 MB raw)
+        const MAX_PDF_BASE64_LENGTH = 50 * 1024 * 1024;
+        if (pdfBase64.length > MAX_PDF_BASE64_LENGTH) {
+          return sendError(reply, 413, 'PDF too large (max 37.5 MB)');
+        }
+
         const buf = Buffer.from(pdfBase64, 'base64');
         const pdfParse = await import('pdf-parse');
         const parsed = await pdfParse.default(buf);
@@ -468,6 +500,12 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
         const { pdfBase64, analysisType, customPrompt, maxLength } = request.body ?? {};
         if (!pdfBase64 || typeof pdfBase64 !== 'string') {
           return sendError(reply, 400, 'pdfBase64 (string) is required');
+        }
+
+        // Reject oversized payloads before decoding (50 MB base64 ≈ 37.5 MB raw)
+        const MAX_PDF_B64 = 50 * 1024 * 1024;
+        if (pdfBase64.length > MAX_PDF_B64) {
+          return sendError(reply, 413, 'PDF too large (max 37.5 MB)');
         }
 
         const validTypes = [
@@ -540,6 +578,9 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
         if (!pdfBase64 || typeof pdfBase64 !== 'string') {
           return sendError(reply, 400, 'pdfBase64 (string) is required');
         }
+        if (pdfBase64.length > 50 * 1024 * 1024) {
+          return sendError(reply, 413, 'PDF too large (max 37.5 MB)');
+        }
 
         const buf = Buffer.from(pdfBase64, 'base64');
         const pdfParse = await import('pdf-parse');
@@ -581,6 +622,9 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
         const { pdfBase64, pageRange, outputFormat } = request.body ?? {};
         if (!pdfBase64 || typeof pdfBase64 !== 'string') {
           return sendError(reply, 400, 'pdfBase64 (string) is required');
+        }
+        if (pdfBase64.length > 50 * 1024 * 1024) {
+          return sendError(reply, 413, 'PDF too large (max 37.5 MB)');
         }
 
         const buf = Buffer.from(pdfBase64, 'base64');
@@ -624,6 +668,9 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
         const { pdfBase64 } = request.body ?? {};
         if (!pdfBase64 || typeof pdfBase64 !== 'string') {
           return sendError(reply, 400, 'pdfBase64 (string) is required');
+        }
+        if (pdfBase64.length > 50 * 1024 * 1024) {
+          return sendError(reply, 413, 'PDF too large (max 37.5 MB)');
         }
 
         const buf = Buffer.from(pdfBase64, 'base64');

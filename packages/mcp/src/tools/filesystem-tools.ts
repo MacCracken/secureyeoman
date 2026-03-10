@@ -1,5 +1,13 @@
 /**
  * Filesystem Tools — sandboxed file operations (opt-in, admin-only).
+ *
+ * Authorization model: Tool registration is gated by MCP_EXPOSE_FILESYSTEM=true
+ * in the MCP config. The MCP server runs as a single-user process per session,
+ * so per-user RBAC inside tool handlers is not the correct pattern.  Instead:
+ *   1. Feature flag (exposeFilesystemTools) controls whether tools are registered.
+ *   2. Path allowlist (config.allowedPaths) restricts accessible directories.
+ *   3. Symlink traversal is validated via realpath checks.
+ * This is by design — the registration gate IS the authorization mechanism.
  */
 
 import * as fs from 'node:fs/promises';

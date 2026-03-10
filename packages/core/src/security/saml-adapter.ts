@@ -51,6 +51,9 @@ export class SamlAdapter {
         privateKey: cfg.spPrivateKey ?? undefined,
         decryptionPvk: cfg.spPrivateKey ?? undefined,
         wantAssertionsSigned: cfg.wantAssertionsSigned ?? true,
+        audience: cfg.entityId ?? cfg.issuer ?? 'secureyeoman',
+        wantAuthnResponseSigned: true,
+        maxAssertionAgeMs: 300_000,
         identifierFormat:
           cfg.nameIdFormat ?? 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
       });

@@ -537,6 +537,7 @@ async function ollamaPull(
       method: 'POST',
       headers,
       body: JSON.stringify({ model }),
+      signal: AbortSignal.timeout(30_000),
     });
   } catch (err) {
     ctx.stderr.write(`Connection failed: ${errorToString(err)}\n`);

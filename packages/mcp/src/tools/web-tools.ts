@@ -138,7 +138,15 @@ class WebRateLimiter {
   check(): { allowed: boolean; retryAfterMs: number } {
     const now = Date.now();
     const windowStart = now - 60_000;
-    this.timestamps = this.timestamps.filter((t) => t > windowStart);
+
+    // Efficient pruning: binary-shift expired entries from the front
+    let pruneCount = 0;
+    while (pruneCount < this.timestamps.length && this.timestamps[pruneCount]! <= windowStart) {
+      pruneCount++;
+    }
+    if (pruneCount > 0) {
+      this.timestamps.splice(0, pruneCount);
+    }
 
     if (this.timestamps.length >= this.maxPerMinute) {
       const oldest = this.timestamps[0]!;

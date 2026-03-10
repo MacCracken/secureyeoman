@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AutomationsSecurityTab } from './SecurityAutomationsTab';
@@ -113,6 +113,134 @@ describe('AutomationsSecurityTab', () => {
     await user.click(screen.getByText('Tasks'));
     await waitFor(() => {
       expect(screen.getByText('All Types')).toBeInTheDocument();
+    });
+  });
+
+  it('shows tasks when data is available', async () => {
+    mockFetchTasks.mockResolvedValue({
+      tasks: [
+        {
+          id: 't1',
+          name: 'Test Task',
+          type: 'execute',
+          status: 'completed',
+          createdAt: Date.now() - 60000,
+          durationMs: 500,
+          securityContext: { personalityName: 'Default' },
+        },
+        {
+          id: 't2',
+          name: 'Failed Task',
+          type: 'query',
+          status: 'failed',
+          createdAt: Date.now() - 120000,
+          durationMs: 1500,
+        },
+      ],
+      total: 2,
+    } as any);
+
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Tasks')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Tasks'));
+    await waitFor(() => {
+      expect(screen.getByText('Test Task')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Failed Task')).toBeInTheDocument();
+  });
+
+  it('shows task count in Tasks view', async () => {
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 42 } as any);
+
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Tasks')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Tasks'));
+    await waitFor(() => {
+      expect(screen.getByText('42 tasks')).toBeInTheDocument();
+    });
+  });
+
+  it('filters tasks by status', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Tasks')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Tasks'));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Filter by status')).toBeInTheDocument();
+    });
+    // Change status filter
+    fireEvent.change(screen.getByLabelText('Filter by status'), {
+      target: { value: 'completed' },
+    });
+    await waitFor(() => {
+      expect(mockFetchTasks).toHaveBeenCalled();
+    });
+  });
+
+  it('filters tasks by type', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Tasks')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Tasks'));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Filter by type')).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByLabelText('Filter by type'), {
+      target: { value: 'execute' },
+    });
+    await waitFor(() => {
+      expect(mockFetchTasks).toHaveBeenCalled();
+    });
+  });
+
+  it('switches to Workflows subview when allowed', async () => {
+    mockFetchWorkflows.mockResolvedValue({ workflows: [] } as any);
+    const user = userEvent.setup();
+    renderTab({ allowWorkflows: true });
+    await waitFor(() => {
+      expect(screen.getByText('Workflows')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Workflows'));
+    await waitFor(() => {
+      expect(mockFetchWorkflows).toHaveBeenCalled();
+    });
+  });
+
+  it('shows workflows view when clicked', async () => {
+    mockFetchWorkflows.mockResolvedValue({ workflows: [] } as any);
+    mockFetchWorkflowRuns.mockResolvedValue({ runs: [] } as any);
+
+    const user = userEvent.setup();
+    renderTab({ allowWorkflows: true });
+    await waitFor(() => {
+      expect(screen.getByText('Workflows')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Workflows'));
+    await waitFor(() => {
+      expect(mockFetchWorkflows).toHaveBeenCalled();
+    });
+  });
+
+  it('shows no tasks message when empty', async () => {
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 } as any);
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Tasks')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Tasks'));
+    await waitFor(() => {
+      expect(screen.getByText('0 tasks')).toBeInTheDocument();
     });
   });
 });

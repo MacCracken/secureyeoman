@@ -82,8 +82,8 @@ router.registerLazy({
 router.registerLazy({
   name: 'config',
   aliases: ['cfg'],
-  description: 'Validate configuration and check secrets',
-  usage: 'secureyeoman config [validate] [--config PATH]',
+  description: 'Validate configuration and manage settings',
+  usage: 'secureyeoman config [validate|get|set] [options]',
   loader: () => import('./cli/commands/config.js').then((m) => m.configCommand),
 });
 
@@ -184,12 +184,7 @@ router.registerLazy({
   loader: () => import('./cli/commands/policy.js').then((m) => m.policyCommand),
 });
 
-router.registerLazy({
-  name: 'config',
-  description: 'View and manage runtime admin settings (external URL, OAuth redirect)',
-  usage: 'secureyeoman config <get|set> [options]',
-  loader: () => import('./cli/commands/config-settings.js').then((m) => m.configSettingsCommand),
-});
+// config-settings merged into config command (validate + get/set)
 
 router.registerLazy({
   name: 'completion',

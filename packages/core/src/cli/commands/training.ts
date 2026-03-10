@@ -139,6 +139,7 @@ export const trainingCommand: Command = {
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
             body: JSON.stringify(body),
+            signal: AbortSignal.timeout(30_000),
           });
 
           if (!response.ok) {

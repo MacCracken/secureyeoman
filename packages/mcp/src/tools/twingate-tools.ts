@@ -48,6 +48,12 @@ function pruneProxySessions(): void {
 const _pruneInterval = setInterval(pruneProxySessions, 5 * 60 * 1000);
 _pruneInterval.unref();
 
+/** Clean up all proxy sessions and stop the prune timer. Call on server shutdown. */
+export function shutdownTwingateTools(): void {
+  clearInterval(_pruneInterval);
+  mcpSessions.clear();
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function textResponse(data: unknown) {

@@ -84,6 +84,7 @@ export class LinearIntegration implements WebhookIntegration {
           Authorization: this.linearConfig.apiKey,
         },
         body: JSON.stringify({ query: mutation, variables: { teamId, title: text } }),
+        signal: AbortSignal.timeout(30_000),
       });
       const body = (await resp.json()) as {
         data?: { issueCreate?: { issue?: { identifier?: string; id?: string } } };
@@ -199,6 +200,7 @@ export class LinearIntegration implements WebhookIntegration {
           Authorization: this.linearConfig?.apiKey ?? '',
         },
         body: JSON.stringify({ query }),
+        signal: AbortSignal.timeout(30_000),
       });
       if (!resp.ok) return { ok: false, message: `Linear API error: ${resp.status}` };
       const body = (await resp.json()) as {

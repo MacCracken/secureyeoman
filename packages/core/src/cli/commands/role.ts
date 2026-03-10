@@ -33,7 +33,8 @@ export const roleCommand: Command = {
           stderr.write(`Error: ${JSON.stringify(data)}\n`);
           return 1;
         }
-        const roles = (data as { roles: Record<string, unknown>[] }).roles;
+        const raw = data as { roles?: Record<string, unknown>[] };
+        const roles = Array.isArray(raw.roles) ? raw.roles : [];
         if (jsonFlag) {
           stdout.write(JSON.stringify(roles, null, 2) + '\n');
         } else {

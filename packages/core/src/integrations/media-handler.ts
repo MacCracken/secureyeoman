@@ -166,7 +166,7 @@ export class MediaHandler {
       throw new MediaError('Invalid URL', 'INVALID_URL');
     }
 
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
     if (!response.ok) {
       throw new MediaError(`Failed to download: HTTP ${response.status}`, 'DOWNLOAD_FAILED');
     }

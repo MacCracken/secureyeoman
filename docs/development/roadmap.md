@@ -94,6 +94,28 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | MCP | Tool handlers, manifest | 62% stmt coverage — improved from 58%, continue sweep |
 | Core E2E | Expand coverage | Currently 7 files / 53 tests; add training, delegation, analytics flows |
 
+### Security Hardening — Architectural (2026-03-09 Audit)
+
+Items identified in the deep security audit that require design decisions or multi-file refactors. All quick-fix findings were resolved; these remain as planned work.
+
+| Item | Severity | Description | Decision Needed |
+|------|----------|-------------|-----------------|
+| Encrypt OAuth tokens at rest | CRITICAL | `oauth_tokens` table stores access/refresh tokens in plaintext. Need envelope encryption (AES-256-GCM + key from SecretsManager). | Encryption key management strategy |
+| Move OAuth state to DB/Redis | CRITICAL | `OAUTH_STATES`, `PENDING_GMAIL_TOKENS`, `PENDING_OAUTH_USERINFO` maps are per-process — broken in multi-replica. SSO state already uses DB. | Redis vs DB for ephemeral state |
+| Persist 2FA state to DB | HIGH | 2FA secret/enabled/recovery codes are in-memory only — lost on restart, silently disabling 2FA. | DB schema for 2FA fields on auth.users |
+| Add JWT aud/iss claims | HIGH | Session JWTs lack `aud` and `iss` claims. Federation tokens have them, session tokens don't. Risk: cross-context token acceptance. | Migration path for existing tokens |
+| Hash recovery codes | HIGH | 2FA recovery codes stored as plaintext Set in memory. Should be SHA-256 hashed with timing-safe comparison. | Combine with 2FA DB persistence |
+| Rate-limit 2FA verification | HIGH | No rate limit on TOTP code verification — 6-digit code brute-forceable in ~55 min at 100 req/s. | Rate limit strategy (per-user lockout?) |
+| Encrypt OIDC client secrets | HIGH | SSO provider `client_secret` stored plaintext in `auth.identity_providers`. | Use SecretsManager or column encryption |
+| Replace `vm.runInNewContext` | HIGH | Dynamic tool sandbox uses Node `vm` module — escapable via prototype chain. Needs `isolated-vm` or WebAssembly sandbox. | Performance impact of isolate overhead |
+| Implement PKCE for OAuth flows | MEDIUM | OAuth flows lack PKCE (code_verifier/code_challenge). OIDC SSO has it; OAuth doesn't. | Backward compat with existing connections |
+| Authorization code pattern for SSO tokens | MEDIUM | Tokens passed in URL fragment after SSO login — visible in browser history, extractable by XSS. Use one-time code exchange instead. | Frontend token handling refactor |
+| Nonce-based CSP | MEDIUM | `script-src 'unsafe-inline'` weakens XSS protection. Need nonce-based CSP compatible with Vite. | Vite plugin for CSP nonces |
+| `rememberMe` token lifetime | LOW | 30-day access token with `rememberMe` is excessive. Access tokens should be short-lived (1h) regardless; only extend refresh token. | User-facing behavior change |
+| MCP service token least privilege | MEDIUM | MCP self-mints `admin` role JWT. Should use dedicated `mcp-service` role with minimal permissions. | Define MCP-required permissions |
+| Require webhook secrets | MEDIUM | Multiple adapters (Jira, Linear, Azure, GitLab) silently skip verification when no webhook secret is configured. | Enforce at init vs warn-only |
+| IDOR checks on document/memory ops | HIGH | Document GET/DELETE accept arbitrary IDs with no ownership validation. Any authenticated user can read/delete others' documents. | Add `createdBy` field or personality ownership check |
+
 ---
 
 ## Phase 145: Cross-Project MCP Expansion — Remaining

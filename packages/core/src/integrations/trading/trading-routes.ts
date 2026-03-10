@@ -37,7 +37,7 @@ async function marketFetch(
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (provider.name === 'finnhub') headers['X-Finnhub-Token'] = provider.apiKey;
 
-  const res = await fetch(url.toString(), { headers });
+  const res = await fetch(url.toString(), { headers, signal: AbortSignal.timeout(10_000) });
   if (!res.ok) throw new Error(`Market data API error: HTTP ${res.status}`);
 
   return await res.json();
@@ -49,6 +49,7 @@ async function bullshiftFetch(
   try {
     const res = await fetch(`${BULLSHIFT_URL}${path}`, {
       headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(10_000),
     });
 
     const data = await res.json();

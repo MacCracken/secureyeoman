@@ -4,7 +4,7 @@
  * Lifecycle: validate core → register tools/resources/prompts → auto-register → listen.
  */
 
-import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -15,7 +15,9 @@ import { AutoRegistration } from './registration/auto-register.js';
 import { registerStreamableHttpTransport } from './transport/streamable-http.js';
 import { registerAllTools } from './tools/index.js';
 import { globalToolRegistry } from './tools/tool-utils.js';
-import { getBrowserPool } from './tools/browser-tools.js';
+import { shutdownBrowserPool } from './tools/browser-tools.js';
+import { shutdownNetworkTools } from './tools/network-tools.js';
+import { shutdownTwingateTools } from './tools/twingate-tools.js';
 import { registerAllResources } from './resources/index.js';
 import { registerAllPrompts } from './prompts/index.js';
 import { createRateLimiter } from './middleware/rate-limiter.js';
@@ -38,6 +40,7 @@ export class McpServiceServer {
   private readonly auth: ProxyAuth;
   private readonly autoReg: AutoRegistration;
   private readonly mcpServer: McpServer;
+  private rateLimiterPruneTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(opts: McpServiceServerOptions) {
     this.config = opts.config;
@@ -65,6 +68,14 @@ export class McpServiceServer {
 
     // 2. Set up middleware
     const rateLimiter = createRateLimiter(this.config.rateLimitPerTool);
+    // Prune stale rate-limit buckets every 10 minutes
+    this.rateLimiterPruneTimer = setInterval(
+      () => {
+        rateLimiter.prune();
+      },
+      10 * 60 * 1000
+    );
+    this.rateLimiterPruneTimer.unref();
     const inputValidator = createInputValidator();
     const auditLogger = createAuditLogger(this.coreClient);
     const secretRedactor = createSecretRedactor();
@@ -154,9 +165,59 @@ export class McpServiceServer {
    * The matching ~/.ssh/config block is also restored so git can push/pull.
    * Failures are non-fatal — we just log a warning.
    */
+  /** Paths of SSH key files written by this process, cleaned up on exit. */
+  private sshKeyPaths: string[] = [];
+  private sshCleanupRegistered = false;
+
+  /**
+   * Remove SSH key files written by restoreSshKeys().
+   * Called on process exit / SIGTERM / SIGINT to avoid leaving plaintext
+   * private keys on disk after the MCP service stops.
+   */
+  private cleanupSshKeys(): void {
+    // Synchronous best-effort cleanup (process 'exit' handlers can't be async)
+    const fs = require('node:fs') as typeof import('node:fs');
+    for (const p of this.sshKeyPaths) {
+      try {
+        fs.unlinkSync(p);
+      } catch {
+        // best-effort — file may already be gone
+      }
+    }
+    this.sshKeyPaths = [];
+  }
+
+  private registerSshCleanupHandlers(): void {
+    if (this.sshCleanupRegistered) return;
+    this.sshCleanupRegistered = true;
+
+    const cleanup = () => {
+      this.cleanupSshKeys();
+    };
+    process.on('exit', cleanup);
+    process.on('SIGTERM', () => {
+      cleanup();
+      process.exit(0);
+    });
+    process.on('SIGINT', () => {
+      cleanup();
+      process.exit(0);
+    });
+  }
+
   private async restoreSshKeys(): Promise<void> {
     const tokenSecret = this.config.tokenSecret;
     if (!tokenSecret) return; // no token → can't decrypt; skip
+
+    const sshDir = `${homedir()}/.ssh`;
+    const keyPath = `${sshDir}/yeoman_github_ed25519`;
+
+    // Clean up stale key files from previous runs before writing new ones
+    try {
+      await unlink(keyPath);
+    } catch {
+      // File didn't exist — that's fine
+    }
 
     try {
       const result = await this.coreClient.get<{
@@ -164,14 +225,18 @@ export class McpServiceServer {
       }>('/api/v1/internal/ssh-keys');
       if (!result?.keys?.length) return;
 
-      const sshDir = `${homedir()}/.ssh`;
-      const keyPath = `${sshDir}/yeoman_github_ed25519`;
       await mkdir(sshDir, { recursive: true });
 
       for (const { name, ciphertext } of result.keys) {
         try {
           const privateKey = decryptSshKey(ciphertext, tokenSecret);
           await writeFile(keyPath, privateKey, { mode: 0o600 });
+
+          // Track for cleanup on exit
+          if (!this.sshKeyPaths.includes(keyPath)) {
+            this.sshKeyPaths.push(keyPath);
+          }
+          this.registerSshCleanupHandlers();
 
           // Restore ~/.ssh/config block if not already present
           const configPath = `${sshDir}/config`;
@@ -204,11 +269,18 @@ export class McpServiceServer {
   }
 
   async stop(): Promise<void> {
-    // Shutdown browser pool if active
-    const browserPool = getBrowserPool();
-    if (browserPool) {
-      await browserPool.shutdown();
+    // Clean up rate limiter prune timer
+    if (this.rateLimiterPruneTimer) {
+      clearInterval(this.rateLimiterPruneTimer);
+      this.rateLimiterPruneTimer = null;
     }
+    // Clean up SSH keys written to disk
+    this.cleanupSshKeys();
+    // Shutdown browser pool if active
+    await shutdownBrowserPool();
+    // Clean up module-level timers and sessions
+    shutdownNetworkTools();
+    shutdownTwingateTools();
     // Deregister from core
     await this.autoReg.deregister();
     // Close MCP server

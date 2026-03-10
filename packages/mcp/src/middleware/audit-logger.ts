@@ -1,8 +1,12 @@
 /**
  * Audit Logger Middleware — logs every tool call to core's audit API.
+ *
+ * Tool arguments are redacted before logging to prevent secrets (API keys,
+ * tokens, passwords) from appearing in audit records.
  */
 
 import type { CoreApiClient } from '../core-client.js';
+import { createSecretRedactor } from './secret-redactor.js';
 
 export interface AuditLoggerMiddleware {
   log(entry: AuditEntry): Promise<void>;
@@ -17,6 +21,8 @@ export interface AuditEntry {
 }
 
 export function createAuditLogger(client: CoreApiClient): AuditLoggerMiddleware {
+  const redactor = createSecretRedactor();
+
   return {
     async log(entry: AuditEntry): Promise<void> {
       try {
@@ -31,6 +37,8 @@ export function createAuditLogger(client: CoreApiClient): AuditLoggerMiddleware 
       args: Record<string, unknown>,
       fn: () => Promise<T>
     ): Promise<T> {
+      // Redact secrets from args before they reach the audit log
+      const safeArgs = redactor.redact(args) as Record<string, unknown>;
       const start = Date.now();
       try {
         const result = await fn();
@@ -39,7 +47,7 @@ export function createAuditLogger(client: CoreApiClient): AuditLoggerMiddleware 
           event: 'mcp_tool_call',
           level: 'info',
           message: `MCP tool call: ${toolName}`,
-          metadata: { toolName, args, duration, success: true },
+          metadata: { toolName, args: safeArgs, duration, success: true },
         });
         return result;
       } catch (err) {
@@ -50,7 +58,7 @@ export function createAuditLogger(client: CoreApiClient): AuditLoggerMiddleware 
           message: `MCP tool call failed: ${toolName}`,
           metadata: {
             toolName,
-            args,
+            args: safeArgs,
             duration,
             success: false,
             error: err instanceof Error ? err.message : String(err),

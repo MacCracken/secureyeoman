@@ -64,29 +64,46 @@ function errorResponse(message: string) {
   };
 }
 
-// ── Capability guards ─────────────────────────────────────────────────────────
+// ── Capability guards (cached with 5-minute TTL) ─────────────────────────────
+
+const POLICY_CACHE_TTL_MS = 5 * 60 * 1000;
+
+let _policyCache: {
+  data: { allowDesktopControl: boolean; allowCamera: boolean; allowMultimodal: boolean };
+  expiresAt: number;
+} | null = null;
+
+let _capabilitiesCache: { data: string[]; expiresAt: number } | null = null;
 
 async function getSecurityPolicy(
   client: CoreApiClient
 ): Promise<{ allowDesktopControl: boolean; allowCamera: boolean; allowMultimodal: boolean }> {
+  const now = Date.now();
+  if (_policyCache && _policyCache.expiresAt > now) return _policyCache.data;
   try {
     const result = await client.get('/api/v1/security/policy');
-    return {
+    const data = {
       allowDesktopControl: (result as Record<string, unknown>)?.allowDesktopControl === true,
       allowCamera: (result as Record<string, unknown>)?.allowCamera === true,
       allowMultimodal: (result as Record<string, unknown>)?.allowMultimodal === true,
     };
+    _policyCache = { data, expiresAt: now + POLICY_CACHE_TTL_MS };
+    return data;
   } catch {
     return { allowDesktopControl: false, allowCamera: false, allowMultimodal: false };
   }
 }
 
 async function getPersonalityCapabilities(client: CoreApiClient): Promise<string[]> {
+  const now = Date.now();
+  if (_capabilitiesCache && _capabilitiesCache.expiresAt > now) return _capabilitiesCache.data;
   try {
     const result = await client.get('/api/v1/soul/personality');
     const personality = (result as Record<string, Record<string, unknown>>)?.personality;
     const body = personality?.body as Record<string, unknown> | undefined;
-    return (body?.capabilities as string[]) ?? [];
+    const data = (body?.capabilities as string[]) ?? [];
+    _capabilitiesCache = { data, expiresAt: now + POLICY_CACHE_TTL_MS };
+    return data;
   } catch {
     return [];
   }
@@ -185,7 +202,7 @@ export function registerDesktopTools(
       description: 'List all open windows with their IDs, titles, and bounds.',
       inputSchema: {},
     },
-    desktopHandler('desktop_clipboard_read', async () => {
+    desktopHandler('desktop_window_list', async () => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -210,7 +227,7 @@ export function registerDesktopTools(
       description: 'List all connected monitors/displays with their IDs, names, and resolutions.',
       inputSchema: {},
     },
-    desktopHandler('desktop_clipboard_write', async () => {
+    desktopHandler('desktop_display_list', async () => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -242,7 +259,7 @@ export function registerDesktopTools(
         prompt: z.string().max(1000).optional().describe('Analysis prompt for AI interpretation'),
       },
     },
-    desktopHandler('desktop_window_list', async (args) => {
+    desktopHandler('desktop_camera_capture', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -280,7 +297,7 @@ export function registerDesktopTools(
         windowId: z.string().describe('Window ID (from desktop_window_list)'),
       },
     },
-    desktopHandler('desktop_display_list', async (args) => {
+    desktopHandler('desktop_window_focus', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -319,7 +336,7 @@ export function registerDesktopTools(
         height: z.number().int().positive().describe('New height'),
       },
     },
-    desktopHandler('desktop_camera_capture', async (args) => {
+    desktopHandler('desktop_window_resize', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -353,7 +370,7 @@ export function registerDesktopTools(
         y: z.number().int().nonnegative().describe('Y coordinate'),
       },
     },
-    desktopHandler('desktop_window_focus', async (args) => {
+    desktopHandler('desktop_mouse_move', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -393,7 +410,7 @@ export function registerDesktopTools(
         double: z.boolean().optional().describe('Double-click (default: false)'),
       },
     },
-    desktopHandler('desktop_window_resize', async (args) => {
+    desktopHandler('desktop_click', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -427,7 +444,7 @@ export function registerDesktopTools(
         dy: z.number().int().describe('Vertical scroll amount (positive = down)'),
       },
     },
-    desktopHandler('desktop_mouse_move', async (args) => {
+    desktopHandler('desktop_scroll', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -467,7 +484,7 @@ export function registerDesktopTools(
           .describe('Delay between keystrokes in ms (default: 0)'),
       },
     },
-    desktopHandler('desktop_click', async (args) => {
+    desktopHandler('desktop_type', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -509,7 +526,7 @@ export function registerDesktopTools(
           .describe('If true, release the key instead of pressing (default: false)'),
       },
     },
-    desktopHandler('desktop_scroll', async (args) => {
+    desktopHandler('desktop_key', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -540,7 +557,7 @@ export function registerDesktopTools(
       description: 'Read the current clipboard content.',
       inputSchema: {},
     },
-    desktopHandler('desktop_input_sequence', async () => {
+    desktopHandler('desktop_clipboard_read', async () => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -573,7 +590,7 @@ export function registerDesktopTools(
         text: z.string().max(100000).describe('Text to write to clipboard'),
       },
     },
-    desktopHandler('desktop_type', async (args) => {
+    desktopHandler('desktop_clipboard_write', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -634,7 +651,7 @@ export function registerDesktopTools(
           .describe('Ordered list of input actions'),
       },
     },
-    desktopHandler('desktop_key', async (args) => {
+    desktopHandler('desktop_input_sequence', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');

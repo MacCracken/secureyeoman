@@ -3,7 +3,7 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { exec } from 'node:child_process';
+import { exec, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { statSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, join } from 'node:path';
@@ -12,6 +12,7 @@ import { sendError, toErrorMessage } from '../utils/errors.js';
 import { buildSafeEnv } from '../utils/process-env.js';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 interface ExecuteCommandBody {
   command: string;
@@ -64,6 +65,46 @@ function containsShellInjection(command: string): boolean {
     }
   }
   return false;
+}
+
+/**
+ * Check whether the command uses pipes (only safe pipe targets are allowed
+ * by the time we reach execution — containsShellInjection blocks the rest).
+ */
+function hasPipe(command: string): boolean {
+  return command.includes('|');
+}
+
+/**
+ * Split a simple (no-pipe) command string into [program, ...args].
+ * Handles basic quoting (single & double quotes).
+ */
+function parseCommand(command: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  let inSingle = false;
+  let inDouble = false;
+
+  for (const ch of command) {
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+      continue;
+    }
+    if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      continue;
+    }
+    if (ch === ' ' && !inSingle && !inDouble) {
+      if (current.length > 0) {
+        tokens.push(current);
+        current = '';
+      }
+      continue;
+    }
+    current += ch;
+  }
+  if (current.length > 0) tokens.push(current);
+  return tokens;
 }
 
 // Sensitive absolute paths that must not be the cwd
@@ -292,12 +333,27 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
       try {
         logger.debug({ command, cwd: workingDir }, 'Executing terminal command');
 
-        const { stdout, stderr } = await execAsync(command, {
+        const execOpts = {
           cwd: workingDir,
           timeout: 30000, // 30 second timeout
           maxBuffer: 1024 * 1024, // 1MB max output
           env: buildSafeEnv(),
-        });
+        };
+
+        // For commands with safe pipes, we must use exec (shell needed for pipe).
+        // For simple commands, use execFile to avoid shell interpretation entirely.
+        let stdout: string;
+        let stderr: string;
+
+        if (hasPipe(command)) {
+          // Safe pipes already validated by containsShellInjection above
+          ({ stdout, stderr } = await execAsync(command, execOpts));
+        } else {
+          const tokens = parseCommand(command.trim());
+          const program = tokens[0]!;
+          const args = tokens.slice(1);
+          ({ stdout, stderr } = await execFileAsync(program, args, execOpts));
+        }
 
         const response: ExecuteCommandResponse = {
           output: stdout,
@@ -346,6 +402,19 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
     '/api/v1/terminal/tech-stack',
     async (request: FastifyRequest<{ Querystring: { cwd?: string } }>, _reply: FastifyReply) => {
       const dir = request.query.cwd ?? process.cwd();
+
+      // Apply same path validation as the execute endpoint
+      if (SENSITIVE_PATH_PREFIXES.some((p) => dir === p || dir.startsWith(p + '/'))) {
+        return { stacks: [], allowedCommands: Array.from(COMMON_COMMANDS) };
+      }
+      const techAllowedPrefixes = [process.cwd(), '/home', '/tmp', '/var/tmp'];
+      const isDirAllowed =
+        techAllowedPrefixes.some((prefix) => dir === prefix || dir.startsWith(prefix + '/')) ||
+        dir.startsWith(process.cwd() + '/');
+      if (!isDirAllowed) {
+        return { stacks: [], allowedCommands: Array.from(COMMON_COMMANDS) };
+      }
+
       const stacks: string[] = [];
       const allowedCommandsSet = new Set<string>(COMMON_COMMANDS);
 

@@ -366,7 +366,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
       let buffer: Buffer;
       try {
         if (url) {
-          const fetchRes = await fetch(url);
+          const fetchRes = await fetch(url, { signal: AbortSignal.timeout(30_000) });
           if (!fetchRes.ok) {
             return sendError(reply, 400, `Failed to fetch media from URL: HTTP ${fetchRes.status}`);
           }

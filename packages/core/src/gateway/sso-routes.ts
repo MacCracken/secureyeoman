@@ -28,6 +28,16 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
   const { ssoManager, ssoStorage, dashboardUrl, secureYeoman } = opts;
   const ssoGuardOpts = licenseGuard('sso_saml', secureYeoman);
 
+  // Pre-compute allowed host from dashboardUrl to prevent host header injection
+  const allowedHost = (() => {
+    try {
+      const u = new URL(dashboardUrl);
+      return u.host;
+    } catch {
+      return 'localhost';
+    }
+  })();
+
   // ── Provider discovery (public) ──────────────────────────────────
 
   app.get('/api/v1/auth/sso/providers', async () => {
@@ -54,7 +64,8 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         const scheme =
           (request.headers['x-forwarded-proto'] as string) ??
           ((app.server as any).encrypted ? 'https' : 'http');
-        const host = request.headers.host ?? 'localhost';
+        // Use validated host — never trust request.headers.host for redirect URI construction
+        const host = allowedHost;
         const redirectUri = `${scheme}://${host}/api/v1/auth/sso/callback/${request.params.providerId}`;
         const url = await ssoManager.getAuthorizationUrl(
           request.params.providerId,
@@ -73,7 +84,8 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
     async (request: FastifyRequest<{ Params: { providerId: string } }>, reply: FastifyReply) => {
       try {
         const scheme = (request.headers['x-forwarded-proto'] as string) ?? 'http';
-        const host = request.headers.host ?? 'localhost';
+        // Use validated host — never trust request.headers.host for URL construction
+        const host = allowedHost;
         const callbackUrl = new URL(`${scheme}://${host}${request.url}`);
 
         const { result, redirectUri } = await ssoManager.handleCallback(
@@ -218,7 +230,15 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
           request.body ?? {}
         );
 
-        const target = new URL(redirectUri.startsWith('http') ? redirectUri : dashboardUrl);
+        // Validate redirect URI against dashboard origin to prevent open-redirect attacks
+        const dashOrigin = new URL(dashboardUrl).origin;
+        let target: URL;
+        if (redirectUri.startsWith('http')) {
+          const candidate = new URL(redirectUri);
+          target = candidate.origin === dashOrigin ? candidate : new URL(dashboardUrl);
+        } else {
+          target = new URL(dashboardUrl);
+        }
         target.hash = `access_token=${result.accessToken}&refresh_token=${result.refreshToken}&expires_in=${result.expiresIn}`;
         return reply.redirect(target.toString());
       } catch (err) {

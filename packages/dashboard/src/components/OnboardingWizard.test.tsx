@@ -82,10 +82,27 @@ beforeEach(() => {
   vi.mocked(api.completeOnboarding).mockResolvedValue(undefined as any);
 });
 
+// Step order: personality → model → security → api-keys → done
+
+/** Navigate to a specific step by index (0-based) */
+async function navigateToStep(stepIndex: number) {
+  renderWizard();
+  for (let i = 0; i < stepIndex; i++) {
+    const skipBtn = screen.queryByRole('button', { name: /skip for now/i });
+    if (skipBtn) {
+      fireEvent.click(skipBtn);
+    } else {
+      fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    }
+    await waitFor(() => {
+      expect(screen.getByText(new RegExp(`Step ${i + 2} of 5`))).toBeInTheDocument();
+    });
+  }
+}
+
 describe('OnboardingWizard', () => {
   it('renders 5 step progress indicators', () => {
     renderWizard();
-    // There are 5 step bars (one per step)
     expect(screen.getByText(/Step 1 of 5/)).toBeInTheDocument();
   });
 
@@ -97,58 +114,55 @@ describe('OnboardingWizard', () => {
     expect(screen.getByText(/Meet your agent/i)).toBeInTheDocument();
   });
 
-  it('Next from personality advances to api-keys step', async () => {
+  it('Next from personality advances to model step', async () => {
     renderWizard();
     const nextBtn = screen.getByRole('button', { name: /next/i });
     fireEvent.click(nextBtn);
     await waitFor(() => {
-      expect(screen.getByText(/Connect AI providers/i)).toBeInTheDocument();
+      expect(screen.getByText(/AI provider & model/i)).toBeInTheDocument();
     });
     expect(screen.getByText(/Step 2 of 5/)).toBeInTheDocument();
   });
 
-  it('api-keys step has Create API Key form and Skip for now button', async () => {
+  it('model step has provider chips, model input, and provider API key input', async () => {
     renderWizard();
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => {
-      expect(screen.getByText(/Create API Key/i)).toBeInTheDocument();
+      expect(screen.getByText(/AI provider & model/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /anthropic/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Model name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^API Key$/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /skip for now/i })).toBeInTheDocument();
   });
 
-  it('Skip for now on api-keys advances to security step', async () => {
+  it('model step hides API key input for ollama provider', async () => {
     renderWizard();
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /skip for now/i })).toBeInTheDocument();
+      expect(screen.getByText(/AI provider & model/i)).toBeInTheDocument();
     });
+    // Select ollama
+    fireEvent.click(screen.getByRole('button', { name: /ollama/i }));
+    expect(screen.queryByLabelText(/^API Key$/i)).not.toBeInTheDocument();
+  });
+
+  it('Skip from model advances to security step', async () => {
+    renderWizard();
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => screen.getByRole('button', { name: /skip for now/i }));
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
     await waitFor(() => {
       expect(screen.getByText(/Security policy/i)).toBeInTheDocument();
     });
-  });
-
-  it('successful api key create shows copy banner', async () => {
-    renderWizard();
-    fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => {
-      expect(screen.getByLabelText(/Key name/i)).toBeInTheDocument();
-    });
-    fireEvent.change(screen.getByLabelText(/Key name/i), { target: { value: 'My key' } });
-    fireEvent.click(screen.getByRole('button', { name: /create key/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/copy it now/i)).toBeInTheDocument();
-    });
-    expect(screen.getByText(/sy_test_secret_key_value/)).toBeInTheDocument();
+    expect(screen.getByText(/Step 3 of 5/)).toBeInTheDocument();
   });
 
   it('security step shows 5 policy toggles', async () => {
     renderWizard();
-    // skip to security
+    // personality → model (skip) → security
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /skip for now/i })).toBeInTheDocument();
-    });
+    await waitFor(() => screen.getByRole('button', { name: /skip for now/i }));
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
     await waitFor(() => {
       expect(screen.getByText(/Security policy/i)).toBeInTheDocument();
@@ -160,22 +174,24 @@ describe('OnboardingWizard', () => {
     expect(screen.getByLabelText(/Network Access/i)).toBeInTheDocument();
   });
 
-  it('Skip for now on security advances to model step without calling updateSecurityPolicy', async () => {
+  it('Skip on security advances to api-keys step without calling updateSecurityPolicy', async () => {
     renderWizard();
+    // personality → model (skip) → security
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => screen.getByRole('button', { name: /skip for now/i }));
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
     await waitFor(() => screen.getByText(/Security policy/i));
-    // skip security too
+    // skip security
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
     await waitFor(() => {
-      expect(screen.getByText(/Default model/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Dashboard API key/i })).toBeInTheDocument();
     });
     expect(api.updateSecurityPolicy).not.toHaveBeenCalled();
   });
 
   it('toggling a policy then clicking Next calls updateSecurityPolicy', async () => {
     renderWizard();
+    // personality → model (skip) → security
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => screen.getByRole('button', { name: /skip for now/i }));
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
@@ -192,29 +208,49 @@ describe('OnboardingWizard', () => {
     });
   });
 
-  it('model step has provider chips and model input', async () => {
+  it('api-keys step has Create API Key form and Skip for now button', async () => {
     renderWizard();
-    // advance 3 times (skip api-keys, skip security)
+    // personality → model (skip) → security (skip) → api-keys
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => screen.getByRole('button', { name: /skip for now/i }));
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
     await waitFor(() => screen.getByText(/Security policy/i));
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
     await waitFor(() => {
-      expect(screen.getByText(/Default model/i)).toBeInTheDocument();
+      expect(screen.getByText(/Create API Key/i)).toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: /anthropic/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/Model name/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /skip for now/i })).toBeInTheDocument();
+    expect(screen.getByText(/Step 4 of 5/)).toBeInTheDocument();
   });
 
-  it('Next from model advances to done step', async () => {
+  it('successful api key create shows copy banner', async () => {
     renderWizard();
+    // navigate to api-keys step
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => screen.getByRole('button', { name: /skip for now/i }));
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
     await waitFor(() => screen.getByText(/Security policy/i));
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
-    await waitFor(() => screen.getByText(/Default model/i));
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Key name/i)).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByLabelText(/Key name/i), { target: { value: 'My key' } });
+    fireEvent.click(screen.getByRole('button', { name: /create key/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/copy it now/i)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/sy_test_secret_key_value/)).toBeInTheDocument();
+  });
+
+  it('Next from api-keys advances to done step', async () => {
+    renderWizard();
+    // personality → model (skip) → security (skip) → api-keys
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => screen.getByRole('button', { name: /skip for now/i }));
+    fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
+    await waitFor(() => screen.getByText(/Security policy/i));
+    fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
+    await waitFor(() => screen.getByRole('heading', { name: /Dashboard API key/i }));
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByText(/You're all set/i)).toBeInTheDocument();
@@ -224,14 +260,19 @@ describe('OnboardingWizard', () => {
 
   it('done step Launch button calls completeOnboarding', async () => {
     const onComplete = vi.fn();
-    renderWizard(onComplete);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <OnboardingWizard onComplete={onComplete} />
+      </QueryClientProvider>
+    );
     // navigate to done
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => screen.getByRole('button', { name: /skip for now/i }));
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
     await waitFor(() => screen.getByText(/Security policy/i));
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
-    await waitFor(() => screen.getByText(/Default model/i));
+    await waitFor(() => screen.getByRole('heading', { name: /Dashboard API key/i }));
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => screen.getByText(/Launch SecureYeoman/i));
 

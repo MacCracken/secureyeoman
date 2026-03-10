@@ -38,6 +38,24 @@ const DISABLED_MSG =
 
 /** In-process JWT token cache — used only when falling back to email/password auth. */
 const tokenCache = new Map<string, { token: string; expiresAt: number }>();
+const TOKEN_CACHE_MAX = 50;
+
+/** Evict expired entries from tokenCache to prevent unbounded growth. */
+function evictExpiredTokens(): void {
+  const now = Date.now();
+  for (const [key, entry] of tokenCache) {
+    if (entry.expiresAt <= now) tokenCache.delete(key);
+  }
+  // Hard cap: if still over limit, drop oldest
+  if (tokenCache.size > TOKEN_CACHE_MAX) {
+    const iter = tokenCache.keys();
+    while (tokenCache.size > TOKEN_CACHE_MAX) {
+      const { value, done } = iter.next();
+      if (done) break;
+      tokenCache.delete(value);
+    }
+  }
+}
 
 /**
  * Returns the appropriate auth headers for a request.
@@ -53,6 +71,7 @@ async function getAuthHeaders(config: McpServiceConfig): Promise<Record<string, 
   if (!config.agnosticEmail || !config.agnosticPassword) return {};
 
   const cacheKey = config.agnosticUrl ?? '';
+  evictExpiredTokens();
   const cached = tokenCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now() + 30_000) {
     return { Authorization: `Bearer ${cached.token}` };
@@ -63,6 +82,7 @@ async function getAuthHeaders(config: McpServiceConfig): Promise<Record<string, 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: config.agnosticEmail, password: config.agnosticPassword }),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return {};
     const data = (await res.json()) as { access_token: string; expires_in: number };

@@ -253,4 +253,205 @@ describe('docker-tools', () => {
     const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
     expect(args).toContain('--volumes');
   });
+
+  it('calls docker inspect for a container', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
+      (cb as (err: null, stdout: string, stderr: string) => void)(null, '{"Id":"abc"}', '');
+      return undefined as unknown as ReturnType<typeof execFile>;
+    });
+
+    const result = await globalToolRegistry.get('docker_inspect')!({
+      target: 'my-container',
+      type: 'container',
+    });
+    expect(result.isError).toBeFalsy();
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('container');
+    expect(args).toContain('inspect');
+    expect(args).toContain('my-container');
+  });
+
+  it('calls docker image inspect when type=image', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    await globalToolRegistry.get('docker_inspect')!({
+      target: 'nginx:latest',
+      type: 'image',
+    });
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('image');
+    expect(args).toContain('inspect');
+    expect(args).toContain('nginx:latest');
+  });
+
+  it('calls docker stats --no-stream', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
+      (cb as (err: null, stdout: string, stderr: string) => void)(
+        null,
+        '{"Name":"web","CPUPerc":"0.5%"}\n',
+        ''
+      );
+      return undefined as unknown as ReturnType<typeof execFile>;
+    });
+
+    const result = await globalToolRegistry.get('docker_stats')!({ containers: ['web'] });
+    expect(result.isError).toBeFalsy();
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('stats');
+    expect(args).toContain('--no-stream');
+    expect(args).toContain('web');
+  });
+
+  it('calls docker images with filter', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    await globalToolRegistry.get('docker_images')!({ filter: 'dangling=true' });
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('images');
+    expect(args).toContain('--filter');
+    expect(args).toContain('dangling=true');
+  });
+
+  it('calls docker start with container names', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    await globalToolRegistry.get('docker_start')!({ containers: ['web', 'db'] });
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('start');
+    expect(args).toContain('web');
+    expect(args).toContain('db');
+  });
+
+  it('calls docker stop with timeout', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    await globalToolRegistry.get('docker_stop')!({ containers: ['web'], timeout: 15 });
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('stop');
+    expect(args).toContain('--time');
+    expect(args).toContain('15');
+    expect(args).toContain('web');
+  });
+
+  it('calls docker restart with timeout', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    await globalToolRegistry.get('docker_restart')!({ containers: ['web'], timeout: 5 });
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('restart');
+    expect(args).toContain('--time');
+    expect(args).toContain('5');
+  });
+
+  it('calls docker pull with image name', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    await globalToolRegistry.get('docker_pull')!({ image: 'nginx:latest' });
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('pull');
+    expect(args).toContain('nginx:latest');
+  });
+
+  it('calls docker compose ps with --all when all=true', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    await globalToolRegistry.get('docker_compose_ps')!({ workdir: '/app', all: true });
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('compose');
+    expect(args).toContain('ps');
+    expect(args).toContain('--all');
+  });
+
+  it('calls docker compose logs with service and timestamps', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    await globalToolRegistry.get('docker_compose_logs')!({
+      workdir: '/app',
+      service: 'web',
+      tail: 50,
+      timestamps: true,
+    });
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('compose');
+    expect(args).toContain('logs');
+    expect(args).toContain('--timestamps');
+    expect(args).toContain('web');
+    expect(args).toContain('50');
+  });
+
+  it('includes --build in docker_compose_up when build=true', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    await globalToolRegistry.get('docker_compose_up')!({
+      workdir: '/app',
+      services: ['web'],
+      build: true,
+      pull: 'always',
+    });
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('--build');
+    expect(args).toContain('--pull');
+    expect(args).toContain('always');
+    expect(args).toContain('web');
+  });
+
+  it('includes --remove-orphans in docker_compose_down when set', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    await globalToolRegistry.get('docker_compose_down')!({
+      workdir: '/app',
+      volumes: false,
+      removeOrphans: true,
+    });
+    const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
+    expect(args).toContain('--remove-orphans');
+    expect(args).not.toContain('--volumes');
+  });
+
+  it('returns error when execFile rejects', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerDockerTools(server, baseConfig(), noopMiddleware());
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
+      (cb as (err: Error | null, stdout: string, stderr: string) => void)(
+        new Error('docker not found'),
+        '',
+        ''
+      );
+      return undefined as unknown as ReturnType<typeof execFile>;
+    });
+
+    const result = await globalToolRegistry.get('docker_ps')!({ all: false });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('docker not found');
+  });
 });

@@ -111,7 +111,7 @@ export class TelegramIntegration implements Integration {
         if (mmManager) {
           const file = await ctx.api.getFile(photo.file_id);
           const fileUrl = `https://api.telegram.org/file/bot${this.config!.config.botToken as string}/${file.file_path}`;
-          const response = await fetch(fileUrl);
+          const response = await fetch(fileUrl, { signal: AbortSignal.timeout(30_000) });
           const buffer = Buffer.from(await response.arrayBuffer());
           const base64 = buffer.toString('base64');
 
@@ -161,7 +161,7 @@ export class TelegramIntegration implements Integration {
         if (mmManager && msg.voice.file_id) {
           const file = await ctx.api.getFile(msg.voice.file_id);
           const fileUrl = `https://api.telegram.org/file/bot${this.config!.config.botToken as string}/${file.file_path}`;
-          const response = await fetch(fileUrl);
+          const response = await fetch(fileUrl, { signal: AbortSignal.timeout(30_000) });
           const buffer = Buffer.from(await response.arrayBuffer());
           const base64 = buffer.toString('base64');
 

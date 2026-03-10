@@ -71,6 +71,7 @@ async function getAccessToken(config: McpServiceConfig): Promise<string> {
       grant_type: 'refresh_token',
       refresh_token: config.quickBooksRefreshToken,
     }).toString(),
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -102,6 +103,7 @@ async function qboFetch(
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> | undefined),
     },
+    signal: AbortSignal.timeout(15_000),
   });
   let body: unknown;
   try {

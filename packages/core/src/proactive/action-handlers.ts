@@ -12,6 +12,7 @@ import type {
 import type { ActionResult, ProactiveManagerDeps } from './types.js';
 import { errorToString } from '../utils/errors.js';
 import { withRetry } from '../ai/retry-manager.js';
+import { assertPublicUrl } from '../utils/ssrf-guard.js';
 
 export async function executeMessageAction(
   action: MessageAction,
@@ -72,6 +73,8 @@ export async function executeWebhookAction(
   const { logger } = deps;
 
   try {
+    assertPublicUrl(action.url, 'Proactive webhook URL');
+
     const response = await withRetry(
       async () => {
         const controller = new AbortController();

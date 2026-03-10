@@ -35,6 +35,7 @@ async function northflankFetch(
       ...northflankHeaders(config),
       ...(options.headers as Record<string, string> | undefined),
     },
+    signal: AbortSignal.timeout(30_000),
   });
   let body: unknown;
   const ct = res.headers.get('content-type') ?? '';

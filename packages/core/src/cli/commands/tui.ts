@@ -519,6 +519,7 @@ Options:
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(30_000),
         });
 
         if (!res.ok || !res.body) {
@@ -599,12 +600,16 @@ Options:
     };
 
     // ── Resize handler ────────────────────────────────────────────────────────
-    process.stdout.on('resize', () => {
+    const onResize = () => {
       renderer.onResize();
-    });
+    };
+    process.stdout.on('resize', onResize);
 
     // ── Keypress handler ──────────────────────────────────────────────────────
-    process.stdin.on('keypress', (_ch, key) => {
+    const onKeypress = (
+      _ch: string,
+      key: { ctrl?: boolean; meta?: boolean; name?: string; sequence?: string }
+    ) => {
       if (!key) return;
 
       // Quit
@@ -680,11 +685,12 @@ Options:
 
       // Typed character
       if (!key.ctrl && !key.meta && key.sequence?.length === 1) {
-        inputBuf += key.sequence as string;
+        inputBuf += key.sequence;
         renderer.setInput(inputBuf);
         renderer.render();
       }
-    });
+    };
+    process.stdin.on('keypress', onKeypress);
 
     // ── Startup ───────────────────────────────────────────────────────────────
     sysMsg(`Connecting to ${baseUrl}…`);
@@ -716,6 +722,8 @@ Options:
 
     // ── Cleanup ───────────────────────────────────────────────────────────────
     clearInterval(pollInterval);
+    process.stdout.removeListener('resize', onResize);
+    process.stdin.removeListener('keypress', onKeypress);
     if (process.stdin.isTTY) {
       process.stdin.setRawMode(false);
     }

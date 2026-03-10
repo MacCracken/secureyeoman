@@ -156,7 +156,7 @@ export class DiscordIntegration implements Integration {
           for (const att of unified.attachments ?? []) {
             if (att.mimeType?.startsWith('image/') && att.url) {
               try {
-                const resp = await fetch(att.url);
+                const resp = await fetch(att.url, { signal: AbortSignal.timeout(30_000) });
                 const buf = Buffer.from(await resp.arrayBuffer());
                 const result = await mmManager.analyzeImage({
                   imageBase64: buf.toString('base64'),

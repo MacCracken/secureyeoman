@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AuthService } from '../security/auth.js';
-import { generateSecureToken, sha256 } from '../utils/crypto.js';
+import { generateSecureToken } from '../utils/crypto.js';
 import type { OAuthTokenService } from './oauth-token-service.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 
@@ -148,6 +148,7 @@ interface PendingGmailTokens {
 }
 const PENDING_GMAIL_TOKENS = new Map<string, PendingGmailTokens>();
 const PENDING_TOKEN_EXPIRY_MS = 10 * 60 * 1000;
+const MAX_PENDING_TOKENS = 500;
 
 /** Short-lived store for generic Google/GitHub OAuth user info pending dashboard acknowledgement */
 interface PendingOAuthUserInfo {
@@ -156,6 +157,7 @@ interface PendingOAuthUserInfo {
   createdAt: number;
 }
 const PENDING_OAUTH_USERINFO = new Map<string, PendingOAuthUserInfo>();
+const MAX_PENDING_USERINFO = 500;
 
 export class OAuthService {
   private config: OAuthServiceConfig;
@@ -317,6 +319,7 @@ export class OAuthService {
         grant_type: 'authorization_code',
         redirect_uri: redirectUri,
       }),
+      signal: AbortSignal.timeout(15_000),
     });
 
     if (!response.ok) {
@@ -353,6 +356,7 @@ export class OAuthService {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!response.ok) {
@@ -404,9 +408,8 @@ export class OAuthService {
     return this.getConfiguredProviders();
   }
 
-  generateOAuthConnectionToken(provider: string, userId: string): string {
-    const payload = `${provider}:${userId}:${Date.now()}`;
-    return sha256(payload);
+  generateOAuthConnectionToken(_provider: string, _userId: string): string {
+    return generateSecureToken(32);
   }
 }
 
@@ -549,6 +552,11 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
 
         // Gmail: store tokens server-side for the claim endpoint (legacy flow)
         if (providerId === 'gmail') {
+          // Evict oldest entry if at capacity
+          if (PENDING_GMAIL_TOKENS.size >= MAX_PENDING_TOKENS) {
+            const oldest = PENDING_GMAIL_TOKENS.keys().next().value;
+            if (oldest !== undefined) PENDING_GMAIL_TOKENS.delete(oldest);
+          }
           PENDING_GMAIL_TOKENS.set(connectionToken, {
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken || '',
@@ -599,6 +607,10 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         }
 
         // Store user info short-lived for dashboard display
+        if (PENDING_OAUTH_USERINFO.size >= MAX_PENDING_USERINFO) {
+          const oldest = PENDING_OAUTH_USERINFO.keys().next().value;
+          if (oldest !== undefined) PENDING_OAUTH_USERINFO.delete(oldest);
+        }
         PENDING_OAUTH_USERINFO.set(connectionToken, {
           email: userInfo.email || '',
           name: userInfo.name || '',
@@ -624,11 +636,18 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
           `${fe}/connections/oauth?connected=true&provider=${providerId}&email=${encodeURIComponent(userInfo.email || '')}&name=${encodeURIComponent(userInfo.name || '')}&token=${connectionToken}`
         );
       } catch (err) {
-        const message = toErrorMessage(err);
+        // Sanitize error — never leak internal details (stack traces, secrets) in redirect URLs
+        const rawMessage = toErrorMessage(err);
+        const safeMessage = rawMessage.includes('client_secret') ||
+          rawMessage.includes('ECONNREFUSED') ||
+          rawMessage.includes('ETIMEDOUT') ||
+          rawMessage.length > 200
+          ? 'OAuth authentication failed. Please try again.'
+          : rawMessage;
         if (providerId === 'gmail') {
-          return reply.redirect(`${fe}/connections/email?error=${encodeURIComponent(message)}`);
+          return reply.redirect(`${fe}/connections/email?error=${encodeURIComponent(safeMessage)}`);
         }
-        return reply.redirect(`${fe}/connections/oauth?error=${encodeURIComponent(message)}`);
+        return reply.redirect(`${fe}/connections/oauth?error=${encodeURIComponent(safeMessage)}`);
       }
     }
   );

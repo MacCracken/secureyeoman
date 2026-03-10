@@ -60,6 +60,7 @@ export class MistralProvider extends BaseProvider {
       const baseUrl = process.env.MISTRAL_BASE_URL ?? MISTRAL_BASE_URL;
       const res = await fetch(`${baseUrl}/models`, {
         headers: { Authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) return [];
       const data = (await res.json()) as { data?: { id: string; owned_by: string }[] };

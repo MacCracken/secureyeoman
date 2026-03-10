@@ -9,6 +9,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { ExcalidrawEditorLazy } from './ExcalidrawEditorLazy';
 import { useWebSocket } from '../../../hooks/useWebSocket';
+import { sanitizeSvg } from '../../../utils/sanitize';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -488,7 +489,7 @@ export function ExcalidrawWidget({
         ) : svgString ? (
           <div
             className="p-2 overflow-auto h-full"
-            dangerouslySetInnerHTML={{ __html: svgString }}
+            dangerouslySetInnerHTML={{ __html: sanitizeSvg(svgString) }}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-xs text-muted-foreground">

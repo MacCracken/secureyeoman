@@ -46,6 +46,17 @@ export function sanitizeHtml(dirty: string, config?: Record<string, unknown>): s
 }
 
 /**
+ * Sanitize SVG content, preserving SVG elements and filters while
+ * stripping scripts, event handlers, and other dangerous content.
+ * Use this for any SVG rendered via dangerouslySetInnerHTML.
+ */
+export function sanitizeSvg(dirty: string): string {
+  return DOMPurify.sanitize(dirty, {
+    USE_PROFILES: { svg: true, svgFilters: true },
+  });
+}
+
+/**
  * Strip ALL HTML tags, returning plain text only.
  * Use this for any user/AI-generated content displayed as text.
  */

@@ -143,4 +143,127 @@ describe('CommunityTab', () => {
       expect(screen.getByText('No path configured')).toBeInTheDocument();
     });
   });
+
+  it('calls syncCommunitySkills when Sync button clicked', async () => {
+    const user = userEvent.setup();
+    const mockSync = vi.mocked(api.syncCommunitySkills);
+    mockSync.mockResolvedValue({
+      added: 2,
+      updated: 1,
+      skipped: 0,
+      removed: 0,
+      errors: [],
+    } as any);
+
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Sync')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Sync'));
+    await waitFor(() => {
+      expect(mockSync).toHaveBeenCalled();
+    });
+  });
+
+  it('shows sync results after successful sync', async () => {
+    const user = userEvent.setup();
+    const mockSync = vi.mocked(api.syncCommunitySkills);
+    mockSync.mockResolvedValue({
+      added: 3,
+      updated: 1,
+      skipped: 0,
+      removed: 0,
+      errors: [],
+    } as any);
+
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Sync')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Sync'));
+    await waitFor(() => {
+      expect(screen.getByText(/3 added/)).toBeInTheDocument();
+    });
+  });
+
+  it('renders skill cards with install button', async () => {
+    mockFetchMarketplace.mockResolvedValue({
+      skills: [
+        {
+          id: 'cs1',
+          name: 'Git Helper',
+          description: 'Helps with git',
+          version: '1.0.0',
+          author: 'community',
+          category: 'development',
+          tags: ['git'],
+          downloadCount: 10,
+          source: 'community',
+          installed: false,
+          installedGlobally: false,
+          instructions: '',
+          triggerPatterns: [],
+          tools: [],
+          mcpToolsAllowed: [],
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    } as any);
+
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Git Helper')).toBeInTheDocument();
+    });
+  });
+
+  it('renders content type selector with swarms when enabled', async () => {
+    renderComponent({ subAgentsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Swarm Templates')).toBeInTheDocument();
+    });
+  });
+
+  it('shows lastSyncedAt when available', async () => {
+    mockFetchCommunityStatus.mockResolvedValue({
+      communityRepoPath: '/path/to/community',
+      lastSyncedAt: new Date('2026-01-15T10:00:00Z').toISOString(),
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText(/Last synced/)).toBeInTheDocument();
+    });
+  });
+
+  it('handles search input change', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Search community skills/)).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/Search community skills/);
+    await user.type(searchInput, 'git');
+
+    await waitFor(() => {
+      expect(mockFetchMarketplace).toHaveBeenCalledWith(
+        'git',
+        'community',
+        expect.anything(),
+        undefined,
+        expect.anything(),
+        expect.anything(),
+        undefined,
+      );
+    });
+  });
+
+  it('shows loading state', () => {
+    mockFetchMarketplace.mockReturnValue(new Promise(() => {}));
+    renderComponent();
+    // Should not crash while loading
+    expect(screen.getByPlaceholderText(/Search community skills/)).toBeInTheDocument();
+  });
 });

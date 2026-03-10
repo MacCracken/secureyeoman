@@ -257,8 +257,27 @@ async function evaluateAssertion(
       };
 
     case 'regex': {
-      const regex = new RegExp(assertion.pattern);
-      const passed = regex.test(output);
+      if (assertion.pattern.length > 500) {
+        return {
+          assertion,
+          passed: false,
+          actual: output,
+          reason: 'Regex pattern too long (max 500 chars)',
+        };
+      }
+      let passed = false;
+      try {
+        const regex = new RegExp(assertion.pattern);
+        // Test against first 100KB to limit ReDoS exposure
+        passed = regex.test(output.slice(0, 100_000));
+      } catch {
+        return {
+          assertion,
+          passed: false,
+          actual: output,
+          reason: `Invalid regex pattern: ${assertion.pattern}`,
+        };
+      }
       return {
         assertion,
         passed,

@@ -261,6 +261,7 @@ export async function apiCall(
       method: options.method ?? 'GET',
       headers,
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      signal: AbortSignal.timeout(15_000),
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
