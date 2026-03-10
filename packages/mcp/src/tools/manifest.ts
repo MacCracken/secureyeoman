@@ -2443,5 +2443,53 @@ export function getToolManifest(): ToolManifestEntry[] {
       description: 'Create a new Google Docs document with optional initial content',
       category: 'google-workspace',
     },
+
+    // Synapse LLM controller tools
+    {
+      name: 'synapse_status',
+      description:
+        'Get the status and capabilities of the connected Synapse LLM controller, including GPU count, available memory, loaded models, and supported training methods',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_list_models',
+      description:
+        'List all models available on the Synapse instance, including their sizes, quantization formats, and whether they are currently loaded for inference',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_pull_model',
+      description:
+        'Pull (download) a model from HuggingFace or another registry into the Synapse instance',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_infer',
+      description: 'Run inference on a model loaded in Synapse. Returns the generated text',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_submit_job',
+      description:
+        'Submit a training job to Synapse. Supports LoRA, QLoRA, full fine-tune, DPO, and RLHF',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_list_jobs',
+      description:
+        'List all training jobs on the Synapse instance, including status, progress, and timing',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_job_status',
+      description:
+        'Get detailed status of a specific Synapse training job, including current step, loss, and epoch',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_cancel_job',
+      description: 'Cancel a running training job on the Synapse instance',
+      category: 'synapse',
+    },
   ];
 }

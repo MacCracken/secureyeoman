@@ -923,6 +923,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeTerminal: false,
               exposeBullshift: false,
               exposePhotisnadi: false,
+              exposeSynapse: false,
             },
             proactiveConfig: {
               enabled: false,

@@ -245,6 +245,7 @@ export function loadConfig(
     dockerHost: env.MCP_DOCKER_HOST,
     exposeBullshiftTools: parseBool(env.MCP_EXPOSE_BULLSHIFT_TOOLS, false),
     exposePhotisnadiTools: parseBool(env.MCP_EXPOSE_PHOTISNADI_TOOLS, false),
+    exposeSynapseTools: parseBool(env.MCP_EXPOSE_SYNAPSE_TOOLS, false),
   };
 
   return McpServiceConfigSchema.parse(raw);

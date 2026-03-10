@@ -201,6 +201,7 @@ export interface Personality {
       exposeGithub?: boolean;
       exposeDocker?: boolean;
       exposeTerminal?: boolean;
+      exposeSynapse?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -315,6 +316,7 @@ export interface PersonalityCreate {
       exposeGithub?: boolean;
       exposeDocker?: boolean;
       exposeTerminal?: boolean;
+      exposeSynapse?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -914,6 +916,7 @@ export interface McpFeatureConfig {
   exposeAgnosTools: boolean;
   exposeBullshiftTools: boolean;
   exposePhotisnadiTools: boolean;
+  exposeSynapseTools: boolean;
 }
 
 export interface CicdPlatformConfig {

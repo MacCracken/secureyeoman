@@ -323,6 +323,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           gitlabToken?: string;
           exposeNorthflank?: boolean;
           northflankApiKey?: string;
+          exposeSynapseTools?: boolean;
         };
       }>
     ) => {

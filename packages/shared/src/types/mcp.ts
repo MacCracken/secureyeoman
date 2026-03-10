@@ -226,6 +226,8 @@ export const McpServiceConfigSchema = z.object({
   exposeBullshiftTools: z.boolean().default(false),
   /** Enable Photisnadi task/ritual tools (photisnadi_*). Off by default. Set MCP_EXPOSE_PHOTISNADI_TOOLS=true. */
   exposePhotisnadiTools: z.boolean().default(false),
+  /** Enable Synapse LLM controller tools (synapse_*). Off by default. Set MCP_EXPOSE_SYNAPSE_TOOLS=true. */
+  exposeSynapseTools: z.boolean().default(false),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

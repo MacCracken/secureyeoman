@@ -2044,6 +2044,7 @@ export interface McpConfigResponse {
   exposeAgnosTools: boolean;
   exposeBullshiftTools: boolean;
   exposePhotisnadiTools: boolean;
+  exposeSynapseTools: boolean;
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -2086,6 +2087,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeAgnosTools: false,
       exposeBullshiftTools: false,
       exposePhotisnadiTools: false,
+      exposeSynapseTools: false,
     };
   }
 }

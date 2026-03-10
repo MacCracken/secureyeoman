@@ -19,7 +19,7 @@ import { errorToString } from '../utils/errors.js';
 // Types
 // ---------------------------------------------------------------------------
 
-export type EcosystemServiceId = 'agnostic' | 'agnos';
+export type EcosystemServiceId = 'agnostic' | 'agnos' | 'synapse';
 
 export type EcosystemServiceStatus =
   | 'disconnected' // never connected
@@ -77,6 +77,16 @@ const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
     healthPath: '/health',
     requiredSecrets: ['AGNOS_GATEWAY_API_KEY', 'AGNOS_RUNTIME_API_KEY'],
     mcpConfigKey: 'exposeAgnosTools',
+  },
+  {
+    id: 'synapse',
+    displayName: 'Synapse LLM Controller',
+    description: 'Local LLM model management, inference, and training job orchestration',
+    urlEnv: 'SYNAPSE_API_URL',
+    defaultUrl: 'http://127.0.0.1:8420',
+    healthPath: '/health',
+    requiredSecrets: [],
+    mcpConfigKey: 'exposeSynapseTools',
   },
 ] as const;
 

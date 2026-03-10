@@ -67,6 +67,9 @@ services:
       PHOTISNADI_SUPABASE_URL: ${PHOTISNADI_SUPABASE_URL:-}
       PHOTISNADI_SUPABASE_KEY: ${PHOTISNADI_SUPABASE_KEY:-}
       PHOTISNADI_USER_ID: ${PHOTISNADI_USER_ID:-}
+      # Synapse LLM controller — training delegation and model management
+      SYNAPSE_API_URL: ${SYNAPSE_API_URL:-http://synapse:8420}
+      SYNAPSE_GRPC_URL: ${SYNAPSE_GRPC_URL:-http://synapse:8421}
     healthcheck:
       test:
         [
@@ -116,6 +119,9 @@ services:
       AGNOS_RUNTIME_URL: ${AGNOS_RUNTIME_URL:-http://sy-core:8090}
       # BullShift trading API — points to bullshift service in dev profile
       BULLSHIFT_API_URL: ${BULLSHIFT_API_URL:-http://bullshift:8787}
+      # Synapse LLM controller
+      SYNAPSE_API_URL: ${SYNAPSE_API_URL:-http://synapse:8420}
+      SYNAPSE_GRPC_URL: ${SYNAPSE_GRPC_URL:-http://synapse:8421}
       NODE_ENV: production
     healthcheck:
       test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:3001/health']
@@ -176,6 +182,9 @@ services:
       PHOTISNADI_SUPABASE_URL: ${PHOTISNADI_SUPABASE_URL:-}
       PHOTISNADI_SUPABASE_KEY: ${PHOTISNADI_SUPABASE_KEY:-}
       PHOTISNADI_USER_ID: ${PHOTISNADI_USER_ID:-}
+      # Synapse LLM controller
+      SYNAPSE_API_URL: ${SYNAPSE_API_URL:-http://synapse:8420}
+      SYNAPSE_GRPC_URL: ${SYNAPSE_GRPC_URL:-http://synapse:8421}
     healthcheck:
       test: ['CMD', 'secureyeoman', 'health', '--json']
       interval: 30s
@@ -381,6 +390,58 @@ services:
       - full-dev
     restart: unless-stopped
 
+  # Synapse — LLM controller for model pulling, inference, and training.
+  # dev: pulls from GHCR. full-dev: builds from local ../synapse source.
+  # Provides REST (8420) and gRPC bridge (8421) for SY training delegation.
+  synapse:
+    image: ghcr.io/maccracken/synapse:latest
+    ports:
+      - '${SYNAPSE_REST_PORT:-8420}:8420'
+      - '${SYNAPSE_GRPC_PORT:-8421}:8421'
+    volumes:
+      - synapse-models:/var/lib/synapse/models
+      - synapse-data:/var/lib/synapse/data
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      SYNAPSE_STORAGE__MODELS_DIR: /var/lib/synapse/models
+      SYNAPSE_STORAGE__DATABASE: /var/lib/synapse/data/synapse.db
+      SY_ENDPOINT: 'http://sy-core:18789'
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8420/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    profiles:
+      - dev
+    restart: unless-stopped
+
+  # Synapse local build — uses sibling repo source for full integration dev.
+  synapse-dev:
+    build:
+      context: ../synapse
+      dockerfile: docker/Dockerfile
+    ports:
+      - '${SYNAPSE_REST_PORT:-8420}:8420'
+      - '${SYNAPSE_GRPC_PORT:-8421}:8421'
+    volumes:
+      - synapse-models:/var/lib/synapse/models
+      - synapse-data:/var/lib/synapse/data
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      SYNAPSE_STORAGE__MODELS_DIR: /var/lib/synapse/models
+      SYNAPSE_STORAGE__DATABASE: /var/lib/synapse/data/synapse.db
+      SY_ENDPOINT: 'http://sy-core:18789'
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8420/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    profiles:
+      - full-dev
+    restart: unless-stopped
+
   # Dashboard is now served by the core gateway (SPA serving via @fastify/static).
   # The separate dashboard service below is for local development only.
   sy-dashboard-dev:
@@ -411,5 +472,7 @@ volumes:
   data:
   community-repo:
   bullshift-data:
+  synapse-models:
+  synapse-data:
   node-modules:
   dashboard-node-modules:

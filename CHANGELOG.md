@@ -4,6 +4,22 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.10]
+
+### Synapse LLM Controller Integration
+
+Full integration with Synapse, the Rust-based local LLM controller for model management, inference, and training job orchestration. See ADR 034.
+
+- **REST proxy routes** (`integrations/synapse/synapse-routes.ts`): 11 Fastify routes under `/api/v1/synapse/*` — status, models (list/pull with SSE progress), inference (sync + SSE stream), training jobs (submit/list/get/cancel/logs), health check. All enterprise-gated via `licenseGuard('synapse')`.
+- **Synapse client** (`integrations/synapse/synapse-client.ts`): TypeScript REST client with `getStatus`, `submitTrainingJob`, `getJobStatus`, `streamJobLogs`, `pullModel`, `runInference`, `streamInference`, `isHealthy`.
+- **Registry & Manager** (`synapse-registry.ts`, `synapse-manager.ts`): Multi-instance registry with health tracking, heartbeat polling, best-GPU selection for training delegation.
+- **8 MCP tools** (`mcp/tools/synapse-tools.ts`): `synapse_status`, `synapse_list_models`, `synapse_pull_model`, `synapse_infer`, `synapse_submit_job`, `synapse_list_jobs`, `synapse_job_status`, `synapse_cancel_job`. Gated by `MCP_EXPOSE_SYNAPSE_TOOLS=true`.
+- **Database migration** (`008_synapse.sql`): `synapse` schema with `instances`, `delegated_jobs`, `registered_models` tables. Enterprise tier.
+- **License gating**: `synapse` added as enterprise-tier `LicensedFeature`.
+- **Service discovery**: Synapse registered as ecosystem service with health probing via `/health`.
+- **Docker Compose**: Synapse service added to `dev` (GHCR image) and `full-dev` (local build) profiles. Ports 8420 (REST) + 8421 (gRPC).
+- **Dashboard**: Synapse LLM toggle in PersonalityEditor MCP features (requires global enable). `SYNAPSE_API_URL` in service keys panel.
+
 ## [2026.3.9]
 
 ### Secret Internalization & Vault Support

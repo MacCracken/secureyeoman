@@ -1,0 +1,389 @@
+/**
+ * Synapse Routes — REST proxy for the Synapse LLM controller.
+ *
+ * Proxies Synapse endpoints (model management, inference, training) so the
+ * dashboard and MCP tools can interact with Synapse without direct access.
+ * SSE streaming routes relay events from Synapse to the client in real time.
+ */
+
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { sendError, toErrorMessage } from '../../utils/errors.js';
+import type { SecureYeoman } from '../../secureyeoman.js';
+import { licenseGuard } from '../../licensing/license-guard.js';
+
+const SYNAPSE_API_URL = (process.env.SYNAPSE_API_URL ?? 'http://localhost:8420').replace(/\/$/, '');
+
+// ── Helper ──────────────────────────────────────────────────────────────────
+
+async function synapseFetch(path: string, opts?: RequestInit): Promise<Response> {
+  const res = await fetch(`${SYNAPSE_API_URL}${path}`, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...opts?.headers,
+    },
+    signal: opts?.signal ?? AbortSignal.timeout(30_000),
+  });
+  return res;
+}
+
+// ── SSE relay helper ────────────────────────────────────────────────────────
+
+async function relaySSE(reply: FastifyReply, path: string, opts?: RequestInit): Promise<void> {
+  const res = await synapseFetch(path, {
+    ...opts,
+    headers: { ...opts?.headers, Accept: 'text/event-stream' },
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => '');
+    sendError(reply, res.status >= 500 ? 502 : res.status, `Synapse error: ${errorBody}`);
+    return;
+  }
+
+  reply.raw.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+
+  const body = res.body;
+  if (!body) {
+    reply.raw.write('data: {"error":"no response body"}\n\n');
+    reply.raw.end();
+    return;
+  }
+
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      reply.raw.write(decoder.decode(value, { stream: true }));
+    }
+  } catch (err) {
+    reply.raw.write(`data: ${JSON.stringify({ error: toErrorMessage(err) })}\n\n`);
+  } finally {
+    reader.releaseLock();
+    reply.raw.end();
+  }
+}
+
+// ── Route Registration ──────────────────────────────────────────────────────
+
+export interface SynapseRouteOptions {
+  secureYeoman?: SecureYeoman;
+}
+
+export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteOptions): void {
+  const featureGuardOpts = licenseGuard('synapse', opts?.secureYeoman);
+
+  // ── GET /api/v1/synapse/status — Synapse status & capabilities ──────────
+
+  app.get(
+    '/api/v1/synapse/status',
+    featureGuardOpts as Record<string, unknown>,
+    async (_req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const res = await synapseFetch('/api/v1/status');
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, 502, `Synapse status error: ${body}`);
+        }
+        const data = await res.json();
+        return reply.send(data);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse unreachable: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── GET /api/v1/synapse/models — List available models ──────────────────
+
+  app.get(
+    '/api/v1/synapse/models',
+    featureGuardOpts as Record<string, unknown>,
+    async (_req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const res = await synapseFetch('/api/v1/models');
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, 502, `Synapse models error: ${body}`);
+        }
+        const data = await res.json();
+        return reply.send(data);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse unreachable: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── POST /api/v1/synapse/models/pull — Pull model (SSE progress) ───────
+
+  app.post(
+    '/api/v1/synapse/models/pull',
+    featureGuardOpts as Record<string, unknown>,
+    async (
+      req: FastifyRequest<{ Body: { modelName: string; quant?: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { modelName, quant } = req.body ?? ({} as { modelName?: string; quant?: string });
+        if (!modelName) return sendError(reply, 400, 'Missing required field: modelName');
+
+        await relaySSE(reply, '/api/v1/models/pull', {
+          method: 'POST',
+          body: JSON.stringify({ modelName, quant }),
+        });
+      } catch (err) {
+        if (!reply.raw.headersSent) {
+          return sendError(reply, 502, `Synapse pull error: ${toErrorMessage(err)}`);
+        }
+        reply.raw.write(`data: ${JSON.stringify({ error: toErrorMessage(err) })}\n\n`);
+        reply.raw.end();
+      }
+    }
+  );
+
+  // ── POST /api/v1/synapse/inference — Run inference ─────────────────────
+
+  app.post(
+    '/api/v1/synapse/inference',
+    featureGuardOpts as Record<string, unknown>,
+    async (
+      req: FastifyRequest<{
+        Body: { model: string; prompt: string; maxTokens?: number };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { model, prompt, maxTokens } =
+          req.body ?? ({} as { model?: string; prompt?: string; maxTokens?: number });
+        if (!model || !prompt)
+          return sendError(reply, 400, 'Missing required fields: model, prompt');
+
+        const res = await synapseFetch('/api/v1/inference', {
+          method: 'POST',
+          body: JSON.stringify({ model, prompt, maxTokens: maxTokens ?? 512 }),
+        });
+
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, 502, `Synapse inference error: ${body}`);
+        }
+
+        const data = await res.json();
+        return reply.send(data);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse inference failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── POST /api/v1/synapse/inference/stream — Stream inference (SSE) ─────
+
+  app.post(
+    '/api/v1/synapse/inference/stream',
+    featureGuardOpts as Record<string, unknown>,
+    async (
+      req: FastifyRequest<{
+        Body: { model: string; prompt: string; maxTokens?: number };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { model, prompt, maxTokens } =
+          req.body ?? ({} as { model?: string; prompt?: string; maxTokens?: number });
+        if (!model || !prompt)
+          return sendError(reply, 400, 'Missing required fields: model, prompt');
+
+        await relaySSE(reply, '/api/v1/inference/stream', {
+          method: 'POST',
+          body: JSON.stringify({ model, prompt, maxTokens: maxTokens ?? 512 }),
+        });
+      } catch (err) {
+        if (!reply.raw.headersSent) {
+          return sendError(reply, 502, `Synapse stream error: ${toErrorMessage(err)}`);
+        }
+        reply.raw.write(`data: ${JSON.stringify({ error: toErrorMessage(err) })}\n\n`);
+        reply.raw.end();
+      }
+    }
+  );
+
+  // ── POST /api/v1/synapse/training/jobs — Submit training job ───────────
+
+  app.post(
+    '/api/v1/synapse/training/jobs',
+    featureGuardOpts as Record<string, unknown>,
+    async (
+      req: FastifyRequest<{
+        Body: {
+          baseModel: string;
+          datasetPath: string;
+          method: string;
+          configJson?: Record<string, unknown>;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { baseModel, datasetPath, method, configJson } =
+          req.body ??
+          ({} as {
+            baseModel?: string;
+            datasetPath?: string;
+            method?: string;
+            configJson?: Record<string, unknown>;
+          });
+        if (!baseModel || !method)
+          return sendError(reply, 400, 'Missing required fields: baseModel, method');
+
+        const res = await synapseFetch('/api/v1/training/jobs', {
+          method: 'POST',
+          body: JSON.stringify({ baseModel, datasetPath, method, configJson }),
+        });
+
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, 502, `Synapse training submit error: ${body}`);
+        }
+
+        const data = await res.json();
+        return reply.code(201).send(data);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse training submit failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── GET /api/v1/synapse/training/jobs — List training jobs ─────────────
+
+  app.get(
+    '/api/v1/synapse/training/jobs',
+    featureGuardOpts as Record<string, unknown>,
+    async (
+      req: FastifyRequest<{ Querystring: { status?: string; limit?: string; offset?: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const params = new URLSearchParams();
+        const { status, limit, offset } = req.query;
+        if (status) params.set('status', status);
+        if (limit) params.set('limit', limit);
+        if (offset) params.set('offset', offset);
+
+        const qs = params.toString();
+        const path = `/api/v1/training/jobs${qs ? `?${qs}` : ''}`;
+        const res = await synapseFetch(path);
+
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, 502, `Synapse jobs list error: ${body}`);
+        }
+
+        const data = await res.json();
+        return reply.send(data);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse jobs list failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── GET /api/v1/synapse/training/jobs/:id — Get specific job ───────────
+
+  app.get(
+    '/api/v1/synapse/training/jobs/:id',
+    featureGuardOpts as Record<string, unknown>,
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const { id } = req.params;
+        const res = await synapseFetch(`/api/v1/training/jobs/${encodeURIComponent(id)}`);
+
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, res.status === 404 ? 404 : 502, `Synapse job error: ${body}`);
+        }
+
+        const data = await res.json();
+        return reply.send(data);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse job fetch failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── GET /api/v1/synapse/training/jobs/:id/logs — Stream job logs (SSE) ─
+
+  app.get(
+    '/api/v1/synapse/training/jobs/:id/logs',
+    featureGuardOpts as Record<string, unknown>,
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const { id } = req.params;
+        await relaySSE(reply, `/api/v1/training/jobs/${encodeURIComponent(id)}/logs`);
+      } catch (err) {
+        if (!reply.raw.headersSent) {
+          return sendError(reply, 502, `Synapse logs error: ${toErrorMessage(err)}`);
+        }
+        reply.raw.write(`data: ${JSON.stringify({ error: toErrorMessage(err) })}\n\n`);
+        reply.raw.end();
+      }
+    }
+  );
+
+  // ── POST /api/v1/synapse/training/jobs/:id/cancel — Cancel job ────────
+
+  app.post(
+    '/api/v1/synapse/training/jobs/:id/cancel',
+    featureGuardOpts as Record<string, unknown>,
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const { id } = req.params;
+        const res = await synapseFetch(`/api/v1/training/jobs/${encodeURIComponent(id)}/cancel`, {
+          method: 'POST',
+        });
+
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, res.status === 404 ? 404 : 502, `Synapse cancel error: ${body}`);
+        }
+
+        const data = await res.json();
+        return reply.send(data);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse cancel failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── GET /api/v1/synapse/health — Synapse health check ─────────────────
+
+  app.get('/api/v1/synapse/health', async (_req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const res = await synapseFetch('/health', {
+        signal: AbortSignal.timeout(5_000),
+      });
+
+      if (!res.ok) {
+        return reply.code(502).send({
+          status: 'unhealthy',
+          synapseUrl: SYNAPSE_API_URL,
+          httpStatus: res.status,
+        });
+      }
+
+      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      return reply.send({ status: 'healthy', synapseUrl: SYNAPSE_API_URL, ...data });
+    } catch (err) {
+      return reply.code(502).send({
+        status: 'unreachable',
+        synapseUrl: SYNAPSE_API_URL,
+        error: toErrorMessage(err),
+      });
+    }
+  });
+}

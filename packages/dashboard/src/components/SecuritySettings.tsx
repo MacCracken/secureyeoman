@@ -2002,6 +2002,12 @@ const SERVICE_KEYS: ServiceKeyDef[] = [
     category: 'Yeoman MCP',
   },
   { name: 'PHOTISNADI_USER_ID', label: 'Photisnadi User ID', category: 'Yeoman MCP' },
+  {
+    name: 'SYNAPSE_API_URL',
+    label: 'Synapse LLM Controller API URL',
+    category: 'Yeoman MCP',
+    isUrl: true,
+  },
   // Search
   {
     name: 'MCP_WEB_SEARCH_API_KEY',

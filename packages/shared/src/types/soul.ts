@@ -124,6 +124,8 @@ export const McpFeaturesSchema = z
     exposeBullshift: z.boolean().default(false),
     /** Photisnadi task/ritual tools (photisnadi_*). Requires global exposePhotisnadiTools. */
     exposePhotisnadi: z.boolean().default(false),
+    /** Synapse LLM controller tools (synapse_*). Requires global exposeSynapseTools. */
+    exposeSynapse: z.boolean().default(false),
   })
   .default({});
 

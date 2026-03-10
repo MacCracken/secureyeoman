@@ -44,6 +44,7 @@ import {
   Sparkles,
   Terminal,
   BookOpen,
+  Cpu,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -2969,6 +2970,7 @@ interface BodySectionProps {
     exposeGithub: boolean;
     exposeDocker: boolean;
     exposeTerminal: boolean;
+    exposeSynapse: boolean;
   };
   onMcpFeaturesChange: (features: {
     exposeGit: boolean;
@@ -2992,6 +2994,7 @@ interface BodySectionProps {
     exposeGithub: boolean;
     exposeDocker: boolean;
     exposeTerminal: boolean;
+    exposeSynapse: boolean;
   }) => void;
   creationConfig: {
     skills: boolean;
@@ -4404,6 +4407,36 @@ function BodySection({
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
+                              {/* Synapse LLM Controller */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeSynapseTools
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <Cpu className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-xs flex-1">
+                                  Synapse LLM
+                                  {!globalMcpConfig?.exposeSynapseTools && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Synapse in Connections &gt; MCP first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeSynapse}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeSynapse: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeSynapseTools}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
                             </div>
                           </div>
                         )}
@@ -4820,6 +4853,7 @@ export function PersonalityEditor({
     exposeGithub: boolean;
     exposeDocker: boolean;
     exposeTerminal: boolean;
+    exposeSynapse: boolean;
   }>({
     exposeGit: false,
     exposeFilesystem: false,
@@ -4842,6 +4876,7 @@ export function PersonalityEditor({
     exposeGithub: false,
     exposeDocker: false,
     exposeTerminal: false,
+    exposeSynapse: false,
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
@@ -5142,6 +5177,7 @@ export function PersonalityEditor({
       exposeGithub: body.mcpFeatures?.exposeGithub ?? false,
       exposeDocker: body.mcpFeatures?.exposeDocker ?? false,
       exposeTerminal: body.mcpFeatures?.exposeTerminal ?? false,
+      exposeSynapse: body.mcpFeatures?.exposeSynapse ?? false,
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
@@ -5287,6 +5323,7 @@ export function PersonalityEditor({
       exposeGithub: false,
       exposeDocker: false,
       exposeTerminal: false,
+      exposeSynapse: false,
     });
     setProactiveConfig({
       enabled: false,

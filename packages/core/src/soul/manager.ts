@@ -299,6 +299,7 @@ export class SoulManager {
           exposeTerminal: false,
           exposeBullshift: false,
           exposePhotisnadi: false,
+          exposeSynapse: false,
         },
         proactiveConfig: {
           enabled: false,

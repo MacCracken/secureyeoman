@@ -108,6 +108,7 @@ import { registerNotionRoutes } from '../integrations/notion/notion-routes.js';
 import { registerGoogleWorkspaceRoutes } from '../integrations/google-workspace-routes.js';
 import { registerTradingRoutes } from '../integrations/trading/trading-routes.js';
 import { registerPhotisnadiRoutes } from '../integrations/photisnadi/photisnadi-routes.js';
+import { registerSynapseRoutes } from '../integrations/synapse/synapse-routes.js';
 import { registerEcosystemRoutes } from '../integrations/ecosystem-routes.js';
 import { ServiceDiscoveryManager } from '../integrations/service-discovery.js';
 import { CollabManager } from '../soul/collab.js';
@@ -813,6 +814,13 @@ export class GatewayServer {
       registerTradingRoutes(this.app);
     } catch {
       // Trading routes are optional — skip on error
+    }
+
+    // Synapse LLM controller proxy routes
+    try {
+      registerSynapseRoutes(this.app, { secureYeoman: this.secureYeoman });
+    } catch {
+      // Synapse routes are optional — skip on error
     }
 
     // Diagnostic routes (Phase 39 — Channel B: sub-agent reporting + integration ping)

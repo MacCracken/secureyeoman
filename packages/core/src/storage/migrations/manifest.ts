@@ -51,6 +51,6 @@ export const MIGRATION_MANIFEST: MigrationEntry[] = [
   { id: '001_community', sql: readSql('001_community.sql'), tier: 'community' },
   { id: '002_pro', sql: readSql('002_pro.sql'), tier: 'pro' },
   { id: '003_enterprise', sql: readSql('003_enterprise.sql'), tier: 'enterprise' },
-  // Future incremental migrations go here with tier tags:
-  // { id: '011_example', sql: readSql('011_example.sql'), tier: 'pro' },
+  // Incremental migrations with tier tags:
+  { id: '008_synapse', sql: readSql('008_synapse.sql'), tier: 'enterprise' },
 ];
