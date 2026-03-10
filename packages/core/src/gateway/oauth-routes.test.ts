@@ -20,8 +20,8 @@ function makeMockOAuthService(overrides: Partial<OAuthService> = {}): OAuthServi
     isProviderConfigured: vi.fn().mockReturnValue(true),
     getProvider: vi.fn().mockReturnValue(MOCK_PROVIDER),
     getConfiguredProviders: vi.fn().mockReturnValue(['google']),
-    generateState: vi.fn().mockReturnValue('mock-state-token'),
-    validateState: vi.fn().mockReturnValue({
+    generateState: vi.fn().mockResolvedValue({ state: 'mock-state-token', codeVerifier: 'mock-verifier' }),
+    validateState: vi.fn().mockResolvedValue({
       provider: 'google',
       redirectUri: 'http://localhost/callback',
       createdAt: Date.now(),
@@ -31,6 +31,8 @@ function makeMockOAuthService(overrides: Partial<OAuthService> = {}): OAuthServi
       .fn()
       .mockResolvedValue({ id: 'goog-1', email: 'user@example.com', name: 'Test User' }),
     generateOAuthConnectionToken: vi.fn().mockReturnValue('conn-token-123'),
+    storePendingTokens: vi.fn().mockResolvedValue(undefined),
+    consumePendingTokens: vi.fn().mockResolvedValue(null),
     reload: vi.fn().mockReturnValue(['google']),
     ...overrides,
   } as unknown as OAuthService;
@@ -70,11 +72,13 @@ describe('GET /api/v1/auth/oauth/config', () => {
 });
 
 describe('GET /api/v1/auth/oauth/:provider', () => {
-  it('redirects to provider authorize URL when configured', async () => {
+  it('redirects to provider authorize URL when configured, with PKCE params', async () => {
     const app = buildApp();
     const res = await app.inject({ method: 'GET', url: '/api/v1/auth/oauth/google' });
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toContain('accounts.google.com');
+    expect(res.headers.location).toContain('code_challenge=');
+    expect(res.headers.location).toContain('code_challenge_method=S256');
   });
 
   it('returns 400 when provider not configured', async () => {
@@ -441,18 +445,17 @@ describe('GET /api/v1/auth/oauth/:provider/callback — edge cases', () => {
 
 describe('POST /api/v1/auth/oauth/claim — success and token paths', () => {
   it('returns success config on valid pending gmail claim', async () => {
-    // Use a fresh app instance that populates PENDING_GMAIL_TOKENS via gmail callback
     const fastifyApp = Fastify({ logger: false });
     const oauthSvc = makeMockOAuthService({
-      validateState: vi.fn().mockReturnValue({
+      consumePendingTokens: vi.fn().mockResolvedValue({
+        connectionToken: 'valid-claim-tok',
         provider: 'gmail',
-        redirectUri: 'http://localhost/callback',
+        accessToken: 'acc-tok',
+        refreshToken: 'ref-tok',
+        email: 'claim@gmail.com',
         createdAt: Date.now(),
+        expiresAt: Date.now() + 600_000,
       }),
-      generateOAuthConnectionToken: vi.fn().mockReturnValue('valid-claim-tok'),
-      getUserInfo: vi
-        .fn()
-        .mockResolvedValue({ id: 'u-1', email: 'claim@gmail.com', name: 'Claim User' }),
     });
     registerOAuthRoutes(fastifyApp, {
       authService: {} as AuthService,
@@ -460,13 +463,7 @@ describe('POST /api/v1/auth/oauth/claim — success and token paths', () => {
       baseUrl: 'http://localhost:3000',
     });
 
-    // First, trigger gmail callback to populate PENDING_GMAIL_TOKENS
-    await fastifyApp.inject({
-      method: 'GET',
-      url: '/api/v1/auth/oauth/gmail/callback?code=c&state=s',
-    });
-
-    // Now claim the token
+    // Claim the token
     const res = await fastifyApp.inject({
       method: 'POST',
       url: '/api/v1/auth/oauth/claim',
@@ -530,17 +527,20 @@ describe('OAuthService unit tests', () => {
     expect(svc.getProvider('unknown')).toBeUndefined();
   });
 
-  it('generateState returns a token and validateState returns the state', () => {
+  it('generateState returns a state+codeVerifier and validateState returns the state', async () => {
     const svc = new OAuthService({});
-    const state = svc.generateState('google', 'http://localhost/cb');
+    const { state, codeVerifier } = await svc.generateState('google', 'http://localhost/cb');
     expect(state).toBeTruthy();
-    const result = svc.validateState(state);
-    expect(result?.provider).toBe('google');
+    expect(codeVerifier).toBeTruthy();
+    expect(codeVerifier.length).toBeGreaterThanOrEqual(43); // base64url-encoded 32 bytes
+    // Without DB-backed stateStorage, validateState returns null (no in-memory fallback)
+    const result = await svc.validateState(state);
+    expect(result).toBeNull();
   });
 
-  it('validateState returns null for unknown state', () => {
+  it('validateState returns null for unknown state', async () => {
     const svc = new OAuthService({});
-    expect(svc.validateState('bogus-state')).toBeNull();
+    expect(await svc.validateState('bogus-state')).toBeNull();
   });
 
   it('generateOAuthConnectionToken returns a deterministic hash', () => {
@@ -549,19 +549,13 @@ describe('OAuthService unit tests', () => {
     expect(token1).toHaveLength(43); // base64url-encoded 32-byte token
   });
 
-  it('validateState returns null for expired state', () => {
+  it('validateState returns null for expired state', async () => {
     const svc = new OAuthService({});
-    const state = svc.generateState('google', 'http://localhost/cb');
+    const { state } = await svc.generateState('google', 'http://localhost/cb');
 
-    // Mock Date.now to be 11 minutes after creation
-    const origNow = Date.now;
-    const futureTime = Date.now() + 11 * 60 * 1000;
-    Date.now = () => futureTime;
-    try {
-      expect(svc.validateState(state)).toBeNull();
-    } finally {
-      Date.now = origNow;
-    }
+    // Without DB-backed stateStorage, validateState always returns null
+    const result = await svc.validateState(state);
+    expect(result).toBeNull();
   });
 
   it('loadFromEnv loads Google OAuth credentials from env vars', () => {

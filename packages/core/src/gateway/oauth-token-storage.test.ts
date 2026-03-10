@@ -9,6 +9,13 @@ vi.mock('../storage/pg-pool.js', () => ({
   getPool: () => ({ query: (...args: any[]) => mockQuery(...args) }),
 }));
 
+// Mock token encryption so we don't need a real key
+vi.mock('../security/token-encryption.js', () => ({
+  encryptToken: (v: string | null) => (v ? Buffer.from(`enc:${v}`) : null),
+  decryptToken: (v: Buffer | null) => (v ? v.toString().replace(/^enc:/, '') : null),
+  currentKeyId: () => 'v1',
+}));
+
 // ─── Test Data ────────────────────────────────────────────────
 
 const tokenRow = {
@@ -16,8 +23,11 @@ const tokenRow = {
   provider: 'google',
   email: 'user@example.com',
   user_id: 'user-1',
-  access_token: 'acc-token',
-  refresh_token: 'ref-token',
+  access_token: '[encrypted]',
+  refresh_token: '[encrypted]',
+  access_token_enc: Buffer.from('enc:acc-token'),
+  refresh_token_enc: Buffer.from('enc:ref-token'),
+  token_enc_key_id: 'v1',
   scopes: 'email profile',
   expires_at: '9999999999',
   created_at: '1000',
@@ -63,11 +73,12 @@ describe('OAuthTokenStorage', () => {
       expect(sql).toContain('INSERT INTO oauth_tokens');
       expect(sql).toContain('ON CONFLICT');
       expect(sql).toContain('RETURNING *');
+      expect(sql).toContain('access_token_enc');
     });
 
     it('uses null defaults for optional fields', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{ ...tokenRow, refresh_token: null, expires_at: null }],
+        rows: [{ ...tokenRow, refresh_token: null, refresh_token_enc: null, expires_at: null }],
         rowCount: 1,
       });
 
@@ -79,9 +90,10 @@ describe('OAuthTokenStorage', () => {
       });
 
       const params = mockQuery.mock.calls[0][1] as unknown[];
-      expect(params[5]).toBeNull(); // refreshToken
-      expect(params[6]).toBe(''); // scopes default
-      expect(params[7]).toBeNull(); // expiresAt
+      // Param 5 is now the redacted sentinel, 6 is null refreshToken sentinel
+      expect(params[5]).toBeNull(); // refreshToken sentinel (null because no refresh token)
+      expect(params[9]).toBe(''); // scopes default
+      expect(params[10]).toBeNull(); // expiresAt
       expect(result.refreshToken).toBeNull();
       expect(result.expiresAt).toBeNull();
     });
@@ -161,13 +173,13 @@ describe('OAuthTokenStorage', () => {
 
       const sql = mockQuery.mock.calls[0][0] as string;
       expect(sql).toContain('UPDATE oauth_tokens');
-      expect(sql).toContain('access_token = $1');
-      expect(sql).toContain('expires_at = $2');
+      expect(sql).toContain('access_token');
+      expect(sql).toContain('access_token_enc');
 
       const params = mockQuery.mock.calls[0][1] as unknown[];
-      expect(params[0]).toBe('new-access-token');
-      expect(params[1]).toBe(9999999);
-      expect(params[3]).toBe('tok-1');
+      expect(params[0]).toBe('[encrypted]'); // redacted sentinel
+      expect(params[3]).toBe(9999999); // expiresAt
+      expect(params[5]).toBe('tok-1'); // id
     });
   });
 
@@ -186,6 +198,24 @@ describe('OAuthTokenStorage', () => {
       mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
       const result = await storage.deleteToken('nonexistent');
       expect(result).toBe(false);
+    });
+  });
+
+  describe('backward compatibility', () => {
+    it('falls back to plaintext columns when encrypted columns are null', async () => {
+      const legacyRow = {
+        ...tokenRow,
+        access_token: 'legacy-access',
+        refresh_token: 'legacy-refresh',
+        access_token_enc: null,
+        refresh_token_enc: null,
+        token_enc_key_id: null,
+      };
+      mockQuery.mockResolvedValueOnce({ rows: [legacyRow], rowCount: 1 });
+
+      const result = await storage.getById('tok-1');
+      expect(result!.accessToken).toBe('legacy-access');
+      expect(result!.refreshToken).toBe('legacy-refresh');
     });
   });
 });

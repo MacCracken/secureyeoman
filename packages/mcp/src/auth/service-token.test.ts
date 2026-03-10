@@ -17,15 +17,13 @@ describe('mintServiceToken', () => {
     const { payload } = await jwtVerify(token, secret);
 
     expect(payload.sub).toBe('mcp-service');
-    expect(payload.role).toBe('admin');
+    expect(payload.role).toBe('service');
     expect(payload.permissions).toEqual([
       'mcp:execute',
       'mcp:read',
-      'audit:write',
       'brain:read',
       'brain:write',
       'soul:read',
-      'terminal:execute',
       'internal:read',
     ]);
     expect(payload.type).toBe('access');

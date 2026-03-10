@@ -61,24 +61,31 @@ function verifyGithub(
   secret: string | undefined,
   rawBody: string,
   sig: string | undefined
-): boolean {
-  if (!secret) return true; // Skip if not configured
-  if (!sig) return false;
+): 'ok' | 'no_secret' | 'invalid' {
+  if (!secret) return 'no_secret';
+  if (!sig) return 'invalid';
   const expected = `sha256=${hmacSha256(secret, rawBody)}`;
-  return safeCompare(expected, sig);
+  return safeCompare(expected, sig) ? 'ok' : 'invalid';
 }
 
-function verifyHmac(secret: string | undefined, rawBody: string, sig: string | undefined): boolean {
-  if (!secret) return true;
-  if (!sig) return false;
+function verifyHmac(
+  secret: string | undefined,
+  rawBody: string,
+  sig: string | undefined
+): 'ok' | 'no_secret' | 'invalid' {
+  if (!secret) return 'no_secret';
+  if (!sig) return 'invalid';
   const expected = hmacSha256(secret, rawBody);
-  return safeCompare(expected, sig);
+  return safeCompare(expected, sig) ? 'ok' : 'invalid';
 }
 
-function verifyStaticToken(expected: string | undefined, provided: string | undefined): boolean {
-  if (!expected) return true;
-  if (!provided) return false;
-  return safeCompare(expected, provided);
+function verifyStaticToken(
+  expected: string | undefined,
+  provided: string | undefined
+): 'ok' | 'no_secret' | 'invalid' {
+  if (!expected) return 'no_secret';
+  if (!provided) return 'invalid';
+  return safeCompare(expected, provided) ? 'ok' : 'invalid';
 }
 
 // ─── Normalizers ─────────────────────────────────────────────────────────────
@@ -210,7 +217,15 @@ export function registerCicdWebhookRoutes(
       try {
         if (provider === 'github') {
           const sig = request.headers['x-hub-signature-256'] as string | undefined;
-          if (!verifyGithub(webhookSecret, rawBody, sig)) {
+          const result = verifyGithub(webhookSecret, rawBody, sig);
+          if (result === 'no_secret') {
+            return sendError(
+              reply,
+              503,
+              'GitHub webhook secret not configured (SECUREYEOMAN_WEBHOOK_SECRET)'
+            );
+          }
+          if (result === 'invalid') {
             return sendError(reply, 401, 'Invalid GitHub webhook signature');
           }
           const eventHeader = (request.headers['x-github-event'] as string | undefined) ?? 'push';
@@ -218,14 +233,30 @@ export function registerCicdWebhookRoutes(
         } else if (provider === 'jenkins') {
           const jenkinsToken = process.env.JENKINS_WEBHOOK_TOKEN;
           const crumb = request.headers['x-jenkins-crumb'] as string | undefined;
-          if (!verifyStaticToken(jenkinsToken, crumb)) {
+          const result = verifyStaticToken(jenkinsToken, crumb);
+          if (result === 'no_secret') {
+            return sendError(
+              reply,
+              503,
+              'Jenkins webhook token not configured (JENKINS_WEBHOOK_TOKEN)'
+            );
+          }
+          if (result === 'invalid') {
             return sendError(reply, 401, 'Invalid Jenkins crumb token');
           }
           ciEvent = normalizeJenkins(body);
         } else if (provider === 'gitlab') {
           const gitlabToken = process.env.GITLAB_WEBHOOK_TOKEN;
           const token = request.headers['x-gitlab-token'] as string | undefined;
-          if (!verifyStaticToken(gitlabToken, token)) {
+          const result = verifyStaticToken(gitlabToken, token);
+          if (result === 'no_secret') {
+            return sendError(
+              reply,
+              503,
+              'GitLab webhook token not configured (GITLAB_WEBHOOK_TOKEN)'
+            );
+          }
+          if (result === 'invalid') {
             return sendError(reply, 401, 'Invalid GitLab webhook token');
           }
           const eventHeader =
@@ -234,7 +265,15 @@ export function registerCicdWebhookRoutes(
         } else if (provider === 'northflank') {
           const northflankSecret = getSecret('NORTHFLANK_WEBHOOK_SECRET');
           const sig = request.headers['x-northflank-signature'] as string | undefined;
-          if (!verifyHmac(northflankSecret, rawBody, sig)) {
+          const result = verifyHmac(northflankSecret, rawBody, sig);
+          if (result === 'no_secret') {
+            return sendError(
+              reply,
+              503,
+              'Northflank webhook secret not configured (NORTHFLANK_WEBHOOK_SECRET)'
+            );
+          }
+          if (result === 'invalid') {
             return sendError(reply, 401, 'Invalid Northflank webhook signature');
           }
           ciEvent = normalizeNorthflank(body);

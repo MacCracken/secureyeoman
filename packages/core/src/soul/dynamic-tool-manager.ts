@@ -16,13 +16,17 @@
  *   - Hard 10-second execution timeout via Promise.race
  *   - Optional SandboxManager wrapping for OS-level resource limits
  *
- * NOTE: Node.js `vm.runInNewContext` is NOT a fully isolated security boundary.
+ * NOTE: When `isolated-vm` is available (optional native dependency), code is
+ * executed inside a true V8 isolate with memory and CPU limits enforced at the
+ * engine level.  When it is NOT available, execution falls back to Node.js
+ * `vm.runInNewContext` which is NOT a fully isolated security boundary.
  * This feature must remain disabled by default and requires explicit operator opt-in
  * via both the global policy toggle and the per-personality CreationConfig toggle.
  */
 
 import vm from 'node:vm';
 import type { Tool } from '@secureyeoman/shared';
+import { executeIsolated, isIsolatedVmAvailable } from './isolated-executor.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { SandboxManager } from '../sandbox/manager.js';
@@ -352,20 +356,12 @@ export class DynamicToolManager {
   }
 
   /**
-   * Compile implementation code into an async callable.
+   * Build the restricted sandbox object used by both isolated-vm and vm fallback.
    *
-   * The code is wrapped in:
-   *   (async function _dynamicTool(args) { <implementation> })
-   *
-   * and run inside a vm context whose global object exposes only a curated
-   * whitelist of safe built-ins.  The function is extracted and returned for
-   * later invocation; it is NOT executed here.
+   * Deliberately omits: process, require, global, Buffer, __dirname,
+   * __filename, setImmediate, etc.
    */
-  private compile(implementation: string): CompiledFn {
-    const wrappedCode = `(async function _dynamicTool(args) {\n${implementation}\n})`;
-
-    // Build a restricted sandbox — deliberately omitting: process, require,
-    // global, Buffer, __dirname, __filename, setImmediate, etc.
+  private buildSandbox(): Record<string, unknown> {
     const sandbox = Object.create(null) as Record<string, unknown>;
     Object.assign(sandbox, {
       // JSON (safe subset)
@@ -427,7 +423,68 @@ export class DynamicToolManager {
         },
       },
     });
+    return sandbox;
+  }
 
+  /**
+   * Compile implementation code into an async callable.
+   *
+   * The code is wrapped in:
+   *   (async function _dynamicTool(args) { <implementation> })
+   *
+   * When `isolated-vm` is available, the returned function will execute the
+   * code inside a fresh V8 isolate on each invocation (true security boundary).
+   * Otherwise, the code is compiled in a `node:vm` context (defence-in-depth
+   * only, not a security boundary — prototype chain escapes are possible).
+   */
+  private compile(implementation: string): CompiledFn {
+    const wrappedCode = `(async function _dynamicTool(args) {\n${implementation}\n})`;
+
+    // Validate syntax eagerly regardless of execution backend.  This catches
+    // syntax errors at registration time rather than deferring them to the
+    // first invocation.
+    try {
+      new vm.Script(wrappedCode, { filename: 'dynamic-tool-syntax-check' });
+    } catch (err) {
+      throw new Error(`Syntax error in dynamic tool implementation: ${errorToString(err)}`);
+    }
+
+    if (isIsolatedVmAvailable()) {
+      this.deps.logger.debug('Compiling dynamic tool with isolated-vm (V8 isolate)');
+
+      // With isolated-vm the code is compiled + executed per-call inside a
+      // disposable isolate, so we return a thin wrapper here.
+      //
+      // The V8 isolate already has all standard built-ins (Math, JSON, Array,
+      // Date, etc.) available natively — we only need to inject the `args`
+      // object.  Function-valued sandbox entries (console, custom Object
+      // methods) cannot be serialised into the isolate, but the isolate's
+      // own globals are a safe, locked-down superset of our whitelist.
+      return async (args: Record<string, unknown>) => {
+        // Wrap the result in JSON.stringify so that complex return values
+        // (objects, arrays) are serialised to a transferable string, then
+        // parse it back on the host side.  We use an async IIFE wrapper so
+        // that `await` inside the tool implementation works correctly.
+        const callCode = `(async () => JSON.stringify(await (${wrappedCode})(args)))()`;
+        const sandbox: Record<string, unknown> = { args };
+        const raw = await executeIsolated(callCode, sandbox, this.executionTimeoutMs);
+        if (typeof raw === 'string') {
+          try {
+            return JSON.parse(raw);
+          } catch {
+            return raw;
+          }
+        }
+        return raw;
+      };
+    }
+
+    // ── Fallback: node:vm (NOT a security boundary) ───────────────────────
+    this.deps.logger.debug(
+      'Compiling dynamic tool with node:vm (fallback — not a security boundary)'
+    );
+
+    const sandbox = this.buildSandbox();
     const context = vm.createContext(sandbox);
 
     // Block prototype chain escapes (e.g., this.constructor.constructor('return process')())

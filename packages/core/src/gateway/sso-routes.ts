@@ -16,6 +16,7 @@ import type { SsoStorage } from '../security/sso-storage.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { licenseGuard } from '../licensing/license-guard.js';
+import { randomBytes } from 'node:crypto';
 
 export interface SsoRoutesOptions {
   ssoManager: SsoManager;
@@ -103,7 +104,14 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         } else {
           target = new URL(dashboardUrl);
         }
-        target.hash = `access_token=${result.accessToken}&refresh_token=${result.refreshToken}&expires_in=${result.expiresIn}`;
+        // Generate a short-lived auth code instead of putting tokens in the fragment
+        const authCode = randomBytes(32).toString('hex');
+        await ssoStorage.createAuthCode(authCode, {
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresIn: result.expiresIn,
+        });
+        target.searchParams.set('sso_code', authCode);
         return reply.redirect(target.toString());
       } catch (err) {
         const errUrl = new URL(dashboardUrl);
@@ -239,13 +247,36 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         } else {
           target = new URL(dashboardUrl);
         }
-        target.hash = `access_token=${result.accessToken}&refresh_token=${result.refreshToken}&expires_in=${result.expiresIn}`;
+        const authCode = randomBytes(32).toString('hex');
+        await ssoStorage.createAuthCode(authCode, {
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresIn: result.expiresIn,
+        });
+        target.searchParams.set('sso_code', authCode);
         return reply.redirect(target.toString());
       } catch (err) {
         const errUrl = new URL(dashboardUrl);
         errUrl.searchParams.set('sso_error', toErrorMessage(err));
         return reply.redirect(errUrl.toString());
       }
+    }
+  );
+
+  // ── Exchange SSO auth code for tokens (public) ─────────────────────
+  app.post(
+    '/api/v1/auth/sso/exchange',
+    { config: { skipAuth: true } } as Record<string, unknown>,
+    async (request: FastifyRequest<{ Body: { code: string } }>, reply: FastifyReply) => {
+      const { code } = request.body ?? ({} as any);
+      if (!code) {
+        return sendError(reply, 400, 'Authorization code is required');
+      }
+      const tokens = await ssoStorage.consumeAuthCode(code);
+      if (!tokens) {
+        return sendError(reply, 401, 'Invalid or expired authorization code');
+      }
+      return tokens;
     }
   );
 }

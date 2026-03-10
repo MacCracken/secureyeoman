@@ -94,11 +94,12 @@ export const Role = {
   OPERATOR: 'operator',
   AUDITOR: 'auditor',
   VIEWER: 'viewer',
+  SERVICE: 'service',
 } as const;
 
 export type Role = (typeof Role)[keyof typeof Role];
 
-export const RoleSchema = z.enum(['admin', 'operator', 'auditor', 'viewer']);
+export const RoleSchema = z.enum(['admin', 'operator', 'auditor', 'viewer', 'service']);
 
 // Permission definition
 export const PermissionSchema = z.object({

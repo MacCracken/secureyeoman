@@ -32,6 +32,10 @@ function makeMockStorage(overrides?: Partial<SsoStorage>): SsoStorage {
     createIdentityProvider: vi.fn().mockResolvedValue(PROVIDER),
     updateIdentityProvider: vi.fn().mockResolvedValue(PROVIDER),
     deleteIdentityProvider: vi.fn().mockResolvedValue(true),
+    createAuthCode: vi.fn().mockResolvedValue(undefined),
+    consumeAuthCode: vi
+      .fn()
+      .mockResolvedValue({ accessToken: 'tok-a', refreshToken: 'tok-r', expiresIn: 3600 }),
     ...overrides,
   } as unknown as SsoStorage;
 }
@@ -165,7 +169,7 @@ describe('SSO Routes — authorization flow', () => {
 
   // ── Callback route ───────────────────────────────────────────────
 
-  it('GET /api/v1/auth/sso/callback/:id redirects to dashboard with tokens', async () => {
+  it('GET /api/v1/auth/sso/callback/:id redirects to dashboard with auth code (not tokens)', async () => {
     const app = buildApp();
     const res = await app.inject({
       method: 'GET',
@@ -173,7 +177,10 @@ describe('SSO Routes — authorization flow', () => {
       headers: { host: 'localhost' },
     });
     expect(res.statusCode).toBe(302);
-    expect(res.headers.location).toContain('access_token=tok-a');
+    expect(res.headers.location).toContain('sso_code=');
+    // Tokens must NOT appear in the URL
+    expect(res.headers.location).not.toContain('access_token=');
+    expect(res.headers.location).not.toContain('refresh_token=');
   });
 
   it('GET /api/v1/auth/sso/callback/:id redirects to dashboard with error on failure', async () => {
@@ -330,5 +337,40 @@ describe('SSO Routes — provider management (admin)', () => {
     const a = buildApp({ deleteIdentityProvider: vi.fn().mockResolvedValue(false) });
     const res = await a.inject({ method: 'DELETE', url: '/api/v1/auth/sso/providers/missing' });
     expect(res.statusCode).toBe(404);
+  });
+});
+
+describe('SSO Routes — auth code exchange', () => {
+  it('POST /api/v1/auth/sso/exchange returns tokens for valid code', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/sso/exchange',
+      payload: { code: 'valid-code' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().accessToken).toBe('tok-a');
+    expect(res.json().refreshToken).toBe('tok-r');
+    expect(res.json().expiresIn).toBe(3600);
+  });
+
+  it('POST /api/v1/auth/sso/exchange returns 401 for invalid code', async () => {
+    const app = buildApp({ consumeAuthCode: vi.fn().mockResolvedValue(null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/sso/exchange',
+      payload: { code: 'bad-code' },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('POST /api/v1/auth/sso/exchange returns 400 when code is missing', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/sso/exchange',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(400);
   });
 });

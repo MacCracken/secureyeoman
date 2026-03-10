@@ -42,9 +42,9 @@ describe('ServiceDiscoveryManager', () => {
   });
 
   describe('getServices', () => {
-    it('returns both services in disconnected state initially', () => {
+    it('returns all services in disconnected state initially', () => {
       const services = manager.getServices();
-      expect(services).toHaveLength(2);
+      expect(services).toHaveLength(3);
 
       const agnostic = services.find((s) => s.id === 'agnostic');
       expect(agnostic).toBeDefined();
@@ -59,6 +59,13 @@ describe('ServiceDiscoveryManager', () => {
       expect(agnos!.enabled).toBe(false);
       expect(agnos!.displayName).toBe('AGNOS Runtime');
       expect(agnos!.requiredSecrets).toEqual(['AGNOS_GATEWAY_API_KEY', 'AGNOS_RUNTIME_API_KEY']);
+
+      const synapse = services.find((s) => s.id === 'synapse');
+      expect(synapse).toBeDefined();
+      expect(synapse!.status).toBe('disconnected');
+      expect(synapse!.enabled).toBe(false);
+      expect(synapse!.displayName).toBe('Synapse LLM Controller');
+      expect(synapse!.requiredSecrets).toEqual([]);
     });
   });
 

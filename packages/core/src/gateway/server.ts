@@ -10,6 +10,7 @@
  * - Input validation on all parameters
  */
 
+import { randomBytes } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { hostname as osHostname } from 'node:os';
 import { getPool } from '../storage/pg-pool.js';
@@ -305,7 +306,11 @@ export class GatewayServer {
     });
 
     // Security headers
-    this.app.addHook('onRequest', async (_request, reply) => {
+    this.app.addHook('onRequest', async (request, reply) => {
+      // Generate a unique nonce per request for CSP
+      const nonce = randomBytes(16).toString('base64');
+      (request as any).cspNonce = nonce;
+
       reply.header('X-Content-Type-Options', 'nosniff');
       reply.header('X-Frame-Options', 'DENY');
       // X-XSS-Protection: 0 intentionally disables the legacy browser XSS auditor.
@@ -316,15 +321,15 @@ export class GatewayServer {
       reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
       // Content-Security-Policy — defence-in-depth against XSS.
-      // SECURITY(121): Replace with nonce-based CSP when Vite build supports it
-      // 'unsafe-inline' is required for Vite-built React (inline event handlers and styles).
-      // script-src 'self' still prevents loading external scripts from untrusted origins.
+      // Per-request nonce + 'strict-dynamic' replaces 'unsafe-inline' for script-src.
+      // 'strict-dynamic' allows dynamically loaded Vite chunks (import()) to execute.
+      // style-src retains 'unsafe-inline' — CSS-in-JS and Tailwind inject inline styles.
       // connect-src includes ws:/wss: for WebSocket subscriptions.
       reply.header(
         'Content-Security-Policy',
         [
           "default-src 'self'",
-          "script-src 'self' 'unsafe-inline'",
+          `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
           "style-src 'self' 'unsafe-inline'",
           "img-src 'self' data: blob:",
           "font-src 'self' data:",
@@ -3182,15 +3187,23 @@ export class GatewayServer {
     // SPA static serving (must be last — any non-API route falls through to index.html)
     const distPath = this.resolveDashboardDist();
     if (distPath) {
+      // Pre-read the SPA shell as a template so we can inject per-request CSP nonces
+      // into script tags before serving.
+      const indexHtmlTemplate = readFileSync(join(distPath, 'index.html'), 'utf-8');
+
+      // Intercept root path to inject nonce into index.html (before @fastify/static)
+      this.app.get('/', async (request, reply) => {
+        const nonce = (request as any).cspNonce ?? '';
+        const html = indexHtmlTemplate.replace(/<script/g, `<script nonce="${nonce}"`);
+        return reply.type('text/html').send(html);
+      });
+
       // decorateReply must remain true (the default) so reply.sendFile() is available
       // inside the setNotFoundHandler below.
       void this.app.register(fastifyStatic, {
         root: distPath,
         prefix: '/',
       });
-      // Pre-read the SPA shell so we can serve it from setNotFoundHandler without
-      // depending on reply.sendFile() which is unreliable inside a callNotFound context.
-      const indexHtml = readFileSync(join(distPath, 'index.html'), 'utf-8');
 
       // SPA fallback: serve index.html for SPA routes; JSON 404 for everything else.
       this.app.setNotFoundHandler((_request, reply) => {
@@ -3206,8 +3219,10 @@ export class GatewayServer {
         if (/\.[^/]+$/.test(pathname)) {
           return sendError(reply, 404, 'Not found');
         }
-        // All other routes are SPA routes — serve the app shell
-        return reply.type('text/html').send(indexHtml);
+        // Inject CSP nonce into script tags
+        const nonce = (_request as any).cspNonce ?? '';
+        const html = indexHtmlTemplate.replace(/<script/g, `<script nonce="${nonce}"`);
+        return reply.type('text/html').send(html);
       });
       this.getLogger().info({ distPath }, 'Dashboard SPA serving enabled');
     }

@@ -21,15 +21,13 @@ export async function mintServiceToken(tokenSecret: string): Promise<string> {
 
   return new SignJWT({
     sub: 'mcp-service',
-    role: 'admin',
+    role: 'service',
     permissions: [
       'mcp:execute',
       'mcp:read',
-      'audit:write',
       'brain:read',
       'brain:write',
       'soul:read',
-      'terminal:execute',
       'internal:read',
     ],
     type: 'access',

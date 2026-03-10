@@ -53,4 +53,7 @@ export const MIGRATION_MANIFEST: MigrationEntry[] = [
   { id: '003_enterprise', sql: readSql('003_enterprise.sql'), tier: 'enterprise' },
   // Incremental migrations with tier tags:
   { id: '008_synapse', sql: readSql('008_synapse.sql'), tier: 'enterprise' },
+  { id: '009_security_hardening', sql: readSql('009_security_hardening.sql'), tier: 'community' },
+  { id: '010_encrypt_idp_secrets', sql: readSql('010_encrypt_idp_secrets.sql'), tier: 'community' },
+  { id: '011_sso_auth_codes', sql: readSql('011_sso_auth_codes.sql'), tier: 'community' },
 ];

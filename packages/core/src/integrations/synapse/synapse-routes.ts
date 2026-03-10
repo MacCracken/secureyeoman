@@ -21,7 +21,7 @@ async function synapseFetch(path: string, opts?: RequestInit): Promise<Response>
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      ...opts?.headers,
+      ...(opts?.headers as Record<string, string> | undefined),
     },
     signal: opts?.signal ?? AbortSignal.timeout(30_000),
   });
@@ -33,7 +33,10 @@ async function synapseFetch(path: string, opts?: RequestInit): Promise<Response>
 async function relaySSE(reply: FastifyReply, path: string, opts?: RequestInit): Promise<void> {
   const res = await synapseFetch(path, {
     ...opts,
-    headers: { ...opts?.headers, Accept: 'text/event-stream' },
+    headers: {
+      ...(opts?.headers as Record<string, string> | undefined),
+      Accept: 'text/event-stream',
+    },
   });
 
   if (!res.ok) {
@@ -85,7 +88,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
   app.get(
     '/api/v1/synapse/status',
-    featureGuardOpts as Record<string, unknown>,
+    featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
         const res = await synapseFetch('/api/v1/status');
@@ -105,7 +108,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
   app.get(
     '/api/v1/synapse/models',
-    featureGuardOpts as Record<string, unknown>,
+    featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
         const res = await synapseFetch('/api/v1/models');
@@ -125,7 +128,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
   app.post(
     '/api/v1/synapse/models/pull',
-    featureGuardOpts as Record<string, unknown>,
+    featureGuardOpts,
     async (
       req: FastifyRequest<{ Body: { modelName: string; quant?: string } }>,
       reply: FastifyReply
@@ -152,7 +155,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
   app.post(
     '/api/v1/synapse/inference',
-    featureGuardOpts as Record<string, unknown>,
+    featureGuardOpts,
     async (
       req: FastifyRequest<{
         Body: { model: string; prompt: string; maxTokens?: number };
@@ -187,7 +190,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
   app.post(
     '/api/v1/synapse/inference/stream',
-    featureGuardOpts as Record<string, unknown>,
+    featureGuardOpts,
     async (
       req: FastifyRequest<{
         Body: { model: string; prompt: string; maxTokens?: number };
@@ -218,7 +221,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
   app.post(
     '/api/v1/synapse/training/jobs',
-    featureGuardOpts as Record<string, unknown>,
+    featureGuardOpts,
     async (
       req: FastifyRequest<{
         Body: {
@@ -264,7 +267,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
   app.get(
     '/api/v1/synapse/training/jobs',
-    featureGuardOpts as Record<string, unknown>,
+    featureGuardOpts,
     async (
       req: FastifyRequest<{ Querystring: { status?: string; limit?: string; offset?: string } }>,
       reply: FastifyReply
@@ -297,7 +300,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
   app.get(
     '/api/v1/synapse/training/jobs/:id',
-    featureGuardOpts as Record<string, unknown>,
+    featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const { id } = req.params;
@@ -320,7 +323,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
   app.get(
     '/api/v1/synapse/training/jobs/:id/logs',
-    featureGuardOpts as Record<string, unknown>,
+    featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const { id } = req.params;
@@ -339,7 +342,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
   app.post(
     '/api/v1/synapse/training/jobs/:id/cancel',
-    featureGuardOpts as Record<string, unknown>,
+    featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const { id } = req.params;

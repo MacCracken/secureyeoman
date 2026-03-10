@@ -115,13 +115,15 @@ if [ "$_use_embedded_pg" = "true" ]; then
     chmod 600 "$_pg_pw_file"
   fi
 
+  # Clean stale PID file from previous container crash/restart
+  rm -f /var/lib/postgresql/data/postmaster.pid
+
   # Start postgres temporarily to create user/database
   gosu postgres pg_ctl -D /var/lib/postgresql/data -l /tmp/pg_init.log start -w -t 30
 
   # Create user and database if they don't exist
-  # Use psql variable binding to avoid shell interpolation of the password
   gosu postgres psql -U postgres -tc "SELECT 1 FROM pg_roles WHERE rolname = '$DATABASE_USER'" | grep -q 1 || \
-    gosu postgres psql -U postgres -v pw="$_pg_pass" -c "CREATE ROLE \"$DATABASE_USER\" WITH LOGIN PASSWORD :'pw'"
+    gosu postgres psql -U postgres -c "CREATE ROLE \"$DATABASE_USER\" WITH LOGIN PASSWORD '$(printf '%s' "$_pg_pass" | sed "s/'/''/g")'"
   gosu postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'" | grep -q 1 || \
     gosu postgres psql -U postgres -c "CREATE DATABASE \"$DATABASE_NAME\" OWNER \"$DATABASE_USER\" ENCODING 'UTF8' TEMPLATE template0"
 
@@ -130,13 +132,10 @@ if [ "$_use_embedded_pg" = "true" ]; then
   gosu postgres psql -U postgres -d "$DATABASE_NAME" -c "GRANT ALL ON SCHEMA public TO \"$DATABASE_USER\""
   gosu postgres psql -U postgres -d "$DATABASE_NAME" -c "ALTER DATABASE \"$DATABASE_NAME\" OWNER TO \"$DATABASE_USER\""
   gosu postgres psql -U postgres -d "$DATABASE_NAME" -c "GRANT CREATE ON DATABASE \"$DATABASE_NAME\" TO \"$DATABASE_USER\""
-  # Make secureyeoman a superuser for extension management during migrations
+  # Make secureyeoman a superuser for extension management during migrations.
+  # Embedded PG is only accessible from localhost — SUPERUSER is safe here.
+  # Migrations (run by SY on startup) need it for CREATE EXTENSION, ALTER EXTENSION, etc.
   gosu postgres psql -U postgres -c "ALTER ROLE \"$DATABASE_USER\" WITH SUPERUSER"
-
-  # Run migrations while we have superuser privileges (supervisord starts the app later)
-  # After migrations complete, revoke superuser — least-privilege principle
-  gosu postgres psql -U postgres -c "ALTER ROLE \"$DATABASE_USER\" WITH NOSUPERUSER"
-  echo "[entrypoint] Revoked SUPERUSER from $DATABASE_USER after migration setup"
 
   # Stop — supervisord will manage it from here
   gosu postgres pg_ctl -D /var/lib/postgresql/data stop -w -t 10

@@ -5,7 +5,7 @@
  * SecureYeoman instance.
  */
 
-import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
+import { SignJWT, jwtVerify, type JWTPayload, type JWTVerifyOptions } from 'jose';
 import {
   sha256,
   secureCompare,
@@ -76,6 +76,10 @@ export interface AuthServiceConfig {
    *  scrypt format `scrypt:<base64-salt>:<base64-hash>`. Legacy hashes
    *  are auto-upgraded to scrypt on successful login. */
   adminPassword: string;
+  /** JWT issuer claim (default: 'secureyeoman') */
+  jwtIssuer?: string;
+  /** JWT audience claim (default: 'secureyeoman-api') */
+  jwtAudience?: string;
 }
 
 export interface AuthServiceDeps {
@@ -90,11 +94,18 @@ export interface AuthServiceDeps {
 
 const ADMIN_USER_ID = 'admin';
 const API_KEY_PREFIX = 'sck_';
+const JWT_ISSUER_DEFAULT = 'secureyeoman';
+const JWT_AUDIENCE_DEFAULT = 'secureyeoman-api';
 
 function buildPermissionStrings(role: Role, rbac: RBAC): string[] {
   const roleDef = rbac.getRole(role);
   if (!roleDef) return [];
   return roleDef.permissions.map((p) => `${p.resource}:${p.actions.join(',')}`);
+}
+
+/** Hash a recovery code for storage (SHA-256). */
+function hashRecoveryCode(code: string): string {
+  return sha256(code);
 }
 
 // ── Service ──────────────────────────────────────────────────────────
@@ -104,13 +115,15 @@ export class AuthService {
   private previousSecret: Uint8Array | null = null;
   private readonly config: AuthServiceConfig;
   private readonly deps: AuthServiceDeps;
+  private readonly jwtIssuer: string;
+  private readonly jwtAudience: string;
 
   // Auth stats
   private authAttemptsTotal = 0;
   private authSuccessTotal = 0;
   private authFailuresTotal = 0;
 
-  // 2FA state
+  // 2FA state (in-memory cache — authoritative source is DB when available)
   private twoFactorSecret: string | null = null;
   private twoFactorEnabled = false;
   private recoveryCodes = new Set<string>();
@@ -120,6 +133,8 @@ export class AuthService {
     this.config = config;
     this.secret = new TextEncoder().encode(config.tokenSecret);
     this.deps = deps;
+    this.jwtIssuer = config.jwtIssuer ?? JWT_ISSUER_DEFAULT;
+    this.jwtAudience = config.jwtAudience ?? JWT_AUDIENCE_DEFAULT;
   }
 
   /**
@@ -525,7 +540,10 @@ export class AuthService {
     this.twoFactorSecret = this.pendingTwoFactorSecret;
     this.twoFactorEnabled = true;
     this.pendingTwoFactorSecret = null;
-    this.recoveryCodes = new Set(recoveryCodes ?? []);
+
+    // Store recovery codes as SHA-256 hashes
+    const rawCodes = recoveryCodes ?? [];
+    this.recoveryCodes = new Set(rawCodes.map(hashRecoveryCode));
 
     await this.audit('auth_success', '2FA enabled', {
       userId: ADMIN_USER_ID,
@@ -534,9 +552,19 @@ export class AuthService {
     return true;
   }
 
-  async verifyTwoFactorCode(code: string): Promise<LoginResult> {
+  async verifyTwoFactorCode(code: string, ip?: string): Promise<LoginResult> {
     if (!this.twoFactorEnabled || !this.twoFactorSecret) {
       throw new AuthError('2FA is not enabled', 400);
+    }
+
+    // Rate-limit 2FA verification attempts (max 5 per 15 minutes per IP)
+    if (ip) {
+      const rl = await this.deps.rateLimiter.check('2fa_verify', ip, { ipAddress: ip });
+      if (!rl.allowed) {
+        this.authFailuresTotal++;
+        await this.audit('auth_failure', '2FA rate limit exceeded', { ip, userId: ADMIN_USER_ID });
+        throw new AuthError('Too many 2FA attempts. Try again later.', 429);
+      }
     }
 
     // Check TOTP code
@@ -544,9 +572,10 @@ export class AuthService {
       return this.issueTokens(false);
     }
 
-    // Check recovery codes
-    if (this.recoveryCodes.has(code)) {
-      this.recoveryCodes.delete(code);
+    // Check recovery codes (compare hashed)
+    const codeHash = hashRecoveryCode(code);
+    if (this.recoveryCodes.has(codeHash)) {
+      this.recoveryCodes.delete(codeHash);
       await this.audit('auth_success', '2FA recovery code used', {
         userId: ADMIN_USER_ID,
         remainingRecoveryCodes: this.recoveryCodes.size,
@@ -577,8 +606,9 @@ export class AuthService {
     const accessJti = uuidv7();
     const refreshJti = uuidv7();
 
-    const REMEMBER_ME_ACCESS_SECONDS = 30 * 86400;
-    const REMEMBER_ME_REFRESH_SECONDS = 60 * 86400;
+    // rememberMe extends refresh token only — access tokens stay short-lived
+    const REMEMBER_ME_ACCESS_SECONDS = 3600; // 1 hour (was 30 days — excessive)
+    const REMEMBER_ME_REFRESH_SECONDS = 30 * 86400; // 30 days (was 60)
 
     const accessExpiry = rememberMe ? REMEMBER_ME_ACCESS_SECONDS : this.config.tokenExpirySeconds;
     const refreshExpiry = rememberMe
@@ -621,29 +651,54 @@ export class AuthService {
     return new SignJWT(claims)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
+      .setIssuer(this.jwtIssuer)
+      .setAudience(this.jwtAudience)
       .setExpirationTime(`${expirySeconds}s`)
       .sign(this.secret);
   }
 
   private async verifyTokenRaw(token: string): Promise<JWTPayload & Record<string, unknown>> {
+    const verifyOpts: JWTVerifyOptions = {
+      algorithms: ['HS256'],
+      issuer: this.jwtIssuer,
+      audience: this.jwtAudience,
+    };
+
     // Try current secret first
     try {
-      const { payload } = await jwtVerify(token, this.secret, {
-        algorithms: ['HS256'],
-      });
+      const { payload } = await jwtVerify(token, this.secret, verifyOpts);
       return payload as JWTPayload & Record<string, unknown>;
-    } catch {
+    } catch (err) {
       // Fall back to previous secret during grace period
       if (this.previousSecret) {
         try {
-          const { payload } = await jwtVerify(token, this.previousSecret, {
-            algorithms: ['HS256'],
-          });
+          const { payload } = await jwtVerify(token, this.previousSecret, verifyOpts);
           return payload as JWTPayload & Record<string, unknown>;
         } catch {
           // Both keys failed
         }
       }
+
+      // For backward compatibility: try without iss/aud validation for pre-migration tokens
+      try {
+        const { payload } = await jwtVerify(token, this.secret, {
+          algorithms: ['HS256'],
+        });
+        return payload as JWTPayload & Record<string, unknown>;
+      } catch {
+        // Also try previous secret without iss/aud
+        if (this.previousSecret) {
+          try {
+            const { payload } = await jwtVerify(token, this.previousSecret, {
+              algorithms: ['HS256'],
+            });
+            return payload as JWTPayload & Record<string, unknown>;
+          } catch {
+            // All attempts failed
+          }
+        }
+      }
+
       throw new AuthError('Invalid or expired token', 401);
     }
   }

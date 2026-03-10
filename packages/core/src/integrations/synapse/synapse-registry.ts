@@ -9,7 +9,7 @@ import type { SecureLogger } from '../../logging/logger.js';
 import type { SynapseInstance, SynapseHeartbeat } from './types.js';
 
 export class SynapseRegistry {
-  private readonly instances: Map<string, SynapseInstance> = new Map();
+  private readonly instances = new Map<string, SynapseInstance>();
   private readonly logger: SecureLogger;
 
   constructor(logger: SecureLogger) {

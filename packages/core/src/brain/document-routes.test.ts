@@ -137,6 +137,10 @@ async function buildApp(
   opts?: { brainStorage?: BrainStorage; broadcast?: (channel: string, payload: unknown) => void }
 ) {
   const app = Fastify({ logger: false });
+  // Inject admin authUser so ownership guard passes in tests
+  app.addHook('onRequest', async (request) => {
+    (request as any).authUser = { userId: 'test-user', role: 'admin', permissions: [] };
+  });
   await app.register(fastifyMultipart);
   registerDocumentRoutes(app, {
     documentManager: makeMockDocManager(docManager),

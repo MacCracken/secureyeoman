@@ -15,6 +15,7 @@ import type { CognitiveMemoryStorage } from './cognitive-memory-store.js';
 import type { MemoryType, MemoryQuery, KnowledgeQuery } from './types.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import { canAccessResource } from '../gateway/ownership-guard.js';
 
 export interface BrainRoutesOptions {
   brainManager: BrainManager;
@@ -146,6 +147,9 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/memories/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
+        const memory = await brainManager.getMemory(request.params.id);
+        if (!memory) return sendError(reply, 404, 'Memory not found');
+        if (!canAccessResource(request, memory)) return sendError(reply, 403, 'Access denied');
         await brainManager.forget(request.params.id);
         return reply.code(204).send();
       } catch (err) {
@@ -218,6 +222,9 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       reply: FastifyReply
     ) => {
       try {
+        const existing = await brainManager.getKnowledge(request.params.id);
+        if (!existing) return sendError(reply, 404, 'Knowledge entry not found');
+        if (!canAccessResource(request, existing)) return sendError(reply, 403, 'Access denied');
         const { content, confidence } = request.body;
         const knowledge = await brainManager.updateKnowledge(request.params.id, {
           content,
@@ -234,6 +241,9 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/knowledge/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
+        const existing = await brainManager.getKnowledge(request.params.id);
+        if (!existing) return sendError(reply, 404, 'Knowledge entry not found');
+        if (!canAccessResource(request, existing)) return sendError(reply, 403, 'Access denied');
         await brainManager.deleteKnowledge(request.params.id);
         return reply.code(204).send();
       } catch (err) {
@@ -675,6 +685,9 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     }
   );
 
+  // TODO: IDOR — associations don't have a direct owner field. A full ownership
+  // check would require resolving itemId to the underlying memory/knowledge entry
+  // and verifying ownership on that. Skipped for now; tracked separately.
   app.get(
     '/api/v1/brain/associations/:itemId',
     async (

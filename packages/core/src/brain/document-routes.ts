@@ -13,6 +13,7 @@ import type { ProvenanceScores } from '@secureyeoman/shared';
 import { ProvenanceScoresSchema } from '@secureyeoman/shared';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { licenseGuard } from '../licensing/license-guard.js';
+import { canAccessResource } from '../gateway/ownership-guard.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
 export interface DocumentRoutesOptions {
@@ -249,6 +250,7 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const doc = await documentManager.getDocument(request.params.id);
       if (!doc) return sendError(reply, 404, 'Document not found');
+      if (!canAccessResource(request, doc)) return sendError(reply, 403, 'Access denied');
       return { document: doc };
     }
   );
@@ -259,6 +261,7 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const doc = await documentManager.getDocument(request.params.id);
       if (!doc) return sendError(reply, 404, 'Document not found');
+      if (!canAccessResource(request, doc)) return sendError(reply, 403, 'Access denied');
       await documentManager.deleteDocument(request.params.id);
       return reply.code(204).send();
     }
@@ -284,11 +287,10 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
   app.get(
     '/api/v1/brain/documents/:id/provenance',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const doc = await documentManager.getDocument(request.params.id);
+      if (!doc) return sendError(reply, 404, 'Document not found');
+      if (!canAccessResource(request, doc)) return sendError(reply, 403, 'Access denied');
       const prov = await documentManager.getDocumentProvenance(request.params.id);
-      if (prov.sourceQuality === null && prov.trustScore === 0.5) {
-        const doc = await documentManager.getDocument(request.params.id);
-        if (!doc) return sendError(reply, 404, 'Document not found');
-      }
       return prov;
     }
   );
@@ -305,6 +307,7 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
     ) => {
       const doc = await documentManager.getDocument(request.params.id);
       if (!doc) return sendError(reply, 404, 'Document not found');
+      if (!canAccessResource(request, doc)) return sendError(reply, 403, 'Access denied');
 
       const parsed = ProvenanceScoresSchema.safeParse(request.body?.scores);
       if (!parsed.success) {

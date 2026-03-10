@@ -5,6 +5,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { encryptToken, decryptToken, currentKeyId } from './token-encryption.js';
 
 // ── Identity provider ────────────────────────────────────────────────
 
@@ -47,6 +48,8 @@ interface IdpRow {
   config: Record<string, unknown>;
   created_at: number;
   updated_at: number;
+  client_secret_enc: Buffer | null;
+  secret_enc_key_id: string | null;
 }
 
 function idpFromRow(r: IdpRow): IdentityProvider {
@@ -56,7 +59,7 @@ function idpFromRow(r: IdpRow): IdentityProvider {
     type: r.type as 'oidc' | 'saml',
     issuerUrl: r.issuer_url,
     clientId: r.client_id,
-    clientSecret: r.client_secret,
+    clientSecret: r.client_secret_enc ? decryptToken(r.client_secret_enc) : r.client_secret,
     scopes: r.scopes,
     metadataUrl: r.metadata_url,
     entityId: r.entity_id,
@@ -124,18 +127,20 @@ export class SsoStorage extends PgBaseStorage {
   async createIdentityProvider(data: IdentityProviderCreate): Promise<IdentityProvider> {
     const now = Date.now();
     const id = uuidv7();
+    const encSecret = encryptToken(data.clientSecret);
     await this.execute(
       `INSERT INTO auth.identity_providers
          (id, name, type, issuer_url, client_id, client_secret, scopes,
-          metadata_url, entity_id, acs_url, enabled, auto_provision, default_role, config, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16)`,
+          metadata_url, entity_id, acs_url, enabled, auto_provision, default_role, config, created_at, updated_at,
+          client_secret_enc, secret_enc_key_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16,$17,$18)`,
       [
         id,
         data.name,
         data.type,
         data.issuerUrl,
         data.clientId,
-        data.clientSecret,
+        encSecret ? '[encrypted]' : data.clientSecret,
         data.scopes ?? 'openid email profile',
         data.metadataUrl,
         data.entityId,
@@ -146,6 +151,8 @@ export class SsoStorage extends PgBaseStorage {
         JSON.stringify(data.config ?? {}),
         now,
         now,
+        encSecret,
+        encSecret ? currentKeyId() : null,
       ]
     );
     return {
@@ -185,7 +192,6 @@ export class SsoStorage extends PgBaseStorage {
       ['type', 'type'],
       ['issuerUrl', 'issuer_url'],
       ['clientId', 'client_id'],
-      ['clientSecret', 'client_secret'],
       ['scopes', 'scopes'],
       ['metadataUrl', 'metadata_url'],
       ['entityId', 'entity_id'],
@@ -199,6 +205,15 @@ export class SsoStorage extends PgBaseStorage {
         updates.push(`${col} = $${idx++}`);
         values.push(data[key]);
       }
+    }
+    if (data.clientSecret !== undefined) {
+      const encSecret = encryptToken(data.clientSecret);
+      updates.push(`client_secret = $${idx++}`);
+      values.push(encSecret ? '[encrypted]' : data.clientSecret);
+      updates.push(`client_secret_enc = $${idx++}`);
+      values.push(encSecret);
+      updates.push(`secret_enc_key_id = $${idx++}`);
+      values.push(encSecret ? currentKeyId() : null);
     }
     if (data.config !== undefined) {
       updates.push(`config = $${idx++}::jsonb`);
@@ -331,6 +346,46 @@ export class SsoStorage extends PgBaseStorage {
 
   async cleanupExpiredSsoState(): Promise<void> {
     await this.execute('DELETE FROM auth.sso_state WHERE expires_at < $1', [Date.now()]);
+  }
+
+  // ─── SSO Auth Codes ────────────────────────────────────────────
+
+  /** Store a short-lived authorization code that maps to SSO tokens. */
+  async createAuthCode(
+    code: string,
+    tokens: { accessToken: string; refreshToken: string; expiresIn: number }
+  ): Promise<void> {
+    const now = Date.now();
+    await this.execute(
+      `INSERT INTO auth.sso_auth_codes (code, access_token, refresh_token, expires_in, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [code, tokens.accessToken, tokens.refreshToken, tokens.expiresIn, now, now + 60_000]
+    );
+  }
+
+  /** Consume an authorization code atomically — returns tokens or null if expired/missing. */
+  async consumeAuthCode(
+    code: string
+  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number } | null> {
+    const row = await this.queryOne<{
+      access_token: string;
+      refresh_token: string;
+      expires_in: number;
+    }>(
+      'DELETE FROM auth.sso_auth_codes WHERE code = $1 AND expires_at > $2 RETURNING access_token, refresh_token, expires_in',
+      [code, Date.now()]
+    );
+    if (!row) return null;
+    return {
+      accessToken: row.access_token,
+      refreshToken: row.refresh_token,
+      expiresIn: row.expires_in,
+    };
+  }
+
+  /** Clean up expired auth codes. */
+  async cleanupExpiredAuthCodes(): Promise<void> {
+    await this.execute('DELETE FROM auth.sso_auth_codes WHERE expires_at < $1', [Date.now()]);
   }
 
   override close(): void {

@@ -239,8 +239,8 @@ describe('AuthService (unit)', () => {
       const svc = makeService();
       const result = await svc.login('correct', '127.0.0.1', true);
 
-      // rememberMe uses 30*86400 = 2592000 for access
-      expect(result.expiresIn).toBe(30 * 86400);
+      // rememberMe uses 1h access (short-lived), 30d refresh (extended)
+      expect(result.expiresIn).toBe(3600);
     });
   });
 

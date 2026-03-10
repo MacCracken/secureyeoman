@@ -87,6 +87,17 @@ const DEFAULT_ROLES: RoleDefinition[] = [
     ],
   },
   {
+    id: 'role_service',
+    name: 'Service',
+    description: 'Internal service-to-service access with least-privilege permissions',
+    permissions: [
+      { resource: 'mcp', actions: ['execute', 'read'] },
+      { resource: 'brain', actions: ['read', 'write'] },
+      { resource: 'soul', actions: ['read'] },
+      { resource: 'internal', actions: ['read'] },
+    ],
+  },
+  {
     id: 'role_viewer',
     name: 'Viewer',
     description: 'Read-only access to metrics and tasks',

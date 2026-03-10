@@ -1,12 +1,17 @@
 /**
  * OAuthTokenStorage — PostgreSQL-backed store for OAuth2 access/refresh tokens.
  *
- * Tokens are persisted so they survive process restarts.  A single record
- * exists per (provider, email) pair; upsertToken keeps it up-to-date.
+ * Tokens are encrypted at rest using AES-256-GCM. The encrypted values are
+ * stored in `access_token_enc` / `refresh_token_enc` columns. The plaintext
+ * `access_token` / `refresh_token` columns are set to a redacted sentinel
+ * so existing queries that SELECT * don't break.
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { encryptToken, decryptToken, currentKeyId } from '../security/token-encryption.js';
+
+const REDACTED = '[encrypted]';
 
 export interface OAuthToken {
   id: string;
@@ -40,6 +45,9 @@ interface OAuthTokenRow {
   user_id: string;
   access_token: string;
   refresh_token: string | null;
+  access_token_enc: Buffer | null;
+  refresh_token_enc: Buffer | null;
+  token_enc_key_id: string | null;
   scopes: string;
   expires_at: string | null;
   created_at: string;
@@ -47,13 +55,25 @@ interface OAuthTokenRow {
 }
 
 function rowToToken(row: OAuthTokenRow): OAuthToken {
+  // Prefer encrypted columns; fall back to plaintext for pre-migration rows
+  let accessToken: string;
+  let refreshToken: string | null;
+
+  if (row.access_token_enc && row.token_enc_key_id) {
+    accessToken = decryptToken(row.access_token_enc) ?? '';
+    refreshToken = decryptToken(row.refresh_token_enc);
+  } else {
+    accessToken = row.access_token;
+    refreshToken = row.refresh_token;
+  }
+
   return {
     id: row.id,
     provider: row.provider,
     email: row.email,
     userId: row.user_id,
-    accessToken: row.access_token,
-    refreshToken: row.refresh_token,
+    accessToken,
+    refreshToken,
     scopes: row.scopes,
     expiresAt: row.expires_at !== null ? Number(row.expires_at) : null,
     createdAt: Number(row.created_at),
@@ -64,31 +84,43 @@ function rowToToken(row: OAuthTokenRow): OAuthToken {
 export class OAuthTokenStorage extends PgBaseStorage {
   /**
    * Upsert a token record — inserts on first call, updates access/refresh tokens
-   * on subsequent calls for the same (provider, email).
+   * on subsequent calls for the same (provider, email). Tokens are encrypted at rest.
    */
   async upsertToken(data: OAuthTokenCreate): Promise<OAuthToken> {
     const pool = this.getPool();
     const now = Date.now();
 
+    const accessEnc = encryptToken(data.accessToken);
+    const refreshEnc = encryptToken(data.refreshToken ?? null);
+    const keyId = currentKeyId();
+
     const result = await pool.query<OAuthTokenRow>(
       `INSERT INTO oauth_tokens
-         (id, provider, email, user_id, access_token, refresh_token, scopes, expires_at, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
+         (id, provider, email, user_id, access_token, refresh_token,
+          access_token_enc, refresh_token_enc, token_enc_key_id,
+          scopes, expires_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $12)
        ON CONFLICT (provider, email) DO UPDATE SET
-         user_id       = EXCLUDED.user_id,
-         access_token  = EXCLUDED.access_token,
-         refresh_token = COALESCE(EXCLUDED.refresh_token, oauth_tokens.refresh_token),
-         scopes        = EXCLUDED.scopes,
-         expires_at    = EXCLUDED.expires_at,
-         updated_at    = EXCLUDED.updated_at
+         user_id           = EXCLUDED.user_id,
+         access_token      = EXCLUDED.access_token,
+         refresh_token     = COALESCE(EXCLUDED.refresh_token, oauth_tokens.refresh_token),
+         access_token_enc  = EXCLUDED.access_token_enc,
+         refresh_token_enc = COALESCE(EXCLUDED.refresh_token_enc, oauth_tokens.refresh_token_enc),
+         token_enc_key_id  = EXCLUDED.token_enc_key_id,
+         scopes            = EXCLUDED.scopes,
+         expires_at        = EXCLUDED.expires_at,
+         updated_at        = EXCLUDED.updated_at
        RETURNING *`,
       [
         uuidv7(),
         data.provider,
         data.email,
         data.userId,
-        data.accessToken,
-        data.refreshToken ?? null,
+        REDACTED, // plaintext column gets sentinel
+        data.refreshToken ? REDACTED : null,
+        accessEnc,
+        refreshEnc,
+        keyId,
         data.scopes ?? '',
         data.expiresAt ?? null,
         now,
@@ -132,9 +164,14 @@ export class OAuthTokenStorage extends PgBaseStorage {
   /** Update just the access token and its expiry (called after a token refresh). */
   async updateAccessToken(id: string, accessToken: string, expiresAt: number): Promise<void> {
     const pool = this.getPool();
+    const accessEnc = encryptToken(accessToken);
+    const keyId = currentKeyId();
     await pool.query(
-      'UPDATE oauth_tokens SET access_token = $1, expires_at = $2, updated_at = $3 WHERE id = $4',
-      [accessToken, expiresAt, Date.now(), id]
+      `UPDATE oauth_tokens
+       SET access_token = $1, access_token_enc = $2, token_enc_key_id = $3,
+           expires_at = $4, updated_at = $5
+       WHERE id = $6`,
+      [REDACTED, accessEnc, keyId, expiresAt, Date.now(), id]
     );
   }
 

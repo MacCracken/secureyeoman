@@ -46,8 +46,10 @@ function makeMockBrain(overrides?: Partial<BrainManager>): BrainManager {
     recall: vi.fn().mockResolvedValue([MEMORY]),
     remember: vi.fn().mockResolvedValue(MEMORY),
     forget: vi.fn().mockResolvedValue(undefined),
+    getMemory: vi.fn().mockResolvedValue(MEMORY),
     queryKnowledge: vi.fn().mockResolvedValue([KNOWLEDGE]),
     learn: vi.fn().mockResolvedValue(KNOWLEDGE),
+    getKnowledge: vi.fn().mockResolvedValue(KNOWLEDGE),
     updateKnowledge: vi.fn().mockResolvedValue(KNOWLEDGE),
     deleteKnowledge: vi.fn().mockResolvedValue(undefined),
     getStats: vi.fn().mockResolvedValue(STATS),
@@ -119,6 +121,10 @@ interface BuildAppOptions {
 
 function buildApp(opts: BuildAppOptions = {}) {
   const app = Fastify();
+  // Inject admin authUser so ownership guard passes in tests
+  app.addHook('onRequest', async (request) => {
+    (request as any).authUser = { userId: 'test-user', role: 'admin', permissions: [] };
+  });
   registerBrainRoutes(app, {
     brainManager: makeMockBrain(opts.brainOverrides),
     heartbeatManager:

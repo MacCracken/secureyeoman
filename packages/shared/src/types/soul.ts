@@ -647,7 +647,7 @@ export const VectorConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
     provider: z.enum(['local', 'api', 'both']).default('local'),
-    backend: z.enum(['faiss', 'qdrant', 'chroma']).default('faiss'),
+    backend: z.enum(['faiss', 'qdrant', 'chroma', 'agnos']).default('faiss'),
     similarityThreshold: z.number().min(0).max(1).default(0.7),
     maxResults: z.number().int().positive().max(100).default(10),
     local: z

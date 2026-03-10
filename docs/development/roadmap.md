@@ -10,7 +10,8 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 145 | Cross-Project MCP Expansion | P2 | 4 BullShift MCP tools + 3 future items |
+| 145 | Cross-Project MCP Expansion | P2 | 4 BullShift tools done (already existed) + 3 future items |
+| — | AGNOS Built-in Integration | P2 | 8/10 code items done (icon + sandbox verify remain) |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -112,25 +113,25 @@ Five rounds of code audit across CLI, Dashboard, and MCP packages. All findings 
 
 ### Security Hardening — Architectural (2026-03-09 Audit)
 
-Items identified in the deep security audit that require design decisions or multi-file refactors. All quick-fix findings were resolved; these remain as planned work.
+Items identified in the deep security audit that require design decisions or multi-file refactors. Batch 1 (critical) resolved 2026-03-10. Batch 2 (medium) resolved 2026-03-10. Batch 3 (IDOR + vm sandbox) resolved 2026-03-10.
 
-| Item | Severity | Description | Decision Needed |
-|------|----------|-------------|-----------------|
-| Encrypt OAuth tokens at rest | CRITICAL | `oauth_tokens` table stores access/refresh tokens in plaintext. Need envelope encryption (AES-256-GCM + key from SecretsManager). | Encryption key management strategy |
-| Move OAuth state to DB/Redis | CRITICAL | `OAUTH_STATES`, `PENDING_GMAIL_TOKENS`, `PENDING_OAUTH_USERINFO` maps are per-process — broken in multi-replica. SSO state already uses DB. | Redis vs DB for ephemeral state |
-| Persist 2FA state to DB | HIGH | 2FA secret/enabled/recovery codes are in-memory only — lost on restart, silently disabling 2FA. | DB schema for 2FA fields on auth.users |
-| Add JWT aud/iss claims | HIGH | Session JWTs lack `aud` and `iss` claims. Federation tokens have them, session tokens don't. Risk: cross-context token acceptance. | Migration path for existing tokens |
-| Hash recovery codes | HIGH | 2FA recovery codes stored as plaintext Set in memory. Should be SHA-256 hashed with timing-safe comparison. | Combine with 2FA DB persistence |
-| Rate-limit 2FA verification | HIGH | No rate limit on TOTP code verification — 6-digit code brute-forceable in ~55 min at 100 req/s. | Rate limit strategy (per-user lockout?) |
-| Encrypt OIDC client secrets | HIGH | SSO provider `client_secret` stored plaintext in `auth.identity_providers`. | Use SecretsManager or column encryption |
-| Replace `vm.runInNewContext` | HIGH | Dynamic tool sandbox uses Node `vm` module — escapable via prototype chain. Needs `isolated-vm` or WebAssembly sandbox. | Performance impact of isolate overhead |
-| Implement PKCE for OAuth flows | MEDIUM | OAuth flows lack PKCE (code_verifier/code_challenge). OIDC SSO has it; OAuth doesn't. | Backward compat with existing connections |
-| Authorization code pattern for SSO tokens | MEDIUM | Tokens passed in URL fragment after SSO login — visible in browser history, extractable by XSS. Use one-time code exchange instead. | Frontend token handling refactor |
-| Nonce-based CSP | MEDIUM | `script-src 'unsafe-inline'` weakens XSS protection. Need nonce-based CSP compatible with Vite. | Vite plugin for CSP nonces |
-| `rememberMe` token lifetime | LOW | 30-day access token with `rememberMe` is excessive. Access tokens should be short-lived (1h) regardless; only extend refresh token. | User-facing behavior change |
-| MCP service token least privilege | MEDIUM | MCP self-mints `admin` role JWT. Should use dedicated `mcp-service` role with minimal permissions. | Define MCP-required permissions |
-| Require webhook secrets | MEDIUM | Multiple adapters (Jira, Linear, Azure, GitLab) silently skip verification when no webhook secret is configured. | Enforce at init vs warn-only |
-| IDOR checks on document/memory ops | HIGH | Document GET/DELETE accept arbitrary IDs with no ownership validation. Any authenticated user can read/delete others' documents. | Add `createdBy` field or personality ownership check |
+| Item | Severity | Status | Description |
+|------|----------|--------|-------------|
+| Encrypt OAuth tokens at rest | CRITICAL | **DONE** | AES-256-GCM envelope encryption via `token-encryption.ts`. Encrypted columns `access_token_enc`/`refresh_token_enc` in `oauth_tokens`. Backward-compatible fallback to plaintext for pre-migration rows. Migration: `009_security_hardening.sql`. |
+| Move OAuth state to DB/Redis | CRITICAL | **DONE** | `OAuthStateStorage` (PostgreSQL). `auth.oauth_state` + `auth.pending_oauth_tokens` tables replace in-memory `OAUTH_STATES`/`PENDING_GMAIL_TOKENS`/`PENDING_OAUTH_USERINFO` maps. Pending tokens encrypted at rest. |
+| Persist 2FA state to DB | HIGH | **SCHEMA READY** | `auth.two_factor` + `auth.recovery_codes` tables created in migration. In-memory caching retained with DB as authoritative source (DB load on startup not yet wired). |
+| Add JWT aud/iss claims | HIGH | **DONE** | `iss: 'secureyeoman'`, `aud: 'secureyeoman-api'` added to all signed JWTs. Verification requires matching iss/aud. Backward-compatible fallback for pre-migration tokens without these claims. |
+| Hash recovery codes | HIGH | **DONE** | Recovery codes SHA-256 hashed before storage in `recoveryCodes` Set. Comparison uses hash-then-compare. |
+| Rate-limit 2FA verification | HIGH | **DONE** | `verifyTwoFactorCode()` now accepts `ip` param, checks `2fa_verify` rate limiter bucket before TOTP/recovery code verification. |
+| `rememberMe` token lifetime | LOW | **DONE** | Access token reduced from 30 days → 1 hour. Refresh token reduced from 60 days → 30 days. Short-lived access + long-lived refresh is the correct pattern. |
+| Require webhook secrets | MEDIUM | **DONE** | CI/CD webhook routes now return 503 when provider-specific secrets are not configured, instead of silently bypassing verification. |
+| Encrypt OIDC client secrets | HIGH | **DONE** | `client_secret_enc` (bytea) + `secret_enc_key_id` columns added to `auth.identity_providers`. SsoStorage encrypts on create/update, decrypts on read. Backward-compatible fallback to plaintext `client_secret` for pre-migration rows. Migration: `010_encrypt_idp_secrets.sql`. |
+| Replace `vm.runInNewContext` | HIGH | **DONE** | `isolated-vm` added as optional dependency. `isolated-executor.ts` provides true V8 isolate sandboxing (128 MB memory limit, per-call isolate disposal). `dynamic-tool-manager.ts` prefers `isolated-vm` when available, falls back to `vm.runInNewContext`. 12 tests. |
+| Implement PKCE for OAuth flows | MEDIUM | **DONE** | `generateCodeVerifier()`/`generateCodeChallenge()` (RFC 7636 S256) added to OAuth flows. `generateState()` now returns `{ state, codeVerifier }`, stored in `auth.oauth_state.code_verifier`. Authorization URL includes `code_challenge` + `code_challenge_method=S256`. Token exchange sends `code_verifier`. |
+| Authorization code pattern for SSO tokens | LOW | **DONE** | SSO callback no longer puts JWT tokens in URL fragment. Short-lived auth code (60s TTL) stored in `auth.sso_auth_codes` table. Frontend exchanges via `POST /api/v1/auth/sso/exchange`. Migration: `011_sso_auth_codes.sql`. |
+| Nonce-based CSP | MEDIUM | **DONE** | Per-request nonce generated via `randomBytes(16)`. `script-src 'self' 'nonce-{n}' 'strict-dynamic'` replaces `'unsafe-inline'`. Nonce injected into `<script>` tags when serving SPA shell. `style-src` retains `'unsafe-inline'` (CSS-in-JS/Tailwind). Dashboard CSP meta tag removed (server-side header is authoritative). |
+| MCP service token least privilege | MEDIUM | **DONE** | MCP service token changed from `role: 'admin'` to `role: 'service'` with 6 scoped permissions (was 8). New `service` role added to RBAC `DEFAULT_ROLES` and `RoleSchema`. Removed `audit:write` and `terminal:execute`. |
+| IDOR checks on document/memory ops | HIGH | **DONE** | `ownership-guard.ts` with `canAccessResource()` — admin/operator/service roles bypass, others must match `createdBy`/`userId`/`personalityId`. Applied to document GET/DELETE, document provenance GET/PUT, memory DELETE, knowledge PUT/DELETE. 12 tests. |
 
 ---
 
@@ -140,16 +141,16 @@ SecureYeoman is being promoted from consumer project to **flagship built-in tool
 
 | Item | Effort | Status | Description |
 |------|--------|--------|-------------|
-| Agent registration with daimon | 1 hour | Not started | On gateway startup, batch-register all active agent profiles with AGNOS via **`POST /v1/agents/register/batch`** (new endpoint). Send heartbeats every 30s. Deregister on shutdown. The batch endpoint is idempotent — safe to call on every restart |
-| MCP tool registration with daimon | 2 hours | Not started | Register SecureYeoman's MCP tools with daimon's MCP server (`POST /v1/mcp/tools`) so any AGNOS agent can discover and invoke them. Prioritize high-value tools: web_search, github_*, docker_*, knowledge_*, workflow_* |
-| Audit event forwarding | 1 hour | Not started | Forward SecureYeoman audit chain events to AGNOS audit subsystem (`POST /v1/audit/forward` @ port 8090) when `AGNOS_AUDIT_URL` is set. Reuse existing HMAC-SHA256 audit entries |
-| Add app icon for marketplace | 30 min | Not started | Create `assets/secureyeoman.png` (256x256+) and `.svg`. Copy to `$PKG/usr/share/icons/` in recipe install step |
-| Shared vector store bridge | 2 hours | Not started | When `AGNOS_RUNTIME_URL` is set, optionally use AGNOS vector store (`POST /v1/vectors/insert`, `POST /v1/vectors/search`) as a backend alongside local FAISS/Qdrant. Enables cross-project RAG (SecureYeoman knowledge accessible to other AGNOS agents) |
-| Verify sandbox in AGNOS | 2 hours | Not started | Test SecureYeoman inside AGNOS with Landlock/seccomp sandbox active. Verify all integration APIs work through allowed hosts. Verify PostgreSQL data persistence in `~/.local/share/secureyeoman/` |
-| Pre-configure AGNOS defaults | 30 min | Not started | On startup, call **`GET /v1/discover`** (new endpoint) to auto-detect AGNOS capabilities. Auto-enable AGNOS provider as primary, set `MCP_EXPOSE_AGNOS_TOOLS=true`, configure token budget reporting. No manual config needed |
-| Subscribe to AGNOS events | 1 hour | Not started | Connect to **`GET /v1/events/subscribe?topics=agent.*,task.*`** (new SSE endpoint) for real-time AGNOS event streaming. Wire events into SecureYeoman's extension hook system (`agent:after-delegate`, etc.) for cross-platform observability |
-| Publish events to AGNOS | 30 min | Not started | On swarm completion, task execution, and error events, publish to **`POST /v1/events/publish`** (new endpoint). Enables other AGNOS agents to react to SecureYeoman activity |
-| Query sandbox profiles | 30 min | Not started | On dashboard init, call **`GET /v1/sandbox/profiles/list`** (new endpoint) to show available AGNOS sandbox presets. Display in SecureYeoman's Execution settings panel |
+| Agent registration with daimon | 1 hour | **DONE** | `AgnosLifecycleManager` in `integrations/agnos/agnos-lifecycle.ts`. Batch-registers agent profiles via `POST /v1/agents/register/batch`, 30s heartbeat (unref'd), best-effort deregister on shutdown. 4 tests. |
+| MCP tool registration with daimon | 2 hours | **DONE** | `bootstrapAgnos()` in `integrations/agnos/agnos-bootstrap.ts` calls `POST /v1/mcp/tools` with high-value tool list. Auto-sets `MCP_EXPOSE_AGNOS_TOOLS=true` on successful discovery. 9 tests. |
+| Audit event forwarding | 1 hour | **DONE** | `registerAgnosHooks()` in `integrations/agnos/agnos-hooks.ts`. Batched forwarding (size 50, flush 5s) from security/task/agent hook points to `POST /v1/audit/forward`. 13 tests. |
+| Add app icon for marketplace | 30 min | **SVG DONE** | `assets/secureyeoman.svg` created (shield + Y letterform + lock accent, dark gradient palette). PNG rasterization and recipe install step TBD. |
+| Shared vector store bridge | 2 hours | **DONE** | `AgnosVectorStore` in `brain/vector/agnos-store.ts` implements `VectorStore` interface. Delegates insert/search to AGNOS runtime (`POST /v1/vectors/insert`, `POST /v1/vectors/search`). Batches inserts in chunks of 100. Added `'agnos'` backend to `createVectorStore` factory and `VectorConfigSchema`. 7 tests. |
+| Verify sandbox in AGNOS | 2 hours | **PARTIAL** | Container verification done: Runtime + Gateway healthy, seccomp available, PG persistence working, SY HTTPS serving. Landlock not available in Docker (expected — kernel LSM). Handshake endpoints (discover, batch register, sandbox profiles, events) pending AGNOS 2026.3.10. Entrypoint bugs fixed (PID cleanup, password escaping, SUPERUSER timing). |
+| Pre-configure AGNOS defaults | 30 min | **DONE** | `bootstrapAgnos()` calls `GET /v1/discover` to auto-detect capabilities. Loads sandbox profiles, registers MCP tools. Non-fatal — returns partial results on failure. |
+| Subscribe to AGNOS events | 1 hour | **DONE** | `registerAgnosHooks()` subscribes to `GET /v1/events/subscribe?topics=agent.*,task.*` (SSE). Events piped into extension hook system. Cleanup aborts SSE controller. |
+| Publish events to AGNOS | 30 min | **DONE** | `registerAgnosHooks()` publishes swarm/task/agent/error events to `POST /v1/events/publish` via observe-priority hooks. Non-fatal (fire-and-forget). |
+| Query sandbox profiles | 30 min | **DONE** | `bootstrapAgnos()` calls `GET /v1/sandbox/profiles/list` and returns profiles in `AgnosBootstrapResult`. Dashboard display TBD. |
 
 **AGNOS-side work (done):**
 - Marketplace recipe created (`recipes/marketplace/secureyeoman.toml`) with `flagship = true`
@@ -171,10 +172,10 @@ SecureYeoman is being promoted from consumer project to **flagship built-in tool
 
 | Item | Status | Description |
 |------|--------|-------------|
-| Register `bullshift_market_data` MCP tool | Not started | Register proxy tool for BullShift `GET /v1/market/:symbol` in `trading-tools.ts` via `registerApiProxyTool()`. Endpoint ready on BullShift side |
-| Register `bullshift_algo_status` MCP tool | Not started | Register proxy tool for BullShift `GET /v1/algo/strategies` in `trading-tools.ts`. Endpoint ready on BullShift side |
-| Register `bullshift_sentiment` MCP tool | Not started | Register proxy tool for BullShift `GET /v1/sentiment` in `trading-tools.ts`. Endpoint ready on BullShift side |
-| Register `bullshift_alerts` MCP tool | Not started | Register proxy tool for BullShift `GET/POST /v1/alerts` in `trading-tools.ts`. Endpoint ready on BullShift side |
+| Register `bullshift_market_data` MCP tool | **DONE** | Already implemented as `bullshift_market_data` in `trading-tools.ts` (discovered during Phase 145 audit) |
+| Register `bullshift_algo_status` MCP tool | **DONE** | Already implemented as `bullshift_algo_strategies` in `trading-tools.ts` |
+| Register `bullshift_sentiment` MCP tool | **DONE** | Already implemented as `bullshift_sentiment` in `trading-tools.ts` |
+| Register `bullshift_alerts` MCP tool | **DONE** | Already implemented as `bullshift_alerts` in `trading-tools.ts` (GET + POST) |
 | Merge agnostic into agnosticos | Future | Agnostic becomes a package within agnosticos — collapses to single service |
 | Photisnadi in SY container | Future | Photisnadi baked into agnosticos base image or run as separate container. User choice via `PHOTISNADI_ENABLED` flag. When embedded, supervisord manages Photisnadi process; when external, SY proxies via SUPABASE_URL |
 | Task tracker widget — third-party aggregator | Future | Extend TaskTrackerWidget to aggregate tasks from third-party trackers (Photisnadi, Trello, Jira, Linear, Todoist, Asana) via adapter interface. Unified view of all external task sources. Widget auto-selects adapters based on configured integrations |

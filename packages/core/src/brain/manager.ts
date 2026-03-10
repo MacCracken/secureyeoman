@@ -422,6 +422,10 @@ export class BrainManager {
     return this.storage.getMemory(id);
   }
 
+  async getKnowledge(id: string): Promise<KnowledgeEntry | null> {
+    return this.storage.getKnowledge(id);
+  }
+
   // ── Knowledge Operations ───────────────────────────────────
 
   async learn(

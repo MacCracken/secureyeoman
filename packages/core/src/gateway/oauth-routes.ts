@@ -1,12 +1,27 @@
 /**
  * OAuth Routes — Google, GitHub OAuth provider integration.
+ *
+ * State and pending tokens are persisted to PostgreSQL so they survive
+ * restarts and work in multi-replica deployments.
  */
 
+import { randomBytes, createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AuthService } from '../security/auth.js';
 import { generateSecureToken } from '../utils/crypto.js';
 import type { OAuthTokenService } from './oauth-token-service.js';
+import type { OAuthStateStorage } from './oauth-state-storage.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+
+/** Generate a PKCE code_verifier (RFC 7636 §4.1): 43-128 unreserved chars. */
+function generateCodeVerifier(): string {
+  return randomBytes(32).toString('base64url');
+}
+
+/** Compute code_challenge from code_verifier (RFC 7636 §4.2, S256 method). */
+function generateCodeChallenge(verifier: string): string {
+  return createHash('sha256').update(verifier).digest('base64url');
+}
 
 export interface OAuthProvider {
   id: string;
@@ -51,20 +66,8 @@ export interface OAuthServiceConfig {
   };
 }
 
-const OAUTH_STATES = new Map<string, OAuthState>();
 const STATE_EXPIRY_MS = 10 * 60 * 1000;
-const MAX_OAUTH_STATES = 1_000;
-
-// Periodic cleanup of expired OAuth states to prevent memory leaks.
-const _oauthCleanupTimer = setInterval(() => {
-  const now = Date.now();
-  for (const [key, state] of OAUTH_STATES) {
-    if (now - state.createdAt > STATE_EXPIRY_MS) {
-      OAUTH_STATES.delete(key);
-    }
-  }
-}, STATE_EXPIRY_MS);
-_oauthCleanupTimer.unref?.();
+const PENDING_TOKEN_EXPIRY_MS = 10 * 60 * 1000;
 
 const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
   google: {
@@ -139,31 +142,13 @@ const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
   },
 };
 
-/** Short-lived store for Gmail OAuth tokens pending integration creation */
-interface PendingGmailTokens {
-  accessToken: string;
-  refreshToken: string;
-  email: string;
-  createdAt: number;
-}
-const PENDING_GMAIL_TOKENS = new Map<string, PendingGmailTokens>();
-const PENDING_TOKEN_EXPIRY_MS = 10 * 60 * 1000;
-const MAX_PENDING_TOKENS = 500;
-
-/** Short-lived store for generic Google/GitHub OAuth user info pending dashboard acknowledgement */
-interface PendingOAuthUserInfo {
-  email: string;
-  name: string;
-  createdAt: number;
-}
-const PENDING_OAUTH_USERINFO = new Map<string, PendingOAuthUserInfo>();
-const MAX_PENDING_USERINFO = 500;
-
 export class OAuthService {
   private config: OAuthServiceConfig;
+  private stateStorage: OAuthStateStorage | null;
 
-  constructor(config: OAuthServiceConfig = {}) {
+  constructor(config: OAuthServiceConfig = {}, stateStorage?: OAuthStateStorage) {
     this.config = config;
+    this.stateStorage = stateStorage ?? null;
     this.loadFromEnv();
   }
 
@@ -261,40 +246,76 @@ export class OAuthService {
     return Object.keys(this.config).filter((key) => this.isProviderConfigured(key));
   }
 
-  generateState(provider: string, redirectUri: string, frontendOrigin?: string): string {
-    if (OAUTH_STATES.size >= MAX_OAUTH_STATES) {
-      // Evict oldest entry to prevent unbounded growth
-      const oldest = OAUTH_STATES.keys().next().value;
-      if (oldest !== undefined) OAUTH_STATES.delete(oldest);
-    }
+  async generateState(
+    provider: string,
+    redirectUri: string,
+    frontendOrigin?: string
+  ): Promise<{ state: string; codeVerifier: string }> {
     const state = generateSecureToken(32);
-    OAUTH_STATES.set(state, {
-      provider,
-      redirectUri,
-      createdAt: Date.now(),
-      frontendOrigin,
-    });
-    setTimeout(() => OAUTH_STATES.delete(state), STATE_EXPIRY_MS);
-    return state;
+    const codeVerifier = generateCodeVerifier();
+    const now = Date.now();
+
+    if (this.stateStorage) {
+      await this.stateStorage.saveState({
+        state,
+        provider,
+        redirectUri,
+        codeVerifier,
+        frontendOrigin,
+        createdAt: now,
+        expiresAt: now + STATE_EXPIRY_MS,
+      });
+    }
+
+    return { state, codeVerifier };
   }
 
-  validateState(state: string): OAuthState | null {
-    const oauthState = OAUTH_STATES.get(state);
-    if (!oauthState) return null;
-
-    if (Date.now() - oauthState.createdAt > STATE_EXPIRY_MS) {
-      OAUTH_STATES.delete(state);
-      return null;
+  async validateState(state: string): Promise<OAuthState | null> {
+    if (this.stateStorage) {
+      const record = await this.stateStorage.consumeState(state);
+      if (!record) return null;
+      return {
+        provider: record.provider,
+        redirectUri: record.redirectUri,
+        codeVerifier: record.codeVerifier,
+        frontendOrigin: record.frontendOrigin,
+        createdAt: record.createdAt,
+      };
     }
+    return null;
+  }
 
-    OAUTH_STATES.delete(state);
-    return oauthState;
+  /** Store pending Gmail/OAuth tokens in DB for the claim endpoint. */
+  async storePendingTokens(
+    connectionToken: string,
+    provider: string,
+    data: { accessToken: string; refreshToken: string; email: string; name?: string }
+  ): Promise<void> {
+    if (!this.stateStorage) return;
+    const now = Date.now();
+    await this.stateStorage.savePendingTokens({
+      connectionToken,
+      provider,
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+      email: data.email,
+      userInfoName: data.name,
+      createdAt: now,
+      expiresAt: now + PENDING_TOKEN_EXPIRY_MS,
+    });
+  }
+
+  /** Consume pending tokens from DB. */
+  async consumePendingTokens(connectionToken: string) {
+    if (!this.stateStorage) return null;
+    return this.stateStorage.consumePendingTokens(connectionToken);
   }
 
   async exchangeCode(
     providerId: string,
     code: string,
-    redirectUri: string
+    redirectUri: string,
+    codeVerifier?: string
   ): Promise<{ accessToken: string; refreshToken?: string; grantedScope?: string }> {
     const provider = OAUTH_PROVIDERS[providerId];
     if (!provider || !this.isProviderConfigured(providerId)) {
@@ -306,19 +327,24 @@ export class OAuthService {
       throw new Error(`OAuth provider ${providerId} not configured`);
     }
 
+    const params: Record<string, string> = {
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+    };
+    if (codeVerifier) {
+      params.code_verifier = codeVerifier;
+    }
+
     const response = await fetch(provider.tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: 'application/json',
       },
-      body: new URLSearchParams({
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
-      }),
+      body: new URLSearchParams(params),
       signal: AbortSignal.timeout(15_000),
     });
 
@@ -484,7 +510,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       }
 
       const redirectUri = getRedirectUri(providerId);
-      const state = oauthService.generateState(
+      const { state, codeVerifier } = await oauthService.generateState(
         providerId,
         redirectUri,
         frontendOrigin || undefined
@@ -497,6 +523,11 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         scope: provider.scopes.join(' '),
         state,
       });
+
+      // PKCE (RFC 7636) — attach code_challenge for providers that support it.
+      // Providers that don't (e.g. GitHub) will simply ignore the extra params.
+      params.set('code_challenge', generateCodeChallenge(codeVerifier));
+      params.set('code_challenge_method', 'S256');
 
       // All Google services need offline access for refresh tokens + explicit consent screen
       if (
@@ -533,7 +564,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         return reply.redirect('/connections/oauth?error=missing_params');
       }
 
-      const oauthState = oauthService.validateState(state);
+      const oauthState = await oauthService.validateState(state);
       // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
       if (!oauthState || oauthState.provider !== providerId) {
         return reply.redirect('/connections/oauth?error=invalid_state');
@@ -545,25 +576,23 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
 
       try {
         const redirectUri = getRedirectUri(providerId);
-        const tokens = await oauthService.exchangeCode(providerId, code, redirectUri);
+        const tokens = await oauthService.exchangeCode(
+          providerId,
+          code,
+          redirectUri,
+          oauthState.codeVerifier
+        );
         const userInfo = await oauthService.getUserInfo(providerId, tokens.accessToken);
 
         const connectionToken = oauthService.generateOAuthConnectionToken(providerId, userInfo.id);
 
-        // Gmail: store tokens server-side for the claim endpoint (legacy flow)
+        // Gmail: store tokens server-side for the claim endpoint
         if (providerId === 'gmail') {
-          // Evict oldest entry if at capacity
-          if (PENDING_GMAIL_TOKENS.size >= MAX_PENDING_TOKENS) {
-            const oldest = PENDING_GMAIL_TOKENS.keys().next().value;
-            if (oldest !== undefined) PENDING_GMAIL_TOKENS.delete(oldest);
-          }
-          PENDING_GMAIL_TOKENS.set(connectionToken, {
+          await oauthService.storePendingTokens(connectionToken, 'gmail', {
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken || '',
             email: userInfo.email || '',
-            createdAt: Date.now(),
           });
-          setTimeout(() => PENDING_GMAIL_TOKENS.delete(connectionToken), PENDING_TOKEN_EXPIRY_MS);
 
           // Also persist in unified token store when available
           if (oauthTokenService && userInfo.email) {
@@ -606,17 +635,13 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
           );
         }
 
-        // Store user info short-lived for dashboard display
-        if (PENDING_OAUTH_USERINFO.size >= MAX_PENDING_USERINFO) {
-          const oldest = PENDING_OAUTH_USERINFO.keys().next().value;
-          if (oldest !== undefined) PENDING_OAUTH_USERINFO.delete(oldest);
-        }
-        PENDING_OAUTH_USERINFO.set(connectionToken, {
+        // Store user info for dashboard display
+        await oauthService.storePendingTokens(connectionToken, providerId, {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken || '',
           email: userInfo.email || '',
-          name: userInfo.name || '',
-          createdAt: Date.now(),
+          name: userInfo.name,
         });
-        setTimeout(() => PENDING_OAUTH_USERINFO.delete(connectionToken), PENDING_TOKEN_EXPIRY_MS);
 
         // Persist tokens in the unified token store so connected accounts survive page refresh
         if (oauthTokenService && userInfo.email) {
@@ -711,17 +736,10 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         return sendError(reply, 400, 'connectionToken is required');
       }
 
-      const pending = PENDING_GMAIL_TOKENS.get(connectionToken);
+      const pending = await oauthService.consumePendingTokens(connectionToken);
       if (!pending) {
         return sendError(reply, 404, 'Token expired or invalid. Please reconnect.');
       }
-
-      if (Date.now() - pending.createdAt > PENDING_TOKEN_EXPIRY_MS) {
-        PENDING_GMAIL_TOKENS.delete(connectionToken);
-        return sendError(reply, 410, 'Token expired. Please reconnect.');
-      }
-
-      PENDING_GMAIL_TOKENS.delete(connectionToken);
 
       return {
         success: true,

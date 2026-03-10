@@ -65,7 +65,7 @@ describe('CI/CD Webhook Routes', () => {
   });
 
   describe('GitHub provider', () => {
-    it('returns 200 and normalizes workflow_run event without secret configured', async () => {
+    it('returns 503 when webhook secret is not configured', async () => {
       delete process.env.SECUREYEOMAN_WEBHOOK_SECRET;
       const app = await buildApp();
       const payload = {
@@ -85,10 +85,9 @@ describe('CI/CD Webhook Routes', () => {
         payload,
         headers: { 'x-github-event': 'workflow_run' },
       });
-      expect(res.statusCode).toBe(200);
+      expect(res.statusCode).toBe(503);
       const body = res.json();
-      expect(body.provider).toBe('github');
-      expect(body.event).toBe('workflow_run.completed');
+      expect(body.message).toContain('SECUREYEOMAN_WEBHOOK_SECRET');
     });
 
     it('returns 401 when GitHub signature is wrong', async () => {
@@ -130,7 +129,7 @@ describe('CI/CD Webhook Routes', () => {
   });
 
   describe('Jenkins provider', () => {
-    it('returns 200 and normalizes build event without token configured', async () => {
+    it('returns 503 when webhook token is not configured', async () => {
       delete process.env.JENKINS_WEBHOOK_TOKEN;
       const app = await buildApp();
       const res = await app.inject({
@@ -146,10 +145,8 @@ describe('CI/CD Webhook Routes', () => {
           url: 'https://ci.example.com/job/my-job/',
         },
       });
-      expect(res.statusCode).toBe(200);
-      const body = res.json();
-      expect(body.provider).toBe('jenkins');
-      expect(body.event).toBe('build.finalized');
+      expect(res.statusCode).toBe(503);
+      expect(res.json().message).toContain('JENKINS_WEBHOOK_TOKEN');
     });
 
     it('returns 401 when Jenkins crumb token is wrong', async () => {
@@ -178,7 +175,7 @@ describe('CI/CD Webhook Routes', () => {
   });
 
   describe('GitLab provider', () => {
-    it('returns 200 and normalizes pipeline event without token configured', async () => {
+    it('returns 503 when webhook token is not configured', async () => {
       delete process.env.GITLAB_WEBHOOK_TOKEN;
       const app = await buildApp();
       const res = await app.inject({
@@ -195,10 +192,8 @@ describe('CI/CD Webhook Routes', () => {
         },
         headers: { 'x-gitlab-event': 'Pipeline Hook' },
       });
-      expect(res.statusCode).toBe(200);
-      const body = res.json();
-      expect(body.provider).toBe('gitlab');
-      expect(body.event).toBe('pipeline_hook');
+      expect(res.statusCode).toBe(503);
+      expect(res.json().message).toContain('GITLAB_WEBHOOK_TOKEN');
     });
 
     it('returns 401 when GitLab token is wrong', async () => {
@@ -215,7 +210,7 @@ describe('CI/CD Webhook Routes', () => {
   });
 
   describe('Northflank provider', () => {
-    it('returns 200 and normalizes build event without secret configured', async () => {
+    it('returns 503 when webhook secret is not configured', async () => {
       delete process.env.NORTHFLANK_WEBHOOK_SECRET;
       const app = await buildApp();
       const res = await app.inject({
@@ -230,10 +225,8 @@ describe('CI/CD Webhook Routes', () => {
           },
         },
       });
-      expect(res.statusCode).toBe(200);
-      const body = res.json();
-      expect(body.provider).toBe('northflank');
-      expect(body.event).toBe('build.updated');
+      expect(res.statusCode).toBe(503);
+      expect(res.json().message).toContain('NORTHFLANK_WEBHOOK_SECRET');
     });
   });
 
@@ -247,16 +240,22 @@ describe('CI/CD Webhook Routes', () => {
           triggers: [{ type: 'event', config: { event: 'workflow_run.completed' } }],
         },
       ]);
+      process.env.SECUREYEOMAN_WEBHOOK_SECRET = 'test-wf-secret';
       const app = await buildApp(manager);
+      const payload = JSON.stringify({
+        action: 'completed',
+        workflow_run: { id: 1, head_branch: 'main', conclusion: 'success' },
+        repository: {},
+      });
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/webhooks/ci/github',
-        payload: {
-          action: 'completed',
-          workflow_run: { id: 1, head_branch: 'main', conclusion: 'success' },
-          repository: {},
+        payload,
+        headers: {
+          'content-type': 'application/json',
+          'x-github-event': 'workflow_run',
+          'x-hub-signature-256': hmacSig('test-wf-secret', payload),
         },
-        headers: { 'x-github-event': 'workflow_run' },
       });
       expect(res.statusCode).toBe(200);
       // Allow the fire-and-forget to complete
@@ -269,7 +268,7 @@ describe('CI/CD Webhook Routes', () => {
     });
 
     it('does not trigger workflows that are disabled', async () => {
-      delete process.env.SECUREYEOMAN_WEBHOOK_SECRET;
+      process.env.SECUREYEOMAN_WEBHOOK_SECRET = 'test-wf-secret';
       const manager = mockWorkflowManager([
         {
           id: 'wf-disabled',
@@ -278,15 +277,20 @@ describe('CI/CD Webhook Routes', () => {
         },
       ]);
       const app = await buildApp(manager);
+      const payload = JSON.stringify({
+        action: 'completed',
+        workflow_run: { id: 2, head_branch: 'dev', conclusion: 'failure' },
+        repository: {},
+      });
       await app.inject({
         method: 'POST',
         url: '/api/v1/webhooks/ci/github',
-        payload: {
-          action: 'completed',
-          workflow_run: { id: 2, head_branch: 'dev', conclusion: 'failure' },
-          repository: {},
+        payload,
+        headers: {
+          'content-type': 'application/json',
+          'x-github-event': 'workflow_run',
+          'x-hub-signature-256': hmacSig('test-wf-secret', payload),
         },
-        headers: { 'x-github-event': 'workflow_run' },
       });
       await new Promise((r) => setTimeout(r, 10));
       expect(manager.triggerRun).not.toHaveBeenCalled();
