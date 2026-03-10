@@ -174,4 +174,167 @@ describe('MLSecurityTab', () => {
       expect(screen.getByDisplayValue('All ML Types')).toBeInTheDocument();
     });
   });
+
+  it('shows trend chart when trend data exists', async () => {
+    mockFetchMlSummary.mockResolvedValue({
+      ...defaultSummary,
+      trend: [
+        { bucket: '2026-03-01T00:00:00Z', count: 3 },
+        { bucket: '2026-03-01T01:00:00Z', count: 7 },
+      ],
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+    });
+  });
+
+  it('expands event to show details when clicked', async () => {
+    const user = userEvent.setup();
+    mockFetchSecurityEvents.mockResolvedValue({
+      events: [
+        {
+          id: 'e1',
+          type: 'anomaly',
+          severity: 'warn',
+          message: 'Unusual access pattern detected',
+          timestamp: Date.now(),
+          userId: 'user1',
+          ipAddress: '10.0.0.1',
+        },
+      ],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Unusual access pattern detected')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Unusual access pattern detected'));
+    await waitFor(() => {
+      expect(screen.getByText('ID')).toBeInTheDocument();
+      expect(screen.getByText('Severity')).toBeInTheDocument();
+      expect(screen.getByText('User')).toBeInTheDocument();
+      expect(screen.getByText('IP')).toBeInTheDocument();
+      expect(screen.getByText('Timestamp')).toBeInTheDocument();
+    });
+  });
+
+  it('shows user and ip on event row', async () => {
+    mockFetchSecurityEvents.mockResolvedValue({
+      events: [
+        {
+          id: 'e2',
+          type: 'injection_attempt',
+          severity: 'error',
+          message: 'SQL injection attempt',
+          timestamp: Date.now(),
+          userId: 'attacker',
+          ipAddress: '192.168.1.100',
+        },
+      ],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('user: attacker')).toBeInTheDocument();
+      expect(screen.getByText('ip: 192.168.1.100')).toBeInTheDocument();
+    });
+  });
+
+  it('shows pagination controls when total exceeds page size', async () => {
+    const events = Array.from({ length: 20 }, (_, i) => ({
+      id: `e${i}`,
+      type: 'anomaly',
+      severity: 'info',
+      message: `Event ${i}`,
+      timestamp: Date.now() - i * 1000,
+    }));
+    mockFetchSecurityEvents.mockResolvedValue({ events, total: 45 } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText(/Page 1 of 3/)).toBeInTheDocument();
+      expect(screen.getByText('Prev')).toBeInTheDocument();
+      expect(screen.getByText('Next')).toBeInTheDocument();
+    });
+  });
+
+  it('shows critical severity event with correct type badge', async () => {
+    mockFetchSecurityEvents.mockResolvedValue({
+      events: [
+        {
+          id: 'e3',
+          type: 'sandbox_violation',
+          severity: 'critical',
+          message: 'Container breakout attempt',
+          timestamp: Date.now(),
+        },
+      ],
+      total: 1,
+    } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('sandbox_violation')).toBeInTheDocument();
+      expect(screen.getByText('Container breakout attempt')).toBeInTheDocument();
+    });
+  });
+
+  it('changes period and refetches', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('24h')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('24h'));
+    await waitFor(() => {
+      expect(mockFetchMlSummary).toHaveBeenCalledWith(expect.objectContaining({ period: '24h' }));
+    });
+  });
+
+  it('filters by type using the dropdown', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('All ML Types')).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByDisplayValue('All ML Types'), {
+      target: { value: 'anomaly' },
+    });
+    await waitFor(() => {
+      expect(mockFetchSecurityEvents).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'anomaly' })
+      );
+    });
+  });
+
+  it('shows disabled warning and Enable link', async () => {
+    mockFetchMlSummary.mockResolvedValue({ ...defaultSummary, enabled: false } as any);
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Enable in Security Settings')).toBeInTheDocument();
+    });
+  });
+
+  it('shows detection count values', async () => {
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('5')).toBeInTheDocument(); // anomaly
+      expect(screen.getByText('3')).toBeInTheDocument(); // injection
+      expect(screen.getByText('2')).toBeInTheDocument(); // secret
+    });
+  });
+
+  it('shows empty events message with type filter', async () => {
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 } as any);
+    const { fireEvent } = await import('@testing-library/react');
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('All ML Types')).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByDisplayValue('All ML Types'), {
+      target: { value: 'sandbox_violation' },
+    });
+    await waitFor(() => {
+      expect(screen.getByText(/No ML events found for type "sandbox_violation"/)).toBeInTheDocument();
+    });
+  });
 });

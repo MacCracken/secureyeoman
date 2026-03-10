@@ -72,27 +72,43 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### Test Coverage — Current Status (2026-03-08)
+### Test Coverage — Current Status (2026-03-10)
 
 **Core unit: 89.31% stmt / 79.10% branches** (target 88% / 77% — exceeded).
 
 | Suite | Files | Tests | Stmts % | Branch % | Status |
 |-------|-------|-------|---------|----------|--------|
-| Core Unit | 620 | 15,364 | 89.31 | 79.10 | All passing |
-| Dashboard | 164 | 3,201 | 62.37 | 61.98 | All passing |
-| MCP | 72 | 1,066 | 61.80 | 48.51 | All passing |
+| Core Unit | 642 | 15,827 | 89.31 | 79.10 | All passing |
+| Dashboard | 176 | 4,043 | ~68 | ~65 | All passing |
+| MCP | 75 | 1,111 | 70.20 | 51.50 | All passing |
 | Core E2E | 7 | 53 | — | — | All passing |
 | Core DB (integration) | 41 | 890 | — | — | All passing (clean DB verified) |
 
-**Improvement areas per suite:**
+**Recent improvements (2026-03-10):**
+- MCP: 61.80% → 70.20% stmt (+8.4%). Added handler invocation tests for linear, twitter, todoist, notion, jira, gmail, googlecalendar, google-workspace, quickbooks tools. Added prompt and resource handler tests.
+- Dashboard: 62.37% → ~68% stmt (+6%). Added tests for PersonalityEditor, SecurityMLTab, SecurityATHITab, SecurityAutonomyTab, FederationTab, McpManager.
+- Dashboard target: 70% stmt — remaining gap in training tabs (ExperimentsTab, EvaluationTab, PreferencesTab) and hooks (useCollabMonaco, usePushToTalk).
+
+**Remaining improvement areas:**
 
 | Suite | Area | Notes |
 |-------|------|-------|
 | Core Unit | `sandbox/`, `config/`, `cli/commands/` | Branch coverage gaps in exec paths and flag parsing |
-| Core Unit | `training/federated/`, `workflow/` | Manager logic branches, engine conditions |
-| Dashboard | API client, complex components | 62% stmt coverage — significant improvement from 44%, continue sweep |
-| MCP | Tool handlers, manifest | 62% stmt coverage — improved from 58%, continue sweep |
+| Dashboard | Training tabs, collab/voice hooks | ~2% more needed to hit 70% target |
+| MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
 | Core E2E | Expand coverage | Currently 7 files / 53 tests; add training, delegation, analytics flows |
+
+### Code Quality — Completed (2026-03-10, 5 Audit Rounds)
+
+Five rounds of code audit across CLI, Dashboard, and MCP packages. All findings fixed, verified with typecheck (0 errors), lint (0 errors), and full test suites.
+
+| Category | Fixes Applied |
+|----------|--------------|
+| Memory leaks | Event listener cleanup in world.ts, tui.ts, provider.ts, chat.ts. Token cache eviction (agnostic-tools). Rate limiter bucket pruning (rate-limiter.ts). Browser pool shutdown export. Module-level interval cleanup for network-tools and twingate-tools wired into server.stop(). |
+| Performance | O(n²) cards.find() → Map lookup (world.ts). Rate limiter filter → splice pruning (web-tools.ts). useMemo for entry filtering (ConversationHistory.tsx). API response caching with 5-min TTL (desktop-tools.ts). CAPTCHA body clone only on non-success responses (proxy-manager.ts). |
+| Dead code | Removed unused imports (createInterface, getBrowserPool), dead sessionId variable (browser-tools.ts), unused _ALL_SERVICES constant (agnostic.ts). Added clearGlobalToolRegistry() export (tool-utils.ts). |
+| Resource management | SSH session hard cap of 100 (network-tools.ts). Child process error handlers (agnostic.ts). Timer cleanup on unmount (OnboardingWizard.tsx). readSecret end/error handlers with double-resolve guard (provider.ts). |
+| Robustness | Defensive Array.isArray() on API responses (role.ts). Shutdown hooks for all module-level intervals and sessions. |
 
 ### Security Hardening — Architectural (2026-03-09 Audit)
 
@@ -302,4 +318,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-09 (Removed completed Phase 145 items, added Security Hardening — Architectural backlog from deep audit). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-10 (Updated test coverage stats, added Code Quality audit summary from 5 audit rounds). See [Changelog](../../CHANGELOG.md) for full history.*

@@ -501,4 +501,75 @@ describe('FederationTab', () => {
     expect(switches[1]).toHaveAttribute('aria-checked', 'true');
     expect(switches[2]).toHaveAttribute('aria-checked', 'false');
   });
+
+  it('should call updateFederationPeerFeatures when a feature toggle is clicked', async () => {
+    const mockUpdateFeatures = vi.mocked(apiClient.updateFederationPeerFeatures);
+    mockUpdateFeatures.mockResolvedValue(undefined as any);
+
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    const expandBtn = screen.getByRole('button', { name: 'Expand' });
+    fireEvent.click(expandBtn);
+
+    const switches = screen.getAllByRole('switch');
+    // Click the "Personalities" toggle (index 2, currently off)
+    fireEvent.click(switches[2]);
+
+    await waitFor(() => {
+      expect(mockUpdateFeatures).toHaveBeenCalledWith('peer-1', { personalities: true });
+    });
+  });
+
+  it('should call updateFederationPeerFeatures to disable a feature', async () => {
+    const mockUpdateFeatures = vi.mocked(apiClient.updateFederationPeerFeatures);
+    mockUpdateFeatures.mockResolvedValue(undefined as any);
+
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    const expandBtn = screen.getByRole('button', { name: 'Expand' });
+    fireEvent.click(expandBtn);
+
+    const switches = screen.getAllByRole('switch');
+    // Click the "Knowledge Base" toggle (index 0, currently on)
+    fireEvent.click(switches[0]);
+
+    await waitFor(() => {
+      expect(mockUpdateFeatures).toHaveBeenCalledWith('peer-1', { knowledge: false });
+    });
+  });
+
+  it('should show Install button for skills in peer marketplace', async () => {
+    const mockInstallSkill = vi.mocked(apiClient.installSkillFromPeer);
+    mockInstallSkill.mockResolvedValue(undefined as any);
+    mockFetchPeerMarketplace.mockResolvedValue({
+      skills: [
+        { id: 'sk-1', name: 'Web Search', description: 'Search the web' },
+      ],
+    } as any);
+
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    const expandBtn = screen.getByRole('button', { name: 'Expand' });
+    fireEvent.click(expandBtn);
+    fireEvent.click(screen.getByText('Browse peer marketplace'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Web Search')).toBeInTheDocument();
+    });
+
+    const installBtns = screen.getAllByText('Install');
+    expect(installBtns.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should show export button in bundles tab', async () => {
+    renderTab();
+    await waitFor(() => screen.getByText('Remote Instance'));
+
+    fireEvent.click(screen.getByRole('button', { name: /personality bundles/i }));
+
+    expect(screen.getByText('Export Bundle')).toBeInTheDocument();
+  });
 });

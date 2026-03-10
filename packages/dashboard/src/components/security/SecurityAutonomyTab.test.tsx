@@ -334,4 +334,210 @@ describe('AutonomyTab', () => {
       expect(screen.getByText('Advanced')).toBeInTheDocument();
     });
   });
+
+  it('shows audit wizard checklist items after starting a run', async () => {
+    const mockCreateRun = vi.mocked(api.createAuditRun);
+    const mockFetchRun = vi.mocked(api.fetchAuditRun);
+    const runData = {
+      id: 'run-new',
+      name: 'Test Audit',
+      status: 'in_progress',
+      items: [
+        { id: 'item-1', section: 'A', text: 'Verify all L5 items are inventoried', status: 'pending', note: '' },
+        { id: 'item-2', section: 'A', text: 'Confirm naming conventions', status: 'pending', note: '' },
+        { id: 'item-3', section: 'B', text: 'Review level assignments', status: 'pending', note: '' },
+      ],
+    };
+    mockCreateRun.mockResolvedValue(runData as any);
+    mockFetchRun.mockResolvedValue(runData as any);
+
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Audit Wizard')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Audit Wizard'));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Audit name/)).toBeInTheDocument();
+    });
+    await user.type(screen.getByPlaceholderText(/Audit name/), 'Test Audit');
+    await user.click(screen.getByText('Start Audit'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Verify all L5 items are inventoried')).toBeInTheDocument();
+      expect(screen.getByText('Confirm naming conventions')).toBeInTheDocument();
+    });
+    // Status buttons should be visible
+    expect(screen.getAllByText('pass').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('fail').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('deferred').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows Next section button in wizard section A', async () => {
+    const mockCreateRun = vi.mocked(api.createAuditRun);
+    const mockFetchRun = vi.mocked(api.fetchAuditRun);
+    const runData = {
+      id: 'run-x',
+      name: 'Nav Test',
+      status: 'in_progress',
+      items: [
+        { id: 'item-1', section: 'A', text: 'Item A1', status: 'pending', note: '' },
+      ],
+    };
+    mockCreateRun.mockResolvedValue(runData as any);
+    mockFetchRun.mockResolvedValue(runData as any);
+
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Audit Wizard')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Audit Wizard'));
+    await user.type(screen.getByPlaceholderText(/Audit name/), 'Nav Test');
+    await user.click(screen.getByText('Start Audit'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Item A1')).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Next section/)).toBeInTheDocument();
+    expect(screen.getByText('Back to list')).toBeInTheDocument();
+  });
+
+  it('shows completed audit with pass/fail/deferred counts', async () => {
+    const mockFetchRun = vi.mocked(api.fetchAuditRun);
+    mockFetchAuditRuns.mockResolvedValue([
+      { id: 'run-done', name: 'Completed Audit', status: 'completed' },
+    ] as any);
+    mockFetchRun.mockResolvedValue({
+      id: 'run-done',
+      name: 'Completed Audit',
+      status: 'completed',
+      reportMarkdown: '# Audit Report\nAll clear.',
+      items: [
+        { id: 'i1', section: 'A', text: 'Check 1', status: 'pass', note: '' },
+        { id: 'i2', section: 'A', text: 'Check 2', status: 'fail', note: 'Missing docs' },
+        { id: 'i3', section: 'B', text: 'Check 3', status: 'deferred', note: '' },
+      ],
+    } as any);
+
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Audit Wizard')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Audit Wizard'));
+    await waitFor(() => {
+      expect(screen.getByText('Completed Audit')).toBeInTheDocument();
+    });
+    // Click the completed run to view it
+    await user.click(screen.getByText('Completed Audit'));
+    await waitFor(() => {
+      expect(screen.getByText(/Audit Complete/)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Pass: 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Fail: 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Deferred: 1/)).toBeInTheDocument();
+  });
+
+  it('shows View Report details in completed audit', async () => {
+    const mockFetchRun = vi.mocked(api.fetchAuditRun);
+    mockFetchAuditRuns.mockResolvedValue([
+      { id: 'run-rpt', name: 'Report Audit', status: 'completed' },
+    ] as any);
+    mockFetchRun.mockResolvedValue({
+      id: 'run-rpt',
+      name: 'Report Audit',
+      status: 'completed',
+      reportMarkdown: '# Report\nDetailed findings here.',
+      items: [
+        { id: 'i1', section: 'A', text: 'Check', status: 'pass', note: '' },
+      ],
+    } as any);
+
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Audit Wizard')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Audit Wizard'));
+    await waitFor(() => {
+      expect(screen.getByText('Report Audit')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Report Audit'));
+    await waitFor(() => {
+      expect(screen.getByText('View Report')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Emergency Stop button in registry and opens confirm dialog', async () => {
+    const overviewWithL5 = {
+      totals: { L1: 0, L2: 0, L3: 0, L4: 0, L5: 1 },
+      byLevel: {
+        L1: [],
+        L2: [],
+        L3: [],
+        L4: [],
+        L5: [
+          { id: 's-5', name: 'Auto Deploy', type: 'workflow', autonomyLevel: 'L5', enabled: true },
+        ],
+      },
+    };
+    mockFetchOverview.mockResolvedValue(overviewWithL5 as any);
+
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Emergency Stop Registry')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Emergency Stop Registry'));
+    await waitFor(() => {
+      expect(screen.getByText('Emergency Stop')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Emergency Stop'));
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
+      expect(screen.getByText(/Disable workflow "Auto Deploy"/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows no L5 items message in empty registry', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Emergency Stop Registry')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Emergency Stop Registry'));
+    await waitFor(() => {
+      expect(screen.getByText('No L5 items found.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows emergency stop warning text in registry', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Emergency Stop Registry')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Emergency Stop Registry'));
+    await waitFor(() => {
+      expect(screen.getByText(/Emergency stop immediately disables/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows run status in previous runs list', async () => {
+    mockFetchAuditRuns.mockResolvedValue([
+      { id: 'run-1', name: 'Q1 Review', status: 'completed' },
+      { id: 'run-2', name: 'Q2 Review', status: 'in_progress' },
+    ] as any);
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Audit Wizard')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Audit Wizard'));
+    await waitFor(() => {
+      expect(screen.getByText('completed')).toBeInTheDocument();
+      expect(screen.getByText('in_progress')).toBeInTheDocument();
+    });
+  });
 });

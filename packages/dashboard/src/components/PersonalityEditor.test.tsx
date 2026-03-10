@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { PersonalityEditor } from './PersonalityEditor';
+import { PersonalityEditor, PersonalityView } from './PersonalityEditor';
 import { createSoulConfig } from '../test/mocks';
 
 // ── Capture navigate calls ──────────────────────────────────────────
@@ -1012,5 +1012,480 @@ describe('PersonalityEditor — Disposition', () => {
     expect(screen.getByPlaceholderText('trait name')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('value')).toBeInTheDocument();
     expect(screen.getByText('+ Add')).toBeInTheDocument();
+  });
+});
+
+describe('PersonalityEditor — personality list cards', () => {
+  it('shows description on personality card', async () => {
+    const withDesc = { ...MOCK_PERSONALITY, description: 'My test assistant personality' };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [withDesc] });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('My test assistant personality')).toBeInTheDocument();
+    });
+  });
+
+  it('shows trait tags on personality card', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('formality: balanced')).toBeInTheDocument();
+      expect(screen.getByText('humor: dry')).toBeInTheDocument();
+    });
+    // Should show +1 for the third trait
+    expect(screen.getByText('+1')).toBeInTheDocument();
+  });
+
+  it('shows sex badge when not unspecified', async () => {
+    const withSex = { ...MOCK_PERSONALITY, sex: 'female' as const };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [withSex] });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('female')).toBeInTheDocument();
+    });
+  });
+
+  it('shows model provider badge when defaultModel set', async () => {
+    const withModel = {
+      ...MOCK_PERSONALITY,
+      defaultModel: { provider: 'anthropic', model: 'claude-3.5-sonnet' },
+    };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [withModel] });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('anthropic')).toBeInTheDocument();
+    });
+  });
+
+  it('shows empty state when no personalities exist', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('No personalities yet')).toBeInTheDocument();
+      expect(screen.getByText('Create your first personality to get started')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Preview Prompt button on personality card', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Preview Prompt')).toBeInTheDocument();
+    });
+  });
+
+  it('shows export button on personality card', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByLabelText(`Export personality ${MOCK_PERSONALITY.name}`)).toBeInTheDocument();
+    });
+  });
+
+  it('shows enable button for disabled personality', async () => {
+    const disabled = { ...MOCK_PERSONALITY, isActive: false, enabled: false };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [disabled] });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByLabelText(`Enable personality ${MOCK_PERSONALITY.name}`)).toBeInTheDocument();
+    });
+  });
+
+  it('shows Spirit - Pathos section in editor', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    await screen.findByText('Soul — Essence');
+    expect(screen.getByText('Spirit - Pathos')).toBeInTheDocument();
+  });
+
+  it('shows Spirit section with Passions, Inspirations and Pain Points', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    await screen.findByText('Spirit - Pathos');
+    await user.click(screen.getByText('Spirit - Pathos'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Passions')).toBeInTheDocument();
+      expect(screen.getByText('Inspirations')).toBeInTheDocument();
+      expect(screen.getByText('Pain Points')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Morphogenesis and Empathy Resonance toggles in Spirit section', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    await screen.findByText('Spirit - Pathos');
+    await user.click(screen.getByText('Spirit - Pathos'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Morphogenesis')).toBeInTheDocument();
+      expect(screen.getByText('Empathy Resonance')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Brain section thinking controls', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    await waitFor(() => {
+      expect(screen.getByText('Omnipresent Mind')).toBeInTheDocument();
+      expect(screen.getByText('System Prompt Confidentiality')).toBeInTheDocument();
+      expect(screen.getByText('Knowledge Retrieval Mode')).toBeInTheDocument();
+      expect(screen.getByText('Chronoception')).toBeInTheDocument();
+    });
+  });
+
+  it('shows knowledge retrieval mode buttons (RAG, Notebook, Hybrid)', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    await waitFor(() => {
+      expect(screen.getByText('RAG')).toBeInTheDocument();
+      expect(screen.getByText('Notebook')).toBeInTheDocument();
+      expect(screen.getByText('Hybrid')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Default Model selector in Brain section', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    mockFetchModelInfo.mockResolvedValue({
+      available: {
+        anthropic: [{ model: 'claude-3.5-sonnet' }],
+        openai: [{ model: 'gpt-4o' }],
+      },
+    } as any);
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    await waitFor(() => {
+      expect(screen.getByText('Default Model')).toBeInTheDocument();
+      expect(screen.getByText('Use system default')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Model Fallbacks section in Brain', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    await waitFor(() => {
+      expect(screen.getByText('Model Fallbacks')).toBeInTheDocument();
+      expect(screen.getByText(/Ordered list of fallback models/)).toBeInTheDocument();
+    });
+  });
+});
+
+// ── PersonalityView tests ──────────────────────────────────────────────
+
+const mockPromptPreview = vi.mocked(api.fetchPromptPreview);
+
+function renderPersonalityView() {
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={createQueryClient()}>
+        <PersonalityView />
+      </QueryClientProvider>
+    </MemoryRouter>
+  );
+}
+
+describe('PersonalityView', () => {
+  it('renders the personalities heading and subtitle', async () => {
+    renderPersonalityView();
+    expect(await screen.findByText('Personalities')).toBeInTheDocument();
+    expect(screen.getByText('Define the agents that power your assistant')).toBeInTheDocument();
+  });
+
+  it('shows New Personality button', async () => {
+    renderPersonalityView();
+    expect(await screen.findByText('New Personality')).toBeInTheDocument();
+  });
+
+  it('shows loading state', async () => {
+    mockFetchPersonalities.mockReturnValue(new Promise(() => {}));
+    renderPersonalityView();
+    expect(await screen.findByText('Loading...')).toBeInTheDocument();
+  });
+
+  it('shows empty state when no personalities', async () => {
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('No personalities yet')).toBeInTheDocument();
+      expect(screen.getByText('Create your first personality to get started')).toBeInTheDocument();
+    });
+  });
+
+  it('renders personality cards with name', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText(MOCK_PERSONALITY.name)).toBeInTheDocument();
+    });
+  });
+
+  it('shows Active badge on active personality', async () => {
+    const active = { ...MOCK_PERSONALITY, isActive: true };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [active] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('Active')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Default badge on default personality', async () => {
+    const defaultP = { ...MOCK_PERSONALITY, isDefault: true };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [defaultP] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('Default')).toBeInTheDocument();
+    });
+  });
+
+  it('shows description on personality card', async () => {
+    const withDesc = { ...MOCK_PERSONALITY, description: 'A powerful assistant' };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [withDesc] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('A powerful assistant')).toBeInTheDocument();
+    });
+  });
+
+  it('shows trait tags on personality card', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('formality: balanced')).toBeInTheDocument();
+      expect(screen.getByText('humor: dry')).toBeInTheDocument();
+    });
+  });
+
+  it('shows +N for additional traits beyond 2', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('+1')).toBeInTheDocument();
+    });
+  });
+
+  it('shows sex badge when not unspecified', async () => {
+    const withSex = { ...MOCK_PERSONALITY, sex: 'male' as const };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [withSex] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('male')).toBeInTheDocument();
+    });
+  });
+
+  it('shows model provider badge when defaultModel set', async () => {
+    const withModel = {
+      ...MOCK_PERSONALITY,
+      defaultModel: { provider: 'openai', model: 'gpt-4o' },
+    };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [withModel] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('openai')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Preview Prompt button', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('Preview Prompt')).toBeInTheDocument();
+    });
+  });
+
+  it('shows prompt preview when Preview Prompt clicked', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    mockPromptPreview.mockResolvedValue({
+      prompt: 'You are a test assistant',
+      charCount: 25,
+      estimatedTokens: 7,
+      tools: [],
+    } as any);
+    const user = userEvent.setup();
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('Preview Prompt')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Preview Prompt'));
+    await waitFor(() => {
+      expect(screen.getByText('System Prompt Preview')).toBeInTheDocument();
+      expect(screen.getByText('You are a test assistant')).toBeInTheDocument();
+      expect(screen.getByText('25 chars')).toBeInTheDocument();
+      expect(screen.getByText('~7 tokens')).toBeInTheDocument();
+    });
+  });
+
+  it('toggles prompt preview off with Hide Preview', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    mockPromptPreview.mockResolvedValue({
+      prompt: 'You are a test assistant',
+      charCount: 25,
+      estimatedTokens: 7,
+      tools: [],
+    } as any);
+    const user = userEvent.setup();
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('Preview Prompt')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Preview Prompt'));
+    await waitFor(() => {
+      expect(screen.getByText('Hide Preview')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Hide Preview'));
+    await waitFor(() => {
+      expect(screen.getByText('Preview Prompt')).toBeInTheDocument();
+      expect(screen.queryByText('System Prompt Preview')).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows Enable button for disabled personality', async () => {
+    const disabled = { ...MOCK_PERSONALITY, isActive: false };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [disabled] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByTitle(`Enable ${MOCK_PERSONALITY.name}`)).toBeInTheDocument();
+    });
+  });
+
+  it('shows Disable button for active non-default personality', async () => {
+    const active = { ...MOCK_PERSONALITY, isActive: true, isDefault: false };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [active] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByTitle(`Disable ${MOCK_PERSONALITY.name}`)).toBeInTheDocument();
+    });
+  });
+
+  it('navigates to edit page when Edit clicked', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByTitle(`Edit ${MOCK_PERSONALITY.name}`)).toBeInTheDocument();
+    });
+    await user.click(screen.getByTitle(`Edit ${MOCK_PERSONALITY.name}`));
+    expect(mockNavigate).toHaveBeenCalledWith(`/personality/${MOCK_PERSONALITY.id}/edit`);
+  });
+
+  it('navigates to new personality page when New clicked', async () => {
+    const user = userEvent.setup();
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('New Personality')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('New Personality'));
+    expect(mockNavigate).toHaveBeenCalledWith('/personality/new');
+  });
+
+  it('shows delete button disabled for active personality', async () => {
+    const active = { ...MOCK_PERSONALITY, isActive: true };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [active] });
+    renderPersonalityView();
+    await waitFor(() => {
+      const deleteBtn = screen.getByTitle('Deactivate this personality before deleting');
+      expect(deleteBtn).toBeDisabled();
+    });
+  });
+
+  it('shows delete button enabled for inactive personality', async () => {
+    const inactive = { ...MOCK_PERSONALITY, isActive: false };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [inactive] });
+    renderPersonalityView();
+    await waitFor(() => {
+      const deleteBtn = screen.getByTitle(`Delete ${MOCK_PERSONALITY.name}`);
+      expect(deleteBtn).not.toBeDisabled();
+    });
+  });
+
+  it('shows star button to set default for non-default personality', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByTitle(`Set ${MOCK_PERSONALITY.name} as default`)).toBeInTheDocument();
+    });
+  });
+
+  it('shows star button to remove default for default personality', async () => {
+    const defaultP = { ...MOCK_PERSONALITY, isDefault: true };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [defaultP] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByTitle('Remove as default')).toBeInTheDocument();
+    });
+  });
+
+  it('renders multiple personalities', async () => {
+    const p1 = { ...MOCK_PERSONALITY, id: 'p1', name: 'Alpha' };
+    const p2 = { ...MOCK_PERSONALITY, id: 'p2', name: 'Beta', isActive: true };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [p1, p2] });
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('Alpha')).toBeInTheDocument();
+      expect(screen.getByText('Beta')).toBeInTheDocument();
+    });
+  });
+
+  it('shows prompt preview with tools count when tools exist', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    mockPromptPreview.mockResolvedValue({
+      prompt: 'System prompt here',
+      charCount: 18,
+      estimatedTokens: 5,
+      tools: ['tool1', 'tool2', 'tool3'],
+    } as any);
+    const user = userEvent.setup();
+    renderPersonalityView();
+    await waitFor(() => {
+      expect(screen.getByText('Preview Prompt')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Preview Prompt'));
+    await waitFor(() => {
+      expect(screen.getByText('3 tools')).toBeInTheDocument();
+    });
   });
 });

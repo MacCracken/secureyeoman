@@ -536,4 +536,216 @@ describe('SecurityATHITab', () => {
       expect(screen.getByText('80%')).toBeInTheDocument();
     });
   });
+
+  it('shows edit button on scenario row and opens edit modal', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-1',
+          title: 'Editable Threat',
+          description: 'A threat to edit',
+          actor: 'insider',
+          techniques: ['data_poisoning'],
+          harms: ['misinformation'],
+          impacts: ['ip_theft'],
+          likelihood: 2,
+          severity: 3,
+          riskScore: 6,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'identified',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Editable Threat')).toBeInTheDocument();
+    });
+    const editBtn = screen.getByTitle('Edit');
+    fireEvent.click(editBtn);
+    await waitFor(() => {
+      expect(screen.getByTestId('athi-scenario-modal')).toBeInTheDocument();
+    });
+  });
+
+  it('shows technique badges on scenario row', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-tech',
+          title: 'Multi Technique',
+          actor: 'cybercriminal',
+          techniques: ['prompt_injection', 'data_poisoning', 'model_theft'],
+          harms: ['data_breach'],
+          impacts: ['regulatory_penalty'],
+          likelihood: 4,
+          severity: 4,
+          riskScore: 16,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'assessed',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Prompt Injection')).toBeInTheDocument();
+      expect(screen.getByText('Data Poisoning')).toBeInTheDocument();
+      expect(screen.getByText('Model Theft')).toBeInTheDocument();
+    });
+  });
+
+  it('renders table headers for scenario list', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-1',
+          title: 'Header Test',
+          actor: 'cybercriminal',
+          techniques: ['prompt_injection'],
+          harms: ['data_breach'],
+          impacts: [],
+          likelihood: 1,
+          severity: 1,
+          riskScore: 1,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'identified',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Title')).toBeInTheDocument();
+      expect(screen.getByText('Actor')).toBeInTheDocument();
+      expect(screen.getByText('Techniques')).toBeInTheDocument();
+      expect(screen.getByText('Score')).toBeInTheDocument();
+      expect(screen.getByText('Status')).toBeInTheDocument();
+      expect(screen.getByText('Linked')).toBeInTheDocument();
+      expect(screen.getByText('Actions')).toBeInTheDocument();
+    });
+  });
+
+  it('shows assessed status formatted correctly', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-assessed',
+          title: 'Assessed Threat',
+          actor: 'hacktivist',
+          techniques: ['social_engineering'],
+          harms: ['reputational_damage'],
+          impacts: [],
+          likelihood: 3,
+          severity: 3,
+          riskScore: 9,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'assessed',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Assessed')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Hacktivist actor formatted correctly', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-hack',
+          title: 'Hacktivist Scenario',
+          actor: 'hacktivist',
+          techniques: ['prompt_injection'],
+          harms: [],
+          impacts: [],
+          likelihood: 2,
+          severity: 2,
+          riskScore: 4,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'identified',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Hacktivist')).toBeInTheDocument();
+    });
+  });
+
+  it('shows delete button on scenario row', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-del',
+          title: 'Delete Me',
+          actor: 'insider',
+          techniques: [],
+          harms: [],
+          impacts: [],
+          likelihood: 1,
+          severity: 1,
+          riskScore: 1,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'identified',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Delete')).toBeInTheDocument();
+    });
+  });
+
+  it('shows By Status label in summary', async () => {
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('By Status')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Total Scenarios label in summary', async () => {
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Total Scenarios')).toBeInTheDocument();
+      expect(screen.getByText('Avg Risk Score')).toBeInTheDocument();
+      expect(screen.getByText('Mitigation Coverage')).toBeInTheDocument();
+    });
+  });
 });

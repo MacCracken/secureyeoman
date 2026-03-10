@@ -341,4 +341,97 @@ describe('McpManager', () => {
       expect(screen.getByText('Beta tool')).toBeInTheDocument();
     });
   });
+
+  it('shows confirm dialog when Remove is clicked and calls deleteMcpServer on confirm', async () => {
+    const mockDeleteMcpServer = vi.mocked(api.deleteMcpServer);
+    mockDeleteMcpServer.mockResolvedValue(undefined as any);
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [{ id: 's1', name: 'test-server', transport: 'stdio', enabled: true }],
+      total: 1,
+    } as any);
+    const user = userEvent.setup();
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Remove')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Remove'));
+    await waitFor(() => {
+      expect(screen.getByText('Remove MCP Server')).toBeInTheDocument();
+      expect(screen.getByText(/Are you sure you want to remove "test-server"/)).toBeInTheDocument();
+    });
+    // Confirm removal — use the destructive-styled confirm button in the dialog
+    const confirmBtns = screen.getAllByRole('button', { name: /remove/i });
+    const dialogConfirmBtn = confirmBtns.find(b => b.className.includes('destructive'));
+    await user.click(dialogConfirmBtn!);
+    await waitFor(() => {
+      expect(mockDeleteMcpServer).toHaveBeenCalledWith('s1');
+    });
+  });
+
+  it('calls patchMcpServer when toggle is clicked', async () => {
+    const mockPatchMcpServer = vi.mocked(api.patchMcpServer);
+    mockPatchMcpServer.mockResolvedValue(undefined as any);
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [{ id: 's1', name: 'active', transport: 'stdio', enabled: true }],
+      total: 1,
+    } as any);
+    const user = userEvent.setup();
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByTitle('Click to disable')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTitle('Click to disable'));
+    await waitFor(() => {
+      expect(mockPatchMcpServer).toHaveBeenCalledWith('s1', { enabled: false });
+    });
+  });
+
+  it('submits add form with SSE transport and URL', async () => {
+    mockAddMcpServer.mockResolvedValue({ server: { id: 'new', name: 'sse-test' } } as any);
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(screen.getByText('Add Server'));
+    // Fill name
+    const nameInput = screen.getByPlaceholderText('e.g. filesystem-server');
+    await user.type(nameInput, 'sse-test');
+    // Change transport to SSE
+    const { fireEvent: fe } = await import('@testing-library/react');
+    fe.change(screen.getByDisplayValue('stdio'), { target: { value: 'sse' } });
+    // Fill URL
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('https://example.com/mcp')).toBeInTheDocument();
+    });
+    await user.type(screen.getByPlaceholderText('https://example.com/mcp'), 'https://mcp.test.com');
+    // Submit — click the form submit button (not the header "Add Server" button)
+    const addBtns = screen.getAllByRole('button', { name: /add server/i });
+    const submitBtn = addBtns.find(b => !b.className.includes('whitespace-nowrap'));
+    await user.click(submitBtn!);
+    await waitFor(() => {
+      expect(mockAddMcpServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'sse-test',
+          transport: 'sse',
+          url: 'https://mcp.test.com',
+        })
+      );
+    });
+  });
+
+  it('adds and removes environment variables in form', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(screen.getByText('Add Server'));
+    // Click "+ Add Variable"
+    await user.click(screen.getByText('+ Add Variable'));
+    // Should show KEY and value inputs
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('KEY')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('value')).toBeInTheDocument();
+    });
+    // Type env var
+    await user.type(screen.getByPlaceholderText('KEY'), 'MY_VAR');
+    await user.type(screen.getByPlaceholderText('value'), 'my_value');
+    expect(screen.getByDisplayValue('MY_VAR')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('my_value')).toBeInTheDocument();
+  });
 });
