@@ -5,7 +5,7 @@
 import { PgBaseStorage } from '../../storage/pg-base.js';
 import { buildWhere, parseCount } from '../../storage/query-helpers.js';
 import { uuidv7 as generateId } from '../../utils/id.js';
-import type { ClassificationRecord, ClassificationLevel, ClassificationRule } from './types.js';
+import type { ClassificationRecord, ClassificationLevel } from './types.js';
 
 export class ClassificationStore extends PgBaseStorage {
   async create(record: Omit<ClassificationRecord, 'id'>): Promise<string> {

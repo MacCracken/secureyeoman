@@ -5,7 +5,7 @@
  * personality version snapshots.
  */
 
-import type { Personality, PersonalityVersion, DriftSummary } from '@secureyeoman/shared';
+import type { PersonalityVersion, DriftSummary } from '@secureyeoman/shared';
 import type { PersonalityVersionStorage } from './personality-version-storage.js';
 import type { SoulStorage } from './storage.js';
 import type { PersonalityMarkdownSerializer } from './personality-serializer.js';

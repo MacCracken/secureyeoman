@@ -26,7 +26,6 @@ import {
   removeWorkspaceMember,
   fetchUsers,
   type Workspace,
-  type WorkspaceMember,
 } from '../api/client';
 
 const ROLES = ['owner', 'admin', 'member', 'viewer'] as const;

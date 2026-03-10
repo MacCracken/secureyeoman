@@ -10,13 +10,7 @@
 
 import type { ClassificationEngine } from './classification-engine.js';
 import type { DlpPolicyStore } from './dlp-policy-store.js';
-import type {
-  DlpPolicy,
-  DlpPolicyRule,
-  DlpScanResult,
-  DlpFinding,
-  ClassificationLevel,
-} from './types.js';
+import type { DlpPolicy, DlpScanResult, DlpFinding, ClassificationLevel } from './types.js';
 import { CLASSIFICATION_RANK } from './types.js';
 
 export interface DlpScannerConfig {
@@ -51,7 +45,7 @@ export class DlpScanner {
     this.config = config ?? {};
   }
 
-  async scan(content: string, destination: string, contentType?: string): Promise<DlpScanResult> {
+  async scan(content: string, destination: string, _contentType?: string): Promise<DlpScanResult> {
     // 1. Classify content
     const classification = this.engine.classify(content);
 

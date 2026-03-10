@@ -82,7 +82,7 @@ describe('trading-tools — registration', () => {
     expect(() => registerTradingTools(server, makeConfig(), noopMiddleware())).not.toThrow();
   });
 
-  it('registers exactly the 13 expected tool names', () => {
+  it('registers exactly the 26 expected tool names', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     const registered: string[] = [];
     vi.spyOn(server, 'registerTool').mockImplementation((name: string) => {
@@ -102,10 +102,23 @@ describe('trading-tools — registration', () => {
       'market_historical',
       'market_search',
       'trading_journal_log',
+      'bullshift_market_quote',
       'bullshift_algo_strategies',
+      'bullshift_create_strategy',
+      'bullshift_get_strategy',
+      'bullshift_algo_signals',
       'bullshift_sentiment',
+      'bullshift_sentiment_signals',
       'bullshift_list_alerts',
       'bullshift_create_alert',
+      'bullshift_alert_rules',
+      'bullshift_create_alert_rule',
+      'bullshift_delete_alert_rule',
+      'bullshift_ai_providers',
+      'bullshift_add_ai_provider',
+      'bullshift_configure_ai_provider',
+      'bullshift_test_ai_provider',
+      'bullshift_ai_chat',
     ]);
   });
 });
@@ -436,20 +449,38 @@ describe('bullshift_sentiment', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('calls /v1/sentiment/aggregate/:symbol when symbol provided', async () => {
-    mockFetchOk({ symbol: 'AAPL', overall_score: 0.8 });
+  it('calls /v1/sentiment/:symbol with the given symbol', async () => {
+    mockFetchOk({ symbol: 'AAPL', aggregate: { score: 0.8 }, signals: [] });
     const handlers = captureHandlers();
     await handlers.bullshift_sentiment({ symbol: 'AAPL' });
     const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(call[0]).toMatch(/\/v1\/sentiment\/aggregate\/AAPL$/);
+    expect(call[0]).toMatch(/\/v1\/sentiment\/AAPL$/);
+  });
+});
+
+describe('bullshift_sentiment_signals', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
   });
 
-  it('calls /v1/sentiment/signals when no symbol', async () => {
-    mockFetchOk([]);
+  it('calls /v1/sentiment/signals with default limit', async () => {
+    mockFetchOk({ signals: [] });
     const handlers = captureHandlers();
-    await handlers.bullshift_sentiment({});
+    await handlers.bullshift_sentiment_signals({});
     const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(call[0]).toMatch(/\/v1\/sentiment\/signals$/);
+    expect(call[0]).toMatch(/\/v1\/sentiment\/signals\?limit=50$/);
+  });
+
+  it('respects custom limit', async () => {
+    mockFetchOk({ signals: [] });
+    const handlers = captureHandlers();
+    await handlers.bullshift_sentiment_signals({ limit: 10 });
+    const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[0]).toMatch(/\/v1\/sentiment\/signals\?limit=10$/);
   });
 });
 
@@ -496,5 +527,161 @@ describe('bullshift_create_alert', () => {
     expect(body.name).toBe('Slack');
     expect(body.triggers).toContain('order.filled');
     expect(body.format).toBe('slack');
+  });
+});
+
+// ── New tools ────────────────────────────────────────────────────────────────
+
+describe('bullshift_market_quote', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('calls GET /v1/market/:symbol', async () => {
+    mockFetchOk({ symbol: 'AAPL', last_price: 175.5 });
+    const handlers = captureHandlers();
+    const result = await handlers.bullshift_market_quote({ symbol: 'AAPL' });
+    expect(result.isError).toBeFalsy();
+    const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[0]).toMatch(/\/v1\/market\/AAPL$/);
+  });
+});
+
+describe('bullshift_create_strategy', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('sends POST /v1/algo/strategies with strategy config', async () => {
+    mockFetchOk({ id: 'strat-1' });
+    const handlers = captureHandlers();
+    await handlers.bullshift_create_strategy({
+      name: 'MA Cross',
+      strategy_type: 'ma_crossover',
+      symbols: ['AAPL'],
+    });
+    const [url, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toMatch(/\/v1\/algo\/strategies$/);
+    expect(init.method).toBe('POST');
+    const body = JSON.parse(init.body as string);
+    expect(body.name).toBe('MA Cross');
+    expect(body.strategy_type).toBe('ma_crossover');
+    expect(body.parameters.symbols).toEqual(['AAPL']);
+  });
+});
+
+describe('bullshift_algo_signals', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('calls GET /v1/algo/signals with default limit', async () => {
+    mockFetchOk({ signals: [] });
+    const handlers = captureHandlers();
+    await handlers.bullshift_algo_signals({});
+    const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[0]).toMatch(/\/v1\/algo\/signals\?limit=50$/);
+  });
+});
+
+describe('bullshift_alert_rules', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('calls GET /v1/alerts/rules', async () => {
+    mockFetchOk({ rules: [] });
+    const handlers = captureHandlers();
+    await handlers.bullshift_alert_rules({});
+    const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[0]).toMatch(/\/v1\/alerts\/rules$/);
+  });
+});
+
+describe('bullshift_create_alert_rule', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('sends POST /v1/alerts with rule config', async () => {
+    mockFetchOk({ id: 'rule-1' });
+    const handlers = captureHandlers();
+    await handlers.bullshift_create_alert_rule({
+      name: 'Volume Alert',
+      metric_name: 'volume',
+      condition: 'greater_than',
+      threshold: 5000000,
+    });
+    const [url, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toMatch(/\/v1\/alerts$/);
+    expect(init.method).toBe('POST');
+    const body = JSON.parse(init.body as string);
+    expect(body.name).toBe('Volume Alert');
+    expect(body.condition).toBe('greater_than');
+    expect(body.severity).toBe('warning');
+  });
+});
+
+describe('bullshift_ai_providers', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('calls GET /v1/ai/providers', async () => {
+    mockFetchOk({ providers: [] });
+    const handlers = captureHandlers();
+    await handlers.bullshift_ai_providers({});
+    const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[0]).toMatch(/\/v1\/ai\/providers$/);
+  });
+});
+
+describe('bullshift_ai_chat', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('sends POST /v1/ai/chat with provider and prompt', async () => {
+    mockFetchOk({ response: 'AAPL looks bullish', tokens_used: 42 });
+    const handlers = captureHandlers();
+    const result = await handlers.bullshift_ai_chat({
+      provider_id: 'prov-1',
+      prompt: 'Analyze AAPL',
+    });
+    expect(result.isError).toBeFalsy();
+    const [url, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toMatch(/\/v1\/ai\/chat$/);
+    expect(init.method).toBe('POST');
+    const body = JSON.parse(init.body as string);
+    expect(body.provider_id).toBe('prov-1');
+    expect(body.prompt).toBe('Analyze AAPL');
   });
 });

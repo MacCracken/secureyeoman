@@ -182,7 +182,7 @@ export class SlackIntegration implements Integration {
     });
 
     // Slash command: /friday-status
-    this.app.command('/friday-status', async ({ command, ack, respond }) => {
+    this.app.command('/friday-status', async ({ command: _command, ack, respond }) => {
       await ack();
       await respond({
         text: `Agent: ${config.displayName}\nPlatform: Slack\nStatus: Connected`,
@@ -248,7 +248,7 @@ export class SlackIntegration implements Integration {
 
     // Workflow step: friday_process
     const ws = new WorkflowStep('friday_process', {
-      edit: async ({ ack, step, configure }) => {
+      edit: async ({ ack, step: _step, configure }) => {
         await ack();
         await configure({
           blocks: [
@@ -265,7 +265,7 @@ export class SlackIntegration implements Integration {
           ],
         });
       },
-      save: async ({ ack, step, view, update }) => {
+      save: async ({ ack, step: _step, view, update }) => {
         await ack();
         const taskText = (view.state.values as any)?.task_block?.task_input?.value ?? '';
         await update({ inputs: { task: { value: taskText } }, outputs: [] });

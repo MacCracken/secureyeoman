@@ -8,12 +8,7 @@
 
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
-import type {
-  AbTest,
-  AbTestCreate,
-  AbTestAssignment,
-  AbTestResolveResult,
-} from '@secureyeoman/shared';
+import type { AbTest, AbTestCreate, AbTestResolveResult } from '@secureyeoman/shared';
 
 export interface AbTestManagerDeps {
   pool: Pool;

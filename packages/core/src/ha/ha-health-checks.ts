@@ -10,7 +10,6 @@
  */
 
 import { getPool, getReadPool, hasReadReplicas, getReplicaCount } from '../storage/pg-pool.js';
-import { getLogger } from '../logging/logger.js';
 import { readFileSync } from 'node:fs';
 import * as crypto from 'node:crypto';
 import { errorToString } from '../utils/errors.js';

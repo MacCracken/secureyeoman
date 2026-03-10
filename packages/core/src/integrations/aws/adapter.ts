@@ -6,7 +6,7 @@
  * No webhooks — polling or event-driven via the agent loop.
  */
 
-import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
+import type { IntegrationConfig, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 import { createHmac, createHash } from 'crypto';
@@ -94,7 +94,7 @@ export class AwsIntegration implements Integration {
       throw new Error(`Lambda invocation failed: ${err}`);
     }
 
-    const result = await resp.text();
+    const _result = await resp.text();
     return `lambda-${functionName}-${Date.now()}`;
   }
 

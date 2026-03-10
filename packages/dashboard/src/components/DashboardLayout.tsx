@@ -12,11 +12,10 @@ import { NotificationBell } from './NotificationBell';
 import { Logo } from './Logo';
 import { ErrorBoundary } from './common/ErrorBoundary';
 import { OnboardingWizard } from './OnboardingWizard';
-import type { HealthStatus } from '../types';
 
 // Lazy-loaded route components — each becomes its own JS chunk
 const MetricsPage = lazy(() => import('./MetricsPage').then((m) => ({ default: m.MetricsPage })));
-const PersonalityEditor = lazy(() =>
+const _PersonalityEditor = lazy(() =>
   import('./PersonalityEditor').then((m) => ({ default: m.PersonalityEditor }))
 );
 const PersonalityView = lazy(() =>
@@ -53,7 +52,7 @@ const WorkflowBuilder = lazy(() =>
 const WorkflowRunDetail = lazy(() =>
   import('../pages/WorkflowRunDetail').then((m) => ({ default: m.WorkflowRunDetail }))
 );
-const IntentPage = lazy(() => import('./IntentEditor').then((m) => ({ default: m.IntentEditor })));
+const _IntentPage = lazy(() => import('./IntentEditor').then((m) => ({ default: m.IntentEditor })));
 const OrganizationPage = lazy(() =>
   import('./OrganizationPage').then((m) => ({ default: m.OrganizationPage }))
 );

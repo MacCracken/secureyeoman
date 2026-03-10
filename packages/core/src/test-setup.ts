@@ -6,7 +6,7 @@
  * Call `truncateAllTables()` in `beforeEach()` for clean test state.
  */
 
-import { initPool, closePool, resetPool, getPool } from './storage/pg-pool.js';
+import { initPool, getPool } from './storage/pg-pool.js';
 import { runMigrations } from './storage/migrations/runner.js';
 
 /** Validate a PostgreSQL identifier to prevent SQL injection in DDL statements */

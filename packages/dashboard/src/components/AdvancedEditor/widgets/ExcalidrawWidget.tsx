@@ -176,7 +176,7 @@ function sanitizeSvgColor(value: string): string {
 export function ExcalidrawWidget({
   sceneJson,
   documentId,
-  nodeId,
+  nodeId: _nodeId,
   onConfigChange,
 }: ExcalidrawWidgetProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('draw');

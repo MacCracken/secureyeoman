@@ -8,12 +8,7 @@
  */
 
 import type { CompressionStorage } from './storage.js';
-import type {
-  HistoryEntry,
-  CompressedContext,
-  HistoryCompressorConfig,
-  CompressionTier,
-} from './types.js';
+import type { HistoryEntry, CompressedContext, HistoryCompressorConfig } from './types.js';
 import { isTopicBoundary, type TopicBoundaryConfig } from './topic-detector.js';
 import { countTokens } from './token-counter.js';
 import { summarizeTopic, summarizeBulk, type SummarizerDeps } from './summarizer.js';
@@ -237,7 +232,7 @@ export class HistoryCompressor {
 
     try {
       const topicTexts = batch.map((t) => t.content);
-      const summary = await summarizeBulk(topicTexts, this.summarizer);
+      const _summary = await summarizeBulk(topicTexts, this.summarizer);
 
       // This is a recursive escalation — topics become bulk
       await this.escalateBulk(conversationId);

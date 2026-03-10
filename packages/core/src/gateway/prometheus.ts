@@ -13,7 +13,7 @@ import type { MetricsSnapshot } from '@secureyeoman/shared';
 export function formatPrometheusMetrics(metrics: Partial<MetricsSnapshot>): string {
   const lines: string[] = [];
 
-  const ts = metrics.timestamp ?? Date.now();
+  const _ts = metrics.timestamp ?? Date.now();
 
   // ── Task Metrics ─────────────────────────────────────────
   if (metrics.tasks) {

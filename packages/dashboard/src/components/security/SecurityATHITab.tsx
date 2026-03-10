@@ -12,7 +12,6 @@ import {
   Plus,
   Trash2,
   Edit2,
-  ChevronDown,
   X,
   Shield,
   AlertTriangle,
@@ -490,7 +489,7 @@ export function ATHITab() {
     onSuccess: invalidate,
   });
 
-  const linkEventsMut = useMutation({
+  const _linkEventsMut = useMutation({
     mutationFn: ({ id, eventIds }: { id: string; eventIds: string[] }) =>
       linkEventsToAthiScenario(id, eventIds),
     onSuccess: invalidate,

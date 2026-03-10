@@ -12,10 +12,6 @@ import { useKbScope } from './KnowledgeBaseContext';
 
 const ALL_PERSONALITIES = '__all__';
 
-function formatBytes(n: number): string {
-  return n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`;
-}
-
 function StatusBadge({ status }: { status: KbDocument['status'] }) {
   const cls: Record<string, string> = {
     ready: 'bg-green-100 text-green-700',

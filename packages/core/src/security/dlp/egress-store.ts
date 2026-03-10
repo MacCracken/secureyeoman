@@ -5,7 +5,7 @@
 import { PgBaseStorage } from '../../storage/pg-base.js';
 import { buildWhere, parseCount } from '../../storage/query-helpers.js';
 import { uuidv7 as generateId } from '../../utils/id.js';
-import type { EgressEvent, DlpFinding } from './types.js';
+import type { EgressEvent } from './types.js';
 
 export interface EgressQueryFilters {
   destinationType?: string;

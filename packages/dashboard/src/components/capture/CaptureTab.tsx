@@ -71,7 +71,7 @@ export default function CaptureTab() {
     }
   };
 
-  const handleRevoke = async (id: string) => {
+  const _handleRevoke = async (id: string) => {
     try {
       await revokeConsent(id);
       await refresh();

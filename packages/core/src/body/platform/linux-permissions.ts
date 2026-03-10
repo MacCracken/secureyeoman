@@ -188,7 +188,7 @@ export class LinuxPermissionManager implements PlatformPermissionManager {
     }
   }
 
-  async openSystemPreferences(type: CapturePermissionType): Promise<void> {
+  async openSystemPreferences(_type: CapturePermissionType): Promise<void> {
     if (this.usePortal) {
       await execAsync('xdg-open https://help.ubuntu.com/stable/ubuntu-help/shell-apps.html');
     } else {

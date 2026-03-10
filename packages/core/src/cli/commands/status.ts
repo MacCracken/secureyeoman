@@ -119,7 +119,7 @@ Options:
             ctx.stdout.write(JSON.stringify({ profile: deep }, null, 2) + '\n');
           } else {
             ctx.stdout.write(`    Resource Profile:\n`);
-            const mem = process.memoryUsage ? process.memoryUsage() : null;
+            const _mem = process.memoryUsage ? process.memoryUsage() : null;
             if (components) {
               for (const [name, check] of Object.entries(components)) {
                 const status =

@@ -107,7 +107,7 @@ export class LocalEmbeddingProvider extends BaseEmbeddingProvider {
           } else {
             handler.resolve(resp.embeddings);
           }
-        } catch (err) {
+        } catch {
           handler.reject(new Error(`Failed to parse embedding response: ${line}`));
         }
       }

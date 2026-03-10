@@ -5,13 +5,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import {
-  extractBoolFlag,
-  extractCommonFlags,
-  extractFlag,
-  apiCall,
-  colorContext,
-} from '../utils.js';
+import { extractBoolFlag, extractCommonFlags, apiCall, colorContext } from '../utils.js';
 
 const USAGE = `
 Usage: secureyeoman alert <subcommand> [options]

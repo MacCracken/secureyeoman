@@ -2,7 +2,7 @@
  * Proactive Assistance — Internal types (Phase 7.2)
  */
 
-import type { ProactiveTrigger, ProactiveAction, Suggestion } from '@secureyeoman/shared';
+import type { ProactiveTrigger } from '@secureyeoman/shared';
 import type { BrainManager } from '../brain/manager.js';
 import type { IntegrationManager } from '../integrations/manager.js';
 import type { SecureLogger } from '../logging/logger.js';

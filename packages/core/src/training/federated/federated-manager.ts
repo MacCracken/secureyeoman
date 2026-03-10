@@ -14,7 +14,6 @@ import type {
   FederatedParticipant,
   FederatedRound,
   ModelUpdate,
-  AggregationStrategy,
 } from '@secureyeoman/shared';
 import { PrivacyEngine } from './privacy-engine.js';
 import { Aggregator, type AggregationResult } from './aggregator.js';

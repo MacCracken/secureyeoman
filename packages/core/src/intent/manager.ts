@@ -13,7 +13,7 @@
  *   composeSoulContext()   — markdown block for prompt injection
  */
 
-import type { IntentStorage, EnforcementLogQueryOpts, GoalSnapshotRecord } from './storage.js';
+import type { IntentStorage, EnforcementLogQueryOpts } from './storage.js';
 import type {
   OrgIntentRecord,
   Goal,

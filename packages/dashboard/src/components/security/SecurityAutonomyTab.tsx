@@ -32,7 +32,7 @@ export function AutonomyTab() {
     queryFn: fetchAutonomyOverview,
   });
 
-  const { data: runs = [], isLoading: runsLoading } = useQuery({
+  const { data: runs = [], isLoading: _runsLoading } = useQuery({
     queryKey: ['autonomy-audit-runs'],
     queryFn: fetchAuditRuns,
   });

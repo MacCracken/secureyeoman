@@ -63,7 +63,6 @@ Options:
       ctx.stdout.write(`  Uptime:   ${formatUptime(uptime)}\n`);
       ctx.stdout.write(`  Server:   ${baseUrl}\n`);
 
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (checks) {
         ctx.stdout.write('\n  Checks:\n');
         for (const [name, ok] of Object.entries(checks)) {

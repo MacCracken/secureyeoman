@@ -213,7 +213,6 @@ export class GeminiProvider extends BaseProvider {
     }));
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapResponse(response: any, model: string): AIResponse {
     const candidates = response.candidates ?? [];
     const candidate = candidates[0];
@@ -246,7 +245,6 @@ export class GeminiProvider extends BaseProvider {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapUsage(response: any): TokenUsage {
     const meta = response.usageMetadata;
     return {
@@ -257,7 +255,6 @@ export class GeminiProvider extends BaseProvider {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapStopReason(response: any): AIResponse['stopReason'] {
     const reason = response.candidates?.[0]?.finishReason;
     switch (reason) {

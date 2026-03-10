@@ -5,7 +5,7 @@
 import { PgBaseStorage } from '../../storage/pg-base.js';
 import { buildSet, buildWhere, parseCount } from '../../storage/query-helpers.js';
 import { uuidv7 as generateId } from '../../utils/id.js';
-import type { DlpPolicy, DlpPolicyRule, ClassificationLevel } from './types.js';
+import type { DlpPolicy } from './types.js';
 
 export interface DlpPolicyFilters {
   active?: boolean;

@@ -143,16 +143,13 @@ export function formatUptime(ms: number): string {
 export function formatTable(rows: Record<string, string>[], columns?: string[]): string {
   if (rows.length === 0) return '(no results)';
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const cols = columns ?? Object.keys(rows[0]!);
   const widths = cols.map((col) => Math.max(col.length, ...rows.map((r) => (r[col] ?? '').length)));
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const header = cols.map((col, i) => col.toUpperCase().padEnd(widths[i]!)).join('  ');
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
   const separator = cols.map((_, i) => '─'.repeat(widths[i]!)).join('  ');
   const body = rows.map((row) =>
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     cols.map((col, i) => (row[col] ?? '').padEnd(widths[i]!)).join('  ')
   );
 

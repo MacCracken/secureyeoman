@@ -103,7 +103,7 @@ async function runScan(
     const { readFileSync } = await import('node:fs');
     try {
       content = readFileSync(fileArg, 'utf-8');
-    } catch (err) {
+    } catch {
       ctx.stderr.write(`Failed to read file: ${fileArg}\n`);
       return 1;
     }

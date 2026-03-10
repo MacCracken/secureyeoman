@@ -130,7 +130,7 @@ export class ConstitutionalEngine {
         }
       );
       return this.parseCritiqueResponse(raw);
-    } catch (err) {
+    } catch {
       this.deps.logger.warn('Constitutional critique failed — passing through');
       return [];
     }
@@ -173,7 +173,7 @@ export class ConstitutionalEngine {
         } else {
           break; // No meaningful revision produced
         }
-      } catch (err) {
+      } catch {
         this.deps.logger.warn('Constitutional revision failed — keeping current response');
         break;
       }

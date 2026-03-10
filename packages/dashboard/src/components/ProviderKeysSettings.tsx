@@ -131,7 +131,7 @@ const PROVIDERS: ProviderDef[] = [
   },
 ];
 
-const PROVIDER_ENV_NAMES = new Set(PROVIDERS.map((p) => p.envVarName));
+const _PROVIDER_ENV_NAMES = new Set(PROVIDERS.map((p) => p.envVarName));
 
 export function ProviderKeysSettings() {
   const queryClient = useQueryClient();

@@ -19,7 +19,7 @@
  *   3. On failure, log a warning and continue with V1 soft sandbox behaviour.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import type { SandboxOptions, SandboxResult, SandboxViolation } from './types.js';
 
 export interface SandboxWorkerConfig {

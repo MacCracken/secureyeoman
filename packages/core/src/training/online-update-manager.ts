@@ -4,7 +4,6 @@
  * + replay buffer. Registers adapter on completion.
  */
 
-import { randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';

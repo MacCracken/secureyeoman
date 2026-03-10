@@ -326,10 +326,11 @@ export function registerIntegrationRoutes(
 
       try {
         // Dynamic import to avoid circular dependency
-        const { GitHubIntegration } = await import('./github/adapter.js');
+        const { GitHubIntegration: _GitHubIntegration } = await import('./github/adapter.js');
         // The webhook handling is done via the running integration
         // For now, forward the raw body to the integration
-        const body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+        const _body =
+          typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
 
         return { received: true, event };
       } catch (err) {

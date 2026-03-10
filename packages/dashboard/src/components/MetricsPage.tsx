@@ -15,8 +15,6 @@ import {
   Area,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
   Cell,
   XAxis,
   YAxis,
@@ -47,7 +45,6 @@ import {
   Loader2,
   X,
   RotateCcw,
-  ClipboardList,
   GitMerge,
   GripVertical,
   Sliders,
@@ -3119,37 +3116,10 @@ function ServiceStatusRow({
   );
 }
 
-function MiniStatCard({
-  label,
-  value,
-  valueClass,
-}: {
-  label: string;
-  value: string | number;
-  valueClass?: string;
-}) {
-  return (
-    <div className="card p-3 sm:p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`text-xl font-bold mt-0.5 truncate ${valueClass ?? ''}`}>{value}</p>
-    </div>
-  );
-}
-
 function EmptyChart({ message }: { message: string }) {
   return (
     <div className="h-[120px] flex items-center justify-center text-sm text-muted-foreground">
       {message}
-    </div>
-  );
-}
-
-function LegendItem({ color, label, value }: { color: string; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
-      <span className="text-xs capitalize text-muted-foreground">{label}</span>
-      <span className="text-xs font-medium ml-auto">{value}</span>
     </div>
   );
 }

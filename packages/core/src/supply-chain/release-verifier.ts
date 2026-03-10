@@ -174,7 +174,7 @@ export async function verifyRelease(
   // 1. Checksum verification
   try {
     checksum = await verifyChecksum(binaryPath, sha256sumsPath);
-  } catch (err: unknown) {
+  } catch {
     checksum = {
       file: binaryPath.split('/').pop() ?? binaryPath,
       expectedHash: '',

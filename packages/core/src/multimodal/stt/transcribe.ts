@@ -204,7 +204,7 @@ export async function transcribeViaAWSTranscribe(
   request: TranscribeRequest
 ): Promise<TranscribeResult> {
   const creds = getAwsCredentials();
-  const audioBuffer = Buffer.from(request.audioBase64, 'base64');
+  const _audioBuffer = Buffer.from(request.audioBase64, 'base64');
   const format = request.format ?? 'wav';
   const mediaFormat = FORMAT_MAP[format] ?? format;
   const languageCode = resolveLanguageCode(request.language);
@@ -405,7 +405,7 @@ export async function createCustomVocabulary(
   const endpoint = `https://transcribe.${creds.region}.amazonaws.com`;
 
   // Build vocabulary phrases table
-  const phrases = request.entries.map((entry) => {
+  const _phrases = request.entries.map((entry) => {
     const parts = [entry.phrase];
     if (entry.soundsLike?.length) parts.push(entry.soundsLike.join('-'));
     else parts.push('');

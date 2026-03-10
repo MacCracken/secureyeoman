@@ -4,7 +4,7 @@
  * Generates risk assessment reports in JSON, HTML, Markdown, and CSV formats.
  */
 
-import type { RiskAssessment, RiskFinding } from '@secureyeoman/shared';
+import type { RiskAssessment } from '@secureyeoman/shared';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

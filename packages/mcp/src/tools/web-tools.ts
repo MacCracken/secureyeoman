@@ -302,7 +302,6 @@ function truncateOutput(text: string): string {
 function htmlToMarkdown(html: string): string {
   // Lazy-load node-html-markdown to avoid hard crash if not installed
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { NodeHtmlMarkdown } = require('node-html-markdown') as {
       NodeHtmlMarkdown: { translate(html: string): string };
     };

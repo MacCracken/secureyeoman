@@ -43,7 +43,6 @@ import {
   type AgentProfileInfo,
   type DelegationInfo,
   type ActiveDelegationInfo,
-  type DelegationResultInfo,
 } from '../api/client';
 import type { CatalogSkill } from '../types';
 
@@ -76,7 +75,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
   const [delegateContext, setDelegateContext] = useState('');
   const queryClient = useQueryClient();
 
-  const { data: configData } = useQuery({
+  const { data: _configData } = useQuery({
     queryKey: ['agentConfig'],
     queryFn: fetchAgentConfig,
   });
@@ -686,7 +685,7 @@ function ExecutionTree({ nodes, rootId }: { nodes: DelegationInfo[]; rootId: str
 
 function TreeNodeRow({ node, depth }: { node: TreeNode; depth: number }) {
   const totalTokens = node.tokensUsedPrompt + node.tokensUsedCompletion;
-  const pct = node.tokenBudget > 0 ? Math.min((totalTokens / node.tokenBudget) * 100, 100) : 0;
+  const _pct = node.tokenBudget > 0 ? Math.min((totalTokens / node.tokenBudget) * 100, 100) : 0;
 
   return (
     <>

@@ -12,7 +12,6 @@ import { randomUUID } from 'crypto';
 import { getLogger, type SecureLogger } from '../logging/logger.js';
 import type {
   CaptureConsent,
-  ConsentStatus,
   ConsentConfig,
   ConsentGrantResult,
   ConsentStorage,

@@ -11,7 +11,7 @@ import { createSecretsFilter } from './secrets-filter.js';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
-const savedEnv = { ...process.env };
+const _savedEnv = { ...process.env };
 
 function setupSecrets(count: number): void {
   for (let i = 0; i < count; i++) {

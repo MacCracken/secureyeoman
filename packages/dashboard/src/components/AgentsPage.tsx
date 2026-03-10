@@ -17,7 +17,6 @@ import { A2APage } from './A2APage';
 import { MultimodalPage } from './MultimodalPage';
 import { WebPage } from './WebPage';
 import { VectorMemoryExplorerPage } from './VectorMemoryExplorerPage';
-import { PersonalityAvatar } from './PersonalityEditor';
 
 type SectionId = 'multimodal' | 'web' | 'vectorMemory' | 'delegation' | 'a2a';
 

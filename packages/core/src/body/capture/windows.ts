@@ -60,7 +60,7 @@ async function listDisplaysLinux(): Promise<DisplayInfo[]> {
         const geom = match[2] ?? '0x0+0+0';
         const [wh, x, y] = geom.split('+');
         const [w, h] = (wh ?? '0x0').split('x');
-        const primary = line.includes('primary');
+        const _primary = line.includes('primary');
         displays.push({
           id: String(index),
           name,

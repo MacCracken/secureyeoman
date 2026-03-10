@@ -1,4 +1,3 @@
-import type { Personality } from '../../types';
 import type { PresenceUser } from '../../hooks/useCollabEditor.js';
 import {
   Folder,
@@ -9,7 +8,6 @@ import {
   Cpu,
   Bot,
   Globe,
-  ChevronDown,
   X,
   Plus,
   GitBranch,

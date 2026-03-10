@@ -1465,7 +1465,8 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'bullshift_market_quote',
-      description: 'Get real-time market quote from BullShift broker (price, bid/ask, volume, change)',
+      description:
+        'Get real-time market quote from BullShift broker (price, bid/ask, volume, change)',
       category: 'trading',
     },
     {

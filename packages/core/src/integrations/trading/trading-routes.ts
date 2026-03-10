@@ -39,7 +39,7 @@ async function marketFetch(
 
   const res = await fetch(url.toString(), { headers });
   if (!res.ok) throw new Error(`Market data API error: HTTP ${res.status}`);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
   return await res.json();
 }
 
@@ -50,7 +50,7 @@ async function bullshiftFetch(
     const res = await fetch(`${BULLSHIFT_URL}${path}`, {
       headers: { Accept: 'application/json' },
     });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     const data = await res.json();
     return { ok: res.ok, status: res.status, data };
   } catch (err) {

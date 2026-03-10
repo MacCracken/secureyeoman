@@ -5,12 +5,7 @@
  * and the PlatformAdapter contract for normalizing messages.
  */
 
-import type {
-  IntegrationConfig,
-  IntegrationCreate,
-  UnifiedMessage,
-  Platform,
-} from '@secureyeoman/shared';
+import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import type { OAuthTokenService } from '../gateway/oauth-token-service.js';
 import type { z } from 'zod';

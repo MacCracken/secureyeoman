@@ -14,7 +14,6 @@ import {
   riskLevelColor,
   riskLevelBg,
   scoreBar,
-  formatTimestamp,
   scoreToLevel,
   capitalize,
 } from './risk-assessment-report.js';
@@ -203,7 +202,7 @@ ${trend.length > 0 ? trend.map((t) => `- ${t.date}: score=${t.overallScore.toFix
       case 'html': {
         const deptRows = summary.departments
           .map((d) => {
-            const level = scoreToLevel(d.overallScore);
+            const _level = scoreToLevel(d.overallScore);
             return `<tr>
               <td style="padding:8px 12px">${escapeHtml(d.name)}</td>
               <td style="padding:8px 12px">${scoreBar(d.overallScore)}<span style="font-size:11px">${d.overallScore.toFixed(0)}</span></td>

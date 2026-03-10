@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   ShieldX,
   AlertTriangle,
-  CheckCircle,
   XCircle,
   Info,
   RefreshCw,

@@ -500,8 +500,8 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
 
     try {
       // Fetch all memories and knowledge, then reindex
-      const memories = await brainManager.recall({ limit: 100000 });
-      const knowledge = await brainManager.queryKnowledge({ limit: 50000 });
+      const _memories = await brainManager.recall({ limit: 100000 });
+      const _knowledge = await brainManager.queryKnowledge({ limit: 50000 });
 
       // semanticSearch will throw if vector not enabled
       // But we need vector manager directly for reindex
@@ -608,7 +608,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
 
   // ── External Brain Config ───────────────────────────────────
 
-  app.get('/api/v1/brain/sync/config', async (_request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/api/v1/brain/sync/config', async (_request: FastifyRequest, _reply: FastifyReply) => {
     if (!externalSync) {
       return { configured: false, enabled: false };
     }

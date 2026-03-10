@@ -25,7 +25,7 @@ export class TeamsIntegration implements Integration {
 
     const botId = config.config.botId as string | undefined;
     const botPassword = config.config.botPassword as string | undefined;
-    const tenantId = config.config.tenantId as string | undefined;
+    const _tenantId = config.config.tenantId as string | undefined;
 
     if (!botId || !botPassword) {
       throw new Error('Teams integration requires botId and botPassword in config');

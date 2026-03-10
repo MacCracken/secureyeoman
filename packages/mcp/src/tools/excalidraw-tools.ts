@@ -366,7 +366,7 @@ const LAYOUT_STRATEGIES: Record<
     }
   },
 
-  flowchart: (items, elements, { spacing, nodeW, nodeH }) => {
+  flowchart: (items, elements, { spacing: _spacing, nodeW, nodeH }) => {
     // Vertical flow
     items.forEach((label, i) => {
       elements.push({

@@ -5,7 +5,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
-import type { Task, ResourceUsage, SecurityContext, TaskError } from '@secureyeoman/shared';
+import type { Task, ResourceUsage, SecurityContext } from '@secureyeoman/shared';
 
 // ─── Row Types ───────────────────────────────────────────────
 

@@ -9,7 +9,7 @@
  * @see NEXT_STEP_05: Sandboxing
  */
 
-import type { CaptureResource, CaptureScope } from '../body/types.js';
+import type { CaptureScope } from '../body/types.js';
 
 export interface CaptureSandboxConfig {
   maxMemory: number;

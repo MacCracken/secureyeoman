@@ -248,7 +248,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         },
       },
     },
-    async (request: FastifyRequest<{ Body: { token: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Body: { token: string } }>, _reply: FastifyReply) => {
       const { token } = request.body;
 
       // Try JWT first, then fall back to API key validation

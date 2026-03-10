@@ -14,10 +14,7 @@ import {
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { CryptoPool } from '../utils/crypto-pool.js';
 import { AuditReportGenerator, type AuditReportGeneratorDeps } from '../reporting/audit-report.js';
-import {
-  ComplianceReportGenerator,
-  type ComplianceReportGeneratorDeps,
-} from '../reporting/compliance-report-generator.js';
+import { ComplianceReportGenerator } from '../reporting/compliance-report-generator.js';
 import type { EgressStore } from '../security/dlp/egress-store.js';
 import type { ClassificationStore } from '../security/dlp/classification-store.js';
 import { requireSecret } from '../config/loader.js';

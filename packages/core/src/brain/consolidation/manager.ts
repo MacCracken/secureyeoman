@@ -16,7 +16,7 @@ import type { AuditChain } from '../../logging/audit-chain.js';
 import type { SecureLogger } from '../../logging/logger.js';
 import type { AIProvider } from '../../ai/providers/base.js';
 import type { ConsolidationReport, ConsolidationCandidate } from './types.js';
-import { ConsolidationExecutor, type ExecutorDeps } from './executor.js';
+import { ConsolidationExecutor } from './executor.js';
 import {
   CONSOLIDATION_SYSTEM_PROMPT,
   buildConsolidationPrompt,

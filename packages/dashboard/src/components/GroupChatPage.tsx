@@ -15,7 +15,6 @@ import {
   fetchGroupChatMessages,
   sendGroupChatMessage,
   fetchPersonalities,
-  type GroupChatChannel,
   type GroupChatMessage,
 } from '../api/client';
 

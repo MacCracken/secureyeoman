@@ -5,7 +5,7 @@
 
 import type { SecureLogger } from '../../logging/logger.js';
 import type { RetentionStore } from './retention-store.js';
-import type { RetentionPolicy, ClassificationLevel } from './types.js';
+import type { ClassificationLevel } from './types.js';
 
 export interface PurgeResult {
   totalPurged: number;

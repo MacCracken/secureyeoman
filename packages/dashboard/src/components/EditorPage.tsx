@@ -687,10 +687,10 @@ function StandardEditorPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ── Inline AI completion ──
-  const [inlineCompletionEnabled, setInlineCompletionEnabled] = useState(
+  const [inlineCompletionEnabled, _setInlineCompletionEnabled] = useState(
     () => localStorage.getItem('editor:inlineCompletion') !== 'false'
   );
-  const { bindEditor: completionBindEditor, unbindEditor: completionUnbindEditor } =
+  const { bindEditor: completionBindEditor, unbindEditor: _completionUnbindEditor } =
     useInlineCompletion({ enabled: inlineCompletionEnabled, personalityId: selectedPersonalityId });
 
   // ── Training annotations ──
@@ -737,7 +737,7 @@ function StandardEditorPage() {
   const collabDocId = activeTab?.path ? `file:${activeTab.path}` : null;
   const {
     bindEditor: collabBindEditor,
-    unbindEditor: collabUnbindEditor,
+    unbindEditor: _collabUnbindEditor,
     presenceUsers: collabUsers,
     connected: collabConnected,
   } = useCollabMonaco(collabDocId);
@@ -751,7 +751,7 @@ function StandardEditorPage() {
     [activeTabId]
   );
 
-  const updateTabName = useCallback(
+  const _updateTabName = useCallback(
     (name: string) => {
       setTabs((prev) =>
         prev.map((t) =>

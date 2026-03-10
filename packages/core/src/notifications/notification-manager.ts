@@ -15,7 +15,6 @@
 import type {
   NotificationStorage,
   Notification,
-  NewNotification,
   ListNotificationsOptions,
   ListNotificationsResult,
   NotificationLevel,

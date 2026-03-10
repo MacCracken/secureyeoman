@@ -59,7 +59,7 @@ export function registerGroupChatRoutes(app: FastifyInstance, opts: GroupChatRou
       reply: FastifyReply
     ) => {
       const { integrationId, chatId } = request.params;
-      const { limit, offset, before } = request.query;
+      const { limit: _limit, offset: _offset, before } = request.query;
 
       // Validate integration exists
       const integration = await integrationManager.getIntegration(integrationId);

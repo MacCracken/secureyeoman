@@ -303,7 +303,7 @@ export class CouncilManager {
 
   private parsePositionResponse(
     response: string,
-    round: number
+    _round: number
   ): {
     position: string;
     confidence: number;

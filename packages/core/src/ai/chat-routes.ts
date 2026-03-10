@@ -2440,7 +2440,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             string,
             { id: string; name: string; argsJson: string }
           >();
-          let currentToolId = '';
+          let _currentToolId = '';
           stopReason = 'end_turn';
           // Mark start of this iteration's content so we can slice it out later
           iterContentStart = contentPartsS.length;
@@ -2456,7 +2456,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             } else if (chunk.type === 'tool_call_delta') {
               const tc = chunk.toolCall;
               if (tc.id && tc.name) {
-                currentToolId = tc.id;
+                _currentToolId = tc.id;
                 pendingToolCalls.set(tc.id, { id: tc.id, name: tc.name, argsJson: '' });
               }
             } else if (chunk.type === 'done') {

@@ -8,7 +8,6 @@ import type { BrainStorage } from '../storage.js';
 import type { SecureLogger } from '../../logging/logger.js';
 import type { MemoryAuditScope, ReorganizationSummary } from '@secureyeoman/shared';
 import type { MemoryAuditStorage } from './audit-store.js';
-import type { Memory, KnowledgeEntry } from '../types.js';
 
 export interface MemoryReorganizerOpts {
   brainStorage: BrainStorage;

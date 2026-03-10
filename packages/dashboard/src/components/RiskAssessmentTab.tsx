@@ -42,12 +42,9 @@ import {
   resolveRiskFinding,
 } from '../api/client';
 import type {
-  RiskAssessment,
   RiskFinding,
-  ExternalFeed,
   ExternalFinding,
   RiskLevel,
-  RiskFindingSeverity,
   RiskDomain,
   ExternalFeedCategory,
   ExternalFeedSourceType,

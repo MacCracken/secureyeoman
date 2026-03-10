@@ -5,7 +5,6 @@ import {
   fetchPreferencePairs,
   deletePreferencePair,
   exportPreferencesAsDpo,
-  type PreferencePairItem,
 } from '../../api/client';
 
 export function PreferencesTab() {

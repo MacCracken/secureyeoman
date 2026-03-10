@@ -700,7 +700,7 @@ export class SecureYeoman {
           const { MultimodalStorage } = await import('./multimodal/storage.js');
           const { MultimodalManager } = await import('./multimodal/manager.js');
           const multimodalStorage = new MultimodalStorage();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           const mmDeps: any = {
             logger: this.logger.child({ component: 'MultimodalManager' }),
             aiClient: this.aiMod.getAIClient()!,

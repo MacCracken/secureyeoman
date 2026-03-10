@@ -351,7 +351,7 @@ export const crewCommand: Command = {
 
         case 'runs': {
           const teamId = argv[1];
-          const url = teamId
+          const _url = teamId
             ? `/api/v1/agents/teams/runs/${teamId}`
             : '/api/v1/agents/teams?limit=1'; // fallback — list all via runs endpoint isn't direct
           // Use the runs listing via teamId or list all teams then their runs

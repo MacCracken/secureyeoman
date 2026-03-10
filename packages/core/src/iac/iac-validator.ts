@@ -7,12 +7,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import type {
-  IacTool,
-  IacTemplateFile,
-  IacValidationResult,
-  IacConfig,
-} from '@secureyeoman/shared';
+import type { IacTool, IacValidationResult, IacConfig } from '@secureyeoman/shared';
 
 export class IacValidator {
   constructor(private readonly config: IacConfig) {}

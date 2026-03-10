@@ -394,7 +394,7 @@ export function registerTradingTools(
     'bullshift_market_quote',
     {
       description:
-        'Get a real-time market quote from BullShift's connected broker. Returns last price, ' +
+        "Get a real-time market quote from BullShift's connected broker. Returns last price, " +
         'bid/ask, volume, high/low, open, previous close, and change percentage. ' +
         'Uses the broker connection (e.g. Alpaca) — no separate market data API key needed.',
       inputSchema: {
@@ -540,18 +540,11 @@ export function registerTradingTools(
         'Returns overall sentiment score (-1 bearish to +1 bullish), signal count, ' +
         'and breakdown by source (news, social media, webhooks).',
       inputSchema: {
-        symbol: z
-          .string()
-          .min(1)
-          .max(32)
-          .describe('Ticker symbol, e.g. "AAPL"'),
+        symbol: z.string().min(1).max(32).describe('Ticker symbol, e.g. "AAPL"'),
       },
     },
     wrapToolHandler('bullshift_sentiment', middleware, async (args) => {
-      const result = await bs(
-        'get',
-        `/v1/sentiment/${encodeURIComponent(args.symbol)}`
-      );
+      const result = await bs('get', `/v1/sentiment/${encodeURIComponent(args.symbol)}`);
       return jsonResponse(result);
     })
   );
@@ -742,9 +735,21 @@ export function registerTradingTools(
           .enum(['OpenAI', 'Anthropic', 'Ollama', 'LocalLLM', 'SecureYeoman', 'Custom'])
           .describe('AI provider type'),
         api_endpoint: z.string().url().describe('API endpoint URL'),
-        model_name: z.string().min(1).max(100).describe('Model name, e.g. "gpt-4", "claude-sonnet-4-20250514"'),
-        api_key: z.string().optional().describe('API key (can be configured later via bullshift_configure_ai_provider)'),
-        max_tokens: z.number().int().positive().optional().describe('Maximum tokens per request (default: 4096)'),
+        model_name: z
+          .string()
+          .min(1)
+          .max(100)
+          .describe('Model name, e.g. "gpt-4", "claude-sonnet-4-20250514"'),
+        api_key: z
+          .string()
+          .optional()
+          .describe('API key (can be configured later via bullshift_configure_ai_provider)'),
+        max_tokens: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe('Maximum tokens per request (default: 4096)'),
         temperature: z
           .number()
           .min(0)
@@ -806,11 +811,7 @@ export function registerTradingTools(
         'strategy suggestions, or market research. Returns the AI response and token usage.',
       inputSchema: {
         provider_id: z.string().min(1).describe('AI provider UUID to use'),
-        prompt: z
-          .string()
-          .min(1)
-          .max(10000)
-          .describe('Prompt or question for the AI provider'),
+        prompt: z.string().min(1).max(10000).describe('Prompt or question for the AI provider'),
       },
     },
     wrapToolHandler('bullshift_ai_chat', middleware, async (args) => {

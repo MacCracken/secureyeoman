@@ -15,7 +15,6 @@ import type { AIProvider } from '../ai/providers/base.js';
 import type { BrainStorage } from './storage.js';
 import type { Memory } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
-import { uuidv7 } from '../utils/crypto.js';
 
 export type ReconsolidationAction = 'keep' | 'update' | 'split';
 

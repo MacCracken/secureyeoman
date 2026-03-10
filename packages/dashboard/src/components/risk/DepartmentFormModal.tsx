@@ -73,7 +73,7 @@ const PRESETS: { label: string; value: number; color: string }[] = [
 
 const COMPLIANCE_STATUSES = ['not_started', 'in_progress', 'compliant', 'non_compliant'] as const;
 
-const COMPLIANCE_STATUS_COLORS: Record<string, string> = {
+const _COMPLIANCE_STATUS_COLORS: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-600',
   in_progress: 'bg-blue-100 text-blue-700',
   compliant: 'bg-green-100 text-green-700',

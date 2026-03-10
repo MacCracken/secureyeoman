@@ -654,7 +654,7 @@ export class CaptureAuditLogger {
 
       // Check for access by non-owner
       const accesses = userEvents.filter((e) => e.eventType === 'capture.accessed');
-      for (const access of accesses) {
+      for (const _access of accesses) {
         // In real implementation, compare with capture owner
         // For now, flag all accesses as potentially unusual
         if (accesses.length > 5) {

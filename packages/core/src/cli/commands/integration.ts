@@ -112,13 +112,12 @@ async function listIntegrations(
   }
 
   const rows = data.integrations.map((i) => ({
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
     id: String(i.id ?? ''),
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
     name: String(i.name ?? ''),
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
     platform: String(i.platform ?? ''),
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
     enabled: String(i.enabled ?? ''),
   }));
 
@@ -212,7 +211,7 @@ async function createIntegration(
 
   if (!result.ok) {
     const errData = result.data as Record<string, unknown>;
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
     ctx.stderr.write(`Failed to create integration: ${String(errData.error ?? result.status)}\n`);
     return 1;
   }
@@ -272,7 +271,7 @@ async function startIntegration(
 
   if (!result.ok) {
     const errData = result.data as Record<string, unknown>;
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
     ctx.stderr.write(`Failed to start integration: ${String(errData.error ?? result.status)}\n`);
     return 1;
   }
@@ -300,7 +299,7 @@ async function stopIntegration(
 
   if (!result.ok) {
     const errData = result.data as Record<string, unknown>;
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
     ctx.stderr.write(`Failed to stop integration: ${String(errData.error ?? result.status)}\n`);
     return 1;
   }

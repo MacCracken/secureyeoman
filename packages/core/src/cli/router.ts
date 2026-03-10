@@ -106,7 +106,6 @@ export function createRouter(defaultCommand = 'start'): Router {
     // Look up by alias
     const canonical = aliases.get(sub);
     if (canonical) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const cmd = commands.get(canonical)!;
       return { command: cmd, rest: argv.slice(3) };
     }

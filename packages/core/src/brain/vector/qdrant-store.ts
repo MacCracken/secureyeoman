@@ -67,7 +67,7 @@ export class QdrantVectorStore implements VectorStore {
   private async withReconnect<T>(operation: () => Promise<T>): Promise<T> {
     try {
       return await operation();
-    } catch (err) {
+    } catch {
       // Reset initialization state and retry once
       this.initialized = false;
       this.client = null;

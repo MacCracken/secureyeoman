@@ -18,7 +18,7 @@ const GHA_BASE = 'https://api.github.com';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function getToken(config: McpServiceConfig): string | undefined {
+function getToken(_config: McpServiceConfig): string | undefined {
   return process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? undefined;
 }
 
@@ -194,7 +194,7 @@ export function registerGithubActionsTools(
     wrapToolHandler('gha_get_run_logs', middleware, async ({ owner, repo, runId }) => {
       if (!config.exposeGithubActions) return errorResponse(GHA_DISABLED_MSG);
       // GitHub returns a 302 redirect to a signed S3 URL; we capture it without following
-      const token = getToken(config);
+      const _token = getToken(config);
       const url = `${GHA_BASE}/repos/${owner}/${repo}/actions/runs/${runId}/logs`;
       const res = await fetch(url, {
         method: 'GET',

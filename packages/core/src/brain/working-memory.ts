@@ -10,9 +10,8 @@
  */
 
 import type { EmbeddingProvider } from '../ai/embeddings/types.js';
-import type { VectorStore, VectorResult } from './vector/types.js';
+import type { VectorStore } from './vector/types.js';
 import type { SecureLogger } from '../logging/logger.js';
-import { computeCentroid } from './context-retrieval.js';
 
 export interface WorkingMemoryConfig {
   /** Maximum items in the working memory buffer. Default 7 (Miller's 7+-2) */

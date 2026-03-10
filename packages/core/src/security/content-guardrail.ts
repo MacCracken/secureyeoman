@@ -331,7 +331,7 @@ export class ContentGuardrail {
     // Try embedding-based search first
     if (this.deps.brainManager) {
       try {
-        const results = await this.deps.brainManager.semanticSearch(topic, {
+        const _results = await this.deps.brainManager.semanticSearch(topic, {
           limit: 1,
           threshold: this.config.topicThreshold,
         });

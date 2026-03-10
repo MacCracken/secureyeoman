@@ -149,7 +149,7 @@ export function registerDiagnosticRoutes(
           mcpServers: mcpServerResults,
           checkedAt: new Date().toISOString(),
         };
-      } catch (err) {
+      } catch {
         return sendError(reply, 500, 'Failed to ping integrations');
       }
     }

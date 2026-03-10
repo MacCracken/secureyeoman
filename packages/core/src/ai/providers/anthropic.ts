@@ -125,7 +125,7 @@ export class AnthropicProvider extends BaseProvider {
 
       let currentToolId = '';
       let currentToolName = '';
-      let currentToolArgs = '';
+      let _currentToolArgs = '';
       let inThinkingBlock = false;
 
       try {
@@ -135,7 +135,7 @@ export class AnthropicProvider extends BaseProvider {
             if (block.type === 'tool_use') {
               currentToolId = block.id as string;
               currentToolName = block.name as string;
-              currentToolArgs = '';
+              _currentToolArgs = '';
               inThinkingBlock = false;
             } else if (block.type === 'thinking') {
               inThinkingBlock = true;
@@ -150,7 +150,7 @@ export class AnthropicProvider extends BaseProvider {
               inThinkingBlock = false;
               yield { type: 'content_delta', content: (delta.text as string) ?? '' };
             } else if (delta.type === 'input_json_delta') {
-              currentToolArgs += (delta.partial_json as string) ?? '';
+              _currentToolArgs += (delta.partial_json as string) ?? '';
               yield {
                 type: 'tool_call_delta',
                 toolCall: { id: currentToolId, name: currentToolName },

@@ -30,7 +30,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { useSidebar } from '../hooks/useSidebar';
-import { useTheme, THEMES, type ThemeId } from '../hooks/useTheme';
+import { useTheme, THEMES } from '../hooks/useTheme';
 import { getAccessToken } from '../api/client';
 import { Logo } from './Logo';
 import { NewEntityDialog } from './NewEntityDialog';

@@ -5,7 +5,7 @@
  * with a tab bar for switching between views.
  */
 
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { X, GitBranch, Clock, BarChart3, GitCompare } from 'lucide-react';
 import { fetchBranchTree } from '../../api/client';

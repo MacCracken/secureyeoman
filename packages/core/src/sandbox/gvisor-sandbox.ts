@@ -13,7 +13,7 @@
  */
 
 import { execFileSync, execFile } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
@@ -207,7 +207,7 @@ const fn = ${fn.toString()};
         }, timeoutMs);
 
         let stdout = '';
-        let stderr = '';
+        let _stderr = '';
 
         const child = execFile(
           runsc,
@@ -219,7 +219,7 @@ const fn = ${fn.toString()};
           (err, stdoutBuf, stderrBuf) => {
             clearTimeout(timer);
             stdout = stdoutBuf;
-            stderr = stderrBuf;
+            _stderr = stderrBuf;
 
             const endTime = Date.now();
             const cpuTimeMs = endTime - startTime;
@@ -387,7 +387,7 @@ const fn = ${fn.toString()};
    */
   private async runFallback<T>(
     fn: () => Promise<T>,
-    opts?: SandboxOptions
+    _opts?: SandboxOptions
   ): Promise<SandboxResult<T>> {
     const startTime = Date.now();
     const memBefore = process.memoryUsage().heapUsed;

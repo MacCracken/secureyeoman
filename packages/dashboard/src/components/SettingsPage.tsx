@@ -58,7 +58,6 @@ import {
   extractThemeCssVars,
   loadSchedule,
   saveSchedule,
-  DEFAULT_SCHEDULE,
   type CustomTheme,
   type CustomThemeExport,
   type ThemeCssVar,
@@ -297,7 +296,7 @@ function ThemeEditorDialog({
       setEditorIsDark(true);
       setEditorColors(defaultColors());
     }
-  }, [open, initial]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, initial]);
 
   if (!open) return null;
 

@@ -31,12 +31,6 @@ interface SpotifyTrack {
   duration_ms?: number;
 }
 
-interface SpotifyCurrentlyPlaying {
-  is_playing: boolean;
-  item?: SpotifyTrack;
-  progress_ms?: number;
-}
-
 interface SpotifyRecentItem {
   track: SpotifyTrack;
   played_at: string;

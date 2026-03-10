@@ -9,7 +9,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { existsSync, readFileSync, writeFileSync, statSync } from 'node:fs';
-import { resolve as resolvePath, relative } from 'node:path';
+import { resolve as resolvePath } from 'node:path';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { getLogger } from '../logging/logger.js';
 import { buildSafeEnv } from '../utils/process-env.js';
@@ -60,12 +60,6 @@ interface ReplaceResult {
 
 const MAX_MATCHES = 500;
 const MAX_LINE_LENGTH = 500;
-
-function sanitizePattern(pattern: string): string {
-  // For grep -F (fixed string), no sanitization needed
-  // For regex mode, validate it's a valid pattern (grep will reject invalid ones)
-  return pattern;
-}
 
 function isPathSafe(cwd: string, target: string): boolean {
   const resolved = resolvePath(cwd, target);

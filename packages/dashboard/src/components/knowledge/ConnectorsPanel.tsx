@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Globe, GitBranch, FileText, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { ingestUrl, ingestText, ingestGithubWiki, fetchPersonalities } from '../../api/client';
-import type { KbDocument } from '../../types';
 import { useKbScope } from './KnowledgeBaseContext';
-
-function ResultMessage({ doc }: { doc: KbDocument | null; error: string | null }) {
-  return null;
-}
 
 export function ConnectorsPanel() {
   const kbScope = useKbScope();

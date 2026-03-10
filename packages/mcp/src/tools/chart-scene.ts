@@ -154,28 +154,6 @@ function svgTitle(text: string | undefined, w: number, fg: string): string {
   return `<text x="${w / 2}" y="24" text-anchor="middle" font-size="16" font-weight="600" fill="${fg}">${escapeXml(text)}</text>`;
 }
 
-function svgXAxis(
-  labels: string[],
-  scale: BandScale | LinearScale,
-  y: number,
-  fg: string,
-  rotate = false
-): string {
-  const parts: string[] = [];
-  for (const label of labels) {
-    const x =
-      typeof scale === 'function'
-        ? scale(label as never) + ((scale as BandScale).bandwidth ?? 0) / 2
-        : 0;
-    const transform = rotate ? ` transform="rotate(-45,${x},${y + 14})"` : '';
-    const anchor = rotate ? 'end' : 'middle';
-    parts.push(
-      `<text x="${x}" y="${y + 14}" text-anchor="${anchor}" font-size="10" fill="${fg}"${transform}>${escapeXml(label)}</text>`
-    );
-  }
-  return parts.join('');
-}
-
 function svgYAxis(ticks: number[], scale: LinearScale, x: number, fg: string): string {
   return ticks
     .map((v) => {
@@ -249,7 +227,7 @@ function computeSMA(data: OhlcvBar[], period: number): (number | null)[] {
 
 export function renderCandlestick(data: OhlcvBar[], cfg?: CandlestickConfig): string {
   if (!data.length) return emptySvg(cfg);
-  const { w, h, pad, dark, colors, fg, bg, grid, title } = resolveConfig(cfg);
+  const { w, h, pad, dark: _dark, colors: _colors, fg, bg, grid, title } = resolveConfig(cfg);
   const showVol = cfg?.showVolume ?? false;
 
   const priceBot = showVol ? pad.bottom + (h - pad.top - pad.bottom) * 0.2 : pad.bottom;
@@ -352,8 +330,19 @@ export interface LineSeriesInput {
 
 export function renderLineChart(series: LineSeriesInput[], cfg?: ChartConfig): string {
   if (!series.length || !series.some((s) => s.data.length)) return emptySvg(cfg);
-  const { w, h, pad, dark, colors, fg, bg, grid, showLegend, gridLines, title } =
-    resolveConfig(cfg);
+  const {
+    w,
+    h,
+    pad,
+    dark: _dark,
+    colors,
+    fg,
+    bg,
+    grid,
+    showLegend,
+    gridLines,
+    title,
+  } = resolveConfig(cfg);
   const plotTop = pad.top + (title ? 10 : 0);
   const plotBot = h - pad.bottom;
   const plotLeft = pad.left;
@@ -454,8 +443,19 @@ export interface BarChartConfig extends ChartConfig {
 
 export function renderBarChart(data: BarDataInput[], cfg?: BarChartConfig): string {
   if (!data.length) return emptySvg(cfg);
-  const { w, h, pad, dark, colors, fg, bg, grid, showLegend, gridLines, title } =
-    resolveConfig(cfg);
+  const {
+    w,
+    h,
+    pad,
+    dark: _dark,
+    colors,
+    fg,
+    bg,
+    grid,
+    showLegend,
+    gridLines,
+    title,
+  } = resolveConfig(cfg);
   const stacked = cfg?.stacked ?? false;
   const horizontal = cfg?.horizontal ?? false;
   const plotTop = pad.top + (title ? 10 : 0);
@@ -585,7 +585,7 @@ export interface PieChartConfig extends ChartConfig {
 
 export function renderPieChart(slices: PieSliceInput[], cfg?: PieChartConfig): string {
   if (!slices.length) return emptySvg(cfg);
-  const { w, h, pad, dark, colors, fg, bg, title } = resolveConfig(cfg);
+  const { w, h, pad: _pad, dark: _dark, colors, fg, bg, title } = resolveConfig(cfg);
   const donut = cfg?.donut ?? false;
   const donutWidth = cfg?.donutWidth ?? 40;
 
@@ -667,7 +667,7 @@ export interface ScatterConfig extends ChartConfig {
 
 export function renderScatterPlot(points: ScatterPointInput[], cfg?: ScatterConfig): string {
   if (!points.length) return emptySvg(cfg);
-  const { w, h, pad, dark, colors, fg, bg, grid, gridLines, title } = resolveConfig(cfg);
+  const { w, h, pad, dark: _dark, colors, fg, bg, grid, gridLines, title } = resolveConfig(cfg);
   const plotTop = pad.top + (title ? 10 : 0);
   const plotBot = h - pad.bottom;
   const plotLeft = pad.left;
@@ -749,7 +749,18 @@ export interface WaterfallItem {
 
 export function renderWaterfall(items: WaterfallItem[], cfg?: ChartConfig): string {
   if (!items.length) return emptySvg(cfg);
-  const { w, h, pad, dark, colors, fg, bg, grid, gridLines, title } = resolveConfig(cfg);
+  const {
+    w,
+    h,
+    pad,
+    dark: _dark,
+    colors: _colors,
+    fg,
+    bg,
+    grid,
+    gridLines,
+    title,
+  } = resolveConfig(cfg);
   const plotTop = pad.top + (title ? 10 : 0);
   const plotBot = h - pad.bottom;
   const plotLeft = pad.left;
@@ -857,7 +868,7 @@ function heatColor(v: number, lo: number, hi: number, cLow: string, cHigh: strin
 export function renderHeatmap(matrix: HeatmapInput, cfg?: HeatmapConfig): string {
   const { labels, values } = matrix;
   if (!labels.length || !values.length) return emptySvg(cfg);
-  const { w, h, pad, dark, colors, fg, bg, title } = resolveConfig(cfg);
+  const { w, h, pad, dark: _dark, colors: _colors, fg, bg, title } = resolveConfig(cfg);
   const colorLow = cfg?.colorLow ?? '#dbeafe';
   const colorHigh = cfg?.colorHigh ?? '#1d4ed8';
   const showVals = cfg?.showValues ?? true;

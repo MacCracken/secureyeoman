@@ -2,7 +2,7 @@
  * Marketplace Storage — PostgreSQL local skill registry
  */
 
-import type { CatalogSkill, AuthorInfo } from '@secureyeoman/shared';
+import type { CatalogSkill } from '@secureyeoman/shared';
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 import { safeJsonParse } from '../utils/json.js';

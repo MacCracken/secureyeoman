@@ -7,7 +7,7 @@
  * @see NEXT_STEP_02: User Consent Layer
  */
 
-import type { CaptureResource, SimpleCaptureScope } from './types.js';
+import type { SimpleCaptureScope } from './types.js';
 
 /**
  * Consent status lifecycle

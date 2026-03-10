@@ -6,12 +6,7 @@
  * - **Live replay**: Re-executes the same input with live LLM + tool calls.
  */
 
-import type {
-  ExecutionTrace,
-  ReplayOptions,
-  AgentReplayConfig,
-  ToolCallStep,
-} from '@secureyeoman/shared';
+import type { ExecutionTrace, ReplayOptions, AgentReplayConfig } from '@secureyeoman/shared';
 import { TraceRecorder } from './trace-recorder.js';
 
 export interface ReplayDeps {

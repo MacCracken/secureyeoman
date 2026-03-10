@@ -4,7 +4,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
-import { buildWhere, buildSet, parseCount } from '../storage/query-helpers.js';
+import { buildWhere, buildSet } from '../storage/query-helpers.js';
 import type {
   ProviderAccount,
   ProviderAccountCreate,

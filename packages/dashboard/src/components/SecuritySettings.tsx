@@ -11,7 +11,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Shield,
   Lock,
-  Clock,
   CheckCircle,
   XCircle,
   Loader2,
@@ -68,7 +67,6 @@ import {
   fetchSecretKeys,
   setSecret,
   deleteSecret,
-  checkSecret,
 } from '../api/client';
 import type { RoleInfo, AssignmentInfo } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
@@ -260,22 +258,22 @@ export function SecuritySettings() {
   const [contentGuardrailsOpen, setContentGuardrailsOpen] = useState(false);
 
   // ── Queries ─────────────────────────────────────────────────────
-  const { data: rolesData, isLoading: rolesLoading } = useQuery({
+  const { data: rolesData, isLoading: _rolesLoading } = useQuery({
     queryKey: ['auth-roles'],
     queryFn: fetchRoles,
   });
 
-  const { data: assignmentsData, isLoading: assignmentsLoading } = useQuery({
+  const { data: assignmentsData, isLoading: _assignmentsLoading } = useQuery({
     queryKey: ['auth-assignments'],
     queryFn: fetchAssignments,
   });
 
-  const { data: auditStats, isLoading: auditLoading } = useQuery({
+  const { data: _auditStats, isLoading: _auditLoading } = useQuery({
     queryKey: ['audit-stats'],
     queryFn: fetchAuditStats,
   });
 
-  const { data: metrics } = useQuery({
+  const { data: _metrics } = useQuery({
     queryKey: ['metrics'],
     queryFn: fetchMetrics,
     refetchInterval: 10000,
@@ -359,14 +357,14 @@ export function SecuritySettings() {
     },
   });
 
-  const deleteRoleMutation = useMutation({
+  const _deleteRoleMutation = useMutation({
     mutationFn: deleteRole,
     onSuccess: () => {
       void invalidateRoles();
     },
   });
 
-  const assignRoleMutation = useMutation({
+  const _assignRoleMutation = useMutation({
     mutationFn: assignRole,
     onSuccess: () => {
       void invalidateAssignments();
@@ -374,7 +372,7 @@ export function SecuritySettings() {
     },
   });
 
-  const revokeAssignmentMutation = useMutation({
+  const _revokeAssignmentMutation = useMutation({
     mutationFn: revokeAssignment,
     onSuccess: () => {
       void invalidateAssignments();
@@ -399,16 +397,16 @@ export function SecuritySettings() {
   // ── Local state ─────────────────────────────────────────────────
   const [draftProvider, setDraftProvider] = useState('');
   const [draftModel, setDraftModel] = useState('');
-  const [showRoleForm, setShowRoleForm] = useState(false);
+  const [_showRoleForm, setShowRoleForm] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleInfo | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<RoleInfo | null>(null);
-  const [showAssignForm, setShowAssignForm] = useState(false);
-  const [assignUserId, setAssignUserId] = useState('');
-  const [assignRoleId, setAssignRoleId] = useState('');
-  const [confirmRevoke, setConfirmRevoke] = useState<AssignmentInfo | null>(null);
+  const [_confirmDelete, _setConfirmDelete] = useState<RoleInfo | null>(null);
+  const [_showAssignForm, setShowAssignForm] = useState(false);
+  const [_assignUserId, _setAssignUserId] = useState('');
+  const [_assignRoleId, _setAssignRoleId] = useState('');
+  const [_confirmRevoke, _setConfirmRevoke] = useState<AssignmentInfo | null>(null);
 
   const roles = rolesData?.roles ?? [];
-  const assignments = assignmentsData?.assignments ?? [];
+  const _assignments = assignmentsData?.assignments ?? [];
   const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
   const delegationEnabled = (agentConfigData?.config?.enabled as boolean | undefined) ?? false;
   const a2aAllowed = securityPolicy?.allowA2A ?? false;
@@ -453,9 +451,9 @@ export function SecuritySettings() {
   const gvisorAllowed = securityPolicy?.sandboxGvisor ?? false;
   const wasmAllowed = securityPolicy?.sandboxWasm ?? false;
   const credentialProxyAllowed = securityPolicy?.sandboxCredentialProxy ?? false;
-  const roleIds = roles.map((r) => r.id);
+  const _roleIds = roles.map((r) => r.id);
 
-  const handleCreateRole = (form: RoleFormData) => {
+  const _handleCreateRole = (form: RoleFormData) => {
     const permissions = parsePermissions(form.permissions);
     const inheritFrom = form.inheritFrom.trim()
       ? form.inheritFrom
@@ -471,7 +469,7 @@ export function SecuritySettings() {
     });
   };
 
-  const handleUpdateRole = (form: RoleFormData) => {
+  const _handleUpdateRole = (form: RoleFormData) => {
     if (!editingRole) return;
     const permissions = parsePermissions(form.permissions);
     const inheritFrom = form.inheritFrom.trim()

@@ -9,14 +9,8 @@
  */
 
 import { getLogger, type SecureLogger } from '../logging/logger.js';
-import { getRBAC, PermissionDeniedError } from '../security/rbac.js';
-import type {
-  CaptureScope,
-  CaptureResource,
-  CaptureResolution,
-  CaptureDuration,
-  CaptureQuality,
-} from './types.js';
+import { getRBAC } from '../security/rbac.js';
+import type { CaptureScope, CaptureResource, CaptureResolution } from './types.js';
 
 /**
  * Validation result
@@ -382,7 +376,7 @@ export class ScopeValidator {
   private sanitizeScope(
     scope: CaptureScope,
     limits: RoleScopeLimits,
-    warnings: string[]
+    _warnings: string[]
   ): CaptureScope {
     const sanitized: CaptureScope = {
       ...scope,

@@ -30,7 +30,6 @@ export const TEST_ADMIN_PASSWORD_HASH = sha256(TEST_ADMIN_PASSWORD);
 // ── Noop Logger ────────────────────────────────────────────────────
 
 export function noopLogger(): SecureLogger {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const noop = () => {};
   return {
     trace: noop,

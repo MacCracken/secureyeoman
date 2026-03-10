@@ -18,7 +18,7 @@ export class CoreApiClient {
   private readonly baseUrl: string;
   private readonly token: string;
   /** Undici agent used only for internal MCP→core requests over HTTPS. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   private readonly dispatcher: any;
 
   constructor(opts: CoreApiClientOptions) {

@@ -14,7 +14,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { hostname as osHostname } from 'node:os';
 import { getPool } from '../storage/pg-pool.js';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fastifyCompress from '@fastify/compress';
 import fastifyMultipart from '@fastify/multipart';

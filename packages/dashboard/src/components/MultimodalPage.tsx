@@ -387,7 +387,7 @@ interface ProvidersConfig {
 }
 
 function ProviderBadge({
-  provider,
+  provider: _provider,
   label,
   active,
   onClick,

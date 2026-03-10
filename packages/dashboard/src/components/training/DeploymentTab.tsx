@@ -7,7 +7,6 @@ import {
   Plus,
   CheckCircle2,
   XCircle,
-  Clock,
   FlaskConical,
   BarChart3,
 } from 'lucide-react';
@@ -20,8 +19,6 @@ import {
   completeAbTest,
   cancelAbTest,
   evaluateAbTest,
-  type ModelVersionItem,
-  type AbTestItem,
 } from '../../api/client';
 
 function VersionBadge({ isActive }: { isActive: boolean }) {

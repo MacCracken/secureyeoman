@@ -1786,7 +1786,7 @@ function RoutingRulesTab() {
 function MessagingTab({
   integrations,
   platformsData,
-  hasRegisteredPlatforms,
+  hasRegisteredPlatforms: _hasRegisteredPlatforms,
   unregisteredPlatforms,
   connectingPlatform,
   formData,

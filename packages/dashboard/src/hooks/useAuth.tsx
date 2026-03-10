@@ -4,7 +4,6 @@ import {
   login as apiLogin,
   logout as apiLogout,
   setAuthTokens,
-  clearAuthTokens,
   getAccessToken,
   setOnAuthFailure,
   verifySession,

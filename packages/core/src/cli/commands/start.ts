@@ -183,11 +183,9 @@ export const startCommand: Command = {
 
     // Block until shutdown signal
     return new Promise<number>((resolve) => {
-      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
       const shutdown = async (signal: string) => {
         ctx.stdout.write(`\nReceived ${signal}, shutting down...\n`);
         try {
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           await instance?.shutdown();
           ctx.stdout.write('Shutdown complete.\n');
           resolve(0);

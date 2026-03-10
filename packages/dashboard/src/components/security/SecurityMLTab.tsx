@@ -17,7 +17,6 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { fetchMlSummary, fetchSecurityEvents } from '../../api/client';
 import type { MlSecuritySummary } from '../../api/client';
-import type { SecurityEvent } from '../../types';
 
 const ML_EVENT_TYPES = 'anomaly,injection_attempt,sandbox_violation,secret_access';
 const ML_PAGE_SIZE = 20;

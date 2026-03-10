@@ -10,16 +10,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Database,
-  Plus,
-  Trash2,
-  Play,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-} from 'lucide-react';
+import { Database, Plus, Trash2, Play, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import {
   RadarChart,
   Radar,

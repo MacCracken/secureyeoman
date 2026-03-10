@@ -2,12 +2,7 @@
  * MCP Client Manager — connects to external MCP servers, discovers tools
  */
 
-import type {
-  McpServerConfig,
-  McpToolDef,
-  McpResourceDef,
-  McpToolManifest,
-} from '@secureyeoman/shared';
+import type { McpToolDef, McpResourceDef, McpToolManifest } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import { McpStorage } from './storage.js';
 import type { McpCredentialManager } from './credential-manager.js';

@@ -157,7 +157,7 @@ export class AthiManager {
       return this._summaryCache;
     }
 
-    const [byStatus, byActor, topRisks, coverage, { total }] = await Promise.all([
+    const [byStatus, byActor, topRisks, coverage, { total: _total }] = await Promise.all([
       this.storage.getStatusCounts(orgId),
       this.storage.getActorCounts(orgId),
       this.storage.getTopRisks(5, orgId),

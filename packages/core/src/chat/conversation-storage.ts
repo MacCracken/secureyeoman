@@ -249,7 +249,6 @@ export class ConversationStorage extends PgBaseStorage {
       ]
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return (await this.getConversation(id))!;
   }
 
@@ -314,7 +313,6 @@ export class ConversationStorage extends PgBaseStorage {
       id,
     ]);
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return (await this.getConversation(id))!;
   }
 
@@ -376,7 +374,6 @@ export class ConversationStorage extends PgBaseStorage {
       );
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return (await this.getMessage(id))!;
   }
 

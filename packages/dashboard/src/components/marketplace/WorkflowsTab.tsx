@@ -4,18 +4,9 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import {
-  Download,
-  Upload,
-  GitBranch,
-  Shield,
-  Loader2,
-  AlertTriangle,
-  CheckCircle,
-  Search,
-} from 'lucide-react';
+import { Download, Upload, GitBranch, Shield, Loader2, Search } from 'lucide-react';
 import { fetchCommunityWorkflows, exportWorkflow, importWorkflow } from '../../api/client';
-import type { WorkflowDefinition, CompatibilityCheckResult } from '../../api/client';
+import type { WorkflowDefinition } from '../../api/client';
 
 const AUTONOMY_COLORS: Record<string, string> = {
   L1: 'bg-green-500/10 text-green-600 border-green-500/20',
@@ -24,26 +15,6 @@ const AUTONOMY_COLORS: Record<string, string> = {
   L4: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
   L5: 'bg-red-500/10 text-red-600 border-red-500/20',
 };
-
-function CompatibilityBadges({ gaps }: { gaps: CompatibilityCheckResult['gaps'] }) {
-  const items = [
-    ...(gaps.integrations ?? []).map((i) => ({ label: `needs ${i}`, kind: 'warn' })),
-    ...(gaps.tools ?? []).map((t) => ({ label: `tool: ${t}`, kind: 'warn' })),
-  ];
-  if (items.length === 0) {
-    return (
-      <span className="flex items-center gap-1 text-xs text-green-600">
-        <CheckCircle className="w-3 h-3" /> Compatible
-      </span>
-    );
-  }
-  return (
-    <span className="flex items-center gap-1 text-xs text-yellow-600">
-      <AlertTriangle className="w-3 h-3" />
-      {items.map((i) => i.label).join(', ')}
-    </span>
-  );
-}
 
 export function WorkflowsTab({
   source,

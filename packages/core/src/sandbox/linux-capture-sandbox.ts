@@ -15,7 +15,6 @@ import {
   type CaptureSandboxConfig,
   type CaptureSandboxResult,
   type CaptureSandboxViolation,
-  type CaptureProcessHandle,
   DEFAULT_CAPTURE_SANDBOX,
 } from './capture-sandbox.js';
 
@@ -161,7 +160,7 @@ export class LinuxCaptureSandbox {
       await this.initialize();
     }
 
-    const startTime = Date.now();
+    const _startTime = Date.now();
     this.violations = [];
 
     try {

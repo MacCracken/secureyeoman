@@ -61,7 +61,7 @@ export interface DetailedCostAnalysis extends CostAnalysis {
 
 // ── Premium/Fast model classification ──────────────────────────────────────
 
-const PREMIUM_MODELS = new Set(['claude-opus-4-20250514', 'gpt-4-turbo', 'o1', 'o1-mini', 'o3']);
+const _PREMIUM_MODELS = new Set(['claude-opus-4-20250514', 'gpt-4-turbo', 'o1', 'o1-mini', 'o3']);
 
 const FAST_MODEL_ALTERNATIVES: Record<string, { model: string; provider: string }> = {
   'claude-opus-4-20250514': { model: 'claude-haiku-3-5-20241022', provider: 'anthropic' },
@@ -377,7 +377,7 @@ export class CostOptimizer {
    * Trend detection: compare first-half average to second-half average.
    * Confidence decreases with fewer data points.
    */
-  private computeForecast(history: HistoryRow[], requestedDays: number): CostForecast {
+  private computeForecast(history: HistoryRow[], _requestedDays: number): CostForecast {
     // Aggregate cost per day
     const dailyCost = new Map<string, number>();
     for (const row of history) {

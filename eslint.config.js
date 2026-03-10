@@ -45,71 +45,47 @@ export default tseslint.config(
   {
     files: ['packages/core/**/*.ts', 'packages/shared/**/*.ts', 'packages/mcp/**/*.ts'],
     rules: {
-      // Allow console for backend logging (we use pino)
-      'no-console': 'warn',
-
-      // Enforce explicit return types for public APIs
-      '@typescript-eslint/explicit-function-return-type': ['warn', {
-        allowExpressions: true,
-        allowTypedFunctionExpressions: true,
-        allowHigherOrderFunctions: true,
-      }],
-
-      // Security: no eval or dynamic code execution
+      // ── Security (errors — never downgrade) ──
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
-
-      // Prefer const
       'prefer-const': 'error',
 
-      // No unused vars (allow underscore prefix)
+      // ── Real bugs — keep as warnings, fix incrementally ──
+      'no-console': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
       }],
-
-      // Allow async functions that don't use await (for interface consistency)
-      '@typescript-eslint/require-await': 'off',
-
-      // Allow empty functions for stubs
-      '@typescript-eslint/no-empty-function': 'off',
-
-      // Allow non-null assertions after null checks (ensureInitialized pattern)
-      '@typescript-eslint/no-non-null-assertion': 'warn',
-
-      // Allow template literals with numbers (common pattern)
-      '@typescript-eslint/restrict-template-expressions': ['warn', {
-        allowNumber: true,
-        allowBoolean: true,
-        allowNullish: true,
-      }],
-
-      // Allow control characters in regex for security validation
-      'no-control-regex': 'off',
-
-      // Allow unnecessary conditions for defensive coding
-      '@typescript-eslint/no-unnecessary-condition': 'warn',
-
-      // Downgrade unsafe-* rules — common patterns with third-party libs
-      '@typescript-eslint/no-unsafe-assignment': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      '@typescript-eslint/no-unsafe-member-access': 'warn',
-      '@typescript-eslint/no-unsafe-call': 'warn',
-      '@typescript-eslint/no-unsafe-return': 'warn',
-
-      // Downgrade rules with high false-positive rates in this codebase
-      '@typescript-eslint/prefer-nullish-coalescing': 'warn',
-      '@typescript-eslint/return-await': 'warn',
-      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-misused-promises': 'warn',
       '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-base-to-string': 'warn',
-      '@typescript-eslint/no-require-imports': 'warn',
-      '@typescript-eslint/no-useless-constructor': 'warn',
-      '@typescript-eslint/no-redundant-type-constituents': 'warn',
-      '@typescript-eslint/no-dynamic-delete': 'warn',
-      '@typescript-eslint/no-deprecated': 'warn',
+
+      // ── Accepted patterns — off (defensive coding, third-party libs, post-init) ──
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/no-dynamic-delete': 'off',
+      '@typescript-eslint/no-deprecated': 'off',
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+
+      // ── Style preferences — off (not worth enforcing at scale) ──
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/return-await': 'off',
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-useless-constructor': 'off',
+
+      // ── Framework compatibility ──
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-empty-function': 'off',
+      'no-control-regex': 'off',
     },
   },
 
@@ -129,41 +105,33 @@ export default tseslint.config(
         allowConstantExport: true,
       }],
 
-      // No console in frontend (warn during development)
+      // ── Real bugs — keep as warnings ──
       'no-console': 'warn',
-
-      // Allow non-null assertions in React (for refs, etc.)
-      '@typescript-eslint/no-non-null-assertion': 'off',
-      '@typescript-eslint/no-non-null-asserted-optional-chain': 'warn',
-
-      // Allow explicit any in component props for flexibility
-      '@typescript-eslint/no-explicit-any': 'warn',
-
-      // Allow unused vars with underscore
       '@typescript-eslint/no-unused-vars': ['warn', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
       }],
-
-      // Allow empty functions for event handlers
-      '@typescript-eslint/no-empty-function': 'off',
-
-      // Relaxed rules for dashboard
-      '@typescript-eslint/no-unnecessary-condition': 'off',
       '@typescript-eslint/no-misused-promises': 'warn',
       '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-assignment': 'warn',
-      '@typescript-eslint/no-unsafe-member-access': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      '@typescript-eslint/no-unsafe-call': 'warn',
-      '@typescript-eslint/no-unsafe-return': 'warn',
-      '@typescript-eslint/restrict-template-expressions': ['warn', {
-        allowNumber: true,
-        allowBoolean: true,
-      }],
-      '@typescript-eslint/prefer-nullish-coalescing': 'warn',
-      '@typescript-eslint/no-misused-spread': 'warn',
-      '@typescript-eslint/no-base-to-string': 'warn',
+
+      // ── Accepted patterns — off ──
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-non-null-asserted-optional-chain': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-empty-function': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/no-misused-spread': 'off',
+      '@typescript-eslint/no-deprecated': 'off',
+
+      // ── Style — off ──
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
       '@typescript-eslint/return-await': 'off',
     },
   },

@@ -68,7 +68,6 @@ export class WhatsAppIntegration implements Integration {
           if (!msg.key.fromMe && msg.message) {
             const unified = this.normalizeMessage(msg);
             if (unified) {
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               await this.deps!.onMessage(unified);
             }
           }

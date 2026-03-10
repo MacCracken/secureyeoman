@@ -301,9 +301,9 @@ export class MemoryAuditEngine {
 
   private emitAlert(
     type: string,
-    severity: string,
-    message: string,
-    meta?: Record<string, unknown>
+    _severity: string,
+    _message: string,
+    _meta?: Record<string, unknown>
   ): void {
     try {
       const am = this.getAlertManager?.();

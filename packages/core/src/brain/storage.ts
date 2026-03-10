@@ -113,15 +113,6 @@ interface DocumentRow {
   updated_at: number;
 }
 
-interface QueryLogRow {
-  id: string;
-  personality_id: string | null;
-  query_text: string;
-  results_count: number;
-  top_score: number | null;
-  queried_at: number;
-}
-
 // ── Helpers ──────────────────────────────────────────────────
 
 function safeJsonParseProv(val: unknown): ProvenanceScores | null {

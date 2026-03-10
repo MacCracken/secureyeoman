@@ -146,7 +146,7 @@ export class HeartbeatManager {
 
     // Check active hours
     if (check.schedule.activeHours) {
-      const { start, end, timezone = 'UTC' } = check.schedule.activeHours;
+      const { start, end, timezone: _timezone = 'UTC' } = check.schedule.activeHours;
 
       // Convert to timezone (simple implementation - uses UTC for now)
       // For production, use a library like date-fns-tz
@@ -553,7 +553,7 @@ export class HeartbeatManager {
   private async executeLLMAnalyzeAction(
     config: Record<string, unknown>,
     check: HeartbeatCheck,
-    result: HeartbeatCheckResult
+    _result: HeartbeatCheckResult
   ): Promise<void> {
     // LLM analysis requires AI provider integration
     // For now, log that it would be executed

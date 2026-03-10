@@ -417,7 +417,7 @@ function InstalledSystem({
     }
   };
 
-  const agentLabel = (s: Skill) =>
+  const _agentLabel = (s: Skill) =>
     s.personalityName ??
     (s.personalityId ? (personalityMap.get(s.personalityId) ?? s.personalityId) : null) ??
     'Global';

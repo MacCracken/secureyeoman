@@ -13,7 +13,6 @@
 
 import type { CaptureTarget, CaptureFilters } from '../types.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CanvasModule = any;
 
 async function tryLoadCanvas(): Promise<CanvasModule | null> {
@@ -57,7 +56,6 @@ async function captureViaScreenshotDesktop(options: {
   screen?: number;
   format?: CaptureFormat;
 }): Promise<Buffer> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let screenshotDesktop: any;
   try {
     // @ts-expect-error — screenshot-desktop types may not be available
@@ -77,7 +75,6 @@ async function captureViaScreenshotDesktop(options: {
  * Attempt screenshot via @napi-rs/screenshot (Wayland fallback).
  */
 async function captureViaNapiScreenshot(): Promise<Buffer> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let napiScreenshot: any;
   try {
     // @ts-expect-error — @napi-rs/screenshot is an optional dependency

@@ -14,7 +14,7 @@ import {
   createReadStream,
   createWriteStream,
 } from 'node:fs';
-import { join, basename } from 'node:path';
+import { join } from 'node:path';
 import { createGzip } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 

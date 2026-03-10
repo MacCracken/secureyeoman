@@ -377,7 +377,7 @@ export class SubAgentManager {
     tokenBudget: number,
     timeoutMs: number,
     signal: AbortSignal,
-    parentDelegationId?: string
+    _parentDelegationId?: string
   ): Promise<DelegationResult> {
     const startTime = Date.now();
     let tokensUsedPrompt = 0;

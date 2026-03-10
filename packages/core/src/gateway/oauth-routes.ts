@@ -251,7 +251,7 @@ export class OAuthService {
 
   isProviderConfigured(id: string): boolean {
     const config = this.config[id as keyof OAuthServiceConfig];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+
     return !!(config?.clientId && config?.clientSecret);
   }
 
@@ -326,12 +326,11 @@ export class OAuthService {
 
     const data = (await response.json()) as Record<string, unknown>;
     return {
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
       accessToken: String(data.access_token ?? ''),
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
       refreshToken: data.refresh_token ? String(data.refresh_token) : undefined,
       // Google returns the actually-granted scopes; capture them so we can store truth, not request
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
       grantedScope: data.scope ? String(data.scope) : undefined,
     };
   }
@@ -364,36 +363,33 @@ export class OAuthService {
 
     if (providerId === 'google' || providerId === 'gmail') {
       return {
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
         id: String(data.id ?? ''),
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
         email: data.email ? String(data.email) : undefined,
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
         name: data.name ? String(data.name) : undefined,
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
         avatarUrl: data.picture ? String(data.picture) : undefined,
       };
     }
 
     if (providerId === 'github') {
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
       const login = data.login ? String(data.login) : '';
       // GitHub users with "Keep my email private" have null email on /user.
       // Fall back to GitHub's noreply format so the token is always stored.
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
       const numericId = String(data.id ?? '');
       const email = data.email
-        ? // eslint-disable-next-line @typescript-eslint/no-base-to-string
-          String(data.email)
+        ? String(data.email)
         : login
           ? `${numericId}+${login}@users.noreply.github.com`
           : undefined;
       return {
         id: numericId,
         email,
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
         name: data.name ? String(data.name) : login || undefined,
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
         avatarUrl: data.avatar_url ? String(data.avatar_url) : undefined,
       };
     }
@@ -438,7 +434,6 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
   // when using a reverse proxy / Vite dev server on a different port).
   const publicUrl = (opts.publicUrl ?? '').replace(/\/$/, '') || baseUrl;
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const getRedirectUri = (provider: string) =>
     `${publicUrl}/api/v1/auth/oauth/${provider}/callback`;
 
@@ -664,7 +659,6 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
   app.post(
     '/api/v1/auth/oauth/disconnect',
     async (request: FastifyRequest<{ Body: { provider: string } }>, reply: FastifyReply) => {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const { provider } = request.body ?? {};
       if (!provider) {
         return sendError(reply, 400, 'Provider is required');
@@ -690,7 +684,6 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       }>,
       reply: FastifyReply
     ) => {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const body = request.body ?? ({} as Record<string, unknown>);
       const { connectionToken, displayName, enableRead, enableSend, labelFilter, labelName } = body;
 

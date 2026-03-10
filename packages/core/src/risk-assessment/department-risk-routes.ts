@@ -171,7 +171,7 @@ export function registerDepartmentRiskRoutes(
   // GET /api/v1/risk/departments/:id/scores
   app.get<{ Params: { id: string } }>('/api/v1/risk/departments/:id/scores', async (req, reply) => {
     const { id } = req.params;
-    const query = req.query as { from?: string; to?: string; limit?: string };
+    const _query = req.query as { from?: string; to?: string; limit?: string };
     try {
       const scores = await mgr.getTrend(id, undefined);
       return reply.send({ scores });

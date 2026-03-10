@@ -1364,7 +1364,7 @@ export class SraManager {
 
   // ── Executive summary ──────────────────────────────────────────
 
-  async getSummary(orgId?: string): Promise<SraExecutiveSummary> {
+  async getSummary(_orgId?: string): Promise<SraExecutiveSummary> {
     const now = Date.now();
     if (this._summaryCache && now - this._summaryCacheAt < SraManager.SUMMARY_CACHE_TTL_MS) {
       return this._summaryCache;

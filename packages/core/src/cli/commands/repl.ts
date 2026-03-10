@@ -92,7 +92,6 @@ Options:
           return [hits.length ? hits : REPL_COMMANDS, line];
         }
         if (parts[0] === 'integration' && parts.length === 2) {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           const hits = INTEGRATION_ACTIONS.filter((a) => a.startsWith(parts[1]!));
           return [hits.map((h) => `integration ${h}`), line];
         }
@@ -241,13 +240,12 @@ async function replIntegration(
           return;
         }
         const rows = data.integrations.map((i) => ({
-          // eslint-disable-next-line @typescript-eslint/no-base-to-string
           id: String(i.id ?? ''),
-          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
           name: String(i.name ?? ''),
-          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
           platform: String(i.platform ?? ''),
-          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
           enabled: String(i.enabled ?? ''),
         }));
         ctx.stdout.write(formatTable(rows) + '\n');
@@ -285,7 +283,7 @@ async function replIntegration(
         );
         if (!result.ok) {
           const errData = result.data as Record<string, unknown>;
-          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
           ctx.stderr.write(`Failed: ${String(errData.error ?? result.status)}\n`);
           return;
         }

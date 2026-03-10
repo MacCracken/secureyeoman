@@ -201,7 +201,7 @@ export class PromptGuardFilter implements GuardrailFilter {
 
   constructor(private readonly guard: PromptGuardLike) {}
 
-  async onInput(text: string, ctx: GuardrailFilterContext): Promise<GuardrailFilterResult> {
+  async onInput(text: string, _ctx: GuardrailFilterContext): Promise<GuardrailFilterResult> {
     const result = this.guard.scan([{ role: 'user', content: text }]);
     const findings: GuardrailFilterFinding[] = result.findings.map((f) => ({
       filterId: this.id,

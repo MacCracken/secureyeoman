@@ -90,7 +90,7 @@ export class TelegramIntegration implements Integration {
         },
         timestamp: msg.date * 1000,
       };
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
       await this.deps!.onMessage(unified);
     });
 
@@ -221,7 +221,7 @@ export class TelegramIntegration implements Integration {
         },
         timestamp: Date.now(),
       };
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
       await this.deps!.onMessage(unified);
     });
 
@@ -256,7 +256,7 @@ export class TelegramIntegration implements Integration {
         },
         timestamp: msg.date * 1000,
       };
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
       await this.deps!.onMessage(unified);
     });
 

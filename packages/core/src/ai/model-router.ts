@@ -326,7 +326,7 @@ export class ModelRouter {
   private fallback(
     taskProfile: TaskProfile,
     tier: ModelTier,
-    tokenBudget: number
+    _tokenBudget: number
   ): RoutingDecision {
     return {
       selectedModel: null,

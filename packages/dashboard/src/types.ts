@@ -1237,14 +1237,14 @@ export interface CompatibilityCheckResult {
 export interface WorkflowExport {
   exportedAt: number;
   requires: WorkflowShareableRequires;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   workflow: any;
 }
 
 export interface SwarmTemplateExport {
   exportedAt: number;
   requires: SwarmTemplateRequires;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   template: any;
 }
 

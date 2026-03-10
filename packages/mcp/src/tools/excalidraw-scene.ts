@@ -442,8 +442,8 @@ function elementToSvg(el: ExcalidrawElement): string {
     case 'diamond': {
       const cx = el.x + el.width / 2;
       const cy = el.y + el.height / 2;
-      const hw = el.width / 2;
-      const hh = el.height / 2;
+      const _hw = el.width / 2;
+      const _hh = el.height / 2;
       return `<polygon points="${cx},${el.y} ${el.x + el.width},${cy} ${cx},${el.y + el.height} ${el.x},${cy}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`;
     }
     case 'text': {

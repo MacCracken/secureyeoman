@@ -6,7 +6,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
-import type { ExtensionManifest, HookPoint, HookSemantics, WebhookConfig } from './types.js';
+import type { ExtensionManifest, HookPoint, WebhookConfig } from './types.js';
 
 // ─── Row types ──────────────────────────────────────────────────────
 

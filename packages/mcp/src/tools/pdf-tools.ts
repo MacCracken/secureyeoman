@@ -159,7 +159,7 @@ export function registerPdfTools(
 
       const text = extracted.text;
       const searchQuery = caseSensitive ? query : query.toLowerCase();
-      const searchText = caseSensitive ? text : text.toLowerCase();
+      const _searchText = caseSensitive ? text : text.toLowerCase();
 
       // Split into "pages" by form feed or roughly by line count
       const pageTexts = text.split(/\f/);

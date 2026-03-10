@@ -44,7 +44,7 @@ const AGENT_SERVICES = [
 
 const INFRA_SERVICES = ['redis', 'rabbitmq', 'webgui'] as const;
 
-const ALL_SERVICES = [...INFRA_SERVICES, ...AGENT_SERVICES] as const;
+const _ALL_SERVICES = [...INFRA_SERVICES, ...AGENT_SERVICES] as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

@@ -14,13 +14,7 @@
 import { type ModuleContext } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { Config } from '@secureyeoman/shared';
-import {
-  loadConfig,
-  initializeKeyring,
-  getSecret,
-  requireSecret,
-  type LoadConfigOptions,
-} from '../config/loader.js';
+import { initializeKeyring, getSecret } from '../config/loader.js';
 import type { KeyringManager } from '../security/keyring/manager.js';
 import { SecretsManager, type SecretsManagerConfig } from '../security/secrets-manager.js';
 import { TlsManager } from '../security/tls-manager.js';
@@ -361,8 +355,8 @@ export class SecurityModule implements AppModule {
 
       // Track known secrets
       const now = Date.now();
-      const tokenRotDays = this.config.security.rotation.tokenRotationIntervalDays;
-      const signingRotDays = this.config.security.rotation.signingKeyRotationIntervalDays;
+      const _tokenRotDays = this.config.security.rotation.tokenRotationIntervalDays;
+      const _signingRotDays = this.config.security.rotation.signingKeyRotationIntervalDays;
 
       const secretDefs: SecretMetadata[] = [
         {
@@ -495,9 +489,9 @@ export class SecurityModule implements AppModule {
             ? {
                 fire: (
                   type: string,
-                  severity: string,
-                  message: string,
-                  meta?: Record<string, unknown>
+                  _severity: string,
+                  _message: string,
+                  _meta?: Record<string, unknown>
                 ) => {
                   void deps.getAlertManager()!.evaluate({ [type]: 1 });
                 },

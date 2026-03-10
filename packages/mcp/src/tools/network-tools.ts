@@ -96,7 +96,6 @@ function validateNetworkTarget(target: string, config: McpServiceConfig): void {
 // ─── SSH session manager ──────────────────────────────────────────────────────
 
 interface SshSessionEntry {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: any; // ssh2 Client — typed as any to handle optional import
   host: string;
   username: string;
@@ -212,7 +211,6 @@ async function runSshCommand(sessionId: string, command: string): Promise<string
       reject(new Error(`SSH command timed out after ${SSH_COMMAND_TIMEOUT_MS}ms: ${command}`));
     }, SSH_COMMAND_TIMEOUT_MS);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     sess.client.exec(command, (err: Error | null, stream: any) => {
       if (err) {
         clearTimeout(timer);

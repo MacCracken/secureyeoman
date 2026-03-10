@@ -8,7 +8,7 @@
  * sandbox-exec is not available (non-macOS or SIP restrictions).
  */
 
-import { execFileSync, fork } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import * as path from 'node:path';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
 import type {

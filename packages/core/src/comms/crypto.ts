@@ -10,7 +10,6 @@ import {
   createCipheriv,
   createDecipheriv,
   randomBytes,
-  createHash,
   diffieHellman,
   createPrivateKey,
   createPublicKey,
@@ -186,7 +185,7 @@ export function sanitizePayload(payload: MessagePayload): MessagePayload {
   }
 
   const sanitizedMeta = { ...payload.metadata };
-  for (const [key, value] of Object.entries(sanitizedMeta)) {
+  for (const [key, _value] of Object.entries(sanitizedMeta)) {
     if (/key|token|secret|password|credential/i.test(key)) {
       sanitizedMeta[key] = '[REDACTED]';
     }

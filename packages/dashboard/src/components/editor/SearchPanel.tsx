@@ -88,7 +88,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
         caseSensitive,
       });
     },
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       // Re-run search to update results
       if (query) searchMutation.mutate();
     },

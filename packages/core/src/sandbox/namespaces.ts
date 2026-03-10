@@ -13,7 +13,7 @@
 
 import { execSync, execFileSync } from 'node:child_process';
 import { platform } from 'node:os';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 
 export interface NamespaceCapabilities {
   userNamespaces: boolean;

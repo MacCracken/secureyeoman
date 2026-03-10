@@ -97,7 +97,7 @@ export function registerBatchInferenceRoutes(
 
   // ── Cache Stats & Clear ──────────────────────────────────────────────
 
-  app.get('/api/v1/ai/cache/stats', async (_request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/api/v1/ai/cache/stats', async (_request: FastifyRequest, _reply: FastifyReply) => {
     const semanticCache = secureYeoman.getSemanticCache?.();
     const aiClient = secureYeoman.getAIClient?.();
 

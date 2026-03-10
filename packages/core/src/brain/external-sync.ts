@@ -159,7 +159,7 @@ export class ExternalBrainSync {
     // Sync knowledge (paginated)
     if (this.config.syncKnowledge) {
       const knowledgeIds = new Set<string>();
-      let offset = 0;
+      let _offset = 0;
       let batch;
       do {
         batch = await this.brain.queryKnowledge({ limit: PAGE_SIZE });
@@ -171,7 +171,7 @@ export class ExternalBrainSync {
           knowledgeIds.add(filename);
           knowledgeWritten++;
         }
-        offset += PAGE_SIZE;
+        _offset += PAGE_SIZE;
       } while (batch.length === PAGE_SIZE);
 
       // Remove stale files

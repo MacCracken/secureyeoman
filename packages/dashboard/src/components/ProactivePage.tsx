@@ -43,7 +43,7 @@ type Tab = 'overview' | 'triggers' | 'suggestions' | 'patterns';
 
 export function ProactivePage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
 
   const { data: securityPolicy } = useQuery({
     queryKey: ['security-policy'],

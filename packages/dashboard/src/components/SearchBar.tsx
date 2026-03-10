@@ -9,7 +9,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Clock, Shield, FileText, Loader2 } from 'lucide-react';
 import { fetchTasks, fetchSecurityEvents } from '../api/client';
-import type { Task, SecurityEvent } from '../types';
 
 interface SearchResult {
   id: string;
@@ -235,7 +234,7 @@ export function SearchBar() {
               <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/30">
                 {categoryLabels[category] ?? category}
               </div>
-              {items.map((result, idx) => {
+              {items.map((result, _idx) => {
                 const flatIndex = results.indexOf(result);
                 return (
                   <button

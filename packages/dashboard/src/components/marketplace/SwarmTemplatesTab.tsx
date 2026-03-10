@@ -4,45 +4,19 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import {
-  Download,
-  Upload,
-  Users,
-  Shield,
-  GitBranch,
-  Loader2,
-  CheckCircle,
-  AlertTriangle,
-  Search,
-} from 'lucide-react';
+import { Download, Upload, Users, Shield, GitBranch, Loader2, Search } from 'lucide-react';
 import {
   fetchCommunitySwarmTemplates,
   exportSwarmTemplate,
   importSwarmTemplate,
 } from '../../api/client';
-import type { SwarmTemplate, CompatibilityCheckResult } from '../../api/client';
+import type { SwarmTemplate } from '../../api/client';
 
 const STRATEGY_COLORS: Record<string, string> = {
   sequential: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
   parallel: 'bg-green-500/10 text-green-600 border-green-500/20',
   dynamic: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
 };
-
-function CompatibilityBadge({ gaps }: { gaps: CompatibilityCheckResult['gaps'] }) {
-  const roles = gaps.profileRoles ?? [];
-  if (roles.length === 0) {
-    return (
-      <span className="flex items-center gap-1 text-xs text-green-600">
-        <CheckCircle className="w-3 h-3" /> All roles available
-      </span>
-    );
-  }
-  return (
-    <span className="flex items-center gap-1 text-xs text-yellow-600">
-      <AlertTriangle className="w-3 h-3" /> Needs: {roles.join(', ')}
-    </span>
-  );
-}
 
 export function SwarmTemplatesTab({
   source,

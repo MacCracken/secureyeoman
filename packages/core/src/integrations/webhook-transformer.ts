@@ -16,7 +16,7 @@
  *   $.arr[0].nested         — array element property
  */
 
-import type { WebhookTransformStorage, ExtractRule } from './webhook-transform-storage.js';
+import type { WebhookTransformStorage } from './webhook-transform-storage.js';
 
 // ─── JSONPath evaluator (minimal subset) ─────────────────────
 

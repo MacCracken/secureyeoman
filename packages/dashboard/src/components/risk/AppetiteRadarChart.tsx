@@ -17,7 +17,6 @@ import { Target } from 'lucide-react';
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 const DOMAINS = ['security', 'operational', 'financial', 'compliance', 'reputational'] as const;
-type Domain = (typeof DOMAINS)[number];
 
 interface RiskAppetite {
   security: number;

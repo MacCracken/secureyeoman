@@ -20,7 +20,7 @@ export function registerFilesystemTools(
 ): void {
   function validatePath(inputPath: string): string {
     const resolved = path.resolve(inputPath);
-    const real = resolved; // We'll check realpath in the handler
+    const _real = resolved; // We'll check realpath in the handler
 
     const allowed = config.allowedPaths.some((allowedPath: string) =>
       resolved.startsWith(path.resolve(allowedPath))

@@ -3,7 +3,6 @@
  * concurrency, calls AIClient.chat() per prompt, tracks progress.
  */
 
-import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type { AIClient } from './client.js';

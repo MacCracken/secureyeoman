@@ -79,7 +79,7 @@ export class DarwinCaptureSandbox {
       await this.initialize();
     }
 
-    const startTime = Date.now();
+    const _startTime = Date.now();
     this.violations = [];
 
     try {

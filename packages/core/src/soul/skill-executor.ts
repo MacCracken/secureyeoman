@@ -42,7 +42,7 @@ export class SkillExecutor {
   async executeAction(
     skill: Skill,
     actionId: string,
-    context: ActionContext
+    _context: ActionContext
   ): Promise<ActionResult> {
     const startTime = Date.now();
 

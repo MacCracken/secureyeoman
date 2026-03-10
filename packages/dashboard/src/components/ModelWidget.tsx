@@ -9,7 +9,6 @@ import {
   deleteOllamaModel,
   fetchProviderHealth,
 } from '../api/client';
-import type { ProviderHealthEntry } from '../api/client';
 import type { ModelInfo } from '../types';
 
 const LOCAL_PROVIDER_KEYS = new Set(['ollama', 'lmstudio', 'localai']);

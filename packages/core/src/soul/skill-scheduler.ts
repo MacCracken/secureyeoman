@@ -5,7 +5,6 @@
  * See ADR 023: Scheduled Skill Execution
  */
 
-import type { Skill, SkillAction } from '@secureyeoman/shared';
 import { getLogger } from '../logging/logger.js';
 
 const logger = getLogger();

@@ -247,7 +247,7 @@ export function registerApiProxyTool<T extends Record<string, unknown>>(
   server.registerTool(
     name,
     { description, inputSchema },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     wrapToolHandler(name, middleware, async (args: any) => {
       const typedArgs = args as T;
       const path = buildPath(typedArgs);

@@ -14,7 +14,6 @@ import {
   Edit2,
   Trash2,
   X,
-  CheckCircle2,
   Eye,
   ChevronDown,
   ChevronLeft,
@@ -83,7 +82,6 @@ import {
   fetchSoulConfig,
   uploadPersonalityAvatar,
   deletePersonalityAvatar,
-  fetchOAuthTokens,
   getAccessToken,
   exportPersonality,
   importPersonality,
@@ -238,7 +236,7 @@ const TRAIT_CATEGORIES: { key: TraitDef['category']; label: string }[] = [
 const CORE_TRAIT_KEYS = new Set(['formality', 'humor', 'verbosity']);
 
 /** Legacy compat: build TRAIT_OPTIONS from TRAIT_DEFS for any code that still references it. */
-const TRAIT_OPTIONS: Record<string, string[]> = Object.fromEntries(
+const _TRAIT_OPTIONS: Record<string, string[]> = Object.fromEntries(
   TRAIT_DEFS.map((t) => [t.key, t.options])
 );
 
@@ -1639,7 +1637,7 @@ function BrainSection({
     queryFn: fetchExternalSyncStatus,
   });
 
-  const { data: brainConfig, refetch: refetchBrainConfig } = useQuery({
+  const { data: brainConfig, refetch: _refetchBrainConfig } = useQuery({
     queryKey: ['externalBrainConfig'],
     queryFn: fetchExternalBrainConfig,
   });
@@ -4742,7 +4740,7 @@ export function PersonalityEditor({
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Personality | null>(null);
   const [deleteLockedMsg, setDeleteLockedMsg] = useState<string | null>(null);
-  const [activatingId, setActivatingId] = useState<string | null>(null);
+  const [_activatingId, setActivatingId] = useState<string | null>(null);
   const [activateError, setActivateError] = useState<string | null>(null);
   const [setActiveOnSave, setSetActiveOnSave] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
@@ -4950,7 +4948,7 @@ export function PersonalityEditor({
     queryFn: fetchSoulConfig,
   });
 
-  const { data: globalMcpConfig } = useQuery({
+  const { data: _globalMcpConfig } = useQuery({
     queryKey: ['mcpConfig'],
     queryFn: fetchMcpConfig,
   });
@@ -4994,7 +4992,7 @@ export function PersonalityEditor({
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
   });
 
-  const activateMut = useMutation({
+  const _activateMut = useMutation({
     mutationFn: (id: string) => {
       setActivatingId(id);
       setActivateError(null);

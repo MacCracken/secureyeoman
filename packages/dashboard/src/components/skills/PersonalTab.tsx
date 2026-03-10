@@ -30,7 +30,6 @@ import {
   disableSkill,
   approveSkill,
   rejectSkill,
-  installMarketplaceSkill,
   fetchPersonalities,
 } from '../../api/client';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -38,7 +37,7 @@ import type { Skill, SkillCreate } from '../../types';
 import { sanitizeText } from '../../utils/sanitize';
 import { useCollabEditor } from '../../hooks/useCollabEditor.js';
 import { PresenceBanner } from '../PresenceBanner.js';
-import { exportSkill, type TabType } from './shared';
+import { exportSkill } from './shared';
 
 const SOURCE_LABELS: Record<string, string> = {
   user: 'User',

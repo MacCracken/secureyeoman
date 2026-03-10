@@ -20,7 +20,6 @@ const SYNC_STEP1 = 0;
 const SYNC_STEP2 = 1;
 
 type MonacoEditor = import('monaco-editor').editor.IStandaloneCodeEditor;
-type MonacoModel = import('monaco-editor').editor.ITextModel;
 
 export interface CollabMonacoState {
   /** Bind to a mounted Monaco editor instance */

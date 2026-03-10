@@ -3,7 +3,6 @@
  * tracks completion, selects best trial by metric.
  */
 
-import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type { FinetuneManager } from './finetune-manager.js';

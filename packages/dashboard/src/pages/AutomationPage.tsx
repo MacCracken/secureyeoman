@@ -6,7 +6,6 @@
 
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Layers } from 'lucide-react';
 import { OpenTasks } from '../components/TaskHistory';
 import { WorkflowsPage } from './WorkflowsPage';
 
