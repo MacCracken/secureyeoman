@@ -163,7 +163,7 @@ describe('Auth Flow Integration', () => {
       await app.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
-        payload: { password: 'wrong' },
+        payload: { password: 'wrong-password-xxx' },
       });
     }
 
@@ -171,7 +171,7 @@ describe('Auth Flow Integration', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
-      payload: { password: 'wrong' },
+      payload: { password: 'wrong-password-xxx' },
     });
     expect(res.statusCode).toBe(429);
   });
@@ -194,7 +194,7 @@ describe('Auth Flow Integration', () => {
     await app.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
-      payload: { password: 'wrong' },
+      payload: { password: 'wrong-password-xxx' },
     });
 
     const result = await stack.auditStorage.query({
