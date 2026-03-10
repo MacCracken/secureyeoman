@@ -228,6 +228,21 @@ export class SecurityModule implements AppModule {
       this.logger.info('Auto-generated JWT token secret (no external key provided)');
     }
 
+    // Persist token secret to shared data volume so MCP sidecar can read it
+    // without needing SECUREYEOMAN_TOKEN_SECRET in env. Both core and MCP
+    // containers mount the data volume at /home/secureyeoman/.secureyeoman.
+    // MCP deletes the file after reading for security.
+    try {
+      const { writeFileSync, mkdirSync } = await import('node:fs');
+      const tokenSecretDir = '/home/secureyeoman/.secureyeoman';
+      const tokenSecretPath = `${tokenSecretDir}/.token-secret`;
+      mkdirSync(tokenSecretDir, { recursive: true });
+      const currentSecret = getSecret(tokenSecretEnv) ?? '';
+      writeFileSync(tokenSecretPath, currentSecret, { mode: 0o600 });
+    } catch {
+      // Best-effort — env var or SecretsManager is the primary mechanism
+    }
+
     // Audit chain signing key
     const signingKeyEnv = this.config.logging.audit.signingKeyEnv;
     if (!getSecret(signingKeyEnv)) {

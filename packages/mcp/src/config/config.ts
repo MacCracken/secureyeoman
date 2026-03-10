@@ -136,6 +136,30 @@ export const MCP_SECRET_MAPPINGS: {
   },
 ];
 
+import { readFileSync, unlinkSync } from 'node:fs';
+
+/** Shared data volume path where core writes the token secret. */
+const TOKEN_SECRET_PATH = '/home/secureyeoman/.secureyeoman/.token-secret';
+
+/**
+ * Read the token secret from the shared data volume (written by core's SecurityModule).
+ * Deletes the file after reading to minimize the on-disk exposure window.
+ * Falls back to undefined if the file doesn't exist.
+ */
+function readTokenSecretFile(): string | undefined {
+  try {
+    const secret = readFileSync(TOKEN_SECRET_PATH, 'utf8').trim();
+    try {
+      unlinkSync(TOKEN_SECRET_PATH);
+    } catch {
+      // deletion is best-effort
+    }
+    return secret || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function loadConfig(
   env: Record<string, string | undefined> = process.env
 ): McpServiceConfig {
@@ -147,7 +171,7 @@ export function loadConfig(
     autoRegister: parseBool(env.MCP_AUTO_REGISTER, true),
     coreUrl: env.MCP_CORE_URL ?? 'http://127.0.0.1:18789',
     advertiseUrl: env.MCP_ADVERTISE_URL,
-    tokenSecret: env.SECUREYEOMAN_TOKEN_SECRET,
+    tokenSecret: env.SECUREYEOMAN_TOKEN_SECRET || readTokenSecretFile(),
     exposeFilesystem: parseBool(env.MCP_EXPOSE_FILESYSTEM, false),
     allowedPaths: env.MCP_ALLOWED_PATHS
       ? env.MCP_ALLOWED_PATHS.split(',')

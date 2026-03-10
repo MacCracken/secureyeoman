@@ -44,8 +44,8 @@ jobs:
 
       - run: npm run typecheck
 
-  test-unit:
-    name: Unit Tests (Node ${{ matrix.node-version }})
+  test-core:
+    name: Core Unit Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -62,17 +62,7 @@ jobs:
       - run: npm ci
 
       - name: Core unit tests
-        run: npx vitest run --project core:unit
-        env:
-          NODE_ENV: test
-
-      - name: Dashboard tests
-        run: npx vitest run --project dashboard
-        env:
-          NODE_ENV: test
-
-      - name: MCP tests
-        run: npx vitest run --project mcp
+        run: npx vitest run --project core:unit --reporter=default --reporter=github-actions
         env:
           NODE_ENV: test
 
@@ -80,13 +70,50 @@ jobs:
         if: matrix.node-version == 22
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-lcov
+          name: coverage-core-lcov
           path: packages/core/coverage/lcov.info
           retention-days: 7
           if-no-files-found: ignore
 
-  test-integration:
-    name: Integration & E2E Tests
+  test-dashboard:
+    name: Dashboard Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Dashboard tests
+        run: npx vitest run --project dashboard --reporter=default --reporter=github-actions
+        env:
+          NODE_ENV: test
+
+  test-mcp:
+    name: MCP Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: MCP tests
+        run: npx vitest run --project mcp --reporter=default --reporter=github-actions
+        env:
+          NODE_ENV: test
+
+  test-db:
+    name: DB Integration Tests
+    needs: [test-core, test-dashboard, test-mcp]
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -113,7 +140,7 @@ jobs:
       - run: npm ci
 
       - name: DB integration tests
-        run: npx vitest run --project core:db
+        run: npx vitest run --project core:db --reporter=default --reporter=github-actions
         env:
           NODE_ENV: test
           TEST_DB_HOST: localhost
@@ -122,8 +149,36 @@ jobs:
           TEST_DB_PASSWORD: secureyeoman_dev
           TEST_DB_NAME: secureyeoman_test
 
+  test-e2e:
+    name: E2E Tests
+    needs: [test-core, test-dashboard, test-mcp]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: secureyeoman
+          POSTGRES_PASSWORD: secureyeoman_dev
+          POSTGRES_DB: secureyeoman_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U secureyeoman"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - run: npm ci
+
       - name: E2E tests
-        run: npx vitest run --project core:e2e
+        run: npx vitest run --project core:e2e --reporter=default --reporter=github-actions
         env:
           NODE_ENV: test
           TEST_DB_HOST: localhost
