@@ -102,10 +102,8 @@ async function runStart(ctx: CommandContext): Promise<number> {
     printBanner(ctx.stdout, host, actualPort);
 
     // Auto-register with parent if configured
-    const parentUrl =
-      process.env.SECUREYEOMAN_PARENT_URL;
-    const regToken =
-      process.env.SECUREYEOMAN_EDGE_TOKEN;
+    const parentUrl = process.env.SECUREYEOMAN_PARENT_URL;
+    const regToken = process.env.SECUREYEOMAN_EDGE_TOKEN;
 
     if (parentUrl) {
       try {
@@ -167,9 +165,7 @@ async function runRegister(ctx: CommandContext): Promise<number> {
     ctx.stdout.write(`${c.green('✓')} Registered with ${parentUrl}\n`);
     ctx.stdout.write(`  Peer ID: ${peerId}\n`);
   } catch (err) {
-    ctx.stderr.write(
-      `Registration failed: ${err instanceof Error ? err.message : String(err)}\n`
-    );
+    ctx.stderr.write(`Registration failed: ${err instanceof Error ? err.message : String(err)}\n`);
     await runtime.shutdown();
     return 1;
   }
@@ -192,7 +188,9 @@ async function runStatus(ctx: CommandContext): Promise<number> {
   ctx.stdout.write(`  Memory:     ${caps.totalMemoryMb} MB\n`);
   ctx.stdout.write(`  CPU Cores:  ${caps.cpuCores}\n`);
   ctx.stdout.write(`  GPU:        ${caps.hasGpu ? c.green('detected') : c.dim('none')}\n`);
-  ctx.stdout.write(`  Tags:       ${caps.tags.length > 0 ? caps.tags.join(', ') : c.dim('none')}\n`);
+  ctx.stdout.write(
+    `  Tags:       ${caps.tags.length > 0 ? caps.tags.join(', ') : c.dim('none')}\n`
+  );
   ctx.stdout.write(`  Version:    ${VERSION}\n\n`);
 
   return 0;

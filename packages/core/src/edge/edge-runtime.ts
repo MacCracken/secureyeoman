@@ -7,7 +7,12 @@
  * Designed for <128 MB RAM and <5s boot on constrained hardware.
  */
 
-import { loadConfig, validateSecrets, getSecret, type LoadConfigOptions } from '../config/loader.js';
+import {
+  loadConfig,
+  validateSecrets,
+  getSecret,
+  type LoadConfigOptions,
+} from '../config/loader.js';
 import { initializeLogger, type SecureLogger } from '../logging/logger.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { A2AManager } from '../a2a/manager.js';
@@ -81,12 +86,14 @@ export class EdgeRuntime {
     if (this.options.host) this.config.gateway.host = this.options.host;
 
     // Step 2: Logger
-    this.logger = initializeLogger(this.config.logging ?? {
-      level: 'info',
-      format: 'json',
-      output: [{ type: 'stdout', format: 'json' }],
-      audit: { enabled: false },
-    });
+    this.logger = initializeLogger(
+      this.config.logging ?? {
+        level: 'info',
+        format: 'json',
+        output: [{ type: 'stdout', format: 'json' }],
+        audit: { enabled: false },
+      }
+    );
     this.logger.info({ version: VERSION }, 'SecureYeoman Edge starting');
 
     // Step 3: Database (if configured — edge can run SQLite-only)
@@ -99,8 +106,7 @@ export class EdgeRuntime {
 
     // Step 4: Audit chain (in-memory for edge — lightweight)
     const auditStorage = new InMemoryAuditStorage();
-    const signingKey =
-      getSecret('SECUREYEOMAN_SIGNING_KEY') ?? `edge-audit-${Date.now()}`;
+    const signingKey = getSecret('SECUREYEOMAN_SIGNING_KEY') ?? `edge-audit-${Date.now()}`;
     this.auditChain = new AuditChain({ storage: auditStorage, signingKey });
     await this.auditChain.initialize();
 
@@ -184,7 +190,9 @@ export class EdgeRuntime {
     });
 
     return new Promise<void>((resolve, reject) => {
-      this.server!.listen(port, host, () => { resolve(); });
+      this.server!.listen(port, host, () => {
+        resolve();
+      });
       this.server!.once('error', reject);
     });
   }
@@ -216,9 +224,7 @@ export class EdgeRuntime {
     } catch (err) {
       this.logger?.error({ err }, 'A2A receive error');
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({ error: err instanceof Error ? err.message : 'Bad request' })
-      );
+      res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Bad request' }));
     }
   }
 
@@ -295,11 +301,7 @@ export class EdgeRuntime {
       }
       if (mac) break;
     }
-    return crypto
-      .createHash('sha256')
-      .update(`${os.hostname()}:${mac}`)
-      .digest('hex')
-      .slice(0, 16);
+    return crypto.createHash('sha256').update(`${os.hostname()}:${mac}`).digest('hex').slice(0, 16);
   }
 
   private detectGpu(): boolean {
@@ -346,7 +348,9 @@ export class EdgeRuntime {
     // Close HTTP server
     if (this.server) {
       await new Promise<void>((resolve) => {
-        this.server!.close(() => { resolve(); });
+        this.server!.close(() => {
+          resolve();
+        });
       });
     }
 
@@ -363,9 +367,7 @@ export class EdgeRuntime {
 
 // ── Factory ─────────────────────────────────────────────────────────────────
 
-export async function createEdgeRuntime(
-  options?: EdgeRuntimeOptions
-): Promise<EdgeRuntime> {
+export async function createEdgeRuntime(options?: EdgeRuntimeOptions): Promise<EdgeRuntime> {
   const runtime = new EdgeRuntime(options);
   await runtime.initialize();
   return runtime;

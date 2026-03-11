@@ -134,11 +134,7 @@ function StatusBadge({ status }: { status: string }) {
           : 'bg-muted text-muted-foreground border-border'
       }`}
     >
-      {isOnline ? (
-        <Wifi className="w-3 h-3 shrink-0" />
-      ) : (
-        <WifiOff className="w-3 h-3 shrink-0" />
-      )}
+      {isOnline ? <Wifi className="w-3 h-3 shrink-0" /> : <WifiOff className="w-3 h-3 shrink-0" />}
       {status}
     </span>
   );
@@ -393,19 +389,33 @@ export function FleetPanel() {
           icon={<Wifi className="w-4 h-4" />}
           label="Online / Offline"
           value={`${onlineCount} / ${offlineCount}`}
-          sub={totalNodes > 0 ? `${Math.round((onlineCount / totalNodes) * 100)}% healthy` : undefined}
+          sub={
+            totalNodes > 0 ? `${Math.round((onlineCount / totalNodes) * 100)}% healthy` : undefined
+          }
         />
         <OverviewCard
           icon={<Cpu className="w-4 h-4" />}
           label="Total CPU Cores"
           value={totalCpuCores || '—'}
-          sub={healthQueries.isLoading ? 'fetching…' : allCaps.length > 0 ? `across ${allCaps.length} nodes` : 'no data'}
+          sub={
+            healthQueries.isLoading
+              ? 'fetching…'
+              : allCaps.length > 0
+                ? `across ${allCaps.length} nodes`
+                : 'no data'
+          }
         />
         <OverviewCard
           icon={<MemoryStick className="w-4 h-4" />}
           label="Total Memory"
           value={totalMemoryGb > 0 ? `${totalMemoryGb.toFixed(1)} GB` : '—'}
-          sub={healthQueries.isLoading ? 'fetching…' : allCaps.length > 0 ? `across ${allCaps.length} nodes` : 'no data'}
+          sub={
+            healthQueries.isLoading
+              ? 'fetching…'
+              : allCaps.length > 0
+                ? `across ${allCaps.length} nodes`
+                : 'no data'
+          }
         />
       </div>
 

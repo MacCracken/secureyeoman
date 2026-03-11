@@ -62,18 +62,35 @@ async function waitForHealthy(url: string, timeoutMs = 30_000): Promise<void> {
 }
 
 function spawnServer(configPath: string): ChildProcess {
-  const child = spawn(process.execPath, ['--import', 'tsx', CLI_PATH, 'start', '-p', String(TEST_PORT), '-H', TEST_HOST, '-l', 'warn', '-c', configPath], {
-    env: {
-      ...process.env,
-      NODE_ENV: 'test',
-      SECUREYEOMAN_ADMIN_PASSWORD: ADMIN_PASSWORD,
-      SECUREYEOMAN_TOKEN_SECRET: TOKEN_SECRET,
-      SECUREYEOMAN_SIGNING_KEY: 'smoke-test-signing-key-32chars!!!',
-      SECUREYEOMAN_ENCRYPTION_KEY: 'a]&3Gk9$mQ#vL7@pR!wZ5*xN2^bT8+dF',
-      POSTGRES_PASSWORD: process.env.TEST_DB_PASSWORD ?? 'secureyeoman_dev',
-    },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const child = spawn(
+    process.execPath,
+    [
+      '--import',
+      'tsx',
+      CLI_PATH,
+      'start',
+      '-p',
+      String(TEST_PORT),
+      '-H',
+      TEST_HOST,
+      '-l',
+      'warn',
+      '-c',
+      configPath,
+    ],
+    {
+      env: {
+        ...process.env,
+        NODE_ENV: 'test',
+        SECUREYEOMAN_ADMIN_PASSWORD: ADMIN_PASSWORD,
+        SECUREYEOMAN_TOKEN_SECRET: TOKEN_SECRET,
+        SECUREYEOMAN_SIGNING_KEY: 'smoke-test-signing-key-32chars!!!',
+        SECUREYEOMAN_ENCRYPTION_KEY: 'a]&3Gk9$mQ#vL7@pR!wZ5*xN2^bT8+dF',
+        POSTGRES_PASSWORD: process.env.TEST_DB_PASSWORD ?? 'secureyeoman_dev',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }
+  );
 
   // Collect stderr for debugging failures
   let stderr = '';

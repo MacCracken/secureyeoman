@@ -4,6 +4,63 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.11]
+
+### Phase 14A–C: Edge/IoT A2A Binary — `secureyeoman-edge`
+
+Static Go binary for edge/IoT devices. 7.2 MB, zero runtime dependencies, runs on any Linux target including the 10 MB AGNOS edge container. Implements competitive feature parity with PicoClaw/NanoClaw/ZeroClaw while remaining streamlined for edge (no inbound bot listeners, no dashboard, no brain/soul).
+
+**Core Binary (`cmd/secureyeoman-edge/`):**
+- **CLI & config** (`flags.go`, `main.go`): `start` and `register` subcommands. `StartConfig` with port (default 18891), host, log level, parent URL. Env var overrides. Graceful shutdown of all subsystems.
+- **A2A peer-to-peer** (`a2a.go`): Full A2A manager — register/deregister peers, heartbeat loop (30s), capability queries, task delegation, trust levels (unknown/discovered/registered/verified). 7 tests.
+- **Bearer token auth** (`server.go`): `requireAuth()` middleware with `crypto/subtle.ConstantTimeCompare`. Token via `SECUREYEOMAN_EDGE_API_TOKEN` env var.
+- **Per-IP rate limiting** (`ratelimit.go`): Token bucket (100 req/s, burst 200). Auto-cleanup of stale buckets every 5 minutes. 3 tests.
+- **25 HTTP endpoints** (`server.go`): Health, metrics (JSON + Prometheus), memory CRUD, sandbox exec, scheduler CRUD, A2A (peers/register/heartbeat/delegate/discover), messaging, LLM (chat/providers), capabilities, config, update-check. `ServerDeps` struct for dependency injection.
+- **System metrics** (`metrics.go`): CPU, memory, disk via `gopsutil/v4`. Ring buffer history (360 entries, 10s interval = 1 hour). Prometheus text export. 3 tests.
+- **Persistent memory store** (`memory.go`): Namespaced key-value with TTL, JSON file backend, atomic writes (temp + rename). Size limits: 1 MB/value, 10K entries. Container-friendly fallback to `/tmp`. Cleanup loop every 5 minutes. 10 tests.
+- **Sandboxed command execution** (`sandbox.go`): Allowlist/blocklist, configurable timeout, workspace root restriction with symlink resolution (`filepath.EvalSymlinks`), output truncation (64 KB). 8 tests.
+- **Interval scheduler** (`scheduler.go`): Task types: command, webhook, LLM. Minimum 10s interval. `SetExecutor()` callback. 5 tests.
+- **Outbound messaging** (`messaging.go`): Slack, Discord, Telegram, generic webhooks. `AutoConfigMessaging()` from env vars. `ListTargets()` returns `RedactedTarget` (never exposes URLs/tokens). 4 tests.
+- **Multi-provider LLM** (`llm.go`): OpenAI, Anthropic, Ollama, OpenRouter. `AutoConfigProviders()` from env vars. SSRF protection (blocks private IPs except Ollama). Sanitized error messages. 6 tests.
+- **Capability detection** (`capabilities.go`): Auto-detects CPU, GPU (NVIDIA/AMD/Intel), memory, architecture, OS. Deterministic node ID from hostname + arch. Custom tags. 3 tests.
+- **TOFU certificate pinning** (`certpin.go`): SHA-256 hash of parent's leaf cert. Pin file: `parent-cert-pin.hex`. `PinnedClient()` enforces on every request. 4 tests.
+- **mDNS discovery** (`mdns.go`): Advertises `_secureyeoman._tcp` on LAN. `StartDiscoveryLoop()` auto-registers found peers with A2AManager.
+- **OTA self-update** (`updater.go`): Check parent for new version, download, verify SHA-256, atomic binary swap. Does NOT auto-restart (leaves that to process supervisor). 2 tests.
+- **Thread-safe logger** (`logger.go`): Level-filtered, mutex-protected stderr writes. 2 tests.
+- **Total: 16 source files, 83 unit tests (all passing, 19.4s), 20 smoke tests (full server lifecycle).**
+
+**Security hardening (18 audit findings fixed):**
+- 2 critical: constant-time auth comparison, secret redaction in API responses
+- 4 high: SSRF protection with private IP blocking, command injection prevention via allowlist, error message sanitization, registration token requirement
+- 12 medium/low: rate limiting, symlink resolution in sandbox, container path fallbacks, size limits, output truncation
+
+**Build & cross-compilation (`scripts/build-binary.sh`):**
+- `compile_go_edge()` with `CGO_ENABLED=0` for zero-dependency static binaries
+- Targets: linux-amd64, linux-arm64, linux-armv7
+- `--edge` flag builds only Go edge binaries
+- Verified running inside `ghcr.io/maccracken/agnosticos:edge` (10 MB Alpine container)
+
+**Fleet dashboard panel (`packages/dashboard/src/components/fleet/FleetPanel.tsx`):**
+- Node overview cards (total, online, offline, GPU-equipped)
+- Sortable table: status, hostname, architecture, memory, GPU, tags, last seen
+- 30s auto-refresh via `@tanstack/react-query`
+
+### Primary Binary Smoke Tests
+
+E2E test suite for the main TypeScript binary (`packages/core/src/__e2e__/binary-smoke.e2e.test.ts`). Spawns `node --import tsx src/cli.ts start` as a real subprocess and exercises key endpoints over HTTP.
+
+- Tests: health (status + content-type), auth (login/reject/protected), personalities, memory, workflows, A2A peers, 404, content-type, invalid JSON handling
+- Temp YAML config with `secretBackend: env` for CI compatibility
+- DB env var mapping (TEST_DB_* → DATABASE_*/POSTGRES_PASSWORD)
+- Graceful subprocess lifecycle (SIGTERM → SIGKILL fallback)
+
+### CI Pipeline — Go Edge & Binary Smoke Tests
+
+- **`test-edge` job** (`.github/workflows/ci.yml`): Go unit + smoke tests, static binary build, CLI smoke test (`--version`, `status`, `start`), ARM64 cross-compile verification
+- **Binary smoke tests**: Run as part of existing `test-e2e` job (vitest picks up `binary-smoke.e2e.test.ts`)
+
+---
+
 ## [2026.3.10]
 
 ### AGNOS Integration — Handshake Verified & Dashboard Sandbox Profiles

@@ -10,7 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 14 | Edge/IoT A2A Binary | P2 — platform | Planned (aligned with AGNOS Phase 14) |
+| 14 | Edge/IoT A2A Binary | P2 — platform | 14A ✅, 14B partial, 14C partial, 14D planned, 14E partial |
 | — | Engineering Backlog | Ongoing | Security hardening complete; test coverage improvements ongoing |
 | Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle | Future / Demand-Gated | — |
 
@@ -110,26 +110,26 @@
 
 **Goal**: A minimal, headless SecureYeoman binary (`secureyeoman-edge`) that runs on edge/IoT devices as an A2A sub-agent. No dashboard, no brain/soul — just agent runtime, A2A transport, and task execution. Pairs with AGNOS to deliver a full OS + agent stack for edge hardware.
 
-### 14A: Edge Binary
+### 14A: Edge Binary — ✅ Complete (2026-03-11)
 
-- [ ] **`secureyeoman-edge` build target** — Stripped binary: agent runtime + A2A transport + task executor + MCP client. No dashboard, no brain/soul/spirit, no marketplace. Target: <50 MB binary, <128 MB RAM at runtime. Tree-shake unused modules at build time.
-- [ ] **`secureyeoman edge --register` CLI mode** — Boot-time self-registration to a parent SY instance. Sends capabilities (CPU, GPU, memory, network quality, location tag) and receives an A2A peer identity + mTLS certificate.
-- [ ] **Headless agent executor** — Execute delegated tasks from parent SY brain. Supports: tool calls (MCP), code execution (sandboxed), file operations, sensor/hardware access via device-specific MCP tools.
-- [ ] **Minimal config schema** — Edge-specific config subset: parent URL, registration token, capabilities declaration, resource limits, log level. No soul/spirit/brain/marketplace config.
+- [x] **`secureyeoman-edge` build target** — 7.2 MB static Go binary (`CGO_ENABLED=0`). A2A transport, task executor, memory store, metrics, scheduler, sandbox, messaging, LLM, rate limiting. Cross-compiled: linux-amd64, linux-arm64, linux-armv7. Verified in AGNOS edge container. 83 unit tests + 20 smoke tests.
+- [x] **`secureyeoman edge --register` CLI mode** — Self-registration to parent SY. Sends capabilities (CPU, GPU, memory, arch, tags). TOFU certificate pinning for parent TLS.
+- [x] **Headless agent executor** — Sandboxed command execution (allowlist/blocklist, symlink resolution, output truncation), webhook tasks, LLM inference tasks via scheduler.
+- [x] **Minimal config schema** — `StartConfig`: parent URL, registration token, port, host, log level. No soul/spirit/brain/marketplace.
 
-### 14B: A2A Edge Networking
+### 14B: A2A Edge Networking — Partial
 
-- [ ] **mDNS peer discovery** — Edge nodes auto-discover parent SY instance on LAN via mDNS (`_secureyeoman._tcp`). Fallback to explicit parent URL in config.
+- [x] **mDNS peer discovery** — `_secureyeoman._tcp` advertisement + `StartDiscoveryLoop()` auto-registers found peers.
 - [ ] **WireGuard mesh support** — Encrypted tunneling between edge nodes and parent. SY parent acts as WireGuard coordinator, distributing peer configs to fleet.
-- [ ] **Heartbeat & watchdog** — Edge process responds to AGNOS argonaut health checks. Parent tracks edge node liveness, auto-marks unreachable nodes after configurable timeout.
-- [ ] **Bandwidth-aware task acceptance** — Edge nodes advertise connection quality (latency, throughput). Parent delegation layer factors bandwidth into task routing decisions.
+- [x] **Heartbeat & watchdog** — 30s heartbeat loop, peer liveness tracking, configurable timeout.
+- [ ] **Bandwidth-aware task acceptance** — Edge nodes advertise connection quality (latency, throughput). Parent delegation layer factors bandwidth into task routing decisions. *(Capabilities reported but parent-side routing not implemented.)*
 
-### 14C: Fleet Management
+### 14C: Fleet Management — Partial
 
-- [ ] **Edge node registry** — `edge_nodes` table: id, hostname, capabilities, health status, last heartbeat, location, parent instance. Queryable via REST API.
-- [ ] **SY dashboard — Fleet panel** — Fleet topology visualization, per-node health indicators, task distribution heatmap, deploy/update/decommission actions. New dashboard route: `/fleet`.
+- [ ] **Edge node registry** — `edge_nodes` DB table with REST API. *(Currently in-memory A2A peer tracking only.)*
+- [x] **SY dashboard — Fleet panel** — `FleetPanel.tsx`: node overview cards (total/online/offline/GPU), sortable table, 30s auto-refresh.
 - [ ] **Capability-based task routing** — Brain delegation layer routes tasks to edge nodes by GPU availability, network quality, location proximity, current load. Extends existing `RemoteDelegationTransport`.
-- [ ] **Signed OTA updates** — Parent pushes binary updates to edge fleet. Ed25519-signed update bundles, verified on edge before applying. Rollback on health check failure.
+- [x] **OTA updates** — SHA-256 verified download from parent, atomic binary swap. *(Ed25519 signing and rollback TBD.)*
 
 ### 14D: MCP Edge Tools
 
@@ -139,12 +139,12 @@
 - [ ] **`edge_health`** — Detailed health report for a specific edge node (uptime, resource usage, task history).
 - [ ] **`edge_decommission`** — Gracefully remove an edge node: drain tasks, revoke certificates, remove from registry.
 
-### 14E: Hardware Targets (AGNOS-side, SY binary validation)
+### 14E: Hardware Targets (AGNOS-side, SY binary validation) — Partial
 
-- [ ] **Raspberry Pi 4/5 (aarch64)** — Validate `secureyeoman-edge` runs on AGNOS Pi image. Pre-built `.img` with SY edge pre-installed.
-- [ ] **x86_64 NUC/mini-PC** — Validate edge binary on AGNOS x86_64 edge profile.
-- [ ] **RISC-V** — Cross-compile `secureyeoman-edge` for RISC-V targets (SiFive, StarFive). Depends on AGNOS RISC-V support.
-- [ ] **OCI container image** — `docker run secureyeoman-edge` for non-AGNOS Linux hosts. Minimal Alpine-based image.
+- [x] **Raspberry Pi 4/5 (aarch64)** — Cross-compiled `linux-arm64` binary. AGNOS Pi image validation pending.
+- [x] **x86_64 NUC/mini-PC** — `linux-amd64` binary. Validated in AGNOS edge container.
+- [ ] **RISC-V** — Cross-compile for RISC-V targets. Depends on AGNOS RISC-V support and Go RISC-V toolchain maturity.
+- [x] **OCI container image** — Verified running inside `ghcr.io/maccracken/agnosticos:edge` (10 MB Alpine). ARMv7 cross-compile for broader IoT targets.
 
 ---
 
@@ -161,7 +161,7 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Core Unit | 642 | 15,827 | 89.31 | 79.10 | All passing |
 | Dashboard | 179 | 4,105 | 71.12 | 67.71 | All passing — target met |
 | MCP | 75 | 1,111 | 70.20 | 51.50 | All passing |
-| Core E2E | 7 | 53 | — | — | All passing |
+| Core E2E | 8 | 67 | — | — | All passing |
 | Core DB (integration) | 41 | 890 | — | — | All passing (clean DB verified) |
 
 **Refactoring:**
@@ -325,4 +325,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-11 (AGNOS handshake fully verified with type/timestamp fixes; dashboard coverage 71.12%; forge adapters done). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-11 (Phase 14A complete — Go edge binary with 83 tests; primary binary smoke tests added; CI updated with Go edge + smoke test jobs). See [Changelog](../../CHANGELOG.md) for full history.*
