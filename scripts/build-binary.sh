@@ -3,11 +3,13 @@
 #
 # Usage:
 #   bash scripts/build-binary.sh           # full production build (all platforms)
-#   bash scripts/build-binary.sh --dev     # dev build: current platform only, skip Tier 2 + checksums
+#   bash scripts/build-binary.sh --dev     # dev build: current platform only, skip Tier 2/3 + checksums
+#   bash scripts/build-binary.sh --edge    # edge build only: minimal A2A runtime
 #
 # Produces:
 #   Tier 1 (needs PostgreSQL): secureyeoman-linux-x64, secureyeoman-linux-arm64, secureyeoman-darwin-arm64, secureyeoman-windows-x64.exe
 #   Tier 2 (SQLite-only, no external deps): secureyeoman-lite-linux-x64, secureyeoman-lite-linux-arm64, secureyeoman-lite-windows-x64.exe
+#   Tier 3 (Edge/IoT, minimal): secureyeoman-edge-linux-x64, secureyeoman-edge-linux-arm64
 #
 # Prerequisites: bun >= 1.1, npm (for TypeScript build step)
 #
@@ -45,9 +47,11 @@ echo "==> Using $(bun --version) at $(command -v bun)"
 
 # ── Parse flags ───────────────────────────────────────────────────────────────
 DEV_MODE=false
+EDGE_ONLY=false
 for arg in "$@"; do
   case "$arg" in
     --dev) DEV_MODE=true ;;
+    --edge) EDGE_ONLY=true ;;
     *) echo "Unknown argument: $arg" >&2; exit 1 ;;
   esac
 done
@@ -111,6 +115,75 @@ compile_binary() {
     --outfile "${OUTFILE}"
 }
 
+# Edge binary: uses the minimal edge/cli.ts entry point which only imports
+# the edge runtime + A2A transport. Bun tree-shakes out all unused modules
+# (brain, soul, spirit, marketplace, dashboard, training, analytics, etc.).
+# Additional externals strip optional heavy deps not used by the edge runtime.
+EDGE_EXTERNAL=(
+  "${BUN_EXTERNAL[@]}"
+  --external "isolated-vm"
+  --external "@qdrant/js-client-rest"
+  --external "faiss-node"
+  --external "@fastify/websocket"
+  --external "fastify"
+  --external "pdfjs-dist"
+  --external "sharp"
+  --external "mammoth"
+  --external "xlsx"
+  --external "csv-parse"
+  --external "nodemailer"
+  --external "ioredis"
+)
+
+compile_edge_binary() {
+  local TARGET="$1"
+  local OUTFILE="$2"
+  bun build --compile --target "${TARGET}" \
+    "${EDGE_EXTERNAL[@]}" \
+    --minify \
+    "${REPO_ROOT}/packages/core/src/edge/cli.ts" \
+    --outfile "${OUTFILE}"
+}
+
+# ── Go edge binary cross-compile ──────────────────────────────────────────────
+GO_EDGE_DIR="${REPO_ROOT}/cmd/secureyeoman-edge"
+GO_EDGE_VERSION="${VERSION:-2026.3.11}"
+
+compile_go_edge() {
+  local GOOS="$1"
+  local GOARCH="$2"
+  local OUTFILE="$3"
+  echo "    → edge-${GOOS}-${GOARCH}"
+  GOOS="${GOOS}" GOARCH="${GOARCH}" CGO_ENABLED=0 \
+    go build -C "${GO_EDGE_DIR}" \
+    -ldflags "-s -w -X main.Version=${GO_EDGE_VERSION}" \
+    -o "${OUTFILE}" .
+}
+
+# ── Edge-only mode: skip Tier 1 + 2, build only Go edge ──────────────────────
+if [[ "$EDGE_ONLY" == true ]]; then
+  echo "==> Edge-only mode: building Go edge binaries..."
+
+  if [[ "$DEV_MODE" == true ]]; then
+    case "$(uname -s)-$(uname -m)" in
+      Linux-x86_64)   compile_go_edge linux amd64 "${DIST_DIR}/secureyeoman-edge-linux-x64" ;;
+      Linux-aarch64)  compile_go_edge linux arm64 "${DIST_DIR}/secureyeoman-edge-linux-arm64" ;;
+      Darwin-arm64)   compile_go_edge darwin arm64 "${DIST_DIR}/secureyeoman-edge-darwin-arm64" ;;
+      Darwin-x86_64)  compile_go_edge darwin amd64 "${DIST_DIR}/secureyeoman-edge-darwin-x64" ;;
+      *) echo "error: unsupported platform" >&2; exit 1 ;;
+    esac
+  else
+    compile_go_edge linux amd64  "${DIST_DIR}/secureyeoman-edge-linux-x64"
+    compile_go_edge linux arm64  "${DIST_DIR}/secureyeoman-edge-linux-arm64"
+    compile_go_edge linux arm    "${DIST_DIR}/secureyeoman-edge-linux-armv7"
+  fi
+
+  echo ""
+  echo "==> Edge build complete. Binaries:"
+  ls -lh "${DIST_DIR}"/secureyeoman-edge-*
+  exit 0
+fi
+
 # ── Tier 1: PostgreSQL-backed binaries ────────────────────────────────────────
 if [[ "$DEV_MODE" == true ]]; then
   TIER1_TARGETS=("${DEV_TARGET}")
@@ -137,6 +210,14 @@ if [[ "$DEV_MODE" == false ]]; then
     echo "    → lite-${PLATFORM}"
     SECUREYEOMAN_BUILD_TIER=lite compile_binary "${TARGET}" "${DIST_DIR}/secureyeoman-lite-${PLATFORM}${EXT}"
   done
+fi
+
+# ── Tier 3: Edge (Go binary, static, Linux + ARM) ────────────────────────────
+if [[ "$DEV_MODE" == false ]]; then
+  echo "==> Compiling Tier 3 Go edge binaries (minimal A2A runtime)..."
+  compile_go_edge linux amd64  "${DIST_DIR}/secureyeoman-edge-linux-x64"
+  compile_go_edge linux arm64  "${DIST_DIR}/secureyeoman-edge-linux-arm64"
+  compile_go_edge linux arm    "${DIST_DIR}/secureyeoman-edge-linux-armv7"
 fi
 
 # ── Checksums ─────────────────────────────────────────────────────────────────

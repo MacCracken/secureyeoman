@@ -131,6 +131,13 @@ router.registerLazy({
 });
 
 router.registerLazy({
+  name: 'edge',
+  description: 'Edge/IoT mode — minimal headless A2A agent',
+  usage: 'secureyeoman edge <start|register|status> [options]',
+  loader: () => import('./cli/commands/edge.js').then((m) => m.edgeCommand),
+});
+
+router.registerLazy({
   name: 'repl',
   aliases: ['shell'],
   description: 'Interactive REPL',

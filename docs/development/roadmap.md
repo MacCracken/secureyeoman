@@ -10,6 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
+| 14 | Edge/IoT A2A Binary | P2 — platform | Planned (aligned with AGNOS Phase 14) |
 | — | Engineering Backlog | Ongoing | Security hardening complete; test coverage improvements ongoing |
 | Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle | Future / Demand-Gated | — |
 
@@ -100,6 +101,50 @@
 - [ ] **Community marketplace tipping** — Skill authors can receive $YEOMAN tips from users. Displayed on skill cards in marketplace. Incentivizes community contribution without SY taking a cut.
 - [ ] **Governance voting** — $YEOMAN holders vote on roadmap priorities (feature requests, integration order). Lightweight on-chain governance — advisory, not binding. Builds community ownership.
 - [ ] **Token launch logistics** — Fair launch (no VC allocation, no pre-mine beyond treasury). DEX liquidity pool. Community airdrop to early adopters and community skill authors. Legal review for utility token classification per jurisdiction.
+
+---
+
+## Phase 14: Edge/IoT A2A Binary
+
+**Priority**: P2 — Platform. Aligned with [AGNOS Phase 14](https://github.com/MacCracken/agnosticos/blob/main/docs/development/roadmap.md) (Edge Boot Profile, A2A Networking, Hardware Targets, Fleet Management).
+
+**Goal**: A minimal, headless SecureYeoman binary (`secureyeoman-edge`) that runs on edge/IoT devices as an A2A sub-agent. No dashboard, no brain/soul — just agent runtime, A2A transport, and task execution. Pairs with AGNOS to deliver a full OS + agent stack for edge hardware.
+
+### 14A: Edge Binary
+
+- [ ] **`secureyeoman-edge` build target** — Stripped binary: agent runtime + A2A transport + task executor + MCP client. No dashboard, no brain/soul/spirit, no marketplace. Target: <50 MB binary, <128 MB RAM at runtime. Tree-shake unused modules at build time.
+- [ ] **`secureyeoman edge --register` CLI mode** — Boot-time self-registration to a parent SY instance. Sends capabilities (CPU, GPU, memory, network quality, location tag) and receives an A2A peer identity + mTLS certificate.
+- [ ] **Headless agent executor** — Execute delegated tasks from parent SY brain. Supports: tool calls (MCP), code execution (sandboxed), file operations, sensor/hardware access via device-specific MCP tools.
+- [ ] **Minimal config schema** — Edge-specific config subset: parent URL, registration token, capabilities declaration, resource limits, log level. No soul/spirit/brain/marketplace config.
+
+### 14B: A2A Edge Networking
+
+- [ ] **mDNS peer discovery** — Edge nodes auto-discover parent SY instance on LAN via mDNS (`_secureyeoman._tcp`). Fallback to explicit parent URL in config.
+- [ ] **WireGuard mesh support** — Encrypted tunneling between edge nodes and parent. SY parent acts as WireGuard coordinator, distributing peer configs to fleet.
+- [ ] **Heartbeat & watchdog** — Edge process responds to AGNOS argonaut health checks. Parent tracks edge node liveness, auto-marks unreachable nodes after configurable timeout.
+- [ ] **Bandwidth-aware task acceptance** — Edge nodes advertise connection quality (latency, throughput). Parent delegation layer factors bandwidth into task routing decisions.
+
+### 14C: Fleet Management
+
+- [ ] **Edge node registry** — `edge_nodes` table: id, hostname, capabilities, health status, last heartbeat, location, parent instance. Queryable via REST API.
+- [ ] **SY dashboard — Fleet panel** — Fleet topology visualization, per-node health indicators, task distribution heatmap, deploy/update/decommission actions. New dashboard route: `/fleet`.
+- [ ] **Capability-based task routing** — Brain delegation layer routes tasks to edge nodes by GPU availability, network quality, location proximity, current load. Extends existing `RemoteDelegationTransport`.
+- [ ] **Signed OTA updates** — Parent pushes binary updates to edge fleet. Ed25519-signed update bundles, verified on edge before applying. Rollback on health check failure.
+
+### 14D: MCP Edge Tools
+
+- [ ] **`edge_list`** — List registered edge nodes with health, capabilities, load.
+- [ ] **`edge_deploy`** — Deploy a task/agent to a specific edge node or auto-select by capability.
+- [ ] **`edge_update`** — Push binary or config update to edge node(s).
+- [ ] **`edge_health`** — Detailed health report for a specific edge node (uptime, resource usage, task history).
+- [ ] **`edge_decommission`** — Gracefully remove an edge node: drain tasks, revoke certificates, remove from registry.
+
+### 14E: Hardware Targets (AGNOS-side, SY binary validation)
+
+- [ ] **Raspberry Pi 4/5 (aarch64)** — Validate `secureyeoman-edge` runs on AGNOS Pi image. Pre-built `.img` with SY edge pre-installed.
+- [ ] **x86_64 NUC/mini-PC** — Validate edge binary on AGNOS x86_64 edge profile.
+- [ ] **RISC-V** — Cross-compile `secureyeoman-edge` for RISC-V targets (SiFive, StarFive). Depends on AGNOS RISC-V support.
+- [ ] **OCI container image** — `docker run secureyeoman-edge` for non-AGNOS Linux hosts. Minimal Alpine-based image.
 
 ---
 
