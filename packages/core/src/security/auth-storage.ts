@@ -239,9 +239,9 @@ export class AuthStorage extends PgBaseStorage {
     const secretEnc = encryptToken(secret);
     const keyId = currentKeyId();
     await this.execute(
-      `INSERT INTO auth.two_factor (user_id, secret_enc, enabled, secret_enc_key_id, created_at, updated_at)
+      `INSERT INTO auth.two_factor (user_id, secret_enc, enabled, enc_key_id, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (user_id) DO UPDATE SET secret_enc = $2, enabled = $3, secret_enc_key_id = $4, updated_at = $6`,
+       ON CONFLICT (user_id) DO UPDATE SET secret_enc = $2, enabled = $3, enc_key_id = $4, updated_at = $6`,
       [userId, secretEnc, enabled, keyId, now, now]
     );
   }

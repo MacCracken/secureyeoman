@@ -131,14 +131,68 @@ Capabilities no other framework in this competitive set offers:
 
 ## Known Gaps
 
+### Competitive Gaps
+
 | Gap | Leader | SY status |
 |-----|--------|-----------|
 | Community skill volume | OpenClaw (13,729 ClawHub) | 87 community + 24 builtin (Trust Tier advantage offsets volume gap) |
-| Native mobile app | OpenClaw (Android) | Web/CLI only (roadmap Tier 3) |
-| Ultra-low resource / edge | PicoClaw (10-20 MB, < 1 s) / ZeroClaw (3.4 MB, sub-10ms) | Lite binary 123 MB — design trade-off for enterprise features |
+| Native mobile app | OpenClaw (Android) | Web/CLI only; Capacitor scaffold exists (roadmap Tier 3); PWA planned but not priority |
+| Ultra-low resource / edge | PicoClaw (10-20 MB, < 1 s) / ZeroClaw (3.4 MB, sub-10ms) | Lite binary 123 MB — design trade-off for enterprise features; planned slim-IoT/edge variant targets sub-10 s |
 | TEE hardware attestation | Ironclaw (NEAR AI Cloud) | Not applicable (local-first, no cloud dependency) |
-| Startup time | PicoClaw (< 1 s) / ZeroClaw (sub-10ms) | ~30 s — conditional module loading helps |
+| Startup time | PicoClaw (< 1 s) / ZeroClaw (sub-10ms) | ~30 s — conditional module loading helps; further reduction not feasible without slim-IoT/edge variant |
 | Enterprise brand / distribution | OpenAI Frontier (HP, Oracle, Uber) | Self-hosted niche; no cloud sales force |
+
+### Consumer Gaps
+
+| Gap | Impact | Status |
+|-----|--------|--------|
+| No one-click cloud deploy templates | High barrier for non-DevOps users; every consumer competitor offers zero-setup | Planned — Railway, Render, DigitalOcean templates |
+| No conversation share/export UX | Users cannot share chats or download history from dashboard; export exists only via training API (`POST /api/v1/training/export`) | Planned — dashboard share link + download-as-markdown/JSON |
+| No web push notifications | Notification system uses WebSocket + external fan-out (Slack/email); browser must be open to receive | Low priority — WebSocket covers primary use case |
+
+### Enterprise Gaps
+
+| Gap | Impact | Status |
+|-----|--------|--------|
+| No SCIM provisioning | Enterprise IT expects automated user lifecycle from Okta/Azure AD/Google Workspace alongside SSO | Planned |
+| No per-tenant rate limiting / token budgets | Rate limiter is global rules only (per-user/IP); no tenant-specific quotas or LLM spend caps per team | Planned |
+| No break-glass / emergency access | No documented recovery when admin is locked out; emergency stop exists for personalities but not for platform access | Planned — break-glass with audit trail and accountability |
+| No access review / entitlement reporting | RBAC audit logs exist but no "who has access to what" report, no periodic review workflow, no SOC 2/SOX attestation | Planned |
+| No formal compliance audit scope docs | Compliance mapping code covers 5 frameworks (NIST, SOC 2, ISO 27001, HIPAA, EU AI Act) but no published audit scope document or Statement of Applicability | Planned |
+| No public status page | SLO monitoring and health endpoints exist internally; no customer-facing uptime/status dashboard | Low priority |
+| No per-tenant data residency enforcement | Multi-region HA with `allowContentReplication` flag exists; no per-tenant region locking for GDPR | Future consideration |
+
+### Feature Matrix Coverage Gap
+
+The feature matrix (above) covers 5 primary competitors. The 7 new 2026 entrants (TrustClaw, Manus/Meta, OpenAI Frontier, Devin 2.0, OpenHands, ZeroClaw, NanoBot) are described in prose but absent from the comparison table. Adding columns would make the matrix unwieldy; a separate "new entrants" mini-matrix may be warranted as these products mature.
+
+### Pricing & Cost Advantage
+
+SecureYeoman is self-hosted, BYOK (bring-your-own-keys), with $0 infrastructure cost for fully local models (Ollama, LM Studio, LocalAI). Users only pay for the license — not for platform hosting, API markup, or per-seat cloud fees.
+
+**Planned pricing:**
+
+| Tier | Price | Target | Includes |
+|------|-------|--------|----------|
+| **Community** | Free | Hobbyists, evaluators | Core platform, 13+ LLM providers, CLI, dashboard, community skills |
+| **Pro** | $20/yr | Developers, power users | + Advanced brain, provider management, computer use, custom integrations, prompt engineering, batch inference |
+| **Solopreneur** | $100/yr | Solo operators, consultants, small teams | All enterprise features for individuals — SSO, DLP, governance, training pipeline, federated learning, full orchestration |
+| **Enterprise** | $1,000/yr | Organizations, regulated industries | All features + multi-tenancy, dedicated support channels, SLA guarantees, compliance assistance |
+| **Support** | Additional | All paid tiers | Priority support, onboarding assistance, custom integration help — priced separately based on scope |
+
+SY is BYOK — users bring their own API keys and run on their own infrastructure. SecureYeoman does not proxy, meter, or markup AI calls. This means near-zero marginal cost per user, enabling aggressive pricing that cloud-hosted competitors cannot match.
+
+**Competitive comparison:**
+
+| Platform | Monthly cost | What you get | Data sovereignty |
+|----------|-------------|--------------|-----------------|
+| **SecureYeoman Pro** | $20/yr ($10/yr) | Full self-hosted platform + BYOK | Complete — your infra |
+| **Devin 2.0** | $20/mo ($240/yr) | Cloud coding agent only, per-ACU billing | None — Cognition cloud |
+| **OpenClaw** | $300-750 (API costs) | Personal agent, no enterprise features, 9+ CVEs | Partial — keys transit host |
+| **OpenAI Frontier** | Enterprise pricing (undisclosed) | Cloud/on-prem agent platform | Partial — AWS distribution |
+| **Manus AI (Meta)** | Unknown | Cloud agent, Meta infrastructure | None — Meta cloud |
+
+The Pro tier at $20/yr vs Devin's $20/mo ($480 over the same period) is a 24x price advantage — possible because SY has no AI compute costs to recoup. The Solopreneur tier is unique in the market — no competitor offers enterprise-grade governance (SSO, DLP, OPA/CEL, cryptographic audit, training pipeline) to individuals at $100/yr. This directly targets consultants and freelancers serving regulated clients who need compliance posture without enterprise contracts.
 
 ---
 
@@ -156,4 +210,4 @@ Capabilities no other framework in this competitive set offers:
 
 ---
 
-*Updated: 2026-03-11*
+*Updated: 2026-03-11 (gap analysis validated against codebase)*

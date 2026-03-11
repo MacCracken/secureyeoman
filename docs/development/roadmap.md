@@ -11,7 +11,7 @@
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | — | Engineering Backlog | Ongoing | Security hardening complete; test coverage improvements ongoing |
-| Future | LLM Providers, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
+| Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle | Future / Demand-Gated | — |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -60,10 +60,46 @@
 
 **Prerequisites**: Phase 106 (license gating infrastructure — ✅), Schema Tier Split (above).
 
+### Planned Pricing
+
+| Tier | Price | Target |
+|------|-------|--------|
+| Community | Free | Hobbyists, evaluators |
+| Pro | $20/yr | Developers, power users |
+| Solopreneur | $100/yr | Solo operators, consultants — all enterprise features for individuals |
+| Enterprise | $1,000/yr | Organizations, regulated industries — multi-tenancy + SLA |
+| Support | Additional | Priority support, onboarding, custom integrations — priced by scope |
+
+**Note**: The current codebase has 3 tiers (`community | pro | enterprise`). The Solopreneur tier is a licensing distinction (enterprise features, single-tenant, no SLA), not a code-level tier. Implementation options: (a) map Solopreneur to `enterprise` tier with a `seats: 1` claim, or (b) add `solopreneur` as a 4th `LicenseTier` value. Decision deferred to implementation.
+
+### Tasks
+
 - [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates.
-- [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
-- [ ] **License key purchase flow** — Integration with payment provider or manual key issuance workflow. Dashboard license management page.
+- [ ] **Upgrade prompts** — "Upgrade to Pro", "Upgrade to Solopreneur", and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
+- [ ] **Solopreneur tier definition** — Define Solopreneur as enterprise-feature-equivalent with single-tenant / single-seat constraints. Decide on `LicenseTier` implementation approach (see note above).
 - [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
+- [ ] **Pricing page** — Public-facing pricing comparison page for secureyeoman.ai. Feature breakdown per tier, FAQ, upgrade flow.
+
+### Repository & Public Identity
+
+- [ ] **Transfer repositories to `yeoman.maccracken`** — Transfer `secureyeoman` and `secureyeoman-community-repo` to the `yeoman.maccracken` GitHub account. This will be the public-facing org. Update all references: README badges, install scripts (`curl -fsSL https://secureyeoman.ai/install`), Docker image paths (GHCR), Helm chart repo URLs, community sync default URL, and CI/CD workflow `GITHUB_REPOSITORY` refs.
+- [ ] **Post-transfer fixups** — Update `package.json` repository fields, CHANGELOG links, ADR cross-references, dashboard "Report Issue" URLs, and any hardcoded GitHub URLs in docs or code. Verify GitHub redirect from old org works for existing clones.
+
+### Payment & Monetization
+
+- [ ] **Payment provider integration** — Evaluate and integrate Stripe or LemonSqueezy. LemonSqueezy preferred for simplicity (built-in global tax/VAT, merchant of record, simpler compliance). Stripe if more control needed. Flow: user selects tier → checkout → webhook fires → Ed25519 license key generated with tier/seats/expiry claims → delivered via email + dashboard download. No phone-home required (preserves air-gap story).
+- [ ] **License key purchase flow** — Dashboard license management page: view current tier, expiry, upgrade/renew. Webhook handler for payment events (purchase, renewal, refund, cancellation). Automatic key delivery. Manual key issuance fallback for enterprise/PO-based sales.
+- [ ] **Renewal & lifecycle** — Auto-renewal reminders (30/14/7 days before expiry). Expired-key grace period (7 days, read-only mode). Upgrade path: pro-rate remaining time when moving up tiers.
+
+### $YEOMAN Token — Crypto Payment Channel
+
+*Speculative — demand-gated. Introduces a crypto payment option alongside traditional fiat. NOT a prerequisite for launch.*
+
+- [ ] **Token design** — ERC-20 or Solana SPL token ($YEOMAN). Fixed supply or capped inflation. Utility: license purchases, marketplace skill tips, community governance votes. NOT a security — no profit-sharing, no staking rewards, pure utility.
+- [ ] **License purchase with $YEOMAN** — Accept $YEOMAN as payment for Pro/Solopreneur/Enterprise licenses at a discount (e.g. 20% off vs fiat). Smart contract escrow: tokens held until license key delivered. On-chain receipt serves as proof of purchase.
+- [ ] **Community marketplace tipping** — Skill authors can receive $YEOMAN tips from users. Displayed on skill cards in marketplace. Incentivizes community contribution without SY taking a cut.
+- [ ] **Governance voting** — $YEOMAN holders vote on roadmap priorities (feature requests, integration order). Lightweight on-chain governance — advisory, not binding. Builds community ownership.
+- [ ] **Token launch logistics** — Fair launch (no VC allocation, no pre-mine beyond treasury). DEX liquidity pool. Community airdrop to early adopters and community skill authors. Legal review for utility token classification per jurisdiction.
 
 ---
 
@@ -157,12 +193,26 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
+### Consumer Experience
+
+*Lower barrier to entry and improve daily-use experience for individual users and small teams.*
+
+- [ ] **One-click cloud deploy templates** — Railway (`railway.json`), Render (`render.yaml`), and DigitalOcean (`app.json`) deploy templates with pre-configured environment variables. Enables zero-DevOps setup for non-technical users. Include "Deploy to X" buttons in README.
+- [ ] **Conversation share & export UX** — Dashboard UI for sharing and downloading conversations. Share: generate a unique link (optionally time-limited or password-protected). Export: download as Markdown, JSON, or PDF from conversation header menu. Backend: conversation export exists via `POST /api/v1/training/export`; this adds a user-facing wrapper with dedicated routes and dashboard components.
+
+---
+
 ### Enterprise Upgrades
 
 *Security hardening and compliance capabilities for enterprise deployments.*
 
 - [ ] **WebAuthn/FIDO2 auth** — Hardware key authentication for admins. Passwordless login with security keys (YubiKey, Touch ID, Windows Hello). Attestation and assertion flows via `@simplewebauthn/server`.
 - [ ] **HSM Integration** — Hardware Security Module integration for key management. PKCS#11 interface for signing, encryption, and key rotation. Cloud HSM support (AWS CloudHSM, Azure Dedicated HSM, GCP Cloud HSM).
+- [ ] **SCIM provisioning** — RFC 7644 SCIM 2.0 server for automated user lifecycle management. Auto-create, update, deactivate users from IdP directories (Okta, Azure AD, Google Workspace). Group-to-role mapping. Complements existing SSO/OIDC/SAML.
+- [ ] **Per-tenant rate limiting & token budgets** — Extend existing rate limiter with tenant-scoped rules: API request quotas, LLM token spend caps, and storage limits per tenant. Quota usage dashboard in Mission Control. Proactive warnings at 80%/90% thresholds. Builds on `rate-limiter.ts` sliding-window infrastructure.
+- [ ] **Break-glass emergency access** — Documented recovery procedure when admin is locked out. Sealed recovery key generated at install time (printed once, never stored). Break-glass creates a time-limited admin session with full audit trail. Distinct from existing personality emergency stop (`POST /api/v1/security/autonomy/:id/emergency-stop`), which halts agent actions but not platform access.
+- [ ] **Access review & entitlement reporting** — "Who has access to what" report endpoint. Periodic access review campaigns: admin schedules a review, reviewers approve/revoke each user's permissions, results logged to audit chain. Supports SOC 2 CC6.1 / SOX access certification requirements.
+- [ ] **Formal compliance audit scope documentation** — Published SOC 2 Type II audit scope document mapping SY controls to Trust Services Criteria. ISO 27001 Statement of Applicability. Builds on existing `compliance-mapping.ts` (NIST, SOC 2, ISO 27001, HIPAA, EU AI Act) by adding narrative evidence descriptions and control ownership.
 
 ---
 

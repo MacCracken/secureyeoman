@@ -315,8 +315,8 @@ describe('AuthService', () => {
   describe('rememberMe', () => {
     it('should return extended expiry when rememberMe is true', async () => {
       const result = await service.login(ADMIN_PASSWORD_RAW, '127.0.0.1', true);
-      // 30 days = 2592000 seconds
-      expect(result.expiresIn).toBe(30 * 86400);
+      // rememberMe access token = 1 hour (security-hardened from 30d)
+      expect(result.expiresIn).toBe(3600);
     });
 
     it('should return standard expiry when rememberMe is false', async () => {

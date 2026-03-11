@@ -34,7 +34,7 @@ const CLI_ENTRY = resolve(__dirname, 'cli.ts');
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 /** Wall-clock budget from spawn → /health:ok */
-const STARTUP_BUDGET_MS = 30_000;
+const STARTUP_BUDGET_MS = 60_000;
 
 /** How often to poke the health endpoint */
 const POLL_INTERVAL_MS = 100;

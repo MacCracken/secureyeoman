@@ -112,16 +112,20 @@ jobs:
           NODE_ENV: test
 
   test-db:
-    name: DB Integration Tests
+    name: DB Integration Tests (shard ${{ matrix.shard }}/4)
     needs: [test-core, test-dashboard, test-mcp]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+      fail-fast: false
     services:
       postgres:
         image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: secureyeoman
           POSTGRES_PASSWORD: secureyeoman_dev
-          POSTGRES_DB: secureyeoman_test
+          POSTGRES_DB: secureyeoman_test_${{ matrix.shard }}
         ports:
           - 5432:5432
         options: >-
@@ -139,15 +143,19 @@ jobs:
 
       - run: npm ci
 
-      - name: DB integration tests
-        run: npx vitest run --project core:db --reporter=default --reporter=github-actions
+      - name: Enable pgvector extension
+        run: PGPASSWORD=secureyeoman_dev psql -h localhost -U secureyeoman -d secureyeoman_test_${{ matrix.shard }} -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+      - name: DB integration tests (shard ${{ matrix.shard }}/4)
+        run: npx vitest run --project core:db --shard=${{ matrix.shard }}/4 --reporter=default --reporter=github-actions
         env:
           NODE_ENV: test
           TEST_DB_HOST: localhost
           TEST_DB_PORT: "5432"
           TEST_DB_USER: secureyeoman
           TEST_DB_PASSWORD: secureyeoman_dev
-          TEST_DB_NAME: secureyeoman_test
+          TEST_DB_NAME: secureyeoman_test_${{ matrix.shard }}
+          SECUREYEOMAN_TOKEN_SECRET: ci-test-token-secret
 
   test-e2e:
     name: E2E Tests
@@ -186,6 +194,7 @@ jobs:
           TEST_DB_USER: secureyeoman
           TEST_DB_PASSWORD: secureyeoman_dev
           TEST_DB_NAME: secureyeoman_test
+          SECUREYEOMAN_TOKEN_SECRET: ci-test-token-secret
 
   security-audit:
     name: Security Audit

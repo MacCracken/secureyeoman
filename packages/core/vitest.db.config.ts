@@ -78,6 +78,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: DB_TESTS,
+    env: {
+      SECUREYEOMAN_TOKEN_SECRET: 'test-token-secret-for-db-tests',
+    },
     testTimeout: 60000,
     hookTimeout: 60000,
     // DB tests share the secureyeoman_test PostgreSQL database.
