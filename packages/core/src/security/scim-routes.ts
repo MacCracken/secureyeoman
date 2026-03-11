@@ -35,7 +35,7 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
   app.get(
     `${PREFIX}/Users`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (
       request: FastifyRequest<{
         Querystring: { filter?: string; startIndex?: string; count?: string };
@@ -56,22 +56,18 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
     }
   );
 
-  app.post(
-    `${PREFIX}/Users`,
-    guardOpts as Record<string, unknown>,
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const resource = await manager.createUser(request.body as Record<string, unknown>);
-        return reply.code(201).send(resource);
-      } catch (err) {
-        return handleScimError(reply, err);
-      }
+  app.post(`${PREFIX}/Users`, guardOpts, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const resource = await manager.createUser(request.body as Record<string, unknown>);
+      return reply.code(201).send(resource);
+    } catch (err) {
+      return handleScimError(reply, err);
     }
-  );
+  });
 
   app.get(
     `${PREFIX}/Users/:id`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const resource = await manager.getUser(request.params.id);
@@ -84,7 +80,7 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
   app.put(
     `${PREFIX}/Users/:id`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const resource = await manager.replaceUser(
@@ -100,7 +96,7 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
   app.patch(
     `${PREFIX}/Users/:id`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const resource = await manager.patchUser(
@@ -116,7 +112,7 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
   app.delete(
     `${PREFIX}/Users/:id`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         await manager.deleteUser(request.params.id);
@@ -131,7 +127,7 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
   app.get(
     `${PREFIX}/Groups`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (
       request: FastifyRequest<{
         Querystring: { filter?: string; startIndex?: string; count?: string };
@@ -152,22 +148,18 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
     }
   );
 
-  app.post(
-    `${PREFIX}/Groups`,
-    guardOpts as Record<string, unknown>,
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const resource = await manager.createGroup(request.body as Record<string, unknown>);
-        return reply.code(201).send(resource);
-      } catch (err) {
-        return handleScimError(reply, err);
-      }
+  app.post(`${PREFIX}/Groups`, guardOpts, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const resource = await manager.createGroup(request.body as Record<string, unknown>);
+      return reply.code(201).send(resource);
+    } catch (err) {
+      return handleScimError(reply, err);
     }
-  );
+  });
 
   app.get(
     `${PREFIX}/Groups/:id`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const resource = await manager.getGroup(request.params.id);
@@ -180,7 +172,7 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
   app.put(
     `${PREFIX}/Groups/:id`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const resource = await manager.replaceGroup(
@@ -196,7 +188,7 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
   app.patch(
     `${PREFIX}/Groups/:id`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const resource = await manager.patchGroup(
@@ -212,7 +204,7 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
   app.delete(
     `${PREFIX}/Groups/:id`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         await manager.deleteGroup(request.params.id);
@@ -227,7 +219,7 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
   app.get(
     `${PREFIX}/ServiceProviderConfig`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (_request: FastifyRequest, reply: FastifyReply) => {
       return reply.send({
         schemas: ['urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig'],
@@ -253,7 +245,7 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
   app.get(
     `${PREFIX}/ResourceTypes`,
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (_request: FastifyRequest, reply: FastifyReply) => {
       return reply.send([
         {
@@ -276,51 +268,47 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
     }
   );
 
-  app.get(
-    `${PREFIX}/Schemas`,
-    guardOpts as Record<string, unknown>,
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      return reply.send([
-        {
-          schemas: ['urn:ietf:params:scim:schemas:core:2.0:Schema'],
-          id: SCIM_SCHEMAS.User,
-          name: 'User',
-          description: 'User Account',
-          attributes: [
-            {
-              name: 'userName',
-              type: 'string',
-              multiValued: false,
-              required: true,
-              uniqueness: 'server',
-            },
-            { name: 'displayName', type: 'string', multiValued: false, required: false },
-            { name: 'emails', type: 'complex', multiValued: true, required: false },
-            { name: 'active', type: 'boolean', multiValued: false, required: false },
-            { name: 'externalId', type: 'string', multiValued: false, required: false },
-            { name: 'roles', type: 'string', multiValued: true, required: false },
-          ],
-        },
-        {
-          schemas: ['urn:ietf:params:scim:schemas:core:2.0:Schema'],
-          id: SCIM_SCHEMAS.Group,
-          name: 'Group',
-          description: 'Group',
-          attributes: [
-            {
-              name: 'displayName',
-              type: 'string',
-              multiValued: false,
-              required: true,
-              uniqueness: 'server',
-            },
-            { name: 'members', type: 'complex', multiValued: true, required: false },
-            { name: 'externalId', type: 'string', multiValued: false, required: false },
-          ],
-        },
-      ]);
-    }
-  );
+  app.get(`${PREFIX}/Schemas`, guardOpts, async (_request: FastifyRequest, reply: FastifyReply) => {
+    return reply.send([
+      {
+        schemas: ['urn:ietf:params:scim:schemas:core:2.0:Schema'],
+        id: SCIM_SCHEMAS.User,
+        name: 'User',
+        description: 'User Account',
+        attributes: [
+          {
+            name: 'userName',
+            type: 'string',
+            multiValued: false,
+            required: true,
+            uniqueness: 'server',
+          },
+          { name: 'displayName', type: 'string', multiValued: false, required: false },
+          { name: 'emails', type: 'complex', multiValued: true, required: false },
+          { name: 'active', type: 'boolean', multiValued: false, required: false },
+          { name: 'externalId', type: 'string', multiValued: false, required: false },
+          { name: 'roles', type: 'string', multiValued: true, required: false },
+        ],
+      },
+      {
+        schemas: ['urn:ietf:params:scim:schemas:core:2.0:Schema'],
+        id: SCIM_SCHEMAS.Group,
+        name: 'Group',
+        description: 'Group',
+        attributes: [
+          {
+            name: 'displayName',
+            type: 'string',
+            multiValued: false,
+            required: true,
+            uniqueness: 'server',
+          },
+          { name: 'members', type: 'complex', multiValued: true, required: false },
+          { name: 'externalId', type: 'string', multiValued: false, required: false },
+        ],
+      },
+    ]);
+  });
 }
 
 // ── Error handler ───────────────────────────────────────────────────

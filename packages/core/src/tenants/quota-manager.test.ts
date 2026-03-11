@@ -32,6 +32,7 @@ function makeMockStorage() {
       maxValue: mv,
     })),
     resetExpiredCounters: vi.fn().mockResolvedValue(0),
+    clearTenantCounters: vi.fn().mockResolvedValue(0),
     recordTokenUsage: vi.fn().mockImplementation(async (tid, model, inp, out) => ({
       id: 'tok-1',
       tenantId: tid,
@@ -49,7 +50,7 @@ function makeMockStorage() {
       recordCount: 0,
     }),
     execute: vi.fn().mockResolvedValue(0),
-  } as unknown as QuotaStorage & { [k: string]: ReturnType<typeof vi.fn> };
+  } as unknown as QuotaStorage & Record<string, ReturnType<typeof vi.fn>>;
 }
 
 const TENANT = 'tenant-001';
@@ -307,10 +308,7 @@ describe('TenantQuotaManager', () => {
   describe('resetCounters', () => {
     it('deletes all counters for the tenant', async () => {
       await manager.resetCounters(TENANT);
-      expect(storage.execute).toHaveBeenCalledWith(
-        'DELETE FROM quotas.usage_counters WHERE tenant_id = $1',
-        [TENANT]
-      );
+      expect(storage.clearTenantCounters).toHaveBeenCalledWith(TENANT);
     });
   });
 

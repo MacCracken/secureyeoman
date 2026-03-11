@@ -240,6 +240,10 @@ export class QuotaStorage extends PgBaseStorage {
     return this.execute('DELETE FROM quotas.usage_counters WHERE window_end <= $1', [now]);
   }
 
+  async clearTenantCounters(tenantId: string): Promise<number> {
+    return this.execute('DELETE FROM quotas.usage_counters WHERE tenant_id = $1', [tenantId]);
+  }
+
   /* ---------- token_usage ------------------------------------------ */
 
   async recordTokenUsage(

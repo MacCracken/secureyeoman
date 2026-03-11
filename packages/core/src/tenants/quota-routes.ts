@@ -45,7 +45,7 @@ export function registerQuotaRoutes(app: FastifyInstance, opts: QuotaRoutesOptio
   // PUT /api/v1/tenants/:tenantId/quotas — set/update tenant limits
   app.put(
     '/api/v1/tenants/:tenantId/quotas',
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (
       request: FastifyRequest<{
         Params: { tenantId: string };
@@ -116,7 +116,7 @@ export function registerQuotaRoutes(app: FastifyInstance, opts: QuotaRoutesOptio
   // POST /api/v1/tenants/:tenantId/usage/reset — reset counters
   app.post(
     '/api/v1/tenants/:tenantId/usage/reset',
-    guardOpts as Record<string, unknown>,
+    guardOpts,
     async (request: FastifyRequest<{ Params: { tenantId: string } }>, reply: FastifyReply) => {
       try {
         const { tenantId } = request.params;

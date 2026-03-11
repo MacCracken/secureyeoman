@@ -26,9 +26,9 @@ export interface ScimUserResource {
   externalId?: string;
   userName: string;
   displayName?: string;
-  emails?: Array<{ value: string; primary: boolean }>;
+  emails?: { value: string; primary: boolean }[];
   active: boolean;
-  groups?: Array<{ value: string; display: string }>;
+  groups?: { value: string; display: string }[];
   roles?: string[];
   meta: {
     resourceType: string;
@@ -42,7 +42,7 @@ export interface ScimGroupResource {
   id: string;
   externalId?: string;
   displayName: string;
-  members: Array<{ value: string; display?: string }>;
+  members: { value: string; display?: string }[];
   meta: {
     resourceType: string;
     created: string;
@@ -105,7 +105,7 @@ export class ScimManager {
 
     const now = Date.now();
     const id = uuidv7();
-    const emails = body.emails as Array<{ value: string; primary?: boolean }> | undefined;
+    const emails = body.emails as { value: string; primary?: boolean }[] | undefined;
 
     const row = await this.storage.createUser({
       id,
@@ -131,8 +131,8 @@ export class ScimManager {
 
   async listUsers(
     filter?: string,
-    startIndex: number = 1,
-    count: number = 100
+    startIndex = 1,
+    count = 100
   ): Promise<ScimListResponse<ScimUserResource>> {
     const result = await this.storage.listUsers(filter, startIndex, count);
     return {
@@ -148,7 +148,7 @@ export class ScimManager {
     const existing = await this.storage.getUser(id);
     if (!existing) throw new ScimError('User not found', 404);
 
-    const emails = body.emails as Array<{ value: string; primary?: boolean }> | undefined;
+    const emails = body.emails as { value: string; primary?: boolean }[] | undefined;
 
     const updated = await this.storage.updateUser(id, {
       external_id: (body.externalId as string) ?? existing.external_id,
@@ -202,7 +202,7 @@ export class ScimManager {
 
     const now = Date.now();
     const id = uuidv7();
-    const members = body.members as Array<{ value: string }> | undefined;
+    const members = body.members as { value: string }[] | undefined;
 
     const row = await this.storage.createGroup({
       id,
@@ -225,8 +225,8 @@ export class ScimManager {
 
   async listGroups(
     filter?: string,
-    startIndex: number = 1,
-    count: number = 100
+    startIndex = 1,
+    count = 100
   ): Promise<ScimListResponse<ScimGroupResource>> {
     const result = await this.storage.listGroups(filter, startIndex, count);
     return {
@@ -242,7 +242,7 @@ export class ScimManager {
     const existing = await this.storage.getGroup(id);
     if (!existing) throw new ScimError('Group not found', 404);
 
-    const members = body.members as Array<{ value: string }> | undefined;
+    const members = body.members as { value: string }[] | undefined;
 
     const updated = await this.storage.updateGroup(id, {
       external_id: (body.externalId as string) ?? existing.external_id,
@@ -336,7 +336,7 @@ export class ScimManager {
         if (attrs.active !== undefined) updates.active = attrs.active as boolean;
         if (attrs.externalId) updates.external_id = attrs.externalId as string;
         if (attrs.emails) {
-          const emails = attrs.emails as Array<{ value: string }>;
+          const emails = attrs.emails as { value: string }[];
           updates.email = emails[0]?.value ?? existing.email;
         }
         return;
@@ -357,7 +357,7 @@ export class ScimManager {
           break;
         case 'emails':
           {
-            const emails = value as Array<{ value: string }>;
+            const emails = value as { value: string }[];
             updates.email = emails[0]?.value ?? existing.email;
           }
           break;

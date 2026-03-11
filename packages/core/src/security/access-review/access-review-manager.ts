@@ -122,7 +122,7 @@ export class AccessReviewManager {
     }
 
     // Resolve display names from auth storage
-    let userNameMap = new Map<string, string>();
+    const userNameMap = new Map<string, string>();
     let users: import('@secureyeoman/shared').User[] = [];
     try {
       users = await this.authStorage.listUsers();
@@ -376,9 +376,7 @@ export class AccessReviewManager {
           await this.rbac.revokeUserRole(ent.userId);
           success = true;
         } else if (ent.entitlementType === 'api_key') {
-          const keyId = (ent.details as Record<string, unknown> | null)?.keyId as
-            | string
-            | undefined;
+          const keyId = ent.details?.keyId as string | undefined;
           if (keyId) {
             success = await this.authStorage.revokeApiKey(keyId);
           }

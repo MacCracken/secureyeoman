@@ -25,9 +25,9 @@ export interface RegistrationOptions {
   rp: { name: string; id: string };
   user: { id: string; name: string; displayName: string };
   challenge: string;
-  pubKeyCredParams: Array<{ type: 'public-key'; alg: number }>;
+  pubKeyCredParams: { type: 'public-key'; alg: number }[];
   timeout: number;
-  excludeCredentials: Array<{ id: string; type: 'public-key' }>;
+  excludeCredentials: { id: string; type: 'public-key' }[];
   authenticatorSelection: {
     residentKey: string;
     userVerification: string;
@@ -39,7 +39,7 @@ export interface AuthenticationOptions {
   challenge: string;
   timeout: number;
   rpId: string;
-  allowCredentials: Array<{ id: string; type: 'public-key'; transports?: string[] }>;
+  allowCredentials: { id: string; type: 'public-key'; transports?: string[] }[];
   userVerification: string;
 }
 

@@ -251,7 +251,7 @@ export class TenantQuotaManager {
 
   /* ---------- Usage summaries ------------------------------------- */
 
-  async getUsageSummary(tenantId: string, opts?: TokenUsageQueryOpts): Promise<UsageSummary> {
+  async getUsageSummary(tenantId: string, _opts?: TokenUsageQueryOpts): Promise<UsageSummary> {
     const limits = await this.getLimits(tenantId);
     const now = Date.now();
 
@@ -315,11 +315,7 @@ export class TenantQuotaManager {
       this.storage.getCounter(tenantId, 'tokens_per_day', windowStart(now, DAY_MS)),
       this.storage.getCounter(tenantId, 'tokens_per_month', windowStart(now, MONTH_MS)),
     ]);
-    // Use resetExpiredCounters + set window_end to 0 to force expiry
-    // For simplicity, we execute a direct delete
-    await this.storage['execute']('DELETE FROM quotas.usage_counters WHERE tenant_id = $1', [
-      tenantId,
-    ]);
+    await this.storage.clearTenantCounters(tenantId);
   }
 
   async cleanupExpiredCounters(): Promise<number> {

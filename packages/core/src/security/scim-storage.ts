@@ -71,8 +71,8 @@ export class ScimStorage extends PgBaseStorage {
 
   async listUsers(
     filter?: string,
-    startIndex: number = 1,
-    count: number = 100
+    startIndex = 1,
+    count = 100
   ): Promise<ScimListResult<ScimUserRow>> {
     const conditions: string[] = [];
     const values: unknown[] = [];
@@ -182,8 +182,8 @@ export class ScimStorage extends PgBaseStorage {
 
   async listGroups(
     filter?: string,
-    startIndex: number = 1,
-    count: number = 100
+    startIndex = 1,
+    count = 100
   ): Promise<ScimListResult<ScimGroupRow>> {
     const conditions: string[] = [];
     const values: unknown[] = [];
@@ -284,7 +284,7 @@ const SCIM_FILTER_COLUMN_MAP: Record<string, string> = {
 
 function parseScimFilter(filter: string): { column: string; value: string } | null {
   // Supports: attributeName eq "value"
-  const match = filter.match(/^(\w+)\s+eq\s+"([^"]+)"$/i);
+  const match = /^(\w+)\s+eq\s+"([^"]+)"$/i.exec(filter);
   if (!match) return null;
   const attr = match[1];
   const value = match[2];
