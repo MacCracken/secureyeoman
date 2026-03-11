@@ -33,6 +33,10 @@ export interface AgnosSandboxProfile {
   description?: string;
   seccomp?: boolean;
   landlock?: boolean;
+  networkEnabled?: boolean;
+  allowProcessSpawn?: boolean;
+  maxMemoryMb?: number;
+  allowedHosts?: string[];
 }
 
 export class AgnosClient {
@@ -90,6 +94,9 @@ export class AgnosClient {
   }
 
   // ── MCP Tool Registration ─────────────────────────────────
+  // NOTE: AGNOS MCP tools are built-in (read-only). This method is a no-op
+  // against the real runtime (405). Kept for forward-compatibility if AGNOS
+  // adds external tool registration in a future release.
   async registerMcpTools(
     tools: { name: string; description: string; inputSchema?: unknown }[]
   ): Promise<{ registered: number }> {
@@ -111,7 +118,7 @@ export class AgnosClient {
   async publishEvent(topic: string, data: Record<string, unknown>): Promise<void> {
     await this._fetch('/v1/events/publish', {
       method: 'POST',
-      body: { topic, data, source: 'secureyeoman', timestamp: new Date().toISOString() },
+      body: { topic, sender: 'secureyeoman', payload: data },
     });
   }
 
@@ -166,7 +173,18 @@ export class AgnosClient {
   // ── Sandbox Profiles ───────────────────────────────────────
   async listSandboxProfiles(): Promise<AgnosSandboxProfile[]> {
     const res = await this._fetch('/v1/sandbox/profiles/list');
-    return (res as { profiles: AgnosSandboxProfile[] }).profiles ?? [];
+    const raw = (res as { profiles: Record<string, unknown>[] }).profiles ?? [];
+    return raw.map((p) => ({
+      id: String(p.preset ?? ''),
+      name: String(p.preset ?? ''),
+      description: p.app_specific ? `App-specific profile` : undefined,
+      seccomp: p.seccomp_mode !== 'none' && p.seccomp_mode !== undefined,
+      landlock: (p.landlock_rules_count as number) > 0,
+      networkEnabled: p.network_enabled as boolean | undefined,
+      allowProcessSpawn: p.allow_process_spawn as boolean | undefined,
+      maxMemoryMb: p.max_memory_mb as number | undefined,
+      allowedHosts: p.allowed_hosts as string[] | undefined,
+    }));
   }
 
   // ── Vector Store Bridge ────────────────────────────────────

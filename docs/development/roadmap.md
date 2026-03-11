@@ -10,8 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| — | AGNOS Built-in Integration | P2 | 2 remaining (sandbox handshake verify, dashboard profiles) |
-| — | Delta Integration | P2 | 2 remaining (dashboard panel, bootstrap discovery) |
+| — | CI/CD & Code Forge Dashboard | P2 | Planned — Delta/GitHub/GitLab forge panels, adapter interface, artifact browser |
 | — | Engineering Backlog | Ongoing | Security hardening complete; test coverage improvements ongoing |
 | Future | LLM Providers, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -101,27 +100,21 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ---
 
-## AGNOS Built-in Integration — Remaining
+## CI/CD & Code Forge Dashboard
 
-Core integration complete (see ADR 036 + Changelog `[2026.3.10]`). Remaining items:
+Unified dashboard for repositories, pull requests, pipelines, and artifact registries across multiple code forges. Backend webhook ingestion already supports GitHub, GitLab, Jenkins, Northflank, and Delta (`cicd-webhook-routes.ts`). Delta has a full HTTP client (`delta-client.ts`, 17 MCP tools). This section covers the dashboard UI and extending the client layer to other forges.
 
-| Item | Status | Description |
-|------|--------|-------------|
-| Verify sandbox handshake | Blocked | Handshake endpoints (discover, batch register, sandbox profiles, events) pending AGNOS 2026.3.10 release. Re-verify once available. |
-| Dashboard sandbox profiles | Not started | Display AGNOS sandbox profiles queried during bootstrap in dashboard UI. |
-
----
-
----
-
-## Delta Integration — Remaining
-
-Delta is a Rust-based self-hosted code forge (git hosting, PRs, CI/CD, artifact registry) built for the AGNOS ecosystem. Core integration done (see ADR 037 + Changelog `[2026.3.10]`). Docker-compose service and service discovery completed.
-
-| Item | Status | Description |
-|------|--------|-------------|
-| Dashboard Delta panel | Future | Repository browser, PR list/review, pipeline status, artifact downloads. Reuse existing CI/CD dashboard patterns. |
-| AGNOS bootstrap discovery | Future | Extend `bootstrapAgnos()` to discover Delta via AGNOS service registry. Auto-set `DELTA_URL` and `MCP_EXPOSE_DELTA_TOOLS=true` when Delta is detected. |
+| Item | Effort | Status | Description |
+|------|--------|--------|-------------|
+| Dashboard forge panel — Delta | M | Future | Repository browser, PR list/review, pipeline status, artifact downloads. Delta client + MCP tools already exist. |
+| Dashboard forge panel — GitHub | M | Future | Same UI, backed by GitHub REST/GraphQL API. Repo list, PR overview, Actions status, release artifacts. Auth via PAT or GitHub App. |
+| Dashboard forge panel — GitLab | M | Future | Same UI, backed by GitLab REST API. Projects, merge requests, pipeline status, container registry. Auth via PAT or OAuth. |
+| Forge adapter interface | S | Future | Unified `CodeForgeAdapter` interface (`listRepos`, `listPulls`, `getPipelines`, `listArtifacts`, `createStatus`) so dashboard renders any forge identically. Delta, GitHub, GitLab as first three implementations. |
+| Artifact registry browser | M | Future | Cross-forge artifact browser: container images (GHCR, GitLab CR, Delta registry), release assets, build artifacts. Download, inspect layers, compare versions. |
+| JFrog Artifactory integration | M | Future | JFrog Artifactory REST API v2 client. Browse repositories (local/remote/virtual), search artifacts (AQL), view build info, promote builds between repos. Auth via API key or access token. Dashboard panel in artifact registry browser. |
+| Pipeline trigger & monitor | S | Future | Trigger builds from dashboard, stream logs, cancel running pipelines. Reuse existing `delta_trigger_pipeline` / `delta_cancel_pipeline` patterns. Providers: GitHub Actions, GitLab CI, Delta, Jenkins (REST API + crumb auth), Travis CI (API v3 + token auth). |
+| Webhook event timeline | S | Future | Unified timeline view of incoming CI/CD webhook events across all providers (GitHub, GitLab, Jenkins, Northflank, Delta, Travis CI). Filterable by forge, repo, event type. Data already captured by `cicd-webhook-routes.ts`. Travis CI webhook support: signature verification via `Travis-CI-Token` header. |
+| Bitbucket / Gitea support | S | Future | Extend forge adapter + webhook handler to cover Bitbucket Cloud and Gitea. |
 
 ---
 
@@ -257,4 +250,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-10 (Ecosystem service discovery expansion; Docker Compose profile normalization; Delta docker-compose; Aequi stub). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-11 (AGNOS integration complete — handshake verified, dashboard sandbox profiles, client fixes; Delta GHCR verified). See [Changelog](../../CHANGELOG.md) for full history.*

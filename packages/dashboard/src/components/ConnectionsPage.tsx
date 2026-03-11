@@ -1772,7 +1772,7 @@ export function ConnectionsPage() {
                       {profile.description && (
                         <p className="text-xs text-muted-foreground mb-2">{profile.description}</p>
                       )}
-                      <div className="flex gap-3">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
                         <span
                           className="text-[10px] font-medium"
                           style={{ color: profile.seccomp ? '#22c55e' : '#64748b' }}
@@ -1785,6 +1785,22 @@ export function ConnectionsPage() {
                         >
                           landlock {profile.landlock ? 'ON' : 'OFF'}
                         </span>
+                        <span
+                          className="text-[10px] font-medium"
+                          style={{ color: profile.networkEnabled ? '#22c55e' : '#64748b' }}
+                        >
+                          network {profile.networkEnabled ? 'ON' : 'OFF'}
+                        </span>
+                        {profile.maxMemoryMb != null && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {profile.maxMemoryMb}MB
+                          </span>
+                        )}
+                        {profile.allowedHosts && profile.allowedHosts.length > 0 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            hosts: {profile.allowedHosts.join(', ')}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}

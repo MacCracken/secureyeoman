@@ -4,6 +4,28 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.11]
+
+### AGNOS Integration — Handshake Verified & Dashboard Sandbox Profiles
+
+Live-verified all AGNOS handshake endpoints against AGNOS `2026.3.10` runtime. Fixed client-side protocol mismatches discovered during testing. Added dashboard sandbox profiles panel.
+
+- **Handshake verification**: All endpoints confirmed working — discover, batch register/deregister, heartbeat, sandbox profiles (7 presets), event publish, audit forward. MCP tool registration is read-only in AGNOS (built-in tools only).
+- **`publishEvent()` fix** (`integrations/agnos/agnos-client.ts`): Body changed from `{topic, data, source, timestamp}` to `{topic, sender, payload}` to match actual AGNOS API contract.
+- **`listSandboxProfiles()` normalization** (`integrations/agnos/agnos-client.ts`): Transforms AGNOS response format (`preset`, `seccomp_mode`, `landlock_rules_count`, `network_enabled`, `allow_process_spawn`, `max_memory_mb`, `allowed_hosts`) into normalized `AgnosSandboxProfile` interface.
+- **Dashboard sandbox profiles** (`ecosystem-routes.ts`, `ConnectionsPage.tsx`, `client.ts`): New `GET /api/v1/ecosystem/services/agnos/sandbox-profiles` route. Dashboard renders profile cards with seccomp/landlock/network status, memory limits, and allowed hosts when AGNOS is connected. Auto-refreshes every 60s. 3 new route tests.
+- **Delta GHCR verified**: `ghcr.io/maccracken/delta:2026.3.10-1` confirmed working — `create_if_missing` SQLite fix included. All API endpoints (repos, branches, pulls, pipelines, releases) responding correctly with auth.
+
+### Delta MCP Tools — API Path Fixes & 7 New Tools
+
+Audited all Delta MCP tool API paths against actual Delta Axum routes. Fixed 6 path mismatches and added 7 new tools.
+
+- **Path fixes** (`mcp/tools/delta-tools.ts`): Fixed auth header (`token` → `Bearer`), 6 API paths corrected to match Delta's actual route structure (`/api/v1/repos/` prefix, `pipelines` not `actions/runs`, `commits/{sha}/statuses`).
+- **7 new tools**: `delta_create_repo`, `delta_create_pull`, `delta_pull_diff`, `delta_list_branches`, `delta_list_releases`, `delta_create_release`, `delta_list_artifacts`. Total delta tools: 10 → 17.
+- **Manifest updated** (`mcp/tools/manifest.ts`): All 7 new tools registered.
+
+---
+
 ## [2026.3.10]
 
 ### Ecosystem Service Discovery & Docker Compose Unification

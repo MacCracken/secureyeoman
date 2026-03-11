@@ -95,7 +95,8 @@ describe('AgnosClient', () => {
     expect(call[0]).toBe('http://127.0.0.1:8090/v1/events/publish');
     const body = JSON.parse(call[1]?.body as string);
     expect(body.topic).toBe('swarm:completed');
-    expect(body.source).toBe('secureyeoman');
+    expect(body.sender).toBe('secureyeoman');
+    expect(body.payload).toEqual({ swarmId: 's1' });
   });
 
   it('health calls /v1/health', async () => {
@@ -146,16 +147,44 @@ describe('AgnosClient', () => {
     expect(results[0].id).toBe('v1');
   });
 
-  it('listSandboxProfiles returns profiles array', async () => {
+  it('listSandboxProfiles normalizes AGNOS response', async () => {
     vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ profiles: [{ id: 'default', name: 'Default' }] }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      })
+      new Response(
+        JSON.stringify({
+          profiles: [
+            {
+              preset: 'cli-tool',
+              seccomp_mode: 'basic',
+              landlock_rules_count: 2,
+              max_memory_mb: 256,
+              network_enabled: false,
+              allow_process_spawn: true,
+            },
+            {
+              preset: 'photis-nadi',
+              seccomp_mode: 'desktop',
+              landlock_rules_count: 3,
+              max_memory_mb: 512,
+              network_enabled: true,
+              allow_process_spawn: false,
+              allowed_hosts: ['*.supabase.co'],
+              app_specific: true,
+            },
+          ],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      )
     );
 
     const profiles = await client.listSandboxProfiles();
-    expect(profiles).toHaveLength(1);
-    expect(profiles[0].id).toBe('default');
+    expect(profiles).toHaveLength(2);
+    expect(profiles[0].id).toBe('cli-tool');
+    expect(profiles[0].seccomp).toBe(true);
+    expect(profiles[0].landlock).toBe(true);
+    expect(profiles[0].networkEnabled).toBe(false);
+    expect(profiles[0].allowProcessSpawn).toBe(true);
+    expect(profiles[1].id).toBe('photis-nadi');
+    expect(profiles[1].description).toBe('App-specific profile');
+    expect(profiles[1].allowedHosts).toEqual(['*.supabase.co']);
   });
 });

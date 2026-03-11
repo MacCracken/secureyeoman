@@ -2164,6 +2164,10 @@ export interface AgnosSandboxProfile {
   description?: string;
   seccomp?: boolean;
   landlock?: boolean;
+  networkEnabled?: boolean;
+  allowProcessSpawn?: boolean;
+  maxMemoryMb?: number;
+  allowedHosts?: string[];
 }
 
 export async function fetchAgnosSandboxProfiles(): Promise<AgnosSandboxProfile[]> {
