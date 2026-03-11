@@ -119,6 +119,10 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Core E2E | 7 | 53 | — | — | All passing |
 | Core DB (integration) | 41 | 890 | — | — | All passing (clean DB verified) |
 
+**Refactoring:**
+
+- [ ] **auth-middleware.test.ts decomposition** — `gateway/auth-middleware.test.ts` is a 252s monolith (heaviest after soul/brain/spirit). Split into focused files (token validation, RBAC enforcement, SSO middleware, rate-limit middleware) to improve shard balance and developer ergonomics. Same pattern as soul/brain/spirit/marketplace splits.
+
 **Remaining improvement areas:**
 
 | Suite | Area | Notes |

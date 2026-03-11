@@ -112,12 +112,12 @@ jobs:
           NODE_ENV: test
 
   test-db:
-    name: DB Integration Tests (shard ${{ matrix.shard }}/4)
+    name: DB Integration Tests (shard ${{ matrix.shard }}/8)
     needs: [test-core, test-dashboard, test-mcp]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
       fail-fast: false
     services:
       postgres:
@@ -146,8 +146,8 @@ jobs:
       - name: Enable pgvector extension
         run: PGPASSWORD=secureyeoman_dev psql -h localhost -U secureyeoman -d secureyeoman_test_${{ matrix.shard }} -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
-      - name: DB integration tests (shard ${{ matrix.shard }}/4)
-        run: npx vitest run --project core:db --shard=${{ matrix.shard }}/4 --reporter=default --reporter=github-actions
+      - name: DB integration tests (shard ${{ matrix.shard }}/8)
+        run: npx vitest run --project core:db --shard=${{ matrix.shard }}/8 --reporter=default --reporter=github-actions
         env:
           NODE_ENV: test
           TEST_DB_HOST: localhost

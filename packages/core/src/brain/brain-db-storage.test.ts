@@ -1,0 +1,434 @@
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
+import { BrainStorage } from './storage.js';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
+
+// ── BrainStorage Tests ────────────────────────────────────────────
+
+describe('BrainStorage', () => {
+  let storage: BrainStorage;
+
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+
+  beforeEach(async () => {
+    await truncateAllTables();
+    storage = new BrainStorage();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
+  });
+
+  describe('memories', () => {
+    it('should create and retrieve a memory', async () => {
+      const m = await storage.createMemory({
+        type: 'episodic',
+        content: 'User asked about deploying to production',
+        source: 'conversation',
+      });
+      expect(m.id).toBeDefined();
+      expect(m.type).toBe('episodic');
+      expect(m.content).toContain('deploying');
+      expect(m.source).toBe('conversation');
+      expect(m.importance).toBe(0.5);
+      expect(m.accessCount).toBe(0);
+
+      const retrieved = await storage.getMemory(m.id);
+      expect(retrieved).toEqual(m);
+    });
+
+    it('should return null for non-existent memory', async () => {
+      expect(await storage.getMemory('nonexistent')).toBeNull();
+    });
+
+    it('should create memory with custom importance', async () => {
+      const m = await storage.createMemory({
+        type: 'semantic',
+        content: 'Project uses React 18',
+        source: 'observation',
+        importance: 0.9,
+      });
+      expect(m.importance).toBe(0.9);
+    });
+
+    it('should create memory with context', async () => {
+      const m = await storage.createMemory({
+        type: 'preference',
+        content: 'User prefers concise answers',
+        source: 'user',
+        context: { userId: 'user1', topic: 'style' },
+      });
+      expect(m.context).toEqual({ userId: 'user1', topic: 'style' });
+    });
+
+    it('should create memory with expiration', async () => {
+      const expires = Date.now() + 86_400_000;
+      const m = await storage.createMemory({
+        type: 'episodic',
+        content: 'Temporary event',
+        source: 'event',
+        expiresAt: expires,
+      });
+      expect(m.expiresAt).toBe(expires);
+    });
+
+    it('should delete a memory', async () => {
+      const m = await storage.createMemory({
+        type: 'semantic',
+        content: 'Test',
+        source: 'test',
+      });
+      expect(await storage.deleteMemory(m.id)).toBe(true);
+      expect(await storage.getMemory(m.id)).toBeNull();
+    });
+
+    it('should return false deleting non-existent memory', async () => {
+      expect(await storage.deleteMemory('nonexistent')).toBe(false);
+    });
+
+    it('should query memories by type', async () => {
+      await storage.createMemory({ type: 'episodic', content: 'Event 1', source: 'test' });
+      await storage.createMemory({ type: 'semantic', content: 'Fact 1', source: 'test' });
+      await storage.createMemory({ type: 'episodic', content: 'Event 2', source: 'test' });
+
+      const episodic = await storage.queryMemories({ type: 'episodic' });
+      expect(episodic).toHaveLength(2);
+    });
+
+    it('should query memories by search', async () => {
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'React 18 framework',
+        source: 'test',
+      });
+      await storage.createMemory({ type: 'semantic', content: 'Vue 3 framework', source: 'test' });
+
+      const results = await storage.queryMemories({ search: 'React' });
+      expect(results).toHaveLength(1);
+      expect(results[0].content).toContain('React');
+    });
+
+    it('should query memories with minImportance', async () => {
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'Low',
+        source: 'test',
+        importance: 0.2,
+      });
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'High',
+        source: 'test',
+        importance: 0.8,
+      });
+
+      const results = await storage.queryMemories({ minImportance: 0.5 });
+      expect(results).toHaveLength(1);
+      expect(results[0].content).toBe('High');
+    });
+
+    it('should query memories with limit', async () => {
+      for (let i = 0; i < 5; i++) {
+        await storage.createMemory({ type: 'episodic', content: `Event ${i}`, source: 'test' });
+      }
+      const results = await storage.queryMemories({ limit: 3 });
+      expect(results).toHaveLength(3);
+    });
+
+    it('should touch memory (update access count)', async () => {
+      const m = await storage.createMemory({ type: 'semantic', content: 'Test', source: 'test' });
+      await storage.touchMemory(m.id);
+      await storage.touchMemory(m.id);
+
+      const updated = await storage.getMemory(m.id);
+      expect(updated?.accessCount).toBe(2);
+      expect(updated?.lastAccessedAt).toBeGreaterThan(0);
+    });
+
+    it('should batch-touch multiple memories in a single call', async () => {
+      const m1 = await storage.createMemory({
+        type: 'semantic',
+        content: 'Memory 1',
+        source: 'test',
+      });
+      const m2 = await storage.createMemory({
+        type: 'semantic',
+        content: 'Memory 2',
+        source: 'test',
+      });
+      const m3 = await storage.createMemory({
+        type: 'episodic',
+        content: 'Memory 3',
+        source: 'test',
+      });
+
+      await storage.touchMemories([m1.id, m2.id, m3.id]);
+
+      expect((await storage.getMemory(m1.id))?.accessCount).toBe(1);
+      expect((await storage.getMemory(m2.id))?.accessCount).toBe(1);
+      expect((await storage.getMemory(m3.id))?.accessCount).toBe(1);
+      expect((await storage.getMemory(m1.id))?.lastAccessedAt).toBeGreaterThan(0);
+    });
+
+    it('should handle empty array in touchMemories', async () => {
+      // Should not throw
+      await storage.touchMemories([]);
+    });
+
+    it('should decay memories', async () => {
+      const m = await storage.createMemory({
+        type: 'semantic',
+        content: 'Old fact',
+        source: 'test',
+        importance: 0.5,
+      });
+
+      const decayed = await storage.decayMemories(0.1);
+      expect(decayed).toBe(1);
+
+      const updated = await storage.getMemory(m.id);
+      expect(updated?.importance).toBe(0.4);
+    });
+
+    it('should prune expired memories', async () => {
+      await storage.createMemory({
+        type: 'episodic',
+        content: 'Expired',
+        source: 'test',
+        expiresAt: Date.now() - 1000,
+      });
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'Active',
+        source: 'test',
+      });
+
+      const pruned = await storage.pruneExpiredMemories();
+      expect(pruned).toHaveLength(1);
+      expect(await storage.getMemoryCount()).toBe(1);
+    });
+
+    it('should count memories', async () => {
+      expect(await storage.getMemoryCount()).toBe(0);
+      await storage.createMemory({ type: 'semantic', content: 'Test', source: 'test' });
+      expect(await storage.getMemoryCount()).toBe(1);
+    });
+
+    it('should query memories with sortDirection asc', async () => {
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'Low importance',
+        source: 'test',
+        importance: 0.2,
+      });
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'High importance',
+        source: 'test',
+        importance: 0.9,
+      });
+
+      const results = await storage.queryMemories({ sortDirection: 'asc' });
+      expect(results[0].content).toBe('Low importance');
+      expect(results[1].content).toBe('High importance');
+    });
+
+    it('should query memories with offset', async () => {
+      for (let i = 0; i < 5; i++) {
+        await storage.createMemory({
+          type: 'episodic',
+          content: `Event ${i}`,
+          source: 'test',
+          importance: (i + 1) * 0.1,
+        });
+      }
+      const results = await storage.queryMemories({ limit: 2, offset: 2 });
+      expect(results).toHaveLength(2);
+    });
+
+    it('should reject invalid context keys (SQL injection prevention)', async () => {
+      await expect(
+        storage.queryMemories({ context: { "'; DROP TABLE--": 'val' } })
+      ).rejects.toThrow('Invalid context key');
+    });
+
+    it('should prune by importance floor', async () => {
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'Very low',
+        source: 'test',
+        importance: 0.01,
+      });
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'Normal',
+        source: 'test',
+        importance: 0.5,
+      });
+
+      const pruned = await storage.pruneByImportanceFloor(0.05);
+      expect(pruned).toHaveLength(1);
+      expect(await storage.getMemoryCount()).toBe(1);
+    });
+
+    it('should count memories by type', async () => {
+      await storage.createMemory({ type: 'episodic', content: 'E1', source: 'test' });
+      await storage.createMemory({ type: 'episodic', content: 'E2', source: 'test' });
+      await storage.createMemory({ type: 'semantic', content: 'S1', source: 'test' });
+
+      const counts = await storage.getMemoryCountByType();
+      expect(counts.episodic).toBe(2);
+      expect(counts.semantic).toBe(1);
+    });
+  });
+
+  describe('knowledge', () => {
+    it('should create and retrieve knowledge', async () => {
+      const k = await storage.createKnowledge({
+        topic: 'deployment',
+        content: 'Production uses Docker Compose',
+        source: 'documentation',
+      });
+      expect(k.id).toBeDefined();
+      expect(k.topic).toBe('deployment');
+      expect(k.confidence).toBe(0.8);
+
+      const retrieved = await storage.getKnowledge(k.id);
+      expect(retrieved).toEqual(k);
+    });
+
+    it('should return null for non-existent knowledge', async () => {
+      expect(await storage.getKnowledge('nonexistent')).toBeNull();
+    });
+
+    it('should create knowledge with custom confidence', async () => {
+      const k = await storage.createKnowledge({
+        topic: 'api',
+        content: 'REST endpoint on port 18789',
+        source: 'config',
+        confidence: 1.0,
+      });
+      expect(k.confidence).toBe(1.0);
+    });
+
+    it('should query knowledge by topic', async () => {
+      await storage.createKnowledge({ topic: 'deployment', content: 'Docker', source: 'test' });
+      await storage.createKnowledge({ topic: 'security', content: 'TLS', source: 'test' });
+
+      const results = await storage.queryKnowledge({ topic: 'deployment' });
+      expect(results).toHaveLength(1);
+      expect(results[0].topic).toBe('deployment');
+    });
+
+    it('should query knowledge by search', async () => {
+      await storage.createKnowledge({ topic: 'tech', content: 'Uses React 18', source: 'test' });
+      await storage.createKnowledge({ topic: 'tech', content: 'Uses Vue 3', source: 'test' });
+
+      const results = await storage.queryKnowledge({ search: 'React' });
+      expect(results).toHaveLength(1);
+    });
+
+    it('should update knowledge', async () => {
+      const k = await storage.createKnowledge({
+        topic: 'api',
+        content: 'Port 3000',
+        source: 'test',
+      });
+      const updated = await storage.updateKnowledge(k.id, {
+        content: 'Port 18789',
+        confidence: 0.95,
+      });
+      expect(updated.content).toBe('Port 18789');
+      expect(updated.confidence).toBe(0.95);
+    });
+
+    it('should update knowledge with supersedes', async () => {
+      const old = await storage.createKnowledge({ topic: 'api', content: 'v1', source: 'test' });
+      const newer = await storage.createKnowledge({ topic: 'api', content: 'v2', source: 'test' });
+      const updated = await storage.updateKnowledge(newer.id, { supersedes: old.id });
+      expect(updated.supersedes).toBe(old.id);
+    });
+
+    it('should throw when updating non-existent knowledge', async () => {
+      await expect(storage.updateKnowledge('nonexistent', { content: 'X' })).rejects.toThrow(
+        'Knowledge not found'
+      );
+    });
+
+    it('should delete knowledge', async () => {
+      const k = await storage.createKnowledge({ topic: 'test', content: 'Test', source: 'test' });
+      expect(await storage.deleteKnowledge(k.id)).toBe(true);
+      expect(await storage.getKnowledge(k.id)).toBeNull();
+    });
+
+    it('should count knowledge', async () => {
+      expect(await storage.getKnowledgeCount()).toBe(0);
+      await storage.createKnowledge({ topic: 'test', content: 'Test', source: 'test' });
+      expect(await storage.getKnowledgeCount()).toBe(1);
+    });
+  });
+
+  describe('skills', () => {
+    it('should create and retrieve a skill', async () => {
+      const s = await storage.createSkill({
+        name: 'code-review',
+        description: 'Reviews code',
+        instructions: 'Review the code carefully.',
+        tools: [],
+        triggerPatterns: ['review'],
+        enabled: true,
+        source: 'user',
+        status: 'active',
+      });
+      expect(s.id).toBeDefined();
+      expect(s.name).toBe('code-review');
+
+      const retrieved = await storage.getSkill(s.id);
+      expect(retrieved).toEqual(s);
+    });
+
+    it('should list enabled skills', async () => {
+      await storage.createSkill({ name: 's1', enabled: true, source: 'user', status: 'active' });
+      await storage.createSkill({ name: 's2', enabled: false, source: 'user', status: 'active' });
+
+      const enabled = await storage.getEnabledSkills();
+      expect(enabled).toHaveLength(1);
+      expect(enabled[0].name).toBe('s1');
+    });
+
+    it('should increment usage', async () => {
+      const s = await storage.createSkill({ name: 's1', source: 'user', status: 'active' });
+      await storage.incrementUsage(s.id);
+      const updated = await storage.getSkill(s.id);
+      expect(updated?.usageCount).toBe(1);
+    });
+  });
+
+  describe('brain meta', () => {
+    it('should get and set meta', async () => {
+      expect(await storage.getMeta('test')).toBeNull();
+      await storage.setMeta('test', 'value');
+      expect(await storage.getMeta('test')).toBe('value');
+    });
+
+    it('should overwrite meta', async () => {
+      await storage.setMeta('key', 'v1');
+      await storage.setMeta('key', 'v2');
+      expect(await storage.getMeta('key')).toBe('v2');
+    });
+  });
+
+  describe('stats', () => {
+    it('should return brain stats', async () => {
+      await storage.createMemory({ type: 'semantic', content: 'Test', source: 'test' });
+      await storage.createKnowledge({ topic: 'test', content: 'Test', source: 'test' });
+      await storage.createSkill({ name: 's1', source: 'user', status: 'active' });
+
+      const stats = await storage.getStats();
+      expect(stats.memories.total).toBe(1);
+      expect(stats.knowledge.total).toBe(1);
+      expect(stats.skills.total).toBe(1);
+    });
+  });
+});

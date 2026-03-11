@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-SHARDS=${1:-4}
+SHARDS=${1:-8}
 DB_HOST=${TEST_DB_HOST:-localhost}
 DB_PORT=${TEST_DB_PORT:-5432}
 DB_USER=${TEST_DB_USER:-secureyeoman}
