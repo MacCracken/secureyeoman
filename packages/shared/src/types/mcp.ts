@@ -230,10 +230,14 @@ export const McpServiceConfigSchema = z.object({
   exposeSynapseTools: z.boolean().default(false),
   /** Enable Delta self-hosted Git forge tools (delta_*). Off by default. Set MCP_EXPOSE_DELTA_TOOLS=true. */
   exposeDeltaTools: z.boolean().default(false),
-  /** Base URL for the Delta instance. Default: http://localhost:3000 */
+  /** Base URL for the Delta instance. Default: http://localhost:8070 */
   deltaUrl: z.string().optional(),
   /** API token for authenticating with Delta. */
   deltaApiToken: z.string().optional(),
+  /** Enable Aequi accounting tools (aequi_*). Off by default. Set MCP_EXPOSE_AEQUI_TOOLS=true. */
+  exposeAequiTools: z.boolean().default(false),
+  /** Base URL for the Aequi instance. Default: http://localhost:8060 */
+  aequiUrl: z.string().optional(),
   /** Enable voice profile tools (voice_profile_*). On by default — voice is a core feature. Set MCP_EXPOSE_VOICE_TOOLS=false to disable. */
   exposeVoiceTools: z.boolean().default(true),
 });

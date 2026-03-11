@@ -3,6 +3,21 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { registerEcosystemRoutes } from './ecosystem-routes.js';
 import type { EcosystemServiceInfo } from './service-discovery.js';
 
+const mockListSandboxProfiles = vi.fn();
+vi.mock('./agnos/agnos-client.js', () => ({
+  AgnosClient: function (_config: unknown, _logger: unknown) {
+    return { listSandboxProfiles: mockListSandboxProfiles };
+  },
+}));
+
+const mockLogger = {
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+} as any;
+
 const MOCK_AGNOSTIC: EcosystemServiceInfo = {
   id: 'agnostic',
   displayName: 'Agnostic QA Platform',
@@ -56,7 +71,7 @@ describe('Ecosystem Routes', () => {
   beforeEach(async () => {
     app = Fastify();
     mockManager = makeMockManager();
-    registerEcosystemRoutes(app, { discoveryManager: mockManager as any });
+    registerEcosystemRoutes(app, { discoveryManager: mockManager as any, logger: mockLogger });
     await app.ready();
   });
 
@@ -177,6 +192,56 @@ describe('Ecosystem Routes', () => {
         url: '/api/v1/ecosystem/services/unknown/disable',
       });
       expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe('GET /api/v1/ecosystem/services/agnos/sandbox-profiles', () => {
+    it('returns profiles when AGNOS is connected', async () => {
+      mockManager.getService.mockImplementation((id: string) => {
+        if (id === 'agnos') return { ...MOCK_AGNOS, status: 'connected', enabled: true };
+        return undefined;
+      });
+      mockListSandboxProfiles.mockResolvedValue([
+        { id: 'default', name: 'Default', seccomp: true, landlock: true },
+        { id: 'permissive', name: 'Permissive', description: 'No restrictions', seccomp: false, landlock: false },
+      ]);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/ecosystem/services/agnos/sandbox-profiles',
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(body.profiles).toHaveLength(2);
+      expect(body.profiles[0].id).toBe('default');
+      expect(body.profiles[1].seccomp).toBe(false);
+    });
+
+    it('returns empty profiles when AGNOS is disconnected', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/ecosystem/services/agnos/sandbox-profiles',
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(body.profiles).toEqual([]);
+      expect(body.status).toBe('disconnected');
+    });
+
+    it('returns 502 when AGNOS client throws', async () => {
+      mockManager.getService.mockImplementation((id: string) => {
+        if (id === 'agnos') return { ...MOCK_AGNOS, status: 'connected', enabled: true };
+        return undefined;
+      });
+      mockListSandboxProfiles.mockRejectedValue(new Error('ECONNREFUSED'));
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/ecosystem/services/agnos/sandbox-profiles',
+      });
+      expect(res.statusCode).toBe(502);
+      const body = JSON.parse(res.payload);
+      expect(body.message).toContain('ECONNREFUSED');
     });
   });
 });

@@ -5,7 +5,7 @@
  * repositories, pull requests, and CI/CD pipelines through natural language.
  *
  * ## Configuration
- *   DELTA_URL       – Base URL of the Delta instance (default: http://localhost:3000)
+ *   DELTA_URL       – Base URL of the Delta instance (default: http://localhost:8070)
  *   DELTA_API_TOKEN – API token for authenticating with Delta
  */
 
@@ -26,7 +26,7 @@ function getDeltaUrl(config: McpServiceConfig): string {
   return (
     (config as Record<string, unknown>).deltaUrl ??
     process.env.DELTA_URL ??
-    'http://localhost:3000'
+    'http://localhost:8070'
   )
     .toString()
     .replace(/\/$/, '');
@@ -45,7 +45,7 @@ async function delta(
 ): Promise<unknown> {
   const token = (config as Record<string, unknown>).deltaApiToken ?? getDeltaToken();
   const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `token ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const client = createHttpClient(getDeltaUrl(config), headers);
   const res = await client[method](path, body);
@@ -77,7 +77,7 @@ export function registerDeltaTools(
       inputSchema: {},
     },
     wrapToolHandler('delta_list_repos', middleware, async () => {
-      const result = await delta(config, 'get', '/api/v1/repos/search');
+      const result = await delta(config, 'get', '/api/v1/repos');
       return jsonResponse(result);
     })
   );
@@ -208,7 +208,7 @@ export function registerDeltaTools(
       const result = await delta(
         config,
         'get',
-        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/actions/runs${qs}`
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/pipelines${qs}`
       );
       return jsonResponse(result);
     })
@@ -220,23 +220,30 @@ export function registerDeltaTools(
     'delta_trigger_pipeline',
     {
       description:
-        'Trigger a CI/CD pipeline run on a Delta repository. Optionally specify a ' +
-        'git ref (branch or tag) to run against.',
+        'Trigger a CI/CD pipeline run on a Delta repository. Requires a workflow name ' +
+        'and commit SHA. Optionally specify a trigger ref (branch or tag).',
       inputSchema: {
         owner: z.string().min(1).describe('Repository owner'),
         name: z.string().min(1).describe('Repository name'),
-        ref: z
+        workflow_name: z.string().min(1).describe('Name of the workflow/pipeline to trigger'),
+        commit_sha: z.string().min(7).describe('Commit SHA to run against'),
+        trigger_ref: z
           .string()
           .optional()
-          .describe('Git ref (branch or tag) to run against (default: default branch)'),
+          .describe('Git ref (branch or tag) for context'),
       },
     },
     wrapToolHandler('delta_trigger_pipeline', middleware, async (args) => {
       const result = await delta(
         config,
         'post',
-        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/actions/dispatch`,
-        { ref: args.ref }
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/pipelines`,
+        {
+          workflow_name: args.workflow_name,
+          commit_sha: args.commit_sha,
+          trigger_type: 'manual',
+          trigger_ref: args.trigger_ref,
+        }
       );
       return jsonResponse(result);
     })
@@ -258,7 +265,7 @@ export function registerDeltaTools(
       const result = await delta(
         config,
         'post',
-        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/actions/runs/${args.pipeline_id}/cancel`
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/pipelines/${args.pipeline_id}/cancel`
       );
       return jsonResponse(result);
     })
@@ -282,7 +289,7 @@ export function registerDeltaTools(
       const result = await delta(
         config,
         'get',
-        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/actions/runs/${args.pipeline_id}/jobs/${args.job_id}/logs`
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/pipelines/${args.pipeline_id}/jobs/${args.job_id}/logs`
       );
       return jsonResponse(result);
     })
@@ -314,13 +321,196 @@ export function registerDeltaTools(
       const result = await delta(
         config,
         'post',
-        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/statuses/${encodeURIComponent(args.sha)}`,
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/commits/${encodeURIComponent(args.sha)}/statuses`,
         {
           context: args.context,
           state: args.state,
           description: args.description ?? '',
           target_url: args.target_url ?? '',
         }
+      );
+      return jsonResponse(result);
+    })
+  );
+
+  // ── Create Repository ──────────────────────────────────────────────────
+
+  server.registerTool(
+    'delta_create_repo',
+    {
+      description:
+        'Create a new repository on the Delta instance. The authenticated user becomes the owner.',
+      inputSchema: {
+        name: z.string().min(1).max(100).describe('Repository name'),
+        description: z.string().max(1000).optional().describe('Repository description'),
+        visibility: z
+          .enum(['public', 'private'])
+          .optional()
+          .describe('Visibility (default: public)'),
+      },
+    },
+    wrapToolHandler('delta_create_repo', middleware, async (args) => {
+      const result = await delta(config, 'post', '/api/v1/repos', {
+        name: args.name,
+        description: args.description,
+        visibility: args.visibility ?? 'public',
+      });
+      return jsonResponse(result);
+    })
+  );
+
+  // ── Create Pull Request ────────────────────────────────────────────────
+
+  server.registerTool(
+    'delta_create_pull',
+    {
+      description:
+        'Create a pull request on a Delta repository. Specify head and base branches.',
+      inputSchema: {
+        owner: z.string().min(1).describe('Repository owner'),
+        name: z.string().min(1).describe('Repository name'),
+        title: z.string().min(1).max(255).describe('Pull request title'),
+        body: z.string().optional().describe('Pull request description (markdown)'),
+        head_branch: z.string().min(1).describe('Source branch with changes'),
+        base_branch: z.string().min(1).describe('Target branch to merge into'),
+        is_draft: z.boolean().optional().describe('Create as draft PR (default: false)'),
+      },
+    },
+    wrapToolHandler('delta_create_pull', middleware, async (args) => {
+      const result = await delta(
+        config,
+        'post',
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/pulls`,
+        {
+          title: args.title,
+          body: args.body,
+          head_branch: args.head_branch,
+          base_branch: args.base_branch,
+          is_draft: args.is_draft ?? false,
+        }
+      );
+      return jsonResponse(result);
+    })
+  );
+
+  // ── Pull Request Diff ──────────────────────────────────────────────────
+
+  server.registerTool(
+    'delta_pull_diff',
+    {
+      description:
+        'Get the unified diff for a pull request. Returns the raw diff as text.',
+      inputSchema: {
+        owner: z.string().min(1).describe('Repository owner'),
+        name: z.string().min(1).describe('Repository name'),
+        number: z.number().int().positive().describe('Pull request number'),
+      },
+    },
+    wrapToolHandler('delta_pull_diff', middleware, async (args) => {
+      const result = await delta(
+        config,
+        'get',
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/pulls/${args.number}/diff`
+      );
+      return jsonResponse(result);
+    })
+  );
+
+  // ── List Branches ──────────────────────────────────────────────────────
+
+  server.registerTool(
+    'delta_list_branches',
+    {
+      description:
+        'List branches for a Delta repository. Returns branch names and their latest commit info.',
+      inputSchema: {
+        owner: z.string().min(1).describe('Repository owner'),
+        name: z.string().min(1).describe('Repository name'),
+      },
+    },
+    wrapToolHandler('delta_list_branches', middleware, async (args) => {
+      const result = await delta(
+        config,
+        'get',
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/branches`
+      );
+      return jsonResponse(result);
+    })
+  );
+
+  // ── List Releases ──────────────────────────────────────────────────────
+
+  server.registerTool(
+    'delta_list_releases',
+    {
+      description:
+        'List releases for a Delta repository. Returns tag, name, body, and draft/prerelease status.',
+      inputSchema: {
+        owner: z.string().min(1).describe('Repository owner'),
+        name: z.string().min(1).describe('Repository name'),
+      },
+    },
+    wrapToolHandler('delta_list_releases', middleware, async (args) => {
+      const result = await delta(
+        config,
+        'get',
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/releases`
+      );
+      return jsonResponse(result);
+    })
+  );
+
+  // ── Create Release ─────────────────────────────────────────────────────
+
+  server.registerTool(
+    'delta_create_release',
+    {
+      description:
+        'Create a release for a Delta repository. Associates a tag with release notes.',
+      inputSchema: {
+        owner: z.string().min(1).describe('Repository owner'),
+        name: z.string().min(1).describe('Repository name'),
+        tag_name: z.string().min(1).describe('Git tag for the release'),
+        release_name: z.string().min(1).describe('Human-readable release name'),
+        body: z.string().optional().describe('Release notes (markdown)'),
+        is_draft: z.boolean().optional().describe('Mark as draft (default: false)'),
+        is_prerelease: z.boolean().optional().describe('Mark as pre-release (default: false)'),
+      },
+    },
+    wrapToolHandler('delta_create_release', middleware, async (args) => {
+      const result = await delta(
+        config,
+        'post',
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/releases`,
+        {
+          tag_name: args.tag_name,
+          name: args.release_name,
+          body: args.body,
+          is_draft: args.is_draft ?? false,
+          is_prerelease: args.is_prerelease ?? false,
+        }
+      );
+      return jsonResponse(result);
+    })
+  );
+
+  // ── List Artifacts ─────────────────────────────────────────────────────
+
+  server.registerTool(
+    'delta_list_artifacts',
+    {
+      description:
+        'List build artifacts for a Delta repository. Returns artifact metadata including size and download URL.',
+      inputSchema: {
+        owner: z.string().min(1).describe('Repository owner'),
+        name: z.string().min(1).describe('Repository name'),
+      },
+    },
+    wrapToolHandler('delta_list_artifacts', middleware, async (args) => {
+      const result = await delta(
+        config,
+        'get',
+        `/api/v1/repos/${encodeURIComponent(args.owner)}/${encodeURIComponent(args.name)}/artifacts`
       );
       return jsonResponse(result);
     })

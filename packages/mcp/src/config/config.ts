@@ -262,8 +262,10 @@ export function loadConfig(
     exposePhotisnadiTools: parseBool(env.MCP_EXPOSE_PHOTISNADI_TOOLS, false),
     exposeSynapseTools: parseBool(env.MCP_EXPOSE_SYNAPSE_TOOLS, false),
     exposeDeltaTools: parseBool(env.MCP_EXPOSE_DELTA_TOOLS, false),
-    deltaUrl: env.DELTA_URL ?? 'http://localhost:3000',
+    deltaUrl: env.DELTA_URL ?? 'http://localhost:8070',
     deltaApiToken: env.DELTA_API_TOKEN,
+    exposeAequiTools: parseBool(env.MCP_EXPOSE_AEQUI_TOOLS, false),
+    aequiUrl: env.AEQUI_URL ?? 'http://localhost:8060',
     exposeVoiceTools: parseBool(env.MCP_EXPOSE_VOICE_TOOLS, true),
   };
 

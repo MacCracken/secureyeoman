@@ -44,7 +44,7 @@ describe('ServiceDiscoveryManager', () => {
   describe('getServices', () => {
     it('returns all services in disconnected state initially', () => {
       const services = manager.getServices();
-      expect(services).toHaveLength(3);
+      expect(services).toHaveLength(7);
 
       const agnostic = services.find((s) => s.id === 'agnostic');
       expect(agnostic).toBeDefined();
@@ -66,6 +66,26 @@ describe('ServiceDiscoveryManager', () => {
       expect(synapse!.enabled).toBe(false);
       expect(synapse!.displayName).toBe('Synapse LLM Controller');
       expect(synapse!.requiredSecrets).toEqual([]);
+
+      const delta = services.find((s) => s.id === 'delta');
+      expect(delta).toBeDefined();
+      expect(delta!.status).toBe('disconnected');
+      expect(delta!.displayName).toBe('Delta Code Forge');
+
+      const bullshift = services.find((s) => s.id === 'bullshift');
+      expect(bullshift).toBeDefined();
+      expect(bullshift!.status).toBe('disconnected');
+      expect(bullshift!.displayName).toBe('BullShift Trading');
+
+      const photisnadi = services.find((s) => s.id === 'photisnadi');
+      expect(photisnadi).toBeDefined();
+      expect(photisnadi!.status).toBe('disconnected');
+      expect(photisnadi!.displayName).toBe('Photisnadi');
+
+      const aequi = services.find((s) => s.id === 'aequi');
+      expect(aequi).toBeDefined();
+      expect(aequi!.status).toBe('disconnected');
+      expect(aequi!.displayName).toBe('Aequi Accounting');
     });
   });
 

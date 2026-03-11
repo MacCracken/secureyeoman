@@ -11,7 +11,7 @@
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | — | AGNOS Built-in Integration | P2 | 2 remaining (sandbox handshake verify, dashboard profiles) |
-| — | Delta Integration | P2 | 3 remaining (docker-compose, dashboard panel, bootstrap discovery) |
+| — | Delta Integration | P2 | 2 remaining (dashboard panel, bootstrap discovery) |
 | — | Engineering Backlog | Ongoing | Security hardening complete; test coverage improvements ongoing |
 | Future | LLM Providers, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -116,11 +116,10 @@ Core integration complete (see ADR 036 + Changelog `[2026.3.10]`). Remaining ite
 
 ## Delta Integration — Remaining
 
-Delta is a Rust-based self-hosted code forge (git hosting, PRs, CI/CD, artifact registry) built for the AGNOS ecosystem. Core integration done (see ADR 037 + Changelog `[2026.3.10]`).
+Delta is a Rust-based self-hosted code forge (git hosting, PRs, CI/CD, artifact registry) built for the AGNOS ecosystem. Core integration done (see ADR 037 + Changelog `[2026.3.10]`). Docker-compose service and service discovery completed.
 
 | Item | Status | Description |
 |------|--------|-------------|
-| Docker-compose service | Not started | Add `delta` service to `docker-compose.yml` under `delta` and `full-dev` profiles. Image: `ghcr.io/maccracken/delta:latest`. Port 8070. Shared PG or embedded SQLite. Wire `DELTA_URL` env var into sy-core. |
 | Dashboard Delta panel | Future | Repository browser, PR list/review, pipeline status, artifact downloads. Reuse existing CI/CD dashboard patterns. |
 | AGNOS bootstrap discovery | Future | Extend `bootstrapAgnos()` to discover Delta via AGNOS service registry. Auto-set `DELTA_URL` and `MCP_EXPOSE_DELTA_TOOLS=true` when Delta is detected. |
 
@@ -258,4 +257,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-10 (Added Phase 146 Voice & Speech Platform; moved Phase 145 to future; security hardening complete). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-10 (Ecosystem service discovery expansion; Docker Compose profile normalization; Delta docker-compose; Aequi stub). See [Changelog](../../CHANGELOG.md) for full history.*

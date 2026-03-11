@@ -54,6 +54,8 @@ export class AgnosClient {
   }
 
   // ── Agent Registration ──────────────────────────────────────
+
+  /** Batch-register agent profiles (up to 100, idempotent). */
   async registerAgentsBatch(agents: AgnosAgentProfile[]): Promise<{ registered: number }> {
     return this._fetch('/v1/agents/register/batch', {
       method: 'POST',
@@ -65,11 +67,26 @@ export class AgnosClient {
     await this._fetch(`/v1/agents/${encodeURIComponent(agentId)}`, { method: 'DELETE' });
   }
 
-  async heartbeat(agentIds: string[]): Promise<void> {
-    await this._fetch('/v1/agents/heartbeat', {
+  /** Send heartbeat for a single agent. */
+  async heartbeatAgent(agentId: string): Promise<void> {
+    await this._fetch(`/v1/agents/${encodeURIComponent(agentId)}/heartbeat`, {
       method: 'POST',
-      body: { agentIds, source: 'secureyeoman' },
+      body: { source: 'secureyeoman' },
     });
+  }
+
+  /** Send heartbeats for multiple agents (per-agent, no batch endpoint). */
+  async heartbeat(agentIds: string[]): Promise<void> {
+    for (const id of agentIds) {
+      try {
+        await this.heartbeatAgent(id);
+      } catch (err) {
+        this.logger.debug(
+          { agentId: id, error: toErrorMessage(err) },
+          'AGNOS agent heartbeat failed'
+        );
+      }
+    }
   }
 
   // ── MCP Tool Registration ─────────────────────────────────
@@ -177,7 +194,7 @@ export class AgnosClient {
   // ── Health ─────────────────────────────────────────────────
   async health(): Promise<boolean> {
     try {
-      const res = await fetch(`${this.runtimeUrl}/health`, {
+      const res = await fetch(`${this.runtimeUrl}/v1/health`, {
         signal: AbortSignal.timeout(5000),
       });
       return res.ok;

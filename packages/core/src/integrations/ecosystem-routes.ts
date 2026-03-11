@@ -8,13 +8,16 @@
 import type { FastifyInstance } from 'fastify';
 import { sendError } from '../utils/errors.js';
 import type { ServiceDiscoveryManager, EcosystemServiceId } from './service-discovery.js';
+import { AgnosClient } from './agnos/agnos-client.js';
+import type { SecureLogger } from '../logging/logger.js';
 
 export interface EcosystemRoutesOptions {
   discoveryManager: ServiceDiscoveryManager;
+  logger: SecureLogger;
 }
 
 export function registerEcosystemRoutes(app: FastifyInstance, opts: EcosystemRoutesOptions): void {
-  const { discoveryManager } = opts;
+  const { discoveryManager, logger } = opts;
 
   // GET /api/v1/ecosystem/services — list all ecosystem services
   app.get('/api/v1/ecosystem/services', async (_req, reply) => {
@@ -68,5 +71,25 @@ export function registerEcosystemRoutes(app: FastifyInstance, opts: EcosystemRou
     }
     const result = await discoveryManager.disable(id as EcosystemServiceId);
     return reply.send(result);
+  });
+
+  // GET /api/v1/ecosystem/services/agnos/sandbox-profiles — fetch AGNOS sandbox profiles
+  app.get('/api/v1/ecosystem/services/agnos/sandbox-profiles', async (_req, reply) => {
+    const service = discoveryManager.getService('agnos');
+    if (!service) {
+      return sendError(reply, 404, 'AGNOS service not registered');
+    }
+    if (service.status !== 'connected') {
+      return reply.send({ profiles: [], status: service.status });
+    }
+    try {
+      const client = new AgnosClient({ runtimeUrl: service.url }, logger);
+      const profiles = await client.listSandboxProfiles();
+      return reply.send({ profiles });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.warn({ error: message }, 'Failed to fetch AGNOS sandbox profiles');
+      return sendError(reply, 502, `Failed to fetch sandbox profiles: ${message}`);
+    }
   });
 }

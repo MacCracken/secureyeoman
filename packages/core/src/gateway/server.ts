@@ -799,7 +799,10 @@ export class GatewayServer {
           secretsManager,
           logger: this.getLogger().child({ component: 'ServiceDiscovery' }),
         });
-        registerEcosystemRoutes(this.app, { discoveryManager });
+        registerEcosystemRoutes(this.app, {
+          discoveryManager,
+          logger: this.getLogger().child({ component: 'EcosystemRoutes' }),
+        });
       }
     } catch {
       // Ecosystem routes are optional — skip on error

@@ -122,6 +122,9 @@ services:
       # Synapse LLM controller
       SYNAPSE_API_URL: ${SYNAPSE_API_URL:-http://synapse:8420}
       SYNAPSE_GRPC_URL: ${SYNAPSE_GRPC_URL:-http://synapse:8421}
+      # Delta code forge — discovered via MCP env vars (DELTA_URL, MCP_EXPOSE_DELTA_TOOLS)
+      DELTA_URL: ${DELTA_URL:-http://delta:8070}
+      DELTA_API_TOKEN: ${DELTA_API_TOKEN:-}
       NODE_ENV: production
     healthcheck:
       test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:3001/health']
@@ -300,7 +303,8 @@ services:
     restart: unless-stopped
 
   # Photisnadi — Kanban task management with daily rituals (Flutter web).
-  # dev: pulls from GHCR. full-dev: builds from local ../photisnadi source.
+  # Standalone profile (--profile photisnadi) pulls from GHCR.
+  # full-dev builds from local ../photisnadi source.
   # sy-core proxy routes use PHOTISNADI_SUPABASE_URL/KEY from env_file.
   photisnadi:
     image: ghcr.io/maccracken/photisnadi:latest
@@ -311,13 +315,13 @@ services:
       SUPABASE_URL: ${PHOTISNADI_SUPABASE_URL:-}
       SUPABASE_ANON_KEY: ${PHOTISNADI_SUPABASE_KEY:-}
     healthcheck:
-      test: ['CMD', 'curl', '-sf', 'http://localhost:8080/']
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8080/api/v1/health']
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 15s
     profiles:
-      - dev
+      - photisnadi
     restart: unless-stopped
 
   # Photisnadi local build — uses sibling repo source for full integration dev.
@@ -332,7 +336,7 @@ services:
       SUPABASE_URL: ${PHOTISNADI_SUPABASE_URL:-}
       SUPABASE_ANON_KEY: ${PHOTISNADI_SUPABASE_KEY:-}
     healthcheck:
-      test: ['CMD', 'curl', '-sf', 'http://localhost:8080/']
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8080/api/v1/health']
       interval: 30s
       timeout: 3s
       retries: 3
@@ -342,7 +346,8 @@ services:
     restart: unless-stopped
 
   # BullShift — Algorithmic trading platform (Rust API).
-  # dev: pulls from GHCR. full-dev: builds from local ../bullshift source.
+  # Standalone profile (--profile bullshift) pulls from GHCR.
+  # full-dev builds from local ../bullshift source.
   bullshift:
     image: ghcr.io/maccracken/bullshift:latest
     ports:
@@ -362,7 +367,7 @@ services:
       retries: 3
       start_period: 10s
     profiles:
-      - dev
+      - bullshift
     restart: unless-stopped
 
   # BullShift local build — uses sibling repo source for full integration dev.
@@ -391,7 +396,8 @@ services:
     restart: unless-stopped
 
   # Synapse — LLM controller for model pulling, inference, and training.
-  # dev: pulls from GHCR. full-dev: builds from local ../synapse source.
+  # Standalone profile (--profile synapse) pulls from GHCR.
+  # full-dev builds from local ../synapse source.
   # Provides REST (8420) and gRPC bridge (8421) for SY training delegation.
   synapse:
     image: ghcr.io/maccracken/synapse:latest
@@ -413,7 +419,8 @@ services:
       retries: 3
       start_period: 15s
     profiles:
-      - dev
+      - synapse
+      - full-dev
     restart: unless-stopped
 
   # Synapse local build — uses sibling repo source for full integration dev.
@@ -438,6 +445,93 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+    profiles:
+      - full-dev
+    restart: unless-stopped
+
+  # Delta — Code hosting, VCS, CI/CD, and artifact registry (Rust API).
+  # Standalone profile (--profile delta) pulls from GHCR.
+  # full-dev builds from local ../delta source.
+  delta:
+    image: ghcr.io/maccracken/delta:latest
+    ports:
+      - '${DELTA_PORT:-8070}:8070'
+    volumes:
+      - delta-data:/var/lib/delta
+      - ./deploy/delta/config.toml:/etc/delta/config.toml:ro
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8070/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - delta
+    restart: unless-stopped
+
+  # Delta local build — uses sibling repo source for full integration dev.
+  delta-dev:
+    build:
+      context: ../delta
+      dockerfile: docker/Dockerfile
+    ports:
+      - '${DELTA_PORT:-8070}:8070'
+    volumes:
+      - delta-data:/var/lib/delta
+      - ./deploy/delta/config.toml:/etc/delta/config.toml:ro
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8070/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - full-dev
+    restart: unless-stopped
+
+  # Aequi — Self-employed accounting platform (Rust + SQLite).
+  # Standalone profile (--profile aequi) pulls from GHCR.
+  # full-dev builds from local ../aequi source.
+  # NOTE: Project still in development — Dockerfile and health endpoint TBD.
+  aequi:
+    image: ghcr.io/maccracken/aequi:latest
+    ports:
+      - '${AEQUI_PORT:-8060}:8060'
+    volumes:
+      - aequi-data:/var/lib/aequi/data
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8060/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - aequi
+    restart: unless-stopped
+
+  # Aequi local build — uses sibling repo source for full integration dev.
+  aequi-dev:
+    build:
+      context: ../aequi
+      dockerfile: Dockerfile
+    ports:
+      - '${AEQUI_PORT:-8060}:8060'
+    volumes:
+      - aequi-data:/var/lib/aequi/data
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8060/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     profiles:
       - full-dev
     restart: unless-stopped
@@ -474,5 +568,7 @@ volumes:
   bullshift-data:
   synapse-models:
   synapse-data:
+  aequi-data:
+  delta-data:
   node-modules:
   dashboard-node-modules:

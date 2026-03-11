@@ -88,8 +88,9 @@ import {
   fetchEcosystemServices,
   enableEcosystemService,
   disableEcosystemService,
+  fetchAgnosSandboxProfiles,
 } from '../api/client';
-import type { EcosystemServiceInfo } from '../api/client';
+import type { EcosystemServiceInfo, AgnosSandboxProfile } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type {
   McpServerConfig,
@@ -1306,6 +1307,15 @@ export function ConnectionsPage() {
     },
   });
 
+  // AGNOS sandbox profiles — only fetch when AGNOS is connected
+  const agnosService = (ecosystemQuery.data ?? []).find((s) => s.id === 'agnos');
+  const agnosSandboxQuery = useQuery({
+    queryKey: ['agnosSandboxProfiles'],
+    queryFn: fetchAgnosSandboxProfiles,
+    enabled: agnosService?.status === 'connected',
+    refetchInterval: 60_000,
+  });
+
   const addMcpMut = useMutation({
     mutationFn: () => {
       const envRecord: Record<string, string> = {};
@@ -1729,6 +1739,57 @@ export function ConnectionsPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* AGNOS Sandbox Profiles */}
+          {agnosService?.status === 'connected' && (
+            <div className="mb-4">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                AGNOS Sandbox Profiles
+              </h3>
+              {agnosSandboxQuery.isLoading && (
+                <p className="text-xs text-muted-foreground">Loading profiles...</p>
+              )}
+              {agnosSandboxQuery.error && (
+                <p className="text-xs text-red-500">
+                  Failed to load profiles: {(agnosSandboxQuery.error as Error).message}
+                </p>
+              )}
+              {agnosSandboxQuery.data && agnosSandboxQuery.data.length === 0 && (
+                <p className="text-xs text-muted-foreground">No sandbox profiles configured</p>
+              )}
+              {agnosSandboxQuery.data && agnosSandboxQuery.data.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {agnosSandboxQuery.data.map((profile: AgnosSandboxProfile) => (
+                    <div key={profile.id} className="card p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium">{profile.name}</span>
+                        <span className="text-[10px] text-muted-foreground/60 font-mono">
+                          {profile.id}
+                        </span>
+                      </div>
+                      {profile.description && (
+                        <p className="text-xs text-muted-foreground mb-2">{profile.description}</p>
+                      )}
+                      <div className="flex gap-3">
+                        <span
+                          className="text-[10px] font-medium"
+                          style={{ color: profile.seccomp ? '#22c55e' : '#64748b' }}
+                        >
+                          seccomp {profile.seccomp ? 'ON' : 'OFF'}
+                        </span>
+                        <span
+                          className="text-[10px] font-medium"
+                          style={{ color: profile.landlock ? '#22c55e' : '#64748b' }}
+                        >
+                          landlock {profile.landlock ? 'ON' : 'OFF'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

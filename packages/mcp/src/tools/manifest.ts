@@ -2548,6 +2548,41 @@ export function getToolManifest(): ToolManifestEntry[] {
       description: 'Create a commit status check on a specific SHA in a Delta repository',
       category: 'delta',
     },
+    {
+      name: 'delta_create_repo',
+      description: 'Create a new repository on the Delta instance',
+      category: 'delta',
+    },
+    {
+      name: 'delta_create_pull',
+      description: 'Create a pull request on a Delta repository with head and base branches',
+      category: 'delta',
+    },
+    {
+      name: 'delta_pull_diff',
+      description: 'Get the unified diff for a pull request on Delta',
+      category: 'delta',
+    },
+    {
+      name: 'delta_list_branches',
+      description: 'List branches for a Delta repository with latest commit info',
+      category: 'delta',
+    },
+    {
+      name: 'delta_list_releases',
+      description: 'List releases for a Delta repository with tag, name, and status',
+      category: 'delta',
+    },
+    {
+      name: 'delta_create_release',
+      description: 'Create a release for a Delta repository with tag and release notes',
+      category: 'delta',
+    },
+    {
+      name: 'delta_list_artifacts',
+      description: 'List build artifacts for a Delta repository',
+      category: 'delta',
+    },
 
     // Voice profile tools
     {

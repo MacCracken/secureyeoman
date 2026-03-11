@@ -19,7 +19,7 @@ import { errorToString } from '../utils/errors.js';
 // Types
 // ---------------------------------------------------------------------------
 
-export type EcosystemServiceId = 'agnostic' | 'agnos' | 'synapse';
+export type EcosystemServiceId = 'agnostic' | 'agnos' | 'synapse' | 'delta' | 'bullshift' | 'photisnadi' | 'aequi';
 
 export type EcosystemServiceStatus =
   | 'disconnected' // never connected
@@ -74,7 +74,7 @@ const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
     description: 'Agent runtime with LLM gateway and policy enforcement',
     urlEnv: 'AGNOS_RUNTIME_URL',
     defaultUrl: 'http://127.0.0.1:8090',
-    healthPath: '/health',
+    healthPath: '/v1/health',
     requiredSecrets: ['AGNOS_GATEWAY_API_KEY', 'AGNOS_RUNTIME_API_KEY'],
     mcpConfigKey: 'exposeAgnosTools',
   },
@@ -87,6 +87,46 @@ const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
     healthPath: '/health',
     requiredSecrets: [],
     mcpConfigKey: 'exposeSynapseTools',
+  },
+  {
+    id: 'delta',
+    displayName: 'Delta Code Forge',
+    description: 'Self-hosted git hosting, CI/CD pipelines, and artifact registry',
+    urlEnv: 'DELTA_URL',
+    defaultUrl: 'http://127.0.0.1:8070',
+    healthPath: '/health',
+    requiredSecrets: ['DELTA_API_TOKEN'],
+    mcpConfigKey: 'exposeDeltaTools',
+  },
+  {
+    id: 'bullshift',
+    displayName: 'BullShift Trading',
+    description: 'Algorithmic trading platform with portfolio management and market analysis',
+    urlEnv: 'BULLSHIFT_API_URL',
+    defaultUrl: 'http://127.0.0.1:8787',
+    healthPath: '/health',
+    requiredSecrets: [],
+    mcpConfigKey: 'exposeBullshiftTools',
+  },
+  {
+    id: 'photisnadi',
+    displayName: 'Photisnadi',
+    description: 'Kanban task management with daily rituals and focus tracking',
+    urlEnv: 'PHOTISNADI_URL',
+    defaultUrl: 'http://127.0.0.1:8080',
+    healthPath: '/api/v1/health',
+    requiredSecrets: ['PHOTISNADI_SUPABASE_URL', 'PHOTISNADI_SUPABASE_KEY'],
+    mcpConfigKey: 'exposePhotisnadiTools',
+  },
+  {
+    id: 'aequi',
+    displayName: 'Aequi Accounting',
+    description: 'Self-employed accounting platform with double-entry bookkeeping and tax automation',
+    urlEnv: 'AEQUI_URL',
+    defaultUrl: 'http://127.0.0.1:8060',
+    healthPath: '/health',
+    requiredSecrets: [],
+    mcpConfigKey: 'exposeAequiTools',
   },
 ] as const;
 

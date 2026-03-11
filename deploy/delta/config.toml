@@ -1,0 +1,17 @@
+# Delta configuration for Docker Compose
+# Overrides default config to bind to 0.0.0.0 for container networking.
+
+[server]
+host = "0.0.0.0"
+port = 8070
+api_prefix = "/api/v1"
+
+[storage]
+repos_dir = "/var/lib/delta/repos"
+artifacts_dir = "/var/lib/delta/artifacts"
+db_url = "sqlite:///var/lib/delta/delta.db"
+
+[auth]
+enabled = true
+token_expiry_secs = 86400
+secrets_key = "change-me-to-a-strong-random-passphrase"

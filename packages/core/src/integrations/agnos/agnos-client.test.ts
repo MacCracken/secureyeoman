@@ -61,6 +61,26 @@ describe('AgnosClient', () => {
     expect(body.source).toBe('secureyeoman');
   });
 
+  it('heartbeat sends per-agent POST to /v1/agents/:id/heartbeat', async () => {
+    const ok = () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+    vi.mocked(fetch).mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
+
+    await client.heartbeat(['a1', 'a2']);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('http://127.0.0.1:8090/v1/agents/a1/heartbeat');
+    expect(vi.mocked(fetch).mock.calls[1][0]).toBe('http://127.0.0.1:8090/v1/agents/a2/heartbeat');
+  });
+
+  it('heartbeat handles per-agent failures gracefully', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response('error', { status: 500 }));
+
+    // Should not throw — failures are logged at debug level
+    await client.heartbeat(['a1', 'a2']);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+  });
+
   it('publishEvent sends POST to /v1/events/publish', async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response('{}', {
@@ -76,6 +96,13 @@ describe('AgnosClient', () => {
     const body = JSON.parse(call[1]?.body as string);
     expect(body.topic).toBe('swarm:completed');
     expect(body.source).toBe('secureyeoman');
+  });
+
+  it('health calls /v1/health', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response('{}', { status: 200 }));
+    const result = await client.health();
+    expect(result).toBe(true);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('http://127.0.0.1:8090/v1/health');
   });
 
   it('health returns false on error', async () => {

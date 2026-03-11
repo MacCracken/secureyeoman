@@ -2156,6 +2156,23 @@ export async function disableEcosystemService(id: string): Promise<EcosystemServ
   return request(`/ecosystem/services/${encodeURIComponent(id)}/disable`, { method: 'POST' });
 }
 
+// ─── AGNOS Sandbox Profiles ─────────────────────────────────
+
+export interface AgnosSandboxProfile {
+  id: string;
+  name: string;
+  description?: string;
+  seccomp?: boolean;
+  landlock?: boolean;
+}
+
+export async function fetchAgnosSandboxProfiles(): Promise<AgnosSandboxProfile[]> {
+  const res = await request<{ profiles: AgnosSandboxProfile[] }>(
+    '/ecosystem/services/agnos/sandbox-profiles'
+  );
+  return res.profiles;
+}
+
 // ─── Trading & Market Data ──────────────────────────────────
 
 export interface MarketQuoteResponse {

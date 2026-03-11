@@ -6,6 +6,17 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.10]
 
+### Ecosystem Service Discovery & Docker Compose Unification
+
+Unified all in-house projects into consistent service discovery and Docker Compose patterns.
+
+- **Service discovery expansion**: `ServiceDiscoveryManager` registry expanded from 3 → 7 services (agnostic, agnos, synapse, delta, bullshift, photisnadi, aequi). Each service has probe, enable/disable lifecycle, secrets provisioning, and dashboard auto-rendering via `ConnectionsPage`.
+- **Docker Compose profile normalization**: All in-house services now follow the agnostic pattern — standalone profile (own name) for GHCR image, `full-dev` profile for local sibling build. Synapse, bullshift, photisnadi moved from `dev` to standalone profiles (`--profile synapse`, `--profile bullshift`, `--profile photisnadi`). Delta added (`--profile delta`). Aequi stubbed (`--profile aequi`).
+- **Delta docker-compose**: `delta` (GHCR) and `delta-dev` (local `../delta` build) services. Port 8070. 3 volumes (repos, artifacts, data). `DELTA_URL` + `DELTA_API_TOKEN` env vars on `sy-mcp`.
+- **Aequi stub**: `aequi` and `aequi-dev` services stubbed for future accounting platform integration. Port 8060. `exposeAequiTools` + `aequiUrl` added to MCP schema and config.
+- **Photisnadi healthcheck fix**: Healthcheck updated from `/` to `/api/v1/health` (existing endpoint in `lib/server/api.dart`).
+- **Delta URL fix**: MCP config default corrected from `localhost:3000` to `localhost:8070`.
+
 ### Security Hardening — Batches 1–3 (14 Items)
 
 Deep security audit and remediation across authentication, authorization, encryption, and sandboxing. See ADR 035.
