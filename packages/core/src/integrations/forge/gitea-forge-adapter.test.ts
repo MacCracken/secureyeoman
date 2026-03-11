@@ -201,7 +201,8 @@ describe('GiteaForgeAdapter', () => {
               id: 300,
               name: 'binary-linux-amd64',
               size: 52_428_800,
-              browser_download_url: 'https://gitea.example.com/org/project/releases/download/v2.0.0/binary-linux-amd64',
+              browser_download_url:
+                'https://gitea.example.com/org/project/releases/download/v2.0.0/binary-linux-amd64',
               created_at: '2026-02-01T00:00:00Z',
             },
           ],

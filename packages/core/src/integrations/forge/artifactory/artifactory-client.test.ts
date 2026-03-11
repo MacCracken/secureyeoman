@@ -85,9 +85,7 @@ describe('ArtifactoryClient', () => {
   it('searchByName queries artifact search endpoint', async () => {
     const client = makeClient();
     mockJson({
-      results: [
-        { path: 'org/example/lib-1.0.jar', size: 2048, created: '2026-01-01T00:00:00Z' },
-      ],
+      results: [{ path: 'org/example/lib-1.0.jar', size: 2048, created: '2026-01-01T00:00:00Z' }],
     });
 
     const items = await client.searchByName('lib', ['libs-release']);
@@ -140,9 +138,7 @@ describe('ArtifactoryClient', () => {
         number: '42',
         started: '2026-01-01T00:00:00Z',
         status: 'released',
-        modules: [
-          { id: 'mod1', artifacts: [{ name: 'app.jar', sha256: 'abc123' }] },
-        ],
+        modules: [{ id: 'mod1', artifacts: [{ name: 'app.jar', sha256: 'abc123' }] }],
       },
     });
 

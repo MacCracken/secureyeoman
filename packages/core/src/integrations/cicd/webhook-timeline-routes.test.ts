@@ -33,8 +33,24 @@ describe('Webhook Timeline Routes', () => {
     });
 
     it('returns events newest-first', async () => {
-      store.add({ provider: 'github', event: 'push', ref: 'main', conclusion: 'success', runId: '1', repoUrl: 'https://github.com/a/b', metadata: {} });
-      store.add({ provider: 'jenkins', event: 'build.completed', ref: 'dev', conclusion: 'failure', runId: '2', repoUrl: 'https://jenkins.example.com', metadata: {} });
+      store.add({
+        provider: 'github',
+        event: 'push',
+        ref: 'main',
+        conclusion: 'success',
+        runId: '1',
+        repoUrl: 'https://github.com/a/b',
+        metadata: {},
+      });
+      store.add({
+        provider: 'jenkins',
+        event: 'build.completed',
+        ref: 'dev',
+        conclusion: 'failure',
+        runId: '2',
+        repoUrl: 'https://jenkins.example.com',
+        metadata: {},
+      });
       const app = await buildApp(store);
       const res = await app.inject({ method: 'GET', url: '/api/v1/webhooks/timeline' });
       expect(res.statusCode).toBe(200);
@@ -45,18 +61,53 @@ describe('Webhook Timeline Routes', () => {
     });
 
     it('filters by provider', async () => {
-      store.add({ provider: 'github', event: 'push', ref: 'main', conclusion: 'success', runId: '1', repoUrl: 'r', metadata: {} });
-      store.add({ provider: 'jenkins', event: 'build', ref: 'dev', conclusion: 'failure', runId: '2', repoUrl: 'r', metadata: {} });
+      store.add({
+        provider: 'github',
+        event: 'push',
+        ref: 'main',
+        conclusion: 'success',
+        runId: '1',
+        repoUrl: 'r',
+        metadata: {},
+      });
+      store.add({
+        provider: 'jenkins',
+        event: 'build',
+        ref: 'dev',
+        conclusion: 'failure',
+        runId: '2',
+        repoUrl: 'r',
+        metadata: {},
+      });
       const app = await buildApp(store);
-      const res = await app.inject({ method: 'GET', url: '/api/v1/webhooks/timeline?provider=github' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/webhooks/timeline?provider=github',
+      });
       const body = res.json();
       expect(body.total).toBe(1);
       expect(body.events[0].provider).toBe('github');
     });
 
     it('filters by repo substring', async () => {
-      store.add({ provider: 'github', event: 'push', ref: 'main', conclusion: 'success', runId: '1', repoUrl: 'https://github.com/acme/app', metadata: {} });
-      store.add({ provider: 'github', event: 'push', ref: 'main', conclusion: 'success', runId: '2', repoUrl: 'https://github.com/other/lib', metadata: {} });
+      store.add({
+        provider: 'github',
+        event: 'push',
+        ref: 'main',
+        conclusion: 'success',
+        runId: '1',
+        repoUrl: 'https://github.com/acme/app',
+        metadata: {},
+      });
+      store.add({
+        provider: 'github',
+        event: 'push',
+        ref: 'main',
+        conclusion: 'success',
+        runId: '2',
+        repoUrl: 'https://github.com/other/lib',
+        metadata: {},
+      });
       const app = await buildApp(store);
       const res = await app.inject({ method: 'GET', url: '/api/v1/webhooks/timeline?repo=acme' });
       const body = res.json();
@@ -64,10 +115,29 @@ describe('Webhook Timeline Routes', () => {
     });
 
     it('filters by event substring', async () => {
-      store.add({ provider: 'github', event: 'workflow_run.completed', ref: 'main', conclusion: 'success', runId: '1', repoUrl: 'r', metadata: {} });
-      store.add({ provider: 'github', event: 'push', ref: 'main', conclusion: 'success', runId: '2', repoUrl: 'r', metadata: {} });
+      store.add({
+        provider: 'github',
+        event: 'workflow_run.completed',
+        ref: 'main',
+        conclusion: 'success',
+        runId: '1',
+        repoUrl: 'r',
+        metadata: {},
+      });
+      store.add({
+        provider: 'github',
+        event: 'push',
+        ref: 'main',
+        conclusion: 'success',
+        runId: '2',
+        repoUrl: 'r',
+        metadata: {},
+      });
       const app = await buildApp(store);
-      const res = await app.inject({ method: 'GET', url: '/api/v1/webhooks/timeline?event=workflow' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/webhooks/timeline?event=workflow',
+      });
       const body = res.json();
       expect(body.total).toBe(1);
       expect(body.events[0].event).toContain('workflow');
@@ -75,10 +145,21 @@ describe('Webhook Timeline Routes', () => {
 
     it('respects limit and offset', async () => {
       for (let i = 0; i < 10; i++) {
-        store.add({ provider: 'github', event: 'push', ref: 'main', conclusion: 'success', runId: `r-${i}`, repoUrl: 'r', metadata: {} });
+        store.add({
+          provider: 'github',
+          event: 'push',
+          ref: 'main',
+          conclusion: 'success',
+          runId: `r-${i}`,
+          repoUrl: 'r',
+          metadata: {},
+        });
       }
       const app = await buildApp(store);
-      const res = await app.inject({ method: 'GET', url: '/api/v1/webhooks/timeline?limit=3&offset=0' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/webhooks/timeline?limit=3&offset=0',
+      });
       const body = res.json();
       expect(body.total).toBe(10);
       expect(body.events).toHaveLength(3);
@@ -87,7 +168,15 @@ describe('Webhook Timeline Routes', () => {
 
   describe('GET /api/v1/webhooks/timeline/:id', () => {
     it('returns the event by id', async () => {
-      const added = store.add({ provider: 'github', event: 'push', ref: 'main', conclusion: 'success', runId: '42', repoUrl: 'r', metadata: { foo: 'bar' } });
+      const added = store.add({
+        provider: 'github',
+        event: 'push',
+        ref: 'main',
+        conclusion: 'success',
+        runId: '42',
+        repoUrl: 'r',
+        metadata: { foo: 'bar' },
+      });
       const app = await buildApp(store);
       const res = await app.inject({ method: 'GET', url: `/api/v1/webhooks/timeline/${added.id}` });
       expect(res.statusCode).toBe(200);
@@ -99,7 +188,10 @@ describe('Webhook Timeline Routes', () => {
 
     it('returns 404 for missing event', async () => {
       const app = await buildApp(store);
-      const res = await app.inject({ method: 'GET', url: '/api/v1/webhooks/timeline/nonexistent-id' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/webhooks/timeline/nonexistent-id',
+      });
       expect(res.statusCode).toBe(404);
       expect(res.json().message).toContain('not found');
     });
@@ -107,8 +199,24 @@ describe('Webhook Timeline Routes', () => {
 
   describe('DELETE /api/v1/webhooks/timeline', () => {
     it('clears all events and returns 204', async () => {
-      store.add({ provider: 'github', event: 'push', ref: 'main', conclusion: 'success', runId: '1', repoUrl: 'r', metadata: {} });
-      store.add({ provider: 'github', event: 'push', ref: 'main', conclusion: 'success', runId: '2', repoUrl: 'r', metadata: {} });
+      store.add({
+        provider: 'github',
+        event: 'push',
+        ref: 'main',
+        conclusion: 'success',
+        runId: '1',
+        repoUrl: 'r',
+        metadata: {},
+      });
+      store.add({
+        provider: 'github',
+        event: 'push',
+        ref: 'main',
+        conclusion: 'success',
+        runId: '2',
+        repoUrl: 'r',
+        metadata: {},
+      });
       const app = await buildApp(store);
       const res = await app.inject({ method: 'DELETE', url: '/api/v1/webhooks/timeline' });
       expect(res.statusCode).toBe(204);

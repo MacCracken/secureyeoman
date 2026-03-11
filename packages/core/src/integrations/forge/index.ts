@@ -24,4 +24,9 @@ export { registerForgeRoutes } from './forge-routes.js';
 export type { ForgeRoutesOptions } from './forge-routes.js';
 export { registerArtifactRoutes } from './artifact-routes.js';
 export type { ArtifactRoutesOptions } from './artifact-routes.js';
-export { GhcrAdapter, GitLabRegistryAdapter, DeltaRegistryAdapter, createRegistryAdapter } from './registries/index.js';
+export {
+  GhcrAdapter,
+  GitLabRegistryAdapter,
+  DeltaRegistryAdapter,
+  createRegistryAdapter,
+} from './registries/index.js';

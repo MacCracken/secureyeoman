@@ -30,7 +30,9 @@ export class GiteaForgeAdapter implements CodeForgeAdapter {
   async listRepos(): Promise<ForgeRepo[]> {
     const data = await this.get<GiteaRepo[]>('/repos/search?limit=50&sort=updated');
     // Gitea wraps search results in { ok, data } or returns array depending on version
-    const repos = Array.isArray(data) ? data : (data as unknown as { data: GiteaRepo[] }).data ?? [];
+    const repos = Array.isArray(data)
+      ? data
+      : ((data as unknown as { data: GiteaRepo[] }).data ?? []);
     return repos.map(toForgeRepo);
   }
 
@@ -39,7 +41,11 @@ export class GiteaForgeAdapter implements CodeForgeAdapter {
     return toForgeRepo(data);
   }
 
-  async listPulls(owner: string, name: string, state?: 'open' | 'closed' | 'all'): Promise<ForgePullRequest[]> {
+  async listPulls(
+    owner: string,
+    name: string,
+    state?: 'open' | 'closed' | 'all'
+  ): Promise<ForgePullRequest[]> {
     // Gitea doesn't have a separate "merged" state param — merged PRs are returned
     // under state=closed with the `merged` boolean set to true.
     let qs = '?limit=50';
@@ -85,7 +91,9 @@ export class GiteaForgeAdapter implements CodeForgeAdapter {
   }
 
   async listBranches(owner: string, name: string): Promise<ForgeBranch[]> {
-    const data = await this.get<GiteaBranch[]>(`/repos/${enc(owner)}/${enc(name)}/branches?limit=50`);
+    const data = await this.get<GiteaBranch[]>(
+      `/repos/${enc(owner)}/${enc(name)}/branches?limit=50`
+    );
     return data.map((b) => ({
       name: b.name,
       sha: b.commit.id,
@@ -94,7 +102,9 @@ export class GiteaForgeAdapter implements CodeForgeAdapter {
   }
 
   async listReleases(owner: string, name: string): Promise<ForgeRelease[]> {
-    const data = await this.get<GiteaRelease[]>(`/repos/${enc(owner)}/${enc(name)}/releases?limit=30`);
+    const data = await this.get<GiteaRelease[]>(
+      `/repos/${enc(owner)}/${enc(name)}/releases?limit=30`
+    );
     return data.map(toForgeRelease);
   }
 

@@ -252,7 +252,14 @@ export class MultimodalManager {
     const hasPolly = !!(process.env.POLLY_REGION && process.env.AWS_ACCESS_KEY_ID);
     const hasTranscribe = !!(process.env.TRANSCRIBE_REGION && process.env.AWS_ACCESS_KEY_ID);
 
-    const [voiceboxReachable, openedAIReachable, kokoroAvailable, orpheusReachable, piperReachable, fasterWhisperReachable] = await Promise.all([
+    const [
+      voiceboxReachable,
+      openedAIReachable,
+      kokoroAvailable,
+      orpheusReachable,
+      piperReachable,
+      fasterWhisperReachable,
+    ] = await Promise.all([
       this.isVoiceboxReachable(),
       this.isOpenedAIReachable(),
       this.isKokoroAvailable(),
@@ -1550,10 +1557,7 @@ export class MultimodalManager {
    * Synthesize speech using a stored voice profile.
    * Checks the voice cache first, falls back to TTS provider, then caches the result.
    */
-  async speakWithProfile(
-    profileId: string,
-    text: string
-  ): Promise<TTSResult> {
+  async speakWithProfile(profileId: string, text: string): Promise<TTSResult> {
     const store = this.deps.voiceProfileStore;
     if (!store) {
       throw new Error('Voice profile store is not configured');
@@ -1587,7 +1591,12 @@ export class MultimodalManager {
     // Store in cache
     if (cache && result.audioBase64) {
       try {
-        cache.set(profile.provider, profile.voiceId, text, Buffer.from(result.audioBase64, 'base64'));
+        cache.set(
+          profile.provider,
+          profile.voiceId,
+          text,
+          Buffer.from(result.audioBase64, 'base64')
+        );
       } catch {
         // cache write failure is non-fatal
       }

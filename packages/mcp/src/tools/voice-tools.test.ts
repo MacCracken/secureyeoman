@@ -147,15 +147,12 @@ describe('voice_profile_create', () => {
       settings: { speed: 1.0, stability: 0.8 },
     });
     expect(result.isError).toBeFalsy();
-    expect((client.post as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
-      '/api/v1/voice/profiles',
-      {
-        name: 'Deep Narrator',
-        provider: 'elevenlabs',
-        voiceId: 'abc-123',
-        settings: { speed: 1.0, stability: 0.8 },
-      }
-    );
+    expect(client.post as ReturnType<typeof vi.fn>).toHaveBeenCalledWith('/api/v1/voice/profiles', {
+      name: 'Deep Narrator',
+      provider: 'elevenlabs',
+      voiceId: 'abc-123',
+      settings: { speed: 1.0, stability: 0.8 },
+    });
   });
 
   it('defaults settings to empty object when not provided', async () => {
@@ -166,7 +163,7 @@ describe('voice_profile_create', () => {
       provider: 'azure',
       voiceId: 'en-US-JennyNeural',
     });
-    expect((client.post as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+    expect(client.post as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(
       '/api/v1/voice/profiles',
       expect.objectContaining({ settings: {} })
     );
@@ -196,16 +193,14 @@ describe('voice_profile_list', () => {
     const client = mockClient();
     const { handlers } = captureHandlers(undefined, client);
     await handlers.voice_profile_list({});
-    expect((client.get as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
-      '/api/v1/voice/profiles'
-    );
+    expect(client.get as ReturnType<typeof vi.fn>).toHaveBeenCalledWith('/api/v1/voice/profiles');
   });
 
   it('appends provider query param when filtering', async () => {
     const client = mockClient();
     const { handlers } = captureHandlers(undefined, client);
     await handlers.voice_profile_list({ provider: 'elevenlabs' });
-    expect((client.get as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+    expect(client.get as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(
       '/api/v1/voice/profiles?provider=elevenlabs'
     );
   });
@@ -230,7 +225,7 @@ describe('voice_profile_switch', () => {
     const client = mockClient();
     const { handlers } = captureHandlers(undefined, client);
     await handlers.voice_profile_switch({ profileId: 'vp-42' });
-    expect((client.post as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+    expect(client.post as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(
       '/api/v1/voice/profiles/switch',
       { profileId: 'vp-42' }
     );

@@ -53,7 +53,11 @@ describe('VoiceProviderPicker', () => {
   });
 
   it('renders current TTS provider selection', async () => {
-    mockFetchConfig.mockResolvedValue({ enabled: true, ttsProvider: 'openai', sttProvider: 'deepgram' });
+    mockFetchConfig.mockResolvedValue({
+      enabled: true,
+      ttsProvider: 'openai',
+      sttProvider: 'deepgram',
+    });
     renderComponent();
     await screen.findByText('Voice Providers');
     const ttsSelect = screen.getByDisplayValue('OpenAI');

@@ -2243,14 +2243,22 @@ export async function fetchForgeRepos(key: string): Promise<ForgeRepo[]> {
   return res.repos;
 }
 
-export async function fetchForgePulls(key: string, owner: string, name: string): Promise<ForgePullRequest[]> {
+export async function fetchForgePulls(
+  key: string,
+  owner: string,
+  name: string
+): Promise<ForgePullRequest[]> {
   const res = await request<{ pulls: ForgePullRequest[] }>(
     `/forge/${encodeURIComponent(key)}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls`
   );
   return res.pulls;
 }
 
-export async function fetchForgePipelines(key: string, owner: string, name: string): Promise<ForgePipeline[]> {
+export async function fetchForgePipelines(
+  key: string,
+  owner: string,
+  name: string
+): Promise<ForgePipeline[]> {
   const res = await request<{ pipelines: ForgePipeline[] }>(
     `/forge/${encodeURIComponent(key)}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pipelines`
   );
@@ -2293,7 +2301,11 @@ export async function fetchContainerImages(key: string, owner: string): Promise<
   return res.images;
 }
 
-export async function fetchImageTags(key: string, owner: string, name: string): Promise<ContainerTag[]> {
+export async function fetchImageTags(
+  key: string,
+  owner: string,
+  name: string
+): Promise<ContainerTag[]> {
   const res = await request<{ tags: ContainerTag[] }>(
     `/forge/${encodeURIComponent(key)}/artifacts/images/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/tags`
   );
@@ -2304,7 +2316,7 @@ export async function fetchBuildArtifacts(
   key: string,
   owner: string,
   repo: string,
-  pipelineId: string,
+  pipelineId: string
 ): Promise<BuildArtifact[]> {
   const res = await request<{ artifacts: BuildArtifact[] }>(
     `/forge/${encodeURIComponent(key)}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pipelines/${encodeURIComponent(pipelineId)}/artifacts`
@@ -2348,7 +2360,9 @@ export async function fetchWebhookTimeline(
   return request(`/webhooks/timeline${qs ? `?${qs}` : ''}`);
 }
 
-export async function fetchWebhookTimelineEvent(id: string): Promise<{ event: WebhookTimelineEvent }> {
+export async function fetchWebhookTimelineEvent(
+  id: string
+): Promise<{ event: WebhookTimelineEvent }> {
   return request(`/webhooks/timeline/${encodeURIComponent(id)}`);
 }
 
@@ -6810,10 +6824,7 @@ export async function previewVoiceProfile(
   });
 }
 
-export async function cloneVoice(
-  name: string,
-  audioBase64: string
-): Promise<VoiceProfile> {
+export async function cloneVoice(name: string, audioBase64: string): Promise<VoiceProfile> {
   return request('/voice/profiles/clone', {
     method: 'POST',
     body: JSON.stringify({ name, audioBase64 }),
@@ -6862,7 +6873,7 @@ export interface ArtifactoryBuildInfo {
   number: string;
   started: string;
   status?: string;
-  modules?: Array<{ id: string; artifacts: Array<{ name: string; sha256: string }> }>;
+  modules?: { id: string; artifacts: { name: string; sha256: string }[] }[];
 }
 
 export async function fetchArtifactoryConnections(): Promise<ArtifactoryConnection[]> {
@@ -6944,9 +6955,7 @@ export async function fetchArtifactoryDockerTags(
   return res.tags;
 }
 
-export async function fetchArtifactoryBuilds(
-  key: string
-): Promise<ArtifactoryBuildSummary[]> {
+export async function fetchArtifactoryBuilds(key: string): Promise<ArtifactoryBuildSummary[]> {
   const res = await request<{ builds: ArtifactoryBuildSummary[] }>(
     `/artifactory/${encodeURIComponent(key)}/builds`
   );
@@ -6978,8 +6987,6 @@ export async function promoteArtifactoryBuild(
 }
 
 export async function fetchArtifactoryHealth(key: string): Promise<boolean> {
-  const res = await request<{ healthy: boolean }>(
-    `/artifactory/${encodeURIComponent(key)}/health`
-  );
+  const res = await request<{ healthy: boolean }>(`/artifactory/${encodeURIComponent(key)}/health`);
   return res.healthy;
 }

@@ -98,7 +98,10 @@ describe('Forge Routes', () => {
 
   describe('Repo endpoints', () => {
     it('GET /forge/:key/repos returns repos', async () => {
-      const res = await app.inject({ method: 'GET', url: '/api/v1/forge/delta:localhost:8070/repos' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/forge/delta:localhost:8070/repos',
+      });
       expect(res.statusCode).toBe(200);
       expect(JSON.parse(res.payload).repos).toHaveLength(1);
     });

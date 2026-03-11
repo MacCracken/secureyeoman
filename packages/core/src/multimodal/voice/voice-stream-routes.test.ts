@@ -268,9 +268,7 @@ describe('Voice Stream Protocol', () => {
       expect(sanitize('Failed with key sk-abcdefghijklmnopqrstuvwxyz')).toBe(
         'Failed with key [REDACTED]'
       );
-      expect(sanitize('Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature')).toBe(
-        'Bearer [REDACTED]'
-      );
+      expect(sanitize('Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature')).toBe('Bearer [REDACTED]');
       expect(sanitize('No secret here')).toBe('No secret here');
     });
   });

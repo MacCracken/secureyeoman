@@ -15,11 +15,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
-import {
-  wrapToolHandler,
-  jsonResponse,
-  registerDisabledStub,
-} from './tool-utils.js';
+import { wrapToolHandler, jsonResponse, registerDisabledStub } from './tool-utils.js';
 
 const DISABLED_MSG = 'Voice tools are disabled. Set MCP_EXPOSE_VOICE_TOOLS=true to enable.';
 
@@ -47,11 +43,7 @@ export function registerVoiceTools(
         provider: z
           .enum(['elevenlabs', 'azure', 'google', 'openai', 'coqui'])
           .describe('TTS provider'),
-        voiceId: z
-          .string()
-          .min(1)
-          .max(500)
-          .describe('Provider-specific voice identifier'),
+        voiceId: z.string().min(1).max(500).describe('Provider-specific voice identifier'),
         settings: z
           .object({
             speed: z.number().min(0.25).max(4).optional().describe('Speech speed multiplier'),

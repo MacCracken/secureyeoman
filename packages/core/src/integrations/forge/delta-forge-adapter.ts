@@ -59,7 +59,11 @@ export class DeltaForgeAdapter implements CodeForgeAdapter {
     };
   }
 
-  async listPulls(owner: string, name: string, state?: 'open' | 'closed' | 'all'): Promise<ForgePullRequest[]> {
+  async listPulls(
+    owner: string,
+    name: string,
+    state?: 'open' | 'closed' | 'all'
+  ): Promise<ForgePullRequest[]> {
     const pulls = await this.client.listPulls(owner, name, state);
     return pulls.map((p) => ({
       id: p.id,

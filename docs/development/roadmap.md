@@ -10,7 +10,6 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| — | CI/CD & Code Forge Dashboard | P2 | Planned — Delta/GitHub/GitLab forge panels, adapter interface, artifact browser |
 | — | Engineering Backlog | Ongoing | Security hardening complete; test coverage improvements ongoing |
 | Future | LLM Providers, Infra, Dev Ecosystem, Unified Dev Env, Full Triangle | Future / Demand-Gated | — |
 
@@ -92,24 +91,6 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
 | MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
 | Core E2E | Expand coverage | Currently 7 files / 53 tests; add training, delegation, analytics flows |
-
----
-
-## CI/CD & Code Forge Dashboard
-
-Unified dashboard for repositories, pull requests, pipelines, and artifact registries across multiple code forges. Backend webhook ingestion supports GitHub, GitLab, Jenkins, Northflank, Delta, Travis CI, Bitbucket, and Gitea (`cicd-webhook-routes.ts`). Five forge adapters (Delta, GitHub, GitLab, Bitbucket, Gitea). Artifact registry browser (GHCR, GitLab CR, Delta). JFrog Artifactory integration. Webhook event timeline with persistence and dashboard UI.
-
-| Item | Effort | Status | Description |
-|------|--------|--------|-------------|
-| Dashboard forge panel — Delta | M | Done | Included in forge adapter implementation. Delta repos/PRs/pipelines render via unified `ForgePanel`. |
-| Dashboard forge panel — GitHub | M | Done | GitHub adapter (`GitHubForgeAdapter`) with REST API. Repos, PRs (with merged state), Actions runs, branches, releases with assets. GHE support. |
-| Dashboard forge panel — GitLab | M | Done | GitLab adapter (`GitLabForgeAdapter`) with REST v4. Projects, MRs, pipelines, branches, releases. Self-hosted URL support. |
-| Forge adapter interface | S | Done | `CodeForgeAdapter` interface + 5 adapters + factory + REST routes (`/api/v1/forge/*`) + dashboard `ForgePanel` component. |
-| Artifact registry browser | M | Done | `ArtifactRegistryAdapter` interface + GHCR, GitLab CR, Delta adapters + factory. 3 REST endpoints under `/api/v1/forge/:key/artifacts/`. Dashboard `ArtifactBrowser` component (container images + build artifacts tabs). 23 tests. |
-| JFrog Artifactory integration | M | Done | `ArtifactoryClient` REST API v2 client (repos, folders, AQL search, Docker images/tags, builds, build promotion). 17 REST routes under `/api/v1/artifactory/`. Dashboard `ArtifactoryPanel` component. 21 tests. |
-| Pipeline trigger & monitor | S | Done | `triggerPipeline()` and `cancelPipeline()` on all 5 forge adapters. Dashboard trigger/cancel via existing forge routes. Providers: Delta, GitHub Actions, GitLab CI, Bitbucket Pipelines, Gitea Actions. |
-| Webhook event timeline | S | Done | `WebhookEventStore` (in-memory, FIFO 1000, filterable). 3 timeline REST endpoints. Travis CI webhook support (6th provider). Dashboard `WebhookTimeline` component with provider/repo/event filters, 30s auto-refresh. 33 tests. |
-| Bitbucket / Gitea support | S | Done | `BitbucketForgeAdapter` (Cloud v2.0 + Server REST 1.0 auto-detection, 13 tests) + `GiteaForgeAdapter` (API v1, merged PR detection, 11 tests). Webhook normalizers for both providers. Factory updated. |
 
 ---
 

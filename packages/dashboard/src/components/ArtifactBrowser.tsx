@@ -7,16 +7,8 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchContainerImages,
-  fetchImageTags,
-  fetchBuildArtifacts,
-} from '../api/client';
-import type {
-  ContainerImage,
-  ContainerTag,
-  BuildArtifact,
-} from '../api/client';
+import { fetchContainerImages, fetchImageTags, fetchBuildArtifacts } from '../api/client';
+import type { ContainerImage, ContainerTag, BuildArtifact } from '../api/client';
 
 interface ArtifactBrowserProps {
   forgeKey: string;
@@ -55,23 +47,27 @@ export function ArtifactBrowser({ forgeKey, owner, repo, pipelineId }: ArtifactB
           className={`text-xs px-2 py-1 rounded ${
             activeTab === 'images' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
           }`}
-          onClick={() => setActiveTab('images')}
+          onClick={() => {
+            setActiveTab('images');
+          }}
         >
           Container Images
         </button>
         <button
           className={`text-xs px-2 py-1 rounded ${
-            activeTab === 'artifacts' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+            activeTab === 'artifacts'
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground'
           }`}
-          onClick={() => setActiveTab('artifacts')}
+          onClick={() => {
+            setActiveTab('artifacts');
+          }}
         >
           Build Artifacts
         </button>
       </div>
 
-      {activeTab === 'images' && (
-        <ContainerImagesList forgeKey={forgeKey} owner={owner} />
-      )}
+      {activeTab === 'images' && <ContainerImagesList forgeKey={forgeKey} owner={owner} />}
       {activeTab === 'artifacts' && repo && pipelineId && (
         <BuildArtifactsList forgeKey={forgeKey} owner={owner} repo={repo} pipelineId={pipelineId} />
       )}
@@ -96,7 +92,7 @@ function ContainerImagesList({ forgeKey, owner }: { forgeKey: string; owner: str
     return <p className="text-xs text-muted-foreground">Loading container images...</p>;
   }
   if (imagesQuery.error) {
-    return <p className="text-xs text-red-500">{(imagesQuery.error as Error).message}</p>;
+    return <p className="text-xs text-red-500">{imagesQuery.error.message}</p>;
   }
   if (!imagesQuery.data || imagesQuery.data.length === 0) {
     return <p className="text-xs text-muted-foreground">No container images found</p>;
@@ -110,9 +106,9 @@ function ContainerImagesList({ forgeKey, owner }: { forgeKey: string; owner: str
             className={`card p-2 cursor-pointer text-xs ${
               expandedImage === img.fullName ? 'ring-1 ring-primary' : ''
             }`}
-            onClick={() =>
-              setExpandedImage(expandedImage === img.fullName ? null : img.fullName)
-            }
+            onClick={() => {
+              setExpandedImage(expandedImage === img.fullName ? null : img.fullName);
+            }}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -160,7 +156,7 @@ function ImageTagsExpanded({
     return <p className="text-xs text-muted-foreground pl-4 py-1">Loading tags...</p>;
   }
   if (tagsQuery.error) {
-    return <p className="text-xs text-red-500 pl-4 py-1">{(tagsQuery.error as Error).message}</p>;
+    return <p className="text-xs text-red-500 pl-4 py-1">{tagsQuery.error.message}</p>;
   }
   if (!tagsQuery.data || tagsQuery.data.length === 0) {
     return <p className="text-xs text-muted-foreground pl-4 py-1">No tags found</p>;
@@ -205,7 +201,7 @@ function BuildArtifactsList({
     return <p className="text-xs text-muted-foreground">Loading build artifacts...</p>;
   }
   if (artifactsQuery.error) {
-    return <p className="text-xs text-red-500">{(artifactsQuery.error as Error).message}</p>;
+    return <p className="text-xs text-red-500">{artifactsQuery.error.message}</p>;
   }
   if (!artifactsQuery.data || artifactsQuery.data.length === 0) {
     return <p className="text-xs text-muted-foreground">No build artifacts found</p>;
@@ -229,7 +225,9 @@ function BuildArtifactsList({
                 <a
                   href={art.downloadUrl}
                   className="text-primary hover:underline"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

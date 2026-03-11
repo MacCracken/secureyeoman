@@ -19,7 +19,14 @@ import { errorToString } from '../utils/errors.js';
 // Types
 // ---------------------------------------------------------------------------
 
-export type EcosystemServiceId = 'agnostic' | 'agnos' | 'synapse' | 'delta' | 'bullshift' | 'photisnadi' | 'aequi';
+export type EcosystemServiceId =
+  | 'agnostic'
+  | 'agnos'
+  | 'synapse'
+  | 'delta'
+  | 'bullshift'
+  | 'photisnadi'
+  | 'aequi';
 
 export type EcosystemServiceStatus =
   | 'disconnected' // never connected
@@ -121,7 +128,8 @@ const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
   {
     id: 'aequi',
     displayName: 'Aequi Accounting',
-    description: 'Self-employed accounting platform with double-entry bookkeeping and tax automation',
+    description:
+      'Self-employed accounting platform with double-entry bookkeeping and tax automation',
     urlEnv: 'AEQUI_URL',
     defaultUrl: 'http://127.0.0.1:8060',
     healthPath: '/health',

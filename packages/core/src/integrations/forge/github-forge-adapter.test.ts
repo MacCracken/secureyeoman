@@ -52,7 +52,9 @@ describe('GitHubForgeAdapter', () => {
 
     const call = vi.mocked(fetch).mock.calls[0];
     expect(call[0]).toContain('/user/repos');
-    expect((call[1]?.headers as Record<string, string>)['Authorization']).toBe('Bearer ghp_test123');
+    expect((call[1]?.headers as Record<string, string>)['Authorization']).toBe(
+      'Bearer ghp_test123'
+    );
   });
 
   it('listPulls normalizes GitHub response with merged state', async () => {
@@ -137,7 +139,8 @@ describe('GitHubForgeAdapter', () => {
               id: 200,
               name: 'app.tar.gz',
               size: 1024,
-              browser_download_url: 'https://github.com/user/repo/releases/download/v1.0.0/app.tar.gz',
+              browser_download_url:
+                'https://github.com/user/repo/releases/download/v1.0.0/app.tar.gz',
               created_at: '2026-01-01T00:00:00Z',
             },
           ],

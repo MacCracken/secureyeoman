@@ -67,10 +67,7 @@ export class VoiceAgentSession {
   private processing = false;
   private conversationHistory: { role: 'user' | 'assistant'; content: string }[] = [];
 
-  constructor(
-    config: VoiceAgentConfig,
-    multimodalManager: MultimodalManager
-  ) {
+  constructor(config: VoiceAgentConfig, multimodalManager: MultimodalManager) {
     this.config = {
       language: 'en',
       silenceThresholdMs: DEFAULT_SILENCE_MS,
@@ -282,7 +279,7 @@ export class VoiceAgentSession {
 
     return typeof response.content === 'string'
       ? response.content
-      : response.message ?? 'I could not generate a response.';
+      : (response.message ?? 'I could not generate a response.');
   }
 
   /**

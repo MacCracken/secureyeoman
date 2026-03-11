@@ -35,7 +35,11 @@ export class DeltaRegistryAdapter implements ArtifactRegistryAdapter {
     return [];
   }
 
-  async listBuildArtifacts(owner: string, repo: string, pipelineId: string): Promise<BuildArtifact[]> {
+  async listBuildArtifacts(
+    owner: string,
+    repo: string,
+    pipelineId: string
+  ): Promise<BuildArtifact[]> {
     const data = await this.get<DeltaArtifact[]>(
       `/api/v1/repos/${enc(owner)}/${enc(repo)}/pipelines/${enc(pipelineId)}/artifacts`
     );

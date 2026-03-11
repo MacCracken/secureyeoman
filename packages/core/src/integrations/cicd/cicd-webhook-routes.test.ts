@@ -371,7 +371,12 @@ describe('CI/CD Webhook Routes', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/webhooks/ci/travis',
-        payload: { id: 42, branch: 'main', status_message: 'Passed', repository: { url: 'https://travis-ci.org/acme/app' } },
+        payload: {
+          id: 42,
+          branch: 'main',
+          status_message: 'Passed',
+          repository: { url: 'https://travis-ci.org/acme/app' },
+        },
         headers: { 'travis-ci-token': 'travis-secret' },
       });
       expect(res.statusCode).toBe(200);

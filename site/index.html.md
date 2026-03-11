@@ -2,7 +2,7 @@
 
 Most AI assistants serve their platform. SecureYeoman serves you — self-hosted, enterprise-hardened, and answerable only to you. Keep it local. Go hybrid. Connect any provider. Your data only moves when you say so.
 
-**v2026.3.9** | AGPL-3.0 License | 400+ MCP Tools | 56 CLI Commands
+**v2026.3.10** | AGPL-3.0 License | 462 MCP Tools | 56 CLI Commands
 
 ---
 
@@ -27,10 +27,10 @@ RBAC with 4 permission levels, SSO/OIDC (Okta, Azure AD, Auth0), SAML 2.0, OPA p
 
 ### 2. Sandboxed Execution
 
-Landlock + seccomp kernel isolation, WASM/gVisor for high-risk tasks, Skill Trust Tiers, ToolOutputScanner credential redaction (20 patterns). macOS sandbox-exec support.
+Landlock + seccomp kernel isolation, V8 isolate + WASM/gVisor for high-risk tasks, Skill Trust Tiers, ToolOutputScanner credential redaction (20 patterns). macOS sandbox-exec support.
 
 - Landlock + seccomp + sandbox-exec
-- WASM / gVisor high-risk isolation
+- V8 isolate + WASM / gVisor high-risk isolation
 - Skill Trust Tiers (3 levels)
 - ToolOutputScanner — 20-pattern credential redaction
 
@@ -43,12 +43,12 @@ Injection detection scoring, PII scanning (SSN, credit card, email, phone), toxi
 - Toxicity & topic guardrails
 - ResponseGuard output scanner
 
-### 4. 400+ MCP Tools & Integrations
+### 4. 462 MCP Tools & Integrations
 
-32 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, Gmail, GitHub, Jira, Linear, Notion, and more. 400+ built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection, rate limiting, and audit logging.
+38 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, Gmail, GitHub, Jira, Linear, Notion, and more. 462 built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection, rate limiting, and audit logging.
 
-- 32 platform integrations
-- 400+ tools, 9 resources, 4 prompts
+- 38 platform integrations
+- 462 tools, 9 resources, 4 prompts
 - SSRF protection + rate limiting
 - Full audit trail on every tool call
 
@@ -81,12 +81,12 @@ Vector semantic search (FAISS/Qdrant/ChromaDB) fused with tsvector full-text sea
 
 ### 8. Flexible Deployment
 
-Single ~123 MB binary (Linux x64/arm64, macOS arm64), Docker, or Kubernetes with Helm, HPA, PDB, and NetworkPolicies. Three network modes — Local, LAN, or Public TLS. Multi-user workspaces, voice I/O (10 TTS + 7 STT providers), and portable skill marketplace sync. Per-user notification preferences with quiet hours and severity filters across 32 platforms.
+Single ~123 MB binary (Linux x64/arm64, macOS arm64), Docker, or Kubernetes with Helm, HPA, PDB, and NetworkPolicies. Three network modes — Local, LAN, or Public TLS. Multi-user workspaces, voice I/O (14 TTS + 10 STT providers), and portable skill marketplace sync. Per-user notification preferences with quiet hours and severity filters across 38 platforms.
 
 - Single binary + Docker + K8s Helm
 - Local / LAN / Public TLS modes
 - Multi-user workspaces + SSO
-- Voice I/O — binary TTS streaming + Whisper model selector
+- Voice I/O — 14 TTS + 10 STT providers, voice profiles, streaming
 
 ### 9. Skills & Marketplace
 
@@ -123,7 +123,7 @@ Preference annotation, experiment registry, model versioning, A/B testing, and c
 - **Zero-Trust Access** — Provision Twingate service accounts, rotate service keys, and proxy private MCP servers — no VPN required.
 - **DevSecOps Pipelines** — Review code, run tests, manage PRs, enforce security policies, and automate your entire dev workflow.
 - **Enterprise Automation** — Orchestrate multi-agent DAG workflows across swarms of personalities — approvals, reports, escalations.
-- **Threat Intelligence** — Aggregate data across 32 platforms, enrich findings with NVD CVE lookups, and surface insights your team can act on.
+- **Threat Intelligence** — Aggregate data across 38 platforms, enrich findings with NVD CVE lookups, and surface insights your team can act on.
 - **Communications & Productivity** — Manage email, schedule meetings, draft reports, and coordinate across platforms — fully automated.
 
 ---
@@ -135,10 +135,10 @@ Preference annotation, experiment registry, model versioning, A/B testing, and c
 | Data Residency | 100% local | Cloud default | Docker | Local | TEE cloud |
 | RBAC + SSO | Full | None | None | None | None |
 | Multi-tenancy | RLS-enforced | No | No | No | No |
-| MCP Tools | 400+ | Limited | External | Client | Via path |
+| MCP Tools | 462 | Limited | External | Client | Via path |
 | Cryptographic Audit | HMAC-SHA256 | No | No | No | Local DB only |
 | Workflow Orchestration | DAG + Visual | No | No | No | No |
-| Integrations | 32 platforms | 23+ | CLI/Web | 11+ | ~4 |
+| Integrations | 38 platforms | 23+ | CLI/Web | 11+ | ~4 |
 | AI Training Pipeline | Full | No | No | No | No |
 | ML Lifecycle (A/B, Versioning) | Full | No | No | No | No |
 
@@ -163,7 +163,7 @@ cd secureyeoman && npm install && npm run build
 ## Community
 
 - **License**: AGPL-3.0
-- **ADRs**: 32
+- **ADRs**: 37
 - **GitHub**: [github.com/MacCracken/secureyeoman](https://github.com/MacCracken/secureyeoman)
 - **Discussions**: [GitHub Discussions](https://github.com/MacCracken/secureyeoman/discussions)
 

@@ -25,7 +25,10 @@ export interface AgnosDiscoverResponse {
   codename?: string;
   capabilities: string[];
   endpoints: Record<string, string>;
-  companion_services?: Record<string, { default_url: string; status: string; codename?: string; env_var?: string }>;
+  companion_services?: Record<
+    string,
+    { default_url: string; status: string; codename?: string; env_var?: string }
+  >;
   protocol_version?: string;
   uptime_seconds?: number;
   agents_registered?: number;

@@ -41,7 +41,7 @@ describe('GitLabRegistryAdapter', () => {
           location: 'registry.gitlab.com/group/project/backend',
           created_at: '2026-01-02T00:00:00Z',
         },
-      ]),
+      ])
     );
 
     const images = await adapter.listImages('group/project');
@@ -70,7 +70,7 @@ describe('GitLabRegistryAdapter', () => {
           total_size: null,
           created_at: null,
         },
-      ]),
+      ])
     );
 
     const tags = await adapter.getImageTags('group/project', '1');
@@ -97,7 +97,7 @@ describe('GitLabRegistryAdapter', () => {
           artifacts_file: null,
           artifacts_expire_at: null,
         },
-      ]),
+      ])
     );
 
     const artifacts = await adapter.listBuildArtifacts('group/project', 'project', '55');
@@ -111,9 +111,7 @@ describe('GitLabRegistryAdapter', () => {
   });
 
   it('throws on non-OK response', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response('Not Found', { status: 404 }),
-    );
+    vi.mocked(fetch).mockResolvedValue(new Response('Not Found', { status: 404 }));
 
     await expect(adapter.listImages('group/project')).rejects.toThrow('GitLab API 404');
   });

@@ -39,7 +39,7 @@ export interface ArtifactoryBuildInfo {
   number: string;
   started: string;
   status?: string;
-  modules?: Array<{ id: string; artifacts: Array<{ name: string; sha256: string }> }>;
+  modules?: { id: string; artifacts: { name: string; sha256: string }[] }[];
 }
 
 export interface ArtifactoryDockerImage {
@@ -181,7 +181,7 @@ export class ArtifactoryClient {
   // ── Build Info ──────────────────────────────────────────
 
   /** List all builds. */
-  async listBuilds(): Promise<Array<{ name: string; lastStarted: string }>> {
+  async listBuilds(): Promise<{ name: string; lastStarted: string }[]> {
     const data = await this.get<{ builds?: RawBuildSummary[] }>('/api/build');
     return (data.builds ?? []).map((b) => ({
       name: b.uri?.replace(/^\//, '') ?? '',
@@ -336,10 +336,10 @@ interface RawBuildInfo {
   number?: string;
   started?: string;
   status?: string;
-  modules?: Array<{
+  modules?: {
     id?: string;
-    artifacts?: Array<{ name?: string; sha256?: string }>;
-  }>;
+    artifacts?: { name?: string; sha256?: string }[];
+  }[];
 }
 
 // ── Mappers ─────────────────────────────────────────────────

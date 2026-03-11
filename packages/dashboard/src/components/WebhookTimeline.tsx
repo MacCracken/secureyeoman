@@ -65,11 +65,13 @@ export function WebhookTimeline() {
         <select
           className="text-xs p-1.5 rounded border border-border bg-background"
           value={providerFilter}
-          onChange={(e) => setProviderFilter(e.target.value)}
+          onChange={(e) => {
+            setProviderFilter(e.target.value);
+          }}
         >
           {PROVIDERS.map((p) => (
             <option key={p} value={p}>
-              {p === 'all' ? 'All Providers' : PROVIDER_LABELS[p] ?? p}
+              {p === 'all' ? 'All Providers' : (PROVIDER_LABELS[p] ?? p)}
             </option>
           ))}
         </select>
@@ -77,13 +79,17 @@ export function WebhookTimeline() {
           className="text-xs p-1.5 rounded border border-border bg-background flex-1 min-w-[120px]"
           placeholder="Filter by repo..."
           value={repoFilter}
-          onChange={(e) => setRepoFilter(e.target.value)}
+          onChange={(e) => {
+            setRepoFilter(e.target.value);
+          }}
         />
         <input
           className="text-xs p-1.5 rounded border border-border bg-background flex-1 min-w-[120px]"
           placeholder="Filter by event..."
           value={eventFilter}
-          onChange={(e) => setEventFilter(e.target.value)}
+          onChange={(e) => {
+            setEventFilter(e.target.value);
+          }}
         />
       </div>
 
@@ -91,9 +97,7 @@ export function WebhookTimeline() {
       {timelineQuery.isLoading && (
         <p className="text-xs text-muted-foreground">Loading timeline...</p>
       )}
-      {timelineQuery.error && (
-        <p className="text-xs text-red-500">{(timelineQuery.error as Error).message}</p>
-      )}
+      {timelineQuery.error && <p className="text-xs text-red-500">{timelineQuery.error.message}</p>}
 
       {/* Empty state */}
       {!timelineQuery.isLoading && events.length === 0 && (
@@ -106,7 +110,9 @@ export function WebhookTimeline() {
           <div
             key={evt.id}
             className="card p-2 text-xs cursor-pointer"
-            onClick={() => setExpandedId(expandedId === evt.id ? null : evt.id)}
+            onClick={() => {
+              setExpandedId(expandedId === evt.id ? null : evt.id);
+            }}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -114,16 +120,12 @@ export function WebhookTimeline() {
                   className="w-1.5 h-1.5 rounded-full shrink-0"
                   style={{ background: CONCLUSION_COLORS[evt.conclusion] ?? '#64748b' }}
                 />
-                <span className="font-medium">
-                  {PROVIDER_LABELS[evt.provider] ?? evt.provider}
-                </span>
+                <span className="font-medium">{PROVIDER_LABELS[evt.provider] ?? evt.provider}</span>
                 <span className="text-muted-foreground/60">{evt.event}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground/60">{evt.conclusion}</span>
-                <span className="text-muted-foreground/40">
-                  {formatTimestamp(evt.receivedAt)}
-                </span>
+                <span className="text-muted-foreground/40">{formatTimestamp(evt.receivedAt)}</span>
               </div>
             </div>
             <div className="flex items-center gap-3 mt-0.5 text-muted-foreground">
@@ -135,7 +137,9 @@ export function WebhookTimeline() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:underline truncate max-w-[200px]"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                 >
                   {evt.repoUrl}
                 </a>
@@ -146,7 +150,9 @@ export function WebhookTimeline() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:underline text-primary"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                 >
                   Logs
                 </a>

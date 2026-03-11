@@ -56,7 +56,11 @@ export class GitLabRegistryAdapter implements ArtifactRegistryAdapter {
     }));
   }
 
-  async listBuildArtifacts(owner: string, _repo: string, pipelineId: string): Promise<BuildArtifact[]> {
+  async listBuildArtifacts(
+    owner: string,
+    _repo: string,
+    pipelineId: string
+  ): Promise<BuildArtifact[]> {
     const pid = encodeURIComponent(owner);
     // List jobs for the pipeline, then collect artifacts
     const jobs = await this.get<GLJob[]>(

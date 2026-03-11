@@ -202,7 +202,11 @@ describe('VoiceProfileManager', () => {
     await screen.findByText('Clone Voice');
 
     fireEvent.click(screen.getByText('Clone Voice'));
-    expect(screen.getByText('Upload an audio file or record from your microphone to clone a voice using ElevenLabs.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Upload an audio file or record from your microphone to clone a voice using ElevenLabs.'
+      )
+    ).toBeInTheDocument();
   });
 
   it('opens edit form with pre-filled data', async () => {
@@ -270,8 +274,12 @@ describe('VoiceProfileManager', () => {
     fireEvent.click(screen.getByText('Create Profile'));
 
     fireEvent.change(screen.getByPlaceholderText('Profile name'), { target: { value: 'Test' } });
-    fireEvent.change(screen.getByDisplayValue('Select provider...'), { target: { value: 'openai' } });
-    fireEvent.change(screen.getByPlaceholderText('Provider-specific voice identifier'), { target: { value: 'echo' } });
+    fireEvent.change(screen.getByDisplayValue('Select provider...'), {
+      target: { value: 'openai' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Provider-specific voice identifier'), {
+      target: { value: 'echo' },
+    });
 
     // Set invalid JSON in the settings textarea
     const settingsTextarea = screen.getByPlaceholderText('{"speed": 1.0, "pitch": 0}');
@@ -321,8 +329,12 @@ describe('VoiceProfileManager', () => {
     fireEvent.click(screen.getByText('Create Profile'));
 
     fireEvent.change(screen.getByPlaceholderText('Profile name'), { target: { value: 'Test' } });
-    fireEvent.change(screen.getByDisplayValue('Select provider...'), { target: { value: 'openai' } });
-    fireEvent.change(screen.getByPlaceholderText('Provider-specific voice identifier'), { target: { value: 'echo' } });
+    fireEvent.change(screen.getByDisplayValue('Select provider...'), {
+      target: { value: 'openai' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Provider-specific voice identifier'), {
+      target: { value: 'echo' },
+    });
 
     fireEvent.click(screen.getByText('Create'));
 

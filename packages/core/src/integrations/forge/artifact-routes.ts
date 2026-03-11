@@ -73,7 +73,7 @@ export function registerArtifactRoutes(app: FastifyInstance, opts?: ArtifactRout
       } catch (err) {
         return sendError(reply, 502, errMsg(err));
       }
-    },
+    }
   );
 
   // ── Helpers ──

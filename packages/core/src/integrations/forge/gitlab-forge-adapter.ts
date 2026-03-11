@@ -26,7 +26,9 @@ export class GitLabForgeAdapter implements CodeForgeAdapter {
   }
 
   async listRepos(): Promise<ForgeRepo[]> {
-    const data = await this.get<GLProject[]>('/projects?membership=true&per_page=100&order_by=updated_at');
+    const data = await this.get<GLProject[]>(
+      '/projects?membership=true&per_page=100&order_by=updated_at'
+    );
     return data.map((p) => toForgeRepo(p, this.baseUrl));
   }
 
@@ -36,7 +38,11 @@ export class GitLabForgeAdapter implements CodeForgeAdapter {
     return toForgeRepo(data, this.baseUrl);
   }
 
-  async listPulls(owner: string, name: string, state?: 'open' | 'closed' | 'all'): Promise<ForgePullRequest[]> {
+  async listPulls(
+    owner: string,
+    name: string,
+    state?: 'open' | 'closed' | 'all'
+  ): Promise<ForgePullRequest[]> {
     const pid = encodeURIComponent(`${owner}/${name}`);
     const glState = state === 'open' ? 'opened' : state === 'closed' ? 'closed' : 'all';
     const data = await this.get<GLMergeRequest[]>(
@@ -236,9 +242,15 @@ function toForgePull(mr: GLMergeRequest): ForgePullRequest {
   };
 }
 
-function toForgePipeline(p: GLPipeline, baseUrl: string, owner: string, name: string): ForgePipeline {
+function toForgePipeline(
+  p: GLPipeline,
+  baseUrl: string,
+  owner: string,
+  name: string
+): ForgePipeline {
   let status: ForgePipeline['status'] = 'unknown';
-  if (p.status === 'created' || p.status === 'waiting_for_resource' || p.status === 'pending') status = 'queued';
+  if (p.status === 'created' || p.status === 'waiting_for_resource' || p.status === 'pending')
+    status = 'queued';
   else if (p.status === 'running') status = 'running';
   else if (p.status === 'success') status = 'passed';
   else if (p.status === 'failed') status = 'failed';

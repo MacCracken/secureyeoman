@@ -19,8 +19,7 @@ describe('faster-whisper STT Provider', () => {
     it('should call POST /v1/audio/transcriptions on the faster-whisper server', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () =>
-          Promise.resolve({ text: 'Hello world', language: 'en', duration: 2.5 }),
+        json: () => Promise.resolve({ text: 'Hello world', language: 'en', duration: 2.5 }),
       });
       const { transcribeFasterWhisper } = await import('./faster-whisper.js');
 
@@ -98,9 +97,7 @@ describe('faster-whisper STT Provider', () => {
 
       await transcribeFasterWhisper(Buffer.from('audio-data'));
 
-      expect(mockFetch.mock.calls[0][0]).toBe(
-        'http://my-whisper:9000/v1/audio/transcriptions'
-      );
+      expect(mockFetch.mock.calls[0][0]).toBe('http://my-whisper:9000/v1/audio/transcriptions');
     });
 
     it('should strip trailing slash from FASTER_WHISPER_URL', async () => {
@@ -113,9 +110,7 @@ describe('faster-whisper STT Provider', () => {
 
       await transcribeFasterWhisper(Buffer.from('audio-data'));
 
-      expect(mockFetch.mock.calls[0][0]).toBe(
-        'http://my-whisper:9000/v1/audio/transcriptions'
-      );
+      expect(mockFetch.mock.calls[0][0]).toBe('http://my-whisper:9000/v1/audio/transcriptions');
     });
 
     it('should throw on server error', async () => {
@@ -126,18 +121,18 @@ describe('faster-whisper STT Provider', () => {
       });
       const { transcribeFasterWhisper } = await import('./faster-whisper.js');
 
-      await expect(
-        transcribeFasterWhisper(Buffer.from('audio-data'))
-      ).rejects.toThrow('faster-whisper STT error (500)');
+      await expect(transcribeFasterWhisper(Buffer.from('audio-data'))).rejects.toThrow(
+        'faster-whisper STT error (500)'
+      );
     });
 
     it('should throw on network error', async () => {
       mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
       const { transcribeFasterWhisper } = await import('./faster-whisper.js');
 
-      await expect(
-        transcribeFasterWhisper(Buffer.from('audio-data'))
-      ).rejects.toThrow('ECONNREFUSED');
+      await expect(transcribeFasterWhisper(Buffer.from('audio-data'))).rejects.toThrow(
+        'ECONNREFUSED'
+      );
     });
   });
 

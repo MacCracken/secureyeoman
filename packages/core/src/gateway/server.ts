@@ -1063,7 +1063,11 @@ export class GatewayServer {
         // CI/CD inbound webhook normalizer (Phase 90) — public endpoint with HMAC gate
         try {
           const webhookEventStore = new WebhookEventStore();
-          registerCicdWebhookRoutes(this.app, { workflowManager, secureYeoman: this.secureYeoman, webhookEventStore });
+          registerCicdWebhookRoutes(this.app, {
+            workflowManager,
+            secureYeoman: this.secureYeoman,
+            webhookEventStore,
+          });
           registerWebhookTimelineRoutes(this.app, { webhookEventStore });
           this.getLogger().info('CI/CD webhook routes registered');
         } catch (err) {

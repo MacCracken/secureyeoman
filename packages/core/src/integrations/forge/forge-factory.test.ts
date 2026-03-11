@@ -31,8 +31,8 @@ describe('createForgeAdapter', () => {
   });
 
   it('throws for unsupported provider', () => {
-    expect(() => createForgeAdapter({ provider: 'bogus' as never, baseUrl: 'https://example.com' })).toThrow(
-      'Unsupported forge provider: bogus'
-    );
+    expect(() =>
+      createForgeAdapter({ provider: 'bogus' as never, baseUrl: 'https://example.com' })
+    ).toThrow('Unsupported forge provider: bogus');
   });
 });

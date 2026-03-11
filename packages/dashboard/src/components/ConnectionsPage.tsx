@@ -1754,10 +1754,10 @@ export function ConnectionsPage() {
               )}
               {agnosSandboxQuery.error && (
                 <p className="text-xs text-red-500">
-                  Failed to load profiles: {(agnosSandboxQuery.error as Error).message}
+                  Failed to load profiles: {agnosSandboxQuery.error.message}
                 </p>
               )}
-              {agnosSandboxQuery.data && agnosSandboxQuery.data.length === 0 && (
+              {agnosSandboxQuery.data?.length === 0 && (
                 <p className="text-xs text-muted-foreground">No sandbox profiles configured</p>
               )}
               {agnosSandboxQuery.data && agnosSandboxQuery.data.length > 0 && (

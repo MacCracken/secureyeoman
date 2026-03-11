@@ -9,7 +9,7 @@ import { DeltaRegistryAdapter } from './delta-registry-adapter.js';
 
 export function createRegistryAdapter(
   provider: ForgeProvider,
-  config: ForgeConfig,
+  config: ForgeConfig
 ): ArtifactRegistryAdapter | null {
   switch (provider) {
     case 'github':

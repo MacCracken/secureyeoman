@@ -1,6 +1,6 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.3.9-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/2026.3.9)
+[![Version](https://img.shields.io/badge/Version-2026.3.10-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/2026.3.10)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
@@ -59,7 +59,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 
 - **Self-hosted, not SaaS** — single binary, Docker, or Kubernetes. Your data stays on your machines.
 - **Governed by design** — RBAC, audit trails, cryptographic integrity, sandboxed execution, OPA/CEL governance.
-- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 400+-tool MCP server.
+- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 462-tool MCP server.
 - **Full ML lifecycle** — distillation, LoRA fine-tuning, LLM-as-Judge evaluation, DPO, conversation analytics.
 
 ---
@@ -68,14 +68,14 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 
 | Area | Highlights |
 |------|-----------|
-| **Security** | JWT/OIDC/SAML auth, RBAC, AES-256-GCM encryption, mTLS, sandboxing (Landlock/seccomp/gVisor/WASM, 4 built-in profiles), prompt security, content guardrails, DLP (PII detection, classification, watermarking), secrets management (Vault/OpenBao), chaos engineering |
+| **Security** | JWT/OIDC/SAML auth, RBAC, AES-256-GCM encryption, mTLS, sandboxing (Landlock/seccomp/V8 isolate/gVisor/WASM, 5 built-in profiles), prompt security, content guardrails, DLP (PII detection, classification, watermarking), secrets management (Vault/OpenBao), chaos engineering |
 | **AI Models** | 13 providers (Anthropic, OpenAI, Gemini, Ollama, DeepSeek, Mistral, Grok + more), multi-account cost tracking, automatic fallback, local-first routing |
 | **Agents** | Sub-agent delegation, swarms (3 strategies, 5 templates), teams, Council of AIs, A2A protocol, cross-instance federation, Agent Replay & Debugging |
 | **Workflows** | DAG orchestration (19 step types), visual ReactFlow builder, human approval gates, 10 built-in templates |
 | **Training** | Dataset export, distillation, LoRA fine-tuning, pre-training from scratch, LLM-as-Judge eval, DPO/RLHF, federated learning, conversation analytics, A/B experiments |
-| **Dashboard** | React + Vite + Tailwind (42 themes), mission control, real-time CRDT editing, conversation branching, canvas workspace, inline AI completion |
-| **Integrations** | 32 platforms (Slack, Discord, GitHub, Gmail, Teams, WhatsApp + more), 21 CI/CD tools, security toolkits (Kali, network, Docker) |
-| **MCP** | 400+ tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
+| **Dashboard** | React + Vite + Tailwind (45 themes), mission control, real-time CRDT editing, conversation branching, canvas workspace, inline AI completion |
+| **Integrations** | 38 platforms (Slack, Discord, GitHub, Gmail, Teams, WhatsApp + more), 21 CI/CD tools, security toolkits (Kali, network, Docker) |
+| **MCP** | 462 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
 | **Enterprise** | Multi-tenancy (PostgreSQL RLS), multi-region HA, DLP, supply chain security (SBOM, SLSA, signed releases), OpenTelemetry, Prometheus/Grafana |
 | **Knowledge** | Document ingestion (PDF, HTML, MD, URL, GitHub Wiki), RAG with hybrid FTS+vector search, cognitive memory (ACT-R, Hebbian learning) |
 | **Deployment** | Single binary (~123 MB), Docker, Kubernetes Helm chart; Linux x64/arm64, macOS arm64, Windows x64 |
@@ -163,7 +163,7 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | **[Security Model](docs/security/security-model.md)** | Threat model and security controls |
 | **[White Paper](docs/white-paper.md)** | Architectural sovereignty & agentic governance |
 | **[Architecture](docs/development/architecture.md)** | System architecture overview |
-| **[ADRs](docs/adr/)** | 32 Architecture Decision Records |
+| **[ADRs](docs/adr/)** | 37 Architecture Decision Records |
 | **[Roadmap](docs/development/roadmap.md)** | Development roadmap |
 | **[Changelog](CHANGELOG.md)** | Release history |
 

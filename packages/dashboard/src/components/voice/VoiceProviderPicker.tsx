@@ -68,11 +68,9 @@ export function VoiceProviderPicker() {
     refetchOnWindowFocus: false,
   });
 
-  const currentTts = (config)?.ttsProvider as string | undefined;
-  const currentStt = (config)?.sttProvider as string | undefined;
-  const providerHealth = (config)?.providerHealth as
-    | Record<string, boolean>
-    | undefined;
+  const currentTts = config?.ttsProvider as string | undefined;
+  const currentStt = config?.sttProvider as string | undefined;
+  const providerHealth = config?.providerHealth as Record<string, boolean> | undefined;
 
   // TTS test state
   const [ttsTestStatus, setTtsTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>(
@@ -81,9 +79,9 @@ export function VoiceProviderPicker() {
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // STT test state
-  const [sttTestStatus, setSttTestStatus] = useState<'idle' | 'recording' | 'transcribing' | 'success' | 'error'>(
-    'idle'
-  );
+  const [sttTestStatus, setSttTestStatus] = useState<
+    'idle' | 'recording' | 'transcribing' | 'success' | 'error'
+  >('idle');
   const [sttTranscript, setSttTranscript] = useState<string>('');
 
   const ttsMutation = useMutation({
@@ -111,10 +109,14 @@ export function VoiceProviderPicker() {
       ttsAudioRef.current = audio;
       audio.play();
       setTtsTestStatus('success');
-      setTimeout(() => { setTtsTestStatus('idle'); }, 3000);
+      setTimeout(() => {
+        setTtsTestStatus('idle');
+      }, 3000);
     } catch {
       setTtsTestStatus('error');
-      setTimeout(() => { setTtsTestStatus('idle'); }, 3000);
+      setTimeout(() => {
+        setTtsTestStatus('idle');
+      }, 3000);
     }
   }, []);
 
@@ -133,7 +135,9 @@ export function VoiceProviderPicker() {
       };
 
       mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach((t) => { t.stop(); });
+        stream.getTracks().forEach((t) => {
+          t.stop();
+        });
         setSttTestStatus('transcribing');
         try {
           const blob = new Blob(chunks, { type: 'audio/webm' });
@@ -149,10 +153,14 @@ export function VoiceProviderPicker() {
           const result = await transcribeAudio({ audioBase64: base64, format: 'webm' });
           setSttTranscript(result.text || '(no speech detected)');
           setSttTestStatus('success');
-          setTimeout(() => { setSttTestStatus('idle'); }, 5000);
+          setTimeout(() => {
+            setSttTestStatus('idle');
+          }, 5000);
         } catch {
           setSttTestStatus('error');
-          setTimeout(() => { setSttTestStatus('idle'); }, 3000);
+          setTimeout(() => {
+            setSttTestStatus('idle');
+          }, 3000);
         }
       };
 
@@ -164,7 +172,9 @@ export function VoiceProviderPicker() {
       }, 3000);
     } catch {
       setSttTestStatus('error');
-      setTimeout(() => { setSttTestStatus('idle'); }, 3000);
+      setTimeout(() => {
+        setSttTestStatus('idle');
+      }, 3000);
     }
   }, []);
 
@@ -251,10 +261,7 @@ export function VoiceProviderPicker() {
               const health = getHealthStatus(p.id);
               if (health === null) return null;
               return (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-2 text-xs text-muted-foreground"
-                >
+                <div key={p.id} className="flex items-center gap-2 text-xs text-muted-foreground">
                   <HealthDot healthy={health} />
                   <span>{p.label}</span>
                 </div>
@@ -295,7 +302,9 @@ export function VoiceProviderPicker() {
           <button
             className="btn btn-ghost text-sm px-3 py-1.5 flex items-center gap-1.5"
             onClick={handleTestStt}
-            disabled={!currentStt || sttTestStatus === 'recording' || sttTestStatus === 'transcribing'}
+            disabled={
+              !currentStt || sttTestStatus === 'recording' || sttTestStatus === 'transcribing'
+            }
           >
             {sttTestStatus === 'recording' ? (
               <Mic className="w-3.5 h-3.5 text-destructive animate-pulse" />
@@ -337,10 +346,7 @@ export function VoiceProviderPicker() {
               const health = getHealthStatus(p.id);
               if (health === null) return null;
               return (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-2 text-xs text-muted-foreground"
-                >
+                <div key={p.id} className="flex items-center gap-2 text-xs text-muted-foreground">
                   <HealthDot healthy={health} />
                   <span>{p.label}</span>
                 </div>

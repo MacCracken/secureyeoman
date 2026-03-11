@@ -87,7 +87,7 @@ export function VoiceProfileManager() {
 
   const profiles = profilesData?.profiles ?? [];
   const elevenlabsAvailable =
-    (multimodalConfig)?.ttsProvider === 'elevenlabs' ||
+    multimodalConfig?.ttsProvider === 'elevenlabs' ||
     profiles.some((p) => p.provider === 'elevenlabs');
 
   // Form state
@@ -113,8 +113,12 @@ export function VoiceProfileManager() {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (data: { name: string; provider: string; voiceId: string; settings?: Record<string, unknown> }) =>
-      createVoiceProfile(data),
+    mutationFn: (data: {
+      name: string;
+      provider: string;
+      voiceId: string;
+      settings?: Record<string, unknown>;
+    }) => createVoiceProfile(data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['voice-profiles'] });
       setFormMode('closed');
@@ -132,7 +136,12 @@ export function VoiceProfileManager() {
       data,
     }: {
       id: string;
-      data: { name?: string; provider?: string; voiceId?: string; settings?: Record<string, unknown> };
+      data: {
+        name?: string;
+        provider?: string;
+        voiceId?: string;
+        settings?: Record<string, unknown>;
+      };
     }) => updateVoiceProfile(id, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['voice-profiles'] });
@@ -225,24 +234,24 @@ export function VoiceProfileManager() {
     }
   }, [form, formMode, editingId, createMutation, updateMutation]);
 
-  const handlePreview = useCallback(
-    async (profileId: string) => {
-      setPreviewingId(profileId);
-      try {
-        if (audioRef.current) audioRef.current.pause();
-        const result = await previewVoiceProfile(profileId, 'Hello, this is a voice profile preview.');
-        const audio = new Audio(
-          `data:audio/${result.format || 'mp3'};base64,${result.audioBase64}`
-        );
-        audioRef.current = audio;
-        audio.play();
-        audio.onended = () => { setPreviewingId(null); };
-      } catch {
+  const handlePreview = useCallback(async (profileId: string) => {
+    setPreviewingId(profileId);
+    try {
+      if (audioRef.current) audioRef.current.pause();
+      const result = await previewVoiceProfile(
+        profileId,
+        'Hello, this is a voice profile preview.'
+      );
+      const audio = new Audio(`data:audio/${result.format || 'mp3'};base64,${result.audioBase64}`);
+      audioRef.current = audio;
+      audio.play();
+      audio.onended = () => {
         setPreviewingId(null);
-      }
-    },
-    []
-  );
+      };
+    } catch {
+      setPreviewingId(null);
+    }
+  }, []);
 
   const handleCloneFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -265,7 +274,9 @@ export function VoiceProfileManager() {
         if (e.data.size > 0) chunks.push(e.data);
       };
       recorder.onstop = () => {
-        stream.getTracks().forEach((t) => { t.stop(); });
+        stream.getTracks().forEach((t) => {
+          t.stop();
+        });
         cloneStreamRef.current = null;
         const blob = new Blob(chunks, { type: 'audio/webm' });
         const reader = new FileReader();
@@ -308,7 +319,9 @@ export function VoiceProfileManager() {
         onConfirm={() => {
           if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
         }}
-        onCancel={() => { setDeleteTarget(null); }}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
       />
 
       <div className="flex items-center justify-between">
@@ -349,19 +362,25 @@ export function VoiceProfileManager() {
       {cloneOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          onClick={() => { setCloneOpen(false); }}
+          onClick={() => {
+            setCloneOpen(false);
+          }}
           role="dialog"
           aria-modal="true"
           aria-label="Clone Voice"
         >
           <div
             className="card p-6 max-w-md w-full mx-4 shadow-lg space-y-4"
-            onClick={(e) => { e.stopPropagation(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
           >
             <div className="flex items-center justify-between">
               <h3 className="font-medium text-lg">Clone Voice</h3>
               <button
-                onClick={() => { setCloneOpen(false); }}
+                onClick={() => {
+                  setCloneOpen(false);
+                }}
                 className="text-muted-foreground hover:text-foreground"
               >
                 <X className="w-4 h-4" />
@@ -377,7 +396,9 @@ export function VoiceProfileManager() {
               <input
                 type="text"
                 value={cloneName}
-                onChange={(e) => { setCloneName(e.target.value); }}
+                onChange={(e) => {
+                  setCloneName(e.target.value);
+                }}
                 placeholder="My cloned voice"
                 className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -414,13 +435,16 @@ export function VoiceProfileManager() {
                   </button>
                 )}
               </div>
-              {cloneAudioBase64 && (
-                <p className="text-xs text-success">Audio ready for cloning.</p>
-              )}
+              {cloneAudioBase64 && <p className="text-xs text-success">Audio ready for cloning.</p>}
             </div>
 
             <div className="flex gap-2 justify-end">
-              <button className="btn btn-ghost text-sm px-4 py-1.5" onClick={() => { setCloneOpen(false); }}>
+              <button
+                className="btn btn-ghost text-sm px-4 py-1.5"
+                onClick={() => {
+                  setCloneOpen(false);
+                }}
+              >
                 Cancel
               </button>
               <button
@@ -446,10 +470,7 @@ export function VoiceProfileManager() {
             <h3 className="text-sm font-medium">
               {formMode === 'create' ? 'Create Profile' : 'Edit Profile'}
             </h3>
-            <button
-              onClick={closeForm}
-              className="text-muted-foreground hover:text-foreground"
-            >
+            <button onClick={closeForm} className="text-muted-foreground hover:text-foreground">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -460,7 +481,9 @@ export function VoiceProfileManager() {
               <input
                 type="text"
                 value={form.name}
-                onChange={(e) => { setForm((f) => ({ ...f, name: e.target.value })); }}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, name: e.target.value }));
+                }}
                 placeholder="Profile name"
                 className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -470,7 +493,9 @@ export function VoiceProfileManager() {
               <div className="relative">
                 <select
                   value={form.provider}
-                  onChange={(e) => { setForm((f) => ({ ...f, provider: e.target.value })); }}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, provider: e.target.value }));
+                  }}
                   className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary pr-8"
                 >
                   <option value="">Select provider...</option>
@@ -490,19 +515,21 @@ export function VoiceProfileManager() {
             <input
               type="text"
               value={form.voiceId}
-              onChange={(e) => { setForm((f) => ({ ...f, voiceId: e.target.value })); }}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, voiceId: e.target.value }));
+              }}
               placeholder="Provider-specific voice identifier"
               className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">
-              Settings (JSON)
-            </label>
+            <label className="text-xs text-muted-foreground block mb-1">Settings (JSON)</label>
             <textarea
               value={form.settingsJson}
-              onChange={(e) => { setForm((f) => ({ ...f, settingsJson: e.target.value })); }}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, settingsJson: e.target.value }));
+              }}
               rows={4}
               className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-y"
               placeholder='{"speed": 1.0, "pitch": 0}'
@@ -520,11 +547,7 @@ export function VoiceProfileManager() {
               onClick={handleSubmit}
               disabled={isPending}
             >
-              {isPending
-                ? 'Saving...'
-                : formMode === 'create'
-                  ? 'Create'
-                  : 'Update'}
+              {isPending ? 'Saving...' : formMode === 'create' ? 'Create' : 'Update'}
             </button>
           </div>
         </div>
@@ -540,10 +563,7 @@ export function VoiceProfileManager() {
       ) : (
         <div className="space-y-2">
           {profiles.map((profile) => (
-            <div
-              key={profile.id}
-              className="card p-4 flex items-center justify-between"
-            >
+            <div key={profile.id} className="card p-4 flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm truncate">{profile.name}</span>
@@ -571,14 +591,18 @@ export function VoiceProfileManager() {
                 </button>
                 <button
                   className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => { openEdit(profile); }}
+                  onClick={() => {
+                    openEdit(profile);
+                  }}
                   title="Edit"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
                 <button
                   className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-destructive transition-colors"
-                  onClick={() => { setDeleteTarget(profile); }}
+                  onClick={() => {
+                    setDeleteTarget(profile);
+                  }}
                   title="Delete"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

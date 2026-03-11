@@ -14,12 +14,7 @@ import {
   fetchForgePulls,
   fetchForgePipelines,
 } from '../api/client';
-import type {
-  ForgeConnection,
-  ForgeRepo,
-  ForgePullRequest,
-  ForgePipeline,
-} from '../api/client';
+import type { ForgeConnection, ForgeRepo, ForgePullRequest, ForgePipeline } from '../api/client';
 
 const PROVIDER_LABELS: Record<string, string> = {
   delta: 'Delta',
@@ -105,7 +100,9 @@ export function ForgePanel() {
         </h3>
         <button
           className="text-xs text-primary hover:underline"
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => {
+            setShowAddForm(!showAddForm);
+          }}
         >
           {showAddForm ? 'Cancel' : '+ Add Forge'}
         </button>
@@ -117,7 +114,9 @@ export function ForgePanel() {
           <select
             className="w-full text-xs p-1.5 rounded border border-border bg-background"
             value={addForm.provider}
-            onChange={(e) => setAddForm({ ...addForm, provider: e.target.value })}
+            onChange={(e) => {
+              setAddForm({ ...addForm, provider: e.target.value });
+            }}
           >
             <option value="github">GitHub</option>
             <option value="gitlab">GitLab</option>
@@ -129,31 +128,33 @@ export function ForgePanel() {
             className="w-full text-xs p-1.5 rounded border border-border bg-background"
             placeholder="Base URL (e.g. https://github.com)"
             value={addForm.baseUrl}
-            onChange={(e) => setAddForm({ ...addForm, baseUrl: e.target.value })}
+            onChange={(e) => {
+              setAddForm({ ...addForm, baseUrl: e.target.value });
+            }}
           />
           <input
             className="w-full text-xs p-1.5 rounded border border-border bg-background"
             placeholder="Token (optional)"
             type="password"
             value={addForm.token}
-            onChange={(e) => setAddForm({ ...addForm, token: e.target.value })}
+            onChange={(e) => {
+              setAddForm({ ...addForm, token: e.target.value });
+            }}
           />
           <button
             className="text-xs px-3 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
             disabled={!addForm.baseUrl || addMut.isPending}
-            onClick={() =>
+            onClick={() => {
               addMut.mutate({
                 provider: addForm.provider,
                 baseUrl: addForm.baseUrl,
                 token: addForm.token || undefined,
-              })
-            }
+              });
+            }}
           >
             {addMut.isPending ? 'Adding...' : 'Add Connection'}
           </button>
-          {addMut.error && (
-            <p className="text-xs text-red-500">{(addMut.error as Error).message}</p>
-          )}
+          {addMut.error && <p className="text-xs text-red-500">{addMut.error.message}</p>}
         </div>
       )}
 
@@ -201,10 +202,8 @@ export function ForgePanel() {
           {reposQuery.isLoading && (
             <p className="text-xs text-muted-foreground">Loading repos...</p>
           )}
-          {reposQuery.error && (
-            <p className="text-xs text-red-500">{(reposQuery.error as Error).message}</p>
-          )}
-          {reposQuery.data && reposQuery.data.length === 0 && (
+          {reposQuery.error && <p className="text-xs text-red-500">{reposQuery.error.message}</p>}
+          {reposQuery.data?.length === 0 && (
             <p className="text-xs text-muted-foreground">No repositories found</p>
           )}
           <div className="space-y-1">
@@ -216,13 +215,13 @@ export function ForgePanel() {
                     ? 'ring-1 ring-primary'
                     : ''
                 }`}
-                onClick={() =>
+                onClick={() => {
                   setSelectedRepo(
                     selectedRepo?.owner === repo.owner && selectedRepo?.name === repo.name
                       ? null
                       : { owner: repo.owner, name: repo.name }
-                  )
-                }
+                  );
+                }}
               >
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{repo.fullName}</span>
@@ -243,24 +242,36 @@ export function ForgePanel() {
           <div className="flex gap-2 mb-2">
             <button
               className={`text-xs px-2 py-1 rounded ${
-                activeTab === 'pulls' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                activeTab === 'pulls'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground'
               }`}
-              onClick={() => setActiveTab('pulls')}
+              onClick={() => {
+                setActiveTab('pulls');
+              }}
             >
               Pull Requests
             </button>
             <button
               className={`text-xs px-2 py-1 rounded ${
-                activeTab === 'pipelines' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                activeTab === 'pipelines'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground'
               }`}
-              onClick={() => setActiveTab('pipelines')}
+              onClick={() => {
+                setActiveTab('pipelines');
+              }}
             >
               Pipelines
             </button>
           </div>
 
           {activeTab === 'pulls' && (
-            <PullsList pulls={pullsQuery.data} isLoading={pullsQuery.isLoading} error={pullsQuery.error} />
+            <PullsList
+              pulls={pullsQuery.data}
+              isLoading={pullsQuery.isLoading}
+              error={pullsQuery.error}
+            />
           )}
           {activeTab === 'pipelines' && (
             <PipelinesList

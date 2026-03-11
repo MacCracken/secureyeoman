@@ -39,7 +39,7 @@ describe('GhcrAdapter', () => {
           visibility: 'private',
           updated_at: '2026-01-02T00:00:00Z',
         },
-      ]),
+      ])
     );
 
     const images = await adapter.listImages('acme');
@@ -70,7 +70,7 @@ describe('GhcrAdapter', () => {
           updated_at: '2026-01-02T00:00:00Z',
           metadata: { container: { tags: [] } },
         },
-      ]),
+      ])
     );
 
     const tags = await adapter.getImageTags('acme', 'my-app');
@@ -93,7 +93,7 @@ describe('GhcrAdapter', () => {
             expires_at: '2026-02-01T00:00:00Z',
           },
         ],
-      }),
+      })
     );
 
     const artifacts = await adapter.listBuildArtifacts('acme', 'app', '999');
@@ -106,9 +106,7 @@ describe('GhcrAdapter', () => {
   });
 
   it('throws on non-OK response', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response('Forbidden', { status: 403 }),
-    );
+    vi.mocked(fetch).mockResolvedValue(new Response('Forbidden', { status: 403 }));
 
     await expect(adapter.listImages('acme')).rejects.toThrow('GitHub API 403');
   });

@@ -117,9 +117,15 @@ describe('WebhookEventStore', () => {
     });
 
     it('combines multiple filters', () => {
-      store.add(makeEvent({ provider: 'github', event: 'push', repoUrl: 'https://github.com/acme/app' }));
-      store.add(makeEvent({ provider: 'github', event: 'push', repoUrl: 'https://github.com/other/app' }));
-      store.add(makeEvent({ provider: 'jenkins', event: 'push', repoUrl: 'https://github.com/acme/app' }));
+      store.add(
+        makeEvent({ provider: 'github', event: 'push', repoUrl: 'https://github.com/acme/app' })
+      );
+      store.add(
+        makeEvent({ provider: 'github', event: 'push', repoUrl: 'https://github.com/other/app' })
+      );
+      store.add(
+        makeEvent({ provider: 'jenkins', event: 'push', repoUrl: 'https://github.com/acme/app' })
+      );
       const { total } = store.list({ provider: 'github', repo: 'acme' });
       expect(total).toBe(1);
     });

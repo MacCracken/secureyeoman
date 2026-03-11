@@ -20,7 +20,9 @@ function makeMockOAuthService(overrides: Partial<OAuthService> = {}): OAuthServi
     isProviderConfigured: vi.fn().mockReturnValue(true),
     getProvider: vi.fn().mockReturnValue(MOCK_PROVIDER),
     getConfiguredProviders: vi.fn().mockReturnValue(['google']),
-    generateState: vi.fn().mockResolvedValue({ state: 'mock-state-token', codeVerifier: 'mock-verifier' }),
+    generateState: vi
+      .fn()
+      .mockResolvedValue({ state: 'mock-state-token', codeVerifier: 'mock-verifier' }),
     validateState: vi.fn().mockResolvedValue({
       provider: 'google',
       redirectUri: 'http://localhost/callback',

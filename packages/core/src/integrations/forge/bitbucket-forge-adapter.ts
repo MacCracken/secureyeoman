@@ -56,7 +56,11 @@ export class BitbucketForgeAdapter implements CodeForgeAdapter {
     return toForgeRepoServer(data);
   }
 
-  async listPulls(owner: string, name: string, state?: 'open' | 'closed' | 'all'): Promise<ForgePullRequest[]> {
+  async listPulls(
+    owner: string,
+    name: string,
+    state?: 'open' | 'closed' | 'all'
+  ): Promise<ForgePullRequest[]> {
     if (this.isCloud) {
       const bbState = mapPRStateToCloud(state);
       const qs = bbState ? `?state=${bbState}` : '';
@@ -379,10 +383,7 @@ function toForgePipelineCloud(
   };
 }
 
-function mapPipelineStatus(
-  stateName: string,
-  resultName?: string
-): ForgePipeline['status'] {
+function mapPipelineStatus(stateName: string, resultName?: string): ForgePipeline['status'] {
   if (stateName === 'PENDING') return 'queued';
   if (stateName === 'BUILDING') return 'running';
   if (stateName === 'STOPPED') return 'cancelled';

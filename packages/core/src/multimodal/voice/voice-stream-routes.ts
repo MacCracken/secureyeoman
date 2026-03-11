@@ -17,7 +17,7 @@ import { VoiceAgentSession, type VoiceAgentConfig } from './voice-agent.js';
 // augmented type is not visible in stand-alone route-registration functions
 // that receive a plain FastifyInstance. We cast once here to keep the rest
 // of the file clean.
- 
+
 type WsApp = any;
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -198,7 +198,10 @@ async function handleTTSMessage(
   }
 
   if (msg.text.length > MAX_TEXT_LENGTH) {
-    sendJson(socket, { action: 'error', message: `Text exceeds maximum length of ${MAX_TEXT_LENGTH}` });
+    sendJson(socket, {
+      action: 'error',
+      message: `Text exceeds maximum length of ${MAX_TEXT_LENGTH}`,
+    });
     return;
   }
 
@@ -283,9 +286,7 @@ async function handleSTTMessage(
   }
 
   // Binary audio data
-  const chunk = Buffer.isBuffer(raw)
-    ? raw
-    : Buffer.from(raw as ArrayBuffer);
+  const chunk = Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer);
 
   if (state.totalBytes + chunk.length > MAX_AUDIO_BUFFER) {
     sendJson(socket, { type: 'error', message: 'Audio buffer limit exceeded' });
@@ -442,7 +443,10 @@ async function handleAgentMessage(
 
   // Binary audio data — forward to active session
   if (!session || session.isClosed) {
-    sendJson(socket, { action: 'error', message: 'No active session. Send { action: "start" } first.' });
+    sendJson(socket, {
+      action: 'error',
+      message: 'No active session. Send { action: "start" } first.',
+    });
     return;
   }
 

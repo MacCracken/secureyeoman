@@ -227,10 +227,7 @@ export function registerDeltaTools(
         name: z.string().min(1).describe('Repository name'),
         workflow_name: z.string().min(1).describe('Name of the workflow/pipeline to trigger'),
         commit_sha: z.string().min(7).describe('Commit SHA to run against'),
-        trigger_ref: z
-          .string()
-          .optional()
-          .describe('Git ref (branch or tag) for context'),
+        trigger_ref: z.string().optional().describe('Git ref (branch or tag) for context'),
       },
     },
     wrapToolHandler('delta_trigger_pipeline', middleware, async (args) => {
@@ -364,8 +361,7 @@ export function registerDeltaTools(
   server.registerTool(
     'delta_create_pull',
     {
-      description:
-        'Create a pull request on a Delta repository. Specify head and base branches.',
+      description: 'Create a pull request on a Delta repository. Specify head and base branches.',
       inputSchema: {
         owner: z.string().min(1).describe('Repository owner'),
         name: z.string().min(1).describe('Repository name'),
@@ -398,8 +394,7 @@ export function registerDeltaTools(
   server.registerTool(
     'delta_pull_diff',
     {
-      description:
-        'Get the unified diff for a pull request. Returns the raw diff as text.',
+      description: 'Get the unified diff for a pull request. Returns the raw diff as text.',
       inputSchema: {
         owner: z.string().min(1).describe('Repository owner'),
         name: z.string().min(1).describe('Repository name'),
@@ -465,8 +460,7 @@ export function registerDeltaTools(
   server.registerTool(
     'delta_create_release',
     {
-      description:
-        'Create a release for a Delta repository. Associates a tag with release notes.',
+      description: 'Create a release for a Delta repository. Associates a tag with release notes.',
       inputSchema: {
         owner: z.string().min(1).describe('Repository owner'),
         name: z.string().min(1).describe('Repository name'),

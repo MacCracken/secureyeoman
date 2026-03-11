@@ -55,7 +55,11 @@ export class GhcrAdapter implements ArtifactRegistryAdapter {
     }));
   }
 
-  async listBuildArtifacts(owner: string, repo: string, pipelineId: string): Promise<BuildArtifact[]> {
+  async listBuildArtifacts(
+    owner: string,
+    repo: string,
+    pipelineId: string
+  ): Promise<BuildArtifact[]> {
     const data = await this.get<{ artifacts: GHActionArtifact[] }>(
       `/repos/${enc(owner)}/${enc(repo)}/actions/runs/${enc(pipelineId)}/artifacts`
     );

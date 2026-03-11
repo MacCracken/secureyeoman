@@ -93,7 +93,11 @@ export interface CodeForgeAdapter {
   getRepo(owner: string, name: string): Promise<ForgeRepo>;
 
   // Pull Requests / Merge Requests
-  listPulls(owner: string, name: string, state?: 'open' | 'closed' | 'all'): Promise<ForgePullRequest[]>;
+  listPulls(
+    owner: string,
+    name: string,
+    state?: 'open' | 'closed' | 'all'
+  ): Promise<ForgePullRequest[]>;
   getPull(owner: string, name: string, number: number): Promise<ForgePullRequest>;
 
   // Pipelines / CI

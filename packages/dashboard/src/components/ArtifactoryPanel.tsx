@@ -61,7 +61,10 @@ export function ArtifactoryPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBuild, setSelectedBuild] = useState<string | null>(null);
   const [promoteForm, setPromoteForm] = useState({ targetRepo: '', status: '' });
-  const [promoteBuildTarget, setPromoteBuildTarget] = useState<{ name: string; number: string } | null>(null);
+  const [promoteBuildTarget, setPromoteBuildTarget] = useState<{
+    name: string;
+    number: string;
+  } | null>(null);
 
   // ── Connections ──────────────────────────────────────────
 
@@ -101,7 +104,8 @@ export function ArtifactoryPanel() {
 
   const browseQuery = useQuery({
     queryKey: ['artifactoryBrowse', selectedConn, selectedRepo, browsePath],
-    queryFn: () => fetchArtifactoryFolderItems(selectedConn!, selectedRepo!, browsePath || undefined),
+    queryFn: () =>
+      fetchArtifactoryFolderItems(selectedConn!, selectedRepo!, browsePath || undefined),
     enabled: !!selectedConn && !!selectedRepo && activeTab === 'repos',
   });
 
@@ -165,7 +169,9 @@ export function ArtifactoryPanel() {
         </h3>
         <button
           className="text-xs text-primary hover:underline"
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => {
+            setShowAddForm(!showAddForm);
+          }}
         >
           {showAddForm ? 'Cancel' : '+ Add Instance'}
         </button>
@@ -178,47 +184,53 @@ export function ArtifactoryPanel() {
             className="w-full text-xs p-1.5 rounded border border-border bg-background"
             placeholder="Base URL (e.g. https://mycompany.jfrog.io/artifactory)"
             value={addForm.baseUrl}
-            onChange={(e) => setAddForm({ ...addForm, baseUrl: e.target.value })}
+            onChange={(e) => {
+              setAddForm({ ...addForm, baseUrl: e.target.value });
+            }}
           />
           <input
             className="w-full text-xs p-1.5 rounded border border-border bg-background"
             placeholder="Access Token (optional)"
             type="password"
             value={addForm.token}
-            onChange={(e) => setAddForm({ ...addForm, token: e.target.value })}
+            onChange={(e) => {
+              setAddForm({ ...addForm, token: e.target.value });
+            }}
           />
           <div className="grid grid-cols-2 gap-2">
             <input
               className="w-full text-xs p-1.5 rounded border border-border bg-background"
               placeholder="Username (optional)"
               value={addForm.username}
-              onChange={(e) => setAddForm({ ...addForm, username: e.target.value })}
+              onChange={(e) => {
+                setAddForm({ ...addForm, username: e.target.value });
+              }}
             />
             <input
               className="w-full text-xs p-1.5 rounded border border-border bg-background"
               placeholder="Password (optional)"
               type="password"
               value={addForm.password}
-              onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
+              onChange={(e) => {
+                setAddForm({ ...addForm, password: e.target.value });
+              }}
             />
           </div>
           <button
             className="text-xs px-3 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
             disabled={!addForm.baseUrl || addMut.isPending}
-            onClick={() =>
+            onClick={() => {
               addMut.mutate({
                 baseUrl: addForm.baseUrl,
                 token: addForm.token || undefined,
                 username: addForm.username || undefined,
                 password: addForm.password || undefined,
-              })
-            }
+              });
+            }}
           >
             {addMut.isPending ? 'Adding...' : 'Add Connection'}
           </button>
-          {addMut.error && (
-            <p className="text-xs text-red-500">{(addMut.error as Error).message}</p>
-          )}
+          {addMut.error && <p className="text-xs text-red-500">{addMut.error.message}</p>}
         </div>
       )}
 
@@ -310,7 +322,9 @@ export function ArtifactoryPanel() {
         <DockerTab
           repos={reposQuery.data?.filter((r: ArtifactoryRepo) => r.packageType === 'docker')}
           selectedRepo={selectedRepo}
-          onSelectRepo={(key) => setSelectedRepo(selectedRepo === key ? null : key)}
+          onSelectRepo={(key) => {
+            setSelectedRepo(selectedRepo === key ? null : key);
+          }}
           images={dockerImagesQuery.data}
           imagesLoading={dockerImagesQuery.isLoading}
           connKey={selectedConn}
@@ -324,7 +338,9 @@ export function ArtifactoryPanel() {
           isLoading={buildsQuery.isLoading}
           error={buildsQuery.error}
           selectedBuild={selectedBuild}
-          onSelectBuild={(name) => setSelectedBuild(selectedBuild === name ? null : name)}
+          onSelectBuild={(name) => {
+            setSelectedBuild(selectedBuild === name ? null : name);
+          }}
           buildDetail={buildDetailQuery.data}
           buildDetailLoading={buildDetailQuery.isLoading}
           promoteBuildTarget={promoteBuildTarget}
@@ -387,7 +403,9 @@ function ReposTab({
             className={`card p-2 cursor-pointer text-xs ${
               selectedRepo === repo.key ? 'ring-1 ring-primary' : ''
             }`}
-            onClick={() => onSelectRepo(repo.key)}
+            onClick={() => {
+              onSelectRepo(repo.key);
+            }}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -431,7 +449,7 @@ function ReposTab({
             )}
           </div>
           {browseLoading && <p className="text-xs text-muted-foreground">Loading...</p>}
-          {browseItems && browseItems.length === 0 && (
+          {browseItems?.length === 0 && (
             <p className="text-xs text-muted-foreground">Empty folder</p>
           )}
           {(browseItems ?? []).map((item: ArtifactoryItem) => (
@@ -489,7 +507,9 @@ function DockerTab({
               className={`card p-2 cursor-pointer text-xs ${
                 selectedRepo === repo.key ? 'ring-1 ring-primary' : ''
               }`}
-              onClick={() => onSelectRepo(repo.key)}
+              onClick={() => {
+                onSelectRepo(repo.key);
+              }}
             >
               <span className="font-medium">{repo.key}</span>
             </div>
@@ -502,23 +522,21 @@ function DockerTab({
         <div className="space-y-1">
           <h4 className="text-xs font-semibold text-muted-foreground">Images</h4>
           {imagesLoading && <p className="text-xs text-muted-foreground">Loading images...</p>}
-          {images && images.length === 0 && (
-            <p className="text-xs text-muted-foreground">No images found</p>
-          )}
+          {images?.length === 0 && <p className="text-xs text-muted-foreground">No images found</p>}
           {(images ?? []).map((img: ArtifactoryDockerImage) => (
             <div key={img.name} className="card p-2 text-xs">
               <div
                 className="flex items-center justify-between cursor-pointer"
-                onClick={() => setExpandedImage(expandedImage === img.name ? null : img.name)}
+                onClick={() => {
+                  setExpandedImage(expandedImage === img.name ? null : img.name);
+                }}
               >
                 <span className="font-medium">{img.name}</span>
                 <span className="text-muted-foreground/60">{img.tags.length} tags</span>
               </div>
               {expandedImage === img.name && (
                 <div className="mt-1 ml-2 space-y-0.5">
-                  {tagsQuery.isLoading && (
-                    <p className="text-muted-foreground">Loading tags...</p>
-                  )}
+                  {tagsQuery.isLoading && <p className="text-muted-foreground">Loading tags...</p>}
                   {(tagsQuery.data ?? img.tags).map((tag: string) => (
                     <div key={tag} className="text-muted-foreground font-mono">
                       {tag}
@@ -576,7 +594,9 @@ function BuildsTab({
             className={`card p-2 cursor-pointer text-xs ${
               selectedBuild === b.name ? 'ring-1 ring-primary' : ''
             }`}
-            onClick={() => onSelectBuild(b.name)}
+            onClick={() => {
+              onSelectBuild(b.name);
+            }}
           >
             <div className="flex items-center justify-between">
               <span className="font-medium">{b.name}</span>
@@ -620,9 +640,9 @@ function BuildsTab({
               {/* Promote button */}
               <button
                 className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 mt-1"
-                onClick={() =>
-                  setPromoteBuildTarget({ name: buildDetail.name, number: buildDetail.number })
-                }
+                onClick={() => {
+                  setPromoteBuildTarget({ name: buildDetail.name, number: buildDetail.number });
+                }}
               >
                 Promote Build
               </button>
@@ -639,13 +659,17 @@ function BuildsTab({
                 className="w-full text-xs p-1.5 rounded border border-border bg-background"
                 placeholder="Target repository (e.g. libs-release)"
                 value={promoteForm.targetRepo}
-                onChange={(e) => setPromoteForm({ ...promoteForm, targetRepo: e.target.value })}
+                onChange={(e) => {
+                  setPromoteForm({ ...promoteForm, targetRepo: e.target.value });
+                }}
               />
               <input
                 className="w-full text-xs p-1.5 rounded border border-border bg-background"
                 placeholder="Status (optional, e.g. released)"
                 value={promoteForm.status}
-                onChange={(e) => setPromoteForm({ ...promoteForm, status: e.target.value })}
+                onChange={(e) => {
+                  setPromoteForm({ ...promoteForm, status: e.target.value });
+                }}
               />
               <div className="flex gap-2">
                 <button
@@ -664,7 +688,9 @@ function BuildsTab({
                 </button>
                 <button
                   className="text-xs px-3 py-1 rounded text-muted-foreground hover:underline"
-                  onClick={() => setPromoteBuildTarget(null)}
+                  onClick={() => {
+                    setPromoteBuildTarget(null);
+                  }}
                 >
                   Cancel
                 </button>
@@ -700,13 +726,13 @@ function SearchTab({
         className="w-full text-xs p-1.5 rounded border border-border bg-background"
         placeholder="Search by name..."
         value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
+        onChange={(e) => {
+          onSearchChange(e.target.value);
+        }}
       />
       {isLoading && <p className="text-xs text-muted-foreground">Searching...</p>}
       {error && <p className="text-xs text-red-500">{error.message}</p>}
-      {results && results.length === 0 && (
-        <p className="text-xs text-muted-foreground">No results</p>
-      )}
+      {results?.length === 0 && <p className="text-xs text-muted-foreground">No results</p>}
       {(results ?? []).map((item: ArtifactoryItem, i: number) => (
         <div key={`${item.path}/${item.name}-${i}`} className="card p-2 text-xs">
           <div className="flex items-center justify-between">

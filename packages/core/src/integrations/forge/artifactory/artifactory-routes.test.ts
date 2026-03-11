@@ -5,31 +5,38 @@ import { registerArtifactoryRoutes } from './artifactory-routes.js';
 // Mock the ArtifactoryClient
 const mockClient = {
   baseUrl: 'https://mycompany.jfrog.io/artifactory',
-  listRepos: vi.fn().mockResolvedValue([
-    { key: 'npm-local', type: 'local', packageType: 'npm', url: '' },
-  ]),
-  getRepo: vi.fn().mockResolvedValue({ key: 'npm-local', type: 'local', packageType: 'npm', url: '' }),
-  listFolder: vi.fn().mockResolvedValue([
-    { path: '', name: 'lib-1.0.jar', size: 1024, created: '', modified: '' },
-  ]),
+  listRepos: vi
+    .fn()
+    .mockResolvedValue([{ key: 'npm-local', type: 'local', packageType: 'npm', url: '' }]),
+  getRepo: vi
+    .fn()
+    .mockResolvedValue({ key: 'npm-local', type: 'local', packageType: 'npm', url: '' }),
+  listFolder: vi
+    .fn()
+    .mockResolvedValue([{ path: '', name: 'lib-1.0.jar', size: 1024, created: '', modified: '' }]),
   getItemInfo: vi.fn().mockResolvedValue({
-    path: 'org/lib-1.0.jar', name: 'lib-1.0.jar', size: 1024, created: '', modified: '',
+    path: 'org/lib-1.0.jar',
+    name: 'lib-1.0.jar',
+    size: 1024,
+    created: '',
+    modified: '',
   }),
-  searchAql: vi.fn().mockResolvedValue([
-    { path: '', name: 'result.jar', size: 512, created: '', modified: '' },
-  ]),
-  searchByName: vi.fn().mockResolvedValue([
-    { path: '', name: 'found.jar', size: 256, created: '', modified: '' },
-  ]),
-  listDockerImages: vi.fn().mockResolvedValue([
-    { name: 'my-app', tags: ['latest', 'v1.0'] },
-  ]),
+  searchAql: vi
+    .fn()
+    .mockResolvedValue([{ path: '', name: 'result.jar', size: 512, created: '', modified: '' }]),
+  searchByName: vi
+    .fn()
+    .mockResolvedValue([{ path: '', name: 'found.jar', size: 256, created: '', modified: '' }]),
+  listDockerImages: vi.fn().mockResolvedValue([{ name: 'my-app', tags: ['latest', 'v1.0'] }]),
   getDockerTags: vi.fn().mockResolvedValue(['latest', 'v1.0', 'v2.0']),
-  listBuilds: vi.fn().mockResolvedValue([
-    { name: 'my-build', lastStarted: '2026-01-01T00:00:00Z' },
-  ]),
+  listBuilds: vi
+    .fn()
+    .mockResolvedValue([{ name: 'my-build', lastStarted: '2026-01-01T00:00:00Z' }]),
   getBuild: vi.fn().mockResolvedValue({
-    name: 'my-build', number: '1', started: '2026-01-01T00:00:00Z', status: 'released',
+    name: 'my-build',
+    number: '1',
+    started: '2026-01-01T00:00:00Z',
+    status: 'released',
   }),
   promoteBuild: vi.fn().mockResolvedValue(undefined),
   health: vi.fn().mockResolvedValue(true),
@@ -50,9 +57,7 @@ describe('Artifactory Routes', () => {
   beforeEach(async () => {
     app = Fastify();
     registerArtifactoryRoutes(app, {
-      initialConnections: [
-        { baseUrl: 'https://mycompany.jfrog.io/artifactory', token: 'tok' },
-      ],
+      initialConnections: [{ baseUrl: 'https://mycompany.jfrog.io/artifactory', token: 'tok' }],
     });
     await app.ready();
   });
@@ -169,7 +174,12 @@ describe('Artifactory Routes', () => {
       payload: { targetRepo: 'libs-release', status: 'released' },
     });
     expect(res.statusCode).toBe(204);
-    expect(mockClient.promoteBuild).toHaveBeenCalledWith('my-build', '1', 'libs-release', 'released');
+    expect(mockClient.promoteBuild).toHaveBeenCalledWith(
+      'my-build',
+      '1',
+      'libs-release',
+      'released'
+    );
   });
 
   // ── Health ────────────────────────────────────────────────

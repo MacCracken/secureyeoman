@@ -68,7 +68,9 @@ describe('BitbucketForgeAdapter', () => {
 
     const call = vi.mocked(fetch).mock.calls[0];
     expect(call[0]).toContain('/repositories/workspace1/my-repo');
-    expect((call[1]?.headers as Record<string, string>)['Authorization']).toBe('Bearer bb_test_token');
+    expect((call[1]?.headers as Record<string, string>)['Authorization']).toBe(
+      'Bearer bb_test_token'
+    );
   });
 
   it('listPulls normalizes Bitbucket Cloud PRs with state mapping', async () => {
@@ -191,7 +193,11 @@ describe('BitbucketForgeAdapter', () => {
             name: 'app-v1.0.0.tar.gz',
             size: 2048,
             downloads: 10,
-            links: { self: { href: 'https://api.bitbucket.org/2.0/repositories/ws/repo/downloads/app-v1.0.0.tar.gz' } },
+            links: {
+              self: {
+                href: 'https://api.bitbucket.org/2.0/repositories/ws/repo/downloads/app-v1.0.0.tar.gz',
+              },
+            },
             created_on: '2026-02-01T00:00:00Z',
           },
         ])

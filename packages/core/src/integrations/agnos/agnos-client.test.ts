@@ -62,7 +62,8 @@ describe('AgnosClient', () => {
   });
 
   it('heartbeat sends per-agent POST to /v1/agents/:id/heartbeat', async () => {
-    const ok = () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+    const ok = () =>
+      new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
     vi.mocked(fetch).mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
 
     await client.heartbeat(['a1', 'a2']);
@@ -73,7 +74,9 @@ describe('AgnosClient', () => {
 
   it('heartbeat handles per-agent failures gracefully', async () => {
     vi.mocked(fetch)
-      .mockResolvedValueOnce(new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(
+        new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } })
+      )
       .mockResolvedValueOnce(new Response('error', { status: 500 }));
 
     // Should not throw — failures are logged at debug level

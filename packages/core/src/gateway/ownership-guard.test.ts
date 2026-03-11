@@ -55,16 +55,16 @@ describe('canAccessResource', () => {
 
   it('viewer with matching personalityId returns true', () => {
     const req = fakeRequest({ userId: 'user-x', role: 'viewer', personalityId: 'p-1' });
-    expect(
-      canAccessResource(req, { createdBy: null, userId: null, personalityId: 'p-1' })
-    ).toBe(true);
+    expect(canAccessResource(req, { createdBy: null, userId: null, personalityId: 'p-1' })).toBe(
+      true
+    );
   });
 
   it('viewer with non-matching personalityId returns false', () => {
     const req = fakeRequest({ userId: 'user-x', role: 'viewer', personalityId: 'p-2' });
-    expect(
-      canAccessResource(req, { createdBy: null, userId: null, personalityId: 'p-1' })
-    ).toBe(false);
+    expect(canAccessResource(req, { createdBy: null, userId: null, personalityId: 'p-1' })).toBe(
+      false
+    );
   });
 });
 

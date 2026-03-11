@@ -88,10 +88,7 @@ export function registerVoiceProfileRoutes(
   // ── GET /api/v1/voice/profiles/:id — get profile ─────────────
   app.get(
     '/api/v1/voice/profiles/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const profile = await voiceProfileStore.getById(request.params.id);
         if (!profile) {
@@ -135,10 +132,7 @@ export function registerVoiceProfileRoutes(
   // ── DELETE /api/v1/voice/profiles/:id — delete profile ────────
   app.delete(
     '/api/v1/voice/profiles/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const deleted = await voiceProfileStore.delete(request.params.id);
         if (!deleted) {

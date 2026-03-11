@@ -154,11 +154,18 @@ describe('VoiceAgentSession', () => {
   it('should handle interrupt by aborting TTS', async () => {
     // Create a slow TTS response
     manager.synthesizeSpeechBinary.mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({
-        buffer: Buffer.from('long-audio'),
-        format: 'mp3',
-        durationMs: 5000,
-      }), 5000))
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                buffer: Buffer.from('long-audio'),
+                format: 'mp3',
+                durationMs: 5000,
+              }),
+            5000
+          )
+        )
     );
 
     const audioChunks: Buffer[] = [];

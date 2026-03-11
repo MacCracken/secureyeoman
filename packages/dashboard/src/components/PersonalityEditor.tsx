@@ -3103,11 +3103,16 @@ function VoiceLanguageSection({
     setPreviewing(true);
     try {
       if (audioRef.current) audioRef.current.pause();
-      const result = await previewVoiceProfile(voiceProfileId, 'Hello, this is a voice profile preview.');
+      const result = await previewVoiceProfile(
+        voiceProfileId,
+        'Hello, this is a voice profile preview.'
+      );
       const audio = new Audio(`data:audio/${result.format || 'mp3'};base64,${result.audioBase64}`);
       audioRef.current = audio;
       audio.play();
-      audio.onended = () => setPreviewing(false);
+      audio.onended = () => {
+        setPreviewing(false);
+      };
     } catch {
       setPreviewing(false);
     }

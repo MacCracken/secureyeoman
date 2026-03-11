@@ -40,7 +40,11 @@ export class GitHubForgeAdapter implements CodeForgeAdapter {
     return toForgeRepo(data);
   }
 
-  async listPulls(owner: string, name: string, state?: 'open' | 'closed' | 'all'): Promise<ForgePullRequest[]> {
+  async listPulls(
+    owner: string,
+    name: string,
+    state?: 'open' | 'closed' | 'all'
+  ): Promise<ForgePullRequest[]> {
     const qs = state ? `?state=${state}&per_page=100` : '?per_page=100';
     const data = await this.get<GHPull[]>(`/repos/${enc(owner)}/${enc(name)}/pulls${qs}`);
     return data.map(toForgePull);
@@ -90,7 +94,9 @@ export class GitHubForgeAdapter implements CodeForgeAdapter {
   }
 
   async listBranches(owner: string, name: string): Promise<ForgeBranch[]> {
-    const data = await this.get<GHBranch[]>(`/repos/${enc(owner)}/${enc(name)}/branches?per_page=100`);
+    const data = await this.get<GHBranch[]>(
+      `/repos/${enc(owner)}/${enc(name)}/branches?per_page=100`
+    );
     return data.map((b) => ({
       name: b.name,
       sha: b.commit.sha,
@@ -99,7 +105,9 @@ export class GitHubForgeAdapter implements CodeForgeAdapter {
   }
 
   async listReleases(owner: string, name: string): Promise<ForgeRelease[]> {
-    const data = await this.get<GHRelease[]>(`/repos/${enc(owner)}/${enc(name)}/releases?per_page=30`);
+    const data = await this.get<GHRelease[]>(
+      `/repos/${enc(owner)}/${enc(name)}/releases?per_page=30`
+    );
     return data.map(toForgeRelease);
   }
 

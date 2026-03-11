@@ -4,7 +4,8 @@ import type { IdentityProviderCreate } from './sso-storage.js';
 import { AuthStorage } from './auth-storage.js';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
-process.env.SECUREYEOMAN_TOKEN_SECRET = process.env.SECUREYEOMAN_TOKEN_SECRET || 'test-secret-for-sso-storage';
+process.env.SECUREYEOMAN_TOKEN_SECRET =
+  process.env.SECUREYEOMAN_TOKEN_SECRET || 'test-secret-for-sso-storage';
 
 const IDP: IdentityProviderCreate = {
   name: 'Test OIDC Provider',

@@ -31,16 +31,12 @@ export function createVectorStore(config: VectorConfig, dimensions: number): Vec
 export function createVectorStore(opts: CreateVectorStoreOptions): VectorStore;
 export function createVectorStore(
   configOrOpts: VectorConfig | CreateVectorStoreOptions,
-  maybeDimensions?: number,
+  maybeDimensions?: number
 ): VectorStore {
   const isOpts = 'config' in configOrOpts && 'dimensions' in configOrOpts;
-  const config = isOpts
-    ? (configOrOpts as CreateVectorStoreOptions).config
-    : (configOrOpts as VectorConfig);
-  const dimensions = isOpts
-    ? (configOrOpts as CreateVectorStoreOptions).dimensions
-    : maybeDimensions!;
-  const agnosClient = isOpts ? (configOrOpts as CreateVectorStoreOptions).agnosClient : undefined;
+  const config = isOpts ? configOrOpts.config : configOrOpts;
+  const dimensions = isOpts ? configOrOpts.dimensions : maybeDimensions!;
+  const agnosClient = isOpts ? configOrOpts.agnosClient : undefined;
 
   if (config.backend === 'agnos') {
     if (!agnosClient) {

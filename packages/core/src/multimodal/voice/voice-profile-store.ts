@@ -86,10 +86,7 @@ export class VoiceProfileStore extends PgBaseStorage {
   }
 
   async getById(id: string): Promise<VoiceProfile | null> {
-    const row = await this.queryOne<ProfileRow>(
-      `SELECT * FROM voice.profiles WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<ProfileRow>(`SELECT * FROM voice.profiles WHERE id = $1`, [id]);
     return row ? profileFromRow(row) : null;
   }
 
@@ -167,10 +164,7 @@ export class VoiceProfileStore extends PgBaseStorage {
   }
 
   async delete(id: string): Promise<boolean> {
-    const count = await this.execute(
-      `DELETE FROM voice.profiles WHERE id = $1`,
-      [id]
-    );
+    const count = await this.execute(`DELETE FROM voice.profiles WHERE id = $1`, [id]);
     return count > 0;
   }
 }

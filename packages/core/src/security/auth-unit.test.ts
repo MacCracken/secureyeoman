@@ -805,10 +805,7 @@ describe('AuthService (unit)', () => {
       mockTotp.verifyTOTP.mockReturnValue(false);
       await svc.verifyTwoFactorCode('RECOVERY1');
 
-      expect(mockStorage.markRecoveryCodeUsed).toHaveBeenCalledWith(
-        'admin',
-        expect.any(String)
-      );
+      expect(mockStorage.markRecoveryCodeUsed).toHaveBeenCalledWith('admin', expect.any(String));
     });
 
     it('deletes from DB on disable', async () => {

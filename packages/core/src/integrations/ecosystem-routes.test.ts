@@ -203,7 +203,13 @@ describe('Ecosystem Routes', () => {
       });
       mockListSandboxProfiles.mockResolvedValue([
         { id: 'default', name: 'Default', seccomp: true, landlock: true },
-        { id: 'permissive', name: 'Permissive', description: 'No restrictions', seccomp: false, landlock: false },
+        {
+          id: 'permissive',
+          name: 'Permissive',
+          description: 'No restrictions',
+          seccomp: false,
+          landlock: false,
+        },
       ]);
 
       const res = await app.inject({
