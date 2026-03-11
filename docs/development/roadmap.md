@@ -20,15 +20,15 @@
 
 ### Manual Tests — Authentication & Multi-Tenancy
 
-- [ ] **SAML SP flow** — Configure SimpleSAMLphp (or mock). (1) `GET /api/v1/auth/sso/saml/:id/metadata` returns valid `<md:EntityDescriptor>` XML. (2) `GET /api/v1/auth/sso/authorize/:id` redirects to IdP with SAMLRequest. (3) Post-IdP redirect hits ACS, returns JWT in URL fragment.
-- [ ] **RLS tenant isolation** — Create tenant B via API. Insert `soul.personality` scoped to tenant B. Query personalities as tenant A → empty. Query as tenant B → record visible. Existing default-tenant data unaffected.
-- [ ] **OAuth token refresh end-to-end** — (1) Connect a Gmail account; (2) Wait for access token to expire (or use Connections → OAuth → "Refresh Token" button); (3) Confirm personality can still call `gmail_profile` without error; (4) Revoke the Google refresh token in Google Account → Security → Third-party apps, then trigger a Gmail tool call — confirm error message tells user to reconnect (not a silent 500).
+- [ ] **SAML SP flow** — Code complete (`sso-routes.ts`, `saml-adapter.ts`, tested). Manual verification: (1) `GET /api/v1/auth/sso/saml/:id/metadata` returns valid `<md:EntityDescriptor>` XML. (2) `GET /api/v1/auth/sso/authorize/:id` redirects to IdP with SAMLRequest. (3) Post-IdP redirect hits ACS, returns JWT. Needs live IdP (SimpleSAMLphp or Keycloak) to confirm end-to-end.
+- [ ] **RLS tenant isolation** — Schema supports tenant_id. Manual verification: Create tenant B, insert scoped personality, cross-query confirms isolation. Needs multi-tenant instance to test.
+- [ ] **OAuth token refresh end-to-end** — Auto-refresh implemented (`oauth-token-service.ts`, 5 min buffer). Manual verification: (1) Connect Gmail; (2) wait for expiry; (3) confirm `gmail_profile` still works; (4) Revoke in Google → confirm reconnect prompt. Needs live Google OAuth credentials.
 
 ### Manual Tests — Agent & Personality Features
 
-- [ ] **Per-Personality Memory Scoping** — End-to-end verification of ADR 133. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(No automated DB integration test yet)*
-- [ ] **AgentWorld sub-agents** — Sub-agents display when created, writing, meeting added. Verify delegation cards appear in grid/map/large views, disappear when delegation completes.
-- [ ] **Adaptive Learning Pipeline** — Verify conversation quality scorer runs on schedule (check `training.conversation_quality` table grows). Trigger a distillation job with `priorityMode: 'failure-first'` → confirm lower-scored conversations appear first in the export.
+- [ ] **Per-Personality Memory Scoping** — Code complete (personalityId throughout brain module, 42+ files). Manual verification: (1) Chat with T.Ron → save memory, confirm NOT in FRIDAY recall; (2) heartbeat stats differ per personality; (3) Omnipresent Mind toggle; (4) `/api/v1/brain/stats?personalityId=<id>` per-personality counts. Needs running instance with 2+ personalities.
+- [ ] **AgentWorld sub-agents** — Code complete (AgentWorldWidget, AgentWorldNode in AdvancedEditor). Manual verification: delegation cards in grid/map/large views, disappear on completion.
+- [ ] **Adaptive Learning Pipeline** — Code complete (`distillation-manager.ts`, `conversation-quality-scorer.ts`). Manual verification: quality scorer runs on schedule, distillation `priorityMode: 'failure-first'` ordering works.
 
 ### Manual Tests — Marketplace & Workflows
 
@@ -47,11 +47,9 @@
 
 ### Manual Tests — Desktop & Editor
 
-- [ ] **Docker MCP Tools** — Enable `MCP_EXPOSE_DOCKER=true` (socket mode). Verify `docker_ps` lists containers, `docker_logs` streams output, `docker_exec` runs commands correctly. Enable DinD mode via `MCP_DOCKER_MODE=dind` + `MCP_DOCKER_HOST` and repeat.
-- [ ] **Canvas Workspace** — Navigate to `/editor/advanced` (or click "Canvas Mode →" in the editor toolbar). Create ≥3 widgets, resize, move, minimize one. Reload page → verify layout is restored from localStorage. Pin a terminal output → frozen-output widget appears adjacent. Worktree selector lists git worktrees.
-- [ ] **Unified editor features** — At `/editor` (standard editor): (1) Click Brain icon → toggle memory on; run a terminal command → verify it appears in the personality's memory via `/api/v1/brain/memories`; (2) Click CPU icon → ModelWidget popup shows current model; switch model → toolbar label updates; (3) Click Globe icon → Agent World panel expands below the main row; switch between Grid/Map/Large views; close via × and verify `localStorage('editor:showWorld')` is `'false'`; (4) Open 3 terminal tabs in MultiTerminal → verify each has independent output; (5) Set `allowAdvancedEditor: true` in security policy → `/editor` should redirect to Canvas workspace.
-
----
+- [ ] **Docker MCP Tools** — Code complete (`docker-tools.ts`: docker_ps, docker_logs, docker_exec, registered in manifest). Manual verification: Enable `MCP_EXPOSE_DOCKER=true` (socket mode), verify listing/logs/exec. Test DinD mode via `MCP_DOCKER_MODE=dind` + `MCP_DOCKER_HOST`.
+- [ ] **Canvas Workspace** — Code complete (AdvancedEditorPage, CanvasWidget, canvas-layout, canvas-event-bus, canvas-registry). Manual verification: widget CRUD, resize, localStorage persistence, frozen-output pinning, worktree selector.
+- [ ] **Unified editor features** — Manual verification: Brain toggle + memory capture, ModelWidget switch, Agent World panel views, MultiTerminal tabs, `allowAdvancedEditor` redirect.
 
 ---
 
@@ -59,7 +57,7 @@
 
 **Priority**: P1 — Commercial. Must complete before public release.
 
-**Prerequisites**: Phase 106 (license gating infrastructure — ✅), Schema Tier Split (above).
+**Prerequisites**: Phase 106 (license gating infrastructure — ✅).
 
 ### Planned Pricing
 
@@ -158,11 +156,12 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 | Suite | Files | Tests | Stmts % | Branch % | Status |
 |-------|-------|-------|---------|----------|--------|
-| Core Unit | 642 | 15,827 | 89.31 | 79.10 | All passing |
-| Dashboard | 179 | 4,105 | 71.12 | 67.71 | All passing — target met |
-| MCP | 75 | 1,111 | 70.20 | 51.50 | All passing |
-| Core E2E | 8 | 67 | — | — | All passing |
+| Core Unit | 673 | 16,186 | 89.31 | 79.10 | All passing |
+| Dashboard | 179 | 4,111 | 71.12 | 67.71 | All passing — target met |
+| MCP | 76 | 1,124 | 70.20 | 51.50 | All passing |
+| Core E2E | 8 | 67 | — | — | All passing (incl. binary smoke) |
 | Core DB (integration) | 41 | 890 | — | — | All passing (clean DB verified) |
+| Go Edge | 16 | 83 | — | — | All passing (19.4s) |
 
 **Refactoring:**
 
@@ -175,7 +174,7 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Core Unit | `sandbox/`, `config/`, `cli/commands/` | Branch coverage gaps in exec paths and flag parsing |
 | Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
 | MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
-| Core E2E | Expand coverage | Currently 7 files / 53 tests; add training, delegation, analytics flows |
+| Core E2E | Expand coverage | Currently 8 files / 67 tests (incl. binary smoke); add training, delegation, analytics flows |
 
 ---
 
@@ -292,9 +291,9 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 - [ ] **Unified dev environment** — Shared `docker-compose.unified.yml` with networking across all three projects. Single `.env.unified` for common secrets.
 - [ ] **Unified SSO across all three projects** — OAuth2/OIDC federation: single identity provider, shared sessions. SecureYeoman as IdP or external OIDC provider.
-- [ ] **Cryptographic audit chain bridge** — SecureYeoman audit events forwarded to AGNOS cryptographic audit chain. Shared correlation IDs, immutable cross-project audit trail.
+- [x] **Cryptographic audit chain bridge** — ✅ Implemented (`agnos-hooks.ts`): batched forwarding (size 50, flush 5s) to AGNOS `POST /v1/audit/forward`. 13 tests. Shared correlation IDs via event metadata.
 - [ ] **Cross-project agent delegation** — SecureYeoman brain delegates to AGNOSTIC QA agents running on AGNOS. Full chain: task → brain → A2A → QA agent → AGNOS sandbox → results → brain.
-- [ ] **Shared vector store / RAG pipeline** — AGNOS embedded vector store accessible from SecureYeoman and AGNOSTIC. Shared knowledge base: code, docs, QA findings, audit logs.
+- [x] **Shared vector store / RAG pipeline** — ✅ Implemented (`brain/vector/agnos-store.ts`): `AgnosVectorStore` delegates to AGNOS runtime, batches inserts in chunks of 100. 7 tests.
 - [ ] **Unified agent marketplace** — Single marketplace spanning SecureYeoman skills, AGNOSTIC QA capabilities, and AGNOS native agents. Cross-project discovery and installation.
 
 ---
@@ -325,4 +324,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-11 (Phase 14A complete — Go edge binary with 83 tests; primary binary smoke tests added; CI updated with Go edge + smoke test jobs). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-11 (Full audit: 8/15 QA manual items code-complete awaiting live verification; test counts updated; cross-project audit bridge + vector store marked done; Phase 14A complete). See [Changelog](../../CHANGELOG.md) for full history.*

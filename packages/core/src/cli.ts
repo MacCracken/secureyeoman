@@ -482,6 +482,14 @@ router.registerLazy({
   loader: () => import('./cli/commands/tenant.js').then((m) => m.tenantCommand),
 });
 
+router.registerLazy({
+  name: 'break-glass',
+  aliases: ['bg'],
+  description: 'Break-glass emergency access token (enterprise)',
+  usage: 'secureyeoman break-glass [--key <recovery-key>] [--url <url>]',
+  loader: () => import('./cli/commands/break-glass.js').then((m) => m.breakGlassCommand),
+});
+
 // ── Help command (eager — uses router directly) ────────────────────────────
 
 router.register({

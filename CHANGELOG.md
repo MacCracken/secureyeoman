@@ -59,6 +59,55 @@ E2E test suite for the main TypeScript binary (`packages/core/src/__e2e__/binary
 - **`test-edge` job** (`.github/workflows/ci.yml`): Go unit + smoke tests, static binary build, CLI smoke test (`--version`, `status`, `start`), ARM64 cross-compile verification
 - **Binary smoke tests**: Run as part of existing `test-e2e` job (vitest picks up `binary-smoke.e2e.test.ts`)
 
+### Enterprise Security & Compliance Features (6 features, 230 new tests)
+
+**1. Compliance Statement of Applicability (SoA) Generator** — Enterprise
+- `soa-generator.ts`: Enriches 74 compliance controls across 5 frameworks (NIST 800-53, SOC 2, ISO 27001, HIPAA, EU AI Act) with hand-written narrative evidence descriptions
+- `soa-routes.ts`: 6 REST endpoints under `/api/v1/compliance/soa/` — JSON and Markdown output, per-framework filtering, coverage summaries
+- License-gated: `compliance_governance` (enterprise)
+- 22 tests (generator + routes)
+
+**2. Break-Glass Emergency Access** — Enterprise
+- `break-glass.ts`: BreakGlassManager with sealed recovery key (256-bit random, SHA-256 hashed), 1-hour JWT sessions, constant-time password comparison
+- `break-glass-storage.ts`: PgBaseStorage for `break_glass` schema (recovery_keys, sessions)
+- `break-glass-routes.ts`: 4 endpoints — unauthenticated emergency activation (rate-limited: 5/15min), session list/revoke (admin)
+- `cli/commands/break-glass.ts`: CLI command (`sy break-glass`, alias `bg`) for key generation
+- Migration: `013_break_glass.sql`. License: `break_glass` (enterprise)
+- 27 tests (manager + routes)
+
+**3. Access Review & Entitlement Reporting** — Enterprise
+- `access-review/access-review-manager.ts`: Campaign lifecycle (open → in_review → closed/expired), entitlement snapshots from RBAC + API keys + tenant associations, reviewer authorization, automatic revocation of denied entitlements on close
+- `access-review/access-review-storage.ts`: PgBaseStorage for `access_review` schema (campaigns, entitlements, decisions)
+- `access-review/access-review-routes.ts`: 6 endpoints under `/api/v1/security/access-review/` — campaign CRUD, entitlement snapshots, decision submission, reports
+- Migration: `014_access_review.sql`. License: `compliance_governance` (enterprise)
+- 67 tests (manager + routes)
+
+**4. SCIM 2.0 Provisioning** — Enterprise
+- `scim.ts`: ScimManager with full SCIM 2.0 resource formatting (User, Group, ListResponse, PatchOp schemas), SCIM filter parsing (`attr eq "value"`)
+- `scim-storage.ts`: PgBaseStorage for `scim` schema (users with soft-delete, groups with hard delete, group membership)
+- `scim-routes.ts`: 15 endpoints under `/api/v1/scim/v2/` — Users CRUD, Groups CRUD, ServiceProviderConfig, ResourceTypes, Schemas discovery
+- Migration: `015_scim.sql`. License: `sso_saml` (enterprise)
+- 46 tests (manager + routes)
+
+**5. Per-Tenant Rate Limiting & Token Budgets** — Enterprise
+- `quota-manager.ts`: TenantQuotaManager with sliding-window rate limits (per-minute, per-hour), token budgets (per-day, per-month), usage tracking and summary
+- `quota-storage.ts`: PgBaseStorage for `quotas` schema (tenant_limits, usage_counters, token_usage)
+- `quota-routes.ts`: 6 endpoints under `/api/v1/tenants/:tenantId/quotas` and `/usage` — limits CRUD, usage summary, token details, counter reset
+- Migration: `016_tenant_quotas.sql`. License: `multi_tenancy` (enterprise)
+- 32 tests (manager + routes)
+
+**6. WebAuthn/FIDO2 Authentication** — Community
+- `webauthn.ts`: WebAuthnManager with full registration/authentication flows, CBOR parsing for `none` attestation, COSE-to-PEM key conversion (ES256 + RS256), authenticator data parsing, counter-based replay protection. Pure `node:crypto`, no external deps.
+- `webauthn-storage.ts`: PgBaseStorage for `webauthn_credentials` and `webauthn_challenges` tables
+- `webauthn-routes.ts`: 6 endpoints under `/api/v1/auth/webauthn/` — register options/verify, authenticate options/verify, credential list/delete. No license gate (community tier).
+- Migration: `017_webauthn.sql`
+- 36 tests (manager + routes)
+
+**Infrastructure:**
+- 5 new migrations (013–017) in `manifest.ts`
+- All 6 features wired into `server.ts` via `tryRegister()` dynamic imports
+- Route permissions added for `/api/v1/scim` and `/api/v1/tenants` prefixes
+
 ---
 
 ## [2026.3.10]

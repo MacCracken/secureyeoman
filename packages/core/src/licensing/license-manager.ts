@@ -38,7 +38,8 @@ export type LicensedFeature =
   | 'dlp_security'
   | 'compliance_governance'
   | 'supply_chain'
-  | 'synapse';
+  | 'synapse'
+  | 'break_glass';
 
 /** @deprecated Use LicensedFeature instead. */
 export type EnterpriseFeature = LicensedFeature;
@@ -66,6 +67,7 @@ export const ENTERPRISE_FEATURES: LicensedFeature[] = [
   'compliance_governance',
   'supply_chain',
   'synapse',
+  'break_glass',
 ];
 
 export const ALL_LICENSED_FEATURES: LicensedFeature[] = [...PRO_FEATURES, ...ENTERPRISE_FEATURES];
@@ -96,6 +98,7 @@ export const FEATURE_TIER_MAP: Record<LicensedFeature, LicenseTier> = {
   compliance_governance: 'enterprise',
   supply_chain: 'enterprise',
   synapse: 'enterprise',
+  break_glass: 'enterprise',
 };
 
 /** @deprecated Use ALL_LICENSED_FEATURES instead. */

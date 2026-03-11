@@ -940,6 +940,12 @@ export class GatewayServer {
       }
     });
 
+    // Statement of Applicability (SoA) routes
+    await this.tryRegister('SoA', async () => {
+      const { registerSoaRoutes } = await import('../supply-chain/soa-routes.js');
+      registerSoaRoutes(this.app, { secureYeoman: this.secureYeoman });
+    });
+
     // Dashboard routes
     await this.tryRegister('Dashboard', async () => {
       const dashboardManager = this.secureYeoman.getDashboardManager();
@@ -1290,6 +1296,20 @@ export class GatewayServer {
     // Key rotation admin routes
     registerRotationRoutes(this.app, this.secureYeoman);
     this.getLogger().info('Key rotation routes registered');
+
+    // Access Review & Entitlement Reporting routes (enterprise)
+    await this.tryRegister('Access review', async () => {
+      const { registerAccessReviewRoutes } =
+        await import('../security/access-review/access-review-routes.js');
+      const { AccessReviewManager } =
+        await import('../security/access-review/access-review-manager.js');
+      const rbac = this.secureYeoman.getRBAC();
+      const authStorage = this.secureYeoman.getAuthStorage();
+      const auditChain = this.secureYeoman.getAuditChain();
+      const manager = new AccessReviewManager({ rbac, authStorage, auditChain });
+      registerAccessReviewRoutes(this.app, { manager, secureYeoman: this.secureYeoman });
+      this.getLogger().info('Access review routes registered');
+    });
 
     // Extension routes
     try {
@@ -1743,6 +1763,58 @@ export class GatewayServer {
         'Event subscription routes skipped'
       );
     }
+
+    // Break-glass emergency access routes — enterprise feature
+    await this.tryRegister('BreakGlass', async () => {
+      const { registerBreakGlassRoutes } = await import('../security/break-glass-routes.js');
+      const { BreakGlassManager } = await import('../security/break-glass.js');
+      const { BreakGlassStorage } = await import('../security/break-glass-storage.js');
+      const tokenSecret =
+        this.secureYeoman.getConfig().gateway?.auth?.tokenSecret ?? 'secureyeoman-default';
+      const bgManager = new BreakGlassManager(
+        { tokenSecret },
+        {
+          storage: new BreakGlassStorage(),
+          auditChain: this.secureYeoman.getAuditChain(),
+          logger: this.getLogger(),
+        }
+      );
+      registerBreakGlassRoutes(this.app, {
+        breakGlassManager: bgManager,
+        secureYeoman: this.secureYeoman,
+      });
+    });
+
+    // SCIM 2.0 provisioning routes — enterprise feature
+    await this.tryRegister('SCIM', async () => {
+      const { registerScimRoutes } = await import('../security/scim-routes.js');
+      registerScimRoutes(this.app, { secureYeoman: this.secureYeoman });
+    });
+
+    // Per-tenant quota & rate limiting routes — enterprise feature
+    await this.tryRegister('Quotas', async () => {
+      const { registerQuotaRoutes } = await import('../tenants/quota-routes.js');
+      const { TenantQuotaManager } = await import('../tenants/quota-manager.js');
+      const { QuotaStorage } = await import('../tenants/quota-storage.js');
+      const quotaManager = new TenantQuotaManager(new QuotaStorage());
+      registerQuotaRoutes(this.app, { quotaManager, secureYeoman: this.secureYeoman });
+    });
+
+    // WebAuthn/FIDO2 authentication routes — community feature (no license gate)
+    await this.tryRegister('WebAuthn', async () => {
+      const { registerWebAuthnRoutes } = await import('../security/webauthn-routes.js');
+      const { WebAuthnManager } = await import('../security/webauthn.js');
+      const { WebAuthnStorage } = await import('../security/webauthn-storage.js');
+      const hostname = this.config.host ?? 'localhost';
+      const port = this.config.port ?? 3000;
+      const webAuthnManager = new WebAuthnManager({
+        storage: new WebAuthnStorage(),
+        rpName: 'SecureYeoman',
+        rpId: hostname,
+        origin: `http://${hostname}:${port}`,
+      });
+      registerWebAuthnRoutes(this.app, { webAuthnManager, secureYeoman: this.secureYeoman });
+    });
 
     // Standard Prometheus scrape endpoint /metrics (unauthenticated, public)
     this.app.get('/metrics', async (_request, reply) => {

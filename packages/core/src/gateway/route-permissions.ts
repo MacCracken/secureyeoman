@@ -99,6 +99,9 @@ const PREFIX_RESOURCE_MAP: readonly [prefix: string, resource: string][] = [
   ['/api/v1/ai', 'ai'],
   ['/api/v1/events', 'events'],
   ['/api/v1/ecosystem', 'integrations'],
+  ['/api/v1/compliance', 'compliance'],
+  ['/api/v1/scim', 'auth'],
+  ['/api/v1/tenants', 'tenants'],
   ['/api/v1/admin', 'admin'],
 ];
 

@@ -57,4 +57,9 @@ export const MIGRATION_MANIFEST: MigrationEntry[] = [
   { id: '010_encrypt_idp_secrets', sql: readSql('010_encrypt_idp_secrets.sql'), tier: 'community' },
   { id: '011_sso_auth_codes', sql: readSql('011_sso_auth_codes.sql'), tier: 'community' },
   { id: '012_voice_profiles', sql: readSql('012_voice_profiles.sql'), tier: 'pro' },
+  { id: '013_break_glass', sql: readSql('013_break_glass.sql'), tier: 'enterprise' },
+  { id: '014_access_review', sql: readSql('014_access_review.sql'), tier: 'enterprise' },
+  { id: '015_scim', sql: readSql('015_scim.sql'), tier: 'enterprise' },
+  { id: '016_tenant_quotas', sql: readSql('016_tenant_quotas.sql'), tier: 'enterprise' },
+  { id: '017_webauthn', sql: readSql('017_webauthn.sql'), tier: 'community' },
 ];
