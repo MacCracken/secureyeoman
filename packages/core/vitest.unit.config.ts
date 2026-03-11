@@ -60,6 +60,8 @@ const DB_TEST_EXCLUDE = [
   'src/config/system-preferences.test.ts',
   // Gateway DB tests
   'src/gateway/auth-middleware.test.ts',
+  'src/gateway/auth-middleware-db-authn.test.ts',
+  'src/gateway/auth-middleware-db-rbac.test.ts',
   'src/gateway/oauth-token.test.ts',
   // AI module with DB usage
   'src/ai/usage-history.test.ts',
