@@ -72,29 +72,24 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### Test Coverage — Current Status (2026-03-10)
+### Test Coverage — Current Status (2026-03-11)
 
-**Core unit: 89.31% stmt / 79.10% branches** (target 88% / 77% — exceeded).
+**All suites above target.** Core unit: 89.31% stmt / 79.10% branches (target 88% / 77%). Dashboard: 71.12% stmt / 67.71% branches (target 70% — met). MCP: 70.20% stmt (target 70% — met).
 
 | Suite | Files | Tests | Stmts % | Branch % | Status |
 |-------|-------|-------|---------|----------|--------|
 | Core Unit | 642 | 15,827 | 89.31 | 79.10 | All passing |
-| Dashboard | 176 | 4,043 | ~68 | ~65 | All passing |
+| Dashboard | 179 | 4,105 | 71.12 | 67.71 | All passing — target met |
 | MCP | 75 | 1,111 | 70.20 | 51.50 | All passing |
 | Core E2E | 7 | 53 | — | — | All passing |
 | Core DB (integration) | 41 | 890 | — | — | All passing (clean DB verified) |
-
-**Recent improvements (2026-03-10):**
-- MCP: 61.80% → 70.20% stmt (+8.4%). Added handler invocation tests for linear, twitter, todoist, notion, jira, gmail, googlecalendar, google-workspace, quickbooks tools. Added prompt and resource handler tests.
-- Dashboard: 62.37% → ~68% stmt (+6%). Added tests for PersonalityEditor, SecurityMLTab, SecurityATHITab, SecurityAutonomyTab, FederationTab, McpManager.
-- Dashboard target: 70% stmt — remaining gap in training tabs (ExperimentsTab, EvaluationTab, PreferencesTab) and hooks (useCollabMonaco, usePushToTalk).
 
 **Remaining improvement areas:**
 
 | Suite | Area | Notes |
 |-------|------|-------|
 | Core Unit | `sandbox/`, `config/`, `cli/commands/` | Branch coverage gaps in exec paths and flag parsing |
-| Dashboard | Training tabs, collab/voice hooks | ~2% more needed to hit 70% target |
+| Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
 | MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
 | Core E2E | Expand coverage | Currently 7 files / 53 tests; add training, delegation, analytics flows |
 
@@ -102,19 +97,19 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ## CI/CD & Code Forge Dashboard
 
-Unified dashboard for repositories, pull requests, pipelines, and artifact registries across multiple code forges. Backend webhook ingestion already supports GitHub, GitLab, Jenkins, Northflank, and Delta (`cicd-webhook-routes.ts`). Delta has a full HTTP client (`delta-client.ts`, 17 MCP tools). This section covers the dashboard UI and extending the client layer to other forges.
+Unified dashboard for repositories, pull requests, pipelines, and artifact registries across multiple code forges. Backend webhook ingestion supports GitHub, GitLab, Jenkins, Northflank, Delta, Travis CI, Bitbucket, and Gitea (`cicd-webhook-routes.ts`). Five forge adapters (Delta, GitHub, GitLab, Bitbucket, Gitea). Artifact registry browser (GHCR, GitLab CR, Delta). JFrog Artifactory integration. Webhook event timeline with persistence and dashboard UI.
 
 | Item | Effort | Status | Description |
 |------|--------|--------|-------------|
 | Dashboard forge panel — Delta | M | Done | Included in forge adapter implementation. Delta repos/PRs/pipelines render via unified `ForgePanel`. |
 | Dashboard forge panel — GitHub | M | Done | GitHub adapter (`GitHubForgeAdapter`) with REST API. Repos, PRs (with merged state), Actions runs, branches, releases with assets. GHE support. |
 | Dashboard forge panel — GitLab | M | Done | GitLab adapter (`GitLabForgeAdapter`) with REST v4. Projects, MRs, pipelines, branches, releases. Self-hosted URL support. |
-| Forge adapter interface | S | Done | `CodeForgeAdapter` interface + Delta/GitHub/GitLab adapters + factory + REST routes (`/api/v1/forge/*`) + dashboard `ForgePanel` component. 67 tests. |
-| Artifact registry browser | M | Future | Cross-forge artifact browser: container images (GHCR, GitLab CR, Delta registry), release assets, build artifacts. Download, inspect layers, compare versions. |
-| JFrog Artifactory integration | M | Future | JFrog Artifactory REST API v2 client. Browse repositories (local/remote/virtual), search artifacts (AQL), view build info, promote builds between repos. Auth via API key or access token. Dashboard panel in artifact registry browser. |
-| Pipeline trigger & monitor | S | Future | Trigger builds from dashboard, stream logs, cancel running pipelines. Reuse existing `delta_trigger_pipeline` / `delta_cancel_pipeline` patterns. Providers: GitHub Actions, GitLab CI, Delta, Jenkins (REST API + crumb auth), Travis CI (API v3 + token auth). |
-| Webhook event timeline | S | Future | Unified timeline view of incoming CI/CD webhook events across all providers (GitHub, GitLab, Jenkins, Northflank, Delta, Travis CI). Filterable by forge, repo, event type. Data already captured by `cicd-webhook-routes.ts`. Travis CI webhook support: signature verification via `Travis-CI-Token` header. |
-| Bitbucket / Gitea support | S | Future | Extend forge adapter + webhook handler to cover Bitbucket Cloud and Gitea. |
+| Forge adapter interface | S | Done | `CodeForgeAdapter` interface + 5 adapters + factory + REST routes (`/api/v1/forge/*`) + dashboard `ForgePanel` component. |
+| Artifact registry browser | M | Done | `ArtifactRegistryAdapter` interface + GHCR, GitLab CR, Delta adapters + factory. 3 REST endpoints under `/api/v1/forge/:key/artifacts/`. Dashboard `ArtifactBrowser` component (container images + build artifacts tabs). 23 tests. |
+| JFrog Artifactory integration | M | Done | `ArtifactoryClient` REST API v2 client (repos, folders, AQL search, Docker images/tags, builds, build promotion). 17 REST routes under `/api/v1/artifactory/`. Dashboard `ArtifactoryPanel` component. 21 tests. |
+| Pipeline trigger & monitor | S | Done | `triggerPipeline()` and `cancelPipeline()` on all 5 forge adapters. Dashboard trigger/cancel via existing forge routes. Providers: Delta, GitHub Actions, GitLab CI, Bitbucket Pipelines, Gitea Actions. |
+| Webhook event timeline | S | Done | `WebhookEventStore` (in-memory, FIFO 1000, filterable). 3 timeline REST endpoints. Travis CI webhook support (6th provider). Dashboard `WebhookTimeline` component with provider/repo/event filters, 30s auto-refresh. 33 tests. |
+| Bitbucket / Gitea support | S | Done | `BitbucketForgeAdapter` (Cloud v2.0 + Server REST 1.0 auto-detection, 13 tests) + `GiteaForgeAdapter` (API v1, merged PR detection, 11 tests). Webhook normalizers for both providers. Factory updated. |
 
 ---
 
@@ -250,4 +245,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-11 (AGNOS integration complete — handshake verified, dashboard sandbox profiles, client fixes; Delta GHCR verified). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-11 (AGNOS handshake fully verified with type/timestamp fixes; dashboard coverage 71.12%; forge adapters done). See [Changelog](../../CHANGELOG.md) for full history.*

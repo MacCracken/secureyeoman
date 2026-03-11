@@ -20,11 +20,16 @@ export interface AgnosAgentProfile {
 }
 
 export interface AgnosDiscoverResponse {
-  name: string;
+  service: string;
   version: string;
+  codename?: string;
   capabilities: string[];
   endpoints: Record<string, string>;
-  companions?: Record<string, { url: string; status: string }>;
+  companion_services?: Record<string, { default_url: string; status: string; codename?: string; env_var?: string }>;
+  protocol_version?: string;
+  uptime_seconds?: number;
+  agents_registered?: number;
+  auth?: { type: string; header: string };
 }
 
 export interface AgnosSandboxProfile {
@@ -108,9 +113,13 @@ export class AgnosClient {
 
   // ── Audit Forwarding ───────────────────────────────────────
   async forwardAuditEvents(events: Record<string, unknown>[]): Promise<{ accepted: number }> {
+    const withTimestamps = events.map((e) => ({
+      timestamp: new Date().toISOString(),
+      ...e,
+    }));
     return this._fetch('/v1/audit/forward', {
       method: 'POST',
-      body: { events, source: 'secureyeoman' },
+      body: { events: withTimestamps, source: 'secureyeoman' },
     }) as Promise<{ accepted: number }>;
   }
 

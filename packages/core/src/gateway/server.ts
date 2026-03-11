@@ -113,7 +113,7 @@ import { registerPhotisnadiRoutes } from '../integrations/photisnadi/photisnadi-
 import { registerSynapseRoutes } from '../integrations/synapse/synapse-routes.js';
 import { registerEcosystemRoutes } from '../integrations/ecosystem-routes.js';
 import { ServiceDiscoveryManager } from '../integrations/service-discovery.js';
-import { registerForgeRoutes } from '../integrations/forge/index.js';
+import { registerForgeRoutes, registerArtifactRoutes } from '../integrations/forge/index.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -122,6 +122,9 @@ import { VERSION } from '../version.js';
 import { otelFastifyPlugin } from '../telemetry/otel-fastify-plugin.js';
 import { registerAlertRoutes } from '../telemetry/alert-routes.js';
 import { registerCicdWebhookRoutes } from '../integrations/cicd/cicd-webhook-routes.js';
+import { WebhookEventStore } from '../integrations/cicd/webhook-event-store.js';
+import { registerWebhookTimelineRoutes } from '../integrations/cicd/webhook-timeline-routes.js';
+import { registerArtifactoryRoutes } from '../integrations/forge/artifactory/index.js';
 import { registerAdminSettingsRoutes } from './admin-settings-routes.js';
 import { registerAnalyticsRoutes } from '../analytics/analytics-routes.js';
 import { registerScanningRoutes } from '../sandbox/scanning/scanning-routes.js';
@@ -818,6 +821,8 @@ export class GatewayServer {
         initialForges.push({ provider: 'delta' as const, baseUrl: deltaUrl, token: deltaToken });
       }
       registerForgeRoutes(this.app, { initialForges });
+      registerArtifactRoutes(this.app, { initialForges });
+      registerArtifactoryRoutes(this.app);
     } catch {
       // Forge routes are optional — skip on error
     }
@@ -1057,7 +1062,9 @@ export class GatewayServer {
 
         // CI/CD inbound webhook normalizer (Phase 90) — public endpoint with HMAC gate
         try {
-          registerCicdWebhookRoutes(this.app, { workflowManager, secureYeoman: this.secureYeoman });
+          const webhookEventStore = new WebhookEventStore();
+          registerCicdWebhookRoutes(this.app, { workflowManager, secureYeoman: this.secureYeoman, webhookEventStore });
+          registerWebhookTimelineRoutes(this.app, { webhookEventStore });
           this.getLogger().info('CI/CD webhook routes registered');
         } catch (err) {
           this.getLogger().debug(

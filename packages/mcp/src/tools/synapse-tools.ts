@@ -60,7 +60,7 @@ export function registerSynapseTools(
       inputSchema: {},
     },
     wrapToolHandler('synapse_status', middleware, async () => {
-      const result = await syn('get', '/api/v1/status');
+      const result = await syn('get', '/system/status');
       return jsonResponse(result);
     })
   );
@@ -76,7 +76,7 @@ export function registerSynapseTools(
       inputSchema: {},
     },
     wrapToolHandler('synapse_list_models', middleware, async () => {
-      const result = await syn('get', '/api/v1/models');
+      const result = await syn('get', '/models');
       return jsonResponse(result);
     })
   );
@@ -98,7 +98,7 @@ export function registerSynapseTools(
       },
     },
     wrapToolHandler('synapse_pull_model', middleware, async ({ modelName, quant }) => {
-      const result = await syn('post', '/api/v1/models/pull', {
+      const result = await syn('post', '/marketplace/pull', {
         model_name: modelName,
         quant: quant ?? '',
       });
@@ -127,7 +127,7 @@ export function registerSynapseTools(
       },
     },
     wrapToolHandler('synapse_infer', middleware, async ({ model, prompt, maxTokens }) => {
-      const result = await syn('post', '/api/v1/inference', {
+      const result = await syn('post', '/inference', {
         model,
         prompt,
         max_tokens: maxTokens ?? 512,
@@ -162,7 +162,7 @@ export function registerSynapseTools(
       'synapse_submit_job',
       middleware,
       async ({ baseModel, datasetPath, method, configJson }) => {
-        const result = await syn('post', '/api/v1/training/jobs', {
+        const result = await syn('post', '/training/jobs', {
           base_model: baseModel,
           dataset_path: datasetPath,
           method,
@@ -182,7 +182,7 @@ export function registerSynapseTools(
       inputSchema: {},
     },
     wrapToolHandler('synapse_list_jobs', middleware, async () => {
-      const result = await syn('get', '/api/v1/training/jobs');
+      const result = await syn('get', '/training/jobs');
       return jsonResponse(result);
     })
   );
@@ -198,7 +198,7 @@ export function registerSynapseTools(
       },
     },
     wrapToolHandler('synapse_job_status', middleware, async ({ jobId }) => {
-      const result = await syn('get', `/api/v1/training/jobs/${encodeURIComponent(jobId)}`);
+      const result = await syn('get', `/training/jobs/${encodeURIComponent(jobId)}`);
       return jsonResponse(result);
     })
   );
@@ -212,7 +212,7 @@ export function registerSynapseTools(
       },
     },
     wrapToolHandler('synapse_cancel_job', middleware, async ({ jobId }) => {
-      const result = await syn('post', `/api/v1/training/jobs/${encodeURIComponent(jobId)}/cancel`);
+      const result = await syn('post', `/training/jobs/${encodeURIComponent(jobId)}/cancel`);
       return jsonResponse(result);
     })
   );

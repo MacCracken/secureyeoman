@@ -3,6 +3,7 @@ import { createForgeAdapter } from './forge-factory.js';
 import { DeltaForgeAdapter } from './delta-forge-adapter.js';
 import { GitHubForgeAdapter } from './github-forge-adapter.js';
 import { GitLabForgeAdapter } from './gitlab-forge-adapter.js';
+import { BitbucketForgeAdapter } from './bitbucket-forge-adapter.js';
 
 describe('createForgeAdapter', () => {
   it('creates DeltaForgeAdapter for delta provider', () => {
@@ -23,9 +24,15 @@ describe('createForgeAdapter', () => {
     expect(adapter.provider).toBe('gitlab');
   });
 
+  it('creates BitbucketForgeAdapter for bitbucket provider', () => {
+    const adapter = createForgeAdapter({ provider: 'bitbucket', baseUrl: 'https://bitbucket.org' });
+    expect(adapter).toBeInstanceOf(BitbucketForgeAdapter);
+    expect(adapter.provider).toBe('bitbucket');
+  });
+
   it('throws for unsupported provider', () => {
-    expect(() => createForgeAdapter({ provider: 'bitbucket', baseUrl: 'https://bitbucket.org' })).toThrow(
-      'Unsupported forge provider: bitbucket'
+    expect(() => createForgeAdapter({ provider: 'bogus' as never, baseUrl: 'https://example.com' })).toThrow(
+      'Unsupported forge provider: bogus'
     );
   });
 });

@@ -91,7 +91,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
-        const res = await synapseFetch('/api/v1/status');
+        const res = await synapseFetch('/system/status');
         if (!res.ok) {
           const body = await res.text().catch(() => '');
           return sendError(reply, 502, `Synapse status error: ${body}`);
@@ -111,7 +111,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
-        const res = await synapseFetch('/api/v1/models');
+        const res = await synapseFetch('/models');
         if (!res.ok) {
           const body = await res.text().catch(() => '');
           return sendError(reply, 502, `Synapse models error: ${body}`);
@@ -137,7 +137,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         const { modelName, quant } = req.body ?? ({} as { modelName?: string; quant?: string });
         if (!modelName) return sendError(reply, 400, 'Missing required field: modelName');
 
-        await relaySSE(reply, '/api/v1/models/pull', {
+        await relaySSE(reply, '/marketplace/pull', {
           method: 'POST',
           body: JSON.stringify({ modelName, quant }),
         });
@@ -168,7 +168,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         if (!model || !prompt)
           return sendError(reply, 400, 'Missing required fields: model, prompt');
 
-        const res = await synapseFetch('/api/v1/inference', {
+        const res = await synapseFetch('/inference', {
           method: 'POST',
           body: JSON.stringify({ model, prompt, maxTokens: maxTokens ?? 512 }),
         });
@@ -203,7 +203,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         if (!model || !prompt)
           return sendError(reply, 400, 'Missing required fields: model, prompt');
 
-        await relaySSE(reply, '/api/v1/inference/stream', {
+        await relaySSE(reply, '/inference/stream', {
           method: 'POST',
           body: JSON.stringify({ model, prompt, maxTokens: maxTokens ?? 512 }),
         });
@@ -245,7 +245,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         if (!baseModel || !method)
           return sendError(reply, 400, 'Missing required fields: baseModel, method');
 
-        const res = await synapseFetch('/api/v1/training/jobs', {
+        const res = await synapseFetch('/training/jobs', {
           method: 'POST',
           body: JSON.stringify({ baseModel, datasetPath, method, configJson }),
         });
@@ -280,7 +280,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         if (offset) params.set('offset', offset);
 
         const qs = params.toString();
-        const path = `/api/v1/training/jobs${qs ? `?${qs}` : ''}`;
+        const path = `/training/jobs${qs ? `?${qs}` : ''}`;
         const res = await synapseFetch(path);
 
         if (!res.ok) {
@@ -304,7 +304,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const { id } = req.params;
-        const res = await synapseFetch(`/api/v1/training/jobs/${encodeURIComponent(id)}`);
+        const res = await synapseFetch(`/training/jobs/${encodeURIComponent(id)}`);
 
         if (!res.ok) {
           const body = await res.text().catch(() => '');
@@ -327,7 +327,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const { id } = req.params;
-        await relaySSE(reply, `/api/v1/training/jobs/${encodeURIComponent(id)}/logs`);
+        await relaySSE(reply, `/training/jobs/${encodeURIComponent(id)}/logs`);
       } catch (err) {
         if (!reply.raw.headersSent) {
           return sendError(reply, 502, `Synapse logs error: ${toErrorMessage(err)}`);
@@ -346,7 +346,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const { id } = req.params;
-        const res = await synapseFetch(`/api/v1/training/jobs/${encodeURIComponent(id)}/cancel`, {
+        const res = await synapseFetch(`/training/jobs/${encodeURIComponent(id)}/cancel`, {
           method: 'POST',
         });
 

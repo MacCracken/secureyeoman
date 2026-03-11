@@ -1,9 +1,9 @@
 /**
  * CI/CD Inbound Webhook Routes — Phase 90
  *
- * Normalises inbound CI/CD events from GitHub, Jenkins, GitLab, Northflank, and Delta
- * into a canonical CiEvent, verifies platform-specific signatures, and dispatches
- * matching event-triggered workflow definitions.
+ * Normalises inbound CI/CD events from GitHub, Jenkins, GitLab, Northflank, Delta,
+ * Travis CI, Bitbucket, and Gitea into a canonical CiEvent, verifies platform-specific
+ * signatures, and dispatches matching event-triggered workflow definitions.
  *
  * Route: POST /api/v1/webhooks/ci/:provider
  *
@@ -13,6 +13,9 @@
  *   GitLab:     X-Gitlab-Token      — static token match against GITLAB_WEBHOOK_TOKEN
  *   Northflank: X-Northflank-Signature — HMAC-SHA256 of body, key = NORTHFLANK_WEBHOOK_SECRET
  *   Delta:      X-Delta-Signature   — HMAC-SHA256 of body, key = DELTA_WEBHOOK_SECRET
+ *   Travis CI:  Travis-CI-Token / Signature — static token match against TRAVIS_WEBHOOK_TOKEN
+ *   Bitbucket:  X-Hub-Signature     — HMAC-SHA256 of body, key = BITBUCKET_WEBHOOK_SECRET
+ *   Gitea:      X-Gitea-Signature   — HMAC-SHA256 of body, key = GITEA_WEBHOOK_SECRET
  */
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -22,11 +25,12 @@ import type { SecureYeoman } from '../../secureyeoman.js';
 import { requiresLicense } from '../../licensing/license-guard.js';
 import { sendError, toErrorMessage } from '../../utils/errors.js';
 import { getSecret } from '../../config/loader.js';
+import type { WebhookEventStore } from './webhook-event-store.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CiEvent {
-  provider: 'github' | 'jenkins' | 'gitlab' | 'northflank' | 'delta';
+  provider: 'github' | 'jenkins' | 'gitlab' | 'northflank' | 'delta' | 'travis' | 'bitbucket' | 'gitea';
   event: string; // e.g. 'workflow_run.completed', 'build.failed'
   ref: string; // branch/tag
   conclusion: string; // success | failure | cancelled | unknown
@@ -39,6 +43,7 @@ export interface CiEvent {
 export interface CicdWebhookRoutesOptions {
   workflowManager?: WorkflowManager;
   secureYeoman?: SecureYeoman;
+  webhookEventStore?: WebhookEventStore;
 }
 
 // ─── Signature Helpers ────────────────────────────────────────────────────────
@@ -228,13 +233,119 @@ function normalizeDelta(eventHeader: string, body: Record<string, unknown>): CiE
   };
 }
 
+function normalizeTravis(body: Record<string, unknown>): CiEvent {
+  const event = String(body.type ?? 'build');
+  const ref = String(body.branch ?? '');
+  const statusMessage = String(body.status_message ?? 'unknown');
+  const conclusionMap: Record<string, string> = {
+    Passed: 'success',
+    Fixed: 'success',
+    Broken: 'failure',
+    Failed: 'failure',
+    Errored: 'failure',
+    'Still Failing': 'failure',
+    Canceled: 'cancelled',
+  };
+  const conclusion = conclusionMap[statusMessage] ?? 'unknown';
+  const runId = String(body.id ?? body.number ?? '');
+  const repository = body.repository as Record<string, unknown> | undefined;
+  const repoUrl = String(repository?.url ?? body.build_url ?? '');
+  const logsUrl = String(body.build_url ?? '') || undefined;
+
+  return {
+    provider: 'travis',
+    event,
+    ref,
+    conclusion,
+    runId,
+    repoUrl,
+    logsUrl,
+    metadata: body,
+  };
+}
+
+function normalizeBitbucket(eventHeader: string, body: Record<string, unknown>): CiEvent {
+  const event = eventHeader.replace(/:/g, '.'); // e.g. repo:push → repo.push
+  const changes = (body.push as Record<string, unknown>)?.changes as Array<Record<string, unknown>> | undefined;
+  const refChanges = body.refChanges as Array<Record<string, unknown>> | undefined;
+  const ref = changes?.[0]?.new
+    ? String((changes[0].new as Record<string, unknown>).name ?? '')
+    : String(refChanges?.[0]?.refId ?? '');
+  const buildStatus = body.commit_status as Record<string, unknown> | undefined;
+  const pipelineState = (body.pipeline as Record<string, unknown>)?.state as Record<string, unknown> | undefined;
+  const stateResult = pipelineState?.result as Record<string, unknown> | undefined;
+  const stateName = String(stateResult?.name ?? pipelineState?.name ?? buildStatus?.state ?? 'unknown').toUpperCase();
+  const conclusionMap: Record<string, string> = {
+    SUCCESSFUL: 'success',
+    PASSED: 'success',
+    FAILED: 'failure',
+    STOPPED: 'cancelled',
+    INPROGRESS: 'unknown',
+  };
+  const conclusion = conclusionMap[stateName] ?? 'unknown';
+  const pipeline = body.pipeline as Record<string, unknown> | undefined;
+  const runId = String(pipeline?.uuid ?? buildStatus?.key ?? '');
+  const repository = body.repository as Record<string, unknown> | undefined;
+  const links = repository?.links as Record<string, unknown> | undefined;
+  const htmlLink = links?.html as Record<string, unknown> | undefined;
+  const repoUrl = String(htmlLink?.href ?? repository?.full_name ?? '');
+
+  return {
+    provider: 'bitbucket',
+    event,
+    ref,
+    conclusion,
+    runId,
+    repoUrl,
+    logsUrl: undefined,
+    metadata: body,
+  };
+}
+
+function normalizeGitea(eventHeader: string, body: Record<string, unknown>): CiEvent {
+  const event = eventHeader; // e.g. push, pull_request, workflow_run
+  const ref = String(body.ref ?? '');
+  const workflowRun = body.workflow_run as Record<string, unknown> | undefined;
+  const action = body.action as string | undefined;
+  const statusStr = String(workflowRun?.status ?? workflowRun?.conclusion ?? action ?? 'unknown').toLowerCase();
+  const conclusionMap: Record<string, string> = {
+    success: 'success',
+    completed: 'success',
+    failure: 'failure',
+    failed: 'failure',
+    cancelled: 'cancelled',
+    canceled: 'cancelled',
+    queued: 'unknown',
+    in_progress: 'unknown',
+    running: 'unknown',
+  };
+  const conclusion = conclusionMap[statusStr] ?? 'unknown';
+  const runId = String(workflowRun?.id ?? body.after ?? '');
+  const repository = body.repository as Record<string, unknown> | undefined;
+  const repoUrl = String(repository?.html_url ?? '');
+  const logsUrl = workflowRun
+    ? String((workflowRun as Record<string, unknown>).html_url ?? '')
+    : undefined;
+
+  return {
+    provider: 'gitea',
+    event,
+    ref,
+    conclusion,
+    runId,
+    repoUrl,
+    logsUrl: logsUrl || undefined,
+    metadata: body,
+  };
+}
+
 // ─── Route Registration ───────────────────────────────────────────────────────
 
 export function registerCicdWebhookRoutes(
   app: FastifyInstance,
   opts: CicdWebhookRoutesOptions = {}
 ): void {
-  const { workflowManager, secureYeoman } = opts;
+  const { workflowManager, secureYeoman, webhookEventStore } = opts;
 
   const cicdPreHandlers = secureYeoman
     ? [requiresLicense('cicd_integration', () => secureYeoman.getLicenseManager())]
@@ -336,11 +447,90 @@ export function registerCicdWebhookRoutes(
           }
           const eventHeader = (request.headers['x-delta-event'] as string | undefined) ?? 'push';
           ciEvent = normalizeDelta(eventHeader, body);
+        } else if (provider === 'travis') {
+          const travisToken = process.env.TRAVIS_WEBHOOK_TOKEN;
+          const token =
+            (request.headers['travis-ci-token'] as string | undefined) ??
+            (request.headers['signature'] as string | undefined);
+          const result = verifyStaticToken(travisToken, token);
+          if (result === 'no_secret') {
+            return sendError(
+              reply,
+              503,
+              'Travis CI webhook token not configured (TRAVIS_WEBHOOK_TOKEN)'
+            );
+          }
+          if (result === 'invalid') {
+            return sendError(reply, 401, 'Invalid Travis CI webhook token');
+          }
+          ciEvent = normalizeTravis(body);
+        } else if (provider === 'bitbucket') {
+          const bitbucketSecret = process.env.BITBUCKET_WEBHOOK_SECRET;
+          const sig = request.headers['x-hub-signature'] as string | undefined;
+          // Bitbucket uses X-Hub-Signature with sha256=<hex> format (same as GitHub)
+          const result = bitbucketSecret
+            ? sig
+              ? (() => {
+                  const expected = `sha256=${hmacSha256(bitbucketSecret, rawBody)}`;
+                  try {
+                    return timingSafeEqual(Buffer.from(expected), Buffer.from(sig ?? ''))
+                      ? 'valid'
+                      : 'invalid';
+                  } catch {
+                    return 'invalid';
+                  }
+                })()
+              : 'invalid'
+            : 'no_secret';
+          if (result === 'no_secret') {
+            return sendError(
+              reply,
+              503,
+              'Bitbucket webhook secret not configured (BITBUCKET_WEBHOOK_SECRET)'
+            );
+          }
+          if (result === 'invalid') {
+            return sendError(reply, 401, 'Invalid Bitbucket webhook signature');
+          }
+          const eventHeader =
+            (request.headers['x-event-key'] as string | undefined) ?? 'repo:push';
+          ciEvent = normalizeBitbucket(eventHeader, body);
+        } else if (provider === 'gitea') {
+          const giteaSecret = process.env.GITEA_WEBHOOK_SECRET;
+          const sig = request.headers['x-gitea-signature'] as string | undefined;
+          const result = verifyHmac(giteaSecret, rawBody, sig);
+          if (result === 'no_secret') {
+            return sendError(
+              reply,
+              503,
+              'Gitea webhook secret not configured (GITEA_WEBHOOK_SECRET)'
+            );
+          }
+          if (result === 'invalid') {
+            return sendError(reply, 401, 'Invalid Gitea webhook signature');
+          }
+          const eventHeader =
+            (request.headers['x-gitea-event'] as string | undefined) ?? 'push';
+          ciEvent = normalizeGitea(eventHeader, body);
         } else {
           return sendError(reply, 400, `Unknown CI provider: ${provider}`);
         }
       } catch (err) {
         return sendError(reply, 400, `Failed to parse ${provider} webhook: ${toErrorMessage(err)}`);
+      }
+
+      // Store the event in the timeline
+      if (webhookEventStore) {
+        webhookEventStore.add({
+          provider: ciEvent.provider,
+          event: ciEvent.event,
+          ref: ciEvent.ref,
+          conclusion: ciEvent.conclusion,
+          runId: ciEvent.runId,
+          repoUrl: ciEvent.repoUrl,
+          logsUrl: ciEvent.logsUrl,
+          metadata: ciEvent.metadata,
+        });
       }
 
       // Dispatch matching event-triggered workflows

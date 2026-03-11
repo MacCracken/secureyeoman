@@ -37,7 +37,7 @@ export class SynapseClient {
   }
 
   async getStatus(): Promise<SynapseInstance> {
-    const res = await this._fetch('/api/v1/status');
+    const res = await this._fetch('/system/status');
     return res as SynapseInstance;
   }
 
@@ -46,7 +46,7 @@ export class SynapseClient {
       { baseModel: req.baseModel, method: req.method },
       'submitting training job to Synapse'
     );
-    const res = await this._fetch('/api/v1/training/jobs', {
+    const res = await this._fetch('/training/jobs', {
       method: 'POST',
       body: req,
     });
@@ -54,19 +54,19 @@ export class SynapseClient {
   }
 
   async getJobStatus(jobId: string): Promise<SynapseJobStatus> {
-    const res = await this._fetch(`/api/v1/training/jobs/${encodeURIComponent(jobId)}`);
+    const res = await this._fetch(`/training/jobs/${encodeURIComponent(jobId)}`);
     return res as SynapseJobStatus;
   }
 
   async *streamJobLogs(jobId: string): AsyncGenerator<string> {
-    const path = `/api/v1/training/jobs/${encodeURIComponent(jobId)}/logs`;
+    const path = `/training/jobs/${encodeURIComponent(jobId)}/logs`;
     for await (const event of this._streamSSE(path)) {
       yield event;
     }
   }
 
   async *pullModel(req: SynapsePullRequest): AsyncGenerator<SynapsePullProgress> {
-    for await (const event of this._streamSSE('/api/v1/models/pull', {
+    for await (const event of this._streamSSE('/marketplace/pull', {
       method: 'POST',
       body: req,
     })) {
@@ -79,7 +79,7 @@ export class SynapseClient {
       { model: req.model, maxTokens: req.maxTokens },
       'running inference on Synapse'
     );
-    const res = await this._fetch('/api/v1/inference', {
+    const res = await this._fetch('/inference', {
       method: 'POST',
       body: req,
     });
@@ -89,7 +89,7 @@ export class SynapseClient {
   async *streamInference(
     req: SynapseInferenceRequest
   ): AsyncGenerator<{ text: string; done: boolean }> {
-    for await (const event of this._streamSSE('/api/v1/inference/stream', {
+    for await (const event of this._streamSSE('/inference/stream', {
       method: 'POST',
       body: req,
     })) {

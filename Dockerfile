@@ -20,7 +20,7 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends git wget gettext-base supervisor \
     postgresql-17 postgresql-17-pgvector gosu \
  && rm -rf /var/lib/apt/lists/* \
- && groupadd -r secureyeoman && useradd -r -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
+ && groupadd -g 1001 secureyeoman && useradd -u 1001 -g secureyeoman -G agnos -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
  && chown -R secureyeoman:secureyeoman /home/secureyeoman \
  && mkdir -p /usr/share/secureyeoman/community-repo \

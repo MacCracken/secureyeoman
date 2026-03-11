@@ -54,7 +54,7 @@ export async function bootstrapAgnos(
 
     logger.info(
       {
-        name: discovery.name,
+        name: discovery.service,
         version: discovery.version,
         capabilities: discovery.capabilities,
       },

@@ -2257,6 +2257,105 @@ export async function fetchForgePipelines(key: string, owner: string, name: stri
   return res.pipelines;
 }
 
+// ─── Artifact Registry ──────────────────────────────────────
+
+export interface ContainerImage {
+  name: string;
+  fullName: string;
+  tags: ContainerTag[];
+  registry: string;
+  visibility?: 'public' | 'private';
+  updatedAt?: string;
+}
+
+export interface ContainerTag {
+  name: string;
+  digest: string;
+  size?: number;
+  pushedAt?: string;
+  architecture?: string;
+}
+
+export interface BuildArtifact {
+  id: string;
+  name: string;
+  size: number;
+  downloadUrl?: string;
+  pipelineId: string;
+  createdAt: string;
+  expiresAt?: string;
+}
+
+export async function fetchContainerImages(key: string, owner: string): Promise<ContainerImage[]> {
+  const res = await request<{ images: ContainerImage[] }>(
+    `/forge/${encodeURIComponent(key)}/artifacts/images?owner=${encodeURIComponent(owner)}`
+  );
+  return res.images;
+}
+
+export async function fetchImageTags(key: string, owner: string, name: string): Promise<ContainerTag[]> {
+  const res = await request<{ tags: ContainerTag[] }>(
+    `/forge/${encodeURIComponent(key)}/artifacts/images/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/tags`
+  );
+  return res.tags;
+}
+
+export async function fetchBuildArtifacts(
+  key: string,
+  owner: string,
+  repo: string,
+  pipelineId: string,
+): Promise<BuildArtifact[]> {
+  const res = await request<{ artifacts: BuildArtifact[] }>(
+    `/forge/${encodeURIComponent(key)}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pipelines/${encodeURIComponent(pipelineId)}/artifacts`
+  );
+  return res.artifacts;
+}
+
+// ─── Webhook Timeline ───────────────────────────────────────
+
+export interface WebhookTimelineEvent {
+  id: string;
+  provider: string;
+  event: string;
+  ref: string;
+  conclusion: string;
+  runId: string;
+  repoUrl: string;
+  logsUrl?: string;
+  receivedAt: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface WebhookTimelineFilters {
+  provider?: string;
+  repo?: string;
+  event?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export async function fetchWebhookTimeline(
+  filters?: WebhookTimelineFilters
+): Promise<{ events: WebhookTimelineEvent[]; total: number }> {
+  const params = new URLSearchParams();
+  if (filters?.provider) params.set('provider', filters.provider);
+  if (filters?.repo) params.set('repo', filters.repo);
+  if (filters?.event) params.set('event', filters.event);
+  if (filters?.limit != null) params.set('limit', String(filters.limit));
+  if (filters?.offset != null) params.set('offset', String(filters.offset));
+  const qs = params.toString();
+  return request(`/webhooks/timeline${qs ? `?${qs}` : ''}`);
+}
+
+export async function fetchWebhookTimelineEvent(id: string): Promise<{ event: WebhookTimelineEvent }> {
+  return request(`/webhooks/timeline/${encodeURIComponent(id)}`);
+}
+
+export async function clearWebhookTimeline(): Promise<void> {
+  await request('/webhooks/timeline', { method: 'DELETE' });
+}
+
 // ─── Trading & Market Data ──────────────────────────────────
 
 export interface MarketQuoteResponse {
@@ -6719,4 +6818,168 @@ export async function cloneVoice(
     method: 'POST',
     body: JSON.stringify({ name, audioBase64 }),
   });
+}
+
+// ─── JFrog Artifactory ──────────────────────────────────────
+
+export interface ArtifactoryConnection {
+  key: string;
+  baseUrl: string;
+}
+
+export interface ArtifactoryRepo {
+  key: string;
+  type: 'local' | 'remote' | 'virtual' | 'federated';
+  packageType: string;
+  description?: string;
+  url: string;
+}
+
+export interface ArtifactoryItem {
+  path: string;
+  name: string;
+  size: number;
+  created: string;
+  modified: string;
+  sha256?: string;
+  mimeType?: string;
+  downloadUri?: string;
+}
+
+export interface ArtifactoryDockerImage {
+  name: string;
+  tags: string[];
+  lastModified?: string;
+}
+
+export interface ArtifactoryBuildSummary {
+  name: string;
+  lastStarted: string;
+}
+
+export interface ArtifactoryBuildInfo {
+  name: string;
+  number: string;
+  started: string;
+  status?: string;
+  modules?: Array<{ id: string; artifacts: Array<{ name: string; sha256: string }> }>;
+}
+
+export async function fetchArtifactoryConnections(): Promise<ArtifactoryConnection[]> {
+  const res = await request<{ connections: ArtifactoryConnection[] }>('/artifactory/connections');
+  return res.connections;
+}
+
+export async function addArtifactoryConnection(config: {
+  baseUrl: string;
+  token?: string;
+  username?: string;
+  password?: string;
+}): Promise<ArtifactoryConnection> {
+  return request('/artifactory/connections', { method: 'POST', body: JSON.stringify(config) });
+}
+
+export async function removeArtifactoryConnection(key: string): Promise<void> {
+  await request(`/artifactory/connections/${encodeURIComponent(key)}`, { method: 'DELETE' });
+}
+
+export async function fetchArtifactoryRepos(
+  key: string,
+  type?: string,
+  packageType?: string
+): Promise<ArtifactoryRepo[]> {
+  const params = new URLSearchParams();
+  if (type) params.set('type', type);
+  if (packageType) params.set('packageType', packageType);
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  const res = await request<{ repos: ArtifactoryRepo[] }>(
+    `/artifactory/${encodeURIComponent(key)}/repos${qs}`
+  );
+  return res.repos;
+}
+
+export async function fetchArtifactoryFolderItems(
+  key: string,
+  repoKey: string,
+  path?: string
+): Promise<ArtifactoryItem[]> {
+  const qs = path ? `?path=${encodeURIComponent(path)}` : '';
+  const res = await request<{ items: ArtifactoryItem[] }>(
+    `/artifactory/${encodeURIComponent(key)}/repos/${encodeURIComponent(repoKey)}/browse${qs}`
+  );
+  return res.items;
+}
+
+export async function fetchArtifactorySearch(
+  key: string,
+  name: string,
+  repos?: string
+): Promise<ArtifactoryItem[]> {
+  const params = new URLSearchParams({ name });
+  if (repos) params.set('repos', repos);
+  const res = await request<{ items: ArtifactoryItem[] }>(
+    `/artifactory/${encodeURIComponent(key)}/search?${params.toString()}`
+  );
+  return res.items;
+}
+
+export async function fetchArtifactoryDockerImages(
+  key: string,
+  repoKey: string
+): Promise<ArtifactoryDockerImage[]> {
+  const res = await request<{ images: ArtifactoryDockerImage[] }>(
+    `/artifactory/${encodeURIComponent(key)}/docker/${encodeURIComponent(repoKey)}/images`
+  );
+  return res.images;
+}
+
+export async function fetchArtifactoryDockerTags(
+  key: string,
+  repoKey: string,
+  image: string
+): Promise<string[]> {
+  const res = await request<{ tags: string[] }>(
+    `/artifactory/${encodeURIComponent(key)}/docker/${encodeURIComponent(repoKey)}/images/${encodeURIComponent(image)}/tags`
+  );
+  return res.tags;
+}
+
+export async function fetchArtifactoryBuilds(
+  key: string
+): Promise<ArtifactoryBuildSummary[]> {
+  const res = await request<{ builds: ArtifactoryBuildSummary[] }>(
+    `/artifactory/${encodeURIComponent(key)}/builds`
+  );
+  return res.builds;
+}
+
+export async function fetchArtifactoryBuild(
+  key: string,
+  name: string,
+  number?: string
+): Promise<ArtifactoryBuildInfo> {
+  const path = number
+    ? `/artifactory/${encodeURIComponent(key)}/builds/${encodeURIComponent(name)}/${encodeURIComponent(number)}`
+    : `/artifactory/${encodeURIComponent(key)}/builds/${encodeURIComponent(name)}`;
+  return request(path);
+}
+
+export async function promoteArtifactoryBuild(
+  key: string,
+  name: string,
+  number: string,
+  targetRepo: string,
+  status?: string
+): Promise<void> {
+  await request(
+    `/artifactory/${encodeURIComponent(key)}/builds/${encodeURIComponent(name)}/${encodeURIComponent(number)}/promote`,
+    { method: 'POST', body: JSON.stringify({ targetRepo, status }) }
+  );
+}
+
+export async function fetchArtifactoryHealth(key: string): Promise<boolean> {
+  const res = await request<{ healthy: boolean }>(
+    `/artifactory/${encodeURIComponent(key)}/health`
+  );
+  return res.healthy;
 }

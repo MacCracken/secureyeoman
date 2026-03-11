@@ -110,3 +110,39 @@ export interface CodeForgeAdapter {
   // Health
   health(): Promise<boolean>;
 }
+
+// ── Artifact Registry Types ─────────────────────────────────
+
+export interface ContainerImage {
+  name: string;
+  fullName: string; // e.g., "ghcr.io/owner/image"
+  tags: ContainerTag[];
+  registry: string; // ghcr, gitlab, delta
+  visibility?: 'public' | 'private';
+  updatedAt?: string;
+}
+
+export interface ContainerTag {
+  name: string;
+  digest: string;
+  size?: number; // bytes
+  pushedAt?: string;
+  architecture?: string;
+}
+
+export interface BuildArtifact {
+  id: string;
+  name: string;
+  size: number; // bytes
+  downloadUrl?: string;
+  pipelineId: string;
+  createdAt: string;
+  expiresAt?: string;
+}
+
+export interface ArtifactRegistryAdapter {
+  readonly provider: string;
+  listImages(owner: string): Promise<ContainerImage[]>;
+  getImageTags(owner: string, name: string): Promise<ContainerTag[]>;
+  listBuildArtifacts(owner: string, repo: string, pipelineId: string): Promise<BuildArtifact[]>;
+}

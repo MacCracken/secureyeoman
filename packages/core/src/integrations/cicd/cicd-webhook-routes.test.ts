@@ -1,22 +1,24 @@
 /**
  * CI/CD Webhook Routes — unit tests
  *
- * Tests the inbound webhook normalizer for GitHub, Jenkins, GitLab, Northflank, and Delta.
- * Verifies: signature verification, CiEvent normalization, workflow dispatch, 400 for unknown provider.
+ * Tests the inbound webhook normalizer for GitHub, Jenkins, GitLab, Northflank, Delta, and Travis CI.
+ * Verifies: signature verification, CiEvent normalization, workflow dispatch, event store persistence,
+ * 400 for unknown provider.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createHmac } from 'node:crypto';
 import Fastify from 'fastify';
 import { registerCicdWebhookRoutes } from './cicd-webhook-routes.js';
+import { WebhookEventStore } from './webhook-event-store.js';
 import type { WorkflowManager } from '../../workflow/workflow-manager.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function buildApp(workflowManager?: WorkflowManager) {
+function buildApp(workflowManager?: WorkflowManager, webhookEventStore?: WebhookEventStore) {
   const app = Fastify({ logger: false });
   // Minimal auth bypass: mark routes as skipAuth (route config) and skip any preHandler
-  registerCicdWebhookRoutes(app, { workflowManager });
+  registerCicdWebhookRoutes(app, { workflowManager, webhookEventStore });
   return app.ready().then(() => app);
 }
 
@@ -60,7 +62,7 @@ describe('CI/CD Webhook Routes', () => {
       const app = await buildApp();
       const res = await app.inject({
         method: 'POST',
-        url: '/api/v1/webhooks/ci/travis',
+        url: '/api/v1/webhooks/ci/circleci',
         payload: {},
       });
       expect(res.statusCode).toBe(400);
@@ -335,6 +337,160 @@ describe('CI/CD Webhook Routes', () => {
         }),
         'webhook:delta'
       );
+    });
+  });
+
+  describe('Travis CI provider', () => {
+    it('returns 503 when Travis webhook token is not configured', async () => {
+      delete process.env.TRAVIS_WEBHOOK_TOKEN;
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/travis',
+        payload: { id: 1, branch: 'main', status_message: 'Passed' },
+      });
+      expect(res.statusCode).toBe(503);
+      expect(res.json().message).toContain('TRAVIS_WEBHOOK_TOKEN');
+    });
+
+    it('returns 401 when Travis CI token is wrong', async () => {
+      process.env.TRAVIS_WEBHOOK_TOKEN = 'real-token';
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/travis',
+        payload: { id: 1, branch: 'main', status_message: 'Passed' },
+        headers: { 'travis-ci-token': 'wrong-token' },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('returns 200 when Travis CI token is correct via Travis-CI-Token header', async () => {
+      process.env.TRAVIS_WEBHOOK_TOKEN = 'travis-secret';
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/travis',
+        payload: { id: 42, branch: 'main', status_message: 'Passed', repository: { url: 'https://travis-ci.org/acme/app' } },
+        headers: { 'travis-ci-token': 'travis-secret' },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.provider).toBe('travis');
+    });
+
+    it('accepts Signature header as alternative to Travis-CI-Token', async () => {
+      process.env.TRAVIS_WEBHOOK_TOKEN = 'travis-secret';
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/travis',
+        payload: { id: 10, branch: 'dev', status_message: 'Failed' },
+        headers: { signature: 'travis-secret' },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('normalizes Travis CI event correctly', async () => {
+      process.env.TRAVIS_WEBHOOK_TOKEN = 'travis-secret';
+      const store = new WebhookEventStore();
+      const app = await buildApp(undefined, store);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/travis',
+        payload: {
+          id: 99,
+          number: '42',
+          type: 'push',
+          branch: 'release/v3',
+          status_message: 'Failed',
+          build_url: 'https://travis-ci.org/acme/app/builds/99',
+          repository: { url: 'https://github.com/acme/app' },
+        },
+        headers: { 'travis-ci-token': 'travis-secret' },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.provider).toBe('travis');
+      expect(body.event).toBe('push');
+
+      // Verify event was stored
+      const { events } = store.list();
+      expect(events).toHaveLength(1);
+      expect(events[0].provider).toBe('travis');
+      expect(events[0].conclusion).toBe('failure');
+      expect(events[0].ref).toBe('release/v3');
+      expect(events[0].runId).toBe('99');
+      expect(events[0].repoUrl).toBe('https://github.com/acme/app');
+      expect(events[0].logsUrl).toBe('https://travis-ci.org/acme/app/builds/99');
+    });
+
+    it('maps Travis status_message to canonical conclusions', async () => {
+      process.env.TRAVIS_WEBHOOK_TOKEN = 'ts';
+      const store = new WebhookEventStore();
+      const app = await buildApp(undefined, store);
+
+      const cases = [
+        { status_message: 'Passed', expected: 'success' },
+        { status_message: 'Fixed', expected: 'success' },
+        { status_message: 'Failed', expected: 'failure' },
+        { status_message: 'Errored', expected: 'failure' },
+        { status_message: 'Canceled', expected: 'cancelled' },
+        { status_message: 'SomethingElse', expected: 'unknown' },
+      ];
+
+      for (const { status_message, expected } of cases) {
+        store.clear();
+        await app.inject({
+          method: 'POST',
+          url: '/api/v1/webhooks/ci/travis',
+          payload: { id: 1, branch: 'main', status_message },
+          headers: { 'travis-ci-token': 'ts' },
+        });
+        const { events } = store.list();
+        expect(events[0].conclusion).toBe(expected);
+      }
+    });
+  });
+
+  describe('event store persistence', () => {
+    it('stores events when webhookEventStore is provided', async () => {
+      process.env.SECUREYEOMAN_WEBHOOK_SECRET = 'mysecret';
+      const store = new WebhookEventStore();
+      const app = await buildApp(undefined, store);
+      const payloadBody = JSON.stringify({
+        action: 'completed',
+        workflow_run: { id: 1, head_branch: 'main', conclusion: 'success' },
+        repository: { html_url: 'https://github.com/o/r' },
+      });
+      const sig = hmacSig('mysecret', payloadBody);
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/github',
+        body: payloadBody,
+        headers: {
+          'content-type': 'application/json',
+          'x-github-event': 'workflow_run',
+          'x-hub-signature-256': sig,
+        },
+      });
+      const { events, total } = store.list();
+      expect(total).toBe(1);
+      expect(events[0].provider).toBe('github');
+      expect(events[0].event).toBe('workflow_run.completed');
+      expect(events[0].repoUrl).toBe('https://github.com/o/r');
+    });
+
+    it('does not throw when webhookEventStore is not provided', async () => {
+      process.env.JENKINS_WEBHOOK_TOKEN = 'jt';
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/ci/jenkins',
+        payload: { build: { phase: 'STARTED', status: 'running', number: 1 } },
+        headers: { 'x-jenkins-crumb': 'jt' },
+      });
+      expect(res.statusCode).toBe(200);
     });
   });
 

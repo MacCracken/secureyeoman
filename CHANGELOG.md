@@ -4,30 +4,61 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
-## [2026.3.11]
+## [2026.3.10]
 
 ### AGNOS Integration — Handshake Verified & Dashboard Sandbox Profiles
 
-Live-verified all AGNOS handshake endpoints against AGNOS `2026.3.10` runtime. Fixed client-side protocol mismatches discovered during testing. Added dashboard sandbox profiles panel.
+Live-verified all AGNOS handshake endpoints against AGNOS runtime. Fixed client-side protocol mismatches discovered during testing. Added dashboard sandbox profiles panel.
 
 - **Handshake verification**: All endpoints confirmed working — discover, batch register/deregister, heartbeat, sandbox profiles (7 presets), event publish, audit forward. MCP tool registration is read-only in AGNOS (built-in tools only).
 - **`publishEvent()` fix** (`integrations/agnos/agnos-client.ts`): Body changed from `{topic, data, source, timestamp}` to `{topic, sender, payload}` to match actual AGNOS API contract.
 - **`listSandboxProfiles()` normalization** (`integrations/agnos/agnos-client.ts`): Transforms AGNOS response format (`preset`, `seccomp_mode`, `landlock_rules_count`, `network_enabled`, `allow_process_spawn`, `max_memory_mb`, `allowed_hosts`) into normalized `AgnosSandboxProfile` interface.
+- **`AgnosDiscoverResponse` type alignment**: Field names matched to real API — `name` → `service`, `companions` → `companion_services` with correct nested shape (`default_url`, `codename`, `env_var`). Added `codename`, `protocol_version`, `uptime_seconds`, `agents_registered`, `auth` fields.
+- **`forwardAuditEvents()` timestamp fix**: Auto-injects `timestamp` (ISO 8601) on events missing it — AGNOS requires `timestamp` per event (422 without it).
 - **Dashboard sandbox profiles** (`ecosystem-routes.ts`, `ConnectionsPage.tsx`, `client.ts`): New `GET /api/v1/ecosystem/services/agnos/sandbox-profiles` route. Dashboard renders profile cards with seccomp/landlock/network status, memory limits, and allowed hosts when AGNOS is connected. Auto-refreshes every 60s. 3 new route tests.
 - **Delta GHCR verified**: `ghcr.io/maccracken/delta:2026.3.10-1` confirmed working — `create_if_missing` SQLite fix included. All API endpoints (repos, branches, pulls, pipelines, releases) responding correctly with auth.
 
 ### CI/CD & Code Forge Dashboard
 
-Unified code forge adapter interface with Delta, GitHub, and GitLab implementations. Dashboard forge panel for browsing repos, PRs, and pipelines across any connected forge.
+Unified code forge adapter interface with Delta, GitHub, GitLab, Bitbucket, and Gitea implementations. Dashboard forge panel for browsing repos, PRs, and pipelines across any connected forge. Artifact registry browser for container images and build artifacts. JFrog Artifactory integration.
 
-- **`CodeForgeAdapter` interface** (`integrations/forge/types.ts`): Normalized types for `ForgeRepo`, `ForgePullRequest`, `ForgePipeline`, `ForgeBranch`, `ForgeRelease`, `ForgeArtifact`. Methods: `listRepos`, `getRepo`, `listPulls`, `getPull`, `listPipelines`, `triggerPipeline`, `cancelPipeline`, `listBranches`, `listReleases`, `health`.
+- **`CodeForgeAdapter` interface** (`integrations/forge/types.ts`): Normalized types for `ForgeRepo`, `ForgePullRequest`, `ForgePipeline`, `ForgeBranch`, `ForgeRelease`, `ForgeArtifact`, `ContainerImage`, `ContainerTag`, `BuildArtifact`, `ArtifactRegistryAdapter`. Methods: `listRepos`, `getRepo`, `listPulls`, `getPull`, `listPipelines`, `triggerPipeline`, `cancelPipeline`, `listBranches`, `listReleases`, `health`.
 - **Delta adapter** (`forge/delta-forge-adapter.ts`): Wraps existing `DeltaClient`. 8 tests.
 - **GitHub adapter** (`forge/github-forge-adapter.ts`): GitHub REST API + GitHub Enterprise support. Repos, PRs (with merged state detection), Actions workflow runs, branches, releases with assets. Auth via Bearer token. 9 tests.
 - **GitLab adapter** (`forge/gitlab-forge-adapter.ts`): GitLab REST v4. Projects, merge requests, pipelines, branches, releases. Auth via `PRIVATE-TOKEN`. Self-hosted URL support. 8 tests.
-- **Factory** (`forge/forge-factory.ts`): `createForgeAdapter()` instantiates the correct adapter from provider config. 4 tests.
+- **Bitbucket adapter** (`forge/bitbucket-forge-adapter.ts`): Bitbucket Cloud (v2.0 API) + Bitbucket Server (REST API 1.0) auto-detection. Repos, PRs (OPEN/MERGED/DECLINED mapping), pipelines (PENDING/BUILDING/COMPLETED status mapping), branches, downloads (as releases). Paginated response handling. 13 tests.
+- **Gitea adapter** (`forge/gitea-forge-adapter.ts`): Gitea API v1. Repos, PRs (merged boolean detection), Gitea Actions runs, branches, releases with assets. Auth via `token` prefix. 11 tests.
+- **Factory** (`forge/forge-factory.ts`): `createForgeAdapter()` instantiates the correct adapter from provider config. Supports all 5 providers. 5 tests.
 - **REST routes** (`forge/forge-routes.ts`): 12 endpoints under `/api/v1/forge/` — connection CRUD, repos, PRs, pipelines, branches, releases, health. In-memory connection store with auto-configured Delta from `DELTA_URL` env. 18 tests.
 - **Dashboard panel** (`ForgePanel.tsx`): Forge connection management, repo browser, PR list with state indicators, pipeline list with status colors, add/remove connections form. Integrated into `ConnectionsPage`. 7 tests.
-- **Total**: 54 new tests across backend + dashboard.
+
+**Artifact Registry Browser:**
+- **Registry adapters** (`forge/registries/`): `GhcrAdapter` (GitHub Packages API), `GitLabRegistryAdapter` (GitLab Registry API v4), `DeltaRegistryAdapter` (Delta artifacts API). Factory function `createRegistryAdapter()`. 15 tests.
+- **Artifact routes** (`forge/artifact-routes.ts`): 3 endpoints — list container images, get image tags, list build artifacts per pipeline. 8 tests.
+- **Dashboard** (`ArtifactBrowser.tsx`): Two-tab component (Container Images / Build Artifacts) with expandable tag details, human-readable sizes, download links.
+
+**JFrog Artifactory Integration:**
+- **Artifactory client** (`forge/artifactory/artifactory-client.ts`): HTTP client for JFrog Artifactory REST API. Bearer token + basic auth. Methods: `listRepos`, `getRepo`, `listFolder`, `getItemInfo`, `searchAql`, `searchByName`, `listDockerImages`, `getDockerTags`, `listBuilds`, `getBuild`, `promoteBuild`, `health`. 10 tests.
+- **Artifactory routes** (`forge/artifactory/artifactory-routes.ts`): 17 endpoints under `/api/v1/artifactory/` — connection CRUD, repo browsing, folder navigation, AQL/name search, Docker images/tags, build info, build promotion, health. 11 tests.
+- **Dashboard** (`ArtifactoryPanel.tsx`): Connection management, repository browser with type badges, folder navigator, Docker image/tag viewer, build info with promotion, artifact search.
+
+**Webhook Event Timeline & Travis CI:**
+- **Webhook event store** (`cicd/webhook-event-store.ts`): In-memory store with FIFO eviction (max 1000), filtering by provider/repo/event, pagination. 13 tests.
+- **Timeline routes** (`cicd/webhook-timeline-routes.ts`): 3 endpoints — list events with filters, get single event, clear all. 9 tests.
+- **Travis CI webhook** (`cicd/cicd-webhook-routes.ts`): 6th webhook provider. `Travis-CI-Token` or `Signature` header verification via `timingSafeEqual`. Status mapping: Passed/Fixed→success, Failed/Errored/Broken→failure, Canceled→cancelled. 11 tests.
+- **Dashboard** (`WebhookTimeline.tsx`): Provider dropdown filter, repo/event text inputs, 30s auto-refresh, color-coded conclusions, click-to-expand metadata JSON.
+
+- **Total**: 147 new tests across forge adapters, registries, Artifactory, webhooks, and timeline.
+
+### Synapse LLM Controller — API Path Fixes & GHCR Image Fix
+
+Live-tested Synapse locally. Fixed API path mismatches across client, routes, and MCP tools. Diagnosed and fixed GHCR container image GLIBC incompatibility.
+
+- **API path corrections**: Synapse routes have no `/api/v1/` prefix — routes are `/models`, `/system/status`, `/training/jobs`, `/inference`, `/marketplace/pull`, etc. Fixed all `synapseFetch()` calls in `synapse-routes.ts`, all `_fetch()` calls in `synapse-client.ts`, and all `syn()` calls in `synapse-tools.ts` (MCP).
+- **`getStatus()` path fix**: `/api/v1/status` → `/system/status` (correct Synapse route).
+- **`pullModel()` path fix**: `/api/v1/models/pull` → `/marketplace/pull` (Synapse uses marketplace endpoint for model pulling).
+- **GHCR image GLIBC fix** (Synapse repo): `docker/Dockerfile.release` base changed from `debian:bookworm-slim` (GLIBC 2.36) to `ubuntu:24.04` (GLIBC 2.39) — CI runner (`ubuntu-latest`) compiles against 2.39, so the runtime image must match.
+- **Verified endpoints**: `/health`, `/system/status`, `/models`, `/training/jobs`, `/marketplace/entries`, `/eval/runs` — all responding correctly. Hardware detection working (CPU, GPU, memory).
 
 ### Delta MCP Tools — API Path Fixes & 7 New Tools
 
@@ -37,9 +68,9 @@ Audited all Delta MCP tool API paths against actual Delta Axum routes. Fixed 6 p
 - **7 new tools**: `delta_create_repo`, `delta_create_pull`, `delta_pull_diff`, `delta_list_branches`, `delta_list_releases`, `delta_create_release`, `delta_list_artifacts`. Total delta tools: 10 → 17.
 - **Manifest updated** (`mcp/tools/manifest.ts`): All 7 new tools registered.
 
----
+### Dashboard Test Coverage — 71.12%
 
-## [2026.3.10]
+Pushed dashboard statement coverage from 69.91% to 71.12% (target: 70%). Added EntityWidget animation loop tests covering canvas rendering and physics code (20.86% → 96.85%).
 
 ### Ecosystem Service Discovery & Docker Compose Unification
 
