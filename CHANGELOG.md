@@ -16,6 +16,19 @@ Live-verified all AGNOS handshake endpoints against AGNOS `2026.3.10` runtime. F
 - **Dashboard sandbox profiles** (`ecosystem-routes.ts`, `ConnectionsPage.tsx`, `client.ts`): New `GET /api/v1/ecosystem/services/agnos/sandbox-profiles` route. Dashboard renders profile cards with seccomp/landlock/network status, memory limits, and allowed hosts when AGNOS is connected. Auto-refreshes every 60s. 3 new route tests.
 - **Delta GHCR verified**: `ghcr.io/maccracken/delta:2026.3.10-1` confirmed working — `create_if_missing` SQLite fix included. All API endpoints (repos, branches, pulls, pipelines, releases) responding correctly with auth.
 
+### CI/CD & Code Forge Dashboard
+
+Unified code forge adapter interface with Delta, GitHub, and GitLab implementations. Dashboard forge panel for browsing repos, PRs, and pipelines across any connected forge.
+
+- **`CodeForgeAdapter` interface** (`integrations/forge/types.ts`): Normalized types for `ForgeRepo`, `ForgePullRequest`, `ForgePipeline`, `ForgeBranch`, `ForgeRelease`, `ForgeArtifact`. Methods: `listRepos`, `getRepo`, `listPulls`, `getPull`, `listPipelines`, `triggerPipeline`, `cancelPipeline`, `listBranches`, `listReleases`, `health`.
+- **Delta adapter** (`forge/delta-forge-adapter.ts`): Wraps existing `DeltaClient`. 8 tests.
+- **GitHub adapter** (`forge/github-forge-adapter.ts`): GitHub REST API + GitHub Enterprise support. Repos, PRs (with merged state detection), Actions workflow runs, branches, releases with assets. Auth via Bearer token. 9 tests.
+- **GitLab adapter** (`forge/gitlab-forge-adapter.ts`): GitLab REST v4. Projects, merge requests, pipelines, branches, releases. Auth via `PRIVATE-TOKEN`. Self-hosted URL support. 8 tests.
+- **Factory** (`forge/forge-factory.ts`): `createForgeAdapter()` instantiates the correct adapter from provider config. 4 tests.
+- **REST routes** (`forge/forge-routes.ts`): 12 endpoints under `/api/v1/forge/` — connection CRUD, repos, PRs, pipelines, branches, releases, health. In-memory connection store with auto-configured Delta from `DELTA_URL` env. 18 tests.
+- **Dashboard panel** (`ForgePanel.tsx`): Forge connection management, repo browser, PR list with state indicators, pipeline list with status colors, add/remove connections form. Integrated into `ConnectionsPage`. 7 tests.
+- **Total**: 54 new tests across backend + dashboard.
+
 ### Delta MCP Tools — API Path Fixes & 7 New Tools
 
 Audited all Delta MCP tool API paths against actual Delta Axum routes. Fixed 6 path mismatches and added 7 new tools.

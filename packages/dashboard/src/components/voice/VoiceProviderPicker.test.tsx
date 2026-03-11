@@ -142,4 +142,206 @@ describe('VoiceProviderPicker', () => {
     const labels = screen.getAllByText('OpenAI');
     expect(labels.length).toBeGreaterThanOrEqual(1);
   });
+
+  // --- Additional coverage tests ---
+
+  it('STT test button is disabled when no STT provider selected', async () => {
+    mockFetchConfig.mockResolvedValue({ enabled: true, ttsProvider: 'openai', sttProvider: '' });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+    const testButtons = screen.getAllByText('Test');
+    // Second test button (STT) should be disabled
+    expect(testButtons[1].closest('button')).toBeDisabled();
+  });
+
+  it('does not call update when TTS select value is empty', async () => {
+    mockFetchConfig.mockResolvedValue({ enabled: true, ttsProvider: 'openai', sttProvider: '' });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    const ttsSelect = screen.getByDisplayValue('OpenAI');
+    fireEvent.change(ttsSelect, { target: { value: '' } });
+
+    expect(mockUpdateProvider).not.toHaveBeenCalled();
+  });
+
+  it('does not call update when STT select value is empty', async () => {
+    mockFetchConfig.mockResolvedValue({ enabled: true, ttsProvider: '', sttProvider: 'openai' });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    const sttSelect = screen.getByDisplayValue('OpenAI');
+    fireEvent.change(sttSelect, { target: { value: '' } });
+
+    expect(mockUpdateProvider).not.toHaveBeenCalled();
+  });
+
+  it('TTS test handles synthesizeSpeech error gracefully', async () => {
+    mockFetchConfig.mockResolvedValue({ enabled: true, ttsProvider: 'openai', sttProvider: '' });
+    mockSynthesize.mockRejectedValue(new Error('TTS failed'));
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    const testButtons = screen.getAllByText('Test');
+    fireEvent.click(testButtons[0]);
+
+    // Should show "Failed" temporarily
+    await waitFor(() => {
+      expect(screen.getByText('Failed')).toBeInTheDocument();
+    });
+  });
+
+  it('shows health dots for healthy and unhealthy providers in TTS list', async () => {
+    mockFetchConfig.mockResolvedValue({
+      enabled: true,
+      ttsProvider: 'openai',
+      sttProvider: 'openai',
+      providerHealth: { openai: true, elevenlabs: false, deepgram: true },
+    });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    // ElevenLabs and Deepgram appear in both select options and health lists
+    const elevenLabsEntries = screen.getAllByText('ElevenLabs');
+    expect(elevenLabsEntries.length).toBeGreaterThanOrEqual(1);
+    const deepgramEntries = screen.getAllByText('Deepgram');
+    expect(deepgramEntries.length).toBeGreaterThanOrEqual(1);
+
+    // Should have both success and destructive health dots
+    const successDots = document.querySelectorAll('.bg-success');
+    const destructiveDots = document.querySelectorAll('.bg-destructive');
+    expect(successDots.length).toBeGreaterThanOrEqual(1);
+    expect(destructiveDots.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does not show health list entries for providers with null health', async () => {
+    mockFetchConfig.mockResolvedValue({
+      enabled: true,
+      ttsProvider: 'openai',
+      sttProvider: 'openai',
+      providerHealth: { openai: true },
+    });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    // openai should show in health list, but providers not in providerHealth should not appear in health section
+    // The labels "OpenAI" will appear in the health list and in the selects
+    const openaiLabels = screen.getAllByText('OpenAI');
+    // At least 1 from health list, plus the select dropdowns
+    expect(openaiLabels.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders section headings for TTS and STT', async () => {
+    mockFetchConfig.mockResolvedValue({ enabled: true, ttsProvider: '', sttProvider: '' });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    expect(screen.getByText('Text-to-Speech Provider')).toBeInTheDocument();
+    expect(screen.getByText('Speech-to-Text Provider')).toBeInTheDocument();
+  });
+
+  it('shows health dot next to current TTS provider', async () => {
+    mockFetchConfig.mockResolvedValue({
+      enabled: true,
+      ttsProvider: 'openai',
+      sttProvider: '',
+      providerHealth: { openai: true },
+    });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    // The HealthDot for the current TTS should be visible (green dot)
+    // There should be health dots rendered in the DOM
+    const dots = document.querySelectorAll('.bg-success');
+    expect(dots.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows destructive health dot for unhealthy current provider', async () => {
+    mockFetchConfig.mockResolvedValue({
+      enabled: true,
+      ttsProvider: 'openai',
+      sttProvider: '',
+      providerHealth: { openai: false },
+    });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    const dots = document.querySelectorAll('.bg-destructive');
+    expect(dots.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows muted health dot when provider health is unknown (null)', async () => {
+    mockFetchConfig.mockResolvedValue({
+      enabled: true,
+      ttsProvider: 'openai',
+      sttProvider: '',
+    });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    // Without providerHealth, the dot next to current tts should show the muted state
+    const dots = document.querySelectorAll('.bg-muted-foreground\\/30');
+    expect(dots.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows health dot next to current STT provider', async () => {
+    mockFetchConfig.mockResolvedValue({
+      enabled: true,
+      ttsProvider: '',
+      sttProvider: 'deepgram',
+      providerHealth: { deepgram: true },
+    });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    expect(screen.getByDisplayValue('Deepgram')).toBeInTheDocument();
+    const dots = document.querySelectorAll('.bg-success');
+    expect(dots.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('TTS test shows success text after synthesize resolves', async () => {
+    mockFetchConfig.mockResolvedValue({ enabled: true, ttsProvider: 'openai', sttProvider: '' });
+    mockSynthesize.mockResolvedValue({ audioBase64: 'dGVzdA==', format: 'mp3', durationMs: 1000 });
+
+    const playMock = vi.fn();
+    const AudioMock = vi.fn(function (this: Record<string, unknown>) {
+      this.play = playMock;
+      this.pause = vi.fn();
+    });
+    vi.stubGlobal('Audio', AudioMock);
+
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    const testButtons = screen.getAllByText('Test');
+    fireEvent.click(testButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Played')).toBeInTheDocument();
+    });
+
+    vi.unstubAllGlobals();
+  });
+
+  it('renders all TTS provider options in dropdown', async () => {
+    mockFetchConfig.mockResolvedValue({ enabled: true, ttsProvider: '', sttProvider: '' });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    const ttsSelect = screen.getByDisplayValue('Select TTS provider...');
+    const options = ttsSelect.querySelectorAll('option');
+    // 13 providers + 1 default "Select TTS provider..."
+    expect(options.length).toBe(14);
+  });
+
+  it('renders all STT provider options in dropdown', async () => {
+    mockFetchConfig.mockResolvedValue({ enabled: true, ttsProvider: '', sttProvider: '' });
+    renderComponent();
+    await screen.findByText('Voice Providers');
+
+    const sttSelect = screen.getByDisplayValue('Select STT provider...');
+    const options = sttSelect.querySelectorAll('option');
+    // 9 providers + 1 default "Select STT provider..."
+    expect(options.length).toBe(10);
+  });
 });

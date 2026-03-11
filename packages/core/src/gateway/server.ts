@@ -113,6 +113,7 @@ import { registerPhotisnadiRoutes } from '../integrations/photisnadi/photisnadi-
 import { registerSynapseRoutes } from '../integrations/synapse/synapse-routes.js';
 import { registerEcosystemRoutes } from '../integrations/ecosystem-routes.js';
 import { ServiceDiscoveryManager } from '../integrations/service-discovery.js';
+import { registerForgeRoutes } from '../integrations/forge/index.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -806,6 +807,19 @@ export class GatewayServer {
       }
     } catch {
       // Ecosystem routes are optional — skip on error
+    }
+
+    // Code forge routes (repos, PRs, pipelines, releases)
+    try {
+      const initialForges = [];
+      const deltaUrl = process.env.DELTA_URL;
+      const deltaToken = process.env.DELTA_API_TOKEN;
+      if (deltaUrl) {
+        initialForges.push({ provider: 'delta' as const, baseUrl: deltaUrl, token: deltaToken });
+      }
+      registerForgeRoutes(this.app, { initialForges });
+    } catch {
+      // Forge routes are optional — skip on error
     }
 
     // Admin settings routes (system preferences)

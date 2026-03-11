@@ -3,8 +3,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { EntityWidget, type EntityState } from './EntityWidget';
 
+// Track whether we want the animation loop to run
+let runAnimationOnce = false;
+
 // Mock canvas context and ResizeObserver
 beforeEach(() => {
+  runAnimationOnce = false;
+
   // ResizeObserver needs to be a proper class
   class MockResizeObserver {
     callback: ResizeObserverCallback;
@@ -34,15 +39,24 @@ beforeEach(() => {
     stroke: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
+    bezierCurveTo: vi.fn(),
+    quadraticCurveTo: vi.fn(),
+    closePath: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    clip: vi.fn(),
     createRadialGradient: vi.fn().mockReturnValue({
       addColorStop: vi.fn(),
     }),
     scale: vi.fn(),
   });
 
-  // Mock requestAnimationFrame
+  // Mock requestAnimationFrame — optionally run callback once
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
-    // Don't actually run the animation loop in tests
+    if (runAnimationOnce) {
+      runAnimationOnce = false;
+      cb(16); // simulate one frame
+    }
     return 0;
   });
 });
@@ -240,6 +254,50 @@ describe('EntityWidget', () => {
   });
 
   it('compact mode creates fewer particles (no crash)', () => {
+    const { unmount } = render(<EntityWidget compact state="active" />);
+    expect(screen.getByTestId('entity-widget')).toBeInTheDocument();
+    unmount();
+  });
+
+  // ── Animation loop coverage (renderEye + stepStreams) ──────────
+
+  it('runs animation loop for dormant state (covers renderEye + stepStreams)', () => {
+    runAnimationOnce = true;
+    const { unmount } = render(<EntityWidget state="dormant" />);
+    expect(screen.getByTestId('entity-widget')).toBeInTheDocument();
+    unmount();
+  });
+
+  it('runs animation loop for thinking state', () => {
+    runAnimationOnce = true;
+    const { unmount } = render(<EntityWidget state="thinking" />);
+    expect(screen.getByTestId('entity-widget')).toBeInTheDocument();
+    unmount();
+  });
+
+  it('runs animation loop for active state', () => {
+    runAnimationOnce = true;
+    const { unmount } = render(<EntityWidget state="active" />);
+    expect(screen.getByTestId('entity-widget')).toBeInTheDocument();
+    unmount();
+  });
+
+  it('runs animation loop for training state', () => {
+    runAnimationOnce = true;
+    const { unmount } = render(<EntityWidget state="training" />);
+    expect(screen.getByTestId('entity-widget')).toBeInTheDocument();
+    unmount();
+  });
+
+  it('runs animation loop for ingesting state', () => {
+    runAnimationOnce = true;
+    const { unmount } = render(<EntityWidget state="ingesting" />);
+    expect(screen.getByTestId('entity-widget')).toBeInTheDocument();
+    unmount();
+  });
+
+  it('runs animation loop in compact mode', () => {
+    runAnimationOnce = true;
     const { unmount } = render(<EntityWidget compact state="active" />);
     expect(screen.getByTestId('entity-widget')).toBeInTheDocument();
     unmount();

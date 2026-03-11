@@ -92,6 +92,7 @@ import {
 } from '../api/client';
 import type { EcosystemServiceInfo, AgnosSandboxProfile } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
+import { ForgePanel } from './ForgePanel';
 import type {
   McpServerConfig,
   McpToolDef,
@@ -1808,6 +1809,11 @@ export function ConnectionsPage() {
               )}
             </div>
           )}
+
+          {/* Code Forges */}
+          <div className="mb-4">
+            <ForgePanel />
+          </div>
 
           <McpTab
             servers={servers}

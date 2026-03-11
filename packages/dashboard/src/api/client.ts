@@ -2177,6 +2177,86 @@ export async function fetchAgnosSandboxProfiles(): Promise<AgnosSandboxProfile[]
   return res.profiles;
 }
 
+// ─── Code Forge ─────────────────────────────────────────────
+
+export interface ForgeConnection {
+  key: string;
+  provider: string;
+  baseUrl: string;
+}
+
+export interface ForgeRepo {
+  id: string;
+  owner: string;
+  name: string;
+  fullName: string;
+  description: string | null;
+  visibility: string;
+  defaultBranch: string;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ForgePullRequest {
+  id: string;
+  number: number;
+  title: string;
+  body: string | null;
+  state: 'open' | 'closed' | 'merged';
+  sourceBranch: string;
+  targetBranch: string;
+  author: string;
+  url: string;
+  createdAt: string;
+}
+
+export interface ForgePipeline {
+  id: string;
+  name: string;
+  status: string;
+  ref: string;
+  sha: string;
+  url: string | null;
+  createdAt: string;
+}
+
+export async function fetchForgeConnections(): Promise<ForgeConnection[]> {
+  const res = await request<{ connections: ForgeConnection[] }>('/forge/connections');
+  return res.connections;
+}
+
+export async function addForgeConnection(config: {
+  provider: string;
+  baseUrl: string;
+  token?: string;
+}): Promise<ForgeConnection> {
+  return request('/forge/connections', { method: 'POST', body: JSON.stringify(config) });
+}
+
+export async function removeForgeConnection(key: string): Promise<void> {
+  await request(`/forge/connections/${encodeURIComponent(key)}`, { method: 'DELETE' });
+}
+
+export async function fetchForgeRepos(key: string): Promise<ForgeRepo[]> {
+  const res = await request<{ repos: ForgeRepo[] }>(`/forge/${encodeURIComponent(key)}/repos`);
+  return res.repos;
+}
+
+export async function fetchForgePulls(key: string, owner: string, name: string): Promise<ForgePullRequest[]> {
+  const res = await request<{ pulls: ForgePullRequest[] }>(
+    `/forge/${encodeURIComponent(key)}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls`
+  );
+  return res.pulls;
+}
+
+export async function fetchForgePipelines(key: string, owner: string, name: string): Promise<ForgePipeline[]> {
+  const res = await request<{ pipelines: ForgePipeline[] }>(
+    `/forge/${encodeURIComponent(key)}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pipelines`
+  );
+  return res.pipelines;
+}
+
 // ─── Trading & Market Data ──────────────────────────────────
 
 export interface MarketQuoteResponse {

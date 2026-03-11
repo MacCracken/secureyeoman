@@ -106,10 +106,10 @@ Unified dashboard for repositories, pull requests, pipelines, and artifact regis
 
 | Item | Effort | Status | Description |
 |------|--------|--------|-------------|
-| Dashboard forge panel — Delta | M | Future | Repository browser, PR list/review, pipeline status, artifact downloads. Delta client + MCP tools already exist. |
-| Dashboard forge panel — GitHub | M | Future | Same UI, backed by GitHub REST/GraphQL API. Repo list, PR overview, Actions status, release artifacts. Auth via PAT or GitHub App. |
-| Dashboard forge panel — GitLab | M | Future | Same UI, backed by GitLab REST API. Projects, merge requests, pipeline status, container registry. Auth via PAT or OAuth. |
-| Forge adapter interface | S | Future | Unified `CodeForgeAdapter` interface (`listRepos`, `listPulls`, `getPipelines`, `listArtifacts`, `createStatus`) so dashboard renders any forge identically. Delta, GitHub, GitLab as first three implementations. |
+| Dashboard forge panel — Delta | M | Done | Included in forge adapter implementation. Delta repos/PRs/pipelines render via unified `ForgePanel`. |
+| Dashboard forge panel — GitHub | M | Done | GitHub adapter (`GitHubForgeAdapter`) with REST API. Repos, PRs (with merged state), Actions runs, branches, releases with assets. GHE support. |
+| Dashboard forge panel — GitLab | M | Done | GitLab adapter (`GitLabForgeAdapter`) with REST v4. Projects, MRs, pipelines, branches, releases. Self-hosted URL support. |
+| Forge adapter interface | S | Done | `CodeForgeAdapter` interface + Delta/GitHub/GitLab adapters + factory + REST routes (`/api/v1/forge/*`) + dashboard `ForgePanel` component. 67 tests. |
 | Artifact registry browser | M | Future | Cross-forge artifact browser: container images (GHCR, GitLab CR, Delta registry), release assets, build artifacts. Download, inspect layers, compare versions. |
 | JFrog Artifactory integration | M | Future | JFrog Artifactory REST API v2 client. Browse repositories (local/remote/virtual), search artifacts (AQL), view build info, promote builds between repos. Auth via API key or access token. Dashboard panel in artifact registry browser. |
 | Pipeline trigger & monitor | S | Future | Trigger builds from dashboard, stream logs, cancel running pipelines. Reuse existing `delta_trigger_pipeline` / `delta_cancel_pipeline` patterns. Providers: GitHub Actions, GitLab CI, Delta, Jenkins (REST API + crumb auth), Travis CI (API v3 + token auth). |
