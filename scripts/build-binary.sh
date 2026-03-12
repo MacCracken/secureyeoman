@@ -147,7 +147,7 @@ compile_edge_binary() {
 
 # ── Go edge binary cross-compile ──────────────────────────────────────────────
 GO_EDGE_DIR="${REPO_ROOT}/cmd/secureyeoman-edge"
-GO_EDGE_VERSION="${VERSION:-2026.3.11}"
+GO_EDGE_VERSION="${VERSION:-2026.3.12}"
 
 compile_go_edge() {
   local GOOS="$1"

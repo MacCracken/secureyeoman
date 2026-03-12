@@ -95,6 +95,11 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup Go (for edge binary)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: cmd/secureyeoman-edge/go.mod
+
       - name: Install dependencies
         run: npm ci
 
@@ -103,6 +108,8 @@ jobs:
 
       - name: Compile binaries
         run: bash scripts/build-binary.sh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
 
       - name: List artifacts
         run: ls -lh dist/secureyeoman-*
@@ -125,7 +132,7 @@ jobs:
 
       - name: Sign binaries with cosign (keyless)
         run: |
-          for binary in dist/secureyeoman-linux-x64 dist/secureyeoman-linux-arm64 dist/secureyeoman-darwin-arm64 dist/secureyeoman-windows-x64.exe dist/secureyeoman-lite-linux-x64 dist/secureyeoman-lite-linux-arm64 dist/secureyeoman-lite-windows-x64.exe; do
+          for binary in dist/secureyeoman-linux-x64 dist/secureyeoman-linux-arm64 dist/secureyeoman-darwin-arm64 dist/secureyeoman-windows-x64.exe dist/secureyeoman-lite-linux-x64 dist/secureyeoman-lite-linux-arm64 dist/secureyeoman-lite-windows-x64.exe dist/secureyeoman-edge-linux-x64 dist/secureyeoman-edge-linux-arm64 dist/secureyeoman-edge-linux-armv7; do
             if [ -f "$binary" ]; then
               cosign sign-blob --yes "$binary" --output-signature "${binary}.sig" --output-certificate "${binary}.cert"
               echo "==> Signed: $binary"
@@ -143,6 +150,9 @@ jobs:
             dist/secureyeoman-lite-linux-x64
             dist/secureyeoman-lite-linux-arm64
             dist/secureyeoman-lite-windows-x64.exe
+            dist/secureyeoman-edge-linux-x64
+            dist/secureyeoman-edge-linux-arm64
+            dist/secureyeoman-edge-linux-armv7
 
       - name: Upload Linux binaries + migrations (for container job)
         uses: actions/upload-artifact@v4
@@ -185,6 +195,9 @@ jobs:
             echo "| \`secureyeoman-darwin-arm64\` | macOS ARM64 | Full binary (PostgreSQL) |"
             echo "| \`secureyeoman-windows-x64.exe\` | Windows x64 | Full binary (PostgreSQL) |"
             echo "| \`secureyeoman-lite-*\` | Various | SQLite fallback (no PostgreSQL required) |"
+            echo "| \`secureyeoman-edge-linux-x64\` | Linux x86_64 | Edge/IoT A2A agent (7 MB static Go binary) |"
+            echo "| \`secureyeoman-edge-linux-arm64\` | Linux ARM64 | Edge/IoT A2A agent (Raspberry Pi, etc.) |"
+            echo "| \`secureyeoman-edge-linux-armv7\` | Linux ARMv7 | Edge/IoT A2A agent (older ARM devices) |"
             echo ""
             echo "### Docker"
             echo ""
@@ -225,6 +238,9 @@ jobs:
             dist/secureyeoman-lite-linux-x64
             dist/secureyeoman-lite-linux-arm64
             dist/secureyeoman-lite-windows-x64.exe
+            dist/secureyeoman-edge-linux-x64
+            dist/secureyeoman-edge-linux-arm64
+            dist/secureyeoman-edge-linux-armv7
             dist/SHA256SUMS
             dist/secureyeoman-sbom.cdx.json
             dist/*.sig
