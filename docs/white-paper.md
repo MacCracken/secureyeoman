@@ -10,7 +10,7 @@
 
 As autonomous agents move from experimental scripts to enterprise tools, they introduce three critical attack vectors: **Data Exfiltration**, **Unauthorized System Mutation**, and **Credential Exposure**. While "viral" agents prioritize autonomy at the expense of security, SecureYeoman is engineered as a **Governed AI Framework**. It provides the utility of an autonomous agent within a Zero-Trust architectural boundary — every tool call gated, every action logged, every secret kept from the model.
 
-SecureYeoman ships today with ~20,500 tests, 33 Architecture Decision Records, and a production Kubernetes Helm chart. It runs fully air-gapped on your infrastructure: no cloud dependency, no behavioral extraction, no AI that answers to someone else.
+SecureYeoman ships today with ~21,000 tests, 37 Architecture Decision Records, and a production Kubernetes Helm chart. It runs fully air-gapped on your infrastructure: no cloud dependency, no behavioral extraction, no AI that answers to someone else.
 
 ---
 
@@ -124,5 +124,5 @@ All in a single deployable binary. A yeoman owns their land. So should you.
 
 ---
 
-*SecureYeoman — ~20,500 tests · 33 ADRs · AGPL-3.0 + Commercial License*
+*SecureYeoman — ~21,000 tests · 37 ADRs · AGPL-3.0 + Commercial License*
 *security@secureyeoman.ai · https://github.com/MacCracken/secureyeoman*

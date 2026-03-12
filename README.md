@@ -1,11 +1,11 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.3.10-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/2026.3.10)
+[![Version](https://img.shields.io/badge/Version-2026.3.12-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/2026.3.12)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: ~20,500](https://img.shields.io/badge/Tests-~20%2C500-brightgreen.svg)]()
+[![Tests: ~21,000](https://img.shields.io/badge/Tests-~21%2C000-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 
 > **Your AI. Your Rules. Your Infrastructure.**
@@ -47,6 +47,12 @@ cp .env.example .env
 npm install && npm run dev
 ```
 
+**Option E — Edge/IoT binary (Go, 7.2 MB):**
+```bash
+curl -fsSL https://secureyeoman.ai/install | bash -s -- --edge
+secureyeoman-edge start --parent-url http://your-server:18789
+```
+
 Then open http://localhost:18789 and complete the onboarding wizard.
 
 See the [Getting Started Guide](docs/guides/getting-started.md) for full setup including Kubernetes Helm deployment.
@@ -68,17 +74,18 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 
 | Area | Highlights |
 |------|-----------|
-| **Security** | JWT/OIDC/SAML auth, RBAC, AES-256-GCM encryption, mTLS, sandboxing (Landlock/seccomp/V8 isolate/gVisor/WASM, 5 built-in profiles), prompt security, content guardrails, DLP (PII detection, classification, watermarking), secrets management (Vault/OpenBao), chaos engineering |
+| **Security** | JWT/OIDC/SAML auth, RBAC, AES-256-GCM encryption, mTLS, sandboxing (Landlock/seccomp/V8 isolate/gVisor/WASM, 5 built-in profiles), prompt security, content guardrails, DLP (PII detection, classification, watermarking), secrets management (Vault/OpenBao), WebAuthn/FIDO2, break-glass emergency access, chaos engineering |
 | **AI Models** | 13 providers (Anthropic, OpenAI, Gemini, Ollama, DeepSeek, Mistral, Grok + more), multi-account cost tracking, automatic fallback, local-first routing |
 | **Agents** | Sub-agent delegation, swarms (3 strategies, 5 templates), teams, Council of AIs, A2A protocol, cross-instance federation, Agent Replay & Debugging |
 | **Workflows** | DAG orchestration (19 step types), visual ReactFlow builder, human approval gates, 10 built-in templates |
-| **Training** | Dataset export, distillation, LoRA fine-tuning, pre-training from scratch, LLM-as-Judge eval, DPO/RLHF, federated learning, conversation analytics, A/B experiments |
-| **Dashboard** | React + Vite + Tailwind (45 themes), mission control, real-time CRDT editing, conversation branching, canvas workspace, inline AI completion |
-| **Integrations** | 38 platforms (Slack, Discord, GitHub, Gmail, Teams, WhatsApp + more), 21 CI/CD tools, security toolkits (Kali, network, Docker) |
+| **Training** | Dataset export, distillation, LoRA fine-tuning, pre-training from scratch, LLM-as-Judge eval, DPO/RLHF, federated learning, conversation analytics, A/B experiments, autoresearch (HP tuning, chaos escalation, circuit breaker autotuning) |
+| **Dashboard** | React + Vite + Tailwind (45 themes), mission control, real-time CRDT editing, conversation branching, canvas workspace, inline AI completion, fleet panel |
+| **Integrations** | 38 platforms (Slack, Discord, GitHub, Gmail, Teams, WhatsApp + more), 5 code forge adapters (Delta, GitHub, GitLab, Bitbucket, Gitea), artifact registries (GHCR, GitLab, JFrog Artifactory), 22 CI/CD tools, security toolkits (Kali, network, Docker) |
 | **MCP** | 462 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
-| **Enterprise** | Multi-tenancy (PostgreSQL RLS), multi-region HA, DLP, supply chain security (SBOM, SLSA, signed releases), OpenTelemetry, Prometheus/Grafana |
+| **Enterprise** | Multi-tenancy (PostgreSQL RLS), multi-region HA, DLP, supply chain security (SBOM, SLSA, signed releases), OpenTelemetry, Prometheus/Grafana, SCIM 2.0 provisioning, access review campaigns, per-tenant quotas, compliance SoA generator |
+| **Simulation** | Tick-driven engine (realtime/accelerated/turn-based), emotion & mood model (Russell's circumplex), spatial & proximity engine (3D zones, proximity triggers), autoresearch experiment runner |
 | **Knowledge** | Document ingestion (PDF, HTML, MD, URL, GitHub Wiki), RAG with hybrid FTS+vector search, cognitive memory (ACT-R, Hebbian learning) |
-| **Deployment** | Single binary (~123 MB), Docker, Kubernetes Helm chart; Linux x64/arm64, macOS arm64, Windows x64 |
+| **Deployment** | Single binary (~123 MB), Docker, Kubernetes Helm chart, Edge/IoT binary (Go, 7.2 MB); Linux x64/arm64, macOS arm64, Windows x64 |
 
 See the [Feature Reference](docs/features.md) for the complete breakdown.
 
@@ -167,7 +174,7 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | **[Roadmap](docs/development/roadmap.md)** | Development roadmap |
 | **[Changelog](CHANGELOG.md)** | Release history |
 
-**Guides** — See [`docs/guides/`](docs/guides/) for 66 topic guides including [CLI Reference](docs/guides/cli-reference.md), [AI Providers](docs/guides/ai-providers.md), [Integrations](docs/guides/integrations.md), [Knowledge & Memory](docs/guides/knowledge-memory.md), [Workflows](docs/guides/workflows.md), [Swarms](docs/guides/swarms.md), [SSO/SAML](docs/guides/sso-saml.md), [DLP](docs/guides/data-loss-prevention.md), [Multi-Region HA](docs/guides/multi-region-ha.md), [Observability](docs/guides/observability.md), [Security Testing](docs/guides/security-testing.md), and more.
+**Guides** — See [`docs/guides/`](docs/guides/) for 68 topic guides including [CLI Reference](docs/guides/cli-reference.md), [AI Providers](docs/guides/ai-providers.md), [Integrations](docs/guides/integrations.md), [Knowledge & Memory](docs/guides/knowledge-memory.md), [Workflows](docs/guides/workflows.md), [Swarms](docs/guides/swarms.md), [SSO/SAML](docs/guides/sso-saml.md), [DLP](docs/guides/data-loss-prevention.md), [Federated Learning](docs/guides/federated-learning.md), [Chaos Engineering](docs/guides/chaos-engineering.md), [Multi-Region HA](docs/guides/multi-region-ha.md), [Observability](docs/guides/observability.md), [Security Testing](docs/guides/security-testing.md), and more.
 
 ---
 

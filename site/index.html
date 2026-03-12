@@ -86,7 +86,7 @@
       <!-- Release badge — centered across full page width, above columns -->
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        <span>v2026.3.10 Now Available</span>
+        <span>v2026.3.12 Now Available</span>
         <a
           href="https://github.com/MacCracken/secureyeoman/releases"
           target="_blank"
@@ -152,7 +152,7 @@
           </div>
           <div class="hero-stats">
             <div class="stat">
-              <span class="stat-value">~20,500</span>
+              <span class="stat-value">~21,000</span>
               <span class="stat-label">Tests</span>
             </div>
             <div class="stat-divider"></div>
@@ -264,12 +264,14 @@
               with optional OPA sidecar integration.
             </p>
             <ul class="feature-list">
-              <li>RBAC + SSO/OIDC + SAML 2.0 (Okta, Azure AD, Auth0)</li>
+              <li>RBAC + SSO/OIDC + SAML 2.0 + WebAuthn/FIDO2</li>
               <li>Multi-tenancy with PostgreSQL RLS isolation</li>
               <li>Global rate limiting + sandbox artifact scanning</li>
               <li>Five sandboxing modes + externalization gate</li>
               <li>TEE-aware provider routing + attestation verification</li>
               <li>DLP — PII classification, egress scanning, watermarking</li>
+              <li>Break-glass emergency access + SCIM 2.0 provisioning</li>
+              <li>Access review campaigns + compliance SoA generator</li>
               <li>Organizational Intent — hard boundaries &amp; OPA policies</li>
             </ul>
           </div>
@@ -326,15 +328,16 @@
             <p class="feature-desc">
               38 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams,
               GitHub, GitLab, Gmail, Google Calendar, Jira, Notion, AWS, Azure DevOps, and more.
-              462 built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection,
-              encrypted credentials, and Markdown-for-Agents content negotiation
-              (<code>Accept: text/markdown</code>, <code>Content-Signal</code> enforcement).
+              5 code forge adapters (Delta, GitHub, GitLab, Bitbucket, Gitea) with artifact
+              registries (GHCR, GitLab, JFrog Artifactory). 462 built-in MCP tools, 9 resources,
+              and 4 prompts — with SSRF protection, encrypted credentials, and Markdown-for-Agents
+              content negotiation.
             </p>
             <ul class="feature-list">
               <li>38 platform integrations</li>
+              <li>5 code forge adapters + artifact registries</li>
               <li>462 tools · 9 resources · 4 prompts</li>
               <li>SSRF protection + encrypted creds</li>
-              <li>Markdown-for-Agents content negotiation</li>
             </ul>
           </div>
 
@@ -410,19 +413,18 @@
             <h3 class="feature-title">Flexible Deployment</h3>
             <p class="feature-desc">
               Single ~123 MB binary (Linux x64/arm64, macOS arm64), Docker, or Kubernetes with
-              Helm, HPA, PDB, and NetworkPolicies. Three network modes — Local, LAN, or Public
-              TLS — with a live badge in the dashboard. Multi-user workspaces, voice I/O (10
-              TTS + 7 STT providers with binary streaming and Whisper model selection), and
-              portable skill marketplace sync. Per-user notification preferences with quiet
-              hours and severity filters across 38 platforms.
+              Helm, HPA, PDB, and NetworkPolicies. Edge/IoT binary — a 7.2 MB static Go binary
+              with A2A peer discovery, sandboxed execution, and fleet management. Three network
+              modes — Local, LAN, or Public TLS. Multi-user workspaces, voice I/O (14 TTS +
+              10 STT providers), and portable skill marketplace sync.
             </p>
             <ul class="feature-list">
               <li>Single binary + Docker + K8s Helm</li>
+              <li>Edge/IoT binary (Go, 7.2 MB) for constrained devices</li>
               <li>Local / LAN / Public TLS modes</li>
               <li>Multi-user workspaces + SSO</li>
               <li>Voice I/O — 14 TTS + 10 STT providers, voice profiles, streaming</li>
-              <li>Per-user notification prefs + quiet hours</li>
-              <li>Skill marketplace sync (community + marketplace origins)</li>
+              <li>Fleet dashboard with node overview + GPU detection</li>
             </ul>
           </div>
 
@@ -485,6 +487,27 @@
             </ul>
           </div>
 
+          <!-- 12. Simulation Engine — enterprise, research -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-dice-d20"></i>
+            </div>
+            <h3 class="feature-title">Simulation Engine</h3>
+            <p class="feature-desc">
+              Enterprise-tier simulation framework with tick-driven execution (realtime,
+              accelerated, turn-based), emotion &amp; mood modeling using Russell's circumplex
+              (10 mood labels, 12 trait modifiers), 3D spatial &amp; proximity engine with
+              zone-based triggers, and an autoresearch experiment runner for autonomous
+              AI-driven research loops with metric-driven retain/discard cycles.
+            </p>
+            <ul class="feature-list">
+              <li>Tick driver — realtime / accelerated / turn-based</li>
+              <li>Emotion &amp; mood model (Russell's circumplex)</li>
+              <li>3D spatial &amp; proximity engine (6 trigger types)</li>
+              <li>Autoresearch: HP tuning, chaos escalation, CB autotuning</li>
+            </ul>
+          </div>
+
         </div>
       </div>
     </section>
@@ -526,8 +549,8 @@
             </div>
             <h3>DevSecOps Pipelines</h3>
             <p>
-              Review code, run tests, manage PRs, enforce security policies, and automate your
-              entire dev workflow.
+              Review code, run tests, manage PRs across 5 code forges (Delta, GitHub, GitLab,
+              Bitbucket, Gitea), enforce security policies, and automate your entire dev workflow.
             </p>
           </div>
           <div class="use-case-card">
@@ -613,7 +636,7 @@
           </div>
 
           <div class="compare-row">
-            <div class="compare-feature-col"><i class="fas fa-users-cog"></i> RBAC · SSO/OIDC · SAML 2.0</div>
+            <div class="compare-feature-col"><i class="fas fa-users-cog"></i> RBAC · SSO/OIDC · SAML · WebAuthn</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> Full</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
@@ -863,9 +886,9 @@
               <span class="exec-role exec-role-cfo">CFO / Legal</span>
             </div>
             <h3>Compliance Pathway</h3>
-            <p>RBAC with four roles, SSO/OIDC (Okta, Azure AD, Auth0), SAML 2.0, multi-tenancy with PostgreSQL RLS isolation, cryptographically-chained audit logs exportable as JSON/HTML/CSV, secrets management via Vault/OpenBao, and an Organizational Intent layer enforcing hard boundaries via OPA policy evaluation. This is the compliance foundation — not the compliance sprint you scramble through after an incident.</p>
+            <p>RBAC with four roles, SSO/OIDC (Okta, Azure AD, Auth0), SAML 2.0, WebAuthn/FIDO2, SCIM 2.0 provisioning, multi-tenancy with PostgreSQL RLS isolation, per-tenant quotas, access review campaigns, cryptographically-chained audit logs exportable as JSON/HTML/CSV, secrets management via Vault/OpenBao, compliance Statement of Applicability generator (NIST, SOC 2, ISO 27001, HIPAA, EU AI Act), and an Organizational Intent layer enforcing hard boundaries via OPA policy evaluation. This is the compliance foundation — not the compliance sprint you scramble through after an incident.</p>
             <div class="exec-proof">
-              <span class="proof-item"><i class="fas fa-check-circle"></i> RBAC + SSO/OIDC + SAML 2.0</span>
+              <span class="proof-item"><i class="fas fa-check-circle"></i> RBAC + SSO/OIDC + SAML + WebAuthn + SCIM</span>
               <span class="proof-item"><i class="fas fa-check-circle"></i> Exportable cryptographic audit chain</span>
               <span class="proof-item"><i class="fas fa-check-circle"></i> Multi-tenancy + OPA policy enforcement</span>
             </div>
@@ -1294,7 +1317,7 @@ SECUREYEOMAN_ADMIN_PASSWORD="&lt;your-admin-password&gt;"</code></pre>
               </div>
               <div class="stat-row">
                 <span class="stat-name">Tests</span>
-                <span class="stat-value">~20,500</span>
+                <span class="stat-value">~21,000</span>
               </div>
               <div class="stat-row">
                 <span class="stat-name">TS Files</span>

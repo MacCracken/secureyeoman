@@ -1,10 +1,12 @@
 # SecureYeoman
 
-> SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (13 AI providers), enterprise-grade security (RBAC, SSO/SAML, sandboxing, TEE-aware routing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 462-tool MCP server, and a full ML lifecycle platform — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
+> SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (13 AI providers), enterprise-grade security (RBAC, SSO/SAML, WebAuthn/FIDO2, sandboxing, TEE-aware routing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 462-tool MCP server, a full ML lifecycle platform, and a simulation engine — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
 
-- Version: 2026.3.10
-- 37 ADRs, 66 guides
+- Version: 2026.3.12
+- 37 ADRs, 68 guides
 - 38 platform integrations, 462 MCP tools, 56 CLI commands
+- 5 code forge adapters (Delta, GitHub, GitLab, Bitbucket, Gitea)
+- Edge/IoT binary (Go, 7.2 MB, zero dependencies)
 
 ## Documentation
 
@@ -34,6 +36,9 @@
 - [Cognitive ML Memory](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/knowledge-memory.md#cognitive-ml-memory-enhancements): Context retrieval, working memory, salience classification
 - [Notifications](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/notifications.md): Alert rules, job completion notifications, ntfy channel
 - [Constitutional AI](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/constitutional-ai.md): Self-critique, revision, and DPO training
+- [Federated Learning](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/federated-learning.md): Privacy-preserving distributed training
+- [Chaos Engineering](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/chaos-engineering.md): Fault injection and resilience testing
+- [SSO/SAML](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/sso-saml.md): Identity provider setup
 - [Troubleshooting](https://github.com/MacCracken/secureyeoman/blob/main/docs/troubleshooting.md): Common problems and fixes
 
 ## Optional
