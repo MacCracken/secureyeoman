@@ -12,7 +12,7 @@
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | 14 | Edge/IoT A2A Binary | P2 — platform | 14A ✅, 14B partial, 14C partial, 14D planned, 14E partial |
 | — | Engineering Backlog | Ongoing | Security hardening complete; test coverage improvements ongoing |
-| Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | — |
+| Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Sim core 5/7 ✅, Enterprise 6/7 ✅ |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -150,13 +150,13 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### Test Coverage — Current Status (2026-03-11)
+### Test Coverage — Current Status (2026-03-12)
 
 **All suites above target.** Core unit: 89.31% stmt / 79.10% branches (target 88% / 77%). Dashboard: 71.12% stmt / 67.71% branches (target 70% — met). MCP: 70.20% stmt (target 70% — met).
 
 | Suite | Files | Tests | Stmts % | Branch % | Status |
 |-------|-------|-------|---------|----------|--------|
-| Core Unit | 673 | 16,186 | 89.31 | 79.10 | All passing |
+| Core Unit | 697 | 16,608 | 89.31 | 79.10 | All passing |
 | Dashboard | 179 | 4,111 | 71.12 | 67.71 | All passing — target met |
 | MCP | 76 | 1,124 | 70.20 | 51.50 | All passing |
 | Core E2E | 8 | 67 | — | — | All passing (incl. binary smoke) |
@@ -254,13 +254,7 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 *Security hardening and compliance capabilities for enterprise deployments.*
 
-- [ ] **WebAuthn/FIDO2 auth** — Hardware key authentication for admins. Passwordless login with security keys (YubiKey, Touch ID, Windows Hello). Attestation and assertion flows via `@simplewebauthn/server`.
 - [ ] **HSM Integration** — Hardware Security Module integration for key management. PKCS#11 interface for signing, encryption, and key rotation. Cloud HSM support (AWS CloudHSM, Azure Dedicated HSM, GCP Cloud HSM).
-- [ ] **SCIM provisioning** — RFC 7644 SCIM 2.0 server for automated user lifecycle management. Auto-create, update, deactivate users from IdP directories (Okta, Azure AD, Google Workspace). Group-to-role mapping. Complements existing SSO/OIDC/SAML.
-- [ ] **Per-tenant rate limiting & token budgets** — Extend existing rate limiter with tenant-scoped rules: API request quotas, LLM token spend caps, and storage limits per tenant. Quota usage dashboard in Mission Control. Proactive warnings at 80%/90% thresholds. Builds on `rate-limiter.ts` sliding-window infrastructure.
-- [ ] **Break-glass emergency access** — Documented recovery procedure when admin is locked out. Sealed recovery key generated at install time (printed once, never stored). Break-glass creates a time-limited admin session with full audit trail. Distinct from existing personality emergency stop (`POST /api/v1/security/autonomy/:id/emergency-stop`), which halts agent actions but not platform access.
-- [ ] **Access review & entitlement reporting** — "Who has access to what" report endpoint. Periodic access review campaigns: admin schedules a review, reviewers approve/revoke each user's permissions, results logged to audit chain. Supports SOC 2 CC6.1 / SOX access certification requirements.
-- [ ] **Formal compliance audit scope documentation** — Published SOC 2 Type II audit scope document mapping SY controls to Trust Services Criteria. ISO 27001 Statement of Applicability. Builds on existing `compliance-mapping.ts` (NIST, SOC 2, ISO 27001, HIPAA, EU AI Act) by adding narrative evidence descriptions and control ownership.
 
 ---
 
@@ -300,13 +294,18 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ### Simulation Engine — Enterprise
 
-*Demand-Gated — enterprise-tier licensed feature (`simulation`). A general-purpose live simulation framework built on existing personality, cognitive memory, workflow, voice, and multi-agent subsystems. Subsets below target specific simulation domains.*
+*Enterprise-tier licensed feature (`simulation`). A general-purpose live simulation framework built on existing personality, cognitive memory, workflow, voice, and multi-agent subsystems. Subsets below target specific simulation domains.*
 
 #### Core Simulation Infrastructure
 
-- [ ] **Simulation tick driver** — Configurable timestep scheduler (real-time, accelerated, turn-based) that advances entity state on a cadence. Triggers cognitive memory decay, mood updates, and scheduled behaviors per tick. Builds on workflow engine's DAG execution and personality active-hours scheduling.
-- [ ] **Emotion & mood model** — Affect system layered on personality traits. Mood state (valence/arousal) influenced by events, decays over time, modulates system prompt and response style. Stored as cognitive memory entries with dedicated decay curves. Exposed via `GET /api/v1/personalities/:id/mood`.
-- [ ] **Spatial & proximity awareness** — Location-aware entity context: proximity triggers (approach/leave radius), line-of-sight events, spatial memory. Integrates with external state adapters for coordinate data. Memory entries tagged with location metadata.
+- [x] **Simulation tick driver** — ✅ Implemented (`simulation/tick-driver.ts`): Three modes (realtime, accelerated, turn-based). Per-personality configs, pause/resume, tick counting, sim-time epoch. Integrates with mood engine and cognitive memory decay. 17 tests.
+- [x] **Emotion & mood model** — ✅ Implemented (`simulation/mood-engine.ts`): Russell's circumplex model (valence/arousal → 10 mood labels). 12 personality trait modifiers. Exponential decay toward baselines. Mood state CRUD + event log. 14 tests.
+- [x] **Spatial & proximity awareness** — ✅ Implemented (`simulation/spatial-engine.ts`): 3D entity locations, named zones with bounding boxes, 6 proximity trigger types, declarative rules with cooldown and mood effects, per-tick evaluation. 30 tests.
+- [x] **Experiment runner (autoresearch)** — ✅ Implemented (`simulation/experiment-runner.ts`): Autonomous research loop inspired by Karpathy's autoresearch. Fixed-budget experimentation, single-scope modification, metric-driven retain/discard, baseline promotion, experiment journaling. Pluggable `createProposer()` / `createExecutor()` callbacks allow domain-specific autoresearch (see below). 34 tests. Three domain integrations already built:
+  - **Hyperparameter search** (`training/hyperparam-autoresearch.ts`): Iterative HP search with automatic space narrowing and convergence detection. 17 tests.
+  - **Chaos engineering** (`chaos/chaos-autoresearch.ts`): Iterative resilience improvement with escalation levels, target cycling, and composite resilience scoring. 16 tests.
+  - **Circuit breaker tuning** (`resilience/circuit-breaker-autotuner.ts`): Threshold/timeout tuning via observation-based detection scoring. 19 tests.
+- [x] **Training executor bridge** — ✅ Implemented (`simulation/training-executor.ts`): Bridges experiment runner to FinetuneManager, EvaluationManager, ExperimentRegistryManager via interface wrappers. 13 tests.
 - [ ] **Entity relationship graph** — Persistent inter-entity relationship tracking. Affinity scores, trust levels, group membership. Updated by interactions and events. Queryable for decision branching. Builds on cognitive memory's associative graph.
 - [ ] **Simulation dashboard panel** — Dashboard widget for monitoring live simulations: active entities, mood heatmap, relationship graph visualization, memory utilization, tick rate, LLM cost per entity. Extends existing dashboard component patterns.
 
@@ -350,9 +349,9 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 #### Scientific Modeling
 
 - [ ] **Model definition DSL** — Declarative schema for defining scientific models: state variables, equations/rules (symbolic or code), initial conditions, parameter ranges, and output observables. Stored as workflow-compatible JSON. Importable/exportable for reproducibility.
-- [ ] **Parameter sweep engine** — Batch exploration of parameter spaces: grid search, Latin hypercube sampling, or Bayesian optimization. Each parameter set runs as a parallel workflow. Results aggregated into comparison dashboards with sensitivity analysis.
+- [ ] **Parameter sweep engine** — Batch exploration of parameter spaces: grid search, Latin hypercube sampling, or Bayesian optimization. Each parameter set runs as a parallel workflow. Results aggregated into comparison dashboards with sensitivity analysis. Foundation already in place via `ExperimentRunner` autoresearch framework and `HyperparamAutoresearch` (iterative narrowing, convergence detection).
 - [ ] **Agent-based modeling (ABM)** — Map simulation entities to scientific agents (cells, organisms, particles, economic actors). Each agent is a personality with domain-specific rules and stochastic behavior. Tick driver advances population state. Emergent phenomena observed via relationship graph and spatial awareness.
-- [ ] **Experiment journaling** — Automatic provenance logging: every simulation run records parameters, random seeds, model version, and full output trace to audit chain. Reproducible reruns from journal entries. Exportable as supplementary material for publications.
+- [ ] **Experiment journaling** — Automatic provenance logging: every simulation run records parameters, random seeds, model version, and full output trace to audit chain. Reproducible reruns from journal entries. Exportable as supplementary material for publications. Core journaling infrastructure already in `ExperimentRunner` (hypothesis tracking, run status, metric recording, retain/discard decisions).
 - [ ] **Data ingestion adapters** — Import observational/experimental datasets (CSV, HDF5, NetCDF, FITS) as simulation initial conditions or validation baselines. Adapter registry for domain-specific formats. Comparison tools for simulated vs. observed data with statistical goodness-of-fit metrics.
 - [ ] **Visualization & export** — Time-series plots, phase diagrams, population dynamics charts, spatial heatmaps. Export simulation results as publication-ready figures (SVG/PNG), raw data (CSV/Parquet), or Jupyter-compatible notebooks. Dashboard widgets for interactive exploration.
 - [ ] **LLM-assisted analysis** — Post-simulation agent that interprets results: identifies trends, flags anomalies, suggests follow-up experiments, generates natural-language summaries of findings. Personality tunable per scientific domain (bio, physics, econ, climate).
@@ -386,4 +385,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-11 (Full audit: 8/15 QA manual items code-complete awaiting live verification; test counts updated; cross-project audit bridge + vector store marked done; Phase 14A complete). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-12 (Simulation engine core infrastructure: tick driver, mood engine, spatial engine, experiment runner + autoresearch integrations complete; enterprise security features complete — only HSM remains; test counts updated). See [Changelog](../../CHANGELOG.md) for full history.*

@@ -4,6 +4,99 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.12]
+
+### Simulation Engine — Core Infrastructure (6 subsystems, 192 new tests)
+
+Enterprise-tier simulation framework built on personality, cognitive memory, and workflow subsystems. Implements the first 3 core simulation infrastructure roadmap items plus the autoresearch experiment framework.
+
+**Simulation Tick Driver** (`simulation/tick-driver.ts`)
+- Three modes: `realtime` (wall-clock interval), `accelerated` (compressed by `timeScale`), `turn_based` (manual advance only)
+- Per-personality tick configs with pause/resume, tick counting, sim-time epoch tracking
+- Integrates with mood engine (triggers mood decay each tick) and cognitive memory (configurable decay interval)
+- 17 tests
+
+**Emotion & Mood Model** (`simulation/mood-engine.ts`)
+- Russell's circumplex model: `(valence, arousal)` mapped to 10 mood labels (happy, excited, alert, tense, angry, sad, bored, calm, relaxed, neutral)
+- 12 personality trait modifiers (cheerful, serious, energetic, calm, empathetic, analytical, playful, reserved, passionate, stoic, anxious, confident)
+- Exponential decay toward personality-derived baselines. Events shift mood with configurable deltas
+- Exposed via mood state CRUD and event log
+- 14 tests
+
+**Spatial & Proximity Engine** (`simulation/spatial-engine.ts`)
+- 3D entity locations (x, y, z, heading, speed) with zone assignment
+- Named spatial zones with bounding boxes and property metadata
+- 6 proximity trigger types: `enter_radius`, `leave_radius`, `enter_zone`, `leave_zone`, `approach`, `depart`
+- Declarative proximity rules with configurable radius threshold, cooldown, and mood effects
+- Per-tick proximity evaluation: fires events, applies mood effects, respects cooldown
+- Distance-tracking for approach/depart events (compares current vs previous distance)
+- 30 tests (engine + routes)
+
+**Experiment Runner — Autoresearch Framework** (`simulation/experiment-runner.ts`)
+- Autonomous research loop inspired by Karpathy's autoresearch methodology
+- Fixed-budget experimentation: every run gets the same compute budget (time or steps)
+- Single-scope modification: constrain what the agent can change per cycle
+- Metric-driven retain/discard: best result retained, experiment journaled
+- Baseline promotion: retained results become the new baseline for next cycle
+- Pluggable `propose` and `executeExperiment` callbacks for domain-specific autoresearch
+- Session management: create, configure constraints (mutable keys, bounds, frozen keys), track runs
+- In-memory experiment store for session/run persistence
+- 34 tests
+
+**Training Executor** (`simulation/training-executor.ts`)
+- Bridges experiment runner to real training infrastructure via dependency interfaces
+- `TrainingJobLauncher`: create/wait for finetune jobs (LoRA/QLoRA)
+- `TrainingEvaluator`: post-training metric evaluation
+- `ExperimentTracker`: experiment registry with status tracking and eval run linking
+- Wired in `server.ts` to FinetuneManager, EvaluationManager, ExperimentRegistryManager with polling-based job completion
+- 13 tests
+
+**Simulation Store & Routes:**
+- PostgreSQL persistence: `simulation` schema with 7 tables across 2 migrations (018, 019)
+- Tables: `tick_configs`, `mood_states`, `mood_events`, `entity_locations`, `spatial_zones`, `proximity_rules`, `proximity_events`
+- 29 REST endpoints under `/api/v1/simulation/` — tick CRUD/control, mood state/events, locations, zones, proximity rules/events, experiment sessions
+- All routes gated by enterprise `simulation` license
+- 42 tests (store + routes)
+
+**Shared Types** (`@secureyeoman/shared`):
+- Zod schemas + TypeScript types for all simulation entities: tick configs, mood states/events/labels, entity locations, spatial zones, proximity rules/events/trigger types
+
+### Autoresearch Domain Integrations (3 domains)
+
+Applies autoresearch patterns (fixed-budget experimentation, metric-driven retain/discard, convergence detection) to three existing subsystems. Each creates `createProposer()` and `createExecutor()` callbacks that plug into the experiment runner.
+
+**Hyperparameter Autoresearch** (`training/hyperparam-autoresearch.ts`)
+- Iterative hyperparameter search with automatic space narrowing
+- After retaining a result, narrows candidate values to `narrowingFactor` radius around the best value
+- Convergence detection: spread of last N retained results below threshold → stop
+- Configurable: `convergenceThreshold`, `convergenceWindow`, `narrowingFactor`, `trialsPerBatch`, `lowerIsBetter`, `maxDurationMs`
+- 17 tests
+
+**Chaos Autoresearch** (`chaos/chaos-autoresearch.ts`)
+- Turns chaos engineering from one-shot experiments into an iterative resilience improvement loop
+- Escalation levels: consecutive passes increase fault intensity; failures reset the pass counter
+- Composite resilience score: `recoveryRate * 0.7 + speedScore * 0.3`
+- Target type cycling across configurable fault types (latency, error, resource, network, dependency)
+- Baseline tracking with best resilience score promotion
+- Configurable: `passesForEscalation`, `maxEscalationLevel`, `maxDurationMs`, `targetTypes`
+- 16 tests
+
+**Circuit Breaker Autotuner** (`resilience/circuit-breaker-autotuner.ts`)
+- Iterative tuning of `failureThreshold` and `resetTimeoutMs` via observation analysis
+- Detection score: `accuracyScore * 0.6 + speedScore * 0.4`
+- Adaptive proposals: high false-open rate → increase threshold; slow detection → decrease threshold; also adjusts timeout based on recovery time
+- `applyConfig` callback fires on retained results to push config to real circuit breakers
+- Configurable: `convergenceThreshold`, `minObservations`, `thresholdCandidates`, `timeoutCandidates`, `maxDurationMs`, `initialConfig`
+- 19 tests
+
+### Autoresearch Marketplace Skill
+
+- `marketplace/skills/autoresearch.ts`: Built-in YEOMAN skill for autonomous AI-driven experiment research
+- Multi-step system prompt: hypothesis formation, parameter modification within constraints, fixed-budget execution, metric evaluation, journal documentation
+- Registered in marketplace skill index
+
+---
+
 ## [2026.3.11]
 
 ### Phase 14A–C: Edge/IoT A2A Binary — `secureyeoman-edge`
