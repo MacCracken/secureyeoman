@@ -1301,6 +1301,20 @@ export {
   type ProximityRule,
   type ProximityRuleCreate,
   type ProximityEvent,
+  RelationshipTypeSchema,
+  EntityRelationshipSchema,
+  EntityRelationshipCreateSchema,
+  RelationshipEventCreateSchema,
+  RelationshipEventSchema,
+  EntityGroupSchema,
+  EntityGroupCreateSchema,
+  type RelationshipType,
+  type EntityRelationship,
+  type EntityRelationshipCreate,
+  type RelationshipEventCreate,
+  type RelationshipEvent,
+  type EntityGroup,
+  type EntityGroupCreate,
 } from './simulation.js';
 
 // Responsible AI types (Phase 130)

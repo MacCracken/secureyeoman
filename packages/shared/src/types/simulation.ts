@@ -218,3 +218,95 @@ export const MoodEventSchema = z.object({
   createdAt: z.number().int(),
 });
 export type MoodEvent = z.infer<typeof MoodEventSchema>;
+
+// ── Entity Relationships ──────────────────────────────────────────────
+
+export const RelationshipTypeSchema = z.enum([
+  'ally',
+  'rival',
+  'neutral',
+  'mentor',
+  'student',
+  'trade_partner',
+  'family',
+  'custom',
+]);
+export type RelationshipType = z.infer<typeof RelationshipTypeSchema>;
+
+export const EntityRelationshipSchema = z.object({
+  id: z.string(),
+  personalityId: z.string(),
+  sourceEntityId: z.string(),
+  targetEntityId: z.string(),
+  type: RelationshipTypeSchema,
+  affinity: z.number().min(-1).max(1).default(0),
+  trust: z.number().min(0).max(1).default(0.5),
+  interactionCount: z.number().int().min(0).default(0),
+  decayRate: z.number().min(0).max(1).default(0.01),
+  metadata: z.record(z.unknown()).default({}),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+});
+export type EntityRelationship = z.infer<typeof EntityRelationshipSchema>;
+
+export const EntityRelationshipCreateSchema = z.object({
+  sourceEntityId: z.string(),
+  targetEntityId: z.string(),
+  type: RelationshipTypeSchema.default('neutral'),
+  affinity: z.number().min(-1).max(1).default(0),
+  trust: z.number().min(0).max(1).default(0.5),
+  decayRate: z.number().min(0).max(1).default(0.01),
+  metadata: z.record(z.unknown()).default({}),
+});
+export type EntityRelationshipCreate = z.infer<typeof EntityRelationshipCreateSchema>;
+
+export const RelationshipEventCreateSchema = z.object({
+  sourceEntityId: z.string(),
+  targetEntityId: z.string(),
+  eventType: z.string(),
+  affinityDelta: z.number().min(-2).max(2).default(0),
+  trustDelta: z.number().min(-1).max(1).default(0),
+  source: z.string().default('system'),
+  moodEffect: z
+    .object({
+      valenceDelta: z.number().default(0),
+      arousalDelta: z.number().default(0),
+    })
+    .nullable()
+    .default(null),
+  metadata: z.record(z.unknown()).default({}),
+});
+export type RelationshipEventCreate = z.infer<typeof RelationshipEventCreateSchema>;
+
+export const RelationshipEventSchema = z.object({
+  id: z.string(),
+  personalityId: z.string(),
+  sourceEntityId: z.string(),
+  targetEntityId: z.string(),
+  eventType: z.string(),
+  affinityDelta: z.number(),
+  trustDelta: z.number(),
+  source: z.string(),
+  metadata: z.record(z.unknown()),
+  createdAt: z.number().int(),
+});
+export type RelationshipEvent = z.infer<typeof RelationshipEventSchema>;
+
+export const EntityGroupSchema = z.object({
+  id: z.string(),
+  personalityId: z.string(),
+  groupId: z.string(),
+  name: z.string(),
+  members: z.array(z.string()).default([]),
+  metadata: z.record(z.unknown()).default({}),
+  createdAt: z.number().int(),
+});
+export type EntityGroup = z.infer<typeof EntityGroupSchema>;
+
+export const EntityGroupCreateSchema = z.object({
+  groupId: z.string(),
+  name: z.string(),
+  members: z.array(z.string()).default([]),
+  metadata: z.record(z.unknown()).default({}),
+});
+export type EntityGroupCreate = z.infer<typeof EntityGroupCreateSchema>;

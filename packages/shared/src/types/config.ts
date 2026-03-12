@@ -562,6 +562,8 @@ export const SecurityConfigSchema = z.object({
   sandboxWasm: z.boolean().default(false),
   /** Enable outbound credential injection at sandbox proxy boundary. Off by default. */
   sandboxCredentialProxy: z.boolean().default(false),
+  /** Allow simulation engine dashboard (tick driver, mood, spatial, relationships). Off by default. */
+  allowSimulation: z.boolean().default(false),
   /** Allow git clone/pull from a URL during community skill sync. Off by default. */
   allowCommunityGitFetch: z.boolean().default(false),
   /** Default git URL for community skills repo when git fetch is enabled. */

@@ -3133,6 +3133,7 @@ export interface SecurityPolicy {
   allowDynamicTools: boolean;
   sandboxDynamicTools: boolean;
   allowAnomalyDetection: boolean;
+  allowSimulation: boolean;
   sandboxGvisor: boolean;
   sandboxWasm: boolean;
   sandboxCredentialProxy: boolean;
@@ -3185,6 +3186,7 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowDynamicTools: false,
       sandboxDynamicTools: true,
       allowAnomalyDetection: false,
+      allowSimulation: false,
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
@@ -6989,4 +6991,80 @@ export async function promoteArtifactoryBuild(
 export async function fetchArtifactoryHealth(key: string): Promise<boolean> {
   const res = await request<{ healthy: boolean }>(`/artifactory/${encodeURIComponent(key)}/health`);
   return res.healthy;
+}
+
+// ── Simulation Engine ──────────────────────────────────────────────────
+
+export async function fetchSimTickConfig(personalityId: string): Promise<any> {
+  return request(`/simulation/tick/${encodeURIComponent(personalityId)}`);
+}
+
+export async function startSimTick(
+  personalityId: string,
+  config: { mode: string; tickIntervalMs?: number; timeScale?: number }
+): Promise<any> {
+  return request(`/simulation/tick/${encodeURIComponent(personalityId)}`, {
+    method: 'POST',
+    body: JSON.stringify(config),
+  });
+}
+
+export async function pauseSimTick(personalityId: string): Promise<any> {
+  return request(`/simulation/tick/${encodeURIComponent(personalityId)}/pause`, { method: 'POST' });
+}
+
+export async function resumeSimTick(personalityId: string): Promise<any> {
+  return request(`/simulation/tick/${encodeURIComponent(personalityId)}/resume`, {
+    method: 'POST',
+  });
+}
+
+export async function advanceSimTick(personalityId: string): Promise<any> {
+  return request(`/simulation/tick/${encodeURIComponent(personalityId)}/advance`, {
+    method: 'POST',
+  });
+}
+
+export async function deleteSimTick(personalityId: string): Promise<any> {
+  return request(`/simulation/tick/${encodeURIComponent(personalityId)}`, { method: 'DELETE' });
+}
+
+export async function fetchSimMoodState(personalityId: string): Promise<any> {
+  return request(`/personalities/${encodeURIComponent(personalityId)}/mood`);
+}
+
+export async function fetchSimMoodHistory(personalityId: string, limit = 20): Promise<any> {
+  return request(`/personalities/${encodeURIComponent(personalityId)}/mood/history?limit=${limit}`);
+}
+
+export async function submitSimMoodEvent(
+  personalityId: string,
+  event: { eventType: string; valenceDelta: number; arousalDelta: number; source?: string }
+): Promise<any> {
+  return request(`/personalities/${encodeURIComponent(personalityId)}/mood/event`, {
+    method: 'POST',
+    body: JSON.stringify(event),
+  });
+}
+
+export async function resetSimMood(personalityId: string): Promise<any> {
+  return request(`/personalities/${encodeURIComponent(personalityId)}/mood/reset`, {
+    method: 'POST',
+  });
+}
+
+export async function fetchSimEntities(personalityId: string): Promise<any> {
+  return request(`/simulation/spatial/${encodeURIComponent(personalityId)}/entities`);
+}
+
+export async function fetchSimZones(personalityId: string): Promise<any> {
+  return request(`/simulation/spatial/${encodeURIComponent(personalityId)}/zones`);
+}
+
+export async function fetchSimRelationships(personalityId: string): Promise<any> {
+  return request(`/simulation/relationships/${encodeURIComponent(personalityId)}`);
+}
+
+export async function fetchSimGroups(personalityId: string): Promise<any> {
+  return request(`/simulation/groups/${encodeURIComponent(personalityId)}`);
 }

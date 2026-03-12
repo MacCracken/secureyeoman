@@ -11,6 +11,9 @@ import type {
   SpatialZone,
   ProximityRule,
   ProximityEvent,
+  EntityRelationship,
+  RelationshipEvent,
+  EntityGroup,
 } from '@secureyeoman/shared';
 
 function rowToTickConfig(row: Record<string, unknown>): TickConfig {
@@ -101,6 +104,50 @@ function rowToProximityRule(row: Record<string, unknown>): ProximityRule {
     cooldownMs: Number(row.cooldown_ms ?? 0),
     moodEffect: (row.mood_effect as ProximityRule['moodEffect']) ?? null,
     enabled: (row.enabled as boolean) ?? true,
+    createdAt: Number(row.created_at ?? 0),
+  };
+}
+
+function rowToEntityRelationship(row: Record<string, unknown>): EntityRelationship {
+  return {
+    id: row.id as string,
+    personalityId: row.personality_id as string,
+    sourceEntityId: row.source_entity_id as string,
+    targetEntityId: row.target_entity_id as string,
+    type: (row.type as EntityRelationship['type']) ?? 'neutral',
+    affinity: Number(row.affinity ?? 0),
+    trust: Number(row.trust ?? 0.5),
+    interactionCount: Number(row.interaction_count ?? 0),
+    decayRate: Number(row.decay_rate ?? 0.01),
+    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    createdAt: Number(row.created_at ?? 0),
+    updatedAt: Number(row.updated_at ?? 0),
+  };
+}
+
+function rowToRelationshipEvent(row: Record<string, unknown>): RelationshipEvent {
+  return {
+    id: row.id as string,
+    personalityId: row.personality_id as string,
+    sourceEntityId: row.source_entity_id as string,
+    targetEntityId: row.target_entity_id as string,
+    eventType: row.event_type as string,
+    affinityDelta: Number(row.affinity_delta ?? 0),
+    trustDelta: Number(row.trust_delta ?? 0),
+    source: (row.source as string) ?? 'system',
+    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    createdAt: Number(row.created_at ?? 0),
+  };
+}
+
+function rowToEntityGroup(row: Record<string, unknown>): EntityGroup {
+  return {
+    id: row.id as string,
+    personalityId: row.personality_id as string,
+    groupId: row.group_id as string,
+    name: row.name as string,
+    members: (row.members as string[]) ?? [],
+    metadata: (row.metadata as Record<string, unknown>) ?? {},
     createdAt: Number(row.created_at ?? 0),
   };
 }
@@ -499,5 +546,212 @@ export class SimulationStore extends PgBaseStorage {
       [personalityId, limit]
     );
     return rows.map(rowToProximityEvent);
+  }
+
+  // ── Entity Relationships ────────────────────────────────────────────
+
+  async upsertRelationship(rel: EntityRelationship): Promise<void> {
+    await this.execute(
+      `INSERT INTO simulation.entity_relationships (
+        id, personality_id, source_entity_id, target_entity_id,
+        type, affinity, trust, interaction_count, decay_rate,
+        metadata, created_at, updated_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      ON CONFLICT (personality_id, source_entity_id, target_entity_id) DO UPDATE SET
+        type = EXCLUDED.type,
+        affinity = EXCLUDED.affinity,
+        trust = EXCLUDED.trust,
+        interaction_count = EXCLUDED.interaction_count,
+        decay_rate = EXCLUDED.decay_rate,
+        metadata = EXCLUDED.metadata,
+        updated_at = EXCLUDED.updated_at`,
+      [
+        rel.id,
+        rel.personalityId,
+        rel.sourceEntityId,
+        rel.targetEntityId,
+        rel.type,
+        rel.affinity,
+        rel.trust,
+        rel.interactionCount,
+        rel.decayRate,
+        JSON.stringify(rel.metadata),
+        rel.createdAt,
+        rel.updatedAt,
+      ]
+    );
+  }
+
+  async getRelationship(
+    personalityId: string,
+    sourceEntityId: string,
+    targetEntityId: string
+  ): Promise<EntityRelationship | null> {
+    const row = await this.queryOne<Record<string, unknown>>(
+      `SELECT * FROM simulation.entity_relationships
+       WHERE personality_id = $1 AND source_entity_id = $2 AND target_entity_id = $3`,
+      [personalityId, sourceEntityId, targetEntityId]
+    );
+    return row ? rowToEntityRelationship(row) : null;
+  }
+
+  async listRelationships(
+    personalityId: string,
+    opts: { entityId?: string; type?: string; minAffinity?: number; limit?: number } = {}
+  ): Promise<EntityRelationship[]> {
+    const limit = Math.min(opts.limit ?? 100, 500);
+    const conditions: string[] = ['personality_id = $1'];
+    const params: unknown[] = [personalityId];
+    let idx = 2;
+
+    if (opts.entityId) {
+      conditions.push(`(source_entity_id = $${idx} OR target_entity_id = $${idx})`);
+      params.push(opts.entityId);
+      idx++;
+    }
+    if (opts.type) {
+      conditions.push(`type = $${idx}`);
+      params.push(opts.type);
+      idx++;
+    }
+    if (opts.minAffinity != null) {
+      conditions.push(`affinity >= $${idx}`);
+      params.push(opts.minAffinity);
+      idx++;
+    }
+
+    params.push(limit);
+    const rows = await this.queryMany<Record<string, unknown>>(
+      `SELECT * FROM simulation.entity_relationships
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY updated_at DESC LIMIT $${idx}`,
+      params
+    );
+    return rows.map(rowToEntityRelationship);
+  }
+
+  async deleteRelationship(
+    personalityId: string,
+    sourceEntityId: string,
+    targetEntityId: string
+  ): Promise<boolean> {
+    const count = await this.execute(
+      `DELETE FROM simulation.entity_relationships
+       WHERE personality_id = $1 AND source_entity_id = $2 AND target_entity_id = $3`,
+      [personalityId, sourceEntityId, targetEntityId]
+    );
+    return count > 0;
+  }
+
+  async listAllRelationships(personalityId: string): Promise<EntityRelationship[]> {
+    const rows = await this.queryMany<Record<string, unknown>>(
+      `SELECT * FROM simulation.entity_relationships WHERE personality_id = $1`,
+      [personalityId]
+    );
+    return rows.map(rowToEntityRelationship);
+  }
+
+  // ── Relationship Events ─────────────────────────────────────────────
+
+  async recordRelationshipEvent(event: RelationshipEvent): Promise<void> {
+    await this.execute(
+      `INSERT INTO simulation.relationship_events (
+        id, personality_id, source_entity_id, target_entity_id,
+        event_type, affinity_delta, trust_delta, source, metadata, created_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [
+        event.id,
+        event.personalityId,
+        event.sourceEntityId,
+        event.targetEntityId,
+        event.eventType,
+        event.affinityDelta,
+        event.trustDelta,
+        event.source,
+        JSON.stringify(event.metadata),
+        event.createdAt,
+      ]
+    );
+  }
+
+  async listRelationshipEvents(
+    personalityId: string,
+    opts: { entityId?: string; limit?: number; since?: number } = {}
+  ): Promise<RelationshipEvent[]> {
+    const limit = Math.min(opts.limit ?? 50, 200);
+    const conditions: string[] = ['personality_id = $1'];
+    const params: unknown[] = [personalityId];
+    let idx = 2;
+
+    if (opts.entityId) {
+      conditions.push(`(source_entity_id = $${idx} OR target_entity_id = $${idx})`);
+      params.push(opts.entityId);
+      idx++;
+    }
+    if (opts.since != null) {
+      conditions.push(`created_at >= $${idx}`);
+      params.push(opts.since);
+      idx++;
+    }
+
+    params.push(limit);
+    const rows = await this.queryMany<Record<string, unknown>>(
+      `SELECT * FROM simulation.relationship_events
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY created_at DESC LIMIT $${idx}`,
+      params
+    );
+    return rows.map(rowToRelationshipEvent);
+  }
+
+  // ── Entity Groups ──────────────────────────────────────────────────
+
+  async upsertEntityGroup(group: EntityGroup): Promise<void> {
+    await this.execute(
+      `INSERT INTO simulation.entity_groups (
+        id, personality_id, group_id, name, members, metadata, created_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7)
+      ON CONFLICT (personality_id, group_id) DO UPDATE SET
+        name = EXCLUDED.name,
+        members = EXCLUDED.members,
+        metadata = EXCLUDED.metadata`,
+      [
+        group.id,
+        group.personalityId,
+        group.groupId,
+        group.name,
+        group.members,
+        JSON.stringify(group.metadata),
+        group.createdAt,
+      ]
+    );
+  }
+
+  async listEntityGroups(personalityId: string): Promise<EntityGroup[]> {
+    const rows = await this.queryMany<Record<string, unknown>>(
+      `SELECT * FROM simulation.entity_groups
+       WHERE personality_id = $1
+       ORDER BY created_at`,
+      [personalityId]
+    );
+    return rows.map(rowToEntityGroup);
+  }
+
+  async getEntityGroup(personalityId: string, groupId: string): Promise<EntityGroup | null> {
+    const row = await this.queryOne<Record<string, unknown>>(
+      `SELECT * FROM simulation.entity_groups
+       WHERE personality_id = $1 AND group_id = $2`,
+      [personalityId, groupId]
+    );
+    return row ? rowToEntityGroup(row) : null;
+  }
+
+  async deleteEntityGroup(personalityId: string, groupId: string): Promise<boolean> {
+    const count = await this.execute(
+      `DELETE FROM simulation.entity_groups
+       WHERE personality_id = $1 AND group_id = $2`,
+      [personalityId, groupId]
+    );
+    return count > 0;
   }
 }

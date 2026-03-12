@@ -12,7 +12,7 @@
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | 14 | Edge/IoT A2A Binary | P2 — platform | 14A ✅, 14B partial, 14C partial, 14D planned, 14E partial |
 | — | Engineering Backlog | Ongoing | Security hardening complete; test coverage improvements ongoing |
-| Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Sim core 5/7 ✅, Enterprise 6/7 ✅ |
+| Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Sim core 7/7 ✅, Enterprise 6/7 ✅ |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -306,8 +306,8 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
   - **Chaos engineering** (`chaos/chaos-autoresearch.ts`): Iterative resilience improvement with escalation levels, target cycling, and composite resilience scoring. 16 tests.
   - **Circuit breaker tuning** (`resilience/circuit-breaker-autotuner.ts`): Threshold/timeout tuning via observation-based detection scoring. 19 tests.
 - [x] **Training executor bridge** — ✅ Implemented (`simulation/training-executor.ts`): Bridges experiment runner to FinetuneManager, EvaluationManager, ExperimentRegistryManager via interface wrappers. 13 tests.
-- [ ] **Entity relationship graph** — Persistent inter-entity relationship tracking. Affinity scores, trust levels, group membership. Updated by interactions and events. Queryable for decision branching. Builds on cognitive memory's associative graph.
-- [ ] **Simulation dashboard panel** — Dashboard widget for monitoring live simulations: active entities, mood heatmap, relationship graph visualization, memory utilization, tick rate, LLM cost per entity. Extends existing dashboard component patterns.
+- [x] **Entity relationship graph** — ✅ Implemented (`simulation/relationship-graph.ts`): Persistent inter-entity relationships with affinity (-1 to 1), trust (0 to 1), interaction tracking. 8 relationship types, group membership, tick-driven decay. 14 REST endpoints. Interaction events auto-adjust scores and optionally trigger mood effects. 40 tests.
+- [x] **Simulation dashboard panel** — ✅ Implemented (`dashboard/components/simulation/SimulationPanel.tsx`): 4-tab monitoring panel (Tick, Mood, Spatial, Relationships). Real-time tick state with play/pause/advance controls, valence/arousal progress bars with mood label badges, entity/zone tables, relationship affinity/trust bars, group membership display. Gated by `allowSimulation` security policy. 20 tests.
 
 #### Game NPCs
 
@@ -385,4 +385,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-12 (Simulation engine core infrastructure: tick driver, mood engine, spatial engine, experiment runner + autoresearch integrations complete; enterprise security features complete — only HSM remains; test counts updated). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-12 (Simulation engine core infrastructure complete 7/7: tick driver, mood engine, spatial engine, experiment runner + autoresearch integrations, entity relationship graph, dashboard panel; enterprise security features complete — only HSM remains; test counts updated). See [Changelog](../../CHANGELOG.md) for full history.*

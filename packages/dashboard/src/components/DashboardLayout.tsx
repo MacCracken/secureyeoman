@@ -59,6 +59,9 @@ const OrganizationPage = lazy(() =>
 const AdvancedEditorPage = lazy(() =>
   import('./AdvancedEditor/AdvancedEditorPage').then((m) => ({ default: m.AdvancedEditorPage }))
 );
+const SimulationPage = lazy(() =>
+  import('./simulation/SimulationPanel').then((m) => ({ default: m.SimulationPanel }))
+);
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -239,6 +242,7 @@ export function DashboardLayout() {
                   <Route path="/multimodal" element={<Navigate to="/agents" replace />} />
                   <Route path="/costs" element={<Navigate to="/metrics" replace />} />
                   <Route path="/organization" element={<OrganizationPage />} />
+                  <Route path="/simulation" element={<SimulationPage />} />
                   <Route
                     path="/intent"
                     element={<Navigate to="/organization?tab=intent" replace />}

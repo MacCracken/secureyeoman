@@ -1833,6 +1833,12 @@ export class GatewayServer {
         logger: this.getLogger(),
         moodEngine,
       });
+      const { RelationshipGraph } = await import('../simulation/relationship-graph.js');
+      const relationshipGraph = new RelationshipGraph({
+        store: simStore,
+        logger: this.getLogger(),
+        moodEngine,
+      });
 
       // Bridge autoresearch experiment runner to real training infrastructure
       const finetuneManager = this.secureYeoman.getFinetuneManager();
@@ -1905,12 +1911,14 @@ export class GatewayServer {
       const tickDriver = new TickDriver({ store: simStore, logger: this.getLogger(), moodEngine });
       tickDriver.onTick(spatialEngine.createTickHandler());
       tickDriver.onTick(experimentRunner.createTickHandler());
+      tickDriver.onTick(relationshipGraph.createTickHandler());
       registerSimulationRoutes(this.app, {
         store: simStore,
         tickDriver,
         moodEngine,
         spatialEngine,
         experimentRunner,
+        relationshipGraph,
         secureYeoman: this.secureYeoman,
       });
     });

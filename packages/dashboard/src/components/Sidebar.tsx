@@ -206,6 +206,12 @@ export function Sidebar({
     }
     if (hasAgents)
       top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
+    if (securityPolicy?.allowSimulation ?? false)
+      top.push({
+        to: '/simulation',
+        label: 'Simulation',
+        icon: <Activity className="w-5 h-5" />,
+      });
     return top;
   }, [
     hasAgents,
@@ -214,6 +220,7 @@ export function Sidebar({
     orgIntentAllowed,
     workflowsAllowed,
     noModelsAvailable,
+    securityPolicy?.allowSimulation,
   ]);
 
   useEffect(() => {

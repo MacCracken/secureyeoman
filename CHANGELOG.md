@@ -6,6 +6,29 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.12]
 
+### Simulation Engine — Complete (7/7 core infrastructure, 252 new tests)
+
+**Entity Relationship Graph** (`simulation/relationship-graph.ts`)
+- Persistent inter-entity relationships with affinity (-1 to 1), trust (0 to 1), and interaction counting
+- 8 relationship types: `ally`, `rival`, `neutral`, `mentor`, `student`, `trade_partner`, `family`, `custom`
+- Interaction events auto-adjust scores, auto-create missing relationships, and optionally trigger mood effects via MoodEngine integration
+- Entity groups: named collections with membership management (add/remove/list)
+- Tick-driven decay: affinity decays toward 0, trust toward 0.5 at configurable rate per relationship
+- PostgreSQL persistence: 3 tables (`entity_relationships`, `relationship_events`, `entity_groups`) in migration 020
+- 14 REST endpoints under `/api/v1/simulation/relationships/` and `/api/v1/simulation/groups/`
+- 40 tests
+
+**Simulation Dashboard Panel** (`dashboard/components/simulation/SimulationPanel.tsx`)
+- 4-tab monitoring panel: Tick Driver, Mood, Spatial, Relationships
+- Tick tab: current tick count, mode, time scale, status display; Play/Pause/Resume/Advance/Stop controls; start form for new simulations
+- Mood tab: valence/arousal progress bars with gradient coloring, mood label badge (10 color-coded labels), dominance display, mood event submission form, reset to baseline, recent event history
+- Spatial tab: entity table (ID, type, zone, position, speed), zone grid with bounding boxes
+- Relationships tab: relationship table with affinity/trust mini-bars, type badges, interaction counts; group grid with member counts and preview
+- Personality ID input for selecting which simulation to monitor; 3-second auto-refresh on tick and mood data
+- Gated by `allowSimulation` security policy; lazy-loaded route at `/simulation`
+- 15 API client functions added to dashboard
+- 20 tests
+
 ### Simulation Engine — Core Infrastructure (6 subsystems, 192 new tests)
 
 Enterprise-tier simulation framework built on personality, cognitive memory, and workflow subsystems. Implements the first 3 core simulation infrastructure roadmap items plus the autoresearch experiment framework.

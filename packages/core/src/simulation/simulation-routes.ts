@@ -9,6 +9,7 @@ import type { TickDriver } from './tick-driver.js';
 import type { MoodEngine } from './mood-engine.js';
 import type { SpatialEngine } from './spatial-engine.js';
 import type { ExperimentRunner } from './experiment-runner.js';
+import type { RelationshipGraph } from './relationship-graph.js';
 import type { SimulationStore } from './simulation-store.js';
 import { licenseGuard } from '../licensing/license-guard.js';
 import {
@@ -17,6 +18,9 @@ import {
   EntityLocationUpsertSchema,
   SpatialZoneCreateSchema,
   ProximityRuleCreateSchema,
+  EntityRelationshipCreateSchema,
+  RelationshipEventCreateSchema,
+  EntityGroupCreateSchema,
 } from '@secureyeoman/shared';
 import { sendError } from '../utils/errors.js';
 
@@ -26,13 +30,22 @@ interface SimulationRouteOpts {
   moodEngine: MoodEngine;
   spatialEngine?: SpatialEngine;
   experimentRunner?: ExperimentRunner;
+  relationshipGraph?: RelationshipGraph;
   secureYeoman?: {
     getLicenseManager(): import('../licensing/license-manager.js').LicenseManager;
   } | null;
 }
 
 export function registerSimulationRoutes(app: FastifyInstance, opts: SimulationRouteOpts): void {
-  const { tickDriver, moodEngine, spatialEngine, experimentRunner, store, secureYeoman } = opts;
+  const {
+    tickDriver,
+    moodEngine,
+    spatialEngine,
+    experimentRunner,
+    relationshipGraph,
+    store,
+    secureYeoman,
+  } = opts;
   const guard = licenseGuard('simulation', secureYeoman);
 
   // ── Tick Driver Routes ──────────────────────────────────────────────
@@ -480,6 +493,272 @@ export function registerSimulationRoutes(app: FastifyInstance, opts: SimulationR
       const run = await experimentRunner.getBestRun(request.params.sessionId);
       if (!run) return sendError(reply, 404, 'No best run found');
       return reply.send(run);
+    }
+  );
+
+  // ── Relationship Graph Routes ──────────────────────────────────────
+
+  if (!relationshipGraph) return;
+
+  // POST /api/v1/simulation/relationships/:personalityId — create relationship
+  app.post(
+    '/api/v1/simulation/relationships/:personalityId',
+    guard,
+    async (request: FastifyRequest<{ Params: { personalityId: string } }>, reply: FastifyReply) => {
+      const parsed = EntityRelationshipCreateSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return sendError(reply, 400, 'Invalid relationship data', {
+          extra: { issues: parsed.error.issues },
+        });
+      }
+      const rel = await relationshipGraph.createRelationship(
+        request.params.personalityId,
+        parsed.data
+      );
+      return reply.code(201).send(rel);
+    }
+  );
+
+  // GET /api/v1/simulation/relationships/:personalityId — list relationships
+  app.get(
+    '/api/v1/simulation/relationships/:personalityId',
+    guard,
+    async (
+      request: FastifyRequest<{
+        Params: { personalityId: string };
+        Querystring: { entityId?: string; type?: string; minAffinity?: string; limit?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const qs = request.query as {
+        entityId?: string;
+        type?: string;
+        minAffinity?: string;
+        limit?: string;
+      };
+      const items = await relationshipGraph.listRelationships(request.params.personalityId, {
+        entityId: qs.entityId,
+        type: qs.type,
+        minAffinity: qs.minAffinity ? Number(qs.minAffinity) : undefined,
+        limit: qs.limit ? Number(qs.limit) : undefined,
+      });
+      return reply.send({ items });
+    }
+  );
+
+  // GET /api/v1/simulation/relationships/:personalityId/:sourceId/:targetId — get specific
+  app.get(
+    '/api/v1/simulation/relationships/:personalityId/:sourceId/:targetId',
+    guard,
+    async (
+      request: FastifyRequest<{
+        Params: { personalityId: string; sourceId: string; targetId: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const rel = await relationshipGraph.getRelationship(
+        request.params.personalityId,
+        request.params.sourceId,
+        request.params.targetId
+      );
+      if (!rel) return sendError(reply, 404, 'Relationship not found');
+      return reply.send(rel);
+    }
+  );
+
+  // PUT /api/v1/simulation/relationships/:personalityId/:sourceId/:targetId — update
+  app.put(
+    '/api/v1/simulation/relationships/:personalityId/:sourceId/:targetId',
+    guard,
+    async (
+      request: FastifyRequest<{
+        Params: { personalityId: string; sourceId: string; targetId: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const body = request.body as Record<string, unknown>;
+      const updates: { affinity?: number; trust?: number; metadata?: Record<string, unknown> } = {};
+      if (body.affinity != null) updates.affinity = Number(body.affinity);
+      if (body.trust != null) updates.trust = Number(body.trust);
+      if (body.metadata != null) updates.metadata = body.metadata as Record<string, unknown>;
+
+      const rel = await relationshipGraph.updateRelationship(
+        request.params.personalityId,
+        request.params.sourceId,
+        request.params.targetId,
+        updates
+      );
+      if (!rel) return sendError(reply, 404, 'Relationship not found');
+      return reply.send(rel);
+    }
+  );
+
+  // DELETE /api/v1/simulation/relationships/:personalityId/:sourceId/:targetId — delete
+  app.delete(
+    '/api/v1/simulation/relationships/:personalityId/:sourceId/:targetId',
+    guard,
+    async (
+      request: FastifyRequest<{
+        Params: { personalityId: string; sourceId: string; targetId: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const deleted = await relationshipGraph.deleteRelationship(
+        request.params.personalityId,
+        request.params.sourceId,
+        request.params.targetId
+      );
+      if (!deleted) return sendError(reply, 404, 'Relationship not found');
+      return reply.code(204).send();
+    }
+  );
+
+  // POST /api/v1/simulation/relationships/:personalityId/interact — record interaction
+  app.post(
+    '/api/v1/simulation/relationships/:personalityId/interact',
+    guard,
+    async (request: FastifyRequest<{ Params: { personalityId: string } }>, reply: FastifyReply) => {
+      const parsed = RelationshipEventCreateSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return sendError(reply, 400, 'Invalid interaction data', {
+          extra: { issues: parsed.error.issues },
+        });
+      }
+      const event = await relationshipGraph.recordInteraction(
+        request.params.personalityId,
+        parsed.data
+      );
+      return reply.send(event);
+    }
+  );
+
+  // GET /api/v1/simulation/relationships/:personalityId/events — list events
+  app.get(
+    '/api/v1/simulation/relationships/:personalityId/events',
+    guard,
+    async (
+      request: FastifyRequest<{
+        Params: { personalityId: string };
+        Querystring: { entityId?: string; limit?: string; since?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const qs = request.query as { entityId?: string; limit?: string; since?: string };
+      const items = await relationshipGraph.listEvents(request.params.personalityId, {
+        entityId: qs.entityId,
+        limit: qs.limit ? Number(qs.limit) : undefined,
+        since: qs.since ? Number(qs.since) : undefined,
+      });
+      return reply.send({ items });
+    }
+  );
+
+  // ── Group Routes ───────────────────────────────────────────────────
+
+  // POST /api/v1/simulation/groups/:personalityId — create group
+  app.post(
+    '/api/v1/simulation/groups/:personalityId',
+    guard,
+    async (request: FastifyRequest<{ Params: { personalityId: string } }>, reply: FastifyReply) => {
+      const parsed = EntityGroupCreateSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return sendError(reply, 400, 'Invalid group data', {
+          extra: { issues: parsed.error.issues },
+        });
+      }
+      const group = await relationshipGraph.createGroup(request.params.personalityId, parsed.data);
+      return reply.code(201).send(group);
+    }
+  );
+
+  // GET /api/v1/simulation/groups/:personalityId — list groups
+  app.get(
+    '/api/v1/simulation/groups/:personalityId',
+    guard,
+    async (request: FastifyRequest<{ Params: { personalityId: string } }>, reply: FastifyReply) => {
+      const items = await relationshipGraph.listGroups(request.params.personalityId);
+      return reply.send({ items });
+    }
+  );
+
+  // GET /api/v1/simulation/groups/:personalityId/:groupId/members — get members
+  app.get(
+    '/api/v1/simulation/groups/:personalityId/:groupId/members',
+    guard,
+    async (
+      request: FastifyRequest<{ Params: { personalityId: string; groupId: string } }>,
+      reply: FastifyReply
+    ) => {
+      const members = await relationshipGraph.getGroupMembers(
+        request.params.personalityId,
+        request.params.groupId
+      );
+      return reply.send({ members });
+    }
+  );
+
+  // POST /api/v1/simulation/groups/:personalityId/:groupId/members — add member
+  app.post(
+    '/api/v1/simulation/groups/:personalityId/:groupId/members',
+    guard,
+    async (
+      request: FastifyRequest<{ Params: { personalityId: string; groupId: string } }>,
+      reply: FastifyReply
+    ) => {
+      const body = request.body as Record<string, unknown>;
+      if (!body.entityId || typeof body.entityId !== 'string') {
+        return sendError(reply, 400, 'Missing required field: entityId');
+      }
+      try {
+        await relationshipGraph.addToGroup(
+          request.params.personalityId,
+          request.params.groupId,
+          body.entityId
+        );
+        return reply.code(204).send();
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('not found')) {
+          return sendError(reply, 404, err.message);
+        }
+        throw err;
+      }
+    }
+  );
+
+  // DELETE /api/v1/simulation/groups/:personalityId/:groupId/members/:entityId — remove member
+  app.delete(
+    '/api/v1/simulation/groups/:personalityId/:groupId/members/:entityId',
+    guard,
+    async (
+      request: FastifyRequest<{
+        Params: { personalityId: string; groupId: string; entityId: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const removed = await relationshipGraph.removeFromGroup(
+        request.params.personalityId,
+        request.params.groupId,
+        request.params.entityId
+      );
+      if (!removed) return sendError(reply, 404, 'Member or group not found');
+      return reply.code(204).send();
+    }
+  );
+
+  // DELETE /api/v1/simulation/groups/:personalityId/:groupId — delete group
+  app.delete(
+    '/api/v1/simulation/groups/:personalityId/:groupId',
+    guard,
+    async (
+      request: FastifyRequest<{ Params: { personalityId: string; groupId: string } }>,
+      reply: FastifyReply
+    ) => {
+      const deleted = await relationshipGraph.deleteGroup(
+        request.params.personalityId,
+        request.params.groupId
+      );
+      if (!deleted) return sendError(reply, 404, 'Group not found');
+      return reply.code(204).send();
     }
   );
 }

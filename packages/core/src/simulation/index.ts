@@ -26,4 +26,6 @@ export type {
   TrainingEvaluator,
   ExperimentTracker,
 } from './training-executor.js';
+export { RelationshipGraph } from './relationship-graph.js';
+export type { RelationshipGraphOpts } from './relationship-graph.js';
 export { registerSimulationRoutes } from './simulation-routes.js';
