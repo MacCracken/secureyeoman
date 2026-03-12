@@ -10,6 +10,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { sendError, toErrorMessage } from '../../utils/errors.js';
 import type { SecureYeoman } from '../../secureyeoman.js';
 import { licenseGuard } from '../../licensing/license-guard.js';
+import type { SynapseInboundJobRequest, SynapseCapabilities } from './types.js';
 
 const SYNAPSE_API_URL = (process.env.SYNAPSE_API_URL ?? 'http://localhost:8420').replace(/\/$/, '');
 
@@ -389,4 +390,245 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
       });
     }
   });
+
+  // ── Bidirectional: inbound job delegation (Synapse → SY) ───────────────
+
+  // POST /api/v1/synapse/bridge/jobs — Synapse submits a job to SY
+  app.post(
+    '/api/v1/synapse/bridge/jobs',
+    featureGuardOpts,
+    async (
+      req: FastifyRequest<{
+        Body: SynapseInboundJobRequest & { instanceId: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { instanceId, jobType, description, payload, synapseSourceJobId } =
+          req.body ?? ({} as SynapseInboundJobRequest & { instanceId: string });
+        if (!instanceId || !jobType) {
+          return sendError(reply, 400, 'Missing required fields: instanceId, jobType');
+        }
+
+        const manager = opts?.secureYeoman?.getSynapseManager();
+        const store = manager?.getStore();
+        if (!store) {
+          return sendError(reply, 503, 'Synapse bridge not initialized');
+        }
+
+        const job = await store.createInboundJob(instanceId, {
+          synapseSourceJobId,
+          jobType: jobType as SynapseInboundJobRequest['jobType'],
+          description,
+          payload: payload ?? {},
+        });
+        return reply.code(201).send(job);
+      } catch (err) {
+        return sendError(reply, 500, `Failed to create inbound job: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // GET /api/v1/synapse/bridge/jobs — List inbound jobs
+  app.get(
+    '/api/v1/synapse/bridge/jobs',
+    featureGuardOpts,
+    async (
+      req: FastifyRequest<{
+        Querystring: { status?: string; instanceId?: string; limit?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const manager = opts?.secureYeoman?.getSynapseManager();
+        const store = manager?.getStore();
+        if (!store) {
+          return sendError(reply, 503, 'Synapse bridge not initialized');
+        }
+
+        const { status, instanceId, limit } = req.query;
+        const jobs = await store.listInboundJobs({
+          status,
+          instanceId,
+          limit: limit ? Number(limit) : undefined,
+        });
+        return reply.send(jobs);
+      } catch (err) {
+        return sendError(reply, 500, `Failed to list inbound jobs: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // GET /api/v1/synapse/bridge/jobs/:id — Get inbound job status
+  app.get(
+    '/api/v1/synapse/bridge/jobs/:id',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const manager = opts?.secureYeoman?.getSynapseManager();
+        const store = manager?.getStore();
+        if (!store) {
+          return sendError(reply, 503, 'Synapse bridge not initialized');
+        }
+
+        const job = await store.getInboundJob(req.params.id);
+        if (!job) return sendError(reply, 404, 'Inbound job not found');
+        return reply.send(job);
+      } catch (err) {
+        return sendError(reply, 500, `Failed to get inbound job: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // PATCH /api/v1/synapse/bridge/jobs/:id — Update inbound job (result/completion)
+  app.patch(
+    '/api/v1/synapse/bridge/jobs/:id',
+    featureGuardOpts,
+    async (
+      req: FastifyRequest<{
+        Params: { id: string };
+        Body: { status?: string; result?: Record<string, unknown>; errorMessage?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const manager = opts?.secureYeoman?.getSynapseManager();
+        const store = manager?.getStore();
+        if (!store) {
+          return sendError(reply, 503, 'Synapse bridge not initialized');
+        }
+
+        const updated = await store.updateInboundJob(req.params.id, req.body ?? {});
+        if (!updated) return sendError(reply, 404, 'Inbound job not found');
+        return reply.send(updated);
+      } catch (err) {
+        return sendError(reply, 500, `Failed to update inbound job: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // POST /api/v1/synapse/bridge/capabilities — Receive capability announcement
+  app.post(
+    '/api/v1/synapse/bridge/capabilities',
+    featureGuardOpts,
+    async (
+      req: FastifyRequest<{
+        Body: { instanceId: string; capabilities: SynapseCapabilities };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { instanceId, capabilities } = req.body ?? ({} as { instanceId?: string; capabilities?: SynapseCapabilities });
+        if (!instanceId || !capabilities) {
+          return sendError(reply, 400, 'Missing required fields: instanceId, capabilities');
+        }
+
+        const manager = opts?.secureYeoman?.getSynapseManager();
+        const store = manager?.getStore();
+        if (!store) {
+          return sendError(reply, 503, 'Synapse bridge not initialized');
+        }
+
+        // Record announcement and update registry
+        await store.recordCapabilityAnnouncement(instanceId, capabilities);
+        const registry = manager!.getRegistry();
+        const existing = registry.get(instanceId);
+        if (existing) {
+          registry.updateHeartbeat(instanceId, {
+            instanceId,
+            timestamp: Date.now(),
+            loadedModels: capabilities.loadedModels,
+            gpuMemoryFreeMb: capabilities.totalGpuMemoryMb,
+            activeTrainingJobs: 0,
+          });
+        }
+
+        return reply.send({ received: true });
+      } catch (err) {
+        return sendError(reply, 500, `Failed to process capability announcement: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // POST /api/v1/synapse/bridge/webhook — Job completion callback from Synapse
+  app.post(
+    '/api/v1/synapse/bridge/webhook',
+    featureGuardOpts,
+    async (
+      req: FastifyRequest<{
+        Body: {
+          synapseJobId: string;
+          status: string;
+          modelOutputPath?: string;
+          errorMessage?: string;
+          step?: number;
+          loss?: number;
+          epoch?: number;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { synapseJobId, status, modelOutputPath, errorMessage, step, loss, epoch } =
+          req.body ?? ({} as Record<string, unknown>);
+        if (!synapseJobId || !status) {
+          return sendError(reply, 400, 'Missing required fields: synapseJobId, status');
+        }
+
+        const manager = opts?.secureYeoman?.getSynapseManager();
+        const store = manager?.getStore();
+        if (!store) {
+          return sendError(reply, 503, 'Synapse bridge not initialized');
+        }
+
+        const delegated = await store.getDelegatedJobBySynapseId(synapseJobId as string);
+        if (!delegated) {
+          return sendError(reply, 404, `No delegated job found for synapseJobId: ${synapseJobId}`);
+        }
+
+        await store.updateDelegatedJobStatus(delegated.id, {
+          status: status as string,
+          currentStep: step as number | undefined,
+          currentLoss: loss as number | undefined,
+          currentEpoch: epoch as number | undefined,
+          errorMessage: errorMessage as string | undefined,
+          modelOutputPath: modelOutputPath as string | undefined,
+        });
+
+        return reply.send({ received: true, delegatedJobId: delegated.id });
+      } catch (err) {
+        return sendError(reply, 500, `Webhook processing failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // GET /api/v1/synapse/bridge/delegated-jobs — List delegated jobs (SY → Synapse)
+  app.get(
+    '/api/v1/synapse/bridge/delegated-jobs',
+    featureGuardOpts,
+    async (
+      req: FastifyRequest<{
+        Querystring: { status?: string; instanceId?: string; limit?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const manager = opts?.secureYeoman?.getSynapseManager();
+        const store = manager?.getStore();
+        if (!store) {
+          return sendError(reply, 503, 'Synapse bridge not initialized');
+        }
+
+        const { status, instanceId, limit } = req.query;
+        const jobs = await store.listDelegatedJobs({
+          status,
+          instanceId,
+          limit: limit ? Number(limit) : undefined,
+        });
+        return reply.send(jobs);
+      } catch (err) {
+        return sendError(reply, 500, `Failed to list delegated jobs: ${toErrorMessage(err)}`);
+      }
+    }
+  );
 }

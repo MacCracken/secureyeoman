@@ -35,12 +35,15 @@ import type { NotificationManager } from '../notifications/notification-manager.
 import type { ConversationStorage } from '../chat/conversation-storage.js';
 import type { SoulStorage } from '../soul/storage.js';
 
+import type { SynapseManager } from '../integrations/synapse/synapse-manager.js';
+
 export interface TrainingModuleDeps {
   getAlertManager: () => AlertManager | null;
   aiClient?: AIClient | null;
   notificationManager?: NotificationManager | null;
   chatConversationStorage?: ConversationStorage | null;
   soulStorage?: SoulStorage | null;
+  getSynapseManager?: () => SynapseManager | null;
 }
 
 export class TrainingModule extends BaseModule {
@@ -88,7 +91,8 @@ export class TrainingModule extends BaseModule {
       this.logger.child({ component: 'FinetuneManager' }),
       undefined,
       undefined,
-      this.deps.getAlertManager
+      this.deps.getAlertManager,
+      this.deps.getSynapseManager
     );
     this.logger.debug('FinetuneManager initialized');
 

@@ -1,0 +1,139 @@
+syntax = "proto3";
+
+package synapse.bridge;
+
+// ── SynapseBridge ─────────────────────────────────────────────────────────────
+// Bidirectional bridge between SecureYeoman and Synapse LLM controller.
+// SY implements YeomanBridge (receives calls from Synapse).
+// SY calls SynapseService (sends calls to Synapse).
+
+// Service implemented on the Synapse side — SY calls these.
+service SynapseService {
+  // Submit a training job
+  rpc SubmitTrainingJob(TrainingJobRequest) returns (TrainingJobResponse);
+
+  // Stream real-time training metrics
+  rpc StreamTrainingMetrics(TrainingMetricsRequest) returns (stream TrainingMetrics);
+
+  // Stream inference tokens
+  rpc StreamInference(InferenceRequest) returns (stream InferenceChunk);
+
+  // Get current capabilities
+  rpc GetCapabilities(CapabilitiesRequest) returns (CapabilitiesResponse);
+
+  // Bidirectional heartbeat stream
+  rpc Heartbeat(stream HeartbeatPing) returns (stream HeartbeatPong);
+}
+
+// Service implemented on the SY side — Synapse calls these.
+service YeomanBridge {
+  // Synapse announces its capabilities
+  rpc AnnounceCapabilities(CapabilitiesResponse) returns (AckResponse);
+
+  // Synapse delegates a job to SY (reverse delegation)
+  rpc SubmitInboundJob(InboundJobRequest) returns (InboundJobResponse);
+
+  // Synapse reports job completion/progress
+  rpc ReportJobStatus(JobStatusReport) returns (AckResponse);
+
+  // Synapse registers a trained model
+  rpc RegisterModel(ModelRegistration) returns (AckResponse);
+}
+
+// ── Messages ──────────────────────────────────────────────────────────────────
+
+message TrainingJobRequest {
+  string base_model = 1;
+  string dataset_path = 2;
+  string method = 3;
+  string config_json = 4;
+  string sy_job_id = 5;
+  string sy_job_type = 6;
+}
+
+message TrainingJobResponse {
+  string job_id = 1;
+}
+
+message TrainingMetricsRequest {
+  string job_id = 1;
+}
+
+message TrainingMetrics {
+  string job_id = 1;
+  int64 step = 2;
+  double loss = 3;
+  double epoch = 4;
+  int64 gpu_memory_used_mb = 5;
+  int64 timestamp = 6;
+}
+
+message InferenceRequest {
+  string model = 1;
+  string prompt = 2;
+  int32 max_tokens = 3;
+}
+
+message InferenceChunk {
+  string text = 1;
+  bool done = 2;
+}
+
+message CapabilitiesRequest {}
+
+message CapabilitiesResponse {
+  string instance_id = 1;
+  int32 gpu_count = 2;
+  int64 total_gpu_memory_mb = 3;
+  repeated string supported_methods = 4;
+  repeated string loaded_models = 5;
+  string version = 6;
+}
+
+message HeartbeatPing {
+  string instance_id = 1;
+  int64 timestamp = 2;
+}
+
+message HeartbeatPong {
+  string instance_id = 1;
+  int64 timestamp = 2;
+  bool healthy = 3;
+}
+
+message InboundJobRequest {
+  string instance_id = 1;
+  string synapse_source_job_id = 2;
+  string job_type = 3;
+  string description = 4;
+  string payload_json = 5;
+}
+
+message InboundJobResponse {
+  string id = 1;
+  string status = 2;
+}
+
+message JobStatusReport {
+  string synapse_job_id = 1;
+  string status = 2;
+  int64 step = 3;
+  double loss = 4;
+  double epoch = 5;
+  string error_message = 6;
+  string model_output_path = 7;
+}
+
+message ModelRegistration {
+  string instance_id = 1;
+  string model_name = 2;
+  string model_path = 3;
+  string base_model = 4;
+  string training_method = 5;
+  string job_id = 6;
+}
+
+message AckResponse {
+  bool success = 1;
+  string message = 2;
+}

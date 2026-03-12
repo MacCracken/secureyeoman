@@ -16,6 +16,7 @@ import type {
   PretrainingConfig,
 } from '@secureyeoman/shared';
 import type { CorpusLoader } from './corpus-loader.js';
+import type { SynapseManager } from '../integrations/synapse/synapse-manager.js';
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 
@@ -61,6 +62,8 @@ function rowToJob(row: Record<string, unknown>): PretrainJob {
     completedAt:
       row.completed_at instanceof Date ? row.completed_at.getTime() : Number(row.completed_at ?? 0),
     tenantId: (row.tenant_id as string) ?? 'default',
+    backend: (row.backend as 'local' | 'synapse') ?? 'local',
+    synapseDelegatedJobId: (row.synapse_delegated_job_id as string | null) ?? null,
   };
 }
 
@@ -83,7 +86,8 @@ export class PretrainManager {
     private readonly pool: Pool,
     private readonly logger: SecureLogger,
     private readonly config: PretrainingConfig,
-    private readonly corpusLoader?: CorpusLoader
+    private readonly corpusLoader?: CorpusLoader,
+    private readonly getSynapseManager?: () => SynapseManager | null
   ) {}
 
   async createJob(input: PretrainJobCreate): Promise<PretrainJob> {
@@ -262,6 +266,64 @@ export class PretrainManager {
       id,
     ]);
     return (rowCount ?? 0) > 0;
+  }
+
+  /**
+   * Start a pre-training job. If backend=synapse, delegates to Synapse;
+   * otherwise falls through to the existing local Docker path.
+   */
+  async startJob(jobId: string): Promise<void> {
+    const job = await this.getJob(jobId);
+    if (!job) throw new Error(`Pretrain job not found: ${jobId}`);
+    if (job.status !== 'pending') {
+      throw new Error(`Job ${jobId} is not pending (status=${job.status})`);
+    }
+
+    if (job.backend === 'synapse') {
+      const synapse = this.getSynapseManager?.();
+      if (!synapse || !synapse.isAvailable()) {
+        throw new Error('Synapse backend requested but no healthy Synapse instance is available');
+      }
+
+      const { response, delegatedJob } = await synapse.delegateTrainingJob(
+        {
+          baseModel: `pretrain:${job.architecture}:${job.parameterCount}`,
+          datasetPath: job.corpusSourceIds.join(','),
+          method: 'pretrain',
+          configJson: JSON.stringify({
+            vocab_size: job.vocabSize,
+            context_length: job.contextLength,
+            hidden_size: job.hiddenSize,
+            num_layers: job.numLayers,
+            num_heads: job.numHeads,
+            intermediate_size: job.intermediateSize,
+            batch_size: job.batchSize,
+            learning_rate: job.learningRate,
+            lr_schedule: job.lrSchedule,
+            warmup_steps: job.warmupSteps,
+            weight_decay: job.weightDecay,
+            max_steps: job.maxSteps,
+          }),
+        },
+        { syJobId: jobId, syJobType: 'pretrain' }
+      );
+
+      await this.pool.query(
+        `UPDATE training.pretrain_jobs
+         SET status = 'training', container_id = $1, synapse_delegated_job_id = $2, started_at = $3
+         WHERE id = $4`,
+        [`synapse:${response.jobId}`, delegatedJob?.id ?? null, Date.now(), jobId]
+      );
+
+      this.logger.info(
+        { jobId, synapseJobId: response.jobId },
+        'Pre-training job delegated to Synapse'
+      );
+      return;
+    }
+
+    // Local Docker execution is handled by the caller (routes or scheduler)
+    await this.updateProgress(jobId, { status: 'training' });
   }
 
   /** Estimate parameter count from architecture config. */

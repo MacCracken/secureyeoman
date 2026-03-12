@@ -56,7 +56,9 @@
     "twitter-api-v2": "^1.18.0",
     "yaml": "^2.5.0",
     "yjs": "^13.6.29",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "@grpc/grpc-js": "^1.12.5",
+    "@grpc/proto-loader": "^0.7.13"
   },
   "optionalDependencies": {
     "@napi-rs/screenshot": "^1.0.0",

@@ -19,12 +19,15 @@ import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type { AlertManager } from '../telemetry/alert-manager.js';
 import { emitJobCompletion } from '../telemetry/job-completion-events.js';
+import type { SynapseManager } from '../integrations/synapse/synapse-manager.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type FinetuneStatus = 'pending' | 'running' | 'complete' | 'failed' | 'cancelled';
 
 export type TrainingMethod = 'sft' | 'dpo' | 'rlhf' | 'reward' | 'pretrain';
+
+export type TrainingBackend = 'local' | 'synapse';
 
 export interface FinetuneJobConfig {
   name: string;
@@ -46,6 +49,8 @@ export interface FinetuneJobConfig {
   resumeFromCheckpoint?: string;
   rewardModelPath?: string;
   searchId?: string;
+  /** Execute on local Docker (default) or delegate to a remote Synapse instance. */
+  backend?: TrainingBackend;
 }
 
 export interface FinetuneJob {
@@ -75,6 +80,8 @@ export interface FinetuneJob {
   resumeFromCheckpoint: string | null;
   rewardModelPath: string | null;
   searchId: string | null;
+  backend: TrainingBackend;
+  synapseDelegatedJobId: string | null;
 }
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
@@ -107,6 +114,8 @@ function rowToJob(row: Record<string, unknown>): FinetuneJob {
     resumeFromCheckpoint: (row.resume_from_checkpoint as string | null) ?? null,
     rewardModelPath: (row.reward_model_path as string | null) ?? null,
     searchId: (row.search_id as string | null) ?? null,
+    backend: (row.backend as TrainingBackend) ?? 'local',
+    synapseDelegatedJobId: (row.synapse_delegated_job_id as string | null) ?? null,
   };
 }
 
@@ -121,7 +130,8 @@ export class FinetuneManager {
     private readonly logger: SecureLogger,
     workDir = '/tmp/secureyeoman-finetune',
     onJobComplete?: (jobId: string, job: FinetuneJob) => Promise<void>,
-    private readonly getAlertManager?: () => AlertManager | null
+    private readonly getAlertManager?: () => AlertManager | null,
+    private readonly getSynapseManager?: () => SynapseManager | null
   ) {
     this.workDir = workDir;
     this.onJobComplete = onJobComplete;
@@ -245,6 +255,12 @@ export class FinetuneManager {
     if (!job) throw new Error(`Finetune job not found: ${jobId}`);
     if (job.status !== 'pending') {
       throw new Error(`Job ${jobId} is not pending (status=${job.status})`);
+    }
+
+    // ── Synapse backend delegation ──────────────────────────────────────
+    if (job.backend === 'synapse') {
+      await this._startSynapseJob(job);
+      return;
     }
 
     const jobDir = join(this.workDir, jobId);
@@ -487,6 +503,45 @@ export class FinetuneManager {
   /**
    * Register a completed adapter with Ollama via `ollama create`.
    */
+  /**
+   * Delegate a job to a remote Synapse instance instead of running Docker locally.
+   */
+  private async _startSynapseJob(job: FinetuneJob): Promise<void> {
+    const synapse = this.getSynapseManager?.();
+    if (!synapse || !synapse.isAvailable()) {
+      throw new Error('Synapse backend requested but no healthy Synapse instance is available');
+    }
+
+    const { response, delegatedJob } = await synapse.delegateTrainingJob(
+      {
+        baseModel: job.baseModel,
+        datasetPath: job.datasetPath,
+        method: job.trainingMethod,
+        configJson: JSON.stringify({
+          lora_rank: job.loraRank,
+          lora_alpha: job.loraAlpha,
+          batch_size: job.batchSize,
+          epochs: job.epochs,
+          learning_rate: job.learningRate,
+          warmup_steps: job.warmupSteps,
+        }),
+      },
+      { syJobId: job.id, syJobType: 'finetune' }
+    );
+
+    await this.pool.query(
+      `UPDATE training.finetune_jobs
+       SET status='running', container_id=$1, synapse_delegated_job_id=$2
+       WHERE id=$3`,
+      [`synapse:${response.jobId}`, delegatedJob?.id ?? null, job.id]
+    );
+
+    this.logger.info(
+      { jobId: job.id, synapseJobId: response.jobId },
+      'Finetune job delegated to Synapse'
+    );
+  }
+
   async registerWithOllama(jobId: string, ollamaBaseUrl: string): Promise<void> {
     const job = await this.getJob(jobId);
     if (!job) throw new Error(`Job ${jobId} not found`);

@@ -85,3 +85,45 @@ export interface SynapseConfig {
   readonly heartbeatIntervalMs: number;
   readonly connectionTimeoutMs: number;
 }
+
+// ── Inbound job delegation (Synapse → SY) ───────────────────────────────────
+
+export type InboundJobType = 'evaluation' | 'data_curation' | 'model_export' | 'custom';
+export type InboundJobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'rejected';
+
+export interface SynapseInboundJobRequest {
+  readonly synapseSourceJobId?: string;
+  readonly jobType: InboundJobType;
+  readonly description?: string;
+  readonly payload: Record<string, unknown>;
+}
+
+export interface SynapseInboundJobResponse {
+  readonly id: string;
+  readonly status: InboundJobStatus;
+}
+
+// ── Capability announcement ─────────────────────────────────────────────────
+
+export interface SynapseCapabilityAnnouncement {
+  readonly instanceId: string;
+  readonly capabilities: SynapseCapabilities;
+  readonly announcedAt: number;
+}
+
+// ── gRPC bridge types ───────────────────────────────────────────────────────
+
+export interface SynapseStreamMetrics {
+  readonly jobId: string;
+  readonly step: number;
+  readonly loss: number;
+  readonly epoch: number;
+  readonly gpuMemoryUsedMb: number;
+  readonly timestamp: number;
+}
+
+export interface SynapseBridgeConfig {
+  readonly grpcPort: number;
+  readonly tlsCert?: string;
+  readonly tlsKey?: string;
+}

@@ -87,6 +87,9 @@ export const PretrainJobSchema = z.object({
   startedAt: z.number().default(0),
   completedAt: z.number().default(0),
   tenantId: z.string().default('default'),
+  /** Execute on local Docker (default) or delegate to a remote Synapse instance. */
+  backend: z.enum(['local', 'synapse']).default('local'),
+  synapseDelegatedJobId: z.string().nullable().default(null),
 });
 export type PretrainJob = z.infer<typeof PretrainJobSchema>;
 

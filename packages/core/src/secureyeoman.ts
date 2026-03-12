@@ -228,6 +228,8 @@ export class SecureYeoman {
   private videoStreamManager:
     | import('./body/capture/video-stream-manager.js').VideoStreamManager
     | null = null;
+  private synapseManager: import('./integrations/synapse/synapse-manager.js').SynapseManager | null =
+    null;
 
   // CPU usage sampler — updated every getMetrics() call to compute a rolling delta
   private _lastCpuUsage: NodeJS.CpuUsage = process.cpuUsage();
@@ -683,6 +685,7 @@ export class SecureYeoman {
           notificationManager: this.platformMod.getNotificationManager(),
           chatConversationStorage: this.platformMod.getConversationStorage(),
           soulStorage: null, // SoulStorage is internal to SoulModule
+          getSynapseManager: () => this.synapseManager,
         });
         await this.trainingMod.init({ config: this.config, logger: this.logger });
         this.logger.debug('TrainingModule initialized');
@@ -781,6 +784,28 @@ export class SecureYeoman {
             await this.browserSessionStorage.ensureTables();
           });
         }
+      }
+
+      // Step 6e: Initialize Synapse bridge (enterprise, config-gated)
+      if (process.env.SYNAPSE_API_URL) {
+        await this.initOptional('Synapse manager', async () => {
+          const { SynapseManager } = await import('./integrations/synapse/synapse-manager.js');
+          const { SynapseStore } = await import('./integrations/synapse/synapse-store.js');
+          const pool = getPool();
+          const store = new SynapseStore(pool, this.logger!.child({ component: 'SynapseStore' }));
+          this.synapseManager = new SynapseManager(
+            {
+              apiUrl: process.env.SYNAPSE_API_URL!,
+              grpcUrl: process.env.SYNAPSE_GRPC_URL ?? 'http://localhost:8421',
+              enabled: true,
+              heartbeatIntervalMs: Number(process.env.SYNAPSE_HEARTBEAT_MS ?? 10_000),
+              connectionTimeoutMs: Number(process.env.SYNAPSE_TIMEOUT_MS ?? 15_000),
+            },
+            this.logger!,
+            store
+          );
+          await this.synapseManager.init();
+        });
       }
 
       // Step 7: Record initialization in audit log
@@ -1766,6 +1791,10 @@ export class SecureYeoman {
     this.ensureInitialized();
     return this.browserSessionStorage;
   }
+  getSynapseManager(): import('./integrations/synapse/synapse-manager.js').SynapseManager | null {
+    this.ensureInitialized();
+    return this.synapseManager;
+  }
 
   // ------------------------------------------------------------------
   // License management
@@ -2265,6 +2294,10 @@ export class SecureYeoman {
     if (this.browserSessionStorage) {
       this.browserSessionStorage.close();
       this.browserSessionStorage = null;
+    }
+    if (this.synapseManager) {
+      this.synapseManager.shutdown();
+      this.synapseManager = null;
     }
 
     // Close PostgreSQL pool last
