@@ -237,7 +237,7 @@ docker run -d \
   secureyeoman:latest
 ```
 
-The MCP service is opt-in via Docker Compose profiles. Set `MCP_ENABLED=true` in `.env` before starting it. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token configuration needed.
+The MCP service is opt-in via Docker Compose profiles. Set `MCP_ENABLED=true` in `.env` before starting it. The MCP service authenticates to core via an auto-provisioned API key — core generates it on first boot and MCP retrieves it via a private-network-only bootstrap endpoint. No shared secrets or manual token configuration needed.
 
 ## Reverse Proxy
 

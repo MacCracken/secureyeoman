@@ -623,7 +623,7 @@ Configuration is via environment variables (not the YAML config file):
 |----------|---------|-------------|
 | `AGNOSTIC_PATH` | *(auto-detect)* | Absolute path to the Agnostic project directory. Auto-detected from `../agnostic`, `~/agnostic`, `~/Repos/agnostic`, `~/Projects/agnostic` when not set. Override with `--path` flag or this variable. |
 
-**Authentication:** The MCP service self-mints a service JWT on startup using the shared `SECUREYEOMAN_TOKEN_SECRET`. No manual token configuration is needed — just ensure `SECUREYEOMAN_TOKEN_SECRET` is set in your `.env` file (it's the same secret used by core for JWT signing).
+**Authentication:** The MCP service authenticates to core via an auto-provisioned API key (`sck_…` prefix, `role: service`). On first boot, core generates the key, stores the hash in `auth.api_keys` and the raw key encrypted (AES-256-GCM) in `internal.auto_secrets`. MCP retrieves the key by polling core's internal bootstrap endpoint (`GET /api/v1/internal/mcp-bootstrap`, private-network-only, no auth required). No shared secrets or manual token configuration needed. Users can regenerate the key from the dashboard Security panel.
 
 See the [Getting Started Guide](guides/getting-started.md#mcp-service-optional) for step-by-step setup instructions.
 
@@ -1122,7 +1122,7 @@ All security-sensitive values are referenced by environment variable name in the
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `SECUREYEOMAN_SIGNING_KEY` | Yes | Audit chain HMAC-SHA256 signing key (32+ chars) |
-| `SECUREYEOMAN_TOKEN_SECRET` | Yes | JWT signing secret (32+ chars); also used by MCP service to self-mint a service JWT |
+| `SECUREYEOMAN_TOKEN_SECRET` | Yes | JWT signing secret (32+ chars); auto-generated and persisted in DB if not set |
 | `SECUREYEOMAN_ENCRYPTION_KEY` | Yes | AES-256-GCM encryption key (32+ chars) |
 | `SECUREYEOMAN_ADMIN_PASSWORD` | Yes | Admin login password (32+ chars) |
 | `ANTHROPIC_API_KEY` | One AI key required | Anthropic Claude API key |

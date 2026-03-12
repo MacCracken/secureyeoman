@@ -767,7 +767,7 @@ export class GatewayServer {
     // Todoist API proxy routes — uses stored integration credentials
     try {
       const todoistIm = this.secureYeoman.getIntegrationManager();
-      registerTodoistRoutes(this.app, { integrationManager: todoistIm });
+      await registerTodoistRoutes(this.app, { integrationManager: todoistIm });
     } catch {
       // Todoist routes are optional — skip on error
     }
@@ -2447,7 +2447,7 @@ export class GatewayServer {
             correlationId,
             parentTaskId,
           };
-          taskStorage.storeTask(task);
+          await taskStorage.storeTask(task);
           return reply.code(201).send(task);
         } catch (err) {
           this.getLogger().error({ error: String(err) }, 'Failed to create task');
@@ -3354,14 +3354,14 @@ export class GatewayServer {
       }
     );
 
-    // ── MCP bootstrap — unauthenticated, localhost-only ────────────────────
+    // ── MCP bootstrap — unauthenticated, internal-network-only ─────────────
     // MCP service polls this on startup to retrieve its auto-provisioned API key.
-    // The endpoint is in PUBLIC_ROUTES (no auth) but restricted to loopback.
+    // The endpoint is in PUBLIC_ROUTES (no auth) but restricted to loopback
+    // and RFC-1918 private networks (Docker bridge / overlay).
     this.app.get('/api/v1/internal/mcp-bootstrap', async (request, reply) => {
-      // Localhost guard — reject anything that isn't loopback
       const ip = request.ip;
-      if (ip !== '127.0.0.1' && ip !== '::1' && ip !== '::ffff:127.0.0.1') {
-        return sendError(reply, 403, 'Bootstrap endpoint is localhost-only');
+      if (!isPrivateIP(ip)) {
+        return sendError(reply, 403, 'Bootstrap endpoint is internal-network-only');
       }
       try {
         const { loadAutoSecret } = await import('../security/auto-secret-store.js');
@@ -3372,10 +3372,7 @@ export class GatewayServer {
         }
         return { apiKey };
       } catch (err) {
-        this.getLogger().error(
-          { error: errorToString(err) },
-          'Failed to serve MCP bootstrap key'
-        );
+        this.getLogger().error({ error: errorToString(err) }, 'Failed to serve MCP bootstrap key');
         return sendError(reply, 500, 'Failed to retrieve bootstrap key');
       }
     });

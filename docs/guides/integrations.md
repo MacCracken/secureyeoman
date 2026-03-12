@@ -695,11 +695,10 @@ The MCP service is a standalone MCP server exposing SecureYeoman's capabilities 
 
 ### Prerequisites
 - A running SecureYeoman core instance
-- `SECUREYEOMAN_TOKEN_SECRET` set in `.env` (shared with core)
 
 ### Quick Start
 
-The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET`. No manual token needed.
+The MCP service authenticates to core via an auto-provisioned API key (`sck_…` prefix). On startup, MCP polls core's localhost-only bootstrap endpoint (`GET /api/v1/internal/mcp-bootstrap`) with retries until the key is available. No shared secrets or manual token setup needed.
 
 ```bash
 # Local development

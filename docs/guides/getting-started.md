@@ -94,7 +94,7 @@ Docker Compose services:
 | `mcp` | 3001 | `mcp` / `full` / `dev` | MCP protocol server (tools, resources, prompts) |
 | `dashboard-dev` | 3000 | `dev` | Vite dev server for frontend development |
 
-The core service serves the dashboard SPA at `/` and the REST API at `/api/v1/`. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token setup needed.
+The core service serves the dashboard SPA at `/` and the REST API at `/api/v1/`. The MCP service authenticates to core using an auto-provisioned API key (`sck_…` prefix) — no manual token setup needed. On first boot, core generates the key, stores it encrypted in the database, and exposes it via a localhost-only bootstrap endpoint that MCP polls on startup.
 
 #### Production Docker image (binary-based)
 
@@ -347,12 +347,12 @@ The MCP service (`@secureyeoman/mcp`) exposes SecureYeoman's capabilities as MCP
 
 ### 1. Configure Environment
 
-The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET`. No manual token needed — just enable it:
+The MCP service authenticates to core via an auto-provisioned API key — no manual token needed. On startup, MCP polls core's internal bootstrap endpoint to retrieve its service API key. Just enable it:
 
 ```bash
 # MCP Service
 MCP_ENABLED=true
-# SECUREYEOMAN_TOKEN_SECRET is already set for core — MCP uses it automatically
+# No shared secret needed — core auto-provisions an API key for MCP on first boot
 ```
 
 All other MCP variables have sensible defaults. See [Configuration Reference](../configuration.md) for the full list.

@@ -6,6 +6,23 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.12]
 
+### MCP Auth: JWT Minting → API Key Bootstrap
+
+Replaced MCP's self-minted JWT authentication with auto-provisioned API key auth, eliminating shared secrets between core and MCP.
+
+- **Core auto-provisions MCP service API key** on first boot via `authService.createApiKey()` (`sck_…` prefix, `role: service`, no expiry)
+- **Raw key encrypted at rest** (AES-256-GCM) in `internal.auto_secrets` table; hash stored in `auth.api_keys`
+- **Private-network-only bootstrap endpoint** (`GET /api/v1/internal/mcp-bootstrap`) — unauthenticated, restricted to RFC-1918 / loopback IPs
+- **MCP polls bootstrap endpoint on startup** with exponential backoff (8 retries, 2s→256s), graceful failure if core unreachable
+- **`x-api-key` header** replaces `Authorization: Bearer` for all MCP→core requests — no token refresh needed
+- **Service RBAC role expanded**: added `mcp:write` (auto-registration), `integrations:read,write` (secrets resolve, SSH keys)
+- **Removed**: `mintServiceToken()` dependency from MCP CLI, JWT expiry parsing / auto-refresh in `CoreApiClient`, token secret file I/O
+- **`MCP_CORE_API_KEY` env var** — optional override to skip bootstrap polling
+- Fixed `no-floating-promises` warnings in `server.ts` (Todoist routes, task storage)
+- Fixed `no-console` warnings in MCP CLI (`eslint-disable` for CLI entry point)
+- Updated `package-lock.json` to sync optional deps (`@napi-rs/screenshot`, `@nut-tree/nut-js`)
+- 17,772 tests passing (774 files), 0 lint errors, format clean
+
 ### Simulation Engine — Complete (7/7 core infrastructure, 252 new tests)
 
 **Entity Relationship Graph** (`simulation/relationship-graph.ts`)
