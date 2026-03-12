@@ -99,6 +99,7 @@ const PREFIX_RESOURCE_MAP: readonly [prefix: string, resource: string][] = [
   ['/api/v1/ai', 'ai'],
   ['/api/v1/events', 'events'],
   ['/api/v1/ecosystem', 'integrations'],
+  ['/api/v1/simulation', 'simulation'],
   ['/api/v1/compliance', 'compliance'],
   ['/api/v1/scim', 'auth'],
   ['/api/v1/tenants', 'tenants'],
@@ -151,6 +152,12 @@ permit('/api/v1/sandbox/scan', 'POST', 'sandbox', 'execute');
 
 // DELETE → execute
 permit('/api/v1/terminal/worktrees/:id', 'DELETE', 'execution', 'execute');
+
+// Simulation mood routes (nested under personalities but scoped to simulation resource)
+permit('/api/v1/personalities/:id/mood', 'GET', 'simulation', 'read');
+permit('/api/v1/personalities/:id/mood/event', 'POST', 'simulation', 'write');
+permit('/api/v1/personalities/:id/mood/history', 'GET', 'simulation', 'read');
+permit('/api/v1/personalities/:id/mood/reset', 'POST', 'simulation', 'write');
 
 // Cross-resource override (route prefix maps to different resource than convention)
 permit('/api/v1/auth/oauth/reload', 'POST', 'secrets', 'write');

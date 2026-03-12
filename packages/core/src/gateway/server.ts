@@ -1816,6 +1816,105 @@ export class GatewayServer {
       registerWebAuthnRoutes(this.app, { webAuthnManager, secureYeoman: this.secureYeoman });
     });
 
+    // Simulation engine routes — enterprise feature
+    await this.tryRegister('Simulation', async () => {
+      const { registerSimulationRoutes } = await import('../simulation/simulation-routes.js');
+      const { SimulationStore } = await import('../simulation/simulation-store.js');
+      const { TickDriver } = await import('../simulation/tick-driver.js');
+      const { MoodEngine } = await import('../simulation/mood-engine.js');
+      const { SpatialEngine } = await import('../simulation/spatial-engine.js');
+      const { ExperimentRunner } = await import('../simulation/experiment-runner.js');
+      const { InMemoryExperimentStore } = await import('../simulation/experiment-store.js');
+      const { TrainingExecutor } = await import('../simulation/training-executor.js');
+      const simStore = new SimulationStore();
+      const moodEngine = new MoodEngine({ store: simStore, logger: this.getLogger() });
+      const spatialEngine = new SpatialEngine({
+        store: simStore,
+        logger: this.getLogger(),
+        moodEngine,
+      });
+
+      // Bridge autoresearch experiment runner to real training infrastructure
+      const finetuneManager = this.secureYeoman.getFinetuneManager();
+      const evalManager = this.secureYeoman.getEvaluationManager();
+      const registryManager = this.secureYeoman.getExperimentRegistryManager();
+
+      const trainingExecutor = new TrainingExecutor({
+        logger: this.getLogger(),
+        jobLauncher: finetuneManager
+          ? {
+              createJob: (config) => finetuneManager.createJob(config),
+              waitForCompletion: async (jobId, timeoutMs) => {
+                const deadline = Date.now() + timeoutMs;
+                while (Date.now() < deadline) {
+                  const job = await finetuneManager.getJob(jobId);
+                  if (!job) return { status: 'failed', errorMessage: 'Job not found' };
+                  if (job.status === 'complete')
+                    return { status: 'complete', adapterPath: job.adapterPath };
+                  if (job.status === 'failed')
+                    return { status: 'failed', errorMessage: job.errorMessage };
+                  if (job.status === 'cancelled')
+                    return { status: 'failed', errorMessage: 'Job cancelled' };
+                  await new Promise((r) => setTimeout(r, 5000));
+                }
+                return { status: 'failed', errorMessage: 'Timeout waiting for training job' };
+              },
+            }
+          : undefined,
+        evaluator: evalManager
+          ? {
+              evaluate: async (config) => {
+                const result = await evalManager.runEvaluation(config);
+                return { metrics: result.metrics as unknown as Record<string, number> };
+              },
+            }
+          : undefined,
+        tracker: registryManager
+          ? {
+              createExperiment: async (data) => {
+                const exp = await registryManager.createExperiment({
+                  ...data,
+                  status:
+                    (data.status as 'draft' | 'running' | 'completed' | 'failed' | 'archived') ??
+                    'draft',
+                });
+                return { id: exp.id };
+              },
+              updateExperiment: (id, updates) =>
+                registryManager.updateExperiment(id, {
+                  ...updates,
+                  status: updates.status as
+                    | 'draft'
+                    | 'running'
+                    | 'completed'
+                    | 'failed'
+                    | 'archived'
+                    | undefined,
+                }),
+              linkEvalRun: (expId, evalRunId, metrics) =>
+                registryManager.linkEvalRun(expId, evalRunId, metrics),
+            }
+          : undefined,
+      });
+
+      const experimentRunner = new ExperimentRunner({
+        store: new InMemoryExperimentStore(),
+        logger: this.getLogger(),
+        executeExperiment: trainingExecutor.createExecutor(),
+      });
+      const tickDriver = new TickDriver({ store: simStore, logger: this.getLogger(), moodEngine });
+      tickDriver.onTick(spatialEngine.createTickHandler());
+      tickDriver.onTick(experimentRunner.createTickHandler());
+      registerSimulationRoutes(this.app, {
+        store: simStore,
+        tickDriver,
+        moodEngine,
+        spatialEngine,
+        experimentRunner,
+        secureYeoman: this.secureYeoman,
+      });
+    });
+
     // Standard Prometheus scrape endpoint /metrics (unauthenticated, public)
     this.app.get('/metrics', async (_request, reply) => {
       try {

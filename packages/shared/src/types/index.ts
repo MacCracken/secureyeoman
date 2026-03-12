@@ -1266,6 +1266,43 @@ export {
   type ValidationIssue,
 } from './excalidraw.js';
 
+// Simulation Engine types
+export {
+  SimulationTickModeSchema,
+  TickConfigSchema,
+  TickConfigCreateSchema,
+  TickConfigUpdateSchema,
+  MoodLabelSchema,
+  MoodStateSchema,
+  MoodEventCreateSchema,
+  MoodEventSchema,
+  type SimulationTickMode,
+  type TickConfig,
+  type TickConfigCreate,
+  type TickConfigUpdate,
+  type TickEvent,
+  type MoodLabel,
+  type MoodState,
+  type MoodEventCreate,
+  type MoodEvent,
+  EntityLocationSchema,
+  EntityLocationUpsertSchema,
+  SpatialZoneSchema,
+  SpatialZoneCreateSchema,
+  ProximityTriggerTypeSchema,
+  ProximityRuleSchema,
+  ProximityRuleCreateSchema,
+  ProximityEventSchema,
+  type EntityLocation,
+  type EntityLocationUpsert,
+  type SpatialZone,
+  type SpatialZoneCreate,
+  type ProximityTriggerType,
+  type ProximityRule,
+  type ProximityRuleCreate,
+  type ProximityEvent,
+} from './simulation.js';
+
 // Responsible AI types (Phase 130)
 export {
   CohortDimensionSchema,

@@ -62,4 +62,6 @@ export const MIGRATION_MANIFEST: MigrationEntry[] = [
   { id: '015_scim', sql: readSql('015_scim.sql'), tier: 'enterprise' },
   { id: '016_tenant_quotas', sql: readSql('016_tenant_quotas.sql'), tier: 'enterprise' },
   { id: '017_webauthn', sql: readSql('017_webauthn.sql'), tier: 'community' },
+  { id: '018_simulation', sql: readSql('018_simulation.sql'), tier: 'enterprise' },
+  { id: '019_spatial', sql: readSql('019_spatial.sql'), tier: 'enterprise' },
 ];

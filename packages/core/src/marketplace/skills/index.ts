@@ -28,6 +28,7 @@ export { pdfAnalysisSkill } from './pdf-analysis.js';
 export { cognitiveMemoryAnalystSkill } from './cognitive-memory-analyst.js';
 export { financialChartingSkill } from './financial-charting.js';
 export { confidentialComputingSkill } from './confidential-computing.js';
+export { autoresearchSkill } from './autoresearch.js';
 export {
   tokyoNightThemeSkill,
   catppuccinMochaThemeSkill,
