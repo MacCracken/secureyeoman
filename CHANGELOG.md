@@ -45,6 +45,11 @@ Static Go binary for edge/IoT devices. 7.2 MB, zero runtime dependencies, runs o
 - Sortable table: status, hostname, architecture, memory, GPU, tags, last seen
 - 30s auto-refresh via `@tanstack/react-query`
 
+**TypeScript Edge Runtime (`packages/core/src/edge/`):**
+- **EdgeRuntime** (`edge-runtime.ts`): Minimal headless SecureYeoman runtime for edge/IoT — runs only config, logging, auth, A2A transport, task execution, and health endpoint. Skips brain, soul, spirit, marketplace, dashboard, training, analytics. Designed for <128 MB RAM, <5s boot.
+- **Edge CLI** (`edge/cli.ts`): Separate entry point for tree-shaking. `secureyeoman-edge start|register|status`.
+- **Edge command** (`cli/commands/edge.ts`): `secureyeoman edge start [--port] [--host] [--parent-url] [--registration-token]`, `register --parent URL`, `status`.
+
 ### Primary Binary Smoke Tests
 
 E2E test suite for the main TypeScript binary (`packages/core/src/__e2e__/binary-smoke.e2e.test.ts`). Spawns `node --import tsx src/cli.ts start` as a real subprocess and exercises key endpoints over HTTP.
@@ -383,6 +388,22 @@ Comprehensive security audit across 5 domains — SSRF, injection, cryptography,
 
 #### Cache & Resource Management
 - **MCP proxy auth** (`mcp/auth/proxy-auth.ts`): Added `MAX_CACHE_SIZE = 10_000` with LRU eviction to prevent unbounded memory growth from auth token caching.
+
+### Real-Time Video Streaming
+
+Video streaming pipeline with three sources (AGNOS remote, local camera, local screen), REST + WebSocket API, and MCP tools. Gated on `allowVideoStreaming` + `allowDesktopControl` security settings.
+
+- **VideoStreamManager** (`body/capture/video-stream-manager.ts`): Orchestrates streaming sessions — AGNOS frame polling, local camera via ffmpeg, local screenshots. Unique session IDs, configurable FPS (1–30), auto-stop after max duration (default 10 min), hard cap of 3 concurrent sessions. WebSocket broadcast with JSON frame messages (base64 image, sequence, timestamp, optional vision analysis).
+- **AGNOS Video Bridge** (`body/capture/agnos-video-bridge.ts`): HTTP client for AGNOS daimon screen capture endpoints (port 8090). Screenshot capture, recording lifecycle (start/stop/pause/resume), frame polling with sequence-based streaming (`?since=N`), live view.
+- **REST + WebSocket routes** (`body/video-stream-routes.ts`): 5 REST endpoints under `/api/v1/video/stream/` — start, stop, list sessions, session details, list sources. WebSocket endpoint `WS /ws/video/:sessionId` for frame subscription.
+- **5 MCP tools** (`mcp/tools/video-tools.ts`): `video_stream_start`, `video_stream_stop`, `video_stream_sessions`, `video_stream_sources`, `video_stream_snapshot`. Gated on `exposeDesktopControl`. Registered in manifest.
+
+### Key Rotation Dashboard & Admin Settings
+
+- **Key rotation routes** (`security/rotation/rotation-routes.ts`): 2 endpoints — `GET /api/v1/admin/key-rotation` (list all tracked secrets and rotation status) and `POST /api/v1/admin/key-rotation/:name/rotate` (manually trigger rotation). 7 tests.
+- **KeyRotationCard** (`dashboard/components/KeyRotationCard.tsx`): Dashboard card showing secret rotation status (healthy/expiring/expired), category labels (JWT, audit signing, encryption, admin, API key), manual rotate button. 14 tests.
+- **Admin settings routes** (`gateway/admin-settings-routes.ts`): `GET/PATCH /api/v1/admin/settings` for runtime-changeable system preferences (`external_url`, `oauth_redirect_base_url`). Database-backed via `system_preferences` table.
+- **Config CLI command** (`cli/commands/config-settings.ts`): `secureyeoman config get|set <key> <value>` for managing admin settings from the command line.
 
 ### Code Audit Fixes
 
