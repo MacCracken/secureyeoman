@@ -2,9 +2,11 @@
 
 All notable changes to SecureYeoman are documented in this file. Versions correspond to git tags.
 
+**Versioning**: CalVer `YYYY.M.D` for daily releases, `YYYY.M.D-N` for same-day patches (e.g. `2026.3.12-1`). Set via `npm run version:set <version>`.
+
 ---
 
-## [2026.3.12]
+## [2026.3.12-1]
 
 ### MCP Transport: Per-Session Server Instances
 
@@ -30,7 +32,17 @@ Replaced MCP's self-minted JWT authentication with auto-provisioned API key auth
 - Fixed `no-floating-promises` warnings in `server.ts` (Todoist routes, task storage)
 - Fixed `no-console` warnings in MCP CLI (`eslint-disable` for CLI entry point)
 - Updated `package-lock.json` to sync optional deps (`@napi-rs/screenshot`, `@nut-tree/nut-js`)
-- 17,772 tests passing (774 files), 0 lint errors, format clean
+
+### Release Pipeline: Edge Binary Support
+
+- **Added edge binaries to release workflow** — `secureyeoman-edge-linux-x64`, `secureyeoman-edge-linux-arm64`, `secureyeoman-edge-linux-armv7` now included in GitHub Release assets
+- Added `setup-go` step (from `go.mod`) to release workflow — ensures Go toolchain is available for Tier 3 edge compilation
+- Edge binaries now signed with cosign (keyless) and included in SLSA provenance attestations
+- Release notes table updated to list edge binaries with platform descriptions
+- `VERSION` env var passed to `build-binary.sh` so Go edge binary gets the correct version stamp
+- 21,903 tests passing (954 files), 0 lint errors, format clean
+
+## [2026.3.12]
 
 ### Simulation Engine — Complete (7/7 core infrastructure, 252 new tests)
 
