@@ -53,8 +53,8 @@ describe('runMigrations() — fast path (latest already applied)', () => {
   it('returns early when latest migration already applied', async () => {
     // CREATE TABLE IF NOT EXISTS returns empty rows
     mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // CREATE TABLE
-    // SELECT WHERE id = $1 returns the latest filtered entry
-    mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: '002_users' }] });
+    // SELECT WHERE id = ANY($1) returns ALL filtered entries (count must match)
+    mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: '001_initial' }, { id: '002_users' }] });
 
     await runMigrations();
 
@@ -133,7 +133,7 @@ describe('runMigrations() — re-check fast path after lock', () => {
 
     mockClientQuery
       .mockResolvedValueOnce({ rows: [] }) // pg_advisory_lock
-      .mockResolvedValueOnce({ rows: [{ id: '002_users' }] }) // recheck → already done
+      .mockResolvedValueOnce({ rows: [{ id: '001_initial' }, { id: '002_users' }] }) // recheck → all applied
       .mockResolvedValueOnce({ rows: [] }); // pg_advisory_unlock
 
     await runMigrations();
@@ -188,7 +188,7 @@ describe('runMigrations() — empty manifest', () => {
     // The module is already loaded with the 2-item MOCK_MANIFEST.
     // This test validates the pool CREATE TABLE call still happens.
     mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // CREATE TABLE
-    mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: '002_users' }] }); // fast path matches latest
+    mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: '001_initial' }, { id: '002_users' }] }); // fast path — all applied
 
     await runMigrations();
     expect(mockConnect).not.toHaveBeenCalled();
