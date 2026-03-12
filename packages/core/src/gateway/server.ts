@@ -3354,6 +3354,32 @@ export class GatewayServer {
       }
     );
 
+    // ── MCP bootstrap — unauthenticated, localhost-only ────────────────────
+    // MCP service polls this on startup to retrieve its auto-provisioned API key.
+    // The endpoint is in PUBLIC_ROUTES (no auth) but restricted to loopback.
+    this.app.get('/api/v1/internal/mcp-bootstrap', async (request, reply) => {
+      // Localhost guard — reject anything that isn't loopback
+      const ip = request.ip;
+      if (ip !== '127.0.0.1' && ip !== '::1' && ip !== '::ffff:127.0.0.1') {
+        return sendError(reply, 403, 'Bootstrap endpoint is localhost-only');
+      }
+      try {
+        const { loadAutoSecret } = await import('../security/auto-secret-store.js');
+        const { MCP_SERVICE_API_KEY_SECRET } = await import('../modules/security-module.js');
+        const apiKey = await loadAutoSecret(MCP_SERVICE_API_KEY_SECRET);
+        if (!apiKey) {
+          return sendError(reply, 503, 'MCP service API key not yet provisioned');
+        }
+        return { apiKey };
+      } catch (err) {
+        this.getLogger().error(
+          { error: errorToString(err) },
+          'Failed to serve MCP bootstrap key'
+        );
+        return sendError(reply, 500, 'Failed to retrieve bootstrap key');
+      }
+    });
+
     // ── Phase 42: TLS Certificate Routes ────────────────────────────────────
 
     // GET /api/v1/security/tls — TLS cert status for dashboard display

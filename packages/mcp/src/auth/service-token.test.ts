@@ -21,6 +21,7 @@ describe('mintServiceToken', () => {
     expect(payload.permissions).toEqual([
       'mcp:execute',
       'mcp:read',
+      'auth:read',
       'brain:read',
       'brain:write',
       'soul:read',

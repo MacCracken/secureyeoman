@@ -65,4 +65,5 @@ export const MIGRATION_MANIFEST: MigrationEntry[] = [
   { id: '018_simulation', sql: readSql('018_simulation.sql'), tier: 'enterprise' },
   { id: '019_spatial', sql: readSql('019_spatial.sql'), tier: 'enterprise' },
   { id: '020_relationships', sql: readSql('020_relationships.sql'), tier: 'enterprise' },
+  { id: '021_auto_secrets', sql: readSql('021_auto_secrets.sql'), tier: 'community' },
 ];

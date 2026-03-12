@@ -45,6 +45,8 @@ const PUBLIC_ROUTES = new Set([
   '/api/v1/federation/knowledge/search',
   '/api/v1/federation/marketplace',
   '/api/v1/federation/marketplace/:skillId',
+  // MCP bootstrap — localhost-only guard enforced in handler
+  '/api/v1/internal/mcp-bootstrap',
 ]);
 const TOKEN_ONLY_ROUTES = new Set([
   '/api/v1/auth/refresh',

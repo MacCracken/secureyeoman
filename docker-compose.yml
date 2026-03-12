@@ -55,6 +55,7 @@ services:
       - '${TLS_PORT:-443}:${TLS_PORT:-443}'
     volumes:
       - data:/home/secureyeoman/.secureyeoman
+      - sy-pgdata:/var/lib/postgresql/data
       - community-repo:/usr/share/secureyeoman/community-repo
       - ./certs:/app/certs:ro
     env_file: .env.dev
@@ -182,6 +183,7 @@ services:
       - '${TLS_PORT:-443}:${TLS_PORT:-443}'
     volumes:
       - data:/home/secureyeoman/.secureyeoman
+      - sy-pgdata:/var/lib/postgresql/data
       - community-repo:/usr/share/secureyeoman/community-repo
       - ./certs:/app/certs:ro
     env_file: .env.dev
@@ -583,6 +585,7 @@ services:
 
 volumes:
   pgdata:
+  sy-pgdata:
   data:
   community-repo:
   bullshift-data:

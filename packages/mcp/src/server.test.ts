@@ -21,7 +21,7 @@ function makeConfig(overrides?: Partial<McpServiceConfig>): McpServiceConfig {
 }
 
 function mockCoreClient(): CoreApiClient {
-  const client = new CoreApiClient({ coreUrl: 'http://127.0.0.1:18789', coreToken: 'test' });
+  const client = new CoreApiClient({ coreUrl: 'http://127.0.0.1:18789', apiKey: 'sck_test' });
   vi.spyOn(client, 'healthCheck').mockResolvedValue(true);
   vi.spyOn(client, 'get').mockResolvedValue({});
   vi.spyOn(client, 'post').mockResolvedValue({ server: { id: 'test-id' } });

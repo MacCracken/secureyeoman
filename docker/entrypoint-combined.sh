@@ -149,6 +149,11 @@ PGEOF
   echo "[entrypoint] Embedded PostgreSQL ready (user=$DATABASE_USER, db=$DATABASE_NAME)"
 fi
 
+# --- Ensure shared data volume is writable by secureyeoman ---
+# The volume may have been created by another service (e.g. AGNOS) with different ownership.
+# secureyeoman needs write access to share the token secret with the MCP sidecar.
+chown secureyeoman:secureyeoman /home/secureyeoman/.secureyeoman 2>/dev/null || true
+
 # --- Set the command for secureyeoman process ---
 # $@ comes from CMD in Dockerfile (e.g. "secureyeoman start" or "node ... start")
 export SY_CMD="$*"

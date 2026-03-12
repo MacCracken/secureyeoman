@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console -- CLI entry point uses console for operator-visible logging */
 
 /**
  * CLI entry point for the SecureYeoman MCP service.
@@ -12,7 +13,6 @@ import { McpServiceServer } from './server.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CoreApiClient } from './core-client.js';
-import { mintServiceToken } from './auth/service-token.js';
 import { registerAllTools } from './tools/index.js';
 import { registerAllResources } from './resources/index.js';
 import { registerAllPrompts } from './prompts/index.js';
@@ -21,6 +21,56 @@ import { createInputValidator } from './middleware/input-validator.js';
 import { createAuditLogger } from './middleware/audit-logger.js';
 import { createSecretRedactor } from './middleware/secret-redactor.js';
 import { MCP_VERSION } from './utils/version.js';
+
+/** Maximum number of bootstrap retries before giving up. */
+const BOOTSTRAP_MAX_RETRIES = 8;
+/** Base delay between bootstrap retries (ms). Doubles each attempt. */
+const BOOTSTRAP_BASE_DELAY_MS = 2000;
+
+/**
+ * Fetch the auto-provisioned MCP service API key from core's bootstrap endpoint.
+ * Retries with exponential backoff until the key is available or max retries exceeded.
+ */
+async function fetchBootstrapApiKey(coreUrl: string): Promise<string> {
+  const baseUrl = coreUrl.replace(/\/+$/, '');
+  const url = `${baseUrl}/api/v1/internal/mcp-bootstrap`;
+
+  for (let attempt = 1; attempt <= BOOTSTRAP_MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as { apiKey?: string };
+        if (data.apiKey) {
+          console.log(`[secureyeoman-mcp] Bootstrap: API key retrieved (attempt ${attempt})`);
+          return data.apiKey;
+        }
+      }
+
+      const status = res.status;
+      console.log(
+        `[secureyeoman-mcp] Bootstrap: core returned ${status} (attempt ${attempt}/${BOOTSTRAP_MAX_RETRIES})`
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.log(
+        `[secureyeoman-mcp] Bootstrap: core unreachable — ${msg} (attempt ${attempt}/${BOOTSTRAP_MAX_RETRIES})`
+      );
+    }
+
+    if (attempt < BOOTSTRAP_MAX_RETRIES) {
+      const delay = BOOTSTRAP_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+
+  throw new Error(
+    `Failed to retrieve MCP service API key after ${BOOTSTRAP_MAX_RETRIES} attempts — core may not be ready`
+  );
+}
 
 /**
  * Start the MCP server. Returns an exit code (0 = success).
@@ -34,23 +84,29 @@ export async function runMcpServer(_argv: string[] = []): Promise<number> {
     return 0;
   }
 
-  // stdio transport mode — no HTTP server needed
-  if (config.transport === 'stdio') {
-    if (!config.tokenSecret) {
-      console.error('[secureyeoman-mcp] SECUREYEOMAN_TOKEN_SECRET is required');
+  // Resolve the API key: env var override OR bootstrap from core
+  let apiKey = process.env.MCP_CORE_API_KEY;
+  if (!apiKey) {
+    try {
+      apiKey = await fetchBootstrapApiKey(config.coreUrl);
+    } catch (err) {
+      console.error(
+        `[secureyeoman-mcp] ${err instanceof Error ? err.message : 'Bootstrap failed'}`
+      );
       return 1;
     }
+  }
 
-    const coreToken = await mintServiceToken(config.tokenSecret);
-    const coreClient = new CoreApiClient({
-      coreUrl: config.coreUrl,
-      coreToken,
-      tokenSecret: config.tokenSecret,
-    });
+  const coreClient = new CoreApiClient({
+    coreUrl: config.coreUrl,
+    apiKey,
+  });
 
-    // Enrich config with secrets from core's SecretsManager (env vars take precedence)
-    config = await enrichConfigWithSecrets(config, coreClient);
+  // Enrich config with secrets from core's SecretsManager (env vars take precedence)
+  config = await enrichConfigWithSecrets(config, coreClient);
 
+  // stdio transport mode — no HTTP server needed
+  if (config.transport === 'stdio') {
     const mcpServer = new McpServer({
       name: 'secureyeoman-mcp',
       version: MCP_VERSION,
@@ -82,21 +138,6 @@ export async function runMcpServer(_argv: string[] = []): Promise<number> {
   }
 
   // HTTP-based transport modes (streamable-http, sse)
-  if (!config.tokenSecret) {
-    console.error('[secureyeoman-mcp] SECUREYEOMAN_TOKEN_SECRET is required');
-    return 1;
-  }
-
-  const coreToken = await mintServiceToken(config.tokenSecret);
-  const coreClient = new CoreApiClient({
-    coreUrl: config.coreUrl,
-    coreToken,
-    tokenSecret: config.tokenSecret,
-  });
-
-  // Enrich config with secrets from core's SecretsManager (env vars take precedence)
-  config = await enrichConfigWithSecrets(config, coreClient);
-
   const server = new McpServiceServer({ config, coreClient });
 
   // Graceful shutdown

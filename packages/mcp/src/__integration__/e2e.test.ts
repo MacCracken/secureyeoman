@@ -89,7 +89,7 @@ afterAll(async () => {
 
 describe('e2e integration', () => {
   it('should start MCP service with mock core', async () => {
-    const client = new CoreApiClient({ coreUrl: mockCoreUrl, coreToken: 'test-service-token' });
+    const client = new CoreApiClient({ coreUrl: mockCoreUrl, apiKey: 'sck_test-service-token' });
     mcpServer = new McpServiceServer({ config: makeConfig(), coreClient: client });
     await mcpServer.start();
 
@@ -155,7 +155,7 @@ describe('e2e integration', () => {
   });
 
   it('should auto-register with core when enabled', async () => {
-    const client = new CoreApiClient({ coreUrl: mockCoreUrl, coreToken: 'test-service-token' });
+    const client = new CoreApiClient({ coreUrl: mockCoreUrl, apiKey: 'sck_test-service-token' });
     const autoRegServer = new McpServiceServer({
       config: makeConfig({ autoRegister: true }),
       coreClient: client,
@@ -188,13 +188,13 @@ describe('e2e integration', () => {
   });
 
   it('should handle core healthcheck correctly', async () => {
-    const client = new CoreApiClient({ coreUrl: mockCoreUrl, coreToken: 'test' });
+    const client = new CoreApiClient({ coreUrl: mockCoreUrl, apiKey: 'sck_test' });
     const healthy = await client.healthCheck();
     expect(healthy).toBe(true);
   });
 
   it('should detect unreachable core', async () => {
-    const client = new CoreApiClient({ coreUrl: 'http://127.0.0.1:1', coreToken: 'test' });
+    const client = new CoreApiClient({ coreUrl: 'http://127.0.0.1:1', apiKey: 'sck_test' });
     const healthy = await client.healthCheck();
     expect(healthy).toBe(false);
   });
@@ -202,7 +202,7 @@ describe('e2e integration', () => {
   it('should stop cleanly', async () => {
     await mcpServer.stop();
     // Restart for any remaining tests
-    const client = new CoreApiClient({ coreUrl: mockCoreUrl, coreToken: 'test-service-token' });
+    const client = new CoreApiClient({ coreUrl: mockCoreUrl, apiKey: 'sck_test-service-token' });
     mcpServer = new McpServiceServer({ config: makeConfig(), coreClient: client });
     await mcpServer.start();
   });

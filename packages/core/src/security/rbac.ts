@@ -91,6 +91,7 @@ const DEFAULT_ROLES: RoleDefinition[] = [
     name: 'Service',
     description: 'Internal service-to-service access with least-privilege permissions',
     permissions: [
+      { resource: 'auth', actions: ['read'] },
       { resource: 'mcp', actions: ['execute', 'read'] },
       { resource: 'brain', actions: ['read', 'write'] },
       { resource: 'soul', actions: ['read'] },

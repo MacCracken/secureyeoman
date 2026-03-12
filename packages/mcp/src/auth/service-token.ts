@@ -25,6 +25,7 @@ export async function mintServiceToken(tokenSecret: string): Promise<string> {
     permissions: [
       'mcp:execute',
       'mcp:read',
+      'auth:read',
       'brain:read',
       'brain:write',
       'soul:read',

@@ -15,6 +15,7 @@ import { type ModuleContext } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { Config } from '@secureyeoman/shared';
 import { initializeKeyring, getSecret } from '../config/loader.js';
+import { loadAutoSecret, saveAutoSecret } from '../security/auto-secret-store.js';
 import type { KeyringManager } from '../security/keyring/manager.js';
 import { SecretsManager, type SecretsManagerConfig } from '../security/secrets-manager.js';
 import { TlsManager } from '../security/tls-manager.js';
@@ -69,6 +70,9 @@ export interface SecurityPostAuthDeps {
   authService: AuthService;
   auditChain: AuditChain;
 }
+
+/** Name under which the raw MCP service API key is stored in internal.auto_secrets. */
+export const MCP_SERVICE_API_KEY_SECRET = 'MCP_SERVICE_API_KEY';
 
 export interface SecurityLateDeps {
   auditChain: AuditChain;
@@ -222,21 +226,6 @@ export class SecurityModule implements AppModule {
       this.logger.info('Auto-generated JWT token secret (no external key provided)');
     }
 
-    // Persist token secret to shared data volume so MCP sidecar can read it
-    // without needing SECUREYEOMAN_TOKEN_SECRET in env. Both core and MCP
-    // containers mount the data volume at /home/secureyeoman/.secureyeoman.
-    // MCP deletes the file after reading for security.
-    try {
-      const { writeFileSync, mkdirSync } = await import('node:fs');
-      const tokenSecretDir = '/home/secureyeoman/.secureyeoman';
-      const tokenSecretPath = `${tokenSecretDir}/.token-secret`;
-      mkdirSync(tokenSecretDir, { recursive: true });
-      const currentSecret = getSecret(tokenSecretEnv) ?? '';
-      writeFileSync(tokenSecretPath, currentSecret, { mode: 0o600 });
-    } catch {
-      // Best-effort — env var or SecretsManager is the primary mechanism
-    }
-
     // Audit chain signing key
     const signingKeyEnv = this.config.logging.audit.signingKeyEnv;
     if (!getSecret(signingKeyEnv)) {
@@ -277,6 +266,12 @@ export class SecurityModule implements AppModule {
 
   /** Phase 2: RBAC, validator, rateLimiter, all early storages — after DB migrations. */
   async initCore(): Promise<void> {
+    // Reconcile auto-generated secrets with DB-persisted values.
+    // DB is the source of truth — if a secret exists in DB, use it instead of
+    // the freshly generated one from initEarly(). If not in DB, persist the
+    // auto-generated value so future restarts reuse the same key.
+    await this.reconcileAutoSecrets();
+
     // Storages (zero-arg constructors)
     this.autonomyAuditStorage = new AutonomyAuditStorage();
     this.athiStorage = new AthiStorage();
@@ -467,6 +462,11 @@ export class SecurityModule implements AppModule {
       this.rotationManager.start();
       this.logger.debug('Secret rotation manager started');
     }
+
+    // Auto-provision MCP service API key if it doesn't already exist.
+    // The raw key is stored encrypted in internal.auto_secrets so MCP can
+    // retrieve it via the /api/v1/internal/mcp-bootstrap endpoint.
+    await this.provisionMcpServiceApiKey(deps.authService);
   }
 
   /** Phase 4: externalizationGate, athiManager, sraManager — after alertManager may exist. */
@@ -603,7 +603,7 @@ export class SecurityModule implements AppModule {
   async cleanup(): Promise<void> {
     // Rate limiter
     if (this.rateLimiter) {
-      this.rateLimiter.stop();
+      await this.rateLimiter.stop();
     }
 
     // RBAC cache
@@ -785,5 +785,78 @@ export class SecurityModule implements AppModule {
    */
   setMcpCredentialManager(mgr: McpCredentialManager): void {
     this.mcpCredentialManager = mgr;
+  }
+
+  /**
+   * Reconcile auto-generated secrets with DB. DB is the source of truth.
+   * If DB has a value, override process.env (and the temp value from initEarly).
+   * If DB is empty (first run), persist the auto-generated value from initEarly.
+   */
+  private async reconcileAutoSecrets(): Promise<void> {
+    const secretEnvNames = [
+      this.config.gateway.auth.tokenSecret,
+      this.config.logging.audit.signingKeyEnv,
+      this.config.security.encryption.keyEnv,
+      'SECUREYEOMAN_WEBHOOK_SECRET',
+    ];
+
+    for (const envName of secretEnvNames) {
+      const currentValue = getSecret(envName);
+      if (!currentValue) continue;
+
+      try {
+        const dbValue = await loadAutoSecret(envName);
+        if (dbValue) {
+          // DB has the canonical value — use it
+          if (dbValue !== currentValue) {
+            process.env[envName] = dbValue;
+            if (this.secretsManager) {
+              await this.secretsManager.set(envName, dbValue);
+            }
+            this.logger.info({ name: envName }, 'Restored auto-secret from DB');
+          }
+        } else {
+          // First run — persist to DB
+          await saveAutoSecret(envName, currentValue);
+          this.logger.info({ name: envName }, 'Persisted auto-secret to DB');
+        }
+      } catch (err) {
+        this.logger.warn(
+          { name: envName, error: String(err) },
+          'Failed to reconcile auto-secret with DB'
+        );
+      }
+    }
+  }
+
+  /**
+   * Auto-provision an MCP service API key if one doesn't already exist.
+   * The raw key is stored encrypted in internal.auto_secrets. MCP retrieves
+   * it via the bootstrap endpoint at startup.
+   */
+  private async provisionMcpServiceApiKey(authService: AuthService): Promise<void> {
+    try {
+      const existing = await loadAutoSecret(MCP_SERVICE_API_KEY_SECRET);
+      if (existing) {
+        this.logger.debug('MCP service API key already provisioned');
+        return;
+      }
+
+      // Create a service-role API key with no expiry
+      const result = await authService.createApiKey({
+        name: 'MCP Service (auto-provisioned)',
+        role: 'service',
+        userId: 'mcp-service',
+      });
+
+      // Store the raw key encrypted in internal.auto_secrets
+      await saveAutoSecret(MCP_SERVICE_API_KEY_SECRET, result.key);
+      this.logger.info({ keyPrefix: result.keyPrefix }, 'Auto-provisioned MCP service API key');
+    } catch (err) {
+      this.logger.error(
+        { error: String(err) },
+        'Failed to auto-provision MCP service API key — MCP will not be able to authenticate'
+      );
+    }
   }
 }

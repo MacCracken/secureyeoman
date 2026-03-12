@@ -1,6 +1,8 @@
 /**
  * CoreApiClient — typed HTTP client wrapping fetch() to call core REST API.
  *
+ * Authenticates via x-api-key header using an auto-provisioned service API key.
+ *
  * When the coreUrl is HTTPS and NODE_ENV=development (or NODE_TLS_REJECT_UNAUTHORIZED=0),
  * a custom undici Agent with rejectUnauthorized=false is used so MCP can reach the core
  * gateway even when the TLS cert is issued for a public hostname (e.g. dev.example.com)
@@ -8,42 +10,22 @@
  * is always enforced.
  */
 import { Agent } from 'undici';
-import { mintServiceToken } from './auth/service-token.js';
 
 export interface CoreApiClientOptions {
   coreUrl: string;
-  coreToken: string;
-  /** Token secret for automatic token refresh. If provided, enables auto-refresh. */
-  tokenSecret?: string;
+  /** Service API key (sck_...) for x-api-key auth. */
+  apiKey: string;
 }
-
-/** Minimum remaining TTL before we proactively refresh the service token (5 minutes). */
-const TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
 
 export class CoreApiClient {
   private readonly baseUrl: string;
-  private token: string;
-  private readonly tokenSecret: string | undefined;
-  private tokenExpiresAt = 0;
+  private readonly apiKey: string;
   /** Undici agent used only for internal MCP→core requests over HTTPS. */
-
   private readonly dispatcher: any;
 
   constructor(opts: CoreApiClientOptions) {
     this.baseUrl = opts.coreUrl.replace(/\/+$/, '');
-    this.token = opts.coreToken;
-    this.tokenSecret = opts.tokenSecret;
-
-    // Parse the JWT to extract expiry (no verification — we minted it ourselves)
-    try {
-      const payloadB64 = opts.coreToken.split('.')[1];
-      if (payloadB64) {
-        const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
-        if (payload.exp) this.tokenExpiresAt = payload.exp * 1000;
-      }
-    } catch {
-      // If we can't parse, leave expiresAt at 0 — refresh will be attempted on next call
-    }
+    this.apiKey = opts.apiKey;
 
     // Only disable TLS verification in development environments.
     // In production, full certificate verification is always enforced.
@@ -54,32 +36,7 @@ export class CoreApiClient {
       : undefined;
   }
 
-  /**
-   * Refresh the service token if it is close to expiry.
-   * Returns immediately if no tokenSecret is configured or the token is still fresh.
-   */
-  async refreshTokenIfNeeded(): Promise<void> {
-    if (!this.tokenSecret) return;
-    const remaining = this.tokenExpiresAt - Date.now();
-    if (remaining > TOKEN_REFRESH_THRESHOLD_MS) return;
-
-    const newToken = await mintServiceToken(this.tokenSecret);
-    this.token = newToken;
-
-    // Update expiry from the new token
-    try {
-      const payloadB64 = newToken.split('.')[1];
-      if (payloadB64) {
-        const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
-        if (payload.exp) this.tokenExpiresAt = payload.exp * 1000;
-      }
-    } catch {
-      // best-effort
-    }
-  }
-
   async get<T = unknown>(path: string, query?: Record<string, string>): Promise<T> {
-    await this.refreshTokenIfNeeded();
     const url = this.buildUrl(path, query);
     const res = await fetch(url, {
       method: 'GET',
@@ -91,7 +48,6 @@ export class CoreApiClient {
   }
 
   async post<T = unknown>(path: string, body?: unknown): Promise<T> {
-    await this.refreshTokenIfNeeded();
     const url = this.buildUrl(path);
     const res = await fetch(url, {
       method: 'POST',
@@ -104,7 +60,6 @@ export class CoreApiClient {
   }
 
   async put<T = unknown>(path: string, body?: unknown): Promise<T> {
-    await this.refreshTokenIfNeeded();
     const url = this.buildUrl(path);
     const res = await fetch(url, {
       method: 'PUT',
@@ -117,7 +72,6 @@ export class CoreApiClient {
   }
 
   async delete<T = unknown>(path: string): Promise<T> {
-    await this.refreshTokenIfNeeded();
     const url = this.buildUrl(path);
     const res = await fetch(url, {
       method: 'DELETE',
@@ -132,7 +86,6 @@ export class CoreApiClient {
     try {
       const res = await fetch(`${this.baseUrl}/health`, {
         method: 'GET',
-        headers: this.headers(),
         signal: AbortSignal.timeout(5000),
         dispatcher: this.dispatcher,
       });
@@ -154,7 +107,7 @@ export class CoreApiClient {
 
   private headers(): Record<string, string> {
     return {
-      Authorization: `Bearer ${this.token}`,
+      'x-api-key': this.apiKey,
       'Content-Type': 'application/json',
     };
   }
