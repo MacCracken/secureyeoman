@@ -23,9 +23,11 @@ class MockWebSocket {
   onclose: (() => void) | null = null;
   onerror: (() => void) | null = null;
   url: string;
+  protocols: string | string[] | undefined;
 
-  constructor(url: string) {
+  constructor(url: string, protocols?: string | string[]) {
     this.url = url;
+    this.protocols = protocols;
     MockWebSocket.instances.push(this);
     // Trigger onopen asynchronously
     setTimeout(() => this.onopen?.(), 0);
@@ -116,7 +118,7 @@ describe('useCollabEditor', () => {
     );
     expect(MockWebSocket.instances.length).toBe(1);
     expect(MockWebSocket.instances[0]!.url).toContain('/ws/collab/');
-    expect(MockWebSocket.instances[0]!.url).toContain('token=test-token');
+    expect(MockWebSocket.instances[0]!.protocols).toEqual(['token.test-token']);
   });
 
   it('sends sync step 1 on open', async () => {

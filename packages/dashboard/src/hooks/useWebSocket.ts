@@ -37,16 +37,15 @@ export function useWebSocket(path: string): UseWebSocketReturn {
   const messageQueueRef = useRef<unknown[]>([]);
 
   const connect = useCallback(() => {
-    // Build WebSocket URL with auth token as query param
-    // (browser WebSocket API does not support custom headers)
+    // Build WebSocket URL — auth via Sec-WebSocket-Protocol subprotocol
+    // (avoids leaking tokens in browser history, server logs, and referrer headers)
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     const token = getAccessToken();
-    const params = token ? `?token=${encodeURIComponent(token)}` : '';
-    const url = `${protocol}//${host}${path}${params}`;
+    const url = `${protocol}//${host}${path}`;
 
     try {
-      const ws = new WebSocket(url);
+      const ws = token ? new WebSocket(url, [`token.${token}`]) : new WebSocket(url);
       wsRef.current = ws;
 
       ws.onopen = () => {

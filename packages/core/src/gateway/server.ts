@@ -3462,14 +3462,14 @@ export class GatewayServer {
       this.getLogger().info({ distPath }, 'Dashboard SPA serving enabled');
     }
 
-    // WebSocket endpoint — auth via Sec-WebSocket-Protocol header (preferred) or ?token= query param (fallback)
+    // WebSocket endpoint — auth via Sec-WebSocket-Protocol header (token.* subprotocol)
     this.app.get('/ws/metrics', { websocket: true }, async (socket, request) => {
-      // Extract token: prefer Sec-WebSocket-Protocol subprotocol, fall back to query param
+      // Extract token from Sec-WebSocket-Protocol subprotocol (e.g. "token.<jwt>")
+      // Note: ?token= query param auth was removed — it leaks tokens in logs/history/referrers
       let authUser: { userId: string; role: string } | undefined;
       if (this.authService) {
-        const url = new URL(request.url, `http://${request.hostname}`);
         const protocols = request.headers['sec-websocket-protocol'];
-        const protocolToken =
+        const token =
           typeof protocols === 'string'
             ? protocols
                 .split(',')
@@ -3477,17 +3477,6 @@ export class GatewayServer {
                 .find((p) => p.startsWith('token.'))
                 ?.slice(6)
             : undefined;
-        const queryToken = url.searchParams.get('token');
-        const token = protocolToken ?? queryToken;
-
-        if (queryToken && !protocolToken) {
-          this.getLogger().warn(
-            'WebSocket auth via query param is deprecated, use Sec-WebSocket-Protocol',
-            {
-              ip: request.ip,
-            }
-          );
-        }
 
         if (!token) {
           socket.close(4401, 'Missing authentication token');
@@ -3611,7 +3600,7 @@ export class GatewayServer {
     });
 
     // ── Collaborative editing endpoint (Yjs binary protocol) ────────────
-    // Path: /ws/collab/:docId — auth via Sec-WebSocket-Protocol (preferred) or ?token= (fallback)
+    // Path: /ws/collab/:docId — auth via Sec-WebSocket-Protocol (token.* subprotocol)
     // docId format: "personality:<uuid>" | "skill:<uuid>"
     this.app.get(
       '/ws/collab/:docId',
@@ -3619,12 +3608,12 @@ export class GatewayServer {
       async (socket, request: FastifyRequest<{ Params: { docId: string } }>) => {
         const { docId } = request.params;
 
-        // Auth — prefer Sec-WebSocket-Protocol subprotocol, fall back to query param
+        // Auth via Sec-WebSocket-Protocol subprotocol (e.g. "token.<jwt>")
+        // Note: ?token= query param auth was removed — it leaks tokens in logs/history/referrers
         let authUser: { userId: string; role: string; displayName: string } | undefined;
         if (this.authService) {
-          const url = new URL(request.url, `http://${request.hostname}`);
           const protocols = request.headers['sec-websocket-protocol'];
-          const protocolToken =
+          const token =
             typeof protocols === 'string'
               ? protocols
                   .split(',')
@@ -3632,17 +3621,6 @@ export class GatewayServer {
                   .find((p) => p.startsWith('token.'))
                   ?.slice(6)
               : undefined;
-          const queryToken = url.searchParams.get('token');
-          const token = protocolToken ?? queryToken;
-
-          if (queryToken && !protocolToken) {
-            this.getLogger().warn(
-              'WebSocket auth via query param is deprecated, use Sec-WebSocket-Protocol',
-              {
-                ip: request.ip,
-              }
-            );
-          }
 
           if (!token) {
             socket.close(4401, 'Missing authentication token');
@@ -3735,12 +3713,12 @@ export class GatewayServer {
       '/ws/video/:sessionId',
       { websocket: true },
       async (socket, request: FastifyRequest<{ Params: { sessionId: string } }>) => {
-        // Auth: same pattern as /ws/metrics
+        // Auth via Sec-WebSocket-Protocol subprotocol (same pattern as /ws/metrics)
+        // Note: ?token= query param auth was removed — it leaks tokens in logs/history/referrers
         let authUser: { userId: string; role: string } | undefined;
         if (this.authService) {
-          const url = new URL(request.url, `http://${request.hostname}`);
           const protocols = request.headers['sec-websocket-protocol'];
-          const protocolToken =
+          const token =
             typeof protocols === 'string'
               ? protocols
                   .split(',')
@@ -3748,7 +3726,6 @@ export class GatewayServer {
                   .find((p) => p.startsWith('token.'))
                   ?.slice(6)
               : undefined;
-          const token = protocolToken ?? url.searchParams.get('token');
           if (!token) {
             socket.close(4401, 'Missing authentication token');
             return;

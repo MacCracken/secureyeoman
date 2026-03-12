@@ -5,7 +5,9 @@ services:
   # To use this external PG instead, run with --profile external-db and set
   # DATABASE_HOST=sy-pg in the service environment.
   sy-pg:
-    image: pgvector/pgvector:pg16
+    # PRODUCTION: Pin to SHA256 digest in .env — e.g. PGVECTOR_IMAGE=pgvector/pgvector@sha256:<digest>
+    # Get digest: docker manifest inspect pgvector/pgvector:pg16 | jq -r '.manifests[0].digest'
+    image: ${PGVECTOR_IMAGE:-pgvector/pgvector:pg16}
     environment:
       POSTGRES_DB: secureyeoman
       POSTGRES_USER: secureyeoman
@@ -260,7 +262,9 @@ services:
   # TEMPORARY: Next agnostic release embeds Redis internally — remove this service then.
   # Only in full-dev; standalone agnostic can use its own or embedded Redis.
   agnostic-redis:
-    image: redis:7-alpine
+    # PRODUCTION: Pin to SHA256 digest in .env — e.g. REDIS_IMAGE=redis@sha256:<digest>
+    # Get digest: docker manifest inspect redis:7-alpine | jq -r '.manifests[0].digest'
+    image: ${REDIS_IMAGE:-redis:7-alpine}
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
@@ -302,7 +306,9 @@ services:
   # Capabilities are restricted to block SSRF: http.send and net.lookup_ip_addr
   # are disabled before accepting user-authored Rego policies.
   sy-opa:
-    image: openpolicyagent/opa:1.14.0
+    # PRODUCTION: Pin to SHA256 digest in .env — e.g. OPA_IMAGE=openpolicyagent/opa@sha256:<digest>
+    # Get digest: docker manifest inspect openpolicyagent/opa:1.14.0 | jq -r '.manifests[0].digest'
+    image: ${OPA_IMAGE:-openpolicyagent/opa:1.14.0}
     command:
       - 'run'
       - '--server'
@@ -561,7 +567,9 @@ services:
   # Dashboard is now served by the core gateway (SPA serving via @fastify/static).
   # The separate dashboard service below is for local development only.
   sy-dashboard-dev:
-    image: node:22-alpine
+    # PRODUCTION: Pin to SHA256 digest in .env — e.g. NODE_IMAGE=node@sha256:<digest>
+    # Get digest: docker manifest inspect node:22-alpine | jq -r '.manifests[0].digest'
+    image: ${NODE_IMAGE:-node:22-alpine}
     working_dir: /app
     command: sh -c "npm install --ignore-scripts && npm run dev:dashboard"
     ports:

@@ -685,9 +685,6 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     }
   );
 
-  // TODO: IDOR — associations don't have a direct owner field. A full ownership
-  // check would require resolving itemId to the underlying memory/knowledge entry
-  // and verifying ownership on that. Skipped for now; tracked separately.
   app.get(
     '/api/v1/brain/associations/:itemId',
     async (
@@ -702,6 +699,13 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       }
       try {
         const { itemId } = request.params;
+
+        // Resolve itemId to its underlying memory or knowledge entry for ownership check
+        const memory = await brainManager.getMemory(itemId);
+        const owner = memory ?? (await brainManager.getKnowledge(itemId));
+        if (!owner) return sendError(reply, 404, 'Item not found');
+        if (!canAccessResource(request, owner)) return sendError(reply, 403, 'Access denied');
+
         const { limit, minWeight } = request.query;
         const associations = await cognitiveStorage.getAssociations(itemId, {
           limit: limit ? Math.min(Number(limit), MAX_QUERY_LIMIT) : 20,

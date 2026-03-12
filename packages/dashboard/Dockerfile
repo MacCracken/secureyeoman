@@ -1,5 +1,8 @@
 # Stage 1: Build the dashboard SPA
-FROM node:22-alpine AS builder
+# Pin: update digest with: docker manifest inspect node:22-alpine | jq -r '.manifests[0].digest'
+# Last verified: 2026-03-12
+ARG NODE_IMAGE=node:22-alpine
+FROM ${NODE_IMAGE} AS builder
 
 WORKDIR /app
 
@@ -21,7 +24,10 @@ RUN npm run build --workspace=@secureyeoman/shared && \
     npm run build --workspace=@secureyeoman/dashboard
 
 # Stage 2: Serve with nginx
-FROM nginx:1.27-alpine
+# Pin: update digest with: docker manifest inspect nginx:1.27-alpine | jq -r '.manifests[0].digest'
+# Last verified: 2026-03-12
+ARG NGINX_IMAGE=nginx:1.27-alpine
+FROM ${NGINX_IMAGE}
 
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf

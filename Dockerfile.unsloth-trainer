@@ -12,7 +12,10 @@
 # The container expects /workspace/config.json to contain the training config
 # and writes adapter weights to /workspace/adapter/.
 
-FROM pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime
+# Pin: update digest with: docker manifest inspect pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime | jq -r '.manifests[0].digest'
+# Last verified: 2026-03-12
+ARG PYTORCH_IMAGE=pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime
+FROM ${PYTORCH_IMAGE}
 
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \

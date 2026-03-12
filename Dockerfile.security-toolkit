@@ -1,4 +1,7 @@
-FROM kalilinux/kali-rolling
+# Pin: update digest with: docker manifest inspect kalilinux/kali-rolling | jq -r '.manifests[0].digest'
+# Last verified: 2026-03-12
+ARG KALI_IMAGE=kalilinux/kali-rolling
+FROM ${KALI_IMAGE}
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nodejs npm nmap gobuster ffuf nikto sqlmap nuclei whatweb \
     wpscan hydra hashcat john theharvester dnsutils whois && \

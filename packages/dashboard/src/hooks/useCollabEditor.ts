@@ -92,10 +92,9 @@ export function useCollabEditor(
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     const token = getAccessToken();
-    const params = token ? `?token=${encodeURIComponent(token)}` : '';
-    const url = `${protocol}//${host}/ws/collab/${encodeURIComponent(docId)}${params}`;
+    const url = `${protocol}//${host}/ws/collab/${encodeURIComponent(docId)}`;
 
-    const ws = new WebSocket(url);
+    const ws = token ? new WebSocket(url, [`token.${token}`]) : new WebSocket(url);
     ws.binaryType = 'arraybuffer';
     wsRef.current = ws;
 

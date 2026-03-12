@@ -67,20 +67,20 @@ export class VoicePromptCache {
       this.memory.delete(key);
     }
 
-    // Tier 2: disk
+    // Tier 2: disk — read first, then check mtime (avoids TOCTOU race
+    // where file is deleted between stat and read by enforceDiskLimit/clear)
     try {
       const filePath = join(this.cacheDir, key);
+      const buffer = readFileSync(filePath);
       const stat = statSync(filePath);
       if (now - stat.mtimeMs < this.ttlMs) {
-        const buffer = readFileSync(filePath);
-        // Promote to memory
         this.memorySet(key, buffer);
         return buffer;
       }
       // Expired — remove
       unlinkSync(filePath);
     } catch {
-      // file does not exist
+      // file does not exist or was removed mid-read
     }
 
     return null;

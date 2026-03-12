@@ -259,7 +259,7 @@ describe('GatewayServer', () => {
       });
       await server.start();
 
-      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics?token=valid`);
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics`, ['token.valid']);
 
       const ack = await new Promise<{ payload: { subscribed: string[] } }>((resolve, reject) => {
         ws.on('open', () => {
@@ -302,7 +302,7 @@ describe('GatewayServer', () => {
       });
       await server.start();
 
-      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics?token=valid`);
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics`, ['token.valid']);
 
       const ack = await new Promise<{ payload: { subscribed: string[] } }>((resolve, reject) => {
         ws.on('open', () => {
@@ -3001,7 +3001,7 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics?token=valid`);
+        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics`, ['token.valid']);
 
         // Subscribe first
         await new Promise<void>((resolve, reject) => {
@@ -3065,7 +3065,7 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics?token=valid`);
+        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics`, ['token.valid']);
 
         await new Promise<void>((resolve, reject) => {
           ws.on('open', () => {
@@ -3158,7 +3158,7 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics?token=valid`);
+        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics`, ['token.valid']);
 
         // Subscribe to metrics
         await new Promise<void>((resolve, reject) => {
@@ -3225,7 +3225,7 @@ describe('GatewayServer', () => {
 
       try {
         // Connect first client
-        const ws1 = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics?token=valid`);
+        const ws1 = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics`, ['token.valid']);
         await new Promise<void>((resolve, reject) => {
           ws1.on('open', () => resolve());
           ws1.on('error', reject);
@@ -3235,7 +3235,7 @@ describe('GatewayServer', () => {
         expect(srv.getConnectedClients()).toBe(1);
 
         // Connect second client — should evict the first
-        const ws2 = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics?token=valid`);
+        const ws2 = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics`, ['token.valid']);
         await new Promise<void>((resolve, reject) => {
           ws2.on('open', () => resolve());
           ws2.on('error', reject);
@@ -3281,7 +3281,7 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics?token=badtoken`);
+        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics`, ['token.badtoken']);
 
         const code = await new Promise<number>((resolve, reject) => {
           ws.on('close', (code: number) => resolve(code));
@@ -3415,9 +3415,10 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        // Pass token via both Bearer header (for auth hook) and query param (for collab handler)
+        // Pass token via Sec-WebSocket-Protocol subprotocol
         const ws = new WebSocket(
-          `ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001?token=valid`,
+          `ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001`,
+          ['token.valid'],
           { headers: { Authorization: 'Bearer valid' } }
         );
 
@@ -3463,7 +3464,8 @@ describe('GatewayServer', () => {
 
       try {
         const ws = new WebSocket(
-          `ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001?token=valid`,
+          `ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001`,
+          ['token.valid'],
           { headers: { Authorization: 'Bearer valid' } }
         );
 
@@ -4209,7 +4211,7 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics?token=valid`);
+        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics`, ['token.valid']);
 
         await new Promise<void>((resolve, reject) => {
           ws.on('open', () => resolve());
@@ -4783,7 +4785,7 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics?token=valid`);
+        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/metrics`, ['token.valid']);
 
         await new Promise<void>((resolve, reject) => {
           ws.on('open', () => resolve());

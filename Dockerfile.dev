@@ -10,7 +10,10 @@
 #   docker build -t secureyeoman .
 
 # ---- builder ----
-FROM node:22-alpine AS builder
+# Pin: update digest with: docker manifest inspect node:22-alpine | jq -r '.manifests[0].digest'
+# Last verified: 2026-03-12
+ARG NODE_IMAGE=node:22-alpine
+FROM ${NODE_IMAGE} AS builder
 
 WORKDIR /app
 
