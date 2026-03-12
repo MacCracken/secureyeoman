@@ -32,6 +32,10 @@ Tools registered via `registerTool` + `wrapToolHandler`, which automatically app
 
 Three MCP transports: **Streamable HTTP** (primary, JSON-RPC over HTTP POST), **SSE** (browser clients), **stdio** (Claude Desktop, local CLI). Remote MCP access supported via zero-trust networking proxy with 30-minute session TTL.
 
+**Per-Session Server Pattern (Streamable HTTP).** Following the MCP SDK reference implementation, each MCP `initialize` request creates its own `McpServer` + `StreamableHTTPServerTransport` pair via the `createSessionServer()` factory on `McpServiceServer`. The factory registers all tools, resources, and prompts on the fresh server instance, then returns the transport. Sessions are tracked by the `mcp-session-id` header (set by the SDK transport). Subsequent requests carrying the same session ID are routed to their existing transport; requests without a session ID that are not `initialize` requests are rejected. This pattern enables multiple concurrent MCP sessions without the "Already connected to a transport" error that occurs when a single `McpServer` instance is reused across connections. The `isInitializeRequest()` helper from the MCP SDK is used to detect session-creating requests.
+
+**Internal Tool-Call Endpoint.** `POST /api/v1/internal/tool-call` provides direct tool invocation that bypasses the MCP protocol entirely. This endpoint is used for service-to-service calls (e.g., core invoking MCP tools internally) where the overhead of MCP session negotiation is unnecessary. It accepts `{ name, arguments }` in the request body and returns the tool result directly.
+
 ### 4. Tool Categories
 
 **Web Tools (12).** Scraping (4), search (2), browser automation (6 via Playwright). SSRF protection blocks private IPs, cloud metadata, non-HTTP protocols. Rate limited (10 req/min default). Output capped at 500 KB.

@@ -530,7 +530,7 @@ Configuration is via environment variables (not the YAML config file):
 | `MCP_ENABLED` | `true` | Master kill switch — set to `false` to prevent startup |
 | `MCP_PORT` | `3001` | HTTP server port (1024–65535) |
 | `MCP_HOST` | `127.0.0.1` | Bind address |
-| `MCP_TRANSPORT` | `streamable-http` | Transport mode: `streamable-http`, `sse`, `stdio` |
+| `MCP_TRANSPORT` | `streamable-http` | Transport mode: `streamable-http`, `sse`, `stdio`. Streamable HTTP uses per-session server instances (each `initialize` creates a new `McpServer` + transport pair, enabling concurrent sessions). |
 | `MCP_AUTO_REGISTER` | `true` | Auto-register with core's MCP server list on startup |
 | `MCP_CORE_URL` | `http://127.0.0.1:18789` | Core gateway URL |
 | `MCP_EXPOSE_FILESYSTEM` | `false` | Enable filesystem tools (`fs_read`, `fs_write`, `fs_list`, `fs_search`) — admin-only |

@@ -156,8 +156,8 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 | Suite | Files | Tests | Stmts % | Branch % | Status |
 |-------|-------|-------|---------|----------|--------|
-| Core Unit | 697 | 16,608 | 89.31 | 79.10 | All passing |
-| Dashboard | 179 | 4,111 | 71.12 | 67.71 | All passing — target met |
+| Core Unit | 698 | 16,648 | 89.31 | 79.10 | All passing |
+| Dashboard | 180 | 4,131 | 71.12 | 67.71 | All passing — target met |
 | MCP | 76 | 1,124 | 70.20 | 51.50 | All passing |
 | Core E2E | 8 | 67 | — | — | All passing (incl. binary smoke) |
 | Core DB (integration) | 41 | 890 | — | — | All passing (clean DB verified) |
@@ -385,4 +385,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-12 (Simulation engine core infrastructure complete 7/7: tick driver, mood engine, spatial engine, experiment runner + autoresearch integrations, entity relationship graph, dashboard panel; enterprise security features complete — only HSM remains; test counts updated). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-12 (MCP transport fix — per-session server pattern; MCP auth migrated to API key bootstrap; test counts updated: 16,648 core + 4,131 dashboard + 1,124 MCP). See [Changelog](../../CHANGELOG.md) for full history.*

@@ -4,6 +4,7 @@
  * Lifecycle: validate core → register tools/resources/prompts → auto-register → listen.
  */
 
+import { unlinkSync } from 'node:fs';
 import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -13,7 +14,7 @@ import { CoreApiClient } from './core-client.js';
 import { ProxyAuth } from './auth/proxy-auth.js';
 import { AutoRegistration } from './registration/auto-register.js';
 import { registerStreamableHttpTransport } from './transport/streamable-http.js';
-import { registerAllTools } from './tools/index.js';
+import { registerAllTools, type ToolMiddleware } from './tools/index.js';
 import { globalToolRegistry } from './tools/tool-utils.js';
 import { shutdownBrowserPool } from './tools/browser-tools.js';
 import { shutdownNetworkTools } from './tools/network-tools.js';
@@ -41,6 +42,8 @@ export class McpServiceServer {
   private readonly autoReg: AutoRegistration;
   private readonly mcpServer: McpServer;
   private rateLimiterPruneTimer: ReturnType<typeof setInterval> | null = null;
+  /** Cached middleware — created once, reused for per-session server factories. */
+  private toolMiddleware: ToolMiddleware | null = null;
 
   constructor(opts: McpServiceServerOptions) {
     this.config = opts.config;
@@ -57,6 +60,26 @@ export class McpServiceServer {
       name: 'secureyeoman-mcp',
       version: MCP_VERSION,
     });
+  }
+
+  /**
+   * Create a fresh McpServer instance with all tools, resources, and prompts
+   * registered. Used by the streamable HTTP transport to give each session
+   * its own server (required by the MCP SDK — one transport per server).
+   */
+  async createSessionServer(): Promise<McpServer> {
+    const server = new McpServer({
+      name: 'secureyeoman-mcp',
+      version: MCP_VERSION,
+    });
+
+    if (this.toolMiddleware) {
+      await registerAllTools(server, this.coreClient, this.config, this.toolMiddleware);
+      registerAllResources(server, this.coreClient);
+      registerAllPrompts(server, this.coreClient);
+    }
+
+    return server;
   }
 
   async start(): Promise<void> {
@@ -81,12 +104,8 @@ export class McpServiceServer {
     const secretRedactor = createSecretRedactor();
 
     // 3. Register tools, resources, prompts
-    await registerAllTools(this.mcpServer, this.coreClient, this.config, {
-      rateLimiter,
-      inputValidator,
-      auditLogger,
-      secretRedactor,
-    });
+    this.toolMiddleware = { rateLimiter, inputValidator, auditLogger, secretRedactor };
+    await registerAllTools(this.mcpServer, this.coreClient, this.config, this.toolMiddleware);
     registerAllResources(this.mcpServer, this.coreClient);
     registerAllPrompts(this.mcpServer, this.coreClient);
 
@@ -97,8 +116,8 @@ export class McpServiceServer {
     if (this.config.transport === 'streamable-http') {
       registerStreamableHttpTransport({
         app: this.app,
-        mcpServer: this.mcpServer,
         auth: this.auth,
+        createServer: () => this.createSessionServer(),
       });
     }
 
@@ -176,10 +195,9 @@ export class McpServiceServer {
    */
   private cleanupSshKeys(): void {
     // Synchronous best-effort cleanup (process 'exit' handlers can't be async)
-    const fs = require('node:fs') as typeof import('node:fs');
     for (const p of this.sshKeyPaths) {
       try {
-        fs.unlinkSync(p);
+        unlinkSync(p);
       } catch {
         // best-effort — file may already be gone
       }

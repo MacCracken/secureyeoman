@@ -6,6 +6,15 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.12]
 
+### MCP Transport: Per-Session Server Instances
+
+- **Streamable HTTP uses per-session server pattern** — each `initialize` request creates its own `McpServer` + `StreamableHTTPServerTransport` pair via `createSessionServer()`, matching the MCP SDK reference implementation
+- Sessions tracked by `mcp-session-id` header; multiple concurrent sessions fully supported
+- Fixes "Already connected to a transport" error when multiple clients connect simultaneously
+- `isInitializeRequest()` from MCP SDK used to detect session-creating requests; non-initialize requests without a session ID are rejected
+- Internal tool-call endpoint (`POST /api/v1/internal/tool-call`) provides direct tool invocation bypassing MCP protocol for service-to-service calls
+- **Fix**: `cleanupSshKeys` shutdown handler now uses top-level `import { unlinkSync }` instead of `require('node:fs')` (ESM compatibility)
+
 ### MCP Auth: JWT Minting → API Key Bootstrap
 
 Replaced MCP's self-minted JWT authentication with auto-provisioned API key auth, eliminating shared secrets between core and MCP.

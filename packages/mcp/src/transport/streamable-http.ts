@@ -1,23 +1,33 @@
 /**
  * Streamable HTTP Transport — primary MCP transport using POST /mcp/v1.
+ *
+ * Follows the MCP SDK's per-session server pattern: each `initialize` request
+ * creates a new McpServer + StreamableHTTPServerTransport pair.  Subsequent
+ * requests reuse the session via the `mcp-session-id` header.
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ProxyAuth } from '../auth/proxy-auth.js';
-import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
 export interface StreamableHttpOptions {
   app: FastifyInstance;
-  mcpServer: McpServer;
   auth: ProxyAuth;
+  /** Factory that creates a fresh McpServer with all tools/resources/prompts registered. */
+  createServer: () => Promise<McpServer>;
+}
+
+interface Session {
+  transport: StreamableHTTPServerTransport;
+  server: McpServer;
 }
 
 export function registerStreamableHttpTransport(opts: StreamableHttpOptions): void {
-  const { app, mcpServer, auth } = opts;
+  const { app, auth, createServer } = opts;
 
-  const transports = new Map<string, Transport>();
+  const sessions = new Map<string, Session>();
 
   app.post('/mcp/v1', async (request: FastifyRequest, reply: FastifyReply) => {
     const token = auth.extractToken(request.headers.authorization);
@@ -30,49 +40,48 @@ export function registerStreamableHttpTransport(opts: StreamableHttpOptions): vo
       return reply.code(401).send({ error: 'Invalid or expired token' });
     }
 
-    const sessionId = request.headers['mcp-session-id'] as string | undefined;
-
-    let transport: Transport;
-    if (sessionId && transports.has(sessionId)) {
-      transport = transports.get(sessionId)!;
-    } else {
-      // Generate session ID upfront so we can store the transport in the map
-      // before handleRequest runs (handleRequest sets the response header).
-      const newSessionId = crypto.randomUUID();
-
-      const httpTransport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => newSessionId,
-      });
-
-      // The MCP SDK's Server allows only one transport at a time.
-      // If a previous transport's SSE stream ended without a clean close,
-      // the server may still hold a stale reference. Close it before
-      // connecting the new transport.
-      try {
-        await mcpServer.server.connect(httpTransport);
-      } catch {
-        await mcpServer.server.close();
-        await mcpServer.server.connect(httpTransport);
-      }
-
-      transports.set(newSessionId, httpTransport);
-      transport = httpTransport;
-
-      httpTransport.onclose = () => {
-        transports.delete(newSessionId);
-      };
-    }
-
-    // Handle the request via the transport
     const body = request.body as Record<string, unknown>;
     const res = reply.raw;
     const req = request.raw;
-
-    // Set headers for streaming
     res.setHeader('Content-Type', 'application/json');
 
+    const sessionId = request.headers['mcp-session-id'] as string | undefined;
+
     try {
-      await (transport as StreamableHTTPServerTransport).handleRequest(req, res, body);
+      if (sessionId && sessions.has(sessionId)) {
+        // ── Existing session ──
+        const session = sessions.get(sessionId)!;
+        await session.transport.handleRequest(req, res, body);
+      } else if (!sessionId && isInitializeRequest(body)) {
+        // ── New session: create server + transport ──
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => crypto.randomUUID(),
+          onsessioninitialized: (sid: string) => {
+            sessions.set(sid, { transport, server });
+          },
+        });
+
+        transport.onclose = () => {
+          const sid = transport.sessionId;
+          if (sid) sessions.delete(sid);
+        };
+
+        const server = await createServer();
+        await server.connect(transport);
+        await transport.handleRequest(req, res, body);
+      } else {
+        // ── Invalid: no session ID and not an initialize request ──
+        if (!res.headersSent) {
+          return reply.code(400).send({
+            jsonrpc: '2.0',
+            error: {
+              code: -32000,
+              message: 'Bad Request: No valid session ID provided',
+            },
+            id: null,
+          });
+        }
+      }
     } catch {
       if (!res.headersSent) {
         return reply.code(500).send({ error: 'Transport error' });
@@ -80,7 +89,7 @@ export function registerStreamableHttpTransport(opts: StreamableHttpOptions): vo
     }
   });
 
-  // Handle GET for session creation
+  // Handle GET for SSE streams (resumability)
   app.get('/mcp/v1', async (request: FastifyRequest, reply: FastifyReply) => {
     const token = auth.extractToken(request.headers.authorization);
     if (!token) {
@@ -93,12 +102,12 @@ export function registerStreamableHttpTransport(opts: StreamableHttpOptions): vo
     }
 
     const sessionId = request.headers['mcp-session-id'] as string | undefined;
-    if (sessionId && transports.has(sessionId)) {
-      const transport = transports.get(sessionId)!;
+    if (sessionId && sessions.has(sessionId)) {
+      const session = sessions.get(sessionId)!;
       const res = reply.raw;
       const req = request.raw;
       try {
-        await (transport as StreamableHTTPServerTransport).handleRequest(req, res);
+        await session.transport.handleRequest(req, res);
       } catch {
         if (!res.headersSent) {
           return reply.code(500).send({ error: 'Transport error' });
@@ -112,10 +121,11 @@ export function registerStreamableHttpTransport(opts: StreamableHttpOptions): vo
   // Handle DELETE for session cleanup
   app.delete('/mcp/v1', async (request: FastifyRequest, reply: FastifyReply) => {
     const sessionId = request.headers['mcp-session-id'] as string | undefined;
-    if (sessionId && transports.has(sessionId)) {
-      const transport = transports.get(sessionId)!;
-      await transport.close();
-      transports.delete(sessionId);
+    if (sessionId && sessions.has(sessionId)) {
+      const session = sessions.get(sessionId)!;
+      await session.transport.close();
+      await session.server.close();
+      sessions.delete(sessionId);
       return reply.code(200).send({ message: 'Session closed' });
     }
     return reply.code(404).send({ error: 'Session not found' });
