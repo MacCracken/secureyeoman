@@ -80,15 +80,18 @@ export async function runMigrations(tier: LicenseTier = 'enterprise'): Promise<v
   const migrations = filterByTier(MIGRATION_MANIFEST, tier);
   if (migrations.length === 0) return;
 
-  // Fast-path (no lock needed): if the latest filtered entry is already the
-  // latest recorded migration in our filtered set, all applicable migrations
-  // have been applied.
-  const latestId = migrations[migrations.length - 1]!.id;
-  const latest = await pool.query<{ id: string }>(
-    'SELECT id FROM schema_migrations WHERE id = $1',
-    [latestId]
+  // Fast-path (no lock needed): if every filtered migration is already
+  // recorded, nothing to do. We check both the latest ID and the total
+  // count to avoid false-positives during tier upgrades (e.g. community→
+  // enterprise where the last migration is community-tier but enterprise-
+  // only migrations in the middle are still missing).
+  const filteredIds = migrations.map((m) => m.id);
+  const latestId = filteredIds[filteredIds.length - 1]!;
+  const applied = await pool.query<{ id: string }>(
+    'SELECT id FROM schema_migrations WHERE id = ANY($1)',
+    [filteredIds]
   );
-  if (latest.rows.length > 0) {
+  if (applied.rows.length === filteredIds.length) {
     return;
   }
 
@@ -105,10 +108,10 @@ export async function runMigrations(tier: LicenseTier = 'enterprise'): Promise<v
       // Re-check fast-path after acquiring the lock — another pod may have
       // completed migrations while we were waiting.
       const recheck = await client.query<{ id: string }>(
-        'SELECT id FROM schema_migrations WHERE id = $1',
-        [latestId]
+        'SELECT id FROM schema_migrations WHERE id = ANY($1)',
+        [filteredIds]
       );
-      if (recheck.rows.length > 0) {
+      if (recheck.rows.length === filteredIds.length) {
         return;
       }
 
