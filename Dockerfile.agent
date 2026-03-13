@@ -1,0 +1,45 @@
+# Dockerfile.agent — Minimal agent runtime image (Tier 2.5)
+#
+# Lightweight container for autonomous SecureYeoman agents.
+# Includes: soul, AI providers, A2A transport, auth delegation.
+# Excludes: brain/RAG, training, dashboard, PostgreSQL, Caddy, AGNOS.
+#
+# Build the agent binary first:
+#   npm run build:binary --dev   # or full production build
+#
+# Then build this image:
+#   docker build -f Dockerfile.agent -t secureyeoman-agent .
+#
+# Target: <120 MB image, <5s boot, 100–200 MB RAM.
+
+FROM node:22-alpine
+
+LABEL org.opencontainers.image.source="https://github.com/MacCracken/secureyeoman"
+LABEL org.opencontainers.image.description="SecureYeoman Agent — Autonomous AI agent runtime (Tier 2.5)"
+LABEL org.opencontainers.image.licenses="MIT"
+
+# tini for proper signal handling (PID 1)
+RUN apk add --no-cache tini curl \
+ && addgroup -g 1001 secureyeoman \
+ && adduser -u 1001 -G secureyeoman -D -h /home/secureyeoman secureyeoman \
+ && mkdir -p /home/secureyeoman/.secureyeoman \
+ && chown -R secureyeoman:secureyeoman /home/secureyeoman
+
+# Copy the pre-built agent binary
+COPY dist/secureyeoman-agent-linux-x64 /usr/local/bin/secureyeoman-agent
+RUN chmod +x /usr/local/bin/secureyeoman-agent
+
+# Use JSON log format
+ENV SECUREYEOMAN_LOG_FORMAT=json
+
+# Default agent port
+EXPOSE 8099
+
+USER secureyeoman
+WORKDIR /home/secureyeoman
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -sf http://127.0.0.1:8099/health || exit 1
+
+ENTRYPOINT ["tini", "--", "/usr/local/bin/secureyeoman-agent"]
+CMD ["start"]

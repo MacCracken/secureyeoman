@@ -5,6 +5,7 @@
 #   bash scripts/build-binary.sh           # full production build (all platforms)
 #   bash scripts/build-binary.sh --dev     # dev build: current platform only, skip Tier 2/3 + checksums
 #   bash scripts/build-binary.sh --edge    # edge build only: minimal A2A runtime
+#   bash scripts/build-binary.sh --agent   # agent build only: soul + AI agent runtime
 #
 # Produces:
 #   Tier 1 (needs PostgreSQL): secureyeoman-linux-x64, secureyeoman-linux-arm64, secureyeoman-darwin-arm64, secureyeoman-windows-x64.exe
@@ -49,10 +50,12 @@ echo "==> Using $(bun --version) at $(command -v bun)"
 # ── Parse flags ───────────────────────────────────────────────────────────────
 DEV_MODE=false
 EDGE_ONLY=false
+AGENT_ONLY=false
 for arg in "$@"; do
   case "$arg" in
     --dev) DEV_MODE=true ;;
     --edge) EDGE_ONLY=true ;;
+    --agent) AGENT_ONLY=true ;;
     *) echo "Unknown argument: $arg" >&2; exit 1 ;;
   esac
 done
@@ -206,6 +209,27 @@ if [[ "$EDGE_ONLY" == true ]]; then
   echo ""
   echo "==> Edge build complete. Binaries:"
   ls -lh "${DIST_DIR}"/secureyeoman-edge-*
+  exit 0
+fi
+
+# ── Agent-only mode: skip Tier 1 + 2 + 3, build only agent ────────────
+if [[ "$AGENT_ONLY" == true ]]; then
+  echo "==> Agent-only mode: building Tier 2.5 agent binaries..."
+
+  if [[ "$DEV_MODE" == true ]]; then
+    echo "    → agent-${DEV_TARGET#bun-}"
+    compile_agent_binary "${DEV_TARGET}" "${DIST_DIR}/secureyeoman-agent-${DEV_TARGET#bun-}"
+  else
+    for TARGET in bun-linux-x64 bun-linux-arm64 bun-darwin-arm64; do
+      PLATFORM="${TARGET#bun-}"
+      echo "    → agent-${PLATFORM}"
+      compile_agent_binary "${TARGET}" "${DIST_DIR}/secureyeoman-agent-${PLATFORM}"
+    done
+  fi
+
+  echo ""
+  echo "==> Agent build complete. Binaries:"
+  ls -lh "${DIST_DIR}"/secureyeoman-agent-*
   exit 0
 fi
 

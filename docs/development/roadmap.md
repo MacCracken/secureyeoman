@@ -163,19 +163,19 @@
 - [x] **Build script tier** — `compile_agent_binary()` in `build-binary.sh`. Targets: `secureyeoman-agent-linux-x64`, `linux-arm64`, `darwin-arm64`. Tree-shakes out Qdrant, FAISS, pdfjs, sharp, mammoth, xlsx, csv-parse.
 - [x] **Main CLI registration** — `secureyeoman agent <start|register|status>` registered as lazy command.
 
-### 15B: Parent Registration & Delegation
+### 15B: Parent Registration & Delegation — ✅ Complete (2026-03-13)
 
-- [ ] **Parent registration** — `secureyeoman-agent register --parent-url <url> --token <token>`. Registers with parent SY, receives API key, stores parent URL for delegation.
-- [ ] **Auth delegation** — Agent validates incoming tokens against parent's auth service via REST call. Caches valid tokens locally (5 min TTL).
-- [ ] **Knowledge delegation** — RAG queries forwarded to parent's brain via A2A message. Agent has no local vector store.
-- [ ] **Audit forwarding** — Agent events batched and forwarded to parent's audit chain (reuses AGNOS hook pattern: batch 50, flush 5s).
+- [x] **Parent registration** — `registerWithParent()` in AgentRuntime. Auto-registers via `SECUREYEOMAN_PARENT_URL` env var or `--parent` CLI flag. Stores peerId from parent response.
+- [x] **Auth delegation** — `ParentAuthDelegate` class (`src/agent/parent-auth-delegate.ts`). Validates tokens against parent's `/api/v1/auth/validate`. LRU cache (500 entries, 5 min TTL). 13 tests.
+- [x] **Knowledge delegation** — `KnowledgeDelegate` class (`src/agent/knowledge-delegate.ts`). Forwards RAG queries to parent's `/api/v1/brain/query`. Also supports `remember()` for storing memories on parent. Graceful fallback on errors. 10 tests.
+- [x] **Audit forwarding** — `AuditForwarder` class (`src/agent/audit-forwarder.ts`). Batches events (default 50), flushes on timer (default 5s) or at capacity. Forwards to parent's `/api/v1/audit/forward`. Tracks forwarded/dropped counts. 9 tests.
 
-### 15C: Build & Distribution
+### 15C: Build & Distribution — ✅ Complete (2026-03-13)
 
-- [ ] **Build script tier** — `SECUREYEOMAN_BUILD_TIER=agent` in `build-binary.sh`. Targets: `secureyeoman-agent-linux-x64`, `linux-arm64`, `darwin-arm64`.
-- [ ] **Conditional module init** — `SECUREYEOMAN_BUILD_TIER` env var gates module loading. Agent tier loads: soul, AI, delegation (subset), auth (subset), security (subset). Skips: brain, training, analytics, simulation, marketplace, dashboard, DLP, TEE, supply chain, edge fleet, SCIM, break glass.
-- [ ] **Container image** — `Dockerfile.agent` with minimal Node.js/Bun base. Target: <120 MB image.
-- [ ] **Docker compose profile** — `agent` profile for running alongside full SY.
+- [x] **Build script tier** — `--agent` flag in `build-binary.sh` for agent-only builds. `compile_agent_binary()` targets: linux-x64, linux-arm64, darwin-arm64. Dev mode builds current platform only.
+- [x] **Conditional module init** — AgentRuntime loads only: security (early), auth, AI, soul, A2A. Skips: brain, training, analytics, simulation, marketplace, dashboard, DLP, TEE, supply chain, edge fleet, SCIM, break glass. Parent delegation subsystems (auth, knowledge, audit) initialized when `parentUrl` is configured.
+- [x] **Container image** — `Dockerfile.agent` with `node:22-alpine` base + tini. Copies `secureyeoman-agent-linux-x64` binary. Exposes port 8099. Healthcheck via curl to `/health`.
+- [x] **Docker compose profile** — `sy-agent` service in `agent`, `full`, `full-dev` profiles. Auto-registers with parent SY. Resource limits: 256 MB RAM, 1 CPU. Scalable via `--scale sy-agent=N`.
 
 ---
 

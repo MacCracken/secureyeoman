@@ -222,6 +222,49 @@ services:
       - prod
     restart: unless-stopped
 
+  # ── Agent runtime (Tier 2.5) ────────────────────────────────────────────────
+  # Headless agent with soul, AI, A2A — no brain/training/dashboard.
+  # Registers with the parent SY instance for auth, knowledge, and audit delegation.
+  # Scale with: docker compose --profile agent up --scale sy-agent=3
+  sy-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    ports:
+      - '${AGENT_PORT:-8099}:8099'
+    environment:
+      SECUREYEOMAN_HOST: '0.0.0.0'
+      SECUREYEOMAN_PARENT_URL: ${SECUREYEOMAN_PARENT_URL:-http://sy-core:18789}
+      SECUREYEOMAN_AGENT_TOKEN: ${SECUREYEOMAN_AGENT_TOKEN:-}
+      SECUREYEOMAN_AGENT_TAGS: ${SECUREYEOMAN_AGENT_TAGS:-}
+      SECUREYEOMAN_LOG_FORMAT: json
+      # AI provider config — agent needs its own provider credentials
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://127.0.0.1:8099/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      sy-core:
+        condition: service_healthy
+        required: false
+      secureyeoman:
+        condition: service_healthy
+        required: false
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '1.0'
+    profiles:
+      - agent
+      - full
+      - full-dev
+    restart: unless-stopped
+
   # AGNOSTIC QA Platform — Chainlit webgui + agent workers.
   # Requires Redis for task queue and session state.
   agnostic:

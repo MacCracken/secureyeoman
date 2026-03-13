@@ -9,6 +9,7 @@
  *   SHRUTI_API_KEY – API key for authenticating with Shruti
  */
 
+import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
@@ -73,21 +74,9 @@ export function registerShrutiTools(
         'Create a new audio session in Shruti DAW. ' +
         'Returns session info (name, sample rate, channels, path).',
       inputSchema: {
-        type: 'object',
-        properties: {
-          name: { type: 'string', description: 'Session name' },
-          sample_rate: {
-            type: 'number',
-            description: 'Sample rate in Hz (default: 44100)',
-            default: 44100,
-          },
-          channels: {
-            type: 'number',
-            description: 'Number of audio channels (default: 2)',
-            default: 2,
-          },
-        },
-        required: ['name'],
+        name: z.string().describe('Session name'),
+        sample_rate: z.number().optional().describe('Sample rate in Hz (default: 44100)'),
+        channels: z.number().optional().describe('Number of audio channels (default: 2)'),
       },
     },
     wrapToolHandler('shruti_session_create', middleware, async (args: Record<string, unknown>) => {
@@ -107,11 +96,7 @@ export function registerShrutiTools(
     {
       description: 'Open an existing Shruti session by file path.',
       inputSchema: {
-        type: 'object',
-        properties: {
-          path: { type: 'string', description: 'Path to the session file' },
-        },
-        required: ['path'],
+        path: z.string().describe('Path to the session file'),
       },
     },
     wrapToolHandler('shruti_session_open', middleware, async (args: Record<string, unknown>) => {
@@ -130,17 +115,11 @@ export function registerShrutiTools(
       description:
         'Add a track to the current Shruti session. ' + 'Types: audio, midi, bus, instrument.',
       inputSchema: {
-        type: 'object',
-        properties: {
-          name: { type: 'string', description: 'Track name' },
-          track_type: {
-            type: 'string',
-            enum: ['audio', 'midi', 'bus', 'instrument'],
-            description: 'Track type (default: audio)',
-            default: 'audio',
-          },
-        },
-        required: ['name'],
+        name: z.string().describe('Track name'),
+        track_type: z
+          .enum(['audio', 'midi', 'bus', 'instrument'])
+          .optional()
+          .describe('Track type (default: audio)'),
       },
     },
     wrapToolHandler('shruti_track_add', middleware, async (args: Record<string, unknown>) => {
@@ -173,17 +152,12 @@ export function registerShrutiTools(
     {
       description: 'Place an audio file on a track at a specific timeline position (in frames).',
       inputSchema: {
-        type: 'object',
-        properties: {
-          track_index: { type: 'number', description: 'Track index (0-based)' },
-          file_path: { type: 'string', description: 'Path to the audio file (WAV, FLAC)' },
-          position_frames: {
-            type: 'number',
-            description: 'Position on the timeline in frames (default: 0)',
-            default: 0,
-          },
-        },
-        required: ['track_index', 'file_path'],
+        track_index: z.number().describe('Track index (0-based)'),
+        file_path: z.string().describe('Path to the audio file (WAV, FLAC)'),
+        position_frames: z
+          .number()
+          .optional()
+          .describe('Position on the timeline in frames (default: 0)'),
       },
     },
     wrapToolHandler('shruti_region_add', middleware, async (args: Record<string, unknown>) => {
@@ -204,23 +178,14 @@ export function registerShrutiTools(
       description:
         'Control Shruti transport: play, stop, pause, record, seek to position, or set tempo.',
       inputSchema: {
-        type: 'object',
-        properties: {
-          action: {
-            type: 'string',
-            enum: ['play', 'stop', 'pause', 'record', 'seek', 'set_tempo'],
-            description: 'Transport action',
-          },
-          position_frames: {
-            type: 'number',
-            description: 'Seek position in frames (only for action=seek)',
-          },
-          bpm: {
-            type: 'number',
-            description: 'Tempo in BPM (only for action=set_tempo)',
-          },
-        },
-        required: ['action'],
+        action: z
+          .enum(['play', 'stop', 'pause', 'record', 'seek', 'set_tempo'])
+          .describe('Transport action'),
+        position_frames: z
+          .number()
+          .optional()
+          .describe('Seek position in frames (only for action=seek)'),
+        bpm: z.number().optional().describe('Tempo in BPM (only for action=set_tempo)'),
       },
     },
     wrapToolHandler('shruti_transport', middleware, async (args: Record<string, unknown>) => {
@@ -254,23 +219,12 @@ export function registerShrutiTools(
         'Export/bounce the current Shruti session to an audio file. ' +
         'Supports WAV and FLAC at 16, 24, or 32-bit depth.',
       inputSchema: {
-        type: 'object',
-        properties: {
-          path: { type: 'string', description: 'Output file path' },
-          format: {
-            type: 'string',
-            enum: ['wav', 'flac'],
-            description: 'Audio format (default: wav)',
-            default: 'wav',
-          },
-          bit_depth: {
-            type: 'number',
-            enum: [16, 24, 32],
-            description: 'Bit depth (default: 24)',
-            default: 24,
-          },
-        },
-        required: ['path'],
+        path: z.string().describe('Output file path'),
+        format: z.enum(['wav', 'flac']).optional().describe('Audio format (default: wav)'),
+        bit_depth: z
+          .union([z.literal(16), z.literal(24), z.literal(32)])
+          .optional()
+          .describe('Bit depth (default: 24)'),
       },
     },
     wrapToolHandler('shruti_export', middleware, async (args: Record<string, unknown>) => {
@@ -292,24 +246,12 @@ export function registerShrutiTools(
         'Run audio analysis on a track. Types: spectrum (FFT), dynamics (peak/RMS/LUFS), ' +
         'auto_mix (AI gain/pan/EQ suggestions), composition (structure/tempo suggestions).',
       inputSchema: {
-        type: 'object',
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['spectrum', 'dynamics', 'auto_mix', 'composition'],
-            description: 'Analysis type',
-          },
-          track_index: {
-            type: 'number',
-            description: 'Track index for spectrum/dynamics analysis (0-based)',
-          },
-          fft_size: {
-            type: 'number',
-            description: 'FFT size for spectrum analysis (default: 4096)',
-            default: 4096,
-          },
-        },
-        required: ['type'],
+        type: z.enum(['spectrum', 'dynamics', 'auto_mix', 'composition']).describe('Analysis type'),
+        track_index: z
+          .number()
+          .optional()
+          .describe('Track index for spectrum/dynamics analysis (0-based)'),
+        fft_size: z.number().optional().describe('FFT size for spectrum analysis (default: 4096)'),
       },
     },
     wrapToolHandler('shruti_analyze', middleware, async (args: Record<string, unknown>) => {
@@ -342,25 +284,15 @@ export function registerShrutiTools(
         'Adjust track mixing: set gain (dB), pan (-1 to 1), mute, solo, or add an effect ' +
         '(eq, compressor, reverb, delay, limiter).',
       inputSchema: {
-        type: 'object',
-        properties: {
-          track_index: { type: 'number', description: 'Track index (0-based)' },
-          action: {
-            type: 'string',
-            enum: ['gain', 'pan', 'mute', 'unmute', 'solo', 'unsolo', 'add_effect'],
-            description: 'Mixer action',
-          },
-          value: {
-            type: 'number',
-            description: 'Value for gain (dB) or pan (-1.0 to 1.0)',
-          },
-          effect_type: {
-            type: 'string',
-            enum: ['eq', 'compressor', 'reverb', 'delay', 'limiter'],
-            description: 'Effect type (only for action=add_effect)',
-          },
-        },
-        required: ['track_index', 'action'],
+        track_index: z.number().describe('Track index (0-based)'),
+        action: z
+          .enum(['gain', 'pan', 'mute', 'unmute', 'solo', 'unsolo', 'add_effect'])
+          .describe('Mixer action'),
+        value: z.number().optional().describe('Value for gain (dB) or pan (-1.0 to 1.0)'),
+        effect_type: z
+          .enum(['eq', 'compressor', 'reverb', 'delay', 'limiter'])
+          .optional()
+          .describe('Effect type (only for action=add_effect)'),
       },
     },
     wrapToolHandler('shruti_mix', middleware, async (args: Record<string, unknown>) => {
@@ -431,25 +363,14 @@ export function registerShrutiTools(
       description:
         'Edit operations: undo, redo, split region at frame, trim region, set fade in/out.',
       inputSchema: {
-        type: 'object',
-        properties: {
-          action: {
-            type: 'string',
-            enum: ['undo', 'redo', 'split', 'trim', 'fade'],
-            description: 'Edit action',
-          },
-          track_index: { type: 'number', description: 'Track index (for split/trim/fade)' },
-          region_index: { type: 'number', description: 'Region index (for split/trim/fade)' },
-          at_frame: { type: 'number', description: 'Split position in frames (for split)' },
-          start_frame: { type: 'number', description: 'Trim start in frames (for trim)' },
-          end_frame: { type: 'number', description: 'Trim end in frames (for trim)' },
-          fade_in_frames: { type: 'number', description: 'Fade in duration in frames (for fade)' },
-          fade_out_frames: {
-            type: 'number',
-            description: 'Fade out duration in frames (for fade)',
-          },
-        },
-        required: ['action'],
+        action: z.enum(['undo', 'redo', 'split', 'trim', 'fade']).describe('Edit action'),
+        track_index: z.number().optional().describe('Track index (for split/trim/fade)'),
+        region_index: z.number().optional().describe('Region index (for split/trim/fade)'),
+        at_frame: z.number().optional().describe('Split position in frames (for split)'),
+        start_frame: z.number().optional().describe('Trim start in frames (for trim)'),
+        end_frame: z.number().optional().describe('Trim end in frames (for trim)'),
+        fade_in_frames: z.number().optional().describe('Fade in duration in frames (for fade)'),
+        fade_out_frames: z.number().optional().describe('Fade out duration in frames (for fade)'),
       },
     },
     wrapToolHandler('shruti_edit', middleware, async (args: Record<string, unknown>) => {

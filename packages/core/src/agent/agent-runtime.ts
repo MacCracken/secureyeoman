@@ -18,6 +18,9 @@ import { initPoolFromConfig, closePool } from '../storage/pg-pool.js';
 import { runMigrations } from '../storage/migrations/runner.js';
 import type { Config, AIRequest } from '@secureyeoman/shared';
 import { VERSION } from '../version.js';
+import { ParentAuthDelegate, type ValidatedIdentity } from './parent-auth-delegate.js';
+import { KnowledgeDelegate } from './knowledge-delegate.js';
+import { AuditForwarder } from './audit-forwarder.js';
 
 // ── Module imports (dynamic to enable tree-shaking) ──────────────────
 
@@ -76,6 +79,11 @@ export class AgentRuntime {
   private auditMod: AuditModule | null = null;
   private aiMod: AIModule | null = null;
   private soulMod: SoulModule | null = null;
+
+  // Delegation subsystems (15B)
+  private parentAuthDelegate: ParentAuthDelegate | null = null;
+  private knowledgeDelegate: KnowledgeDelegate | null = null;
+  private auditForwarder: AuditForwarder | null = null;
 
   private activePersonality: string | null = null;
 
@@ -188,7 +196,31 @@ export class AgentRuntime {
       this.logger.debug('A2A manager initialized');
     }
 
-    // Step 10: Start HTTP server
+    // Step 10: Parent delegation subsystems (auth, knowledge, audit)
+    const parentUrl = this.options.parentUrl ?? process.env.SECUREYEOMAN_PARENT_URL;
+    const regToken = this.options.registrationToken ?? process.env.SECUREYEOMAN_AGENT_TOKEN;
+
+    if (parentUrl) {
+      this.parentAuthDelegate = new ParentAuthDelegate(
+        { parentUrl, registrationToken: regToken },
+        this.logger
+      );
+
+      this.knowledgeDelegate = new KnowledgeDelegate(
+        { parentUrl, registrationToken: regToken },
+        this.logger
+      );
+
+      this.auditForwarder = new AuditForwarder(
+        { parentUrl, registrationToken: regToken },
+        this.logger
+      );
+      this.auditForwarder.start();
+
+      this.logger.debug({ parentUrl }, 'Parent delegation subsystems initialized');
+    }
+
+    // Step 11: Start HTTP server
     await this.startServer();
 
     this.startedAt = Date.now();
@@ -224,9 +256,21 @@ export class AgentRuntime {
         return;
       }
 
-      // Chat (core agent endpoint)
+      // Chat (core agent endpoint) — requires auth when parent delegation is active
       if (url === '/api/v1/agent/chat' && method === 'POST') {
+        if (this.parentAuthDelegate) {
+          const identity = await this.authenticateRequest(req);
+          if (!identity) {
+            this.sendJson(res, 401, { error: 'Unauthorized' });
+            return;
+          }
+        }
         return this.handleChat(req, res);
+      }
+
+      // Knowledge query (forwarded to parent brain)
+      if (url === '/api/v1/agent/knowledge' && method === 'POST') {
+        return this.handleKnowledgeQuery(req, res);
       }
 
       // Models list
@@ -368,6 +412,79 @@ export class AgentRuntime {
     }
   }
 
+  // ── Knowledge Handler ──────────────────────────────────────────────
+
+  private async handleKnowledgeQuery(
+    req: import('node:http').IncomingMessage,
+    res: import('node:http').ServerResponse
+  ): Promise<void> {
+    if (!this.knowledgeDelegate) {
+      this.sendJson(res, 503, { error: 'Knowledge delegation not configured (no parent URL)' });
+      return;
+    }
+
+    try {
+      const body = await this.readBody(req);
+      const { query, personalityId, limit, types } = body as {
+        query?: string;
+        personalityId?: string;
+        limit?: number;
+        types?: string[];
+      };
+
+      if (!query || typeof query !== 'string') {
+        this.sendJson(res, 400, { error: 'query is required' });
+        return;
+      }
+
+      const result = await this.knowledgeDelegate.query({ query, personalityId, limit, types });
+      this.sendJson(res, 200, result);
+    } catch (err) {
+      this.logger?.error({ err }, 'Knowledge query handler error');
+      this.sendJson(res, 500, { error: err instanceof Error ? err.message : 'Internal error' });
+    }
+  }
+
+  // ── Auth Helper ───────────────────────────────────────────────────
+
+  private async authenticateRequest(
+    req: import('node:http').IncomingMessage
+  ): Promise<ValidatedIdentity | null> {
+    if (!this.parentAuthDelegate) return null;
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) return null;
+
+    const token = authHeader.slice(7);
+    return this.parentAuthDelegate.validateToken(token);
+  }
+
+  // ── Audit Recording ──────────────────────────────────────────────
+
+  /** Record an audit event locally and forward to parent if configured. */
+  recordAudit(event: {
+    event: string;
+    level: 'info' | 'warn' | 'error';
+    message: string;
+    userId?: string;
+    metadata?: Record<string, unknown>;
+  }): void {
+    const entry = { ...event, timestamp: Date.now() };
+
+    // Forward to parent if configured
+    if (this.auditForwarder) {
+      this.auditForwarder.record(entry);
+    }
+
+    // Also record locally via audit chain
+    this.auditChain
+      ?.record({
+        ...entry,
+        correlationId: crypto.randomUUID(),
+      })
+      .catch(() => {});
+  }
+
   // ── Registration ───────────────────────────────────────────────────
 
   async registerWithParent(parentUrl: string, token?: string): Promise<{ peerId: string }> {
@@ -443,6 +560,18 @@ export class AgentRuntime {
     return this.soulMod;
   }
 
+  getParentAuthDelegate(): ParentAuthDelegate | null {
+    return this.parentAuthDelegate;
+  }
+
+  getKnowledgeDelegate(): KnowledgeDelegate | null {
+    return this.knowledgeDelegate;
+  }
+
+  getAuditForwarder(): AuditForwarder | null {
+    return this.auditForwarder;
+  }
+
   // ── Shutdown ───────────────────────────────────────────────────────
 
   async shutdown(): Promise<void> {
@@ -450,6 +579,11 @@ export class AgentRuntime {
     this.shutdownRequested = true;
 
     this.logger?.info('SecureYeoman Agent shutting down');
+
+    // Stop audit forwarder (flush remaining events)
+    if (this.auditForwarder) {
+      await this.auditForwarder.stop();
+    }
 
     // Cleanup modules in reverse init order
     if (this.a2aManager) {
