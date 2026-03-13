@@ -719,8 +719,8 @@ describe('Tier Audit — feature classification', () => {
     expect(PRO_FEATURES).toContain('batch_inference');
   });
 
-  it('ENTERPRISE_FEATURES contains exactly 15 enterprise features', () => {
-    expect(ENTERPRISE_FEATURES).toHaveLength(15);
+  it('ENTERPRISE_FEATURES contains exactly 16 enterprise features', () => {
+    expect(ENTERPRISE_FEATURES).toHaveLength(16);
     expect(ENTERPRISE_FEATURES).toContain('adaptive_learning');
     expect(ENTERPRISE_FEATURES).toContain('sso_saml');
     expect(ENTERPRISE_FEATURES).toContain('multi_tenancy');
@@ -736,6 +736,7 @@ describe('Tier Audit — feature classification', () => {
     expect(ENTERPRISE_FEATURES).toContain('synapse');
     expect(ENTERPRISE_FEATURES).toContain('break_glass');
     expect(ENTERPRISE_FEATURES).toContain('simulation');
+    expect(ENTERPRISE_FEATURES).toContain('edge_fleet');
   });
 
   it('ALL_LICENSED_FEATURES is the union of PRO + ENTERPRISE', () => {

@@ -418,7 +418,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
         const job = await store.createInboundJob(instanceId, {
           synapseSourceJobId,
-          jobType: jobType as SynapseInboundJobRequest['jobType'],
+          jobType: jobType,
           description,
           payload: payload ?? {},
         });
@@ -586,18 +586,18 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           return sendError(reply, 503, 'Synapse bridge not initialized');
         }
 
-        const delegated = await store.getDelegatedJobBySynapseId(synapseJobId as string);
+        const delegated = await store.getDelegatedJobBySynapseId(synapseJobId);
         if (!delegated) {
           return sendError(reply, 404, `No delegated job found for synapseJobId: ${synapseJobId}`);
         }
 
         await store.updateDelegatedJobStatus(delegated.id, {
-          status: status as string,
-          currentStep: step as number | undefined,
-          currentLoss: loss as number | undefined,
-          currentEpoch: epoch as number | undefined,
-          errorMessage: errorMessage as string | undefined,
-          modelOutputPath: modelOutputPath as string | undefined,
+          status: status,
+          currentStep: step,
+          currentLoss: loss,
+          currentEpoch: epoch,
+          errorMessage: errorMessage,
+          modelOutputPath: modelOutputPath,
         });
 
         return reply.send({ received: true, delegatedJobId: delegated.id });

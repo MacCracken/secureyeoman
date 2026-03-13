@@ -335,7 +335,10 @@ export class SynapseGrpcClient {
           ) => void;
         }
       ).getCapabilities({}, (err, res) => {
-        if (err) return reject(err);
+        if (err) {
+          reject(err);
+          return;
+        }
         resolve({
           instanceId: res!.instanceId as string,
           gpuCount: res!.gpuCount as number,
@@ -379,7 +382,10 @@ export class SynapseGrpcClient {
           syJobType: req.syJobType ?? 'finetune',
         },
         (err, res) => {
-          if (err) return reject(err);
+          if (err) {
+            reject(err);
+            return;
+          }
           resolve({ jobId: res!.jobId as string });
         }
       );

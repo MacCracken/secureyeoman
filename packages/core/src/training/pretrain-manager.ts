@@ -281,7 +281,7 @@ export class PretrainManager {
 
     if (job.backend === 'synapse') {
       const synapse = this.getSynapseManager?.();
-      if (!synapse || !synapse.isAvailable()) {
+      if (!synapse?.isAvailable()) {
         throw new Error('Synapse backend requested but no healthy Synapse instance is available');
       }
 

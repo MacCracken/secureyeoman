@@ -222,7 +222,7 @@ export class SynapseStore {
     synapseJobId: string,
     req: SynapseTrainingJobRequest,
     syJobId?: string,
-    syJobType: string = 'finetune'
+    syJobType = 'finetune'
   ): Promise<DelegatedJobRow> {
     const id = randomUUID();
     const { rows } = await this.pool.query<Record<string, unknown>>(

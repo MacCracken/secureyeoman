@@ -508,7 +508,7 @@ export class FinetuneManager {
    */
   private async _startSynapseJob(job: FinetuneJob): Promise<void> {
     const synapse = this.getSynapseManager?.();
-    if (!synapse || !synapse.isAvailable()) {
+    if (!synapse?.isAvailable()) {
       throw new Error('Synapse backend requested but no healthy Synapse instance is available');
     }
 

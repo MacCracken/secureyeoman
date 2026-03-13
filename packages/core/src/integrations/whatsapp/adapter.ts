@@ -16,12 +16,19 @@ import path from 'path';
 import fs from 'fs';
 
 // Dynamic import — baileys is optional
-type WASocket = { ev: { on: (event: string, cb: (...args: unknown[]) => void) => void }; sendMessage: (jid: string, content: { text: string }) => Promise<{ key: { id?: string } } | undefined>; end: (reason: unknown) => void };
-type BaileysModule = {
+interface WASocket {
+  ev: { on: (event: string, cb: (...args: unknown[]) => void) => void };
+  sendMessage: (
+    jid: string,
+    content: { text: string }
+  ) => Promise<{ key: { id?: string } } | undefined>;
+  end: (reason: unknown) => void;
+}
+interface BaileysModule {
   default: (opts: Record<string, unknown>) => WASocket;
   useMultiFileAuthState: (path: string) => Promise<{ state: unknown; saveCreds: () => void }>;
   DisconnectReason: { loggedOut: number };
-};
+}
 
 let baileysModule: BaileysModule | null = null;
 
@@ -86,23 +93,20 @@ export class WhatsAppIntegration implements Integration {
 
     this.sock.ev.on('creds.update', saveCreds);
 
-    this.sock.ev.on(
-      'messages.upsert',
-      async (update: unknown) => {
-        const { messages, type } = update as { messages: Record<string, unknown>[]; type: string };
-        if (type !== 'notify') return;
+    this.sock.ev.on('messages.upsert', async (update: unknown) => {
+      const { messages, type } = update as { messages: Record<string, unknown>[]; type: string };
+      if (type !== 'notify') return;
 
-        for (const msg of messages) {
-          const key = msg.key as { fromMe?: boolean };
-          if (!key.fromMe && msg.message) {
-            const unified = this.normalizeMessage(msg);
-            if (unified) {
-              await this.deps!.onMessage(unified);
-            }
+      for (const msg of messages) {
+        const key = msg.key as { fromMe?: boolean };
+        if (!key.fromMe && msg.message) {
+          const unified = this.normalizeMessage(msg);
+          if (unified) {
+            await this.deps!.onMessage(unified);
           }
         }
       }
-    );
+    });
 
     this.sock.ev.on('connection.update', (update: unknown) => {
       const { connection, lastDisconnect, qr } = update as {
@@ -161,10 +165,12 @@ export class WhatsAppIntegration implements Integration {
 
     const message = msg.message as Record<string, unknown> | undefined;
     const conversation = message?.conversation as string | undefined;
-    const extendedText = message?.extendedTextMessage as {
-      text?: string;
-      contextInfo?: { stanzaId?: string };
-    } | undefined;
+    const extendedText = message?.extendedTextMessage as
+      | {
+          text?: string;
+          contextInfo?: { stanzaId?: string };
+        }
+      | undefined;
     const text = conversation || extendedText?.text || '';
 
     if (!text) return null;

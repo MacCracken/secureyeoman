@@ -60,7 +60,8 @@
     "nanoid": "5.1.6",
     "@excalidraw/mermaid-to-excalidraw": {
       "mermaid": "10.9.5"
-    }
+    },
+    "serialize-javascript": ">=7.0.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

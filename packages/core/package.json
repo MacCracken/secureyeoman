@@ -61,8 +61,6 @@
   },
   "optionalDependencies": {
     "baileys": "^6.7.9",
-    "@napi-rs/screenshot": "^1.0.0",
-    "@nut-tree/nut-js": "^4.2.0",
     "isolated-vm": "^6.0.2",
     "@qdrant/js-client-rest": "^1.12.0",
     "faiss-node": "^0.5.1",
