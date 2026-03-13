@@ -1308,21 +1308,27 @@ function LicenseCard() {
                 {lemonCheckout.isConfigured && (
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => lemonCheckout.openCheckout('pro')}
+                      onClick={() => {
+                        lemonCheckout.openCheckout('pro');
+                      }}
                       disabled={lemonCheckout.isLoading}
                       className="rounded-md bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
                     >
                       {lemonCheckout.isLoading ? 'Processing…' : 'Upgrade to Pro — $20/yr'}
                     </button>
                     <button
-                      onClick={() => lemonCheckout.openCheckout('solopreneur')}
+                      onClick={() => {
+                        lemonCheckout.openCheckout('solopreneur');
+                      }}
                       disabled={lemonCheckout.isLoading}
                       className="rounded-md bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
                     >
                       Solopreneur — $100/yr
                     </button>
                     <button
-                      onClick={() => lemonCheckout.openCheckout('enterprise')}
+                      onClick={() => {
+                        lemonCheckout.openCheckout('enterprise');
+                      }}
                       disabled={lemonCheckout.isLoading}
                       className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                     >

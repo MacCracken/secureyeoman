@@ -299,11 +299,11 @@ describe('SettingsPage', () => {
   it('shows community tier chip and all features as locked when on community tier', async () => {
     renderComponent();
     expect(await screen.findByText('Community')).toBeInTheDocument();
-    expect(screen.getByText('Adaptive Learning Pipeline')).toBeInTheDocument();
+    expect(screen.getByText('Adaptive Learning')).toBeInTheDocument();
     expect(screen.getByText('SSO / SAML')).toBeInTheDocument();
     expect(screen.getByText('Multi-Tenancy')).toBeInTheDocument();
     expect(screen.getByText('CI/CD Integration')).toBeInTheDocument();
-    expect(screen.getByText('Advanced Observability')).toBeInTheDocument();
+    expect(screen.getByText('Observability')).toBeInTheDocument();
     // Community tier message
     expect(screen.getByText(/Enter a license key to unlock licensed features/)).toBeInTheDocument();
   });
@@ -325,12 +325,12 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Acme Corp')).toBeInTheDocument();
     expect(screen.getByText('25')).toBeInTheDocument();
     expect(screen.getByText('Never')).toBeInTheDocument();
-    // All 5 features are shown — 3 enabled, 2 locked
-    expect(screen.getByText('Adaptive Learning Pipeline')).toBeInTheDocument();
+    // Spot-check a few features are shown — 3 enabled, rest locked
+    expect(screen.getByText('Adaptive Learning')).toBeInTheDocument();
     expect(screen.getByText('SSO / SAML')).toBeInTheDocument();
     expect(screen.getByText('CI/CD Integration')).toBeInTheDocument();
     expect(screen.getByText('Multi-Tenancy')).toBeInTheDocument();
-    expect(screen.getByText('Advanced Observability')).toBeInTheDocument();
+    expect(screen.getByText('Observability')).toBeInTheDocument();
   });
 
   it('shows expiry countdown banner when license expires within 30 days', async () => {

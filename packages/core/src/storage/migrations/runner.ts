@@ -1,40 +1,32 @@
 /**
  * Migration Runner — Applies numbered SQL migrations in order.
  *
- * All baseline migrations (001_community, 002_pro, 003_enterprise) are
- * always applied regardless of tier. The full schema must be present
- * because application code references tables across all tiers during
- * startup (RBAC, risk, telemetry, etc.). Feature gating is handled at
- * the route/API level by `requiresLicense()`, not at the schema level.
- *
- * Incremental migrations (011+) are tier-filtered: they only run if the
- * active license tier permits them.
+ * All migrations (001_community, 002_pro, 003_enterprise) are always
+ * applied regardless of tier. The full schema must be present because
+ * application code references tables across all tiers during startup
+ * (RBAC, risk, telemetry, etc.). Feature gating is handled at the
+ * route/API level by `requiresLicense()`, not at the schema level.
  *
  * Tracks applied migrations in a `schema_migrations` table.
  *
- * Existing databases that have the old monolithic migration IDs
- * (001_baseline, 002_agent_replay, etc.) are handled by a compatibility
- * shim that marks the new tier-split IDs as applied.
+ * Existing databases that have legacy migration IDs (from before the
+ * tier-split consolidation) are handled by a compatibility shim that
+ * marks the current IDs as applied without re-running DDL.
  */
 
 import { getPool } from '../pg-pool.js';
 import type { LicenseTier } from '../../licensing/license-manager.js';
-import { MIGRATION_MANIFEST, type MigrationEntry } from './manifest.js';
-
-/** Tier hierarchy: community < pro < enterprise */
-const TIER_RANK: Record<LicenseTier, number> = {
-  community: 0,
-  pro: 1,
-  enterprise: 2,
-};
+import { MIGRATION_MANIFEST } from './manifest.js';
 
 /**
- * Old monolithic migration IDs that have been superseded by the tier split.
- * If any of these are present in schema_migrations, the DB was created
- * with the old schema. We mark the new tier-split IDs as applied so they
- * don't re-run (the old baseline already contains all DDL).
+ * Legacy migration IDs that have been superseded by the consolidated
+ * tier-split baselines. If any of these are present in schema_migrations,
+ * the DB was created with an older schema version. We mark the current
+ * IDs as applied so they don't re-run (the old migrations already
+ * created all DDL).
  */
 const LEGACY_MIGRATION_IDS = [
+  // Phase 1 — original monolithic baseline + incrementals
   '001_baseline',
   '002_agent_replay',
   '003_policy_as_code',
@@ -42,30 +34,29 @@ const LEGACY_MIGRATION_IDS = [
   '005_chaos_engineering',
   '006_federated_learning',
   '007_pretrain_jobs',
+  // Phase 2 — pre-consolidation tier-split incrementals (now folded into baselines)
+  '008_synapse',
+  '009_security_hardening',
+  '010_encrypt_idp_secrets',
+  '011_sso_auth_codes',
+  '012_voice_profiles',
+  '013_break_glass',
+  '014_access_review',
+  '015_scim',
+  '016_tenant_quotas',
+  '017_webauthn',
+  '018_simulation',
+  '019_spatial',
+  '020_relationships',
+  '021_auto_secrets',
+  '022_synapse_bridge',
+  '023_edge_fleet',
 ];
 
-/** New tier-split IDs that replace the legacy ones. */
-const TIER_SPLIT_IDS = ['001_community', '002_pro', '003_enterprise'];
+/** Current consolidated migration IDs. */
+const CURRENT_IDS = ['001_community', '002_pro', '003_enterprise'];
 
-/**
- * IDs of baseline migrations that must always run regardless of tier.
- * The full schema must be present for the application to start — tier
- * gating is handled at the feature/route level via requiresLicense().
- */
-const ALWAYS_RUN_IDS = new Set(TIER_SPLIT_IDS);
-
-/**
- * Filter manifest entries to those that should run for the given tier.
- *
- * Baseline migrations (001_community, 002_pro, 003_enterprise) always
- * run. Incremental migrations (011+) are tier-filtered.
- */
-function filterByTier(migrations: MigrationEntry[], tier: LicenseTier): MigrationEntry[] {
-  const maxRank = TIER_RANK[tier];
-  return migrations.filter((m) => ALWAYS_RUN_IDS.has(m.id) || TIER_RANK[m.tier] <= maxRank);
-}
-
-export async function runMigrations(tier: LicenseTier = 'enterprise'): Promise<void> {
+export async function runMigrations(_tier: LicenseTier = 'enterprise'): Promise<void> {
   const pool = getPool();
 
   // Ensure the migrations tracking table exists. CREATE TABLE IF NOT EXISTS is
@@ -77,21 +68,17 @@ export async function runMigrations(tier: LicenseTier = 'enterprise'): Promise<v
     )
   `);
 
-  const migrations = filterByTier(MIGRATION_MANIFEST, tier);
+  const migrations = MIGRATION_MANIFEST;
   if (migrations.length === 0) return;
 
-  // Fast-path (no lock needed): if every filtered migration is already
-  // recorded, nothing to do. We check both the latest ID and the total
-  // count to avoid false-positives during tier upgrades (e.g. community→
-  // enterprise where the last migration is community-tier but enterprise-
-  // only migrations in the middle are still missing).
-  const filteredIds = migrations.map((m) => m.id);
-  const latestId = filteredIds[filteredIds.length - 1]!;
+  // Fast-path (no lock needed): if every migration is already recorded,
+  // nothing to do.
+  const migrationIds = migrations.map((m) => m.id);
   const applied = await pool.query<{ id: string }>(
     'SELECT id FROM schema_migrations WHERE id = ANY($1)',
-    [filteredIds]
+    [migrationIds]
   );
-  if (applied.rows.length === filteredIds.length) {
+  if (applied.rows.length === migrationIds.length) {
     return;
   }
 
@@ -109,45 +96,25 @@ export async function runMigrations(tier: LicenseTier = 'enterprise'): Promise<v
       // completed migrations while we were waiting.
       const recheck = await client.query<{ id: string }>(
         'SELECT id FROM schema_migrations WHERE id = ANY($1)',
-        [filteredIds]
+        [migrationIds]
       );
-      if (recheck.rows.length === filteredIds.length) {
+      if (recheck.rows.length === migrationIds.length) {
         return;
       }
 
-      // Legacy compatibility: if old monolithic migrations exist, mark
-      // the new tier-split IDs as applied (the old baseline already contains
-      // all DDL from all tiers).
+      // Legacy compatibility: if old migration IDs exist, mark the current
+      // consolidated IDs as applied (the old DDL already covers everything).
       const legacyCheck = await client.query<{ id: string }>(
         `SELECT id FROM schema_migrations WHERE id = ANY($1)`,
         [LEGACY_MIGRATION_IDS]
       );
       if (legacyCheck.rows.length > 0) {
         const now = Date.now();
-        for (const splitId of TIER_SPLIT_IDS) {
+        for (const currentId of CURRENT_IDS) {
           await client.query(
             `INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`,
-            [splitId, now]
+            [currentId, now]
           );
-        }
-        // Also apply any incremental migrations (011+) that aren't yet applied
-        const incrementals = migrations.filter((m) => !TIER_SPLIT_IDS.includes(m.id));
-        for (const { id, sql } of incrementals) {
-          const existing = await client.query('SELECT id FROM schema_migrations WHERE id = $1', [
-            id,
-          ]);
-          if (existing.rows.length > 0) continue;
-
-          await client.query('SET statement_timeout = 300000');
-          try {
-            await client.query(sql);
-          } finally {
-            await client.query('SET statement_timeout = 0');
-          }
-          await client.query('INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)', [
-            id,
-            now,
-          ]);
         }
         return;
       }

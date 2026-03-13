@@ -108,7 +108,9 @@ export function useLemonCheckout() {
 
     for (let i = 0; i < maxAttempts; i++) {
       try {
-        const res = await fetch(`${LICENSING_API}/api/v1/licenses/by-order/${encodeURIComponent(orderId)}`);
+        const res = await fetch(
+          `${LICENSING_API}/api/v1/licenses/by-order/${encodeURIComponent(orderId)}`
+        );
         if (res.ok) {
           const data = (await res.json()) as { licenseKey?: string };
           if (data.licenseKey) {
