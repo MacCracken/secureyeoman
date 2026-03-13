@@ -1,6 +1,6 @@
 # ADR 039: Agent Binary — Distribution Tier 2.5
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-03-12
 
 ## Context

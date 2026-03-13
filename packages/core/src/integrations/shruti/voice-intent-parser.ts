@@ -150,17 +150,11 @@ function parseAction(lower: string, words: string[]): [VoiceAction, number] {
   // Pan
   if (lower.includes('pan left') || lower.includes('move left')) {
     const track = extractTrackContext(lower);
-    return [
-      { kind: 'track_control', command: { action: 'pan', track, direction: 'left' } },
-      0.85,
-    ];
+    return [{ kind: 'track_control', command: { action: 'pan', track, direction: 'left' } }, 0.85];
   }
   if (lower.includes('pan right') || lower.includes('move right')) {
     const track = extractTrackContext(lower);
-    return [
-      { kind: 'track_control', command: { action: 'pan', track, direction: 'right' } },
-      0.85,
-    ];
+    return [{ kind: 'track_control', command: { action: 'pan', track, direction: 'right' } }, 0.85];
   }
   if (lower.includes('pan center') || lower.includes('center pan')) {
     const track = extractTrackContext(lower);
@@ -195,11 +189,7 @@ function parseAction(lower: string, words: string[]): [VoiceAction, number] {
       const track = extractTrackContext(lower);
       return [{ kind: 'analyze', command: { type: 'spectrum', track } }, 0.8];
     }
-    if (
-      lower.includes('dynamics') ||
-      lower.includes('levels') ||
-      lower.includes('loudness')
-    ) {
+    if (lower.includes('dynamics') || lower.includes('levels') || lower.includes('loudness')) {
       const track = extractTrackContext(lower);
       return [{ kind: 'analyze', command: { type: 'dynamics', track } }, 0.8];
     }

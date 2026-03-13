@@ -9,6 +9,7 @@
 # Produces:
 #   Tier 1 (needs PostgreSQL): secureyeoman-linux-x64, secureyeoman-linux-arm64, secureyeoman-darwin-arm64, secureyeoman-windows-x64.exe
 #   Tier 2 (SQLite-only, no external deps): secureyeoman-lite-linux-x64, secureyeoman-lite-linux-arm64, secureyeoman-lite-windows-x64.exe
+#   Tier 2.5 (Agent, soul+AI, SQLite): secureyeoman-agent-linux-x64, secureyeoman-agent-linux-arm64, secureyeoman-agent-darwin-arm64
 #   Tier 3 (Edge/IoT, minimal): secureyeoman-edge-linux-x64, secureyeoman-edge-linux-arm64
 #
 # Prerequisites: bun >= 1.1, npm (for TypeScript build step)
@@ -145,6 +146,29 @@ compile_edge_binary() {
     --outfile "${OUTFILE}"
 }
 
+# Agent binary: uses agent/cli.ts entry point which imports soul, AI, auth,
+# security, and A2A. Tree-shakes out brain/RAG, training, analytics, simulation,
+# dashboard, marketplace, and enterprise compliance subsystems.
+AGENT_EXTERNAL=(
+  "${BUN_EXTERNAL[@]}"
+  --external "@qdrant/js-client-rest"
+  --external "faiss-node"
+  --external "pdfjs-dist"
+  --external "sharp"
+  --external "mammoth"
+  --external "xlsx"
+  --external "csv-parse"
+)
+
+compile_agent_binary() {
+  local TARGET="$1"
+  local OUTFILE="$2"
+  bun build --compile --target "${TARGET}" \
+    "${AGENT_EXTERNAL[@]}" \
+    "${REPO_ROOT}/packages/core/src/agent/cli.ts" \
+    --outfile "${OUTFILE}"
+}
+
 # ── Go edge binary cross-compile ──────────────────────────────────────────────
 GO_EDGE_DIR="${REPO_ROOT}/cmd/secureyeoman-edge"
 GO_EDGE_VERSION="${VERSION:-2026.3.12}"
@@ -211,6 +235,20 @@ if [[ "$DEV_MODE" == false ]]; then
     echo "    → lite-${PLATFORM}"
     SECUREYEOMAN_BUILD_TIER=lite compile_binary "${TARGET}" "${DIST_DIR}/secureyeoman-lite-${PLATFORM}${EXT}"
   done
+fi
+
+# ── Tier 2.5: Agent (soul + AI, SQLite, no brain/training/dashboard) ──────────
+if [[ "$DEV_MODE" == false ]]; then
+  echo "==> Compiling Tier 2.5 agent binaries (soul + AI agent runtime)..."
+  for TARGET in bun-linux-x64 bun-linux-arm64 bun-darwin-arm64; do
+    PLATFORM="${TARGET#bun-}"
+    echo "    → agent-${PLATFORM}"
+    compile_agent_binary "${TARGET}" "${DIST_DIR}/secureyeoman-agent-${PLATFORM}"
+  done
+else
+  echo "==> Compiling Tier 2.5 agent binary (dev, current platform)..."
+  echo "    → agent-${DEV_TARGET#bun-}"
+  compile_agent_binary "${DEV_TARGET}" "${DIST_DIR}/secureyeoman-agent-${DEV_TARGET#bun-}"
 fi
 
 # ── Tier 3: Edge (Go binary, static, Linux + ARM) ────────────────────────────

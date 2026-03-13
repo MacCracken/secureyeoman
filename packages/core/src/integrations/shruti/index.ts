@@ -23,10 +23,7 @@ export type {
 } from './voice-intent-parser.js';
 
 export { ShrutiVoiceBridge } from './shruti-voice-bridge.js';
-export type {
-  ShrutiVoiceBridgeConfig,
-  VoiceBridgeResult,
-} from './shruti-voice-bridge.js';
+export type { ShrutiVoiceBridgeConfig, VoiceBridgeResult } from './shruti-voice-bridge.js';
 
 export { registerShrutiVoiceRoutes } from './shruti-voice-routes.js';
 export type { ShrutiVoiceRouteDeps } from './shruti-voice-routes.js';

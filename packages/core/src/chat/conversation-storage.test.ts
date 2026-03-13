@@ -43,6 +43,9 @@ describe('ConversationStorage', () => {
     const c1 = await storage.createConversation({ title: 'First' });
     const c2 = await storage.createConversation({ title: 'Second' });
 
+    // Ensure a measurable time gap so addMessage produces a later updated_at
+    await new Promise((r) => setTimeout(r, 20));
+
     // Add a message to c1 to give it a later updated_at
     await storage.addMessage({ conversationId: c1.id, role: 'user', content: 'bump' });
 

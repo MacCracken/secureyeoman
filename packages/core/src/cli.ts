@@ -138,6 +138,13 @@ router.registerLazy({
 });
 
 router.registerLazy({
+  name: 'agent',
+  description: 'Agent mode — streamlined AI agent runtime (Tier 2.5)',
+  usage: 'secureyeoman agent <start|register|status> [options]',
+  loader: () => import('./cli/commands/agent.js').then((m) => m.agentCommand),
+});
+
+router.registerLazy({
   name: 'repl',
   aliases: ['shell'],
   description: 'Interactive REPL',

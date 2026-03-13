@@ -155,12 +155,13 @@
 
 **Goal**: A streamlined, headless SecureYeoman binary (`secureyeoman-agent`) for autonomous agent workloads. Includes soul, AI providers, and A2A delegation — but not brain/RAG, training, analytics, dashboard, or enterprise compliance subsystems. SQLite-only, <5s boot, 100–200 MB RAM. Enables scaling agent count independently of platform instances.
 
-### 15A: AgentRuntime Core
+### 15A: AgentRuntime Core — ✅ Complete (2026-03-12)
 
-- [ ] **`AgentRuntime` class** — `src/agent/agent-runtime.ts`, parallel to `EdgeRuntime`. Initializes: config, logger, SQLite, auth (delegated or local), RBAC, soul manager, AI provider router, A2A transport, slim gateway.
-- [ ] **Agent CLI entry point** — `src/agent/cli.ts` with `start`, `register`, `status` subcommands. Bun build target for tree-shaking.
-- [ ] **Slim gateway** — ~15–20 routes: health, A2A receive/capabilities, chat completions, soul CRUD (personality, skills, tools), model list, tool-call, auth token validation.
-- [ ] **SQLite schema subset** — Agent-specific migration with soul tables (personalities, skills, dynamic_tools), auth tables (api_keys), and audit log. No brain, training, simulation, edge fleet tables.
+- [x] **`AgentRuntime` class** — `src/agent/agent-runtime.ts`, parallel to `EdgeRuntime`. Initializes: config, logger, audit chain, security (early), auth, AI module, soul module, A2A transport, slim HTTP server. 11 tests.
+- [x] **Agent CLI entry point** — `src/agent/cli.ts` with `start`, `register`, `status` subcommands. `src/cli/commands/agent.ts` command handler with banner, parent auto-registration, signal handling.
+- [x] **Slim gateway** — 6 routes: `/health`, `/api/v1/agent/chat`, `/api/v1/agent/models`, `/api/v1/agent/personality`, `/api/v1/a2a/receive`, `/api/v1/a2a/capabilities`.
+- [x] **Build script tier** — `compile_agent_binary()` in `build-binary.sh`. Targets: `secureyeoman-agent-linux-x64`, `linux-arm64`, `darwin-arm64`. Tree-shakes out Qdrant, FAISS, pdfjs, sharp, mammoth, xlsx, csv-parse.
+- [x] **Main CLI registration** — `secureyeoman agent <start|register|status>` registered as lazy command.
 
 ### 15B: Parent Registration & Delegation
 
@@ -190,19 +191,20 @@
 - [ ] **Health endpoint** — `GET /health` returning version, uptime, active session, audio device info.
 - [ ] **Docker image** — `Dockerfile` for headless Shruti server (no GUI dependencies). Multi-stage Rust build.
 
-### 16B: SY Integration
+### 16B: SY Integration — ✅ Complete (2026-03-12)
 
-- [ ] **Ecosystem registration** — Add `shruti` to `EcosystemServiceId` union and `SERVICE_REGISTRY` in `service-discovery.ts`. Port 8050, env `SHRUTI_URL`, secret `SHRUTI_API_KEY`.
-- [ ] **Integration client** — `integrations/shruti/shruti-client.ts` HTTP client with methods for all Shruti API endpoints (session, tracks, transport, export, analysis, mixer, undo/redo).
-- [ ] **MCP tools** — `mcp/tools/shruti-tools.ts` with 10 tools (`shruti_session_create`, `shruti_session_open`, `shruti_track_add`, `shruti_track_list`, `shruti_region_add`, `shruti_transport`, `shruti_export`, `shruti_analyze`, `shruti_mix`, `shruti_edit`). Gated by `exposeShrutiTools` / `MCP_EXPOSE_SHRUTI_TOOLS`.
-- [ ] **Config fields** — `shrutiUrl`, `shrutiApiKey`, `exposeShrutiTools` in `McpServiceConfig`.
-- [ ] **Docker compose** — `shruti` and `shruti-dev` services with `shruti` and `full-dev` profiles.
+- [x] **Ecosystem registration** — `shruti` added to `EcosystemServiceId` and `SERVICE_REGISTRY`. Port 8050, `SHRUTI_URL`, `SHRUTI_API_KEY`. 8 services total.
+- [x] **Integration client** — `integrations/shruti/shruti-client.ts`: 20 methods (session, tracks, transport, export, analysis, mixer, undo/redo, mcpToolCall). 31 tests.
+- [x] **MCP tools** — `mcp/tools/shruti-tools.ts`: 10 tools gated by `exposeShrutiTools`. Registered in manifest.
+- [x] **Config fields** — `shrutiUrl`, `shrutiApiKey`, `exposeShrutiTools` in `McpServiceConfig`. Secret mappings in `MCP_SECRET_MAPPINGS`.
+- [x] **Docker compose** — `shruti` (ghcr.io, port 8050, profile: shruti) and `shruti-dev` (build from ../shruti, profile: full-dev) services.
 
-### 16C: Voice-Driven Music Production
+### 16C: Voice-Driven Music Production — ✅ Complete (2026-03-12)
 
-- [ ] **STT → Shruti intent bridge** — SY's STT providers transcribe user speech, forward to Shruti's `parse_voice_input()` for DAW-specific intents (play, stop, mute track 2, set tempo 120).
-- [ ] **TTS confirmation** — Agent speaks back confirmations via SY's TTS providers ("Track 2 muted", "Exporting session to WAV").
-- [ ] **Dashboard panel** — Shruti card in ecosystem services panel. When connected: active session name, track count, transport state, recent analysis results.
+- [x] **Voice intent parser** — `integrations/shruti/voice-intent-parser.ts`: TS port of Shruti's `parse_voice_input()`. 12 intent categories, confidence scoring. 28 tests.
+- [x] **Voice bridge** — `integrations/shruti/shruti-voice-bridge.ts`: `ShrutiVoiceBridge` class. Transcript → parse → resolve track → execute via ShrutiClient → confirmation text. Configurable gain/pan/tempo steps. 26 tests.
+- [x] **REST endpoints** — `integrations/shruti/shruti-voice-routes.ts`: `POST /api/v1/shruti/voice/command` (execute), `POST /api/v1/shruti/voice/parse` (parse-only).
+- [ ] **Dashboard panel** — Shruti card in ecosystem services panel. (Deferred — dashboard work tracked separately.)
 
 ---
 

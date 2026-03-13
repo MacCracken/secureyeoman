@@ -14,20 +14,14 @@ export interface ShrutiVoiceRouteDeps {
   voiceBridge: ShrutiVoiceBridge;
 }
 
-export function registerShrutiVoiceRoutes(
-  app: FastifyInstance,
-  deps: ShrutiVoiceRouteDeps
-): void {
+export function registerShrutiVoiceRoutes(app: FastifyInstance, deps: ShrutiVoiceRouteDeps): void {
   const { voiceBridge } = deps;
 
   // ── Execute a voice command ────────────────────────────────────────
 
   app.post(
     '/api/v1/shruti/voice/command',
-    async (
-      req: FastifyRequest<{ Body: { transcript: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (req: FastifyRequest<{ Body: { transcript: string } }>, reply: FastifyReply) => {
       const { transcript } = req.body ?? {};
 
       if (!transcript || typeof transcript !== 'string' || transcript.trim().length === 0) {
@@ -52,10 +46,7 @@ export function registerShrutiVoiceRoutes(
 
   app.post(
     '/api/v1/shruti/voice/parse',
-    async (
-      req: FastifyRequest<{ Body: { transcript: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (req: FastifyRequest<{ Body: { transcript: string } }>, reply: FastifyReply) => {
       const { transcript } = req.body ?? {};
 
       if (!transcript || typeof transcript !== 'string' || transcript.trim().length === 0) {

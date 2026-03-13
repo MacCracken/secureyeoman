@@ -81,7 +81,10 @@ export class ShrutiVoiceBridge {
   async processTranscript(transcript: string): Promise<VoiceBridgeResult> {
     const intent = parseVoiceInput(transcript);
 
-    this.logger?.debug({ intent: intent.action, confidence: intent.confidence }, 'parsed voice intent');
+    this.logger?.debug(
+      { intent: intent.action, confidence: intent.confidence },
+      'parsed voice intent'
+    );
 
     if (intent.confidence < this.config.minConfidence) {
       return {
@@ -228,7 +231,8 @@ export class ShrutiVoiceBridge {
     }
     // For faster/slower, get current tempo and adjust
     const info = await this.client.sessionInfo();
-    const delta = command.action === 'faster' ? this.config.tempoStepBpm : -this.config.tempoStepBpm;
+    const delta =
+      command.action === 'faster' ? this.config.tempoStepBpm : -this.config.tempoStepBpm;
     const newBpm = Math.max(20, Math.min(300, info.tempo + delta));
     await this.client.setTempo(newBpm);
     return `Tempo ${command.action === 'faster' ? 'increased' : 'decreased'} to ${newBpm} BPM.`;
@@ -239,12 +243,12 @@ export class ShrutiVoiceBridge {
       case 'spectrum': {
         const idx = await this.resolveTrackIndex(command.track ?? '');
         await this.client.analyzeSpectrum(idx);
-        return `Spectrum analysis complete for ${command.track || 'track ' + idx}.`;
+        return `Spectrum analysis complete for ${command.track || `track ${idx}`}.`;
       }
       case 'dynamics': {
         const idx = await this.resolveTrackIndex(command.track ?? '');
         await this.client.analyzeDynamics(idx);
-        return `Dynamics analysis complete for ${command.track || 'track ' + idx}.`;
+        return `Dynamics analysis complete for ${command.track || `track ${idx}`}.`;
       }
       case 'full_mix':
         await this.client.autoMixSuggest();
