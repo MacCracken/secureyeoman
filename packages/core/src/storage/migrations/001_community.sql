@@ -2839,7 +2839,12 @@ CREATE INDEX IF NOT EXISTS idx_recovery_codes_user ON auth.recovery_codes (user_
 -- ===========================================================================
 
 DO $$ BEGIN
-  IF NOT EXISTS (
+  -- identity_providers is created in 003_enterprise.sql; on fresh DBs this
+  -- migration runs first, so skip if the table does not exist yet.
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'auth' AND table_name = 'identity_providers'
+  ) AND NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'auth' AND table_name = 'identity_providers' AND column_name = 'client_secret_enc'
   ) THEN

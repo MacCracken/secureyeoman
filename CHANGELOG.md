@@ -87,6 +87,15 @@ Comprehensive code audit across the entire codebase (3 rounds: critical/high, me
 **Engineering Backlog**
 - `docs/development/roadmap.md`: Added 3 intentionally deferred audit items (2FA timing side-channel, chaos delete TOCTOU, webhook header prototype pollution residual) with risk levels and fix suggestions
 
+**Release Prep & CI/CD Fixes**
+- `001_community.sql`: Fixed forward reference — `ALTER TABLE auth.identity_providers` failed on fresh DBs because the table is created in `003_enterprise.sql`. Added table-existence guard to skip ALTER when table doesn't exist yet
+- `003_enterprise.sql`: Added `client_secret_enc` and `secret_enc_key_id` columns to `auth.identity_providers` CREATE TABLE (previously only added via ALTER in 001, which is now skipped on fresh DBs)
+- `test-setup.ts`: `setupTestDb()` now seeds the default tenant after migrations — fixes `tenant-storage.test.ts` failures on fresh test databases where no default tenant existed
+- `runner-unit.test.ts`: Fixed stale test that assumed tier-based migration filtering (removed in runner refactor). Test now correctly reflects that all migrations are applied regardless of tier
+- Version bumped to 2026.3.13 across README, site (index.html, whitepaper.html, llms.txt, sitemap.xml, .md sources), and functional audit
+- Functional audit updated: 5 enterprise gaps closed (SCIM 2.0, break-glass, access reviews, per-tenant quotas, compliance SoA), test count updated, Shruti + agent binary added to differentiators
+- Site: CLI commands stat corrected (40 → 56), TS files stat updated (1,576 → 2,310)
+
 ---
 
 ## [2026.3.12-2]

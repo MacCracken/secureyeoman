@@ -350,6 +350,8 @@ CREATE TABLE IF NOT EXISTS auth.identity_providers (
     config jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at bigint NOT NULL,
     updated_at bigint NOT NULL,
+    client_secret_enc bytea,
+    secret_enc_key_id text,
     CONSTRAINT identity_providers_type_check CHECK ((type = ANY (ARRAY['oidc'::text, 'saml'::text])))
 );
 
