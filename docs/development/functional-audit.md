@@ -1,6 +1,6 @@
 # Competitive Analysis
 
-> Last updated: **2026-03-11** | SecureYeoman **v2026.3.10**
+> Last updated: **2026-03-13** | SecureYeoman **v2026.3.13**
 
 ---
 
@@ -10,13 +10,15 @@ SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that sh
 
 No competitor matches this combination. The closest — Ironclaw — leads on Rust memory safety and TEE hardware attestation but requires NEAR AI Cloud infrastructure (no air-gap) and lacks RBAC, SSO, multi-agent orchestration, and a dashboard. OpenAI Frontier offers enterprise governance but is cloud-hosted with limited availability and no data sovereignty.
 
+Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security audit (30+ fixes: injection prevention, IDOR protection, information disclosure, defense-in-depth hardening), Shruti DAW integration (10 MCP tools, voice bridge, HTTP client), agent parent registration with delegated auth/knowledge/audit forwarding, agent binary build & distribution (Docker, multi-arch), and full-stack `exposeEdgeTools` toggle wiring.
+
 ---
 
 ## Landscape
 
 | | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |---|---|---|---|---|---|
-| **Version** | 2026.3.10 | 2026.3.8 | v0.9.8.2 | v0.2.0 | v0.13.1 |
+| **Version** | 2026.3.13 | 2026.3.8 | v0.9.8.2 | v0.2.0 | v0.13.1 |
 | **Stars** | — | ~250K | ~15.7K | ~21.7K | ~4K |
 | **Language** | TypeScript | TypeScript | Python | Go | Rust |
 | **Focus** | Enterprise self-hosted | Personal AI | Personal assistant | Embedded/edge | Privacy-first TEE |
@@ -109,7 +111,7 @@ No competitor matches this combination. The closest — Ironclaw — leads on Ru
 | | Docker (GHCR, multi-arch, cosign) | Y | Y | Y | - | Y |
 | | Air-gap / offline | Y | Y | Y | Y | - |
 | | Dual DB (PostgreSQL + SQLite) | Y | - | - | - | Y |
-| **Quality** | Tests | ~20,500 | Limited | Minimal | Minimal | Unknown |
+| **Quality** | Tests | ~21,000+ | Limited | Minimal | Minimal | Unknown |
 | | Coverage | ~89% | - | - | - | - |
 | | ADRs | 37 | - | - | - | - |
 
@@ -119,7 +121,7 @@ No competitor matches this combination. The closest — Ironclaw — leads on Ru
 
 Capabilities no other framework in this competitive set offers:
 
-- **Governance stack** — RBAC + SSO/OIDC/SAML + multi-tenancy + OPA/CEL + DLP + cryptographic audit + compliance reporting
+- **Governance stack** — RBAC + SSO/OIDC/SAML + WebAuthn/FIDO2 + SCIM 2.0 + multi-tenancy + OPA/CEL + DLP + cryptographic audit + break-glass emergency access + access review campaigns + compliance SoA generator
 - **DAG workflow orchestration** — 19 step types with visual ReactFlow builder and human approval gates
 - **Agent evaluation harness** — structured scenarios with expected/forbidden tool calls and multi-metric scoring
 - **Network security toolkit** — 38 tools (device discovery, port scan, SSH, NetBox, NVD/CVE, PCAP) + Kali toolkit
@@ -128,6 +130,8 @@ Capabilities no other framework in this competitive set offers:
 - **Mission Control dashboard** — multi-panel command center with KPI bar, topology, live feeds, resource monitoring
 - **Training pipeline** — distillation + LoRA fine-tuning + pre-training from scratch + LLM-as-Judge + federated learning
 - **Voice & Speech platform** — 14 TTS providers, 10 STT providers, voice profiles, streaming, Orpheus/Piper/faster-whisper
+- **Shruti DAW integration** — 10 MCP tools for audio production, voice-to-DAW bridge with intent parsing, HTTP client (20 methods)
+- **Agent binary & fleet** — Tier 2.5 agent binary with parent registration, delegated auth/knowledge/audit, Docker-native scaling
 
 ## Known Gaps
 
@@ -154,11 +158,11 @@ Capabilities no other framework in this competitive set offers:
 
 | Gap | Impact | Status |
 |-----|--------|--------|
-| No SCIM provisioning | Enterprise IT expects automated user lifecycle from Okta/Azure AD/Google Workspace alongside SSO | Planned |
-| No per-tenant rate limiting / token budgets | Rate limiter is global rules only (per-user/IP); no tenant-specific quotas or LLM spend caps per team | Planned |
-| No break-glass / emergency access | No documented recovery when admin is locked out; emergency stop exists for personalities but not for platform access | Planned — break-glass with audit trail and accountability |
-| No access review / entitlement reporting | RBAC audit logs exist but no "who has access to what" report, no periodic review workflow, no SOC 2/SOX attestation | Planned |
-| No formal compliance audit scope docs | Compliance mapping code covers 5 frameworks (NIST, SOC 2, ISO 27001, HIPAA, EU AI Act) but no published audit scope document or Statement of Applicability | Planned |
+| ~~No SCIM provisioning~~ | ~~Enterprise IT expects automated user lifecycle~~ | **Shipped** (v2026.3.13) — SCIM 2.0 Users + Groups provisioning |
+| ~~No per-tenant rate limiting / token budgets~~ | ~~Rate limiter is global rules only~~ | **Shipped** (v2026.3.13) — per-tenant quotas and token budgets |
+| ~~No break-glass / emergency access~~ | ~~No documented recovery when admin is locked out~~ | **Shipped** (v2026.3.13) — break-glass emergency access with sealed recovery key and audit trail |
+| ~~No access review / entitlement reporting~~ | ~~RBAC audit logs exist but no "who has access to what" report~~ | **Shipped** (v2026.3.13) — access review campaigns + entitlement reporting |
+| ~~No formal compliance audit scope docs~~ | ~~Compliance mapping code covers 5 frameworks~~ | **Shipped** (v2026.3.13) — compliance SoA generator (NIST, SOC 2, ISO 27001, HIPAA, EU AI Act) |
 | No public status page | SLO monitoring and health endpoints exist internally; no customer-facing uptime/status dashboard | Low priority |
 | No per-tenant data residency enforcement | Multi-region HA with `allowContentReplication` flag exists; no per-tenant region locking for GDPR | Future consideration |
 
@@ -210,4 +214,4 @@ The Pro tier at $20/yr vs Devin's $20/mo ($480 over the same period) is a 24x pr
 
 ---
 
-*Updated: 2026-03-11 (gap analysis validated against codebase)*
+*Updated: 2026-03-13 (gap analysis validated against codebase, enterprise gaps closed: SCIM, break-glass, access reviews, per-tenant quotas, compliance SoA)*

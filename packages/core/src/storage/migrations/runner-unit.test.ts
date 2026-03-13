@@ -62,9 +62,10 @@ describe('runMigrations() — fast path (latest already applied)', () => {
     expect(mockConnect).not.toHaveBeenCalled();
   });
 
-  it('community tier only checks for 001_initial as latest', async () => {
+  it('community tier still checks all migrations (tier param is ignored)', async () => {
     mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // CREATE TABLE
-    mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: '001_initial' }] }); // community latest found
+    // All migrations must be applied for the fast path — tier is not used for filtering
+    mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: '001_initial' }, { id: '002_users' }] });
 
     await runMigrations('community');
 
