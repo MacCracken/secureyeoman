@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -24,12 +25,14 @@ type Updater struct {
 
 // UpdateInfo describes the result of an update check.
 type UpdateInfo struct {
-	Available      bool   `json:"available"`
-	CurrentVersion string `json:"currentVersion"`
-	LatestVersion  string `json:"latestVersion,omitempty"`
-	DownloadURL    string `json:"downloadURL,omitempty"`
-	Size           int64  `json:"size,omitempty"`
-	SHA256         string `json:"sha256,omitempty"`
+	Available        bool   `json:"available"`
+	CurrentVersion   string `json:"currentVersion"`
+	LatestVersion    string `json:"latestVersion,omitempty"`
+	DownloadURL      string `json:"downloadURL,omitempty"`
+	Size             int64  `json:"size,omitempty"`
+	SHA256           string `json:"sha256,omitempty"`
+	Ed25519Signature string `json:"ed25519Signature,omitempty"` // hex-encoded Ed25519 signature (Phase 14C)
+	Ed25519PublicKey string `json:"ed25519PublicKey,omitempty"` // hex-encoded Ed25519 public key
 }
 
 // NewUpdater creates an Updater for the currently running binary.
@@ -131,6 +134,15 @@ func (u *Updater) DownloadAndApply(info *UpdateInfo, token string) error {
 		u.logger.Info("updater: SHA256 verified", "hash", info.SHA256)
 	} else {
 		u.logger.Warn("updater: no SHA256 provided — skipping integrity check")
+	}
+
+	// Ed25519 signature verification (Phase 14C)
+	if info.Ed25519Signature != "" && info.Ed25519PublicKey != "" {
+		if err := verifyEd25519(tmpPath, info.Ed25519Signature, info.Ed25519PublicKey); err != nil {
+			_ = os.Remove(tmpPath)
+			return fmt.Errorf("updater: Ed25519 signature invalid: %w", err)
+		}
+		u.logger.Info("updater: Ed25519 signature verified")
 	}
 
 	// Set executable permissions on the new binary before swapping.
@@ -253,6 +265,43 @@ func verifySHA256(path, expected string) error {
 	got := hex.EncodeToString(h.Sum(nil))
 	if !strings.EqualFold(got, expected) {
 		return fmt.Errorf("got %s, want %s", got, expected)
+	}
+	return nil
+}
+
+// verifyEd25519 reads the file at path and verifies its Ed25519 signature.
+// Both signature and publicKey are hex-encoded strings.
+func verifyEd25519(path, signatureHex, publicKeyHex string) error {
+	pubKeyBytes, err := hex.DecodeString(publicKeyHex)
+	if err != nil {
+		return fmt.Errorf("decode public key: %w", err)
+	}
+	if len(pubKeyBytes) != ed25519.PublicKeySize {
+		return fmt.Errorf("invalid public key size: got %d, want %d", len(pubKeyBytes), ed25519.PublicKeySize)
+	}
+
+	sigBytes, err := hex.DecodeString(signatureHex)
+	if err != nil {
+		return fmt.Errorf("decode signature: %w", err)
+	}
+	if len(sigBytes) != ed25519.SignatureSize {
+		return fmt.Errorf("invalid signature size: got %d, want %d", len(sigBytes), ed25519.SignatureSize)
+	}
+
+	// Read file and verify signature over raw bytes
+	f, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("open: %w", err)
+	}
+	defer f.Close()
+
+	content, err := io.ReadAll(f)
+	if err != nil {
+		return fmt.Errorf("read: %w", err)
+	}
+
+	if !ed25519.Verify(ed25519.PublicKey(pubKeyBytes), content, sigBytes) {
+		return fmt.Errorf("signature verification failed")
 	}
 	return nil
 }

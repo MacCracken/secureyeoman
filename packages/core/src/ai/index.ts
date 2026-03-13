@@ -26,6 +26,7 @@ export {
   type ToolCallRecord,
   type StuckReason,
 } from './task-loop.js';
+export { WsWarmup, type WsWarmupConfig, type WsWarmupDeps } from './ws-warmup.js';
 export { CostCalculator } from './cost-calculator.js';
 export { CostOptimizer, type CostOptimizerDeps } from './cost-optimizer.js';
 export { UsageTracker, type UsageStats, type UsageRecord } from './usage-tracker.js';

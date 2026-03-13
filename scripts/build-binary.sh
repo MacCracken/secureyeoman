@@ -173,9 +173,10 @@ if [[ "$EDGE_ONLY" == true ]]; then
       *) echo "error: unsupported platform" >&2; exit 1 ;;
     esac
   else
-    compile_go_edge linux amd64  "${DIST_DIR}/secureyeoman-edge-linux-x64"
-    compile_go_edge linux arm64  "${DIST_DIR}/secureyeoman-edge-linux-arm64"
-    compile_go_edge linux arm    "${DIST_DIR}/secureyeoman-edge-linux-armv7"
+    compile_go_edge linux amd64   "${DIST_DIR}/secureyeoman-edge-linux-x64"
+    compile_go_edge linux arm64   "${DIST_DIR}/secureyeoman-edge-linux-arm64"
+    compile_go_edge linux arm     "${DIST_DIR}/secureyeoman-edge-linux-armv7"
+    compile_go_edge linux riscv64 "${DIST_DIR}/secureyeoman-edge-linux-riscv64"
   fi
 
   echo ""
@@ -215,9 +216,10 @@ fi
 # ── Tier 3: Edge (Go binary, static, Linux + ARM) ────────────────────────────
 if [[ "$DEV_MODE" == false ]]; then
   echo "==> Compiling Tier 3 Go edge binaries (minimal A2A runtime)..."
-  compile_go_edge linux amd64  "${DIST_DIR}/secureyeoman-edge-linux-x64"
-  compile_go_edge linux arm64  "${DIST_DIR}/secureyeoman-edge-linux-arm64"
-  compile_go_edge linux arm    "${DIST_DIR}/secureyeoman-edge-linux-armv7"
+  compile_go_edge linux amd64   "${DIST_DIR}/secureyeoman-edge-linux-x64"
+  compile_go_edge linux arm64   "${DIST_DIR}/secureyeoman-edge-linux-arm64"
+  compile_go_edge linux arm     "${DIST_DIR}/secureyeoman-edge-linux-armv7"
+  compile_go_edge linux riscv64 "${DIST_DIR}/secureyeoman-edge-linux-riscv64"
 fi
 
 # ── Checksums ─────────────────────────────────────────────────────────────────

@@ -40,7 +40,8 @@ export type LicensedFeature =
   | 'supply_chain'
   | 'synapse'
   | 'break_glass'
-  | 'simulation';
+  | 'simulation'
+  | 'edge_fleet';
 
 /** @deprecated Use LicensedFeature instead. */
 export type EnterpriseFeature = LicensedFeature;
@@ -70,6 +71,7 @@ export const ENTERPRISE_FEATURES: LicensedFeature[] = [
   'synapse',
   'break_glass',
   'simulation',
+  'edge_fleet',
 ];
 
 export const ALL_LICENSED_FEATURES: LicensedFeature[] = [...PRO_FEATURES, ...ENTERPRISE_FEATURES];
@@ -102,6 +104,7 @@ export const FEATURE_TIER_MAP: Record<LicensedFeature, LicenseTier> = {
   synapse: 'enterprise',
   break_glass: 'enterprise',
   simulation: 'enterprise',
+  edge_fleet: 'enterprise',
 };
 
 /** @deprecated Use ALL_LICENSED_FEATURES instead. */

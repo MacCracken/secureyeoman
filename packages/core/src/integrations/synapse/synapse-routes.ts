@@ -518,7 +518,8 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
       reply: FastifyReply
     ) => {
       try {
-        const { instanceId, capabilities } = req.body ?? ({} as { instanceId?: string; capabilities?: SynapseCapabilities });
+        const { instanceId, capabilities } =
+          req.body ?? ({} as { instanceId?: string; capabilities?: SynapseCapabilities });
         if (!instanceId || !capabilities) {
           return sendError(reply, 400, 'Missing required fields: instanceId, capabilities');
         }
@@ -545,7 +546,11 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
         return reply.send({ received: true });
       } catch (err) {
-        return sendError(reply, 500, `Failed to process capability announcement: ${toErrorMessage(err)}`);
+        return sendError(
+          reply,
+          500,
+          `Failed to process capability announcement: ${toErrorMessage(err)}`
+        );
       }
     }
   );

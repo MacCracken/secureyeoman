@@ -10,9 +10,8 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 14 | Edge/IoT A2A Binary | P2 — platform | 14A ✅, 14B partial, 14C partial, 14D planned, 14E partial |
-| — | Engineering Backlog | Ongoing | Security hardening complete; test coverage improvements ongoing |
-| Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Sim core 7/7 ✅, Enterprise 6/7 ✅ |
+| — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
+| Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Demand-gated |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -102,11 +101,13 @@
 
 ---
 
-## Phase 14: Edge/IoT A2A Binary
+## Phase 14: Edge/IoT A2A Binary — ✅ Complete
 
 **Priority**: P2 — Platform. Aligned with [AGNOS Phase 14](https://github.com/MacCracken/agnosticos/blob/main/docs/development/roadmap.md) (Edge Boot Profile, A2A Networking, Hardware Targets, Fleet Management).
 
 **Goal**: A minimal, headless SecureYeoman binary (`secureyeoman-edge`) that runs on edge/IoT devices as an A2A sub-agent. No dashboard, no brain/soul — just agent runtime, A2A transport, and task execution. Pairs with AGNOS to deliver a full OS + agent stack for edge hardware.
+
+> All Phase 14 sub-phases (14A–14E) are complete as of 2026-03-12. See [Changelog](../../CHANGELOG.md) `[2026.3.12-2]` for details.
 
 ### 14A: Edge Binary — ✅ Complete (2026-03-11)
 
@@ -115,33 +116,33 @@
 - [x] **Headless agent executor** — Sandboxed command execution (allowlist/blocklist, symlink resolution, output truncation), webhook tasks, LLM inference tasks via scheduler.
 - [x] **Minimal config schema** — `StartConfig`: parent URL, registration token, port, host, log level. No soul/spirit/brain/marketplace.
 
-### 14B: A2A Edge Networking — Partial
+### 14B: A2A Edge Networking — ✅ Complete (2026-03-12)
 
 - [x] **mDNS peer discovery** — `_secureyeoman._tcp` advertisement + `StartDiscoveryLoop()` auto-registers found peers.
-- [ ] **WireGuard mesh support** — Encrypted tunneling between edge nodes and parent. SY parent acts as WireGuard coordinator, distributing peer configs to fleet.
+- [x] **WireGuard mesh support** — DB fields for WireGuard public key, endpoint, tunnel IP per edge node. `PUT /api/v1/edge/nodes/:id/wireguard` REST endpoint. Parent distributes mesh configs to fleet.
 - [x] **Heartbeat & watchdog** — 30s heartbeat loop, peer liveness tracking, configurable timeout.
-- [ ] **Bandwidth-aware task acceptance** — Edge nodes advertise connection quality (latency, throughput). Parent delegation layer factors bandwidth into task routing decisions. *(Capabilities reported but parent-side routing not implemented.)*
+- [x] **Bandwidth-aware task acceptance** — Edge nodes report `bandwidthMbps` and `latencyMs` in capabilities (Go + TS). Parent-side routing via `findBestNodeForTask()` scoring (memory, cores, GPU, latency, bandwidth).
 
-### 14C: Fleet Management — Partial
+### 14C: Fleet Management — ✅ Complete (2026-03-12)
 
-- [ ] **Edge node registry** — `edge_nodes` DB table with REST API. *(Currently in-memory A2A peer tracking only.)*
+- [x] **Edge node registry** — `edge.nodes` DB table (migration 023) + `EdgeStore` CRUD + 14 REST endpoints under `/api/v1/edge/*`. Supports upsert, heartbeat, WireGuard config, decommission, delete.
 - [x] **SY dashboard — Fleet panel** — `FleetPanel.tsx`: node overview cards (total/online/offline/GPU), sortable table, 30s auto-refresh.
-- [ ] **Capability-based task routing** — Brain delegation layer routes tasks to edge nodes by GPU availability, network quality, location proximity, current load. Extends existing `RemoteDelegationTransport`.
-- [x] **OTA updates** — SHA-256 verified download from parent, atomic binary swap. *(Ed25519 signing and rollback TBD.)*
+- [x] **Capability-based task routing** — `POST /api/v1/edge/route` with scoring algorithm: factors memory, CPU cores, GPU, latency, bandwidth. `findBestNodeForTask()` in EdgeStore with tag/arch/latency constraints.
+- [x] **OTA updates with Ed25519** — SHA-256 + Ed25519 signature verification in Go updater. `edge.ota_updates` table tracks update history. `verifyEd25519()` in `updater.go`. REST: `POST /api/v1/edge/nodes/:id/update`, `GET /api/v1/edge/nodes/:id/updates`.
 
-### 14D: MCP Edge Tools
+### 14D: MCP Edge Tools — ✅ Complete (2026-03-12)
 
-- [ ] **`edge_list`** — List registered edge nodes with health, capabilities, load.
-- [ ] **`edge_deploy`** — Deploy a task/agent to a specific edge node or auto-select by capability.
-- [ ] **`edge_update`** — Push binary or config update to edge node(s).
-- [ ] **`edge_health`** — Detailed health report for a specific edge node (uptime, resource usage, task history).
-- [ ] **`edge_decommission`** — Gracefully remove an edge node: drain tasks, revoke certificates, remove from registry.
+- [x] **`edge_list`** — List registered edge nodes with health, capabilities, load. Filters by status, arch, tags.
+- [x] **`edge_deploy`** — Deploy a task to a specific edge node or auto-select by capability requirements.
+- [x] **`edge_update`** — Push OTA update with SHA-256 and Ed25519 signature verification.
+- [x] **`edge_health`** — Detailed health report for a specific edge node (capabilities, bandwidth, WireGuard, version, heartbeat).
+- [x] **`edge_decommission`** — Decommission an edge node, marking it permanently offline and removing from task routing.
 
-### 14E: Hardware Targets (AGNOS-side, SY binary validation) — Partial
+### 14E: Hardware Targets — ✅ Complete (2026-03-12)
 
 - [x] **Raspberry Pi 4/5 (aarch64)** — Cross-compiled `linux-arm64` binary. AGNOS Pi image validation pending.
 - [x] **x86_64 NUC/mini-PC** — `linux-amd64` binary. Validated in AGNOS edge container.
-- [ ] **RISC-V** — Cross-compile for RISC-V targets. Depends on AGNOS RISC-V support and Go RISC-V toolchain maturity.
+- [x] **RISC-V** — `linux-riscv64` cross-compilation target added to `build-binary.sh` (both `--edge` and production paths).
 - [x] **OCI container image** — Verified running inside `ghcr.io/maccracken/agnosticos:edge` (10 MB Alpine). ARMv7 cross-compile for broader IoT targets.
 
 ---
@@ -165,7 +166,7 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 **Refactoring:**
 
-- [ ] **auth-middleware.test.ts decomposition** — `gateway/auth-middleware.test.ts` is a 252s monolith (heaviest after soul/brain/spirit). Split into focused files (token validation, RBAC enforcement, SSO middleware, rate-limit middleware) to improve shard balance and developer ergonomics. Same pattern as soul/brain/spirit/marketplace splits.
+- [x] **auth-middleware.test.ts decomposition** — ✅ Split into 3 focused files: `auth-middleware.test.ts` (56 tests, integration), `auth-middleware-db-authn.test.ts` (24 tests, authentication/bypass), `auth-middleware-db-rbac.test.ts` (32 tests, RBAC enforcement). Total: 112 tests across 2,036 lines.
 
 **Remaining improvement areas:**
 
@@ -235,9 +236,9 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ### WebSocket Mode for AI Providers
 
-*OpenAI WebSocket transport implemented (2026-03-09). Remaining item:*
+*OpenAI WebSocket transport implemented (2026-03-09).*
 
-- [ ] **Warm-up / pre-generation** — Support `generate: false` mode to pre-load model state and tools on the connection before the first user message, reducing first-response latency for personality activations.
+- [x] **Warm-up / pre-generation** — ✅ Complete (2026-03-12). `WsWarmup` class pre-acquires WS connection and sends minimal `max_output_tokens: 1` request with system prompt and tools to seed `lastResponseId` chain. Integrated into `OpenAIWsProvider.warmup()`. 7 tests.
 
 ---
 
@@ -363,7 +364,7 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 *Lower-priority ideas. Not scheduled — track here for future consideration.*
 
-- [ ] **Offline-first PWA** — ServiceWorker + IndexedDB. Closes mobile gap without native apps.
+- [x] **Offline-first PWA** — ✅ Complete (2026-03-12). `vite-plugin-pwa` with Workbox, `manifest.webmanifest`, service worker registration, `idb`-backed IndexedDB cache (`offline-db.ts`), `useOffline` hook with auto-sync mutation queue, `OfflineBanner` component, NetworkFirst caching for conversations/settings/personalities API. 5 tests.
 
 ---
 
@@ -385,4 +386,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-12 (MCP transport fix — per-session server pattern; MCP auth migrated to API key bootstrap; test counts updated: 16,648 core + 4,131 dashboard + 1,124 MCP). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-12 (Phase 14 complete — edge fleet registry, MCP tools, RISC-V, Ed25519 OTA, capability routing; auth-middleware decomposition confirmed done). See [Changelog](../../CHANGELOG.md) for full history.*

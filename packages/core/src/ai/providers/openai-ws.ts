@@ -37,6 +37,7 @@ import {
   ProviderUnavailableError,
   InvalidResponseError,
 } from '../errors.js';
+import { WsWarmup, type WsWarmupConfig } from '../ws-warmup.js';
 import type { SecureLogger } from '../../logging/logger.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -52,10 +53,11 @@ export class OpenAIWsProvider extends BaseProvider {
   readonly name: AIProviderName = 'openai';
   private readonly transport: OpenAIWsTransport;
   private readonly httpFallback: OpenAIProvider;
+  private readonly wsWarmup: WsWarmup | null;
   private wsFailureCount = 0;
   private wsDisabledUntil = 0;
 
-  constructor(config: ProviderConfig, logger?: SecureLogger) {
+  constructor(config: ProviderConfig, logger?: SecureLogger, warmupConfig?: WsWarmupConfig) {
     super(config, logger);
 
     const apiKey = config.apiKey ?? '';
@@ -68,6 +70,15 @@ export class OpenAIWsProvider extends BaseProvider {
 
     this.transport = new OpenAIWsTransport(wsConfig, logger);
     this.httpFallback = new OpenAIProvider(config, logger);
+
+    // Initialize warm-up if configured
+    this.wsWarmup = warmupConfig?.enabled
+      ? new WsWarmup({
+          logger: logger?.child({ component: 'WsWarmup' }) ?? (null as unknown as SecureLogger),
+          transport: this.transport,
+          config: warmupConfig,
+        })
+      : null;
   }
 
   private isWsAvailable(): boolean {
@@ -461,6 +472,27 @@ export class OpenAIWsProvider extends BaseProvider {
     }
 
     return new InvalidResponseError('openai', err.message ?? 'WebSocket error');
+  }
+
+  // ── Warm-up ──────────────────────────────────────────────────────────────
+
+  /**
+   * Pre-acquire a WebSocket connection and send a minimal request to seed
+   * the model state and `lastResponseId` chain.  Reduces first-response
+   * latency for personality activations.
+   *
+   * No-op if warm-up is not configured.
+   */
+  async warmup(
+    sessionKey: string,
+    opts: {
+      systemPrompt?: string;
+      tools?: { name: string; description: string; parameters: Record<string, unknown> }[];
+    } = {}
+  ): Promise<boolean> {
+    if (!this.wsWarmup) return false;
+    const model = this.modelConfig.model ?? 'gpt-4o';
+    return this.wsWarmup.warmup(sessionKey, { model, ...opts });
   }
 
   // ── Cleanup ───────────────────────────────────────────────────────────────

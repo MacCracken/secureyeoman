@@ -111,6 +111,7 @@ import { registerGoogleWorkspaceRoutes } from '../integrations/google-workspace-
 import { registerTradingRoutes } from '../integrations/trading/trading-routes.js';
 import { registerPhotisnadiRoutes } from '../integrations/photisnadi/photisnadi-routes.js';
 import { registerSynapseRoutes } from '../integrations/synapse/synapse-routes.js';
+import { registerEdgeFleetRoutes } from '../edge/edge-fleet-routes.js';
 import { registerEcosystemRoutes } from '../integrations/ecosystem-routes.js';
 import { ServiceDiscoveryManager } from '../integrations/service-discovery.js';
 import { registerForgeRoutes, registerArtifactRoutes } from '../integrations/forge/index.js';
@@ -849,6 +850,16 @@ export class GatewayServer {
       registerSynapseRoutes(this.app, { secureYeoman: this.secureYeoman });
     } catch {
       // Synapse routes are optional — skip on error
+    }
+
+    // Edge fleet management routes (Phase 14C)
+    try {
+      const edgeStore = this.secureYeoman.getEdgeStore();
+      if (edgeStore) {
+        registerEdgeFleetRoutes(this.app, { edgeStore, secureYeoman: this.secureYeoman });
+      }
+    } catch {
+      // Edge routes are optional — skip on error
     }
 
     // Diagnostic routes (Phase 39 — Channel B: sub-agent reporting + integration ping)
@@ -2123,7 +2134,8 @@ export class GatewayServer {
       reply.code(allHealthy ? 200 : 503);
 
       const isLoopback = this.config.host === '127.0.0.1' || this.config.host === 'localhost';
-      const networkMode = isLoopback ? 'local' : this.config.tls.enabled ? 'public' : 'lan';
+      const tlsActive = this.config.tls.enabled || process.env.TLS_TERMINATED_BY_PROXY === 'true';
+      const networkMode = isLoopback ? 'local' : tlsActive ? 'public' : 'lan';
 
       return {
         status: allHealthy ? 'ok' : 'error',

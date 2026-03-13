@@ -63,6 +63,7 @@ import { registerJiraTools } from './jira-tools.js';
 import { registerNotionTools } from './notion-tools.js';
 import { registerGoogleWorkspaceTools } from './google-workspace-tools.js';
 import { registerVoiceTools } from './voice-tools.js';
+import { registerEdgeTools } from './edge-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -151,4 +152,6 @@ export async function registerAllTools(
   registerGoogleWorkspaceTools(server, client, middleware);
   // Voice profile tools
   registerVoiceTools(server, client, config, middleware);
+  // Edge fleet tools (Phase 14D)
+  registerEdgeTools(server, config, middleware);
 }

@@ -55,6 +55,12 @@ export interface EdgeCapabilities {
   hasGpu: boolean;
   /** Custom capability tags */
   tags: string[];
+  /** Measured bandwidth to parent in Mbps (Phase 14B) */
+  bandwidthMbps?: number;
+  /** Measured latency to parent in ms (Phase 14B) */
+  latencyMs?: number;
+  /** WireGuard public key (Phase 14B) */
+  wireguardPubkey?: string;
 }
 
 // ─── EdgeRuntime Class ──────────────────────────────────────────────────────

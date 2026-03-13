@@ -4,14 +4,40 @@
  * Uses WhatsApp Web Protocol (MD) for connection.
  * Normalizes inbound messages to UnifiedMessage and routes them
  * through the IntegrationManager's onMessage callback.
+ *
+ * baileys is an optional dependency — if unavailable, init() throws
+ * a clear error rather than crashing at import time.
  */
 
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, type WASocket } from 'baileys';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 import path from 'path';
 import fs from 'fs';
+
+// Dynamic import — baileys is optional
+type WASocket = { ev: { on: (event: string, cb: (...args: unknown[]) => void) => void }; sendMessage: (jid: string, content: { text: string }) => Promise<{ key: { id?: string } } | undefined>; end: (reason: unknown) => void };
+type BaileysModule = {
+  default: (opts: Record<string, unknown>) => WASocket;
+  useMultiFileAuthState: (path: string) => Promise<{ state: unknown; saveCreds: () => void }>;
+  DisconnectReason: { loggedOut: number };
+};
+
+let baileysModule: BaileysModule | null = null;
+
+async function loadBaileys(): Promise<BaileysModule> {
+  if (baileysModule) return baileysModule;
+  try {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore — baileys is optional; may not be installed in all environments
+    baileysModule = (await import('baileys')) as unknown as BaileysModule;
+    return baileysModule;
+  } catch {
+    throw new Error(
+      'WhatsApp integration requires the "baileys" package. Install it with: npm install baileys'
+    );
+  }
+}
 
 export class WhatsAppIntegration implements Integration {
   readonly platform: Platform = 'whatsapp';
@@ -42,9 +68,10 @@ export class WhatsAppIntegration implements Integration {
     if (this.running) return;
     if (!this.config) throw new Error('Integration not initialized');
 
-    const { state, saveCreds } = await useMultiFileAuthState(this.sessionPath);
+    const baileys = await loadBaileys();
+    const { state, saveCreds } = await baileys.useMultiFileAuthState(this.sessionPath);
 
-    this.sock = makeWASocket({
+    this.sock = baileys.default({
       auth: state,
       printQRInTerminal: true,
       logger: {
@@ -54,18 +81,20 @@ export class WhatsAppIntegration implements Integration {
         warn: (msg: string) => this.logger?.warn(msg),
         error: (msg: string) => this.logger?.error(msg),
         debug: (msg: string) => this.logger?.debug(msg),
-      } as any,
+      },
     });
 
     this.sock.ev.on('creds.update', saveCreds);
 
     this.sock.ev.on(
       'messages.upsert',
-      async ({ messages, type }: { messages: any[]; type: string }) => {
+      async (update: unknown) => {
+        const { messages, type } = update as { messages: Record<string, unknown>[]; type: string };
         if (type !== 'notify') return;
 
         for (const msg of messages) {
-          if (!msg.key.fromMe && msg.message) {
+          const key = msg.key as { fromMe?: boolean };
+          if (!key.fromMe && msg.message) {
             const unified = this.normalizeMessage(msg);
             if (unified) {
               await this.deps!.onMessage(unified);
@@ -75,23 +104,22 @@ export class WhatsAppIntegration implements Integration {
       }
     );
 
-    this.sock.ev.on('connection.update', (update: any) => {
-      const { connection, lastDisconnect, qr } = update;
+    this.sock.ev.on('connection.update', (update: unknown) => {
+      const { connection, lastDisconnect, qr } = update as {
+        connection?: string;
+        lastDisconnect?: { error?: { output?: { statusCode?: number } } };
+        qr?: string;
+      };
 
       if (qr) {
         this.logger?.info('WhatsApp QR code received - scan with your phone');
       }
 
       if (connection === 'close') {
-        const reason = (lastDisconnect?.error as { output?: { statusCode?: number } })?.output
-          ?.statusCode;
-        const shouldReconnect = reason !== (DisconnectReason.loggedOut as number);
+        const reason = lastDisconnect?.error?.output?.statusCode;
+        const shouldReconnect = reason !== baileys.DisconnectReason.loggedOut;
 
         this.logger?.warn({ reason, shouldReconnect }, 'WhatsApp connection closed');
-
-        if (shouldReconnect) {
-          // Will auto-reconnect due to makeWASocket behavior
-        }
       } else if (connection === 'open') {
         this.logger?.info('WhatsApp connected');
         this.running = true;
@@ -124,16 +152,19 @@ export class WhatsAppIntegration implements Integration {
     return this.running && this.sock !== null;
   }
 
-  private normalizeMessage(msg: any): UnifiedMessage | null {
+  private normalizeMessage(msg: Record<string, unknown>): UnifiedMessage | null {
     if (!this.config) return null;
 
-    const key = msg.key;
+    const key = msg.key as { remoteJid?: string; participant?: string; id?: string };
     const remoteJid = key.remoteJid;
     if (!remoteJid || remoteJid === 'status@broadcast') return null;
 
-    const message = msg.message;
-    const conversation = message?.conversation;
-    const extendedText = message?.extendedTextMessage;
+    const message = msg.message as Record<string, unknown> | undefined;
+    const conversation = message?.conversation as string | undefined;
+    const extendedText = message?.extendedTextMessage as {
+      text?: string;
+      contextInfo?: { stanzaId?: string };
+    } | undefined;
     const text = conversation || extendedText?.text || '';
 
     if (!text) return null;
@@ -144,7 +175,7 @@ export class WhatsAppIntegration implements Integration {
       platform: 'whatsapp',
       direction: 'inbound',
       senderId: key.participant || remoteJid,
-      senderName: msg.pushName || remoteJid.split('@')[0],
+      senderName: (msg.pushName as string) || remoteJid.split('@')[0]!,
       chatId: remoteJid,
       text: text,
       attachments: [],
@@ -154,7 +185,7 @@ export class WhatsAppIntegration implements Integration {
         messageType: Object.keys(message || {}).join(','),
         isGroup: remoteJid.endsWith('@g.us'),
       },
-      timestamp: msg.messageTimestamp * 1000,
+      timestamp: (msg.messageTimestamp as number) * 1000,
     };
   }
 }

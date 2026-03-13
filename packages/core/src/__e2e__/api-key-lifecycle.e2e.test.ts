@@ -184,13 +184,10 @@ describe('API key RBAC enforcement', () => {
     const { personality } = await createRes.json();
 
     // Delete
-    const deleteRes = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities/${personality.id}`,
-      {
-        method: 'DELETE',
-        headers: { 'x-api-key': key },
-      }
-    );
+    const deleteRes = await fetch(`${server.baseUrl}/api/v1/soul/personalities/${personality.id}`, {
+      method: 'DELETE',
+      headers: { 'x-api-key': key },
+    });
     expect(deleteRes.status).toBe(204);
   });
 

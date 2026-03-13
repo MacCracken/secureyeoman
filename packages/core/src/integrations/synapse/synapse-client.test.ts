@@ -40,10 +40,18 @@ describe('SynapseClient', () => {
         id: 'syn-1',
         endpoint: 'http://localhost:8420',
         version: '1.0.0',
-        capabilities: { gpuCount: 2, totalGpuMemoryMb: 48000, supportedMethods: ['sft'], loadedModels: [] },
+        capabilities: {
+          gpuCount: 2,
+          totalGpuMemoryMb: 48000,
+          supportedMethods: ['sft'],
+          loadedModels: [],
+        },
       };
       fetchSpy.mockResolvedValueOnce(
-        new Response(JSON.stringify(mockStatus), { status: 200, headers: { 'Content-Type': 'application/json' } })
+        new Response(JSON.stringify(mockStatus), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
       );
 
       const result = await client.getStatus();
@@ -55,9 +63,7 @@ describe('SynapseClient', () => {
     });
 
     it('should throw on non-ok response', async () => {
-      fetchSpy.mockResolvedValueOnce(
-        new Response('not found', { status: 404 })
-      );
+      fetchSpy.mockResolvedValueOnce(new Response('not found', { status: 404 }));
 
       await expect(client.getStatus()).rejects.toThrow('returned 404');
     });

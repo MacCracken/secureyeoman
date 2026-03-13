@@ -1,0 +1,19 @@
+{
+  "name": "SecureYeoman Dashboard",
+  "short_name": "SecureYeoman",
+  "description": "AI-native security operations platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["security", "productivity", "utilities"]
+}

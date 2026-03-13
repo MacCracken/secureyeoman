@@ -2601,5 +2601,37 @@ export function getToolManifest(): ToolManifestEntry[] {
       description: 'Assign a voice profile to the current personality for TTS output',
       category: 'voice',
     },
+
+    // Edge Fleet tools (Phase 14D)
+    {
+      name: 'edge_list',
+      description:
+        'List all registered edge nodes with status, capabilities, architecture, memory, GPU, bandwidth, and latency',
+      category: 'edge',
+    },
+    {
+      name: 'edge_deploy',
+      description:
+        'Deploy a task/workload to an edge node with optional auto-routing based on hardware requirements',
+      category: 'edge',
+    },
+    {
+      name: 'edge_update',
+      description:
+        'Trigger an OTA update for an edge node with SHA-256 and Ed25519 signature verification',
+      category: 'edge',
+    },
+    {
+      name: 'edge_health',
+      description:
+        'Get detailed health and status for a specific edge node including capabilities, bandwidth, WireGuard status',
+      category: 'edge',
+    },
+    {
+      name: 'edge_decommission',
+      description:
+        'Decommission an edge node, marking it permanently offline and removing it from task routing',
+      category: 'edge',
+    },
   ];
 }

@@ -193,12 +193,16 @@ describe('SynapseManager', () => {
 
   describe('registerModel', () => {
     it('should register model via store', async () => {
-      await manager.registerModel('syn-1', {
-        modelName: 'my-model',
-        modelPath: '/models/my-model',
-        baseModel: 'llama-7b',
-        trainingMethod: 'sft',
-      }, 'dj-1');
+      await manager.registerModel(
+        'syn-1',
+        {
+          modelName: 'my-model',
+          modelPath: '/models/my-model',
+          baseModel: 'llama-7b',
+          trainingMethod: 'sft',
+        },
+        'dj-1'
+      );
 
       expect(mockStore.registerModel).toHaveBeenCalledWith(
         'syn-1',

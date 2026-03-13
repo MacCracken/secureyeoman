@@ -240,6 +240,8 @@ export const McpServiceConfigSchema = z.object({
   aequiUrl: z.string().optional(),
   /** Enable voice profile tools (voice_profile_*). On by default — voice is a core feature. Set MCP_EXPOSE_VOICE_TOOLS=false to disable. */
   exposeVoiceTools: z.boolean().default(true),
+  /** Enable edge fleet tools (edge_*). Off by default. Set MCP_EXPOSE_EDGE_TOOLS=true. */
+  exposeEdgeTools: z.boolean().default(false),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

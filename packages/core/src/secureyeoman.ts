@@ -228,8 +228,10 @@ export class SecureYeoman {
   private videoStreamManager:
     | import('./body/capture/video-stream-manager.js').VideoStreamManager
     | null = null;
-  private synapseManager: import('./integrations/synapse/synapse-manager.js').SynapseManager | null =
-    null;
+  private synapseManager:
+    | import('./integrations/synapse/synapse-manager.js').SynapseManager
+    | null = null;
+  private edgeStore: import('./edge/edge-store.js').EdgeStore | null = null;
 
   // CPU usage sampler — updated every getMetrics() call to compute a rolling delta
   private _lastCpuUsage: NodeJS.CpuUsage = process.cpuUsage();
@@ -807,6 +809,13 @@ export class SecureYeoman {
           await this.synapseManager.init();
         });
       }
+
+      // Step 6f: Initialize Edge fleet store (enterprise)
+      await this.initOptional('Edge fleet store', async () => {
+        const { EdgeStore } = await import('./edge/edge-store.js');
+        const pool = getPool();
+        this.edgeStore = new EdgeStore(pool, this.logger!.child({ component: 'EdgeStore' }));
+      });
 
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
@@ -1794,6 +1803,10 @@ export class SecureYeoman {
   getSynapseManager(): import('./integrations/synapse/synapse-manager.js').SynapseManager | null {
     this.ensureInitialized();
     return this.synapseManager;
+  }
+  getEdgeStore(): import('./edge/edge-store.js').EdgeStore | null {
+    this.ensureInitialized();
+    return this.edgeStore;
   }
 
   // ------------------------------------------------------------------

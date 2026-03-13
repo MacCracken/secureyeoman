@@ -1,6 +1,6 @@
 {
   "name": "@secureyeoman/core",
-  "version": "2026.3.12-1",
+  "version": "2026.3.12-2",
   "description": "SecureYeoman Core Agent Engine",
   "type": "module",
   "main": "./dist/index.js",
@@ -36,7 +36,6 @@
     "@opentelemetry/api": "^1.9.0",
     "@secureyeoman/shared": "*",
     "@slack/bolt": "^4.6.0",
-    "baileys": "^6.7.9",
     "better-sqlite3": "^11.0.0",
     "clipboardy": "^4.0.0",
     "discord.js": "^14.25.1",
@@ -61,6 +60,7 @@
     "@grpc/proto-loader": "^0.7.13"
   },
   "optionalDependencies": {
+    "baileys": "^6.7.9",
     "@napi-rs/screenshot": "^1.0.0",
     "@nut-tree/nut-js": "^4.2.0",
     "isolated-vm": "^6.0.2",

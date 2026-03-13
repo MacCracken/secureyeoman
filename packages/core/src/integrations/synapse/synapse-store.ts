@@ -184,10 +184,9 @@ export class SynapseStore {
   }
 
   async markDisconnected(instanceId: string): Promise<void> {
-    await this.pool.query(
-      `UPDATE synapse.instances SET status = 'disconnected' WHERE id = $1`,
-      [instanceId]
-    );
+    await this.pool.query(`UPDATE synapse.instances SET status = 'disconnected' WHERE id = $1`, [
+      instanceId,
+    ]);
   }
 
   async listInstances(): Promise<SynapseInstance[]> {
@@ -210,10 +209,9 @@ export class SynapseStore {
   }
 
   async deleteInstance(instanceId: string): Promise<boolean> {
-    const { rowCount } = await this.pool.query(
-      `DELETE FROM synapse.instances WHERE id = $1`,
-      [instanceId]
-    );
+    const { rowCount } = await this.pool.query(`DELETE FROM synapse.instances WHERE id = $1`, [
+      instanceId,
+    ]);
     return (rowCount ?? 0) > 0;
   }
 

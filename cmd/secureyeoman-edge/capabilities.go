@@ -13,14 +13,17 @@ import (
 
 // EdgeCapabilities describes the hardware and software capabilities of this edge node.
 type EdgeCapabilities struct {
-	NodeID        string   `json:"nodeId"`
-	Hostname      string   `json:"hostname"`
-	Arch          string   `json:"arch"`
-	Platform      string   `json:"platform"`
-	TotalMemoryMB int      `json:"totalMemoryMb"`
-	CPUCores      int      `json:"cpuCores"`
-	HasGPU        bool     `json:"hasGpu"`
-	Tags          []string `json:"tags"`
+	NodeID          string   `json:"nodeId"`
+	Hostname        string   `json:"hostname"`
+	Arch            string   `json:"arch"`
+	Platform        string   `json:"platform"`
+	TotalMemoryMB   int      `json:"totalMemoryMb"`
+	CPUCores        int      `json:"cpuCores"`
+	HasGPU          bool     `json:"hasGpu"`
+	Tags            []string `json:"tags"`
+	BandwidthMbps   int      `json:"bandwidthMbps,omitempty"`   // measured bandwidth to parent (Phase 14B)
+	LatencyMs       int      `json:"latencyMs,omitempty"`       // measured latency to parent (Phase 14B)
+	WireguardPubkey string   `json:"wireguardPubkey,omitempty"` // WireGuard public key (Phase 14B)
 }
 
 // DetectCapabilities gathers system information for this edge node.

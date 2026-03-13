@@ -6,6 +6,95 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.12-2]
+
+### WebSocket Warm-up, Offline-first PWA & Caddy TLS Fix
+
+**WebSocket Warm-up / Pre-generation** (`ai/ws-warmup.ts`, `ai/providers/openai-ws.ts`)
+- `WsWarmup` class pre-acquires an OpenAI WebSocket connection and sends a minimal `max_output_tokens: 1` request with system prompt + tools to seed `lastResponseId` chain before the first real user message
+- Reduces first-response latency for personality activations by pre-loading model state on the persistent WS connection
+- `OpenAIWsProvider.warmup(sessionKey, { systemPrompt, tools })` public API — no-op when warm-up is not configured
+- Parallel to existing `KvCacheWarmer` (Ollama) — covers the OpenAI WS transport path
+- 7 new tests
+
+**Offline-first PWA** (dashboard)
+- `vite-plugin-pwa` with Workbox integration — service worker auto-generated with `registerType: 'prompt'`
+- `manifest.webmanifest` — installable as standalone app on mobile and desktop
+- PWA meta tags: theme-color, apple-mobile-web-app-capable, apple-touch-icon
+- `offline-db.ts` — native IndexedDB cache (zero dependencies) with 4 stores: conversations, settings, pendingMutations, apiCache
+- `useOffline` hook — reactive online/offline status, pending mutation count, auto-sync on reconnect
+- `OfflineBanner` component — persistent UI indicator when offline or mutations pending, with manual sync button
+- Workbox runtime caching: NetworkFirst for conversations/settings/personalities API (5s timeout, 100 entries, 5 min TTL), NetworkOnly for other API routes
+- NavigateFallback to `/index.html` with denylist for `/api/`, `/ws`, `/health`, `/prom`
+- 5 new tests
+
+**Caddy TLS Reverse Proxy Fix** (`docker/Caddyfile.template`, `docker/entrypoint-combined.sh`, `gateway/server.ts`)
+- Fixed Caddyfile template using hostname-bound site block (`localhost:443`) which rejected connections from Docker service names (`sy-core`). Changed to `:443` (any hostname) so Caddy accepts all SNI values with the provided cert
+- Fixed health endpoint reporting `networkMode: 'local'` when TLS is terminated by Caddy — added `TLS_TERMINATED_BY_PROXY` env var so Fastify knows TLS is active even though it serves plain HTTP internally
+- Entrypoint now sets `TLS_TERMINATED_BY_PROXY=true` when Caddy handles TLS termination
+
+---
+
+### Phase 14B–E Complete: Edge Fleet Management, MCP Tools, RISC-V
+
+Completes the remaining Phase 14 Edge/IoT items: fleet registry with DB persistence, capability-based routing, WireGuard mesh config, bandwidth-aware scheduling, OTA Ed25519 signing, 5 MCP edge tools, and RISC-V cross-compilation.
+
+**Edge Fleet Registry & Store** (`edge/edge-store.ts`, `edge/edge-fleet-routes.ts`)
+- `edge.nodes` DB table with full hardware capabilities, bandwidth/latency metrics, WireGuard mesh fields, OTA version tracking
+- `edge.deployments` table for task/workload deployment tracking to edge nodes
+- `edge.ota_updates` audit log for OTA update attempts with SHA-256 and Ed25519 signature fields
+- `EdgeStore` CRUD: upsertNode, getNode, listNodes, updateNodeStatus, updateNodeHeartbeat, updateWireguard, decommissionNode, findBestNodeForTask, createDeployment, updateDeploymentStatus, createOtaUpdate, updateOtaStatus, listOtaUpdates
+- Migration: `023_edge_fleet.sql` (enterprise tier)
+- 19 tests (edge-store.test.ts)
+
+**Edge Fleet REST API** (14 endpoints under `/api/v1/edge/`)
+- Node registry: GET/POST/DELETE nodes, heartbeat, status update, decommission
+- WireGuard mesh: PUT wireguard config per node
+- Capability routing: POST `/api/v1/edge/route` — scores nodes by memory, cores, GPU, latency, bandwidth
+- Deployments: CRUD for task deployments to edge nodes
+- OTA updates: trigger update, list update history, update check endpoint (polled by Go edge binary)
+- All routes gated by `edge_fleet` enterprise license feature
+
+**Bandwidth-Aware Task Routing** (Phase 14B)
+- `bandwidthMbps` and `latencyMs` fields added to `EdgeCapabilities` (TypeScript + Go)
+- `wireguardPubkey` field in capabilities for mesh identity
+- `findBestNodeForTask()` scoring: `memory*0.001 + cores*10 + gpu*100 - latency*0.1 + bandwidth*0.01`
+- Supports constraint filters: minMemoryMb, minCores, needsGpu, arch, tags, maxLatencyMs
+
+**WireGuard Mesh Support** (Phase 14B)
+- DB fields: `wireguard_pubkey`, `wireguard_endpoint`, `wireguard_ip` on `edge.nodes`
+- REST endpoint for mesh config distribution from parent to fleet
+
+**OTA Ed25519 Signing** (Phase 14C)
+- `verifyEd25519()` in Go updater (`updater.go`): hex-encoded public key + signature verification over binary content
+- Runs after SHA-256 check; both must pass for update to apply
+- `UpdateInfo` struct extended with `Ed25519Signature` and `Ed25519PublicKey` fields
+- `edge.ota_updates` table stores `ed25519_signature` per update record
+
+**MCP Edge Tools** (Phase 14D — 5 tools in `mcp/tools/edge-tools.ts`)
+- `edge_list` — List nodes with status/arch/tag filters
+- `edge_deploy` — Deploy workload to specific node or auto-route by capability requirements
+- `edge_update` — Trigger OTA update with integrity verification
+- `edge_health` — Detailed node health report
+- `edge_decommission` — Permanently retire a node
+- Gated by `exposeEdgeTools` / `MCP_EXPOSE_EDGE_TOOLS` config toggle
+- Registered in manifest (431+ total tools)
+
+**RISC-V Cross-Compilation** (Phase 14E)
+- `linux-riscv64` target added to `build-binary.sh` for both `--edge` and production build paths
+- `secureyeoman-edge-linux-riscv64` binary now produced alongside x64/arm64/armv7
+
+**Wiring**
+- `secureyeoman.ts`: EdgeStore instantiated at Step 6f; `getEdgeStore()` getter
+- `gateway/server.ts`: `registerEdgeFleetRoutes()` called during route registration
+- `license-manager.ts`: `edge_fleet` added as enterprise-tier `LicensedFeature`
+- `shared/types/mcp.ts`: `exposeEdgeTools` field added to `McpServiceConfig`
+
+**Engineering Backlog**
+- `auth-middleware.test.ts` decomposition confirmed complete (3 files, 112 tests, 2,036 lines)
+
+---
+
 ## [2026.3.12-1]
 
 ### MCP Transport: Per-Session Server Instances

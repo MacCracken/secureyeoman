@@ -19,10 +19,7 @@ import type { SecureLogger } from '../../logging/logger.js';
 import { toErrorMessage } from '../../utils/errors.js';
 import type { SynapseStore } from './synapse-store.js';
 import type { SynapseRegistry } from './synapse-registry.js';
-import type {
-  SynapseBridgeConfig,
-  SynapseStreamMetrics,
-} from './types.js';
+import type { SynapseBridgeConfig, SynapseStreamMetrics } from './types.js';
 
 // ── Proto loading ────────────────────────────────────────────────────────────
 
@@ -69,27 +66,26 @@ export class YeomanBridgeServer {
       registerModel: this._handleRegisterModel.bind(this),
     });
 
-    const credentials = this.config.tlsCert && this.config.tlsKey
-      ? grpc.ServerCredentials.createSsl(null, [{
-          cert_chain: Buffer.from(this.config.tlsCert),
-          private_key: Buffer.from(this.config.tlsKey),
-        }])
-      : grpc.ServerCredentials.createInsecure();
+    const credentials =
+      this.config.tlsCert && this.config.tlsKey
+        ? grpc.ServerCredentials.createSsl(null, [
+            {
+              cert_chain: Buffer.from(this.config.tlsCert),
+              private_key: Buffer.from(this.config.tlsKey),
+            },
+          ])
+        : grpc.ServerCredentials.createInsecure();
 
     return new Promise((resolve, reject) => {
-      this.server!.bindAsync(
-        `0.0.0.0:${this.config.grpcPort}`,
-        credentials,
-        (err) => {
-          if (err) {
-            this.logger.error({ error: toErrorMessage(err) }, 'gRPC server bind failed');
-            reject(err);
-            return;
-          }
-          this.logger.info({ port: this.config.grpcPort }, 'YeomanBridge gRPC server started');
-          resolve();
+      this.server!.bindAsync(`0.0.0.0:${this.config.grpcPort}`, credentials, (err) => {
+        if (err) {
+          this.logger.error({ error: toErrorMessage(err) }, 'gRPC server bind failed');
+          reject(err);
+          return;
         }
-      );
+        this.logger.info({ port: this.config.grpcPort }, 'YeomanBridge gRPC server started');
+        resolve();
+      });
     });
   }
 
@@ -147,12 +143,19 @@ export class YeomanBridgeServer {
       const req = call.request;
       const job = await this.store.createInboundJob(req.instanceId as string, {
         synapseSourceJobId: req.synapseSourceJobId as string,
-        jobType: (req.jobType as string) as 'evaluation' | 'data_curation' | 'model_export' | 'custom',
+        jobType: req.jobType as string as
+          | 'evaluation'
+          | 'data_curation'
+          | 'model_export'
+          | 'custom',
         description: req.description as string,
         payload: req.payloadJson ? JSON.parse(req.payloadJson as string) : {},
       });
 
-      this.logger.info({ inboundJobId: job.id, jobType: req.jobType }, 'inbound job submitted via gRPC');
+      this.logger.info(
+        { inboundJobId: job.id, jobType: req.jobType },
+        'inbound job submitted via gRPC'
+      );
       callback(null, { id: job.id, status: job.status });
     } catch (err) {
       this.logger.error({ error: toErrorMessage(err) }, 'submitInboundJob failed');
@@ -208,7 +211,10 @@ export class YeomanBridgeServer {
         (req.jobId as string) || undefined
       );
 
-      this.logger.info({ modelName: req.modelName, instanceId: req.instanceId }, 'model registered via gRPC');
+      this.logger.info(
+        { modelName: req.modelName, instanceId: req.instanceId },
+        'model registered via gRPC'
+      );
       callback(null, { success: true, message: 'model registered' });
     } catch (err) {
       this.logger.error({ error: toErrorMessage(err) }, 'registerModel failed');
@@ -253,9 +259,13 @@ export class SynapseGrpcClient {
   async *streamTrainingMetrics(jobId: string): AsyncGenerator<SynapseStreamMetrics> {
     if (!this.client) throw new Error('gRPC client not connected');
 
-    const call = (this.client as unknown as {
-      streamTrainingMetrics: (req: Record<string, unknown>) => grpc.ClientReadableStream<Record<string, unknown>>;
-    }).streamTrainingMetrics({ jobId });
+    const call = (
+      this.client as unknown as {
+        streamTrainingMetrics: (
+          req: Record<string, unknown>
+        ) => grpc.ClientReadableStream<Record<string, unknown>>;
+      }
+    ).streamTrainingMetrics({ jobId });
 
     try {
       for await (const msg of call) {
@@ -283,9 +293,13 @@ export class SynapseGrpcClient {
   ): AsyncGenerator<{ text: string; done: boolean }> {
     if (!this.client) throw new Error('gRPC client not connected');
 
-    const call = (this.client as unknown as {
-      streamInference: (req: Record<string, unknown>) => grpc.ClientReadableStream<Record<string, unknown>>;
-    }).streamInference({ model, prompt, maxTokens });
+    const call = (
+      this.client as unknown as {
+        streamInference: (
+          req: Record<string, unknown>
+        ) => grpc.ClientReadableStream<Record<string, unknown>>;
+      }
+    ).streamInference({ model, prompt, maxTokens });
 
     try {
       for await (const msg of call) {
@@ -313,12 +327,14 @@ export class SynapseGrpcClient {
     if (!this.client) throw new Error('gRPC client not connected');
 
     return new Promise((resolve, reject) => {
-      (this.client as unknown as {
-        getCapabilities: (
-          req: Record<string, unknown>,
-          cb: (err: grpc.ServiceError | null, res?: Record<string, unknown>) => void
-        ) => void;
-      }).getCapabilities({}, (err, res) => {
+      (
+        this.client as unknown as {
+          getCapabilities: (
+            req: Record<string, unknown>,
+            cb: (err: grpc.ServiceError | null, res?: Record<string, unknown>) => void
+          ) => void;
+        }
+      ).getCapabilities({}, (err, res) => {
         if (err) return reject(err);
         resolve({
           instanceId: res!.instanceId as string,
@@ -346,12 +362,14 @@ export class SynapseGrpcClient {
     if (!this.client) throw new Error('gRPC client not connected');
 
     return new Promise((resolve, reject) => {
-      (this.client as unknown as {
-        submitTrainingJob: (
-          req: Record<string, unknown>,
-          cb: (err: grpc.ServiceError | null, res?: Record<string, unknown>) => void
-        ) => void;
-      }).submitTrainingJob(
+      (
+        this.client as unknown as {
+          submitTrainingJob: (
+            req: Record<string, unknown>,
+            cb: (err: grpc.ServiceError | null, res?: Record<string, unknown>) => void
+          ) => void;
+        }
+      ).submitTrainingJob(
         {
           baseModel: req.baseModel,
           datasetPath: req.datasetPath,

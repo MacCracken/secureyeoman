@@ -12,7 +12,7 @@
 #   Mode C — HTTP passthrough (TLS_ENABLED=false):
 #     Caddy is not started; Fastify serves HTTP directly.
 
-${TLS_DOMAIN}:${TLS_PORT} {
+:${TLS_PORT} {
     tls ${TLS_CERT_DIRECTIVE}
 
     reverse_proxy 127.0.0.1:18789

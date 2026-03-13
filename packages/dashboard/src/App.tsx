@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import { DashboardLayout } from './components/DashboardLayout';
 import { LoginPage } from './pages/LoginPage';
+import { OfflineBanner } from './components/OfflineBanner';
 import { useAuth } from './hooks/useAuth';
 import { SidebarProvider } from './hooks/useSidebar';
 
@@ -28,6 +29,7 @@ function App() {
           element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />}
         />
       </Routes>
+      <OfflineBanner />
     </SidebarProvider>
   );
 }

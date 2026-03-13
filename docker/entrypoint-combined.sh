@@ -48,6 +48,7 @@ if [ "$TLS_ENABLED" = "true" ]; then
     export SECUREYEOMAN_HOST="${SECUREYEOMAN_HOST:-0.0.0.0}"
     export SECUREYEOMAN_TLS_ENABLED="false"  # Fastify stays HTTP; Caddy terminates TLS
     export TLS_ENABLED="false"               # Ensure Fastify doesn't pick up TLS from env_file
+    export TLS_TERMINATED_BY_PROXY="true"    # Tell Fastify TLS is handled by Caddy (for networkMode/health)
 
     # Write supervisord override to enable caddy
     cat > /tmp/supervisord-caddy.conf <<OVERRIDE

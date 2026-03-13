@@ -25,7 +25,8 @@ COPY packages/mcp/package.json packages/mcp/
 COPY packages/dashboard/package.json packages/dashboard/
 
 # --ignore-scripts: skip "prepare" hook (git config for .githooks) — no .git in builder
-RUN npm ci --ignore-scripts
+# npm install (not ci): tolerates transitive deps with unavailable git URLs (e.g. baileys → libsignal)
+RUN npm install --ignore-scripts
 
 # Copy source
 COPY tsconfig.json ./

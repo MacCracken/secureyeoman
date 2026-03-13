@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'path';
 import type { Plugin as EsbuildPlugin } from 'esbuild';
 
@@ -41,7 +42,36 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [micromarkResolve(), react()],
+    plugins: [
+      micromarkResolve(),
+      react(),
+      VitePWA({
+        registerType: 'prompt',
+        includeAssets: ['favicon.svg'],
+        manifest: false, // Use public/manifest.webmanifest
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+          maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8 MB — Monaco workers are ~7 MB
+          runtimeCaching: [
+            {
+              urlPattern: /^\/api\/v1\/(conversations|settings|personalities)/,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'api-cache',
+                expiration: { maxEntries: 100, maxAgeSeconds: 300 },
+                networkTimeoutSeconds: 5,
+              },
+            },
+            {
+              urlPattern: /^\/api\//,
+              handler: 'NetworkOnly',
+            },
+          ],
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//, /^\/ws/, /^\/health/, /^\/prom/],
+        },
+      }),
+    ],
     resolve: {
       alias: {
         '@': resolve(__dirname, './src'),

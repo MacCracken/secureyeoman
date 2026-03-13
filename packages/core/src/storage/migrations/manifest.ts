@@ -67,4 +67,5 @@ export const MIGRATION_MANIFEST: MigrationEntry[] = [
   { id: '020_relationships', sql: readSql('020_relationships.sql'), tier: 'enterprise' },
   { id: '021_auto_secrets', sql: readSql('021_auto_secrets.sql'), tier: 'community' },
   { id: '022_synapse_bridge', sql: readSql('022_synapse_bridge.sql'), tier: 'enterprise' },
+  { id: '023_edge_fleet', sql: readSql('023_edge_fleet.sql'), tier: 'enterprise' },
 ];

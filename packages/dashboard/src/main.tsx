@@ -35,3 +35,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </React.StrictMode>
 );
+
+// Register service worker for offline-first PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.warn('[SW] Registration failed:', err);
+    });
+  });
+}
