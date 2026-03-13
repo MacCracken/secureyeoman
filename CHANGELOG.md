@@ -33,6 +33,44 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 - Fixed health endpoint reporting `networkMode: 'local'` when TLS is terminated by Caddy — added `TLS_TERMINATED_BY_PROXY` env var so Fastify knows TLS is active even though it serves plain HTTP internally
 - Entrypoint now sets `TLS_TERMINATED_BY_PROXY=true` when Caddy handles TLS termination
 
+**Bidirectional Synapse gRPC Bridge** (`integrations/synapse/grpc-bridge.ts`, `bridge.proto`)
+- `YeomanBridgeServer` — gRPC server (port 8421) receives capability announcements, inbound jobs, status reports, and model registrations from Synapse
+- `SynapseGrpcClient` — gRPC client for streaming training metrics and inference tokens from Synapse
+- Proto file with 2 services (`SynapseService`, `YeomanBridge`) and 10 RPC methods
+- Bidirectional heartbeat streaming support
+- Dependencies: `@grpc/grpc-js` v1.12.5, `@grpc/proto-loader` v0.7.13
+
+**Training Job Delegation to Synapse** (`training/finetune-manager.ts`, `training/pretrain-manager.ts`)
+- Both finetune and pretrain managers can now delegate jobs to remote Synapse instances instead of running locally
+- New `TrainingBackend` type: `'local' | 'synapse'` — `backend` field on job configs and DB rows
+- `synapseDelegatedJobId` field for Synapse-side job correlation
+- `_startSynapseJob()` in finetune manager, `startJob()` in pretrain manager with Synapse delegation
+
+**Synapse Inbound Job Delegation** (`synapse-store.ts`, `synapse-routes.ts`, `022_synapse_bridge.sql`)
+- Synapse can submit jobs back to SecureYeoman (reverse delegation)
+- `synapse.inbound_jobs` table with job_type, payload, status, result tracking
+- `synapse.capability_announcements` table for audit trail
+- Inbound job types: `evaluation`, `data_curation`, `model_export`, `custom`
+- 7 new REST endpoints under `/api/v1/synapse/bridge/`:
+  - POST/GET jobs — receive and list inbound jobs
+  - GET/PATCH jobs/:id — status and result updates
+  - POST capabilities — receive capability announcements
+  - POST webhook — receive delegated job progress/completion updates
+  - GET delegated-jobs — list SY→Synapse delegated jobs with filtering
+
+**New E2E Test Suites** (3 files, `src/__e2e__/`)
+- `api-key-lifecycle.e2e.test.ts` — full API key lifecycle (creation, listing, revocation, rotation, scope enforcement)
+- `concurrent-ops.e2e.test.ts` — parallel personality creation, race conditions, data consistency
+- `security.e2e.test.ts` — rate limiting, security headers, input validation, injection resistance
+
+**Voice Prompt Cache Tests** (`multimodal/voice/voice-cache.test.ts`)
+- Comprehensive test suite for voice prompt cache (memory + disk with TTL, max entries, max disk size)
+
+**CI/CD Fixes**
+- Removed phantom optional dependencies (`@napi-rs/screenshot`, `@nut-tree/nut-js`) — packages are 404 on npm; caused `npm ci` failure on Node 24
+- Added `serialize-javascript` override (→ 7.0.4) to fix high-severity RCE vulnerability via `workbox-build` → `@rollup/plugin-terser` chain
+- Fixed `ENTERPRISE_FEATURES` test — updated count from 15 → 16 after `edge_fleet` addition
+
 ---
 
 ### Phase 14B–E Complete: Edge Fleet Management, MCP Tools, RISC-V

@@ -2633,5 +2633,63 @@ export function getToolManifest(): ToolManifestEntry[] {
         'Decommission an edge node, marking it permanently offline and removing it from task routing',
       category: 'edge',
     },
+    // Shruti DAW tools (Phase 16)
+    {
+      name: 'shruti_session_create',
+      description: 'Create a new audio session in Shruti DAW with name, sample rate, and channels',
+      category: 'shruti',
+    },
+    {
+      name: 'shruti_session_open',
+      description: 'Open an existing Shruti DAW session by file path',
+      category: 'shruti',
+    },
+    {
+      name: 'shruti_track_add',
+      description: 'Add a track (audio, midi, bus, instrument) to the current Shruti session',
+      category: 'shruti',
+    },
+    {
+      name: 'shruti_track_list',
+      description:
+        'List all tracks in the current Shruti session with gain, pan, mute/solo state',
+      category: 'shruti',
+    },
+    {
+      name: 'shruti_region_add',
+      description:
+        'Place an audio file on a track at a specific timeline position in the Shruti session',
+      category: 'shruti',
+    },
+    {
+      name: 'shruti_transport',
+      description:
+        'Control Shruti transport: play, stop, pause, record, seek to position, or set tempo',
+      category: 'shruti',
+    },
+    {
+      name: 'shruti_export',
+      description:
+        'Export/bounce the current Shruti session to WAV or FLAC at 16/24/32-bit depth',
+      category: 'shruti',
+    },
+    {
+      name: 'shruti_analyze',
+      description:
+        'Run audio analysis: spectrum (FFT), dynamics (peak/RMS/LUFS), auto-mix suggestions, or composition suggestions',
+      category: 'shruti',
+    },
+    {
+      name: 'shruti_mix',
+      description:
+        'Adjust track mixing in Shruti: set gain (dB), pan, mute, solo, or add an effect (EQ, compressor, reverb, delay, limiter)',
+      category: 'shruti',
+    },
+    {
+      name: 'shruti_edit',
+      description:
+        'Edit operations in Shruti: undo, redo, split region, trim region, set fade in/out',
+      category: 'shruti',
+    },
   ];
 }

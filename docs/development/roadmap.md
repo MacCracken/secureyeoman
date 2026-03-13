@@ -10,6 +10,8 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
+| 15 | Agent Binary (Tier 2.5) | P2 — platform | Planned |
+| 16 | Shruti DAW Ecosystem Integration | P2 — platform | Planned |
 | — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
 | Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Demand-gated |
 
@@ -144,6 +146,63 @@
 - [x] **x86_64 NUC/mini-PC** — `linux-amd64` binary. Validated in AGNOS edge container.
 - [x] **RISC-V** — `linux-riscv64` cross-compilation target added to `build-binary.sh` (both `--edge` and production paths).
 - [x] **OCI container image** — Verified running inside `ghcr.io/maccracken/agnosticos:edge` (10 MB Alpine). ARMv7 cross-compile for broader IoT targets.
+
+---
+
+## Phase 15: Agent Binary (Tier 2.5)
+
+**Priority**: P2 — Platform. See [ADR 039](../adr/039-agent-binary-tier.md).
+
+**Goal**: A streamlined, headless SecureYeoman binary (`secureyeoman-agent`) for autonomous agent workloads. Includes soul, AI providers, and A2A delegation — but not brain/RAG, training, analytics, dashboard, or enterprise compliance subsystems. SQLite-only, <5s boot, 100–200 MB RAM. Enables scaling agent count independently of platform instances.
+
+### 15A: AgentRuntime Core
+
+- [ ] **`AgentRuntime` class** — `src/agent/agent-runtime.ts`, parallel to `EdgeRuntime`. Initializes: config, logger, SQLite, auth (delegated or local), RBAC, soul manager, AI provider router, A2A transport, slim gateway.
+- [ ] **Agent CLI entry point** — `src/agent/cli.ts` with `start`, `register`, `status` subcommands. Bun build target for tree-shaking.
+- [ ] **Slim gateway** — ~15–20 routes: health, A2A receive/capabilities, chat completions, soul CRUD (personality, skills, tools), model list, tool-call, auth token validation.
+- [ ] **SQLite schema subset** — Agent-specific migration with soul tables (personalities, skills, dynamic_tools), auth tables (api_keys), and audit log. No brain, training, simulation, edge fleet tables.
+
+### 15B: Parent Registration & Delegation
+
+- [ ] **Parent registration** — `secureyeoman-agent register --parent-url <url> --token <token>`. Registers with parent SY, receives API key, stores parent URL for delegation.
+- [ ] **Auth delegation** — Agent validates incoming tokens against parent's auth service via REST call. Caches valid tokens locally (5 min TTL).
+- [ ] **Knowledge delegation** — RAG queries forwarded to parent's brain via A2A message. Agent has no local vector store.
+- [ ] **Audit forwarding** — Agent events batched and forwarded to parent's audit chain (reuses AGNOS hook pattern: batch 50, flush 5s).
+
+### 15C: Build & Distribution
+
+- [ ] **Build script tier** — `SECUREYEOMAN_BUILD_TIER=agent` in `build-binary.sh`. Targets: `secureyeoman-agent-linux-x64`, `linux-arm64`, `darwin-arm64`.
+- [ ] **Conditional module init** — `SECUREYEOMAN_BUILD_TIER` env var gates module loading. Agent tier loads: soul, AI, delegation (subset), auth (subset), security (subset). Skips: brain, training, analytics, simulation, marketplace, dashboard, DLP, TEE, supply chain, edge fleet, SCIM, break glass.
+- [ ] **Container image** — `Dockerfile.agent` with minimal Node.js/Bun base. Target: <120 MB image.
+- [ ] **Docker compose profile** — `agent` profile for running alongside full SY.
+
+---
+
+## Phase 16: Shruti DAW Ecosystem Integration
+
+**Priority**: P2 — Platform. See [ADR 040](../adr/040-shruti-ecosystem-integration.md).
+
+**Goal**: Add Shruti (Rust-native DAW) as the 8th ecosystem service, giving SY agents music production, audio recording/editing, spectral analysis, and AI-assisted mixing capabilities. Shruti is at MVP v1 (723 tests, 6 MCP tools, AgentApi with 35+ methods) but needs an HTTP server wrapper before SY can connect.
+
+### 16A: Shruti HTTP Server (Shruti repo)
+
+- [ ] **`shruti serve` subcommand** — Axum or Actix-web server on port 8050 wrapping `AgentApi`. Bearer token auth. Endpoints: session CRUD, track management, transport control, export, analysis, mixer, undo/redo, MCP tool-call dispatch.
+- [ ] **Health endpoint** — `GET /health` returning version, uptime, active session, audio device info.
+- [ ] **Docker image** — `Dockerfile` for headless Shruti server (no GUI dependencies). Multi-stage Rust build.
+
+### 16B: SY Integration
+
+- [ ] **Ecosystem registration** — Add `shruti` to `EcosystemServiceId` union and `SERVICE_REGISTRY` in `service-discovery.ts`. Port 8050, env `SHRUTI_URL`, secret `SHRUTI_API_KEY`.
+- [ ] **Integration client** — `integrations/shruti/shruti-client.ts` HTTP client with methods for all Shruti API endpoints (session, tracks, transport, export, analysis, mixer, undo/redo).
+- [ ] **MCP tools** — `mcp/tools/shruti-tools.ts` with 10 tools (`shruti_session_create`, `shruti_session_open`, `shruti_track_add`, `shruti_track_list`, `shruti_region_add`, `shruti_transport`, `shruti_export`, `shruti_analyze`, `shruti_mix`, `shruti_edit`). Gated by `exposeShrutiTools` / `MCP_EXPOSE_SHRUTI_TOOLS`.
+- [ ] **Config fields** — `shrutiUrl`, `shrutiApiKey`, `exposeShrutiTools` in `McpServiceConfig`.
+- [ ] **Docker compose** — `shruti` and `shruti-dev` services with `shruti` and `full-dev` profiles.
+
+### 16C: Voice-Driven Music Production
+
+- [ ] **STT → Shruti intent bridge** — SY's STT providers transcribe user speech, forward to Shruti's `parse_voice_input()` for DAW-specific intents (play, stop, mute track 2, set tempo 120).
+- [ ] **TTS confirmation** — Agent speaks back confirmations via SY's TTS providers ("Track 2 muted", "Exporting session to WAV").
+- [ ] **Dashboard panel** — Shruti card in ecosystem services panel. When connected: active session name, track count, transport state, recent analysis results.
 
 ---
 
@@ -386,4 +445,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-12 (Phase 14 complete — edge fleet registry, MCP tools, RISC-V, Ed25519 OTA, capability routing; auth-middleware decomposition confirmed done). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-12 (Phase 15 Agent Binary + Phase 16 Shruti DAW added; Phase 14 complete). See [Changelog](../../CHANGELOG.md) for full history.*

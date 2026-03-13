@@ -44,7 +44,7 @@ describe('ServiceDiscoveryManager', () => {
   describe('getServices', () => {
     it('returns all services in disconnected state initially', () => {
       const services = manager.getServices();
-      expect(services).toHaveLength(7);
+      expect(services).toHaveLength(8);
 
       const agnostic = services.find((s) => s.id === 'agnostic');
       expect(agnostic).toBeDefined();
@@ -86,6 +86,12 @@ describe('ServiceDiscoveryManager', () => {
       expect(aequi).toBeDefined();
       expect(aequi!.status).toBe('disconnected');
       expect(aequi!.displayName).toBe('Aequi Accounting');
+
+      const shruti = services.find((s) => s.id === 'shruti');
+      expect(shruti).toBeDefined();
+      expect(shruti!.status).toBe('disconnected');
+      expect(shruti!.displayName).toBe('Shruti DAW');
+      expect(shruti!.requiredSecrets).toEqual(['SHRUTI_API_KEY']);
     });
   });
 

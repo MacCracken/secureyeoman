@@ -149,6 +149,21 @@ export const MCP_SECRET_MAPPINGS: {
     label: 'Delta API Token',
     category: 'Services',
   },
+  // Shruti DAW
+  {
+    secretName: 'SHRUTI_URL',
+    configKey: 'shrutiUrl',
+    envVar: 'SHRUTI_URL',
+    label: 'Shruti Instance URL',
+    category: 'Services',
+  },
+  {
+    secretName: 'SHRUTI_API_KEY',
+    configKey: 'shrutiApiKey',
+    envVar: 'SHRUTI_API_KEY',
+    label: 'Shruti API Key',
+    category: 'Services',
+  },
 ];
 
 export function loadConfig(
@@ -243,6 +258,9 @@ export function loadConfig(
     exposeAequiTools: parseBool(env.MCP_EXPOSE_AEQUI_TOOLS, false),
     aequiUrl: env.AEQUI_URL ?? 'http://localhost:8060',
     exposeVoiceTools: parseBool(env.MCP_EXPOSE_VOICE_TOOLS, true),
+    exposeShrutiTools: parseBool(env.MCP_EXPOSE_SHRUTI_TOOLS, false),
+    shrutiUrl: env.SHRUTI_URL ?? 'http://localhost:8050',
+    shrutiApiKey: env.SHRUTI_API_KEY,
   };
 
   return McpServiceConfigSchema.parse(raw);

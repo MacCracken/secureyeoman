@@ -242,6 +242,12 @@ export const McpServiceConfigSchema = z.object({
   exposeVoiceTools: z.boolean().default(true),
   /** Enable edge fleet tools (edge_*). Off by default. Set MCP_EXPOSE_EDGE_TOOLS=true. */
   exposeEdgeTools: z.boolean().default(false),
+  /** Enable Shruti DAW tools (shruti_*). Off by default. Set MCP_EXPOSE_SHRUTI_TOOLS=true. */
+  exposeShrutiTools: z.boolean().default(false),
+  /** Base URL for the Shruti DAW instance. Default: http://localhost:8050 */
+  shrutiUrl: z.string().optional(),
+  /** API key for authenticating with Shruti. */
+  shrutiApiKey: z.string().optional(),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

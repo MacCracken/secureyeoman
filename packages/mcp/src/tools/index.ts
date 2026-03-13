@@ -64,6 +64,7 @@ import { registerNotionTools } from './notion-tools.js';
 import { registerGoogleWorkspaceTools } from './google-workspace-tools.js';
 import { registerVoiceTools } from './voice-tools.js';
 import { registerEdgeTools } from './edge-tools.js';
+import { registerShrutiTools } from './shruti-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -154,4 +155,6 @@ export async function registerAllTools(
   registerVoiceTools(server, client, config, middleware);
   // Edge fleet tools (Phase 14D)
   registerEdgeTools(server, config, middleware);
+  // Shruti DAW tools (Phase 16)
+  registerShrutiTools(server, config, middleware);
 }

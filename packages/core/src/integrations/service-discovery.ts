@@ -26,7 +26,8 @@ export type EcosystemServiceId =
   | 'delta'
   | 'bullshift'
   | 'photisnadi'
-  | 'aequi';
+  | 'aequi'
+  | 'shruti';
 
 export type EcosystemServiceStatus =
   | 'disconnected' // never connected
@@ -135,6 +136,17 @@ const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
     healthPath: '/health',
     requiredSecrets: [],
     mcpConfigKey: 'exposeAequiTools',
+  },
+  {
+    id: 'shruti',
+    displayName: 'Shruti DAW',
+    description:
+      'Rust-native digital audio workstation with AI-assisted music production, mixing, and analysis',
+    urlEnv: 'SHRUTI_URL',
+    defaultUrl: 'http://127.0.0.1:8050',
+    healthPath: '/health',
+    requiredSecrets: ['SHRUTI_API_KEY'],
+    mcpConfigKey: 'exposeShrutiTools',
   },
 ] as const;
 

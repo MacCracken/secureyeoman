@@ -564,6 +564,52 @@ services:
       - full-dev
     restart: unless-stopped
 
+  # ── Shruti DAW ───────────────────────────────────────────────────────────────
+  # Rust-native digital audio workstation with AI-assisted music production.
+  # Port 8050. Headless server mode (no GUI).
+  shruti:
+    image: ghcr.io/maccracken/shruti:latest
+    ports:
+      - '${SHRUTI_PORT:-8050}:8050'
+    volumes:
+      - shruti-data:/data
+    environment:
+      SHRUTI_API_KEY: ${SHRUTI_API_KEY:-}
+      SHRUTI_DATA_DIR: /data
+      RUST_LOG: ${RUST_LOG:-info}
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8050/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - shruti
+    restart: unless-stopped
+
+  # Shruti local build — uses sibling repo source for full integration dev.
+  shruti-dev:
+    build:
+      context: ../shruti
+      dockerfile: Dockerfile
+    ports:
+      - '${SHRUTI_PORT:-8050}:8050'
+    volumes:
+      - shruti-data:/data
+    environment:
+      SHRUTI_API_KEY: ${SHRUTI_API_KEY:-}
+      SHRUTI_DATA_DIR: /data
+      RUST_LOG: ${RUST_LOG:-info}
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8050/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - full-dev
+    restart: unless-stopped
+
   # Dashboard is now served by the core gateway (SPA serving via @fastify/static).
   # The separate dashboard service below is for local development only.
   sy-dashboard-dev:
@@ -600,6 +646,7 @@ volumes:
   synapse-models:
   synapse-data:
   aequi-data:
+  shruti-data:
   delta-data:
   node-modules:
   dashboard-node-modules:
