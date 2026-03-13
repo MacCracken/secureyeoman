@@ -103,7 +103,15 @@ export class ExternalBrainSync {
     ]);
     const safe: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(config)) {
-      if (ALLOWED_KEYS.has(k)) safe[k] = v;
+      if (ALLOWED_KEYS.has(k)) {
+        // Reject path traversal in path/subdir fields
+        if ((k === 'path' || k === 'subdir') && typeof v === 'string') {
+          if (/\.\.[\\/]/.test(v) || v.includes('~') || v.includes('%2e')) {
+            throw new Error(`Invalid ${k}: path traversal not allowed`);
+          }
+        }
+        safe[k] = v;
+      }
     }
     Object.assign(this.config, safe);
 
@@ -159,10 +167,10 @@ export class ExternalBrainSync {
     // Sync knowledge (paginated)
     if (this.config.syncKnowledge) {
       const knowledgeIds = new Set<string>();
-      let _offset = 0;
+      let kOffset = 0;
       let batch;
       do {
-        batch = await this.brain.queryKnowledge({ limit: PAGE_SIZE });
+        batch = await this.brain.queryKnowledge({ limit: PAGE_SIZE, offset: kOffset });
         for (const entry of batch) {
           const filename = this.sanitizeFilename(`${entry.id}.md`);
           const filepath = join(knowledgeDir, filename);
@@ -171,7 +179,7 @@ export class ExternalBrainSync {
           knowledgeIds.add(filename);
           knowledgeWritten++;
         }
-        _offset += PAGE_SIZE;
+        kOffset += PAGE_SIZE;
       } while (batch.length === PAGE_SIZE);
 
       // Remove stale files

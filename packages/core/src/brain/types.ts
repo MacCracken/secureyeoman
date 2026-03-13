@@ -84,6 +84,7 @@ export interface KnowledgeQuery {
   search?: string;
   minConfidence?: number;
   limit?: number;
+  offset?: number;
   /** When set, returns only knowledge scoped to this personality OR unscoped (NULL) entries. */
   personalityId?: string;
 }

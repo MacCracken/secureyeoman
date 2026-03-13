@@ -72,8 +72,15 @@ function makeManager(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function buildApp(manager: ReturnType<typeof makeManager> | null = makeManager()) {
+function buildApp(
+  manager: ReturnType<typeof makeManager> | null = makeManager(),
+  authUserId = 'test-user'
+) {
   const app = Fastify({ logger: false });
+  // Simulate auth middleware — inject authUser on every request
+  app.addHook('onRequest', async (request) => {
+    (request as any).authUser = { userId: authUserId };
+  });
   registerAccessReviewRoutes(app, { manager: manager as any });
   return { app, manager };
 }
@@ -121,7 +128,7 @@ describe('POST /api/v1/security/access-review/campaigns', () => {
     expect(res.json().campaign.id).toBe('camp-1');
     expect(manager!.createCampaign).toHaveBeenCalledWith('Q1 Review', ['reviewer-1'], {
       scope: undefined,
-      createdBy: undefined,
+      createdBy: 'test-user',
       expiryMs: undefined,
     });
   });
@@ -135,13 +142,12 @@ describe('POST /api/v1/security/access-review/campaigns', () => {
         name: 'Scoped',
         reviewerIds: ['rev-1'],
         scope: 'engineering',
-        createdBy: 'admin',
         expiryDays: 14,
       },
     });
     expect(manager!.createCampaign).toHaveBeenCalledWith('Scoped', ['rev-1'], {
       scope: 'engineering',
-      createdBy: 'admin',
+      createdBy: 'test-user',
       expiryMs: 14 * 24 * 60 * 60 * 1000,
     });
   });
@@ -290,7 +296,6 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
       payload: {
         entitlementId: 'ent-1',
         decision: 'approve',
-        reviewerId: 'reviewer-1',
       },
     });
     expect(res.statusCode).toBe(201);
@@ -305,7 +310,6 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
       payload: {
         entitlementId: 'ent-1',
         decision: 'revoke',
-        reviewerId: 'reviewer-1',
         justification: 'Offboarded',
       },
     });
@@ -313,7 +317,7 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
       'camp-1',
       'ent-1',
       'revoke',
-      'reviewer-1',
+      'test-user',
       'Offboarded'
     );
   });
@@ -323,7 +327,7 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/security/access-review/campaigns/camp-1/decisions',
-      payload: { decision: 'approve', reviewerId: 'reviewer-1' },
+      payload: { decision: 'approve' },
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().message).toMatch(/entitlementId/i);
@@ -334,20 +338,20 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/security/access-review/campaigns/camp-1/decisions',
-      payload: { entitlementId: 'ent-1', reviewerId: 'reviewer-1' },
+      payload: { entitlementId: 'ent-1' },
     });
     expect(res.statusCode).toBe(400);
   });
 
-  it('returns 400 when reviewerId is missing', async () => {
-    const { app } = buildApp();
+  it('returns 401 when no auth user', async () => {
+    const app = Fastify({ logger: false });
+    registerAccessReviewRoutes(app, { manager: makeManager() as any });
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/security/access-review/campaigns/camp-1/decisions',
       payload: { entitlementId: 'ent-1', decision: 'approve' },
     });
-    expect(res.statusCode).toBe(400);
-    expect(res.json().message).toMatch(/reviewerId/i);
+    expect(res.statusCode).toBe(401);
   });
 
   it('returns 400 for invalid decision value', async () => {
@@ -355,7 +359,7 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/security/access-review/campaigns/camp-1/decisions',
-      payload: { entitlementId: 'ent-1', decision: 'skip', reviewerId: 'reviewer-1' },
+      payload: { entitlementId: 'ent-1', decision: 'skip' },
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().message).toMatch(/invalid decision/i);
@@ -369,7 +373,7 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/security/access-review/campaigns/bad/decisions',
-      payload: { entitlementId: 'ent-1', decision: 'approve', reviewerId: 'rev-1' },
+      payload: { entitlementId: 'ent-1', decision: 'approve' },
     });
     expect(res.statusCode).toBe(404);
   });
@@ -384,7 +388,7 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/security/access-review/campaigns/camp-1/decisions',
-      payload: { entitlementId: 'ent-1', decision: 'approve', reviewerId: 'rev-1' },
+      payload: { entitlementId: 'ent-1', decision: 'approve' },
     });
     expect(res.statusCode).toBe(409);
   });
@@ -393,13 +397,15 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
     const mgr = makeManager({
       submitDecision: vi
         .fn()
-        .mockRejectedValue(new Error('User rev-1 is not an assigned reviewer for campaign camp-1')),
+        .mockRejectedValue(
+          new Error('User test-user is not an assigned reviewer for campaign camp-1')
+        ),
     });
     const { app } = buildApp(mgr);
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/security/access-review/campaigns/camp-1/decisions',
-      payload: { entitlementId: 'ent-1', decision: 'approve', reviewerId: 'rev-1' },
+      payload: { entitlementId: 'ent-1', decision: 'approve' },
     });
     expect(res.statusCode).toBe(409);
   });
@@ -413,29 +419,29 @@ describe('POST /api/v1/security/access-review/campaigns/:id/close', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/security/access-review/campaigns/camp-1/close',
-      payload: { closedBy: 'admin' },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().campaign.status).toBe('closed');
   });
 
-  it('passes closedBy to manager', async () => {
-    const { app, manager } = buildApp();
+  it('uses auth user as closedBy', async () => {
+    const { app, manager } = buildApp(undefined, 'admin-user');
     await app.inject({
       method: 'POST',
       url: '/api/v1/security/access-review/campaigns/camp-1/close',
-      payload: { closedBy: 'admin-user' },
     });
     expect(manager!.closeCampaign).toHaveBeenCalledWith('camp-1', 'admin-user');
   });
 
-  it('handles missing body gracefully', async () => {
-    const { app, manager } = buildApp();
-    await app.inject({
+  it('handles missing auth gracefully', async () => {
+    const app = Fastify({ logger: false });
+    registerAccessReviewRoutes(app, { manager: makeManager() as any });
+    const res = await app.inject({
       method: 'POST',
       url: '/api/v1/security/access-review/campaigns/camp-1/close',
     });
-    expect(manager!.closeCampaign).toHaveBeenCalledWith('camp-1', undefined);
+    // closedBy will be undefined when no auth
+    expect(res.statusCode).toBe(200);
   });
 
   it('returns 404 when campaign not found', async () => {

@@ -88,7 +88,7 @@ export class ParentAuthDelegate {
       const response = await fetch(`${this.parentUrl}/api/v1/auth/validate`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({}),
         signal: AbortSignal.timeout(this.timeoutMs),
       });
 

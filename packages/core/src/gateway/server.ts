@@ -448,6 +448,14 @@ export class GatewayServer {
       sendError(reply, statusCode, message);
     });
 
+    // Prevent caching of auth responses (tokens, credentials, session data)
+    this.app.addHook('onSend', async (request, reply) => {
+      if (request.url.startsWith('/api/v1/auth')) {
+        void reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        void reply.header('Pragma', 'no-cache');
+      }
+    });
+
     // Auth routes
     if (this.authService) {
       registerAuthRoutes(this.app, {

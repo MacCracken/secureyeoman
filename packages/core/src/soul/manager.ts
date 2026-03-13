@@ -77,6 +77,17 @@ export function isPersonalityWithinActiveHours(p: Personality): boolean {
 const MAX_TRIGGER_CACHE = 10_000;
 const triggerPatternCache = new Map<string, RegExp | null>();
 
+/** Reject patterns with nested quantifiers that can cause catastrophic backtracking. */
+function isUnsafeRegex(pattern: string): boolean {
+  // Detect nested quantifiers: (a+)+, (a*)+, (a+)*, etc.
+  if (/(\([^)]*[+*][^)]*\))[+*{]/.test(pattern)) return true;
+  // Detect overlapping alternation with quantifiers: (a|a)+
+  if (/\([^)]*\|[^)]*\)[+*{]/.test(pattern) && pattern.length > 100) return true;
+  // Reject excessively long patterns
+  if (pattern.length > 500) return true;
+  return false;
+}
+
 function compileTriggerPattern(pattern: string): RegExp | null {
   if (triggerPatternCache.has(pattern)) return triggerPatternCache.get(pattern)!;
   if (triggerPatternCache.size >= MAX_TRIGGER_CACHE) {
@@ -85,7 +96,11 @@ function compileTriggerPattern(pattern: string): RegExp | null {
   }
   let re: RegExp | null;
   try {
-    re = new RegExp(pattern, 'i');
+    if (isUnsafeRegex(pattern)) {
+      re = null; // Fall back to substring matching
+    } else {
+      re = new RegExp(pattern, 'i');
+    }
   } catch {
     re = null;
   }
@@ -300,6 +315,9 @@ export class SoulManager {
           exposeBullshift: false,
           exposePhotisnadi: false,
           exposeSynapse: false,
+          exposeDelta: false,
+          exposeVoice: false,
+          exposeEdge: false,
         },
         proactiveConfig: {
           enabled: false,

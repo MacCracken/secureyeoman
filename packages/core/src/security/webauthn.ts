@@ -645,7 +645,7 @@ export class WebAuthnManager {
     return this.storage.getCredentialsByUser(userId);
   }
 
-  async removeCredential(credentialId: string): Promise<number> {
-    return this.storage.deleteCredential(credentialId);
+  async removeCredential(credentialId: string, userId?: string): Promise<number> {
+    return this.storage.deleteCredential(credentialId, userId);
   }
 }

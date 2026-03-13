@@ -124,7 +124,13 @@ export class AgentRuntime {
 
     // Step 4: Audit chain (in-memory — lightweight for agent mode)
     const auditStorage = new InMemoryAuditStorage();
-    const signingKey = getSecret('SECUREYEOMAN_SIGNING_KEY') ?? `agent-audit-${Date.now()}`;
+    const configuredKey = getSecret('SECUREYEOMAN_SIGNING_KEY');
+    if (!configuredKey) {
+      this.logger.warn(
+        'No SECUREYEOMAN_SIGNING_KEY configured — using random key (audit chain non-persistent)'
+      );
+    }
+    const signingKey = configuredKey ?? crypto.randomUUID();
     this.auditChain = new AuditChain({ storage: auditStorage, signingKey });
     await this.auditChain.initialize();
 
@@ -137,10 +143,13 @@ export class AgentRuntime {
     // Step 6: Auth module (delegated to parent when parentUrl is set)
     const rbac = this.securityMod.getRBAC();
     const rateLimiter = this.securityMod.getRateLimiter();
+    if (!rbac || !rateLimiter) {
+      throw new Error('SecurityModule failed to initialize RBAC or RateLimiter');
+    }
     this.authMod = new AuthModule({
       auditChain: this.auditChain,
-      rbac: rbac!,
-      rateLimiter: rateLimiter!,
+      rbac,
+      rateLimiter,
     });
     await this.authMod.init({ config: this.config, logger: this.logger });
     this.logger.debug('Auth module initialized');
@@ -270,6 +279,13 @@ export class AgentRuntime {
 
       // Knowledge query (forwarded to parent brain)
       if (url === '/api/v1/agent/knowledge' && method === 'POST') {
+        if (this.parentAuthDelegate) {
+          const identity = await this.authenticateRequest(req);
+          if (!identity) {
+            this.sendJson(res, 401, { error: 'Unauthorized' });
+            return;
+          }
+        }
         return this.handleKnowledgeQuery(req, res);
       }
 
@@ -284,6 +300,13 @@ export class AgentRuntime {
 
       // A2A receive
       if (url === '/api/v1/a2a/receive' && method === 'POST') {
+        if (this.parentAuthDelegate) {
+          const identity = await this.authenticateRequest(req);
+          if (!identity) {
+            this.sendJson(res, 401, { error: 'Unauthorized' });
+            return;
+          }
+        }
         return this.handleA2AReceive(req, res);
       }
 
@@ -632,9 +655,18 @@ export class AgentRuntime {
     res.end(JSON.stringify(body));
   }
 
-  private async readBody(req: import('node:http').IncomingMessage): Promise<unknown> {
+  private async readBody(
+    req: import('node:http').IncomingMessage,
+    maxBytes = 1_048_576
+  ): Promise<unknown> {
     const chunks: Buffer[] = [];
+    let totalSize = 0;
     for await (const chunk of req) {
+      totalSize += (chunk as Buffer).length;
+      if (totalSize > maxBytes) {
+        req.destroy();
+        throw new Error('Request body too large');
+      }
       chunks.push(chunk as Buffer);
     }
     return JSON.parse(Buffer.concat(chunks).toString('utf-8'));

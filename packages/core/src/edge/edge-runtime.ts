@@ -112,7 +112,13 @@ export class EdgeRuntime {
 
     // Step 4: Audit chain (in-memory for edge — lightweight)
     const auditStorage = new InMemoryAuditStorage();
-    const signingKey = getSecret('SECUREYEOMAN_SIGNING_KEY') ?? `edge-audit-${Date.now()}`;
+    const configuredKey = getSecret('SECUREYEOMAN_SIGNING_KEY');
+    if (!configuredKey) {
+      this.logger.warn(
+        'No SECUREYEOMAN_SIGNING_KEY configured — using random key (audit chain non-persistent)'
+      );
+    }
+    const signingKey = configuredKey ?? crypto.randomUUID();
     this.auditChain = new AuditChain({ storage: auditStorage, signingKey });
     await this.auditChain.initialize();
 
@@ -211,7 +217,16 @@ export class EdgeRuntime {
   ): Promise<void> {
     try {
       const chunks: Buffer[] = [];
+      let totalSize = 0;
+      const MAX_BODY = 1_048_576; // 1 MB
       for await (const chunk of req) {
+        totalSize += (chunk as Buffer).length;
+        if (totalSize > MAX_BODY) {
+          req.destroy();
+          res.writeHead(413, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Request body too large' }));
+          return;
+        }
         chunks.push(chunk as Buffer);
       }
       const body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));

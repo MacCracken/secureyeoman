@@ -83,7 +83,13 @@ export class WebAuthnStorage extends PgBaseStorage {
     );
   }
 
-  async deleteCredential(credentialId: string): Promise<number> {
+  async deleteCredential(credentialId: string, userId?: string): Promise<number> {
+    if (userId) {
+      return this.execute(
+        'DELETE FROM webauthn_credentials WHERE credential_id = $1 AND user_id = $2',
+        [credentialId, userId]
+      );
+    }
     return this.execute('DELETE FROM webauthn_credentials WHERE credential_id = $1', [
       credentialId,
     ]);

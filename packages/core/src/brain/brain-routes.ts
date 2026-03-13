@@ -509,12 +509,6 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     }
 
     try {
-      // Fetch all memories and knowledge, then reindex
-      const _memories = await brainManager.recall({ limit: 100000 });
-      const _knowledge = await brainManager.queryKnowledge({ limit: 50000 });
-
-      // semanticSearch will throw if vector not enabled
-      // But we need vector manager directly for reindex
       const stats = await brainManager.getStats();
       return {
         message: 'Reindex triggered',
@@ -648,9 +642,16 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         return sendError(reply, 503, 'External brain sync not initialized');
       }
 
-      // Validate path if provided — reject path traversal
-      if (request.body.path && /\.\.[\\/]/.test(request.body.path)) {
-        return sendError(reply, 400, 'Invalid path: path traversal detected');
+      // Validate path/subdir if provided — reject traversal and home expansion
+      const body = request.body as Record<string, unknown>;
+      for (const field of ['path', 'subdir']) {
+        const val = body[field];
+        if (
+          typeof val === 'string' &&
+          (/\.\.[\\/]/.test(val) || val.includes('~') || val.includes('%2e'))
+        ) {
+          return sendError(reply, 400, 'Invalid path: path traversal detected');
+        }
       }
 
       try {

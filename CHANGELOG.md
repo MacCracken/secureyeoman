@@ -6,6 +6,89 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.13]
+
+### Security Audit — 3 Rounds of Hardening + Edge Tools Wiring
+
+Comprehensive code audit across the entire codebase (3 rounds: critical/high, medium, low). 30+ fixes spanning injection prevention, IDOR protection, information disclosure, and defense-in-depth hardening. Plus full-stack wiring of `exposeEdgeTools` toggle.
+
+**Injection Prevention**
+- `brain/storage.ts`: FTS injection — `to_tsquery` → `plainto_tsquery` in all 3 RRF methods (memories, knowledge, document_chunks)
+- `brain/brain-routes.ts`, `brain/external-sync.ts`: Path traversal validation on `path` and `subdir` fields (`..`, `~`, `%2e` blocked)
+- `agents/manager.ts`: Binary agent command injection — shell metacharacter validation (`;&|` etc.) on command + args, env var allowlist (`SAFE_ENV_KEYS`)
+- `ai/inline-complete-routes.ts`: XML marker escaping (`<`/`>` → entities) to prevent prompt injection in inline completions
+- `gateway/search-routes.ts`: Glob pattern hardening (no absolute paths, no `~`, alphanumeric + glob chars only)
+- `sandbox/gvisor-sandbox.ts`: stateRoot validation (absolute path required, no traversal)
+- `workflow/workflow-engine.ts`: `encodeURIComponent()` on all CI/CD URL path segments (owner, repo, workflowId, projectId, runId)
+- `mcp/tools/edge-tools.ts`: `encodeURIComponent(nodeId)` on all path interpolations
+- `training/annotation-routes.ts`: CSV formula injection escaping on export (`=`, `+`, `-`, `@`, `\t`, `\r` prefixed with apostrophe)
+- `ai/provider-account-routes.ts`: CSV formula injection escaping on cost export
+
+**IDOR & Access Control**
+- `security/auth-storage.ts`: API key revocation scoped by `user_id` — prevents cross-user key deletion
+- `security/auth.ts`: `revokeApiKey` passes `userId` through to storage
+- `gateway/auth-routes.ts`: Added `service: 5` to `ROLE_HIERARCHY` — prevents privilege escalation to service role
+
+**Information Disclosure**
+- `gateway/sso-routes.ts`: Both SSO callbacks return generic `sso_auth_failed` instead of detailed error text
+- `gateway/oauth-routes.ts`: OAuth provider error changed to generic `not available`
+- `gateway/auth-routes.ts`: Federation token verification returns generic error
+- `mcp/client.ts`: Removed endpoint URL from log entries (secret leak prevention)
+
+**Robustness & Defense-in-Depth**
+- `ai/providers/agnos.ts`: Wrapped streaming + tool call JSON.parse in try/catch (skip malformed SSE data)
+- `ai/providers/ollama.ts`: Wrapped streaming JSON.parse in try/catch
+- `ai/cost-calculator.ts`: Fixed negative cost — `Math.max(0, inputTokens - cachedTokens)`
+- `mcp/client.ts`: Response size guard — reject >50MB before JSON parsing
+- `simulation/simulation-routes.ts`: `safeNum()` helper with `Number.isFinite()` on all 8 numeric query params
+- `gateway/search-routes.ts`: NaN/negative guard on `maxResults`
+- `brain/external-sync.ts`: Fixed infinite loop — knowledge sync now passes `offset` for pagination
+- `brain/types.ts`: Added `offset?: number` to `KnowledgeQuery`
+- `brain/brain-routes.ts`: Removed pointless 150K-record fetches in reindex endpoint
+- `training/annotation-routes.ts`: Added 10K-row cap on annotation export
+- `gateway/server.ts`: `Cache-Control: no-store, no-cache, must-revalidate, private` + `Pragma: no-cache` on all `/api/v1/auth/*` responses via Fastify `onSend` hook
+
+**Edge Tools Full-Stack Wiring**
+- `mcp/config/config.ts`: Added `MCP_EXPOSE_EDGE_TOOLS` env var parsing
+- `mcp/mcp-routes.ts`: Added 5 missing expose flags to PATCH `/api/v1/mcp/config` body (`exposeDeltaTools`, `exposeEdgeTools`, `exposeVoiceTools`, `exposeAequiTools`, `exposeShrutiTools`)
+- `integrations/service-discovery.ts`: Added `edge` to `EcosystemServiceId` + `SERVICE_REGISTRY` (9 services total)
+- `shared/types/soul.ts`: Added `exposeDelta`, `exposeVoice`, `exposeEdge` to personality-level `McpFeaturesSchema`
+- `dashboard/types.ts`: Added 3 new fields to MCP config + personality mcpFeatures interfaces
+- `dashboard/api/client.ts`: Added 3 fields to `McpConfigResponse` with fallback defaults
+- `dashboard/components/PersonalityEditor.tsx`: 3 toggle checkboxes (Delta Forge, Voice & Speech, Edge Fleet) with icons, disabled when global config off
+- `soul/manager.ts`, `soul/soul-routes.ts`: Added 3 fields to mcpFeatures defaults
+
+**Phase 16B–C: Shruti DAW Integration** (complete)
+- `integrations/shruti/shruti-client.ts` — HTTP client (20 methods: session, tracks, transport, export, analysis, mixer, undo/redo, MCP tool dispatch). Port 8050, bearer token auth. 31 tests.
+- `integrations/shruti/voice-intent-parser.ts` — TS port of Shruti's `parse_voice_input()`. 12 intent categories, confidence scoring. 28 tests.
+- `integrations/shruti/shruti-voice-bridge.ts` — `ShrutiVoiceBridge` class: transcript → parse → resolve track → execute via ShrutiClient → confirmation. 26 tests.
+- `integrations/shruti/shruti-voice-routes.ts` — `POST /api/v1/shruti/voice/command` (execute), `POST /api/v1/shruti/voice/parse` (parse-only)
+- `mcp/tools/shruti-tools.ts` — 10 `shruti_*` MCP tools, gated by `exposeShrutiTools` / `MCP_EXPOSE_SHRUTI_TOOLS`
+- Config: `shrutiUrl`, `shrutiApiKey`, `exposeShrutiTools` in McpServiceConfig. Secret mappings in `MCP_SECRET_MAPPINGS`.
+- Docker compose: `shruti` (ghcr.io, port 8050, profile: shruti) and `shruti-dev` (build from ../shruti, profile: full-dev)
+- `shruti` added to `EcosystemServiceId` and `SERVICE_REGISTRY`
+
+**Phase 15B: Agent Parent Registration & Delegation** (complete)
+- `agent/parent-auth-delegate.ts` — `ParentAuthDelegate` validates tokens against parent's `/api/v1/auth/validate`. LRU cache (500 entries, 5 min TTL). 13 tests.
+- `agent/knowledge-delegate.ts` — `KnowledgeDelegate` forwards RAG queries to parent's `/api/v1/brain/query`, supports `remember()` for storing memories. 10 tests.
+- `agent/audit-forwarder.ts` — `AuditForwarder` batches events (50/batch, 5s flush), forwards to parent's `/api/v1/audit/forward`. 9 tests.
+- `agent/agent-runtime.ts` — `registerWithParent()` auto-registers via `SECUREYEOMAN_PARENT_URL` or `--parent` CLI flag
+
+**Phase 15C: Agent Build & Distribution** (complete)
+- `scripts/build-binary.sh` — `--agent` flag for agent-only builds. `compile_agent_binary()` targets: linux-x64, linux-arm64, darwin-arm64
+- `Dockerfile.agent` — `node:22-alpine` + tini, copies `secureyeoman-agent-linux-x64` binary, port 8099, healthcheck
+- Docker compose: `sy-agent` service in `agent`, `full`, `full-dev` profiles. Auto-registers with parent SY. 256 MB RAM, 1 CPU, scalable via `--scale`
+
+**Documentation Reorganization**
+- Guides reorganized into 8 subdirectories: `ai-and-llm/`, `deployment/`, `enterprise/`, `getting-started/`, `integrations/`, `platform-features/`, `security/`, `tools/`
+- ADR consolidation: merged overlapping ADRs (023+024 → 023, 033–037 → 033+034), added `docs/adr/README.md` index
+- New: `docs/README.md` (documentation hub), `docs/development/contributing.md` (contributor guide), ADR 039 (agent binary tier)
+
+**Engineering Backlog**
+- `docs/development/roadmap.md`: Added 3 intentionally deferred audit items (2FA timing side-channel, chaos delete TOCTOU, webhook header prototype pollution residual) with risk levels and fix suggestions
+
+---
+
 ## [2026.3.12-2]
 
 ### WebSocket Warm-up, Offline-first PWA & Caddy TLS Fix

@@ -244,11 +244,18 @@ export function registerProviderAccountRoutes(
           accountId: q.accountId,
         });
 
+        // Escape CSV fields to prevent formula injection (=, +, -, @, \t, \r)
+        const csvEscape = (val: string): string => {
+          const s = val.replace(/"/g, '""');
+          if (/^[=+\-@\t\r]/.test(s)) return `"'${s}"`;
+          return `"${s}"`;
+        };
+
         const header =
           'account_id,provider,label,total_cost_usd,total_input_tokens,total_output_tokens,total_requests';
         const rows = summary.map(
           (s) =>
-            `${s.accountId},${s.provider},"${s.label}",${s.totalCostUsd},${s.totalInputTokens},${s.totalOutputTokens},${s.totalRequests}`
+            `${csvEscape(s.accountId)},${csvEscape(s.provider)},${csvEscape(s.label)},${s.totalCostUsd},${s.totalInputTokens},${s.totalOutputTokens},${s.totalRequests}`
         );
         const csv = [header, ...rows].join('\n');
 

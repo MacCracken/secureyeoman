@@ -2651,8 +2651,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'shruti_track_list',
-      description:
-        'List all tracks in the current Shruti session with gain, pan, mute/solo state',
+      description: 'List all tracks in the current Shruti session with gain, pan, mute/solo state',
       category: 'shruti',
     },
     {
@@ -2669,8 +2668,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'shruti_export',
-      description:
-        'Export/bounce the current Shruti session to WAV or FLAC at 16/24/32-bit depth',
+      description: 'Export/bounce the current Shruti session to WAV or FLAC at 16/24/32-bit depth',
       category: 'shruti',
     },
     {

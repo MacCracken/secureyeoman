@@ -2099,3 +2099,26 @@ ALTER TABLE ONLY workflow.versions
     ADD CONSTRAINT versions_workflow_id_fkey FOREIGN KEY (workflow_id) REFERENCES workflow.definitions(id) ON DELETE CASCADE;
 EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
 END $$;
+
+
+-- ===========================================================================
+-- Consolidated from 012_voice_profiles.sql
+-- Voice profiles for TTS personalization
+-- ===========================================================================
+
+CREATE SCHEMA IF NOT EXISTS voice;
+
+CREATE TABLE IF NOT EXISTS voice.profiles (
+  id text PRIMARY KEY,
+  name text NOT NULL,
+  provider text NOT NULL,
+  voice_id text NOT NULL,
+  settings jsonb NOT NULL DEFAULT '{}',
+  sample_audio_base64 text,
+  created_by text NOT NULL DEFAULT 'admin',
+  created_at bigint NOT NULL,
+  updated_at bigint NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_voice_profiles_provider ON voice.profiles(provider);
+CREATE INDEX IF NOT EXISTS idx_voice_profiles_created ON voice.profiles(created_at DESC);

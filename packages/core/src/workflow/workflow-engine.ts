@@ -948,7 +948,7 @@ export class WorkflowEngine {
           };
           if (token) headers.Authorization = `Bearer ${token}`;
           const res = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`,
+            `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions/workflows/${encodeURIComponent(workflowId)}/dispatches`,
             {
               method: 'POST',
               headers,
@@ -964,7 +964,7 @@ export class WorkflowEngine {
           // Return a sentinel so ci_wait can poll by listing runs.
           return {
             runId: 'dispatched',
-            url: `https://github.com/${owner}/${repo}/actions`,
+            url: `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions`,
             status: 'queued',
             provider,
             owner,
@@ -982,12 +982,15 @@ export class WorkflowEngine {
           const projectId = this.resolveTemplate(String(cfg.projectId ?? ''), ctx);
           const variables = inputs;
           const variableList = Object.entries(variables).map(([key, value]) => ({ key, value }));
-          const res = await fetch(`${gitlabUrl}/api/v4/projects/${projectId}/pipeline`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ ref, variables: variableList }),
-            signal: AbortSignal.timeout(CI_FETCH_TIMEOUT_MS),
-          });
+          const res = await fetch(
+            `${gitlabUrl}/api/v4/projects/${encodeURIComponent(projectId)}/pipeline`,
+            {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ ref, variables: variableList }),
+              signal: AbortSignal.timeout(CI_FETCH_TIMEOUT_MS),
+            }
+          );
           if (!res.ok) {
             const errBody = (await res.text()).slice(0, CI_ERROR_BODY_LIMIT);
             throw new Error(`GitLab pipeline trigger failed (${res.status}): ${errBody}`);
@@ -1032,7 +1035,7 @@ export class WorkflowEngine {
           const terminalStatuses = new Set(['completed']);
           while (Date.now() < deadline) {
             const res = await fetch(
-              `https://api.github.com/repos/${owner}/${repo}/actions/runs/${runId}`,
+              `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions/runs/${encodeURIComponent(runId)}`,
               { headers, signal: AbortSignal.timeout(15_000) }
             );
             if (res.ok) {
@@ -1067,7 +1070,7 @@ export class WorkflowEngine {
           const terminalStatuses = new Set(['success', 'failed', 'canceled', 'skipped']);
           while (Date.now() < deadline) {
             const res = await fetch(
-              `${gitlabUrl}/api/v4/projects/${projectId}/pipelines/${runId}`,
+              `${gitlabUrl}/api/v4/projects/${encodeURIComponent(projectId)}/pipelines/${encodeURIComponent(runId)}`,
               { headers, signal: AbortSignal.timeout(15_000) }
             );
             if (res.ok) {

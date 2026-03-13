@@ -1013,11 +1013,11 @@ describe('POST /api/v1/brain/reindex', () => {
 
   it('returns 400 on error', async () => {
     const app = buildApp({
-      brainOverrides: { recall: vi.fn().mockRejectedValue(new Error('recall failed')) },
+      brainOverrides: { getStats: vi.fn().mockRejectedValue(new Error('stats failed')) },
     });
     const res = await app.inject({ method: 'POST', url: '/api/v1/brain/reindex' });
     expect(res.statusCode).toBe(400);
-    expect(res.json().message).toBe('recall failed');
+    expect(res.json().message).toBe('stats failed');
   });
 
   it('returns 429 when rate limited', async () => {

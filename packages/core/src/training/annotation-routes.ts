@@ -167,14 +167,21 @@ export function registerAnnotationRoutes(
     ) => {
       const { personalityId, format = 'jsonl' } = request.query;
       const tenantId = (request as any).tenantId;
-      const annotations = await storage.list({ personalityId, tenantId });
+      const allAnnotations = await storage.list({ personalityId });
+      const annotations = allAnnotations.slice(0, 10000);
 
       if (format === 'csv') {
+        // Escape CSV fields to prevent formula injection (=, +, -, @)
+        const csvSafe = (val: string): string => {
+          const s = val.replace(/"/g, '""');
+          if (/^[=+\-@\t\r]/.test(s)) return `"'${s}"`;
+          return `"${s}"`;
+        };
         const header = 'file,startLine,endLine,label,note,text\n';
         const rows = annotations.map((a) => {
-          const text = a.selectedText.replace(/"/g, '""');
-          const note = (a.note ?? '').replace(/"/g, '""');
-          return `"${a.filePath}",${a.startLine},${a.endLine},"${a.label}","${note}","${text}"`;
+          const text = csvSafe(a.selectedText);
+          const note = csvSafe(a.note ?? '');
+          return `${csvSafe(a.filePath)},${a.startLine},${a.endLine},${csvSafe(a.label)},${note},${text}`;
         });
         reply.header('content-type', 'text/csv');
         reply.header('content-disposition', 'attachment; filename="annotations.csv"');

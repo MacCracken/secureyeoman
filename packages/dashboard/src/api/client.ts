@@ -2045,6 +2045,9 @@ export interface McpConfigResponse {
   exposeBullshiftTools: boolean;
   exposePhotisnadiTools: boolean;
   exposeSynapseTools: boolean;
+  exposeDeltaTools: boolean;
+  exposeVoiceTools: boolean;
+  exposeEdgeTools: boolean;
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -2088,6 +2091,9 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeBullshiftTools: false,
       exposePhotisnadiTools: false,
       exposeSynapseTools: false,
+      exposeDeltaTools: false,
+      exposeVoiceTools: false,
+      exposeEdgeTools: false,
     };
   }
 }

@@ -435,7 +435,7 @@ export class AuthService {
   }
 
   async revokeApiKey(keyId: string, userId: string): Promise<boolean> {
-    const ok = await this.deps.storage.revokeApiKey(keyId);
+    const ok = await this.deps.storage.revokeApiKey(keyId, userId);
     if (ok) {
       await this.audit('auth_success', 'API key revoked', { userId, keyId });
     }

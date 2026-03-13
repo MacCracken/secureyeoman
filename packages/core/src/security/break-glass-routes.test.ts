@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { registerBreakGlassRoutes } from './break-glass-routes.js';
+import { registerBreakGlassRoutes, resetBreakGlassRateLimit } from './break-glass-routes.js';
 import { BreakGlassError } from './break-glass.js';
 import type { BreakGlassManager } from './break-glass.js';
 
@@ -125,7 +125,8 @@ describe('BreakGlassRoutes', () => {
     });
 
     it('returns 429 after rate limit is exceeded', async () => {
-      // Create a fresh app so the rate limit state is isolated
+      // Reset module-level rate limit state to isolate this test
+      resetBreakGlassRateLimit();
       const freshApp = Fastify();
       const freshMgr = makeMockManager();
       (freshMgr.activateBreakGlass as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -135,15 +136,12 @@ describe('BreakGlassRoutes', () => {
       await freshApp.ready();
 
       try {
-        // Use the same x-forwarded-for IP for all requests
-        const HEADERS = { 'x-forwarded-for': '192.168.0.1' };
-
+        // All inject() requests share the same request.ip (127.0.0.1)
         // First 5 requests should succeed (rate limit is 5)
         for (let i = 0; i < 5; i++) {
           const res = await freshApp.inject({
             method: 'POST',
             url: '/api/v1/auth/break-glass',
-            headers: HEADERS,
             payload: { recoveryKey: 'a'.repeat(64) },
           });
           expect(res.statusCode).toBe(200);
@@ -153,7 +151,6 @@ describe('BreakGlassRoutes', () => {
         const limited = await freshApp.inject({
           method: 'POST',
           url: '/api/v1/auth/break-glass',
-          headers: HEADERS,
           payload: { recoveryKey: 'a'.repeat(64) },
         });
         expect(limited.statusCode).toBe(429);

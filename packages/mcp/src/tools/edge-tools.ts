@@ -165,11 +165,15 @@ export function registerEdgeTools(
       'edge_update',
       middleware,
       async ({ nodeId, toVersion, sha256, ed25519Signature }) => {
-        const result = await api('post', `/api/v1/edge/nodes/${nodeId}/update`, {
-          toVersion,
-          sha256,
-          ed25519Signature,
-        });
+        const result = await api(
+          'post',
+          `/api/v1/edge/nodes/${encodeURIComponent(nodeId)}/update`,
+          {
+            toVersion,
+            sha256,
+            ed25519Signature,
+          }
+        );
         return jsonResponse(result);
       }
     )
@@ -188,7 +192,7 @@ export function registerEdgeTools(
       },
     },
     wrapToolHandler('edge_health', middleware, async ({ nodeId }) => {
-      const result = await api('get', `/api/v1/edge/nodes/${nodeId}`);
+      const result = await api('get', `/api/v1/edge/nodes/${encodeURIComponent(nodeId)}`);
       return jsonResponse(result);
     })
   );
@@ -206,7 +210,10 @@ export function registerEdgeTools(
       },
     },
     wrapToolHandler('edge_decommission', middleware, async ({ nodeId }) => {
-      const result = await api('post', `/api/v1/edge/nodes/${nodeId}/decommission`);
+      const result = await api(
+        'post',
+        `/api/v1/edge/nodes/${encodeURIComponent(nodeId)}/decommission`
+      );
       return jsonResponse(result);
     })
   );

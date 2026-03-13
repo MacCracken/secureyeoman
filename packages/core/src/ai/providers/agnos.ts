@@ -135,7 +135,12 @@ export class AGNOSProvider extends BaseProvider {
           if (!trimmed || trimmed === 'data: [DONE]') continue;
           if (!trimmed.startsWith('data: ')) continue;
 
-          const chunk = JSON.parse(trimmed.slice(6)) as OAIStreamChunk;
+          let chunk: OAIStreamChunk;
+          try {
+            chunk = JSON.parse(trimmed.slice(6)) as OAIStreamChunk;
+          } catch {
+            continue; // skip malformed SSE data
+          }
           const choice = chunk.choices[0];
           if (!choice) continue;
 
@@ -242,10 +247,16 @@ export class AGNOSProvider extends BaseProvider {
     const toolCalls: ToolCall[] = [];
     if (choice.message.tool_calls?.length) {
       for (const tc of choice.message.tool_calls) {
+        let parsedArgs: Record<string, unknown>;
+        try {
+          parsedArgs = JSON.parse(tc.function.arguments) as Record<string, unknown>;
+        } catch {
+          parsedArgs = {};
+        }
         toolCalls.push({
           id: tc.id,
           name: tc.function.name,
-          arguments: JSON.parse(tc.function.arguments),
+          arguments: parsedArgs,
         });
       }
     }

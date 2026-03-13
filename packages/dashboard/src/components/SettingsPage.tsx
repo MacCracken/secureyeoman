@@ -39,6 +39,7 @@ import {
 } from '../api/client';
 import type { BackupRecord } from '../types';
 import { useLicense, ALL_LICENSED_FEATURES } from '../hooks/useLicense';
+import { useLemonCheckout } from '../hooks/useLemonCheckout';
 import { NotificationSettings } from './NotificationSettings';
 import { LogRetentionSettings } from './LogRetentionSettings';
 import { SecuritySettings, RolesSettings, ServiceKeysPanel } from './SecuritySettings';
@@ -1157,11 +1158,30 @@ function BackupTab() {
 // ── License Card ───────────────────────────────────────────────────
 
 const FEATURE_LABELS: Record<string, string> = {
-  adaptive_learning: 'Adaptive Learning Pipeline',
+  // Pro
+  advanced_brain: 'Advanced Brain & RAG',
+  provider_management: 'Provider Management',
+  computer_use: 'Computer Use',
+  custom_integrations: 'Custom Integrations',
+  prompt_engineering: 'Prompt Engineering',
+  batch_inference: 'Batch Inference',
+  // Enterprise
+  adaptive_learning: 'Adaptive Learning',
   sso_saml: 'SSO / SAML',
   multi_tenancy: 'Multi-Tenancy',
   cicd_integration: 'CI/CD Integration',
-  advanced_observability: 'Advanced Observability',
+  advanced_observability: 'Observability',
+  a2a_federation: 'A2A Federation',
+  swarm_orchestration: 'Swarm Orchestration',
+  confidential_computing: 'Confidential Computing',
+  audit_export: 'Audit Export',
+  dlp_security: 'Data Loss Prevention',
+  compliance_governance: 'Compliance & Governance',
+  supply_chain: 'Supply Chain Security',
+  synapse: 'Synapse LLM Controller',
+  break_glass: 'Break Glass Recovery',
+  simulation: 'Simulation Engine',
+  edge_fleet: 'Edge Fleet',
 };
 
 function getDaysUntilExpiry(expiresAt: string | null): number | null {
@@ -1173,6 +1193,7 @@ function getDaysUntilExpiry(expiresAt: string | null): number | null {
 
 function LicenseCard() {
   const { license, isLoading, isEnterprise, hasFeature, refresh } = useLicense();
+  const lemonCheckout = useLemonCheckout();
   const [keyInput, setKeyInput] = useState('');
   const [showInput, setShowInput] = useState(false);
 
@@ -1277,9 +1298,42 @@ function LicenseCard() {
             </div>
 
             {!isEnterprise && (
-              <p className="text-sm text-muted-foreground">
-                Running on the community tier. Enter a license key to unlock licensed features.
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Running on the community tier.{' '}
+                  {lemonCheckout.isConfigured
+                    ? 'Purchase a license or enter a key to unlock features.'
+                    : 'Enter a license key to unlock licensed features.'}
+                </p>
+                {lemonCheckout.isConfigured && (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => lemonCheckout.openCheckout('pro')}
+                      disabled={lemonCheckout.isLoading}
+                      className="rounded-md bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+                    >
+                      {lemonCheckout.isLoading ? 'Processing…' : 'Upgrade to Pro — $20/yr'}
+                    </button>
+                    <button
+                      onClick={() => lemonCheckout.openCheckout('solopreneur')}
+                      disabled={lemonCheckout.isLoading}
+                      className="rounded-md bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+                    >
+                      Solopreneur — $100/yr
+                    </button>
+                    <button
+                      onClick={() => lemonCheckout.openCheckout('enterprise')}
+                      disabled={lemonCheckout.isLoading}
+                      className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      Enterprise — $1,000/yr
+                    </button>
+                  </div>
+                )}
+                {lemonCheckout.error && (
+                  <p className="text-xs text-destructive">{lemonCheckout.error}</p>
+                )}
+              </div>
             )}
 
             {license?.error && (

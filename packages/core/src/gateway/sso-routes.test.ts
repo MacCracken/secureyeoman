@@ -210,7 +210,8 @@ describe('SSO Routes — authorization flow', () => {
     expect(res.headers.location).toContain('sso_error');
     // Parse the sso_error query param (handles + encoding in query strings)
     const errParam = new URL(res.headers.location!).searchParams.get('sso_error');
-    expect(errParam).toContain('Missing state parameter');
+    // Error details are redacted — only generic message returned to client
+    expect(errParam).toBe('sso_auth_failed');
   });
 
   it('callback: IDP error response (access_denied) redirects with sso_error', async () => {
@@ -227,7 +228,7 @@ describe('SSO Routes — authorization flow', () => {
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toContain('sso_error');
     const errParam = new URL(res.headers.location!).searchParams.get('sso_error');
-    expect(errParam).toContain('access_denied');
+    expect(errParam).toBe('sso_auth_failed');
   });
 
   it('callback: expired state redirects with sso_error', async () => {
@@ -241,7 +242,7 @@ describe('SSO Routes — authorization flow', () => {
     });
     expect(res.statusCode).toBe(302);
     const errParam = new URL(res.headers.location!).searchParams.get('sso_error');
-    expect(errParam).toContain('expired');
+    expect(errParam).toBe('sso_auth_failed');
   });
 });
 

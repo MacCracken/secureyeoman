@@ -126,6 +126,12 @@ export const McpFeaturesSchema = z
     exposePhotisnadi: z.boolean().default(false),
     /** Synapse LLM controller tools (synapse_*). Requires global exposeSynapseTools. */
     exposeSynapse: z.boolean().default(false),
+    /** Delta Code Forge tools (delta_*). Requires global exposeDeltaTools. */
+    exposeDelta: z.boolean().default(false),
+    /** Voice & speech tools (voice_*). Requires global exposeVoiceTools. */
+    exposeVoice: z.boolean().default(false),
+    /** Edge/IoT fleet management tools (edge_*). Requires global exposeEdgeTools. */
+    exposeEdge: z.boolean().default(false),
   })
   .default({});
 

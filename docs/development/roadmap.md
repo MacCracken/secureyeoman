@@ -10,8 +10,10 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 15 | Agent Binary (Tier 2.5) | P2 — platform | Planned |
-| 16 | Shruti DAW Ecosystem Integration | P2 — platform | Planned |
+| — | Dashboard Audit & Repair | P1 — quality | Planned (pre-release) |
+| — | E2E Test Expansion | P1 — quality | Planned |
+| 15 | Agent Binary (Tier 2.5) | P2 — platform | ✅ Complete (15A–C) |
+| 16 | Shruti DAW Ecosystem Integration | P2 — platform | 16B–C ✅, 16A blocked (Shruti repo) |
 | — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
 | Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Demand-gated |
 
@@ -74,11 +76,13 @@
 
 ### Tasks
 
-- [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates.
-- [ ] **Upgrade prompts** — "Upgrade to Pro", "Upgrade to Solopreneur", and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
+- [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates. Currently defaults to `false` for development.
+- [x] **Upgrade prompts** — ✅ LemonSqueezy checkout overlay in dashboard LicenseCard (Pro $20/yr, Solopreneur $100/yr, Enterprise $1,000/yr). Gated by `VITE_LEMONSQUEEZY_*_URL` env vars — buttons hidden when URLs not configured.
+- [x] **Feature labels** — ✅ All 22 licensed features now have human-readable labels in the LicenseCard feature chip display.
 - [ ] **Solopreneur tier definition** — Define Solopreneur as enterprise-feature-equivalent with single-tenant / single-seat constraints. Decide on `LicenseTier` implementation approach (see note above).
 - [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
 - [ ] **Pricing page** — Public-facing pricing comparison page for secureyeoman.ai. Feature breakdown per tier, FAQ, upgrade flow.
+- [ ] **LemonSqueezy product setup** — Create store, products, and variants in LemonSqueezy dashboard. Configure webhook URL pointing to licensing service. Set `VITE_LEMONSQUEEZY_*_URL` env vars in dashboard build.
 
 ### Repository & Public Identity
 
@@ -87,9 +91,15 @@
 
 ### Payment & Monetization
 
-- [ ] **Payment provider integration** — Evaluate and integrate Stripe or LemonSqueezy. LemonSqueezy preferred for simplicity (built-in global tax/VAT, merchant of record, simpler compliance). Stripe if more control needed. Flow: user selects tier → checkout → webhook fires → Ed25519 license key generated with tier/seats/expiry claims → delivered via email + dashboard download. No phone-home required (preserves air-gap story).
-- [ ] **License key purchase flow** — Dashboard license management page: view current tier, expiry, upgrade/renew. Webhook handler for payment events (purchase, renewal, refund, cancellation). Automatic key delivery. Manual key issuance fallback for enterprise/PO-based sales.
-- [ ] **Renewal & lifecycle** — Auto-renewal reminders (30/14/7 days before expiry). Expired-key grace period (7 days, read-only mode). Upgrade path: pro-rate remaining time when moving up tiers.
+**Architecture**: Separate `secureyeoman-licensing` repo (`../secureyeoman-licensing/`). Lightweight Fastify + SQLite service that receives LemonSqueezy webhooks, mints Ed25519-signed keys, and serves key retrieval API. SY dashboard opens LemonSqueezy checkout overlay in-app, polls licensing service for key after purchase, auto-applies via `POST /api/v1/license/key`.
+
+- [x] **Licensing service scaffold** — ✅ `secureyeoman-licensing/` repo: Fastify server, SQLite records DB, HMAC-SHA256 webhook verification, Ed25519 key minting, CLI tool for manual issuance, license retrieval routes.
+- [x] **Dashboard checkout integration** — ✅ `useLemonCheckout` hook loads lemon.js, opens overlay, polls for key, auto-applies. Upgrade buttons in LicenseCard.
+- [ ] **LemonSqueezy account setup** — Create store, 3 products (Pro/Solopreneur/Enterprise), configure webhook URL, obtain API key + signing secret. Test mode available for end-to-end purchase testing without real charges.
+- [ ] **End-to-end test** — Test mode purchase → webhook → key mint → dashboard retrieval → auto-apply → enforcement check. Confirm round-trip.
+- [ ] **Renewal & lifecycle** — Auto-renewal reminders (30/14/7 days before expiry). Handle `subscription_expired` / `subscription_payment_failed` webhooks. Upgrade path: pro-rate remaining time when moving up tiers.
+- [ ] **Refund handling** — `order_refunded` webhook → revoke license key in records DB. Key continues to validate offline (Ed25519 is self-contained) but records DB tracks revocation for audit.
+- [ ] **Key re-delivery** — "Lost your license key?" flow in dashboard: enter email → licensing service returns key preview → email verification → full key delivered.
 
 ### $YEOMAN Token — Crypto Payment Channel
 
@@ -100,6 +110,36 @@
 - [ ] **Community marketplace tipping** — Skill authors can receive $YEOMAN tips from users. Displayed on skill cards in marketplace. Incentivizes community contribution without SY taking a cut.
 - [ ] **Governance voting** — $YEOMAN holders vote on roadmap priorities (feature requests, integration order). Lightweight on-chain governance — advisory, not binding. Builds community ownership.
 - [ ] **Token launch logistics** — Fair launch (no VC allocation, no pre-mine beyond treasury). DEX liquidity pool. Community airdrop to early adopters and community skill authors. Legal review for utility token classification per jurisdiction.
+
+---
+
+## Dashboard Audit & Repair
+
+**Priority**: P1 — Quality. Pre-release.
+
+**Goal**: Systematic audit of the dashboard codebase for bugs, UX issues, accessibility, and code quality. Findings become tracked repair items — fix critical/high now, defer medium/low to engineering backlog.
+
+- [ ] **Component audit** — Review all major pages and panels for correctness, responsiveness, error states, and loading states
+- [ ] **Accessibility pass** — Keyboard navigation, ARIA labels, color contrast, screen reader compatibility
+- [ ] **State management audit** — TanStack Query cache invalidation, optimistic updates, stale data handling
+- [ ] **Error boundary coverage** — Ensure all major sections have error boundaries with user-friendly fallbacks
+- [ ] **Performance audit** — Bundle size analysis, unnecessary re-renders, lazy loading of heavy components
+- [ ] **Repair items** — Tracked as sub-tasks; critical/high fixed pre-release, medium/low added to engineering backlog
+
+---
+
+## E2E Test Expansion
+
+**Priority**: P1 — Quality. Currently 8 files / 67 tests. Target: cover all major user flows.
+
+**Goal**: Expand backend E2E test suite (`src/__e2e__/`) to cover flows that unit tests can't adequately verify — multi-step API sequences, cross-module interactions, auth flows.
+
+- [ ] **Training & distillation flows** — Job creation, status polling, completion. Dataset upload → finetune → evaluation pipeline.
+- [ ] **Delegation & A2A flows** — Task delegation to sub-agents, A2A message routing, swarm coordination
+- [ ] **Analytics & reporting flows** — Metrics aggregation, cost tracking, CSV/JSON export
+- [ ] **Brain & RAG flows** — Knowledge ingestion, recall, memory scoping across personalities
+- [ ] **Marketplace flows** — Skill install/uninstall, workflow import, community sync
+- [ ] **MCP tool execution flows** — Tool discovery, execution via streamable HTTP, config toggling
 
 ---
 
@@ -185,11 +225,12 @@
 
 **Goal**: Add Shruti (Rust-native DAW) as the 8th ecosystem service, giving SY agents music production, audio recording/editing, spectral analysis, and AI-assisted mixing capabilities. Shruti is at MVP v1 (723 tests, 6 MCP tools, AgentApi with 35+ methods) but needs an HTTP server wrapper before SY can connect.
 
-### 16A: Shruti HTTP Server (Shruti repo)
+### 16A: Shruti HTTP Server (Shruti repo) — Partially Complete
 
-- [ ] **`shruti serve` subcommand** — Axum or Actix-web server on port 8050 wrapping `AgentApi`. Bearer token auth. Endpoints: session CRUD, track management, transport control, export, analysis, mixer, undo/redo, MCP tool-call dispatch.
-- [ ] **Health endpoint** — `GET /health` returning version, uptime, active session, audio device info.
-- [ ] **Docker image** — `Dockerfile` for headless Shruti server (no GUI dependencies). Multi-stage Rust build.
+- [x] **`shruti serve` subcommand** — Axum server on port 8050 wrapping `AgentApi`. Rate limiting, CORS, 1 MB body limit. Endpoints: session CRUD, track management, transport control, export, analysis, mixer, undo/redo, MCP tool-call dispatch. Tests in `serve.rs`.
+- [x] **Health endpoint** — `GET /health` returning status and version.
+- [x] **Docker image (Shruti repo)** — ✅ `Dockerfile` added (2026-03-13). Multi-stage Rust build on `debian:bookworm-slim`. Builder installs ALSA + X11/Wayland/Vulkan build deps (eframe linked but unused). Runtime stage: ALSA + tini + curl only. Non-root user, healthcheck on `/health`, `shruti serve --port 8050`.
+- [ ] **First release / git tag** — Shruti repo has no tags or releases yet. Needed for versioned image references in SY docker-compose.
 
 ### 16B: SY Integration — ✅ Complete (2026-03-12)
 
@@ -237,6 +278,16 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
 | MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
 | Core E2E | Expand coverage | Currently 8 files / 67 tests (incl. binary smoke); add training, delegation, analytics flows |
+
+### Security Audit — Deferred Items (2026-03-13)
+
+Items identified during code audit rounds 1–3, intentionally deferred due to low exploitability or narrow attack surface. Pick up when touching adjacent code.
+
+| Area | File | Issue | Risk | Notes |
+|------|------|-------|------|-------|
+| Auth | `src/security/auth.ts` L145–164 | Timing side-channel on 2FA hydration — `scrypt` timing reveals whether a user has 2FA enabled | Low | Requires local network position + high-precision timing. Fix: constant-time dummy `scrypt` when no 2FA configured. |
+| Chaos | `src/chaos/chaos-manager.ts` L95–101 | TOCTOU race in experiment delete — running check and deletion are not atomic | Low | Admin-only feature, narrow window. Fix: `DELETE ... WHERE id = $1 AND status != 'running'` single-query guard. |
+| Workflow | `src/workflow/workflow-engine.ts` L559–569 | Webhook header prototype pollution residual — `__proto__`/`constructor`/`prototype` filtered, but `Object.create(null)` base would be safer | Very Low | Already filtered for known dangerous keys. Fix: use `Object.create(null)` for header accumulation object. |
 
 ### SQL Migration Consolidation
 
@@ -445,12 +496,14 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ## Related Documentation
 
+- [Go-Live Checklist](go-live-checklist.md)
 - [System Architecture](../adr/001-system-architecture.md)
 - [API Reference](../api/)
 - [Security Model](../security/security-model.md)
 - [Configuration Reference](../configuration.md)
 - [Getting Started Guide](../guides/getting-started/getting-started.md)
 - [Dependency Watch](dependency-watch.md)
+- [Marketing Strategy](../marketing-strategy.md)
 - [Changelog](../../CHANGELOG.md)
 
 ---

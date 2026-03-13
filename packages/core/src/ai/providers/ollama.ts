@@ -203,7 +203,12 @@ export class OllamaProvider extends BaseProvider {
         for (const line of lines) {
           if (!line.trim()) continue;
 
-          const chunk = JSON.parse(line) as OllamaChatResponse;
+          let chunk: OllamaChatResponse;
+          try {
+            chunk = JSON.parse(line) as OllamaChatResponse;
+          } catch {
+            continue; // skip malformed JSON lines
+          }
 
           if (chunk.message?.content) {
             yield { type: 'content_delta', content: chunk.message.content };

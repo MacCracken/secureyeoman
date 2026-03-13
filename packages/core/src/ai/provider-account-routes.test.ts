@@ -472,8 +472,8 @@ describe('Provider Account Routes', () => {
       expect(lines[0]).toBe(
         'account_id,provider,label,total_cost_usd,total_input_tokens,total_output_tokens,total_requests'
       );
-      expect(lines[1]).toBe('acc-1,anthropic,"Test Key",12.5,100000,50000,250');
-      expect(lines[2]).toBe('acc-2,openai,"GPT Key",8.25,80000,40000,180');
+      expect(lines[1]).toBe('"acc-1","anthropic","Test Key",12.5,100000,50000,250');
+      expect(lines[2]).toBe('"acc-2","openai","GPT Key",8.25,80000,40000,180');
       expect(lines).toHaveLength(3);
     });
   });

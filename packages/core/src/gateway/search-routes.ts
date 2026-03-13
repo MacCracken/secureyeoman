@@ -106,6 +106,9 @@ export function registerSearchRoutes(app: FastifyInstance): void {
         return sendError(reply, 400, 'cwd does not exist');
       }
 
+      if (maxResults !== undefined && (!Number.isFinite(maxResults) || maxResults < 0)) {
+        return sendError(reply, 400, 'maxResults must be a non-negative number');
+      }
       const limit = Math.min(maxResults ?? MAX_MATCHES, MAX_MATCHES);
 
       try {
@@ -114,8 +117,13 @@ export function registerSearchRoutes(app: FastifyInstance): void {
         if (!caseSensitive) flags.push('-i');
         if (!regex) flags.push('-F');
         if (glob) {
-          // Validate glob doesn't escape
-          if (glob.includes('..')) {
+          // Validate glob: no traversal, no absolute paths, safe chars only
+          if (
+            glob.includes('..') ||
+            glob.startsWith('/') ||
+            glob.includes('~') ||
+            !/^[a-zA-Z0-9_\-/*.?[\]{}]+$/.test(glob)
+          ) {
             return sendError(reply, 400, 'Invalid glob pattern');
           }
           flags.push('--include', glob);

@@ -523,7 +523,7 @@ export class CostCalculator {
 
     const pricing = this.getPricing(provider, model);
 
-    const nonCachedInput = usage.inputTokens - usage.cachedTokens;
+    const nonCachedInput = Math.max(0, usage.inputTokens - usage.cachedTokens);
     const inputCost = (nonCachedInput / 1_000_000) * pricing.inputPer1M;
     const cachedCost = pricing.cachedInputPer1M
       ? (usage.cachedTokens / 1_000_000) * pricing.cachedInputPer1M

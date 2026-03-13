@@ -1479,3 +1479,548 @@ CREATE INDEX IF NOT EXISTS idx_federated_updates_round
 
 CREATE INDEX IF NOT EXISTS idx_federated_updates_participant
     ON federated.model_updates (participant_id);
+
+
+-- ===========================================================================
+-- Consolidated from 008_synapse.sql
+-- Synapse LLM Controller integration
+-- ===========================================================================
+
+CREATE SCHEMA IF NOT EXISTS synapse;
+
+CREATE TABLE IF NOT EXISTS synapse.instances (
+  id TEXT PRIMARY KEY,
+  endpoint TEXT NOT NULL,
+  grpc_endpoint TEXT,
+  version TEXT,
+  gpu_count INTEGER NOT NULL DEFAULT 0,
+  total_gpu_memory_mb BIGINT NOT NULL DEFAULT 0,
+  gpu_memory_free_mb BIGINT NOT NULL DEFAULT 0,
+  supported_methods TEXT[] NOT NULL DEFAULT '{}',
+  loaded_models INTEGER NOT NULL DEFAULT 0,
+  active_training_jobs INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'disconnected',
+  discovered_via TEXT NOT NULL DEFAULT 'config',
+  last_heartbeat BIGINT NOT NULL DEFAULT 0,
+  registered_at BIGINT NOT NULL DEFAULT 0,
+  metadata JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE IF NOT EXISTS synapse.delegated_jobs (
+  id TEXT PRIMARY KEY,
+  synapse_instance_id TEXT NOT NULL REFERENCES synapse.instances(id) ON DELETE CASCADE,
+  synapse_job_id TEXT NOT NULL,
+  sy_job_id TEXT,
+  sy_job_type TEXT NOT NULL DEFAULT 'finetune',
+  base_model TEXT NOT NULL,
+  dataset_path TEXT,
+  method TEXT NOT NULL,
+  config_json JSONB NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'pending',
+  current_step BIGINT NOT NULL DEFAULT 0,
+  total_steps BIGINT NOT NULL DEFAULT 0,
+  current_loss DOUBLE PRECISION,
+  current_epoch REAL,
+  error_message TEXT,
+  model_output_path TEXT,
+  created_at BIGINT NOT NULL DEFAULT 0,
+  started_at BIGINT,
+  completed_at BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_delegated_jobs_instance ON synapse.delegated_jobs(synapse_instance_id);
+CREATE INDEX IF NOT EXISTS idx_delegated_jobs_status ON synapse.delegated_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_delegated_jobs_sy_job ON synapse.delegated_jobs(sy_job_id);
+
+CREATE TABLE IF NOT EXISTS synapse.registered_models (
+  id TEXT PRIMARY KEY,
+  synapse_instance_id TEXT NOT NULL REFERENCES synapse.instances(id) ON DELETE CASCADE,
+  model_name TEXT NOT NULL,
+  model_path TEXT NOT NULL,
+  base_model TEXT,
+  training_method TEXT,
+  job_id TEXT REFERENCES synapse.delegated_jobs(id) ON DELETE SET NULL,
+  registered_at BIGINT NOT NULL DEFAULT 0,
+  metadata JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX IF NOT EXISTS idx_registered_models_instance ON synapse.registered_models(synapse_instance_id);
+CREATE INDEX IF NOT EXISTS idx_registered_models_name ON synapse.registered_models(model_name);
+
+
+-- ===========================================================================
+-- Consolidated from 013_break_glass.sql
+-- Break-glass emergency access
+-- ===========================================================================
+
+CREATE SCHEMA IF NOT EXISTS break_glass;
+
+CREATE TABLE IF NOT EXISTS break_glass.recovery_keys (
+  id          TEXT PRIMARY KEY,
+  key_hash    TEXT NOT NULL,
+  created_at  BIGINT NOT NULL,
+  rotated_at  BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS break_glass.sessions (
+  id                TEXT PRIMARY KEY,
+  recovery_key_id   TEXT NOT NULL REFERENCES break_glass.recovery_keys(id),
+  created_at        BIGINT NOT NULL,
+  expires_at        BIGINT NOT NULL,
+  ip_address        TEXT,
+  revoked_at        BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_break_glass_sessions_key ON break_glass.sessions (recovery_key_id);
+CREATE INDEX IF NOT EXISTS idx_break_glass_sessions_expires ON break_glass.sessions (expires_at);
+
+
+-- ===========================================================================
+-- Consolidated from 014_access_review.sql
+-- Access Review & Entitlement Reporting
+-- ===========================================================================
+
+CREATE SCHEMA IF NOT EXISTS access_review;
+
+CREATE TABLE IF NOT EXISTS access_review.campaigns (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  reviewer_ids TEXT[] NOT NULL,
+  scope TEXT,
+  created_by TEXT NOT NULL,
+  created_at BIGINT NOT NULL,
+  closed_at BIGINT,
+  expires_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS access_review.entitlements (
+  id TEXT PRIMARY KEY,
+  campaign_id TEXT NOT NULL REFERENCES access_review.campaigns(id),
+  user_id TEXT NOT NULL,
+  user_name TEXT,
+  entitlement_type TEXT NOT NULL,
+  entitlement_value TEXT NOT NULL,
+  details JSONB,
+  created_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS access_review.decisions (
+  id TEXT PRIMARY KEY,
+  campaign_id TEXT NOT NULL REFERENCES access_review.campaigns(id),
+  entitlement_id TEXT NOT NULL REFERENCES access_review.entitlements(id),
+  reviewer_id TEXT NOT NULL,
+  decision TEXT NOT NULL,
+  justification TEXT,
+  created_at BIGINT NOT NULL,
+  UNIQUE(campaign_id, entitlement_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ar_campaigns_status ON access_review.campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_ar_campaigns_created ON access_review.campaigns(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ar_entitlements_campaign ON access_review.entitlements(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_ar_entitlements_user ON access_review.entitlements(user_id);
+CREATE INDEX IF NOT EXISTS idx_ar_decisions_campaign ON access_review.decisions(campaign_id);
+
+
+-- ===========================================================================
+-- Consolidated from 015_scim.sql
+-- SCIM 2.0 Provisioning
+-- ===========================================================================
+
+CREATE SCHEMA IF NOT EXISTS scim;
+
+CREATE TABLE IF NOT EXISTS scim.users (
+  id TEXT PRIMARY KEY,
+  external_id TEXT,
+  user_name TEXT NOT NULL UNIQUE,
+  display_name TEXT,
+  email TEXT,
+  active BOOLEAN NOT NULL DEFAULT true,
+  roles TEXT[] DEFAULT '{}',
+  metadata JSONB DEFAULT '{}',
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS scim.groups (
+  id TEXT PRIMARY KEY,
+  external_id TEXT,
+  display_name TEXT NOT NULL UNIQUE,
+  members TEXT[] DEFAULT '{}',
+  metadata JSONB DEFAULT '{}',
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_scim_users_username ON scim.users(user_name);
+CREATE INDEX IF NOT EXISTS idx_scim_users_external ON scim.users(external_id);
+CREATE INDEX IF NOT EXISTS idx_scim_users_email ON scim.users(email);
+CREATE INDEX IF NOT EXISTS idx_scim_users_active ON scim.users(active);
+CREATE INDEX IF NOT EXISTS idx_scim_groups_external ON scim.groups(external_id);
+CREATE INDEX IF NOT EXISTS idx_scim_groups_display ON scim.groups(display_name);
+
+
+-- ===========================================================================
+-- Consolidated from 016_tenant_quotas.sql
+-- Per-Tenant Rate Limiting & Token Budgets
+-- ===========================================================================
+
+CREATE SCHEMA IF NOT EXISTS quotas;
+
+CREATE TABLE IF NOT EXISTS quotas.tenant_limits (
+  tenant_id TEXT PRIMARY KEY,
+  requests_per_minute INTEGER NOT NULL DEFAULT 60,
+  requests_per_hour INTEGER NOT NULL DEFAULT 1000,
+  tokens_per_day BIGINT NOT NULL DEFAULT 1000000,
+  tokens_per_month BIGINT NOT NULL DEFAULT 30000000,
+  max_concurrent_requests INTEGER NOT NULL DEFAULT 10,
+  custom_limits JSONB DEFAULT '{}',
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS quotas.usage_counters (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  counter_type TEXT NOT NULL,
+  window_start BIGINT NOT NULL,
+  window_end BIGINT NOT NULL,
+  current_value BIGINT NOT NULL DEFAULT 0,
+  max_value BIGINT NOT NULL,
+  UNIQUE(tenant_id, counter_type, window_start)
+);
+
+CREATE TABLE IF NOT EXISTS quotas.token_usage (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  model TEXT NOT NULL,
+  input_tokens INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  total_tokens INTEGER NOT NULL DEFAULT 0,
+  recorded_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_quotas_usage_tenant ON quotas.usage_counters(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_quotas_usage_window ON quotas.usage_counters(window_start, window_end);
+CREATE INDEX IF NOT EXISTS idx_quotas_token_tenant ON quotas.token_usage(tenant_id, recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_quotas_token_model ON quotas.token_usage(model, recorded_at DESC);
+
+
+-- ===========================================================================
+-- Consolidated from 018_simulation.sql
+-- Simulation Engine: tick driver, mood state, mood events
+-- ===========================================================================
+
+CREATE SCHEMA IF NOT EXISTS simulation;
+
+CREATE TABLE IF NOT EXISTS simulation.tick_configs (
+  id              TEXT PRIMARY KEY,
+  personality_id  TEXT NOT NULL,
+  mode            TEXT NOT NULL CHECK (mode IN ('realtime', 'accelerated', 'turn_based')),
+  tick_interval_ms BIGINT NOT NULL DEFAULT 1000,
+  time_scale      DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+  paused          BOOLEAN NOT NULL DEFAULT false,
+  current_tick    BIGINT NOT NULL DEFAULT 0,
+  sim_time_epoch  BIGINT NOT NULL DEFAULT 0,
+  last_tick_at    BIGINT,
+  created_at      BIGINT NOT NULL,
+  updated_at      BIGINT NOT NULL,
+  UNIQUE (personality_id)
+);
+
+CREATE TABLE IF NOT EXISTS simulation.mood_states (
+  id                TEXT PRIMARY KEY,
+  personality_id    TEXT NOT NULL,
+  valence           DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+  arousal           DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+  dominance         DOUBLE PRECISION NOT NULL DEFAULT 0.5,
+  label             TEXT NOT NULL DEFAULT 'neutral',
+  decay_rate        DOUBLE PRECISION NOT NULL DEFAULT 0.05,
+  baseline_valence  DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+  baseline_arousal  DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+  updated_at        BIGINT NOT NULL,
+  UNIQUE (personality_id)
+);
+
+CREATE TABLE IF NOT EXISTS simulation.mood_events (
+  id              TEXT PRIMARY KEY,
+  personality_id  TEXT NOT NULL,
+  event_type      TEXT NOT NULL,
+  valence_delta   DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+  arousal_delta   DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+  source          TEXT NOT NULL DEFAULT 'system',
+  metadata        JSONB NOT NULL DEFAULT '{}',
+  created_at      BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_mood_events_personality
+  ON simulation.mood_events (personality_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mood_states_personality
+  ON simulation.mood_states (personality_id);
+CREATE INDEX IF NOT EXISTS idx_tick_configs_personality
+  ON simulation.tick_configs (personality_id);
+
+
+-- ===========================================================================
+-- Consolidated from 019_spatial.sql
+-- Spatial & proximity awareness
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS simulation.entity_locations (
+  id              TEXT PRIMARY KEY,
+  personality_id  TEXT NOT NULL,
+  entity_id       TEXT NOT NULL,
+  entity_type     TEXT NOT NULL,
+  zone_id         TEXT NOT NULL DEFAULT '',
+  x               DOUBLE PRECISION NOT NULL DEFAULT 0,
+  y               DOUBLE PRECISION NOT NULL DEFAULT 0,
+  z               DOUBLE PRECISION NOT NULL DEFAULT 0,
+  heading         DOUBLE PRECISION NOT NULL DEFAULT 0,
+  speed           DOUBLE PRECISION NOT NULL DEFAULT 0,
+  metadata        JSONB NOT NULL DEFAULT '{}',
+  updated_at      BIGINT NOT NULL,
+  UNIQUE (personality_id, entity_id)
+);
+
+CREATE TABLE IF NOT EXISTS simulation.spatial_zones (
+  id              TEXT PRIMARY KEY,
+  personality_id  TEXT NOT NULL,
+  zone_id         TEXT NOT NULL,
+  name            TEXT NOT NULL,
+  min_x           DOUBLE PRECISION NOT NULL,
+  min_y           DOUBLE PRECISION NOT NULL,
+  max_x           DOUBLE PRECISION NOT NULL,
+  max_y           DOUBLE PRECISION NOT NULL,
+  properties      JSONB NOT NULL DEFAULT '{}',
+  created_at      BIGINT NOT NULL,
+  UNIQUE (personality_id, zone_id)
+);
+
+CREATE TABLE IF NOT EXISTS simulation.proximity_rules (
+  id                  TEXT PRIMARY KEY,
+  personality_id      TEXT NOT NULL,
+  trigger_type        TEXT NOT NULL CHECK (trigger_type IN (
+    'enter_radius', 'leave_radius', 'enter_zone', 'leave_zone', 'approach', 'depart'
+  )),
+  source_entity_id    TEXT,
+  target_entity_id    TEXT,
+  target_zone_id      TEXT,
+  radius_threshold    DOUBLE PRECISION NOT NULL DEFAULT 0,
+  cooldown_ms         BIGINT NOT NULL DEFAULT 0,
+  mood_effect         JSONB,
+  enabled             BOOLEAN NOT NULL DEFAULT true,
+  created_at          BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS simulation.proximity_events (
+  id                TEXT PRIMARY KEY,
+  personality_id    TEXT NOT NULL,
+  rule_id           TEXT,
+  trigger_type      TEXT NOT NULL,
+  source_entity_id  TEXT NOT NULL,
+  target_entity_id  TEXT,
+  target_zone_id    TEXT,
+  distance          DOUBLE PRECISION NOT NULL DEFAULT 0,
+  tick              BIGINT NOT NULL,
+  metadata          JSONB NOT NULL DEFAULT '{}',
+  created_at        BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_entity_locations_personality
+  ON simulation.entity_locations (personality_id);
+CREATE INDEX IF NOT EXISTS idx_entity_locations_zone
+  ON simulation.entity_locations (personality_id, zone_id);
+CREATE INDEX IF NOT EXISTS idx_spatial_zones_personality
+  ON simulation.spatial_zones (personality_id);
+CREATE INDEX IF NOT EXISTS idx_proximity_rules_personality
+  ON simulation.proximity_rules (personality_id, enabled);
+CREATE INDEX IF NOT EXISTS idx_proximity_events_personality_tick
+  ON simulation.proximity_events (personality_id, tick DESC);
+
+
+-- ===========================================================================
+-- Consolidated from 020_relationships.sql
+-- Entity Relationship Graph
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS simulation.entity_relationships (
+  id TEXT PRIMARY KEY,
+  personality_id TEXT NOT NULL,
+  source_entity_id TEXT NOT NULL,
+  target_entity_id TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'neutral',
+  affinity DOUBLE PRECISION NOT NULL DEFAULT 0,
+  trust DOUBLE PRECISION NOT NULL DEFAULT 0.5,
+  interaction_count INTEGER NOT NULL DEFAULT 0,
+  decay_rate DOUBLE PRECISION NOT NULL DEFAULT 0.01,
+  metadata JSONB NOT NULL DEFAULT '{}',
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL,
+  UNIQUE (personality_id, source_entity_id, target_entity_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_entity_relationships_personality
+  ON simulation.entity_relationships (personality_id);
+CREATE INDEX IF NOT EXISTS idx_entity_relationships_source
+  ON simulation.entity_relationships (personality_id, source_entity_id);
+CREATE INDEX IF NOT EXISTS idx_entity_relationships_target
+  ON simulation.entity_relationships (personality_id, target_entity_id);
+
+CREATE TABLE IF NOT EXISTS simulation.relationship_events (
+  id TEXT PRIMARY KEY,
+  personality_id TEXT NOT NULL,
+  source_entity_id TEXT NOT NULL,
+  target_entity_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  affinity_delta DOUBLE PRECISION NOT NULL DEFAULT 0,
+  trust_delta DOUBLE PRECISION NOT NULL DEFAULT 0,
+  source TEXT NOT NULL DEFAULT 'system',
+  metadata JSONB NOT NULL DEFAULT '{}',
+  created_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_relationship_events_personality
+  ON simulation.relationship_events (personality_id);
+CREATE INDEX IF NOT EXISTS idx_relationship_events_entities
+  ON simulation.relationship_events (personality_id, source_entity_id, target_entity_id);
+
+CREATE TABLE IF NOT EXISTS simulation.entity_groups (
+  id TEXT PRIMARY KEY,
+  personality_id TEXT NOT NULL,
+  group_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  members TEXT[] NOT NULL DEFAULT '{}',
+  metadata JSONB NOT NULL DEFAULT '{}',
+  created_at BIGINT NOT NULL,
+  UNIQUE (personality_id, group_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_entity_groups_personality
+  ON simulation.entity_groups (personality_id);
+
+
+-- ===========================================================================
+-- Consolidated from 022_synapse_bridge.sql
+-- Synapse Bridge: inbound jobs, capability announcements, backend tracking
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS synapse.inbound_jobs (
+  id TEXT PRIMARY KEY,
+  synapse_instance_id TEXT NOT NULL REFERENCES synapse.instances(id) ON DELETE CASCADE,
+  synapse_source_job_id TEXT,
+  job_type TEXT NOT NULL DEFAULT 'evaluation',
+  description TEXT,
+  payload JSONB NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'pending',
+  result JSONB,
+  error_message TEXT,
+  created_at BIGINT NOT NULL DEFAULT 0,
+  started_at BIGINT,
+  completed_at BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_inbound_jobs_instance ON synapse.inbound_jobs(synapse_instance_id);
+CREATE INDEX IF NOT EXISTS idx_inbound_jobs_status ON synapse.inbound_jobs(status);
+
+CREATE TABLE IF NOT EXISTS synapse.capability_announcements (
+  id TEXT PRIMARY KEY,
+  synapse_instance_id TEXT NOT NULL REFERENCES synapse.instances(id) ON DELETE CASCADE,
+  capabilities JSONB NOT NULL DEFAULT '{}',
+  announced_at BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_cap_announce_instance ON synapse.capability_announcements(synapse_instance_id);
+
+DO $$ BEGIN
+  ALTER TABLE training.finetune_jobs ADD COLUMN IF NOT EXISTS backend TEXT NOT NULL DEFAULT 'local';
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE training.finetune_jobs ADD COLUMN IF NOT EXISTS synapse_delegated_job_id TEXT;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE training.pretrain_jobs ADD COLUMN IF NOT EXISTS backend TEXT NOT NULL DEFAULT 'local';
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE training.pretrain_jobs ADD COLUMN IF NOT EXISTS synapse_delegated_job_id TEXT;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+
+-- ===========================================================================
+-- Consolidated from 023_edge_fleet.sql
+-- Edge fleet management: nodes, deployments, OTA updates
+-- ===========================================================================
+
+DO $$ BEGIN
+  CREATE SCHEMA IF NOT EXISTS edge;
+EXCEPTION WHEN duplicate_schema THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS edge.nodes (
+  id                  TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  peer_id             TEXT REFERENCES a2a.peers(id) ON DELETE SET NULL,
+  node_id             TEXT NOT NULL,
+  hostname            TEXT NOT NULL,
+  arch                TEXT NOT NULL DEFAULT 'x64',
+  platform            TEXT NOT NULL DEFAULT 'linux',
+  total_memory_mb     INT NOT NULL DEFAULT 0,
+  cpu_cores           INT NOT NULL DEFAULT 0,
+  has_gpu             BOOLEAN NOT NULL DEFAULT false,
+  tags                TEXT[] NOT NULL DEFAULT '{}',
+  bandwidth_mbps      INT,
+  latency_ms          INT,
+  wireguard_pubkey    TEXT,
+  wireguard_endpoint  TEXT,
+  wireguard_ip        TEXT,
+  current_version     TEXT NOT NULL DEFAULT 'unknown',
+  last_update_check   TIMESTAMPTZ,
+  status              TEXT NOT NULL DEFAULT 'registered'
+                      CHECK (status IN ('registered', 'online', 'offline', 'decommissioned')),
+  last_heartbeat      TIMESTAMPTZ DEFAULT now(),
+  registered_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_edge_nodes_node_id ON edge.nodes (node_id);
+CREATE INDEX IF NOT EXISTS idx_edge_nodes_status ON edge.nodes (status);
+CREATE INDEX IF NOT EXISTS idx_edge_nodes_peer_id ON edge.nodes (peer_id);
+CREATE INDEX IF NOT EXISTS idx_edge_nodes_arch ON edge.nodes (arch);
+
+CREATE TABLE IF NOT EXISTS edge.deployments (
+  id                  TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  node_id             TEXT NOT NULL REFERENCES edge.nodes(id) ON DELETE CASCADE,
+  task_type           TEXT NOT NULL,
+  config_json         JSONB NOT NULL DEFAULT '{}',
+  status              TEXT NOT NULL DEFAULT 'pending'
+                      CHECK (status IN ('pending', 'deploying', 'running', 'stopped', 'failed')),
+  error_message       TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  started_at          TIMESTAMPTZ,
+  stopped_at          TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_edge_deployments_node ON edge.deployments (node_id);
+CREATE INDEX IF NOT EXISTS idx_edge_deployments_status ON edge.deployments (status);
+
+CREATE TABLE IF NOT EXISTS edge.ota_updates (
+  id                  TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  node_id             TEXT NOT NULL REFERENCES edge.nodes(id) ON DELETE CASCADE,
+  from_version        TEXT NOT NULL,
+  to_version          TEXT NOT NULL,
+  sha256              TEXT,
+  ed25519_signature   TEXT,
+  status              TEXT NOT NULL DEFAULT 'pending'
+                      CHECK (status IN ('pending', 'downloading', 'verifying', 'applied', 'failed', 'rolled_back')),
+  error_message       TEXT,
+  initiated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  completed_at        TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_edge_ota_node ON edge.ota_updates (node_id);

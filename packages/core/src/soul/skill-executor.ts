@@ -92,20 +92,46 @@ export class SkillExecutor {
 
     const timeoutMs = httpConfig.timeoutMs ?? 30000;
 
+    // Validate URL and enforce domain restrictions
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(httpConfig.url);
+    } catch {
+      return { success: false, error: 'Invalid URL', durationMs: Date.now() - startTime };
+    }
+
+    // Block private/reserved IPs and cloud metadata endpoints (SSRF protection)
+    const hostname = parsedUrl.hostname.toLowerCase();
+    const BLOCKED_HOSTS = [
+      'localhost',
+      '127.0.0.1',
+      '::1',
+      '0.0.0.0',
+      '169.254.169.254', // AWS/GCP metadata
+      'metadata.google.internal', // GCP metadata
+      'metadata.internal', // Generic cloud metadata
+    ];
+    if (
+      BLOCKED_HOSTS.includes(hostname) ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('192.168.') ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+      hostname.endsWith('.internal') ||
+      hostname.endsWith('.local')
+    ) {
+      return {
+        success: false,
+        error: 'Requests to private/internal addresses are not allowed',
+        durationMs: Date.now() - startTime,
+      };
+    }
+
+    // Enforce allowlist if configured
     if (this.config.allowedDomains?.length) {
-      try {
-        const url = new URL(httpConfig.url);
-        if (!this.config.allowedDomains.includes(url.hostname)) {
-          return {
-            success: false,
-            error: `Domain ${url.hostname} not in allowlist`,
-            durationMs: Date.now() - startTime,
-          };
-        }
-      } catch {
+      if (!this.config.allowedDomains.includes(hostname)) {
         return {
           success: false,
-          error: 'Invalid URL',
+          error: `Domain ${hostname} not in allowlist`,
           durationMs: Date.now() - startTime,
         };
       }

@@ -467,7 +467,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     ) => {
       if (!personalityVersionManager) return sendError(reply, 501, 'Versioning not available');
       try {
-        const tag = (request.body as any)?.tag;
+        const tag = request.body?.tag;
         const version = await personalityVersionManager.tagRelease(
           request.params.id,
           tag || undefined
@@ -924,6 +924,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeBullshift: false,
               exposePhotisnadi: false,
               exposeSynapse: false,
+              exposeDelta: false,
+              exposeVoice: false,
+              exposeEdge: false,
             },
             proactiveConfig: {
               enabled: false,

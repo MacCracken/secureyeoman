@@ -18,6 +18,14 @@ import type { SecureYeoman } from '../../secureyeoman.js';
 import type { AccessReviewManager } from './access-review-manager.js';
 import type { CampaignStatus, DecisionValue } from './access-review-storage.js';
 
+interface AuthenticatedRequest {
+  authUser?: { userId: string };
+}
+
+function getAuthUserId(request: FastifyRequest): string | undefined {
+  return (request as unknown as AuthenticatedRequest).authUser?.userId;
+}
+
 export interface AccessReviewRoutesOptions {
   manager: AccessReviewManager;
   secureYeoman?: SecureYeoman;
@@ -62,7 +70,8 @@ export function registerAccessReviewRoutes(
       }>,
       reply: FastifyReply
     ) => {
-      const { name, reviewerIds, scope, createdBy, expiryDays } = request.body ?? {};
+      const { name, reviewerIds, scope, expiryDays } = request.body ?? {};
+      const authUserId = getAuthUserId(request);
       if (!name) return sendError(reply, 400, 'name is required');
       if (!reviewerIds || reviewerIds.length === 0) {
         return sendError(reply, 400, 'reviewerIds must be a non-empty array');
@@ -70,7 +79,7 @@ export function registerAccessReviewRoutes(
       try {
         const campaign = await manager.createCampaign(name, reviewerIds, {
           scope,
-          createdBy,
+          createdBy: authUserId,
           expiryMs: expiryDays ? expiryDays * 24 * 60 * 60 * 1000 : undefined,
         });
         return reply.code(201).send({ campaign });
@@ -139,10 +148,11 @@ export function registerAccessReviewRoutes(
       }>,
       reply: FastifyReply
     ) => {
-      const { entitlementId, decision, reviewerId, justification } = request.body ?? {};
+      const { entitlementId, decision, justification } = request.body ?? {};
+      const reviewerId = getAuthUserId(request);
       if (!entitlementId) return sendError(reply, 400, 'entitlementId is required');
       if (!decision) return sendError(reply, 400, 'decision is required');
-      if (!reviewerId) return sendError(reply, 400, 'reviewerId is required');
+      if (!reviewerId) return sendError(reply, 401, 'Authentication required');
 
       const validDecisions: DecisionValue[] = ['approve', 'revoke', 'flag'];
       if (!validDecisions.includes(decision as DecisionValue)) {
@@ -185,7 +195,7 @@ export function registerAccessReviewRoutes(
       }>,
       reply: FastifyReply
     ) => {
-      const { closedBy } = request.body ?? {};
+      const closedBy = getAuthUserId(request);
       try {
         const campaign = await manager.closeCampaign(request.params.id, closedBy);
         return reply.send({ campaign });

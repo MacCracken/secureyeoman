@@ -203,6 +203,9 @@ export interface Personality {
       exposeDocker?: boolean;
       exposeTerminal?: boolean;
       exposeSynapse?: boolean;
+      exposeDelta?: boolean;
+      exposeVoice?: boolean;
+      exposeEdge?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -319,6 +322,9 @@ export interface PersonalityCreate {
       exposeDocker?: boolean;
       exposeTerminal?: boolean;
       exposeSynapse?: boolean;
+      exposeDelta?: boolean;
+      exposeVoice?: boolean;
+      exposeEdge?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -919,6 +925,9 @@ export interface McpFeatureConfig {
   exposeBullshiftTools: boolean;
   exposePhotisnadiTools: boolean;
   exposeSynapseTools: boolean;
+  exposeDeltaTools: boolean;
+  exposeVoiceTools: boolean;
+  exposeEdgeTools: boolean;
 }
 
 export interface CicdPlatformConfig {

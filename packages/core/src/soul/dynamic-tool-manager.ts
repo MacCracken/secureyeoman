@@ -64,6 +64,11 @@ const FORBIDDEN_PATTERNS: { pattern: RegExp; label: string }[] = [
   { pattern: /\bglobalThis\b/, label: 'globalThis' },
   { pattern: /\bBuffer\b/, label: 'Buffer' },
   { pattern: /\.constructor\s*\.constructor/, label: 'constructor chain escape' },
+  { pattern: /\[['"]constructor['"]\]/, label: 'bracket-notation constructor escape' },
+  { pattern: /\.__proto__/, label: '__proto__ access' },
+  { pattern: /\[['"]__proto__['"]\]/, label: 'bracket-notation __proto__ access' },
+  { pattern: /Object\s*\.\s*getPrototypeOf/, label: 'getPrototypeOf escape' },
+  { pattern: /Reflect/, label: 'Reflect API' },
   { pattern: /\beval\s*\(/, label: 'eval()' },
   { pattern: /\bnew\s+Function\s*\(/, label: 'new Function()' },
   { pattern: /\bsetTimeout\s*\(/, label: 'setTimeout()' },
@@ -504,11 +509,16 @@ export class DynamicToolManager {
 
   /** Run the compiled function with a hard execution timeout. */
   private async runWithTimeout(fn: CompiledFn, args: Record<string, unknown>): Promise<unknown> {
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
         reject(new Error(`Dynamic tool execution timed out after ${this.executionTimeoutMs}ms`));
-      }, this.executionTimeoutMs)
-    );
-    return Promise.race([fn(args), timeout]);
+      }, this.executionTimeoutMs);
+    });
+    try {
+      return await Promise.race([fn(args), timeout]);
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
   }
 }

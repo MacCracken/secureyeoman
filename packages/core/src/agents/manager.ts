@@ -761,8 +761,39 @@ export class SubAgentManager {
 
     const p = profile as any;
     const command: string = p.command;
-    const commandArgs: string[] = p.commandArgs ?? [];
-    const commandEnv: Record<string, string> = { ...(process.env as any), ...(p.commandEnv ?? {}) };
+    if (!command || typeof command !== 'string') {
+      throw new Error('Binary agent profile missing "command" field');
+    }
+    // Reject shell metacharacters in command to prevent command injection
+    if (/[;&|`$(){}!<>\\]/.test(command)) {
+      throw new Error(`Binary agent command contains forbidden characters: ${command}`);
+    }
+
+    const commandArgs: string[] = (p.commandArgs ?? []).map((a: unknown) => String(a));
+    // Reject shell metacharacters in args (backtick, $, etc.)
+    for (const arg of commandArgs) {
+      if (/[`$]/.test(arg)) {
+        throw new Error(`Binary agent argument contains forbidden characters: ${arg}`);
+      }
+    }
+
+    // Build a minimal environment — do NOT leak parent process.env wholesale
+    const SAFE_ENV_KEYS = [
+      'PATH',
+      'HOME',
+      'USER',
+      'LANG',
+      'LC_ALL',
+      'TZ',
+      'TERM',
+      'TMPDIR',
+      'NODE_ENV',
+    ];
+    const baseEnv: Record<string, string> = {};
+    for (const key of SAFE_ENV_KEYS) {
+      if (process.env[key]) baseEnv[key] = process.env[key]!;
+    }
+    const commandEnv: Record<string, string> = { ...baseEnv, ...(p.commandEnv ?? {}) };
 
     const payload = JSON.stringify({
       delegationId,

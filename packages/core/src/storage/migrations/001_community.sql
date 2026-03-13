@@ -2760,3 +2760,159 @@ END $$;
 
 INSERT INTO mcp.config (key, value) VALUES ('exposeGmail', 'false') ON CONFLICT DO NOTHING;
 INSERT INTO mcp.config (key, value) VALUES ('exposeTwitter', 'false') ON CONFLICT DO NOTHING;
+
+
+-- ===========================================================================
+-- Consolidated from 009_security_hardening.sql
+-- Security hardening: encrypted OAuth tokens, persistent OAuth state,
+-- 2FA DB persistence, hashed recovery codes.
+-- ===========================================================================
+
+-- ── 1. Encrypted OAuth tokens ──────────────────────────────────────────────
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'oauth_tokens' AND column_name = 'access_token_enc'
+  ) THEN
+    ALTER TABLE oauth_tokens
+      ADD COLUMN access_token_enc  bytea,
+      ADD COLUMN refresh_token_enc bytea,
+      ADD COLUMN token_enc_key_id  text;
+  END IF;
+END $$;
+
+-- ── 2. Persistent OAuth state ──────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS auth.oauth_state (
+  state         text PRIMARY KEY,
+  provider      text NOT NULL,
+  redirect_uri  text NOT NULL,
+  code_verifier text,
+  frontend_origin text,
+  created_at    bigint NOT NULL,
+  expires_at    bigint NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_oauth_state_expires ON auth.oauth_state (expires_at);
+
+CREATE TABLE IF NOT EXISTS auth.pending_oauth_tokens (
+  connection_token text PRIMARY KEY,
+  provider         text NOT NULL,
+  access_token_enc bytea,
+  refresh_token_enc bytea,
+  email            text NOT NULL,
+  user_info_name   text,
+  token_enc_key_id text,
+  created_at       bigint NOT NULL,
+  expires_at       bigint NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_pending_oauth_expires ON auth.pending_oauth_tokens (expires_at);
+
+-- ── 3. 2FA persistent state ───────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS auth.two_factor (
+  user_id             text PRIMARY KEY,
+  secret_enc          bytea NOT NULL,
+  enabled             boolean NOT NULL DEFAULT false,
+  pending_secret_enc  bytea,
+  enc_key_id          text,
+  created_at          bigint NOT NULL,
+  updated_at          bigint NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS auth.recovery_codes (
+  id          text PRIMARY KEY,
+  user_id     text NOT NULL REFERENCES auth.two_factor(user_id) ON DELETE CASCADE,
+  code_hash   text NOT NULL,
+  used_at     bigint,
+  created_at  bigint NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_recovery_codes_user ON auth.recovery_codes (user_id);
+
+
+-- ===========================================================================
+-- Consolidated from 010_encrypt_idp_secrets.sql
+-- Encrypt OIDC client secrets at rest.
+-- ===========================================================================
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'auth' AND table_name = 'identity_providers' AND column_name = 'client_secret_enc'
+  ) THEN
+    ALTER TABLE auth.identity_providers
+      ADD COLUMN client_secret_enc  bytea,
+      ADD COLUMN secret_enc_key_id  text;
+  END IF;
+END $$;
+
+
+-- ===========================================================================
+-- Consolidated from 011_sso_auth_codes.sql
+-- Short-lived SSO authorization codes for secure token delivery.
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS auth.sso_auth_codes (
+  code        text PRIMARY KEY,
+  access_token text NOT NULL,
+  refresh_token text NOT NULL,
+  expires_in  integer NOT NULL,
+  created_at  bigint NOT NULL,
+  expires_at  bigint NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sso_auth_codes_expires ON auth.sso_auth_codes (expires_at);
+
+
+-- ===========================================================================
+-- Consolidated from 017_webauthn.sql
+-- WebAuthn/FIDO2 Credentials
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  credential_id TEXT NOT NULL UNIQUE,
+  public_key TEXT NOT NULL,
+  counter BIGINT NOT NULL DEFAULT 0,
+  device_type TEXT,
+  backed_up BOOLEAN NOT NULL DEFAULT false,
+  transports TEXT[],
+  display_name TEXT,
+  created_at BIGINT NOT NULL,
+  last_used_at BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_challenges (
+  id TEXT PRIMARY KEY,
+  challenge TEXT NOT NULL UNIQUE,
+  user_id TEXT,
+  type TEXT NOT NULL,
+  expires_at BIGINT NOT NULL,
+  created_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_webauthn_creds_user ON webauthn_credentials(user_id);
+CREATE INDEX IF NOT EXISTS idx_webauthn_creds_credid ON webauthn_credentials(credential_id);
+CREATE INDEX IF NOT EXISTS idx_webauthn_challenges_exp ON webauthn_challenges(expires_at);
+
+
+-- ===========================================================================
+-- Consolidated from 021_auto_secrets.sql
+-- DB-persisted auto-generated secrets
+-- ===========================================================================
+
+CREATE SCHEMA IF NOT EXISTS internal;
+
+CREATE TABLE IF NOT EXISTS internal.auto_secrets (
+    name  text PRIMARY KEY,
+    value text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE internal.auto_secrets IS
+  'Auto-generated cryptographic secrets persisted across restarts. Values are raw base64url-encoded keys.';

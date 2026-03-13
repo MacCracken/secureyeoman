@@ -286,7 +286,7 @@ describe('WebAuthnManager', () => {
 
       const count = await mgr.removeCredential('cred-id-abc');
 
-      expect(storage.deleteCredential).toHaveBeenCalledWith('cred-id-abc');
+      expect(storage.deleteCredential).toHaveBeenCalledWith('cred-id-abc', undefined);
       expect(count).toBe(1);
     });
 

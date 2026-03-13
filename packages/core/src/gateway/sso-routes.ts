@@ -114,8 +114,9 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         target.searchParams.set('sso_code', authCode);
         return reply.redirect(target.toString());
       } catch (err) {
+        app.log.warn({ error: toErrorMessage(err) }, 'SSO callback failed');
         const errUrl = new URL(dashboardUrl);
-        errUrl.searchParams.set('sso_error', toErrorMessage(err));
+        errUrl.searchParams.set('sso_error', 'sso_auth_failed');
         return reply.redirect(errUrl.toString());
       }
     }
@@ -256,8 +257,9 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         target.searchParams.set('sso_code', authCode);
         return reply.redirect(target.toString());
       } catch (err) {
+        app.log.warn({ error: toErrorMessage(err) }, 'SSO SAML callback failed');
         const errUrl = new URL(dashboardUrl);
-        errUrl.searchParams.set('sso_error', toErrorMessage(err));
+        errUrl.searchParams.set('sso_error', 'sso_auth_failed');
         return reply.redirect(errUrl.toString());
       }
     }

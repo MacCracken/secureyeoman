@@ -171,14 +171,7 @@ export class McpClientManager {
         const token = await mintCallthruToken(this.tokenSecret);
         const endpoint = `${server.url}/api/v1/internal/tool-call`;
 
-        this.logger.info(
-          {
-            serverId,
-            toolName,
-            endpoint,
-          },
-          'Calling MCP tool via internal callthrough'
-        );
+        this.logger.info({ serverId, toolName }, 'Calling MCP tool via internal callthrough');
 
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -195,6 +188,10 @@ export class McpClientManager {
           throw new Error(`MCP tool call failed (${res.status}): ${body}`);
         }
 
+        const contentLength = res.headers.get('content-length');
+        if (contentLength && parseInt(contentLength, 10) > 50_000_000) {
+          throw new Error('MCP response too large (>50MB)');
+        }
         const result = await res.json();
         const elapsed = Date.now() - startTime;
         span.setAttribute('mcp.latency_ms', elapsed);

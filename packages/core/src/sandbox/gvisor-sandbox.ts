@@ -168,6 +168,15 @@ const fn = ${fn.toString()};
       writeFileSync(path.join(tmpDir, 'config.json'), JSON.stringify(ociConfig, null, 2));
 
       const stateRoot = this.opts.stateRoot ?? path.join(os.tmpdir(), 'secureyeoman-gvisor');
+      // Validate stateRoot is absolute and under tmpdir to prevent path manipulation
+      if (!path.isAbsolute(stateRoot) || stateRoot.includes('..')) {
+        return {
+          success: false,
+          error: new Error('stateRoot must be an absolute path without traversal'),
+          resourceUsage: { memoryPeakMb: 0, cpuTimeMs: 0 },
+          violations: [],
+        };
+      }
       mkdirSync(stateRoot, { recursive: true });
 
       const timeoutMs = opts?.timeoutMs ?? 30000;

@@ -24,6 +24,13 @@ import {
 } from '@secureyeoman/shared';
 import { sendError } from '../utils/errors.js';
 
+/** Parse a query-string number, returning undefined if missing/invalid/non-finite. */
+function safeNum(val: string | undefined): number | undefined {
+  if (val === undefined) return undefined;
+  const n = Number(val);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 interface SimulationRouteOpts {
   store: SimulationStore;
   tickDriver: TickDriver;
@@ -178,8 +185,8 @@ export function registerSimulationRoutes(app: FastifyInstance, opts: SimulationR
     ) => {
       const qs = request.query as { limit?: string; since?: string };
       const events = await store.listMoodEvents(request.params.id, {
-        limit: qs.limit ? Number(qs.limit) : undefined,
-        since: qs.since ? Number(qs.since) : undefined,
+        limit: safeNum(qs.limit),
+        since: safeNum(qs.since),
       });
       return reply.send({ items: events });
     }
@@ -242,7 +249,7 @@ export function registerSimulationRoutes(app: FastifyInstance, opts: SimulationR
       const qs = request.query as { zoneId?: string; limit?: string };
       const items = await spatialEngine.listEntities(request.params.personalityId, {
         zoneId: qs.zoneId,
-        limit: qs.limit ? Number(qs.limit) : undefined,
+        limit: safeNum(qs.limit),
       });
       return reply.send({ items });
     }
@@ -342,7 +349,10 @@ export function registerSimulationRoutes(app: FastifyInstance, opts: SimulationR
       request: FastifyRequest<{ Params: { personalityId: string; ruleId: string } }>,
       reply: FastifyReply
     ) => {
-      const deleted = await spatialEngine.deleteRule(request.params.ruleId);
+      const deleted = await spatialEngine.deleteRule(
+        request.params.ruleId,
+        request.params.personalityId
+      );
       if (!deleted) return sendError(reply, 404, 'Rule not found');
       return reply.code(204).send();
     }
@@ -361,8 +371,8 @@ export function registerSimulationRoutes(app: FastifyInstance, opts: SimulationR
     ) => {
       const qs = request.query as { limit?: string; sinceTick?: string };
       const items = await spatialEngine.listProximityEvents(request.params.personalityId, {
-        limit: qs.limit ? Number(qs.limit) : undefined,
-        sinceTick: qs.sinceTick ? Number(qs.sinceTick) : undefined,
+        limit: safeNum(qs.limit),
+        sinceTick: safeNum(qs.sinceTick),
       });
       return reply.send({ items });
     }
@@ -479,7 +489,7 @@ export function registerSimulationRoutes(app: FastifyInstance, opts: SimulationR
     ) => {
       const qs = request.query as { limit?: string };
       const items = await experimentRunner.listRuns(request.params.sessionId, {
-        limit: qs.limit ? Number(qs.limit) : undefined,
+        limit: safeNum(qs.limit),
       });
       return reply.send({ items });
     }
@@ -539,8 +549,8 @@ export function registerSimulationRoutes(app: FastifyInstance, opts: SimulationR
       const items = await relationshipGraph.listRelationships(request.params.personalityId, {
         entityId: qs.entityId,
         type: qs.type,
-        minAffinity: qs.minAffinity ? Number(qs.minAffinity) : undefined,
-        limit: qs.limit ? Number(qs.limit) : undefined,
+        minAffinity: safeNum(qs.minAffinity),
+        limit: safeNum(qs.limit),
       });
       return reply.send({ items });
     }
@@ -578,8 +588,16 @@ export function registerSimulationRoutes(app: FastifyInstance, opts: SimulationR
     ) => {
       const body = request.body as Record<string, unknown>;
       const updates: { affinity?: number; trust?: number; metadata?: Record<string, unknown> } = {};
-      if (body.affinity != null) updates.affinity = Number(body.affinity);
-      if (body.trust != null) updates.trust = Number(body.trust);
+      if (body.affinity != null) {
+        const a = Number(body.affinity);
+        if (!Number.isFinite(a)) return sendError(reply, 400, 'affinity must be a finite number');
+        updates.affinity = a;
+      }
+      if (body.trust != null) {
+        const t = Number(body.trust);
+        if (!Number.isFinite(t)) return sendError(reply, 400, 'trust must be a finite number');
+        updates.trust = t;
+      }
       if (body.metadata != null) updates.metadata = body.metadata as Record<string, unknown>;
 
       const rel = await relationshipGraph.updateRelationship(
@@ -646,8 +664,8 @@ export function registerSimulationRoutes(app: FastifyInstance, opts: SimulationR
       const qs = request.query as { entityId?: string; limit?: string; since?: string };
       const items = await relationshipGraph.listEvents(request.params.personalityId, {
         entityId: qs.entityId,
-        limit: qs.limit ? Number(qs.limit) : undefined,
-        since: qs.since ? Number(qs.since) : undefined,
+        limit: safeNum(qs.limit),
+        since: safeNum(qs.since),
       });
       return reply.send({ items });
     }

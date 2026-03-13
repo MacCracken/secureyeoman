@@ -533,6 +533,11 @@ export class BrainStorage extends PgBaseStorage {
     sql += ` LIMIT $${idx++}`;
     params.push(kbLimit);
 
+    if (query.offset && query.offset > 0) {
+      sql += ` OFFSET $${idx++}`;
+      params.push(query.offset);
+    }
+
     const rows = await this.queryMany<KnowledgeRow>(sql, params);
     return rows.map(rowToKnowledge);
   }
@@ -835,9 +840,9 @@ export class BrainStorage extends PgBaseStorage {
     }
 
     const ftsSubquery = `
-      SELECT id, ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, to_tsquery('english', $${ftsParam})) DESC) AS fts_rank
+      SELECT id, ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, plainto_tsquery('english', $${ftsParam})) DESC) AS fts_rank
       FROM brain.memories
-      WHERE search_vec @@ to_tsquery('english', $${ftsParam}) ${personalityClause}
+      WHERE search_vec @@ plainto_tsquery('english', $${ftsParam}) ${personalityClause}
     `;
 
     let vectorSubquery: string;
@@ -907,9 +912,9 @@ export class BrainStorage extends PgBaseStorage {
     }
 
     const ftsSubquery = `
-      SELECT id, ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, to_tsquery('english', $${ftsParam})) DESC) AS fts_rank
+      SELECT id, ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, plainto_tsquery('english', $${ftsParam})) DESC) AS fts_rank
       FROM brain.knowledge
-      WHERE search_vec @@ to_tsquery('english', $${ftsParam}) ${personalityClause}
+      WHERE search_vec @@ plainto_tsquery('english', $${ftsParam}) ${personalityClause}
     `;
 
     let vectorSubquery: string;
@@ -1002,9 +1007,9 @@ export class BrainStorage extends PgBaseStorage {
 
     const ftsSubquery = `
       SELECT id, source_id, source_table, content,
-             ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, to_tsquery('english', $${ftsParam})) DESC) AS fts_rank
+             ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, plainto_tsquery('english', $${ftsParam})) DESC) AS fts_rank
       FROM brain.document_chunks
-      WHERE search_vec @@ to_tsquery('english', $${ftsParam})
+      WHERE search_vec @@ plainto_tsquery('english', $${ftsParam})
     `;
 
     let vectorSubquery: string;

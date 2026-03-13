@@ -142,9 +142,9 @@ export class SpatialEngine {
     return this.store.listProximityRules(personalityId, opts);
   }
 
-  async deleteRule(ruleId: string): Promise<boolean> {
+  async deleteRule(ruleId: string, personalityId?: string): Promise<boolean> {
     this.cooldowns.delete(ruleId);
-    return this.store.deleteProximityRule(ruleId);
+    return this.store.deleteProximityRule(ruleId, personalityId);
   }
 
   // ── Proximity Event History ───────────────────────────────────────

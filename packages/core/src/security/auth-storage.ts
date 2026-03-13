@@ -126,7 +126,14 @@ export class AuthStorage extends PgBaseStorage {
     );
   }
 
-  async revokeApiKey(id: string): Promise<boolean> {
+  async revokeApiKey(id: string, userId?: string): Promise<boolean> {
+    if (userId) {
+      const changes = await this.execute(
+        'UPDATE auth.api_keys SET revoked_at = $1 WHERE id = $2 AND user_id = $3 AND revoked_at IS NULL',
+        [Date.now(), id, userId]
+      );
+      return changes > 0;
+    }
     const changes = await this.execute(
       'UPDATE auth.api_keys SET revoked_at = $1 WHERE id = $2 AND revoked_at IS NULL',
       [Date.now(), id]

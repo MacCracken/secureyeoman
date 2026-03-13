@@ -324,6 +324,11 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           exposeNorthflank?: boolean;
           northflankApiKey?: string;
           exposeSynapseTools?: boolean;
+          exposeDeltaTools?: boolean;
+          exposeEdgeTools?: boolean;
+          exposeVoiceTools?: boolean;
+          exposeAequiTools?: boolean;
+          exposeShrutiTools?: boolean;
         };
       }>
     ) => {

@@ -70,6 +70,7 @@ describe('McpClientManager', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
+        headers: new Map([['content-type', 'application/json']]),
         json: vi.fn().mockResolvedValue({ result: 'called tool_a successfully' }),
       })
     );

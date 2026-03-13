@@ -29,6 +29,11 @@ interface RateLimitState {
 
 const rateLimitMap = new Map<string, RateLimitState>();
 
+/** Reset rate limit state (for testing only). */
+export function resetBreakGlassRateLimit(): void {
+  rateLimitMap.clear();
+}
+
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
   let state = rateLimitMap.get(ip);
@@ -65,10 +70,7 @@ export function registerBreakGlassRoutes(
   app.post(
     '/api/v1/auth/break-glass',
     async (request: FastifyRequest<{ Body: { recoveryKey?: string } }>, reply: FastifyReply) => {
-      const ip =
-        request.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() ??
-        request.ip ??
-        'unknown';
+      const ip = request.ip ?? 'unknown';
 
       if (!checkRateLimit(ip)) {
         return sendError(reply, 429, 'Too many break-glass activation attempts. Try again later.');

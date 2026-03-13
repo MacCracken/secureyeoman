@@ -257,6 +257,7 @@ export function loadConfig(
     deltaApiToken: env.DELTA_API_TOKEN,
     exposeAequiTools: parseBool(env.MCP_EXPOSE_AEQUI_TOOLS, false),
     aequiUrl: env.AEQUI_URL ?? 'http://localhost:8060',
+    exposeEdgeTools: parseBool(env.MCP_EXPOSE_EDGE_TOOLS, false),
     exposeVoiceTools: parseBool(env.MCP_EXPOSE_VOICE_TOOLS, true),
     exposeShrutiTools: parseBool(env.MCP_EXPOSE_SHRUTI_TOOLS, false),
     shrutiUrl: env.SHRUTI_URL ?? 'http://localhost:8050',

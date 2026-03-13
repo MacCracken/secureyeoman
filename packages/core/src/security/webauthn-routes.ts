@@ -204,7 +204,7 @@ export function registerWebAuthnRoutes(app: FastifyInstance, opts: WebAuthnRoute
       const { id } = request.params;
 
       try {
-        const deleted = await mgr.removeCredential(id);
+        const deleted = await mgr.removeCredential(id, user.userId);
         if (deleted === 0) {
           return sendError(reply, 404, 'Credential not found');
         }

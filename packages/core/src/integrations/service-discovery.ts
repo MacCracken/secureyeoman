@@ -27,7 +27,8 @@ export type EcosystemServiceId =
   | 'bullshift'
   | 'photisnadi'
   | 'aequi'
-  | 'shruti';
+  | 'shruti'
+  | 'edge';
 
 export type EcosystemServiceStatus =
   | 'disconnected' // never connected
@@ -147,6 +148,17 @@ const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
     healthPath: '/health',
     requiredSecrets: ['SHRUTI_API_KEY'],
     mcpConfigKey: 'exposeShrutiTools',
+  },
+  {
+    id: 'edge',
+    displayName: 'Edge Fleet',
+    description:
+      'IoT/edge node fleet management with OTA updates, deployments, and health monitoring',
+    urlEnv: 'SECUREYEOMAN_EDGE_HUB_URL',
+    defaultUrl: 'http://127.0.0.1:0',
+    healthPath: '/health',
+    requiredSecrets: [],
+    mcpConfigKey: 'exposeEdgeTools',
   },
 ] as const;
 

@@ -6,13 +6,15 @@
  * script copies *.sql alongside the compiled *.js files so they are
  * always co-located with manifest.js at runtime.
  *
- * Schema is split by license tier:
- *   001_community.sql — Core platform (always applied)
- *   002_pro.sql       — Workflows, analytics, agents, RBAC (pro+)
- *   003_enterprise.sql — DLP, training, chaos, federated, IaC, etc.
+ * Schema is split by license tier (all DDL consolidated into 3 files):
+ *   001_community.sql  — Core platform (always applied)
+ *   002_pro.sql        — Workflows, analytics, agents, RBAC, voice (pro+)
+ *   003_enterprise.sql — DLP, training, chaos, federated, IaC, synapse,
+ *                        simulation, SCIM, edge fleet, etc. (enterprise)
  *
- * Incremental migrations (011+) carry a tier tag and are applied
- * only when the active tier permits.
+ * All baselines are always applied regardless of tier — the full schema
+ * must be present for the app to start. Feature gating is handled at the
+ * route/API level by requiresLicense().
  */
 
 import { readFileSync } from 'node:fs';
@@ -47,25 +49,7 @@ export interface MigrationEntry {
 }
 
 export const MIGRATION_MANIFEST: MigrationEntry[] = [
-  // Tier-split baselines (replace old 001_baseline + 002-007 incrementals)
   { id: '001_community', sql: readSql('001_community.sql'), tier: 'community' },
   { id: '002_pro', sql: readSql('002_pro.sql'), tier: 'pro' },
   { id: '003_enterprise', sql: readSql('003_enterprise.sql'), tier: 'enterprise' },
-  // Incremental migrations with tier tags:
-  { id: '008_synapse', sql: readSql('008_synapse.sql'), tier: 'enterprise' },
-  { id: '009_security_hardening', sql: readSql('009_security_hardening.sql'), tier: 'community' },
-  { id: '010_encrypt_idp_secrets', sql: readSql('010_encrypt_idp_secrets.sql'), tier: 'community' },
-  { id: '011_sso_auth_codes', sql: readSql('011_sso_auth_codes.sql'), tier: 'community' },
-  { id: '012_voice_profiles', sql: readSql('012_voice_profiles.sql'), tier: 'pro' },
-  { id: '013_break_glass', sql: readSql('013_break_glass.sql'), tier: 'enterprise' },
-  { id: '014_access_review', sql: readSql('014_access_review.sql'), tier: 'enterprise' },
-  { id: '015_scim', sql: readSql('015_scim.sql'), tier: 'enterprise' },
-  { id: '016_tenant_quotas', sql: readSql('016_tenant_quotas.sql'), tier: 'enterprise' },
-  { id: '017_webauthn', sql: readSql('017_webauthn.sql'), tier: 'community' },
-  { id: '018_simulation', sql: readSql('018_simulation.sql'), tier: 'enterprise' },
-  { id: '019_spatial', sql: readSql('019_spatial.sql'), tier: 'enterprise' },
-  { id: '020_relationships', sql: readSql('020_relationships.sql'), tier: 'enterprise' },
-  { id: '021_auto_secrets', sql: readSql('021_auto_secrets.sql'), tier: 'community' },
-  { id: '022_synapse_bridge', sql: readSql('022_synapse_bridge.sql'), tier: 'enterprise' },
-  { id: '023_edge_fleet', sql: readSql('023_edge_fleet.sql'), tier: 'enterprise' },
 ];

@@ -496,7 +496,14 @@ export class SimulationStore extends PgBaseStorage {
     return rows.map(rowToProximityRule);
   }
 
-  async deleteProximityRule(id: string): Promise<boolean> {
+  async deleteProximityRule(id: string, personalityId?: string): Promise<boolean> {
+    if (personalityId) {
+      const count = await this.execute(
+        'DELETE FROM simulation.proximity_rules WHERE id = $1 AND personality_id = $2',
+        [id, personalityId]
+      );
+      return count > 0;
+    }
     const count = await this.execute('DELETE FROM simulation.proximity_rules WHERE id = $1', [id]);
     return count > 0;
   }

@@ -72,8 +72,8 @@ vi.mock('../modules/security-module.js', () => ({
       initEarly: vi.fn().mockResolvedValue(undefined),
       initCore: vi.fn().mockResolvedValue(undefined),
       cleanup: vi.fn().mockResolvedValue(undefined),
-      getRBAC: vi.fn().mockReturnValue(null),
-      getRateLimiter: vi.fn().mockReturnValue(null),
+      getRBAC: vi.fn().mockReturnValue({ check: vi.fn() }),
+      getRateLimiter: vi.fn().mockReturnValue({ check: vi.fn() }),
       getSecretsManager: vi.fn().mockReturnValue(null),
     };
   },

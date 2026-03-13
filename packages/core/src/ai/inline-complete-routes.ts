@@ -60,13 +60,15 @@ export function registerInlineCompleteRoutes(
           }
         }
 
+        // Escape XML-like markers in code context to prevent prompt injection
+        const escCtx = (s: string) => s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const prompt = [
           systemContext,
           `Complete the following ${language || 'code'} at the cursor position. `,
           'Return ONLY the completion text, no explanation, no markdown fences.\n\n',
-          `<prefix>\n${trimmedPrefix}</prefix>\n`,
+          `<prefix>\n${escCtx(trimmedPrefix)}</prefix>\n`,
           '<cursor/>\n',
-          `<suffix>\n${trimmedSuffix}</suffix>`,
+          `<suffix>\n${escCtx(trimmedSuffix)}</suffix>`,
         ].join('');
 
         const completion = await opts.aiClient.complete(prompt, {

@@ -200,6 +200,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         security_auditor: 2,
         operator: 3,
         admin: 4,
+        service: 5,
       };
       const callerLevel = ROLE_HIERARCHY[request.authUser?.role ?? ''] ?? 0;
       const requestedLevel = ROLE_HIERARCHY[role] ?? 0;
@@ -563,7 +564,8 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         );
         return { valid: true, payload };
       } catch (err) {
-        return sendError(reply, 401, toErrorMessage(err));
+        app.log.warn({ error: toErrorMessage(err) }, 'Federation token verification failed');
+        return sendError(reply, 401, 'Token verification failed');
       }
     }
   );

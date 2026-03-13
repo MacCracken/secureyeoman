@@ -570,6 +570,10 @@ export class SoulStorage extends PgBaseStorage {
       where += ` AND enabled = $${idx++}`;
       params.push(filter.enabled);
     }
+    if (filter?.forPersonalityId) {
+      where += ` AND (personality_id = $${idx++} OR personality_id IS NULL)`;
+      params.push(filter.forPersonalityId);
+    }
 
     const limit = filter?.limit ?? 50;
     const offset = filter?.offset ?? 0;

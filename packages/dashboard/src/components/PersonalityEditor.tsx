@@ -2975,6 +2975,9 @@ interface BodySectionProps {
     exposeDocker: boolean;
     exposeTerminal: boolean;
     exposeSynapse: boolean;
+    exposeDelta: boolean;
+    exposeVoice: boolean;
+    exposeEdge: boolean;
   };
   onMcpFeaturesChange: (features: {
     exposeGit: boolean;
@@ -2999,6 +3002,9 @@ interface BodySectionProps {
     exposeDocker: boolean;
     exposeTerminal: boolean;
     exposeSynapse: boolean;
+    exposeDelta: boolean;
+    exposeVoice: boolean;
+    exposeEdge: boolean;
   }) => void;
   creationConfig: {
     skills: boolean;
@@ -4533,6 +4539,96 @@ function BodySection({
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
+                              {/* Delta Code Forge */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeDeltaTools
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <GitBranch className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-xs flex-1">
+                                  Delta Forge
+                                  {!globalMcpConfig?.exposeDeltaTools && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Delta in Connections &gt; MCP first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeDelta}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeDelta: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeDeltaTools}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                              {/* Voice & Speech */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeVoiceTools
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <MessageSquare className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-xs flex-1">
+                                  Voice &amp; Speech
+                                  {!globalMcpConfig?.exposeVoiceTools && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Voice in Connections &gt; MCP first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeVoice}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeVoice: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeVoiceTools}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                              {/* Edge Fleet */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeEdgeTools
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <Network className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-xs flex-1">
+                                  Edge Fleet
+                                  {!globalMcpConfig?.exposeEdgeTools && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Edge in Connections &gt; MCP first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeEdge}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeEdge: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeEdgeTools}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
                             </div>
                           </div>
                         )}
@@ -4951,6 +5047,9 @@ export function PersonalityEditor({
     exposeDocker: boolean;
     exposeTerminal: boolean;
     exposeSynapse: boolean;
+    exposeDelta: boolean;
+    exposeVoice: boolean;
+    exposeEdge: boolean;
   }>({
     exposeGit: false,
     exposeFilesystem: false,
@@ -4974,6 +5073,9 @@ export function PersonalityEditor({
     exposeDocker: false,
     exposeTerminal: false,
     exposeSynapse: false,
+    exposeDelta: false,
+    exposeVoice: false,
+    exposeEdge: false,
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
@@ -5276,6 +5378,9 @@ export function PersonalityEditor({
       exposeDocker: body.mcpFeatures?.exposeDocker ?? false,
       exposeTerminal: body.mcpFeatures?.exposeTerminal ?? false,
       exposeSynapse: body.mcpFeatures?.exposeSynapse ?? false,
+      exposeDelta: body.mcpFeatures?.exposeDelta ?? false,
+      exposeVoice: body.mcpFeatures?.exposeVoice ?? false,
+      exposeEdge: body.mcpFeatures?.exposeEdge ?? false,
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
@@ -5423,6 +5528,9 @@ export function PersonalityEditor({
       exposeDocker: false,
       exposeTerminal: false,
       exposeSynapse: false,
+      exposeDelta: false,
+      exposeVoice: false,
+      exposeEdge: false,
     });
     setProactiveConfig({
       enabled: false,
