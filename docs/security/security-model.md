@@ -890,7 +890,7 @@ Some `npm audit` findings are accepted risks because they exist exclusively in d
 - [API Security](../api/rest-api.md#authentication)
 - [Architecture Overview](../development/architecture.md)
 - [Configuration Reference](../configuration.md)
-- [Kubernetes Deployment Guide](../guides/kubernetes-deployment.md)
+- [Kubernetes Deployment Guide](../guides/deployment/kubernetes-deployment.md)
 
 ---
 

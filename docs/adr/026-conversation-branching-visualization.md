@@ -56,4 +56,4 @@ The existing `BranchTreeView` and `ReplayDiffView` components are preserved unch
 | `packages/dashboard/src/components/chat/BranchTimeline.test.tsx` | Timeline tests (8) |
 | `packages/dashboard/src/components/chat/BranchCompareSelector.test.tsx` | Compare tests (6) |
 | `packages/dashboard/src/components/ChatPage.tsx` | Integration (BranchExplorer replaces BranchTreeView) |
-| `docs/guides/conversation-branching.md` | User guide |
+| `docs/guides/platform-features/conversation-branching.md` | User guide |

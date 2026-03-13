@@ -76,4 +76,4 @@ Legacy `SECUREYEOMAN_TLS_*` variables remain supported; unified `TLS_*` vars tak
 - `docker-compose.yml` — port 443 mapping on sy-core and secureyeoman services
 - `packages/core/src/config/loader.ts` — unified TLS env var resolution
 - `packages/shared/src/types/config.ts` — added `domain` to TlsConfigSchema
-- `docs/guides/tls-certificates.md` — comprehensive rewrite
+- `docs/guides/security/tls-certificates.md` — comprehensive rewrite

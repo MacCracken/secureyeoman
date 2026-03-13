@@ -24,7 +24,7 @@ This documentation covers the complete API surface. For real-time events, see:
 
 ## Related Documentation
 
-- [Getting Started Guide](../guides/getting-started.md)
+- [Getting Started Guide](../guides/getting-started/getting-started.md)
 - [Configuration Reference](../configuration.md)
 - [Deployment Guide](../deployment.md)
 - [Troubleshooting Guide](../troubleshooting.md)

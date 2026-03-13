@@ -561,7 +561,7 @@ Configuration is via environment variables (not the YAML config file):
 
 #### Security Toolkit
 
-> Exposes Kali Linux security tools as MCP tools. See `secureyeoman security setup` to provision the container and [Getting Started — Security Toolkit](guides/getting-started.md#security-toolkit-optional) for a walkthrough.
+> Exposes Kali Linux security tools as MCP tools. See `secureyeoman security setup` to provision the container and [Getting Started — Security Toolkit](guides/getting-started/getting-started.md#security-toolkit-optional) for a walkthrough.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -573,7 +573,7 @@ Configuration is via environment variables (not the YAML config file):
 
 #### Network Evaluation & Protection
 
-> Exposes network device automation, topology discovery, routing analysis, security auditing, NetBox integration, NVD CVE lookup, subnet utilities, and PCAP analysis. See [Network Tools Guide](guides/network-tools.md) for setup and personality configuration.
+> Exposes network device automation, topology discovery, routing analysis, security auditing, NetBox integration, NVD CVE lookup, subnet utilities, and PCAP analysis. See [Network Tools Guide](guides/tools/network-tools.md) for setup and personality configuration.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -595,7 +595,7 @@ Configuration is via environment variables (not the YAML config file):
 
 #### Markdown for Agents (Content Negotiation)
 
-> Native markdown fetching and publisher opt-out enforcement (Phase Tier2-MA). See [Markdown for Agents guide](guides/markdown-for-agents.md).
+> Native markdown fetching and publisher opt-out enforcement (Phase Tier2-MA). See [Markdown for Agents guide](guides/ai-and-llm/markdown-for-agents.md).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -625,7 +625,7 @@ Configuration is via environment variables (not the YAML config file):
 
 **Authentication:** The MCP service authenticates to core via an auto-provisioned API key (`sck_…` prefix, `role: service`). On first boot, core generates the key, stores the hash in `auth.api_keys` and the raw key encrypted (AES-256-GCM) in `internal.auto_secrets`. MCP retrieves the key by polling core's internal bootstrap endpoint (`GET /api/v1/internal/mcp-bootstrap`, private-network-only, no auth required). No shared secrets or manual token configuration needed. Users can regenerate the key from the dashboard Security panel.
 
-See the [Getting Started Guide](guides/getting-started.md#mcp-service-optional) for step-by-step setup instructions.
+See the [Getting Started Guide](guides/getting-started/getting-started.md#mcp-service-optional) for step-by-step setup instructions.
 
 ### brain
 
@@ -992,7 +992,7 @@ Required when `secretBackend: vault`. Supports AppRole authentication (recommend
 | `tokenEnv` | string | `"VAULT_TOKEN"` | Env var holding a static Vault token. Takes precedence over AppRole if set. |
 | `fallback` | boolean | `false` | If `true`, fall back to the `auto` backend when Vault is unreachable rather than failing hard. |
 
-See the [Secrets Management Guide](guides/secrets-management.md) for AppRole setup and rotation configuration.
+See the [Secrets Management Guide](guides/security/secrets-management.md) for AppRole setup and rotation configuration.
 
 ### intent
 
@@ -1003,7 +1003,7 @@ Machine-readable Organizational Intent configuration (Phase 48). The intent syst
 | `filePath` | string | `""` | Optional path to an OrgIntent JSON file to seed on first startup (creates a draft intent doc; does not overwrite an existing active intent). |
 | `signalRefreshIntervalMs` | number | `60000` | How often the background signal monitor re-evaluates all data-source signals and logs degradation events (minimum: 5000 ms). |
 
-The intent system is managed primarily via the dashboard (Settings → Intent) or the REST API at `/api/v1/intent`. See the [Organizational Intent Guide](guides/organizational-intent.md) for authoring and pipeline enforcement details.
+The intent system is managed primarily via the dashboard (Settings → Intent) or the REST API at `/api/v1/intent`. See the [Organizational Intent Guide](guides/platform-features/organizational-intent.md) for authoring and pipeline enforcement details.
 
 **OPA Policy Integration**
 

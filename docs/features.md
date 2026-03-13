@@ -1,6 +1,6 @@
 # Feature Reference
 
-> Complete feature breakdown for SecureYeoman. For installation and usage, see the [Getting Started Guide](guides/getting-started.md).
+> Complete feature breakdown for SecureYeoman. For installation and usage, see the [Getting Started Guide](guides/getting-started/getting-started.md).
 
 | Category | Features |
 |----------|----------|

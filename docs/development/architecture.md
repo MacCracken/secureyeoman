@@ -702,7 +702,7 @@ SecureYeoman supports production deployment on Kubernetes via Helm charts locate
 - **Secrets**: Native K8s Secrets or ExternalSecret CRD (AWS/GCP/Azure)
 - **Environments**: Separate values files for dev, staging, production
 
-See [Kubernetes Deployment Guide](../guides/kubernetes-deployment.md) for setup instructions.
+See [Kubernetes Deployment Guide](../guides/deployment/kubernetes-deployment.md) for setup instructions.
 
 ---
 
@@ -711,7 +711,7 @@ See [Kubernetes Deployment Guide](../guides/kubernetes-deployment.md) for setup 
 - [API Reference](../api/)
 - [Security Model](../security/security-model.md)
 - [Development Roadmap](roadmap.md)
-- [Kubernetes Deployment Guide](../guides/kubernetes-deployment.md)
+- [Kubernetes Deployment Guide](../guides/deployment/kubernetes-deployment.md)
 
 ---
 

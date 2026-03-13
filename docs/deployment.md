@@ -331,7 +331,7 @@ Import the Grafana dashboard from `deploy/grafana/secureyeoman-dashboard.json`.
 
 ## Kubernetes
 
-For Kubernetes deployments using Helm, see the dedicated [Kubernetes Deployment Guide](guides/kubernetes-deployment.md).
+For Kubernetes deployments using Helm, see the dedicated [Kubernetes Deployment Guide](guides/deployment/kubernetes-deployment.md).
 
 The Helm chart supports:
 - **Cloud-agnostic**: EKS, GKE, AKS via values overrides
@@ -352,7 +352,7 @@ helm install secureyeoman deploy/helm/secureyeoman \
 
 ### PostgreSQL Backup (Tier 1)
 
-SecureYeoman provides built-in backup/restore via the REST API and CLI. See the [Backup & Disaster Recovery Guide](guides/backup-disaster-recovery.md) for full details.
+SecureYeoman provides built-in backup/restore via the REST API and CLI. See the [Backup & Disaster Recovery Guide](guides/enterprise/backup-disaster-recovery.md) for full details.
 
 ```bash
 # Via API

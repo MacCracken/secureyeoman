@@ -111,6 +111,27 @@ Agents register with a parent SY instance for:
 
 Agents can also run standalone (no parent) with local-only auth and SQLite storage.
 
+## Implementation Status (2026-03-13)
+
+All phases complete:
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| 15A | AgentRuntime, CLI, build target, SQLite storage | Complete |
+| 15B | Parent auth delegation (LRU-cached token validation), knowledge delegation (RAG query forwarding), audit forwarding (batch 50/flush 5s) | Complete |
+| 15C | `Dockerfile.agent`, docker-compose `sy-agent` service, `build-binary.sh --agent` flag | Complete |
+| 15D | Dashboard agent fleet panel | Planned |
+| 15E | Agent self-update & registration protocol | Planned |
+
+Key implementation files:
+- `src/agent/agent-runtime.ts` — main runtime (11-step boot, ~15 routes)
+- `src/agent/parent-auth-delegate.ts` — token validation against parent SY (LRU cache, 500 entries, 5min TTL)
+- `src/agent/knowledge-delegate.ts` — RAG query forwarding to parent's `/api/v1/brain/query`
+- `src/agent/audit-forwarder.ts` — batched audit event forwarding (50 events / 5s flush)
+- `src/agent/cli.ts` — CLI entry point
+- `Dockerfile.agent` — Alpine-based, <120 MB image, tini PID 1
+- `docker-compose.yml` — `sy-agent` service (profiles: agent, full, full-dev), 256M RAM limit
+
 ## Consequences
 
 - New `AgentRuntime` class in `src/agent/agent-runtime.ts` (parallel to `EdgeRuntime`)

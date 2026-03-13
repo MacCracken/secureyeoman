@@ -322,6 +322,6 @@ See [ADR 010 — Identity & Soul System](../adr/010-identity-and-soul-system.md)
 
 ## Related
 
-- [Personality Editor](../guides/editor.md) — editing personalities in the dashboard
-- [Teams](../guides/teams.md) — organizing personalities into teams
-- [Knowledge & Memory](../guides/knowledge-memory.md) — adding documents to a personality's memory
+- [Personality Editor](editor.md) — editing personalities in the dashboard
+- [Teams](teams.md) — organizing personalities into teams
+- [Knowledge & Memory](../ai-and-llm/knowledge-memory.md) — adding documents to a personality's memory

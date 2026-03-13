@@ -73,4 +73,4 @@ packages/core/src/chaos/
 | `packages/core/src/chaos/chaos-store.ts` | PostgreSQL persistence (PgBaseStorage) |
 | `packages/core/src/chaos/chaos-routes.ts` | Fastify REST API registration |
 | `packages/core/src/storage/migrations/005_chaos_engineering.sql` | Database schema |
-| `docs/guides/chaos-engineering.md` | User guide |
+| `docs/guides/enterprise/chaos-engineering.md` | User guide |

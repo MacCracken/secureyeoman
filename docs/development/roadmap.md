@@ -181,7 +181,7 @@
 
 ## Phase 16: Shruti DAW Ecosystem Integration
 
-**Priority**: P2 — Platform. See [ADR 040](../adr/040-shruti-ecosystem-integration.md).
+**Priority**: P2 — Platform. See [ADR 034](../adr/034-ecosystem-integrations.md).
 
 **Goal**: Add Shruti (Rust-native DAW) as the 8th ecosystem service, giving SY agents music production, audio recording/editing, spectral analysis, and AI-assisted mixing capabilities. Shruti is at MVP v1 (723 tests, 6 MCP tools, AgentApi with 35+ methods) but needs an HTTP server wrapper before SY can connect.
 
@@ -237,6 +237,14 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
 | MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
 | Core E2E | Expand coverage | Currently 8 files / 67 tests (incl. binary smoke); add training, delegation, analytics flows |
+
+### SQL Migration Consolidation
+
+**Priority**: Post-first-release. The migration set has grown to 23+ individual SQL files (001–023). Before the next major release cycle, consolidate into a smaller set:
+
+- [ ] **Consolidate migrations 002–023 into 001_baseline.sql** — Roll all DDL into a single idempotent baseline. Keep `IF NOT EXISTS` / `DO` blocks for safety. New installs get one migration; existing installs skip (already applied).
+- [ ] **Reset migration counter** — After consolidation, new migrations start at 002_*.sql. Update `manifest.ts` to reflect the new file list.
+- [ ] **Test clean-install path** — Verify `npx vitest run --project core:db` passes from a blank database with the consolidated baseline.
 
 ---
 
@@ -441,7 +449,7 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 - [API Reference](../api/)
 - [Security Model](../security/security-model.md)
 - [Configuration Reference](../configuration.md)
-- [Getting Started Guide](../guides/getting-started.md)
+- [Getting Started Guide](../guides/getting-started/getting-started.md)
 - [Dependency Watch](dependency-watch.md)
 - [Changelog](../../CHANGELOG.md)
 
