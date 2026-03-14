@@ -1052,6 +1052,7 @@ CREATE TABLE IF NOT EXISTS soul.personalities (
     include_archetypes boolean DEFAULT true NOT NULL,
     is_active boolean DEFAULT false NOT NULL,
     body jsonb DEFAULT '{}'::jsonb NOT NULL,
+    brain_config jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at bigint NOT NULL,
     updated_at bigint NOT NULL,
     model_fallbacks jsonb DEFAULT '[]'::jsonb NOT NULL,
@@ -1061,6 +1062,21 @@ CREATE TABLE IF NOT EXISTS soul.personalities (
     avatar_url text,
     tenant_id text DEFAULT 'default'::text NOT NULL
 );
+
+-- Idempotent ADD COLUMN for existing installs + data migration: move proactiveConfig from body → brain_config
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'soul' AND table_name = 'personalities' AND column_name = 'brain_config'
+  ) THEN
+    ALTER TABLE soul.personalities ADD COLUMN brain_config jsonb DEFAULT '{}'::jsonb NOT NULL;
+    -- Migrate existing proactiveConfig from body into brain_config
+    UPDATE soul.personalities
+    SET brain_config = jsonb_build_object('proactiveConfig', body->'proactiveConfig'),
+        body = body - 'proactiveConfig'
+    WHERE body ? 'proactiveConfig';
+  END IF;
+END $$;
 
 
 --

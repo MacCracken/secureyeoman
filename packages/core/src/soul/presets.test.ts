@@ -56,13 +56,13 @@ describe('T.Ron preset', () => {
   });
 
   it('enables security proactive builtins', () => {
-    const builtins = tron.data.body?.proactiveConfig?.builtins;
+    const builtins = tron.data.brainConfig?.proactiveConfig?.builtins;
     expect(builtins?.integrationHealthAlert).toBe(true);
     expect(builtins?.securityAlertDigest).toBe(true);
   });
 
   it('disables autonomous learning', () => {
-    const learning = tron.data.body?.proactiveConfig?.learning;
+    const learning = tron.data.brainConfig?.proactiveConfig?.learning;
     expect(learning?.enabled).toBe(false);
     expect(learning?.minConfidence).toBe(0.9);
   });

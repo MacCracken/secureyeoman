@@ -210,6 +210,8 @@ export {
   McpFeaturesSchema,
   CreationConfigSchema,
   ProactivePersonalityConfigSchema,
+  PersonalityBrainConfigSchema,
+  type PersonalityBrainConfig,
   ThinkingPersonalityConfigSchema,
   ReasoningPersonalityConfigSchema,
   CostBudgetSchema,

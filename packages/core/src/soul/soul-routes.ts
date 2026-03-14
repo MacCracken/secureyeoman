@@ -928,6 +928,24 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeVoice: false,
               exposeEdge: false,
             },
+            activeHours: {
+              enabled: false,
+              start: '09:00',
+              end: '17:00',
+              daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+              timezone: 'UTC',
+            },
+            pollyLexiconNames: [],
+            voiceAnnouncements: false,
+            voiceAnnouncementEvents: [],
+            omnipresentMind: false,
+            knowledgeMode: 'rag' as const,
+            enableCitations: false,
+            groundednessMode: 'off' as const,
+            contextOverflowStrategy: 'summarise' as const,
+            confidentialCompute: 'off' as const,
+          },
+          brainConfig: {
             proactiveConfig: {
               enabled: false,
               builtins: {
@@ -946,22 +964,6 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               },
               learning: { enabled: true, minConfidence: 0.7 },
             },
-            activeHours: {
-              enabled: false,
-              start: '09:00',
-              end: '17:00',
-              daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
-              timezone: 'UTC',
-            },
-            pollyLexiconNames: [],
-            voiceAnnouncements: false,
-            voiceAnnouncementEvents: [],
-            omnipresentMind: false,
-            knowledgeMode: 'rag' as const,
-            enableCitations: false,
-            groundednessMode: 'off' as const,
-            contextOverflowStrategy: 'summarise' as const,
-            confidentialCompute: 'off' as const,
           },
         };
 

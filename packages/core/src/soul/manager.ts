@@ -319,6 +319,24 @@ export class SoulManager {
           exposeVoice: false,
           exposeEdge: false,
         },
+        activeHours: {
+          enabled: false,
+          start: '09:00',
+          end: '17:00',
+          daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+          timezone: 'UTC',
+        },
+        omnipresentMind: false,
+        knowledgeMode: 'rag' as const,
+        enableCitations: false,
+        groundednessMode: 'off' as const,
+        contextOverflowStrategy: 'summarise' as const,
+        confidentialCompute: 'off' as const,
+        pollyLexiconNames: [],
+        voiceAnnouncements: false,
+        voiceAnnouncementEvents: [],
+      },
+      brainConfig: {
         proactiveConfig: {
           enabled: false,
           builtins: {
@@ -337,22 +355,6 @@ export class SoulManager {
           },
           learning: { enabled: true, minConfidence: 0.7 },
         },
-        activeHours: {
-          enabled: false,
-          start: '09:00',
-          end: '17:00',
-          daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
-          timezone: 'UTC',
-        },
-        omnipresentMind: false,
-        knowledgeMode: 'rag' as const,
-        enableCitations: false,
-        groundednessMode: 'off' as const,
-        contextOverflowStrategy: 'summarise' as const,
-        confidentialCompute: 'off' as const,
-        pollyLexiconNames: [],
-        voiceAnnouncements: false,
-        voiceAnnouncementEvents: [],
       },
     });
 

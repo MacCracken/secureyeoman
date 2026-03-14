@@ -39,6 +39,7 @@ interface PersonalityRow {
   is_active: boolean;
   is_default: boolean;
   body: Personality['body'];
+  brain_config: Personality['brainConfig'];
   created_at: number;
   updated_at: number;
 }
@@ -121,6 +122,8 @@ function rowToPersonality(row: PersonalityRow): Personality {
         exposeWebSearch: false,
         exposeBrowser: false,
       },
+    },
+    brainConfig: row.brain_config ?? {
       proactiveConfig: {
         enabled: false,
         builtins: {
@@ -211,8 +214,8 @@ export class SoulStorage extends PgBaseStorage {
     const id = uuidv7();
 
     const row = await this.queryOne<PersonalityRow>(
-      `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, inject_date_time, empathy_resonance, is_active, is_default, avatar_url, body, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15, $16, $17::jsonb, $18, $19)
+      `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, inject_date_time, empathy_resonance, is_active, is_default, avatar_url, body, brain_config, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15, $16, $17::jsonb, $18::jsonb, $19, $20)
        RETURNING *`,
       [
         id,
@@ -244,6 +247,7 @@ export class SoulStorage extends PgBaseStorage {
             },
           }
         ),
+        JSON.stringify(data.brainConfig ?? {}),
         now,
         now,
       ]
@@ -364,8 +368,9 @@ export class SoulStorage extends PgBaseStorage {
          inject_date_time = $11,
          empathy_resonance = $12,
          body = $13::jsonb,
-         updated_at = $14
-       WHERE id = $15`,
+         brain_config = $14::jsonb,
+         updated_at = $15
+       WHERE id = $16`,
       [
         data.name ?? existing.name,
         data.description ?? existing.description,
@@ -401,6 +406,7 @@ export class SoulStorage extends PgBaseStorage {
               },
             }
         ),
+        JSON.stringify(data.brainConfig ?? existing.brainConfig ?? {}),
         now,
         id,
       ]

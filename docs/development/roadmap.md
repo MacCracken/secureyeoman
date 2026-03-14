@@ -289,13 +289,23 @@ Items identified during code audit rounds 1–3, intentionally deferred due to l
 | Chaos | `src/chaos/chaos-manager.ts` L95–101 | TOCTOU race in experiment delete — running check and deletion are not atomic | Low | Admin-only feature, narrow window. Fix: `DELETE ... WHERE id = $1 AND status != 'running'` single-query guard. |
 | Workflow | `src/workflow/workflow-engine.ts` L559–569 | Webhook header prototype pollution residual — `__proto__`/`constructor`/`prototype` filtered, but `Object.create(null)` base would be safer | Very Low | Already filtered for known dangerous keys. Fix: use `Object.create(null)` for header accumulation object. |
 
-### SQL Migration Consolidation
+### Personality Traits & Mood Engine
 
-**Priority**: Post-first-release. The migration set has grown to 23+ individual SQL files (001–023). Before the next major release cycle, consolidate into a smaller set:
+*Traits are stored and rendered in the UI, but the mood engine is disconnected and trait injection is shallow. These fixes bring the system to life.*
 
-- [ ] **Consolidate migrations 002–023 into 001_baseline.sql** — Roll all DDL into a single idempotent baseline. Keep `IF NOT EXISTS` / `DO` blocks for safety. New installs get one migration; existing installs skip (already applied).
-- [ ] **Reset migration counter** — After consolidation, new migrations start at 002_*.sql. Update `manifest.ts` to reflect the new file list.
-- [ ] **Test clean-install path** — Verify `npx vitest run --project core:db` passes from a blank database with the consolidated baseline.
+- [ ] **Fix trait→mood vocabulary mismatch** — `deriveBaseline()` looks up trait *keys* (`formality`, `warmth`) in `TRAIT_MOOD_MODIFIERS` which uses *adjective* keys (`cheerful`, `energetic`). They never match, so every personality gets a neutral baseline. Replace with a `TRAIT_VALUE_MODIFIERS` map keyed by trait name + level (e.g. `warmth.effusive → { valence: 0.3, arousal: 0.2 }`).
+- [ ] **Inject mood into system prompt** — `composeMoodPromptFragment()` exists but is never called from `manager.ts`. After building the Soul section, fetch current mood and append the fragment to prompt parts.
+- [ ] **Richer trait prompt injection** — Current injection is a flat comma-separated string (`Traits: formality: formal, humor: balanced`). Replace with per-trait behavioral sentences (e.g. "Use professional, structured language. Avoid slang and contractions.") via a `TRAIT_BEHAVIORAL_DESCRIPTIONS` map.
+- [ ] **Fix applyEvent empty-trait fallback** — When no mood state exists, `applyEvent` calls `initializeMood(personalityId, {})` with empty traits. Should fetch the personality's actual traits from storage instead.
+- [ ] **Trait compound effects** — Detect trait combinations that produce emergent behavior (e.g. high formality + high humor = dry wit; high warmth + high empathy = nurturing tone) and generate compound behavioral instructions.
+
+### SQL Migration Consolidation — ✅ Complete
+
+Consolidated from 23+ individual files into 3 tier-based migrations: `001_community.sql`, `002_pro.sql`, `003_enterprise.sql`.
+
+### Proactive Config: Body → Brain Migration — ✅ Complete (ADR-040)
+
+Moved `proactiveConfig` from `BodyConfigSchema` to `PersonalityBrainConfigSchema` with new `brain_config` JSONB column, idempotent data migration, dashboard UI relocation, and full test coverage.
 
 ---
 

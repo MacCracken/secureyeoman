@@ -1558,6 +1558,8 @@ function BrainSection({
   onDefaultModelChange,
   modelFallbacks,
   onModelFallbacksChange,
+  proactiveConfig,
+  onProactiveConfigChange,
   communityEnabled,
   modelData,
 }: {
@@ -1606,6 +1608,42 @@ function BrainSection({
   onNotebookTokenBudgetChange: (v: number | null) => void;
   injectDateTime: boolean;
   onInjectDateTimeChange: (v: boolean) => void;
+  proactiveConfig: {
+    enabled: boolean;
+    builtins: {
+      dailyStandup: boolean;
+      weeklySummary: boolean;
+      contextualFollowup: boolean;
+      integrationHealthAlert: boolean;
+      securityAlertDigest: boolean;
+    };
+    builtinModes: {
+      dailyStandup: 'auto' | 'suggest' | 'manual';
+      weeklySummary: 'auto' | 'suggest' | 'manual';
+      contextualFollowup: 'auto' | 'suggest' | 'manual';
+      integrationHealthAlert: 'auto' | 'suggest' | 'manual';
+      securityAlertDigest: 'auto' | 'suggest' | 'manual';
+    };
+    learning: { enabled: boolean; minConfidence: number };
+  };
+  onProactiveConfigChange: (config: {
+    enabled: boolean;
+    builtins: {
+      dailyStandup: boolean;
+      weeklySummary: boolean;
+      contextualFollowup: boolean;
+      integrationHealthAlert: boolean;
+      securityAlertDigest: boolean;
+    };
+    builtinModes: {
+      dailyStandup: 'auto' | 'suggest' | 'manual';
+      weeklySummary: 'auto' | 'suggest' | 'manual';
+      contextualFollowup: 'auto' | 'suggest' | 'manual';
+      integrationHealthAlert: 'auto' | 'suggest' | 'manual';
+      securityAlertDigest: 'auto' | 'suggest' | 'manual';
+    };
+    learning: { enabled: boolean; minConfidence: number };
+  }) => void;
   communityEnabled: boolean;
   defaultModel: { provider: string; model: string } | null;
   onDefaultModelChange: (v: { provider: string; model: string } | null) => void;
@@ -2792,7 +2830,165 @@ function BrainSection({
         )}
       </div>
 
-      {/* Thinking config */}
+      {/* Proactive Assistance */}
+      <CollapsibleSection title="Proactive Assistance" defaultOpen={false}>
+        {(() => {
+          const proactiveBlockedByPolicy = false; // Policy check handled at API level
+          return (
+            <div className="space-y-4">
+              <div
+                className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                  proactiveBlockedByPolicy
+                    ? 'bg-muted/30 border-border opacity-60'
+                    : 'bg-muted/50 border-border'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Enable Assistance</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={proactiveConfig.enabled}
+                    onChange={() => {
+                      onProactiveConfigChange({
+                        ...proactiveConfig,
+                        enabled: !proactiveConfig.enabled,
+                      });
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                  <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
+                    {proactiveConfig.enabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </label>
+              </div>
+
+              {proactiveConfig.enabled && (
+                <>
+                  {/* Built-in Triggers — per-item 3-phase approval switch */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Built-in Triggers</h4>
+                    <div className="space-y-2">
+                      {[
+                        { key: 'dailyStandup' as const, label: 'Daily Standup Reminder' },
+                        { key: 'weeklySummary' as const, label: 'Weekly Summary' },
+                        { key: 'contextualFollowup' as const, label: 'Contextual Follow-up' },
+                        {
+                          key: 'integrationHealthAlert' as const,
+                          label: 'Integration Health Alert',
+                        },
+                        { key: 'securityAlertDigest' as const, label: 'Security Alert Digest' },
+                      ].map((item) => {
+                        const isOn = proactiveConfig.builtins[item.key];
+                        const activeMode = proactiveConfig.builtinModes[item.key];
+                        return (
+                          <div
+                            key={item.key}
+                            className="text-sm px-3 py-2 rounded flex items-center justify-between border bg-muted/50 border-border"
+                          >
+                            <span className="font-medium">{item.label}</span>
+                            <div className="flex gap-1">
+                              {(['auto', 'suggest', 'manual'] as const).map((mode) => {
+                                const isActive = isOn && activeMode === mode;
+                                const activeClass = isActive
+                                  ? mode === 'auto'
+                                    ? 'bg-green-600 text-white border-green-600'
+                                    : mode === 'suggest'
+                                      ? 'bg-amber-500 text-white border-amber-500'
+                                      : 'bg-blue-600 text-white border-blue-600'
+                                  : 'bg-muted/50 border-border hover:bg-muted';
+                                return (
+                                  <button
+                                    key={mode}
+                                    type="button"
+                                    onClick={() => {
+                                      onProactiveConfigChange({
+                                        ...proactiveConfig,
+                                        builtins: {
+                                          ...proactiveConfig.builtins,
+                                          [item.key]: !isActive,
+                                        },
+                                        builtinModes: {
+                                          ...proactiveConfig.builtinModes,
+                                          [item.key]: mode,
+                                        },
+                                      });
+                                    }}
+                                    className={`px-2 py-0.5 text-xs rounded border transition-colors ${activeClass}`}
+                                  >
+                                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Learning */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Learning</h4>
+                    <div className="space-y-3">
+                      <div className="text-sm px-3 py-2 rounded flex items-center justify-between border bg-muted/50 border-border">
+                        <span className="font-medium">Enable Learning</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={proactiveConfig.learning.enabled}
+                            onChange={() => {
+                              onProactiveConfigChange({
+                                ...proactiveConfig,
+                                learning: {
+                                  ...proactiveConfig.learning,
+                                  enabled: !proactiveConfig.learning.enabled,
+                                },
+                              });
+                            }}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                        </label>
+                      </div>
+                      {proactiveConfig.learning.enabled && (
+                        <div>
+                          <label className="text-sm text-muted-foreground block mb-1">
+                            Min Confidence: {proactiveConfig.learning.minConfidence.toFixed(2)}
+                          </label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={proactiveConfig.learning.minConfidence}
+                            onChange={(e) => {
+                              onProactiveConfigChange({
+                                ...proactiveConfig,
+                                learning: {
+                                  ...proactiveConfig.learning,
+                                  minConfidence: parseFloat(e.target.value),
+                                },
+                              });
+                            }}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>0.0</span>
+                            <span>1.0</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
+      </CollapsibleSection>
     </CollapsibleSection>
   );
 }
@@ -3032,42 +3228,6 @@ interface BodySectionProps {
     allowDynamicTools: boolean;
     workflows: boolean;
   }) => void;
-  proactiveConfig: {
-    enabled: boolean;
-    builtins: {
-      dailyStandup: boolean;
-      weeklySummary: boolean;
-      contextualFollowup: boolean;
-      integrationHealthAlert: boolean;
-      securityAlertDigest: boolean;
-    };
-    builtinModes: {
-      dailyStandup: 'auto' | 'suggest' | 'manual';
-      weeklySummary: 'auto' | 'suggest' | 'manual';
-      contextualFollowup: 'auto' | 'suggest' | 'manual';
-      integrationHealthAlert: 'auto' | 'suggest' | 'manual';
-      securityAlertDigest: 'auto' | 'suggest' | 'manual';
-    };
-    learning: { enabled: boolean; minConfidence: number };
-  };
-  onProactiveConfigChange: (config: {
-    enabled: boolean;
-    builtins: {
-      dailyStandup: boolean;
-      weeklySummary: boolean;
-      contextualFollowup: boolean;
-      integrationHealthAlert: boolean;
-      securityAlertDigest: boolean;
-    };
-    builtinModes: {
-      dailyStandup: 'auto' | 'suggest' | 'manual';
-      weeklySummary: 'auto' | 'suggest' | 'manual';
-      contextualFollowup: 'auto' | 'suggest' | 'manual';
-      integrationHealthAlert: 'auto' | 'suggest' | 'manual';
-      securityAlertDigest: 'auto' | 'suggest' | 'manual';
-    };
-    learning: { enabled: boolean; minConfidence: number };
-  }) => void;
   resourcePolicy: {
     deletionMode: 'auto' | 'request' | 'manual';
     automationLevel: 'full_manual' | 'semi_auto' | 'supervised_auto';
@@ -3209,8 +3369,6 @@ function BodySection({
   onMcpFeaturesChange,
   creationConfig,
   onCreationConfigChange,
-  proactiveConfig,
-  onProactiveConfigChange,
   resourcePolicy,
   onResourcePolicyChange,
 }: BodySectionProps) {
@@ -3564,178 +3722,6 @@ function BodySection({
         preferredLanguage={preferredLanguage}
         onPreferredLanguageChange={onPreferredLanguageChange}
       />
-
-      <CollapsibleSection title="Proactive Assistance" defaultOpen={false}>
-        {/* Enable toggle — gated by security policy */}
-        {(() => {
-          const proactiveBlockedByPolicy = securityPolicy?.allowProactive === false;
-          return (
-            <div className="space-y-4">
-              <div
-                className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
-                  proactiveBlockedByPolicy
-                    ? 'bg-muted/30 border-border opacity-60'
-                    : 'bg-muted/50 border-border'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Enable Assistance</span>
-                  {proactiveBlockedByPolicy && (
-                    <span className="text-xs text-destructive">(blocked by security policy)</span>
-                  )}
-                </div>
-                <label
-                  className={`relative inline-flex items-center ${proactiveBlockedByPolicy ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={proactiveBlockedByPolicy ? false : proactiveConfig.enabled}
-                    onChange={() => {
-                      if (!proactiveBlockedByPolicy) {
-                        onProactiveConfigChange({
-                          ...proactiveConfig,
-                          enabled: !proactiveConfig.enabled,
-                        });
-                      }
-                    }}
-                    disabled={proactiveBlockedByPolicy}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-                  <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
-                    {proactiveBlockedByPolicy
-                      ? 'Blocked'
-                      : proactiveConfig.enabled
-                        ? 'Enabled'
-                        : 'Disabled'}
-                  </span>
-                </label>
-              </div>
-
-              {proactiveConfig.enabled && !proactiveBlockedByPolicy && (
-                <>
-                  {/* Built-in Triggers — per-item 3-phase approval switch */}
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Built-in Triggers</h4>
-                    <div className="space-y-2">
-                      {[
-                        { key: 'dailyStandup' as const, label: 'Daily Standup Reminder' },
-                        { key: 'weeklySummary' as const, label: 'Weekly Summary' },
-                        { key: 'contextualFollowup' as const, label: 'Contextual Follow-up' },
-                        {
-                          key: 'integrationHealthAlert' as const,
-                          label: 'Integration Health Alert',
-                        },
-                        { key: 'securityAlertDigest' as const, label: 'Security Alert Digest' },
-                      ].map((item) => {
-                        const isOn = proactiveConfig.builtins[item.key];
-                        const activeMode = proactiveConfig.builtinModes[item.key];
-                        return (
-                          <div
-                            key={item.key}
-                            className="text-sm px-3 py-2 rounded flex items-center justify-between border bg-muted/50 border-border"
-                          >
-                            <span className="font-medium">{item.label}</span>
-                            <div className="flex gap-1">
-                              {(['auto', 'suggest', 'manual'] as const).map((mode) => {
-                                const isActive = isOn && activeMode === mode;
-                                const activeClass = isActive
-                                  ? mode === 'auto'
-                                    ? 'bg-green-600 text-white border-green-600'
-                                    : mode === 'suggest'
-                                      ? 'bg-amber-500 text-white border-amber-500'
-                                      : 'bg-blue-600 text-white border-blue-600'
-                                  : 'bg-muted/50 border-border hover:bg-muted';
-                                return (
-                                  <button
-                                    key={mode}
-                                    type="button"
-                                    onClick={() => {
-                                      onProactiveConfigChange({
-                                        ...proactiveConfig,
-                                        builtins: {
-                                          ...proactiveConfig.builtins,
-                                          [item.key]: !isActive,
-                                        },
-                                        builtinModes: {
-                                          ...proactiveConfig.builtinModes,
-                                          [item.key]: mode,
-                                        },
-                                      });
-                                    }}
-                                    className={`px-2 py-0.5 text-xs rounded border transition-colors ${activeClass}`}
-                                  >
-                                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Learning */}
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Learning</h4>
-                    <div className="space-y-3">
-                      <div className="text-sm px-3 py-2 rounded flex items-center justify-between border bg-muted/50 border-border">
-                        <span className="font-medium">Enable Learning</span>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={proactiveConfig.learning.enabled}
-                            onChange={() => {
-                              onProactiveConfigChange({
-                                ...proactiveConfig,
-                                learning: {
-                                  ...proactiveConfig.learning,
-                                  enabled: !proactiveConfig.learning.enabled,
-                                },
-                              });
-                            }}
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-                        </label>
-                      </div>
-                      {proactiveConfig.learning.enabled && (
-                        <div>
-                          <label className="text-sm text-muted-foreground block mb-1">
-                            Min Confidence: {proactiveConfig.learning.minConfidence.toFixed(2)}
-                          </label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={proactiveConfig.learning.minConfidence}
-                            onChange={(e) => {
-                              onProactiveConfigChange({
-                                ...proactiveConfig,
-                                learning: {
-                                  ...proactiveConfig.learning,
-                                  minConfidence: parseFloat(e.target.value),
-                                },
-                              });
-                            }}
-                            className="w-full"
-                          />
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>0.0</span>
-                            <span>1.0</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })()}
-      </CollapsibleSection>
 
       <div>
         <CollapsibleSection title="Capabilities" defaultOpen={false}>
@@ -5382,26 +5368,28 @@ export function PersonalityEditor({
       exposeVoice: body.mcpFeatures?.exposeVoice ?? false,
       exposeEdge: body.mcpFeatures?.exposeEdge ?? false,
     });
+    const bc = p.brainConfig ?? {};
+    const pc = bc.proactiveConfig ?? {};
     setProactiveConfig({
-      enabled: body.proactiveConfig?.enabled ?? false,
+      enabled: pc.enabled ?? false,
       builtins: {
-        dailyStandup: body.proactiveConfig?.builtins?.dailyStandup ?? false,
-        weeklySummary: body.proactiveConfig?.builtins?.weeklySummary ?? false,
-        contextualFollowup: body.proactiveConfig?.builtins?.contextualFollowup ?? false,
-        integrationHealthAlert: body.proactiveConfig?.builtins?.integrationHealthAlert ?? false,
-        securityAlertDigest: body.proactiveConfig?.builtins?.securityAlertDigest ?? false,
+        dailyStandup: pc.builtins?.dailyStandup ?? false,
+        weeklySummary: pc.builtins?.weeklySummary ?? false,
+        contextualFollowup: pc.builtins?.contextualFollowup ?? false,
+        integrationHealthAlert: pc.builtins?.integrationHealthAlert ?? false,
+        securityAlertDigest: pc.builtins?.securityAlertDigest ?? false,
       },
       builtinModes: {
-        dailyStandup: body.proactiveConfig?.builtinModes?.dailyStandup ?? 'auto',
-        weeklySummary: body.proactiveConfig?.builtinModes?.weeklySummary ?? 'suggest',
-        contextualFollowup: body.proactiveConfig?.builtinModes?.contextualFollowup ?? 'suggest',
+        dailyStandup: pc.builtinModes?.dailyStandup ?? 'auto',
+        weeklySummary: pc.builtinModes?.weeklySummary ?? 'suggest',
+        contextualFollowup: pc.builtinModes?.contextualFollowup ?? 'suggest',
         integrationHealthAlert:
-          body.proactiveConfig?.builtinModes?.integrationHealthAlert ?? 'auto',
-        securityAlertDigest: body.proactiveConfig?.builtinModes?.securityAlertDigest ?? 'suggest',
+          pc.builtinModes?.integrationHealthAlert ?? 'auto',
+        securityAlertDigest: pc.builtinModes?.securityAlertDigest ?? 'suggest',
       },
       learning: {
-        enabled: body.proactiveConfig?.learning?.enabled ?? true,
-        minConfidence: body.proactiveConfig?.learning?.minConfidence ?? 0.7,
+        enabled: pc.learning?.enabled ?? true,
+        minConfidence: pc.learning?.minConfidence ?? 0.7,
       },
     });
     setActiveHours({
@@ -5589,7 +5577,6 @@ export function PersonalityEditor({
         selectedIntegrations: integrationAccess.map((a) => a.id), // keep for backward compat
         integrationAccess,
         mcpFeatures,
-        proactiveConfig,
         activeHours,
         thinkingConfig,
         ...(reasoningConfig.enabled ? { reasoningConfig } : {}),
@@ -5603,6 +5590,9 @@ export function PersonalityEditor({
         knowledgeMode,
         ...(notebookTokenBudget !== null ? { notebookTokenBudget } : {}),
         resourcePolicy,
+      },
+      brainConfig: {
+        proactiveConfig,
       },
     };
     if (editing === 'new') {
@@ -5963,6 +5953,8 @@ export function PersonalityEditor({
             onModelFallbacksChange={(v) => {
               setForm((f) => ({ ...f, modelFallbacks: v }));
             }}
+            proactiveConfig={proactiveConfig}
+            onProactiveConfigChange={setProactiveConfig}
             modelData={modelData}
           />
 
@@ -5992,8 +5984,6 @@ export function PersonalityEditor({
             onMcpFeaturesChange={setMcpFeatures}
             creationConfig={creationConfig}
             onCreationConfigChange={setCreationConfig}
-            proactiveConfig={proactiveConfig}
-            onProactiveConfigChange={setProactiveConfig}
             resourcePolicy={resourcePolicy}
             onResourcePolicyChange={setResourcePolicy}
           />

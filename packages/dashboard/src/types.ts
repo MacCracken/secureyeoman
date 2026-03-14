@@ -207,27 +207,6 @@ export interface Personality {
       exposeVoice?: boolean;
       exposeEdge?: boolean;
     };
-    proactiveConfig?: {
-      enabled?: boolean;
-      builtins?: {
-        dailyStandup?: boolean;
-        weeklySummary?: boolean;
-        contextualFollowup?: boolean;
-        integrationHealthAlert?: boolean;
-        securityAlertDigest?: boolean;
-      };
-      builtinModes?: {
-        dailyStandup?: 'auto' | 'suggest' | 'manual';
-        weeklySummary?: 'auto' | 'suggest' | 'manual';
-        contextualFollowup?: 'auto' | 'suggest' | 'manual';
-        integrationHealthAlert?: 'auto' | 'suggest' | 'manual';
-        securityAlertDigest?: 'auto' | 'suggest' | 'manual';
-      };
-      learning?: {
-        enabled?: boolean;
-        minConfidence?: number;
-      };
-    };
     activeHours?: {
       enabled?: boolean;
       start?: string;
@@ -260,6 +239,29 @@ export interface Personality {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
       emergencyStop?: boolean;
+    };
+  };
+  brainConfig?: {
+    proactiveConfig?: {
+      enabled?: boolean;
+      builtins?: {
+        dailyStandup?: boolean;
+        weeklySummary?: boolean;
+        contextualFollowup?: boolean;
+        integrationHealthAlert?: boolean;
+        securityAlertDigest?: boolean;
+      };
+      builtinModes?: {
+        dailyStandup?: 'auto' | 'suggest' | 'manual';
+        weeklySummary?: 'auto' | 'suggest' | 'manual';
+        contextualFollowup?: 'auto' | 'suggest' | 'manual';
+        integrationHealthAlert?: 'auto' | 'suggest' | 'manual';
+        securityAlertDigest?: 'auto' | 'suggest' | 'manual';
+      };
+      learning?: {
+        enabled?: boolean;
+        minConfidence?: number;
+      };
     };
   };
   createdAt: number;
@@ -326,27 +328,6 @@ export interface PersonalityCreate {
       exposeVoice?: boolean;
       exposeEdge?: boolean;
     };
-    proactiveConfig?: {
-      enabled?: boolean;
-      builtins?: {
-        dailyStandup?: boolean;
-        weeklySummary?: boolean;
-        contextualFollowup?: boolean;
-        integrationHealthAlert?: boolean;
-        securityAlertDigest?: boolean;
-      };
-      builtinModes?: {
-        dailyStandup?: 'auto' | 'suggest' | 'manual';
-        weeklySummary?: 'auto' | 'suggest' | 'manual';
-        contextualFollowup?: 'auto' | 'suggest' | 'manual';
-        integrationHealthAlert?: 'auto' | 'suggest' | 'manual';
-        securityAlertDigest?: 'auto' | 'suggest' | 'manual';
-      };
-      learning?: {
-        enabled?: boolean;
-        minConfidence?: number;
-      };
-    };
     activeHours?: {
       enabled?: boolean;
       start?: string;
@@ -379,6 +360,29 @@ export interface PersonalityCreate {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
       emergencyStop?: boolean;
+    };
+  };
+  brainConfig?: {
+    proactiveConfig?: {
+      enabled?: boolean;
+      builtins?: {
+        dailyStandup?: boolean;
+        weeklySummary?: boolean;
+        contextualFollowup?: boolean;
+        integrationHealthAlert?: boolean;
+        securityAlertDigest?: boolean;
+      };
+      builtinModes?: {
+        dailyStandup?: 'auto' | 'suggest' | 'manual';
+        weeklySummary?: 'auto' | 'suggest' | 'manual';
+        contextualFollowup?: 'auto' | 'suggest' | 'manual';
+        integrationHealthAlert?: 'auto' | 'suggest' | 'manual';
+        securityAlertDigest?: 'auto' | 'suggest' | 'manual';
+      };
+      learning?: {
+        enabled?: boolean;
+        minConfidence?: number;
+      };
     };
   };
 }

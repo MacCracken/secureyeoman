@@ -6,6 +6,35 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.14]
+
+### Proactive Config: Body → Brain Migration (ADR-040)
+
+Moved per-personality proactive assistance configuration from the Body domain (`body.proactiveConfig`) to a new Brain domain (`brainConfig.proactiveConfig`). Proactive assistance is a cognitive activity — pattern recognition, decision-making, learning — that belongs with the brain's memory and reasoning systems, not the body's integration wiring.
+
+- Added `brain_config` JSONB column to `soul.personalities` table with idempotent migration
+- Created `PersonalityBrainConfigSchema` in shared types; removed `proactiveConfig` from `BodyConfigSchema`
+- Updated storage layer (INSERT/UPDATE queries, `rowToPersonality`) to read/write the new column
+- Moved proactive UI from "Body - Endowments" to "Brain - Intellect" section in dashboard PersonalityEditor
+- Updated manager, presets (T.Ron), soul-routes defaults to use `brainConfig`
+- Existing data auto-migrated: `body->'proactiveConfig'` → `brain_config` on first startup
+
+### Personality Traits & Mood Engine — Backlog Items Added
+
+Audit of the personality traits and mood engine systems identified 5 issues added to the engineering backlog:
+
+- Mood engine trait→mood vocabulary mismatch (trait keys never match `TRAIT_MOOD_MODIFIERS`)
+- `composeMoodPromptFragment()` exists but is never injected into system prompts
+- Trait prompt injection is a superficial flat string with no behavioral guidance
+- `applyEvent` falls back to empty traits instead of fetching actual personality traits
+- Trait compound effects (emergent behavior from trait combinations) not implemented
+
+### Engineering Backlog — SQL Migration Consolidation Marked Complete
+
+Consolidated 23+ migration files into 3 tier-based baselines (`001_community.sql`, `002_pro.sql`, `003_enterprise.sql`) — previously completed, now tracked as done.
+
+---
+
 ## [2026.3.13]
 
 ### Security Audit — 3 Rounds of Hardening + Edge Tools Wiring

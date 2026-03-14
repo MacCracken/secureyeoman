@@ -169,6 +169,19 @@ export const ProactivePersonalityConfigSchema = z
 
 export type ProactivePersonalityConfig = z.infer<typeof ProactivePersonalityConfigSchema>;
 
+/**
+ * Per-personality brain config — cognitive settings stored in the brain_config JSONB column.
+ * Proactive assistance lives here because it's a cognitive activity (pattern recognition,
+ * decision-making, learning) rather than a body/integration concern.
+ */
+export const PersonalityBrainConfigSchema = z
+  .object({
+    proactiveConfig: ProactivePersonalityConfigSchema.default({}),
+  })
+  .default({});
+
+export type PersonalityBrainConfig = z.infer<typeof PersonalityBrainConfigSchema>;
+
 export const PersonalityActiveHoursSchema = z
   .object({
     enabled: z.boolean().default(false),
@@ -273,7 +286,6 @@ export const BodyConfigSchema = z
     /** Replaces selectedIntegrations — includes both selection and permission mode per integration. */
     integrationAccess: z.array(IntegrationAccessSchema).default([]),
     mcpFeatures: McpFeaturesSchema.default({}),
-    proactiveConfig: ProactivePersonalityConfigSchema.default({}),
     activeHours: PersonalityActiveHoursSchema.default({}),
     thinkingConfig: ThinkingPersonalityConfigSchema,
     reasoningConfig: ReasoningPersonalityConfigSchema,
@@ -381,6 +393,7 @@ export const PersonalitySchema = z.object({
   isDefault: z.boolean().default(false),
   isWithinActiveHours: z.boolean().optional(),
   body: BodyConfigSchema.default({}),
+  brainConfig: PersonalityBrainConfigSchema.default({}),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
 });
@@ -394,6 +407,8 @@ export const PersonalityCreateSchema = PersonalitySchema.omit({
   isActive: true,
   isDefault: true,
   isWithinActiveHours: true,
+}).extend({
+  brainConfig: PersonalityBrainConfigSchema.optional(),
 });
 
 export type PersonalityCreate = z.infer<typeof PersonalityCreateSchema>;

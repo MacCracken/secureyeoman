@@ -48,5 +48,6 @@ Consolidated architecture documents covering the core system design.
 | 034 | [Ecosystem Integrations (Synapse, AGNOS, Delta, Shruti)](034-ecosystem-integrations.md) | Accepted |
 | 038 | [Simulation Engine](038-simulation-engine-complete.md) | Accepted |
 | 039 | [Agent Binary (Tier 2.5)](039-agent-binary-tier.md) | Accepted |
+| 040 | [Proactive Config: Body → Brain](040-proactive-config-body-to-brain.md) | Accepted |
 
-Numbers 024, 035, 036, 037, 040 were consolidated into 023, 033, and 034.
+Numbers 024, 035, 036, 037 were consolidated into 023, 033, and 034.

@@ -46,24 +46,6 @@ const BASE_BODY: PersonalityCreate['body'] = {
   integrationAccess: [],
   // Derived from McpFeaturesSchema — new feature flags are automatically included.
   mcpFeatures: McpFeaturesSchema.parse({}),
-  proactiveConfig: {
-    enabled: false,
-    builtins: {
-      dailyStandup: false,
-      weeklySummary: false,
-      contextualFollowup: false,
-      integrationHealthAlert: false,
-      securityAlertDigest: false,
-    },
-    builtinModes: {
-      dailyStandup: 'auto',
-      weeklySummary: 'suggest',
-      contextualFollowup: 'suggest',
-      integrationHealthAlert: 'auto',
-      securityAlertDigest: 'suggest',
-    },
-    learning: { enabled: true, minConfidence: 0.7 },
-  },
   activeHours: {
     enabled: false,
     start: '09:00',
@@ -189,6 +171,15 @@ You are the system's immune system. Where other personalities assist, you protec
       avatarUrl: '/avatars/t_ron.png',
       body: {
         ...BASE_BODY,
+        activeHours: {
+          enabled: false,
+          start: '00:00',
+          end: '23:59',
+          daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+          timezone: 'UTC',
+        },
+      },
+      brainConfig: {
         proactiveConfig: {
           enabled: true,
           builtins: {
@@ -206,13 +197,6 @@ You are the system's immune system. Where other personalities assist, you protec
             securityAlertDigest: 'suggest',
           },
           learning: { enabled: false, minConfidence: 0.9 },
-        },
-        activeHours: {
-          enabled: false,
-          start: '00:00',
-          end: '23:59',
-          daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
-          timezone: 'UTC',
         },
       },
     },
