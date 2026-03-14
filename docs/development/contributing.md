@@ -28,6 +28,50 @@ npm run test:e2e
 npm run test:e2e:fe
 ```
 
+### Parallel DB Tests (Local)
+
+The DB integration tests (~46 files) take 1hr+ serially. The parallel runner splits them across 8 shards with separate databases, finishing in ~10 minutes.
+
+**Prerequisites:** Start the external Postgres container:
+
+```bash
+docker compose --env-file .env.dev --profile external-db up -d sy-pg
+```
+
+**Option A — Use the script** (requires `psql` on the host to create shard databases):
+
+```bash
+bash scripts/test-db-parallel.sh    # default 8 shards
+bash scripts/test-db-parallel.sh 4  # fewer shards
+```
+
+**Option B — Manual setup** (no host `psql` needed):
+
+```bash
+# 1. Create shard databases via docker exec
+for i in $(seq 1 8); do
+  docker compose --env-file .env.dev exec -T sy-pg \
+    psql -U secureyeoman -d postgres -c \
+    "CREATE DATABASE secureyeoman_test_${i} OWNER secureyeoman;" 2>/dev/null
+  docker compose --env-file .env.dev exec -T sy-pg \
+    psql -U secureyeoman -d "secureyeoman_test_${i}" -c \
+    "CREATE EXTENSION IF NOT EXISTS vector;" 2>/dev/null
+done
+
+# 2. Run 8 shards in parallel from the host
+for i in $(seq 1 8); do
+  TEST_DB_HOST=localhost TEST_DB_PORT=5432 \
+  TEST_DB_USER=secureyeoman TEST_DB_PASSWORD=secureyeoman_dev \
+  TEST_DB_NAME="secureyeoman_test_${i}" \
+  SECUREYEOMAN_TOKEN_SECRET=test-db-parallel-secret \
+  NODE_ENV=test \
+  npx vitest run --project core:db --shard="${i}/8" &
+done
+wait
+```
+
+This mirrors how CI runs DB tests (see `.github/workflows/ci.yml`, `test-db` job).
+
 ### Vitest Config
 
 - **`vitest.unit.config.ts`** (core): `fileParallelism: true`, `pool: 'forks'`

@@ -1599,9 +1599,9 @@ describe('SoulManager', () => {
           baselineArousal: 0,
           updatedAt: Date.now(),
         }),
-        composeMoodPromptFragment: vi.fn().mockReturnValue(
-          '## Current Emotional State\nYou are currently feeling **happy**.'
-        ),
+        composeMoodPromptFragment: vi
+          .fn()
+          .mockReturnValue('## Current Emotional State\nYou are currently feeling **happy**.'),
       };
       manager.setMoodEngine(mockMoodEngine as any);
 

@@ -88,7 +88,7 @@ export class LemonSqueezyValidator {
       variantTierMap: config.variantTierMap ?? {},
       cacheTtlMs: config.cacheTtlMs ?? DEFAULT_CACHE_TTL,
       offlineGracePeriodMs: config.offlineGracePeriodMs ?? DEFAULT_GRACE_PERIOD,
-      instanceName: config.instanceName ?? (globalThis.process?.env?.HOSTNAME ?? 'secureyeoman'),
+      instanceName: config.instanceName ?? globalThis.process?.env?.HOSTNAME ?? 'secureyeoman',
     };
   }
 
@@ -137,7 +137,9 @@ export class LemonSqueezyValidator {
 
       // Resolve tier from variant ID
       const variantId = String(data.meta.variant_id);
-      const tier = this.config.variantTierMap[variantId] ?? this.inferTierFromVariantName(data.meta.variant_name);
+      const tier =
+        this.config.variantTierMap[variantId] ??
+        this.inferTierFromVariantName(data.meta.variant_name);
 
       // Build claims from LS response
       const features = this.getFeaturesForTier(tier);
@@ -162,7 +164,7 @@ export class LemonSqueezyValidator {
       return result;
     } catch (err) {
       // API unreachable — use cache with grace period
-      if (this.cache && this.cache.valid) {
+      if (this.cache?.valid) {
         const age = Date.now() - this.cache.cachedAt;
         if (age < this.config.offlineGracePeriodMs) {
           return this.cache; // Return stale cache within grace period

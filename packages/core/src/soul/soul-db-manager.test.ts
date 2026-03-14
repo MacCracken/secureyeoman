@@ -340,8 +340,8 @@ describe('SoulManager', () => {
       const prompt = await manager.composeSoulPrompt();
       expect(prompt).toContain('You are TestBot');
       expect(prompt).toContain('You are a test bot');
-      expect(prompt).toContain('humor: dry');
-      expect(prompt).toContain('formality: casual');
+      expect(prompt).toContain('**humor** (dry)');
+      expect(prompt).toContain('**formality** (casual)');
     });
 
     it('should include sex when not unspecified', async () => {

@@ -16,7 +16,7 @@
 | 16 | Shruti DAW Ecosystem Integration | P2 — platform | 16B–C ✅, 16A blocked (Shruti repo) |
 | 17 | Native Mobile Experience | P2 — platform | Planned (17A–E) |
 | — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
-| Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Demand-gated |
+| Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Shipping & Logistics, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Demand-gated |
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -416,6 +416,19 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 *OpenAI WebSocket transport implemented (2026-03-09).*
 
 - [x] **Warm-up / pre-generation** — ✅ Complete (2026-03-12). `WsWarmup` class pre-acquires WS connection and sends minimal `max_output_tokens: 1` request with system prompt and tools to seed `lastResponseId` chain. Integrated into `OpenAIWsProvider.warmup()`. 7 tests.
+
+---
+
+### Shipping & Logistics Intelligence
+
+*Unified shipping operations via MCP integrations and native tools. Manage multi-carrier shipping, track packages, optimize fulfillment, and automate logistics workflows from within SecureYeoman.*
+
+- [ ] **Featured MCP servers** — Shippo, ShipBob, and ShipStation added to the dashboard MCP prebuilt picker. One-click connect with API key configuration. Covers rate shopping, label generation, tracking, inventory, and fulfillment.
+- [ ] **Logistics MCP tools (native)** — Built-in `logistics_*` MCP tool set: `logistics_track_shipment`, `logistics_get_rates`, `logistics_create_label`, `logistics_address_verify`. Unified interface across carriers via EasyPost or direct carrier APIs. Registered in `manifest.ts`, gated by `exposeLogisticsTools` flag.
+- [ ] **Shipment tracking dashboard widget** — Real-time package tracking card: carrier, status, ETA, map visualization. Multi-shipment list with filter/search. Status change notifications via proactive engine.
+- [ ] **Shipping workflow templates** — Pre-built workflows: order-to-ship automation (new order → rate shop → cheapest label → tracking notification), return processing, batch label generation, carrier performance comparison.
+- [ ] **Address validation integration** — Validate and autocorrect shipping addresses before label purchase. Surface suggestions in chat and dashboard. Reduces failed deliveries.
+- [ ] **Carrier analytics** — Cost-per-shipment, delivery time, and exception rate dashboards across carriers. Historical trend analysis. Carrier performance scoring to inform rate shopping decisions.
 
 ---
 

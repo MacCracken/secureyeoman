@@ -5383,8 +5383,7 @@ export function PersonalityEditor({
         dailyStandup: pc.builtinModes?.dailyStandup ?? 'auto',
         weeklySummary: pc.builtinModes?.weeklySummary ?? 'suggest',
         contextualFollowup: pc.builtinModes?.contextualFollowup ?? 'suggest',
-        integrationHealthAlert:
-          pc.builtinModes?.integrationHealthAlert ?? 'auto',
+        integrationHealthAlert: pc.builtinModes?.integrationHealthAlert ?? 'auto',
         securityAlertDigest: pc.builtinModes?.securityAlertDigest ?? 'suggest',
       },
       learning: {

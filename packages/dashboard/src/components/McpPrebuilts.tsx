@@ -19,6 +19,8 @@ import {
   Mic2,
   Server,
   Shield,
+  Package,
+  Truck,
 } from 'lucide-react';
 import { addMcpServer, fetchMcpServers } from '../api/client';
 
@@ -219,6 +221,33 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
         label: 'MetaMCP API Key',
       },
     ],
+  },
+  {
+    icon: <Package className="w-5 h-5" />,
+    name: 'Shippo',
+    description:
+      'Create shipments, generate labels, get rates from 90+ carriers, track packages, and verify addresses via the official Shippo MCP server',
+    command: 'npx -y @shippo/shippo-mcp start',
+    requiredEnvVars: [{ key: 'SHIPPO_API_KEY', label: 'Shippo API Key' }],
+    note:
+      'Use test API keys (starting with shippo_test_) for sandbox mode — no real shipments or charges.',
+  },
+  {
+    icon: <Truck className="w-5 h-5" />,
+    name: 'ShipBob',
+    description:
+      'Fulfillment and inventory management — orders, shipments, warehouse inventory, and returns via the hosted ShipBob MCP server',
+    transport: 'streamable-http',
+    urlTemplate: 'https://api.shipbob.com/developer-api/mcp',
+    requiredEnvVars: [{ key: 'SHIPBOB_API_TOKEN', label: 'ShipBob API Token' }],
+  },
+  {
+    icon: <Package className="w-5 h-5" />,
+    name: 'ShipStation',
+    description:
+      'Multi-carrier shipping — shipments, labels, rates, carriers, inventory, warehouses, batches, and manifests via the official ShipStation MCP server',
+    command: 'npx -y @shipstation/mcp-server',
+    requiredEnvVars: [{ key: 'SHIPSTATION_API_KEY', label: 'ShipStation API Key' }],
   },
   {
     icon: <Shield className="w-5 h-5" />,

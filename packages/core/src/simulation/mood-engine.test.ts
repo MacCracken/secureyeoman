@@ -340,10 +340,21 @@ describe('getActiveCompoundEffects', () => {
 describe('TRAIT_VALUE_MODIFIERS', () => {
   it('covers all 15 standard traits', () => {
     const expectedTraits = [
-      'formality', 'humor', 'verbosity', 'directness',
-      'warmth', 'empathy', 'patience', 'confidence',
-      'creativity', 'risk_tolerance', 'curiosity', 'skepticism',
-      'autonomy', 'pedagogy', 'precision',
+      'formality',
+      'humor',
+      'verbosity',
+      'directness',
+      'warmth',
+      'empathy',
+      'patience',
+      'confidence',
+      'creativity',
+      'risk_tolerance',
+      'curiosity',
+      'skepticism',
+      'autonomy',
+      'pedagogy',
+      'precision',
     ];
     for (const trait of expectedTraits) {
       expect(TRAIT_VALUE_MODIFIERS).toHaveProperty(trait);
