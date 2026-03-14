@@ -18,6 +18,7 @@ import type { LowRateDetectionConfig } from '@secureyeoman/shared';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { IpReputationManager } from './ip-reputation.js';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
+import { PeriodicCleanup } from './periodic-cleanup.js';
 
 export interface LowRateAlert {
   routePrefix: string;
@@ -79,7 +80,7 @@ export class LowRateDetector {
   private totalRecords = 0;
   private alertsTriggered = 0;
   private logger: SecureLogger;
-  private analyzeInterval: NodeJS.Timeout | null = null;
+  private readonly analyzeTimer = new PeriodicCleanup();
 
   constructor(config: LowRateDetectionConfig, reputationManager?: IpReputationManager) {
     this.config = config;
@@ -92,10 +93,7 @@ export class LowRateDetector {
 
     if (this.config.enabled) {
       // Periodically rotate windows and analyze
-      this.analyzeInterval = setInterval(() => {
-        this.rotateAndAnalyze();
-      }, this.config.windowMs);
-      this.analyzeInterval.unref();
+      this.analyzeTimer.start(() => { this.rotateAndAnalyze(); }, this.config.windowMs);
 
       this.logger.info(
         {
@@ -208,10 +206,7 @@ export class LowRateDetector {
    * Stop the detector and clear all state.
    */
   stop(): void {
-    if (this.analyzeInterval) {
-      clearInterval(this.analyzeInterval);
-      this.analyzeInterval = null;
-    }
+    this.analyzeTimer.stop();
     this.buckets.clear();
     this.history.clear();
     this.alerts.length = 0;

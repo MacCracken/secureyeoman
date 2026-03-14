@@ -20,6 +20,7 @@ import type { Socket } from 'node:net';
 import type { ConnectionLimitsConfig } from '@secureyeoman/shared';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
 import { normalizeIp } from '../utils/ip.js';
+import { PeriodicCleanup } from './periodic-cleanup.js';
 
 interface IpState {
   /** Active connections from this IP. */
@@ -33,7 +34,7 @@ export class ConnectionLimiter {
   private totalConnections = 0;
   private readonly config: ConnectionLimitsConfig;
   private logger: SecureLogger;
-  private cleanupInterval: NodeJS.Timeout | null = null;
+  private readonly cleanupTimer = new PeriodicCleanup();
 
   // Stats
   private rejectedByIpLimit = 0;
@@ -67,10 +68,7 @@ export class ConnectionLimiter {
     });
 
     // Periodic cleanup of stale IP entries (no active connections, rate window expired)
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, 30_000);
-    this.cleanupInterval.unref();
+    this.cleanupTimer.start(() => { this.cleanup(); }, 30_000);
 
     this.logger.info(
       {
@@ -194,10 +192,7 @@ export class ConnectionLimiter {
   }
 
   stop(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-      this.cleanupInterval = null;
-    }
+    this.cleanupTimer.stop();
     this.ipState.clear();
     this.totalConnections = 0;
   }

@@ -17,6 +17,7 @@ import type { RequestFingerprintConfig } from '@secureyeoman/shared';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { IpReputationManager } from './ip-reputation.js';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
+import { PeriodicCleanup } from './periodic-cleanup.js';
 
 export interface FingerprintRequest {
   ip: string;
@@ -52,7 +53,7 @@ export class RequestFingerprinter {
   private readonly headerHashCache = new Map<string, string>();
   private static readonly MAX_HASH_CACHE = 2000;
   private logger: SecureLogger;
-  private cleanupInterval: NodeJS.Timeout | null = null;
+  private readonly cleanupTimer = new PeriodicCleanup();
 
   // Stats
   private totalFingerprinted = 0;
@@ -69,10 +70,7 @@ export class RequestFingerprinter {
     }
 
     // Periodic cleanup of stale timing entries
-    this.cleanupInterval = setInterval(() => {
-      this.cleanupTimingState();
-    }, 30_000);
-    this.cleanupInterval.unref();
+    this.cleanupTimer.start(() => { this.cleanupTimingState(); }, 30_000);
   }
 
   /**
@@ -259,10 +257,7 @@ export class RequestFingerprinter {
   }
 
   stop(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-      this.cleanupInterval = null;
-    }
+    this.cleanupTimer.stop();
     this.timingState.clear();
     this.headerHashCache.clear();
     this.totalFingerprinted = 0;
