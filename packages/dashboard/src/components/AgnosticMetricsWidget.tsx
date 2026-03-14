@@ -1,8 +1,8 @@
 /**
- * AgnosticMetricsWidget — Compact dashboard card showing AGNOSTIC QA platform metrics.
+ * AgnosticMetricsWidget — Compact dashboard card showing AAS (Agnostic Agentics Systems) metrics.
  *
- * Fetches from the AGNOSTIC widget endpoint (/api/dashboard/widget) proxied through
- * SecureYeoman's API. Shows task counts, agent status, and recent activity.
+ * Fetches from the Agnostic widget endpoint (/api/dashboard/widget) proxied through
+ * SecureYeoman's API. Shows task counts, agent status, crew presets, and recent activity.
  *
  * Phase B — AGNOSTIC as SecureYeoman Plugin
  */
@@ -22,10 +22,16 @@ interface AgnosticWidgetData {
     total: number;
     active: number;
   };
+  presets?: {
+    name: string;
+    domain: string;
+    agent_count: number;
+  }[];
   recentTasks: {
     id: string;
     title: string;
     status: string;
+    domain?: string;
     createdAt: string;
   }[];
 }
@@ -74,7 +80,7 @@ export default function AgnosticMetricsWidget() {
   });
 
   if (isLoading) {
-    return <div className="p-4 text-sm text-zinc-400">Loading AGNOSTIC metrics...</div>;
+    return <div className="p-4 text-sm text-zinc-400">Loading Agnostic metrics...</div>;
   }
 
   if (error) {
@@ -96,9 +102,24 @@ export default function AgnosticMetricsWidget() {
   return (
     <div className="flex flex-col gap-3 p-4 text-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-zinc-200">AGNOSTIC QA</h3>
+        <h3 className="text-base font-semibold text-zinc-200">Agnostic</h3>
         <StatusBadge status={data.status} />
       </div>
+
+      {/* Crew Presets */}
+      {data.presets && data.presets.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {data.presets.map((preset) => (
+            <span
+              key={preset.name}
+              className="rounded bg-zinc-700/50 px-1.5 py-0.5 text-xs text-zinc-400"
+              title={`${preset.name}: ${preset.agent_count} agents (${preset.domain})`}
+            >
+              {preset.domain}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Task Counts */}
       <div className="rounded border border-zinc-700 p-2">

@@ -1,9 +1,10 @@
 /**
- * Agnostic QA Team Tools — MCP tools that bridge to the Agnostic REST API.
+ * AAS (Agnostic Agentics Systems) Tools — MCP tools that bridge to the Agnostic REST API.
  *
- * Agnostic is a Python/CrewAI 6-agent QA platform running separately
- * (docker-compose or native). These tools let YEOMAN agents submit QA tasks,
- * monitor agent status, retrieve session results, and generate reports.
+ * Agnostic is a general-purpose agent platform (CrewAI) supporting any domain:
+ * QA, data-engineering, DevOps, or custom crews. These tools let YEOMAN agents
+ * submit tasks, run crews, manage agent definitions/presets, monitor status,
+ * retrieve session results, and generate reports.
  *
  * Configure via:
  *   MCP_EXPOSE_AGNOSTIC_TOOLS=true
@@ -368,27 +369,37 @@ export function registerAgnosticTools(
     'agnostic_delegate_a2a',
     {
       description:
-        'Delegate a QA task to Agnostic via the A2A (Agent-to-Agent) protocol. ' +
+        'Delegate a task to Agnostic via the A2A (Agent-to-Agent) protocol. ' +
         'Constructs a structured a2a:delegate message and sends it to the Agnostic A2A ' +
-        'receive endpoint (POST /api/v1/a2a/receive). ' +
-        'Requires Agnostic P8 (A2A server) to be implemented on the Agnostic side. ' +
-        'Use agnostic_submit_qa for REST-based submission (available now without P8).',
+        'receive endpoint. Supports both legacy QA tasks (via agents array) and ' +
+        'multi-domain crew tasks (via preset or agent_definitions).',
       inputSchema: {
-        title: z.string().describe('Short title for the QA task'),
+        title: z.string().describe('Short title for the task'),
         description: z
           .string()
-          .describe('What to test — feature description, PR summary, or acceptance criteria'),
-        target_url: z.string().optional().describe('Primary URL to test against'),
+          .describe('What to accomplish — feature description, PR summary, or acceptance criteria'),
+        target_url: z.string().optional().describe('Primary URL to target'),
         priority: z
           .enum(['critical', 'high', 'medium', 'low'])
           .default('high')
           .describe('Task priority'),
+        preset: z
+          .string()
+          .optional()
+          .describe(
+            'Crew preset to run (e.g. "qa-standard", "data-engineering", "devops"). ' +
+              'When set, routes to the crew builder instead of the QA pipeline.'
+          ),
         agents: z
-          .array(
-            z.enum(['security_compliance', 'performance', 'senior_qa', 'junior_qa', 'qa_analyst'])
-          )
+          .array(z.string())
           .default([])
-          .describe('Agents to invoke (empty = all agents)'),
+          .describe(
+            'Agents to invoke (empty = all agents). For QA: security_compliance, performance, etc.'
+          ),
+        agent_definitions: z
+          .array(z.record(z.string(), z.unknown()))
+          .default([])
+          .describe('Inline agent definitions for ad-hoc crews'),
         standards: z
           .array(z.string())
           .default([])
@@ -401,20 +412,24 @@ export function registerAgnosticTools(
     },
     wrapToolHandler('agnostic_delegate_a2a', middleware, async (args) => {
       const messageId = randomUUID();
+      const payload: Record<string, unknown> = {
+        title: args.title,
+        description: args.description,
+        target_url: args.target_url,
+        priority: args.priority,
+        agents: args.agents,
+        standards: args.standards,
+      };
+      // Add crew-specific fields when using preset or inline definitions
+      if (args.preset) payload.preset = args.preset;
+      if (args.agent_definitions?.length) payload.agent_definitions = args.agent_definitions;
+
       const message = {
         id: messageId,
         type: 'a2a:delegate',
         fromPeerId: args.from_peer_id,
         toPeerId: 'agnostic',
-        payload: {
-          task_type: 'qa',
-          title: args.title,
-          description: args.description,
-          target_url: args.target_url,
-          priority: args.priority,
-          agents: args.agents,
-          standards: args.standards,
-        },
+        payload,
         timestamp: Date.now(),
       };
 
@@ -681,6 +696,191 @@ export function registerAgnosticTools(
       };
 
       return labelledResponse('Quality Dashboard', dashboard);
+    })
+  );
+
+  // ── agnostic_run_crew ──────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_run_crew',
+    {
+      description:
+        'Run an agent crew on the Agnostic platform. Provide a preset name ' +
+        '(e.g. "qa-standard", "data-engineering", "devops"), a list of agent keys, ' +
+        'or inline agent definitions. Returns a crew_id + task_id for polling.',
+      inputSchema: {
+        title: z.string().describe('Short title for the crew task'),
+        description: z.string().describe('Task description — what the crew should accomplish'),
+        preset: z
+          .string()
+          .optional()
+          .describe('Preset name (e.g. "qa-standard", "data-engineering", "devops")'),
+        agent_keys: z
+          .array(z.string())
+          .default([])
+          .describe('Agent definition keys from the Agnostic definitions directory'),
+        agent_definitions: z
+          .array(z.record(z.string(), z.unknown()))
+          .default([])
+          .describe('Inline agent definitions (agent_key, name, role, goal, backstory)'),
+        target_url: z.string().optional().describe('Target application URL'),
+        priority: z
+          .enum(['critical', 'high', 'medium', 'low'])
+          .default('high')
+          .describe('Task priority'),
+        callback_url: z
+          .string()
+          .url()
+          .optional()
+          .describe('Webhook URL for completion notification'),
+        callback_secret: z.string().optional().describe('HMAC-SHA256 secret for webhook signature'),
+      },
+    },
+    wrapToolHandler('agnostic_run_crew', middleware, async (args) => {
+      const payload: Record<string, unknown> = {
+        title: args.title,
+        description: args.description,
+        priority: args.priority,
+      };
+      if (args.preset) payload.preset = args.preset;
+      if (args.agent_keys?.length) payload.agent_keys = args.agent_keys;
+      if (args.agent_definitions?.length) payload.agent_definitions = args.agent_definitions;
+      if (args.target_url) payload.target_url = args.target_url;
+      if (args.callback_url) payload.callback_url = args.callback_url;
+      if (args.callback_secret) payload.callback_secret = args.callback_secret;
+
+      const result = await agnosticRequest(config, 'post', '/api/v1/crews', payload);
+      return (
+        checkHttpOk(result, 'Crew run failed') ?? labelledResponse('Crew Started', result.body)
+      );
+    })
+  );
+
+  // ── agnostic_crew_status ────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_crew_status',
+    {
+      description:
+        'Get the status of a running or completed crew. Returns status, agent results, ' +
+        'and completion data. Use the crew_id from agnostic_run_crew.',
+      inputSchema: {
+        crew_id: z.string().describe('Crew ID returned by agnostic_run_crew'),
+      },
+    },
+    wrapToolHandler('agnostic_crew_status', middleware, async (args) => {
+      const result = await agnosticRequest(
+        config,
+        'get',
+        `/api/v1/crews/${encodeURIComponent(args.crew_id)}`
+      );
+      return (
+        checkHttpOk(result, 'Crew status failed') ??
+        labelledResponse(`Crew: ${args.crew_id}`, result.body)
+      );
+    })
+  );
+
+  // ── agnostic_list_presets ───────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_list_presets',
+    {
+      description:
+        'List available agent crew presets on the Agnostic platform. ' +
+        'Presets are pre-built crew configurations (e.g. "qa-standard" with 6 agents, ' +
+        '"data-engineering" with 3 agents, "devops" with 3 agents).',
+      inputSchema: {
+        domain: z
+          .string()
+          .optional()
+          .describe('Filter presets by domain (e.g. "qa", "data-engineering", "devops")'),
+      },
+    },
+    wrapToolHandler('agnostic_list_presets', middleware, async (args) => {
+      const query = args.domain ? `?domain=${encodeURIComponent(args.domain)}` : '';
+      const result = await agnosticRequest(config, 'get', `/api/v1/presets${query}`);
+      return (
+        checkHttpOk(result, 'List presets failed') ??
+        labelledResponse('Available Presets', result.body)
+      );
+    })
+  );
+
+  // ── agnostic_list_definitions ──────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_list_definitions',
+    {
+      description:
+        'List individual agent definitions available on the Agnostic platform. ' +
+        'These are the building blocks for custom crews.',
+      inputSchema: {
+        domain: z.string().optional().describe('Filter definitions by domain'),
+      },
+    },
+    wrapToolHandler('agnostic_list_definitions', middleware, async (args) => {
+      const query = args.domain ? `?domain=${encodeURIComponent(args.domain)}` : '';
+      const result = await agnosticRequest(config, 'get', `/api/v1/definitions${query}`);
+      return (
+        checkHttpOk(result, 'List definitions failed') ??
+        labelledResponse('Agent Definitions', result.body)
+      );
+    })
+  );
+
+  // ── agnostic_create_agent ──────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_create_agent',
+    {
+      description:
+        'Create a new agent definition on the Agnostic platform via A2A. ' +
+        'The agent will be available for inclusion in crews and presets.',
+      inputSchema: {
+        agent_key: z
+          .string()
+          .regex(/^[a-z0-9][a-z0-9-]*$/)
+          .describe('Unique agent key (kebab-case, e.g. "my-custom-agent")'),
+        name: z.string().describe('Display name for the agent'),
+        role: z.string().describe('Agent role description (used as CrewAI role)'),
+        goal: z.string().describe('Agent goal (used as CrewAI goal)'),
+        backstory: z.string().describe('Agent backstory (used as CrewAI backstory)'),
+        domain: z
+          .string()
+          .default('general')
+          .describe('Domain the agent belongs to (e.g. "qa", "data-engineering", "devops")'),
+        tools: z
+          .array(z.string())
+          .default([])
+          .describe('Tool names to attach (must be registered in Agnostic tool registry)'),
+        from_peer_id: z.string().default('yeoman').describe('Sender peer ID'),
+      },
+    },
+    wrapToolHandler('agnostic_create_agent', middleware, async (args) => {
+      const messageId = randomUUID();
+      const message = {
+        id: messageId,
+        type: 'a2a:create_agent',
+        fromPeerId: args.from_peer_id,
+        toPeerId: 'agnostic',
+        payload: {
+          agent_key: args.agent_key,
+          name: args.name,
+          role: args.role,
+          goal: args.goal,
+          backstory: args.backstory,
+          domain: args.domain,
+          tools: args.tools,
+        },
+        timestamp: Date.now(),
+      };
+
+      const result = await agnosticRequest(config, 'post', '/api/v1/a2a/receive', message);
+      return (
+        checkHttpOk(result, 'Agent creation failed') ??
+        labelledResponse(`Agent Created: ${args.agent_key} (message_id: ${messageId})`, result.body)
+      );
     })
   );
 

@@ -252,8 +252,23 @@ const RateLimitingConfigSchema = z
     authLoginWindowMs: z.number().int().positive().max(86400000).default(900000),
     redisUrl: z.string().url().optional(),
     redisPrefix: z.string().max(64).default('secureyeoman:rl').optional(),
+    adaptive: z
+      .object({
+        enabled: z.boolean().default(false),
+        sampleIntervalMs: z.number().int().positive().default(5000),
+        cpuWeight: z.number().min(0).max(1).default(0.4),
+        memoryWeight: z.number().min(0).max(1).default(0.3),
+        eventLoopWeight: z.number().min(0).max(1).default(0.3),
+        elevatedThreshold: z.number().min(0).max(1).default(0.4),
+        criticalThreshold: z.number().min(0).max(1).default(0.7),
+        elevatedMultiplier: z.number().min(0.1).max(1).default(0.7),
+        criticalMultiplier: z.number().min(0.1).max(1).default(0.4),
+      })
+      .default({}),
   })
   .default({});
+
+export type AdaptiveRateLimitConfig = z.infer<typeof RateLimitingConfigSchema>['adaptive'];
 
 const InputValidationConfigSchema = z
   .object({
@@ -643,9 +658,48 @@ export const SecurityConfigSchema = z.object({
   tee: TeeConfigSchema,
   /** Constitutional AI — self-critique and revision loop for alignment. */
   constitutional: ConstitutionalConfigSchema,
+  /** IP reputation scoring — automated blocklisting based on violation history. */
+  ipReputation: z
+    .object({
+      enabled: z.boolean().default(false),
+      autoBlockThreshold: z.number().int().min(1).max(100).default(80),
+      scoreDecayHalfLifeMs: z.number().int().positive().default(3600000),
+      blockDurationMs: z.number().int().positive().default(86400000),
+      maxCacheSize: z.number().int().positive().default(10000),
+    })
+    .default({}),
+  /** Distributed low-rate attack detection — detects coordinated slow attacks across many IPs. */
+  lowRateDetection: z
+    .object({
+      enabled: z.boolean().default(false),
+      windowMs: z.number().int().positive().default(300000),
+      uniqueIpThreshold: z.number().int().positive().default(50),
+      baselineMultiplier: z.number().positive().default(3),
+      autoBlockParticipants: z.boolean().default(false),
+      reputationPenalty: z.number().int().min(0).max(100).default(15),
+    })
+    .default({}),
+  /** Request fingerprinting — bot detection via header ordering, behavioral heuristics, and timing analysis. */
+  requestFingerprinting: z
+    .object({
+      enabled: z.boolean().default(false),
+      headerFingerprint: z.boolean().default(true),
+      behavioralHeuristics: z.boolean().default(true),
+      botScoreThreshold: z.number().int().min(0).max(100).default(70),
+      suspiciousScoreThreshold: z.number().int().min(0).max(100).default(30),
+      reputationPenaltyBot: z.number().int().min(0).max(100).default(15),
+      reputationPenaltySuspicious: z.number().int().min(0).max(100).default(5),
+    })
+    .default({}),
 });
 
 export type SecurityConfig = z.infer<typeof SecurityConfigSchema>;
+
+export type IpReputationConfig = SecurityConfig['ipReputation'];
+
+export type LowRateDetectionConfig = SecurityConfig['lowRateDetection'];
+
+export type RequestFingerprintConfig = SecurityConfig['requestFingerprinting'];
 
 // Audit config sub-schema
 const AuditConfigSchema = z
@@ -796,6 +850,45 @@ const AuthConfigSchema = z
   })
   .default({});
 
+// Connection-level protection — defends against Slowloris, SYN floods, and
+// connection exhaustion even when the user is not behind a reverse proxy.
+const ConnectionLimitsSchema = z
+  .object({
+    /** Maximum concurrent connections per IP address. 0 = unlimited. */
+    maxConnectionsPerIp: z.number().int().min(0).default(50),
+    /** Maximum total concurrent connections across all IPs. 0 = unlimited. */
+    maxTotalConnections: z.number().int().min(0).default(1000),
+    /** Time (ms) allowed for a client to send complete HTTP headers. Kills Slowloris. */
+    headersTimeoutMs: z.number().int().min(1000).max(300000).default(10000),
+    /** Time (ms) allowed for reading the full request body. */
+    requestTimeoutMs: z.number().int().min(1000).max(600000).default(30000),
+    /** Keep-alive timeout (ms). Idle connections are closed after this. */
+    keepAliveTimeoutMs: z.number().int().min(1000).max(600000).default(60000),
+    /** Max requests per keep-alive connection. Prevents connection hoarding. 0 = unlimited. */
+    maxRequestsPerSocket: z.number().int().min(0).default(1000),
+    /** New connections per IP per second. Exceeding triggers immediate RST. 0 = unlimited. */
+    connectionRatePerIpPerSec: z.number().int().min(0).default(20),
+  })
+  .default({});
+
+export type ConnectionLimitsConfig = z.infer<typeof ConnectionLimitsSchema>;
+
+// Body size limits per route category
+export const BodyLimitsSchema = z
+  .object({
+    /** Default max body size in bytes (1 MB). */
+    defaultBytes: z.number().int().positive().default(1_048_576),
+    /** Max body size for auth endpoints in bytes (16 KB). */
+    authBytes: z.number().int().positive().default(16_384),
+    /** Max body size for file upload endpoints in bytes (10 MB). */
+    uploadBytes: z.number().int().positive().default(10_485_760),
+    /** Max body size for chat/inline-complete endpoints in bytes (512 KB). */
+    chatBytes: z.number().int().positive().default(524_288),
+  })
+  .default({});
+
+export type BodyLimitsConfig = z.infer<typeof BodyLimitsSchema>;
+
 // Gateway/API configuration
 export const GatewayConfigSchema = z.object({
   host: z.string().default('127.0.0.1'),
@@ -818,9 +911,21 @@ export const GatewayConfigSchema = z.object({
   oauthRedirectBaseUrl: z.string().optional(),
   /** Path to pre-built dashboard dist directory. Auto-discovered if not set. */
   dashboardDist: z.string().optional(),
+  /** Connection-level protection (Slowloris, SYN flood, connection exhaustion). */
+  connectionLimits: ConnectionLimitsSchema,
+  /** Per-route request body size limits. */
+  bodyLimits: BodyLimitsSchema,
+  /** Backpressure / connection-draining configuration. */
+  backpressure: z
+    .object({
+      enabled: z.boolean().default(true),
+      drainPeriodMs: z.number().int().positive().default(30000),
+    })
+    .default({}),
 });
 
 export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
+export type BackpressureConfig = GatewayConfig['backpressure'];
 
 // Fallback model configuration (used when primary provider hits rate limits or is unavailable)
 export const FallbackModelConfigSchema = z.object({

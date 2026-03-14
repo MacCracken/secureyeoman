@@ -26,6 +26,12 @@ import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logge
 import { type SecureYeoman } from '../secureyeoman.js';
 import type { GatewayConfig } from '@secureyeoman/shared';
 import type { AuthService } from '../security/auth.js';
+import { ConnectionLimiter } from '../security/connection-limiter.js';
+import { IpReputationManager, createIpReputationHook } from '../security/ip-reputation.js';
+import { RequestFingerprinter, createFingerprintHook } from '../security/request-fingerprint.js';
+import { LowRateDetector, createLowRateDetectorHook } from '../security/low-rate-detector.js';
+import { BackpressureManager, createBackpressureHook } from '../security/backpressure.js';
+import { createBodyLimitHook } from '../security/body-limit.js';
 import { createAuthHook, createRbacHook } from './auth-middleware.js';
 import { registerAuthRoutes } from './auth-routes.js';
 import { registerOAuthRoutes, OAuthService } from './oauth-routes.js';
@@ -189,6 +195,11 @@ export class GatewayServer {
   private readonly app: FastifyInstance;
   private readonly clients = new Map<string, WebSocketClient>();
   private readonly collabManager: CollabManager;
+  private readonly connectionLimiter: ConnectionLimiter;
+  private readonly ipReputationManager: IpReputationManager | null = null;
+  private readonly requestFingerprinter: RequestFingerprinter | null = null;
+  private readonly lowRateDetector: LowRateDetector | null = null;
+  private readonly backpressureManager: BackpressureManager;
   private logger: SecureLogger | null = null;
   private metricsInterval: NodeJS.Timeout | null = null;
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -241,9 +252,63 @@ export class GatewayServer {
     this.app = Fastify({
       logger: false, // We use our own logger
       trustProxy: false, // Security: don't trust proxy headers
-      bodyLimit: 1_048_576, // 1 MB max request body
+      bodyLimit: this.config.bodyLimits?.uploadBytes ?? 10_485_760, // Global limit = most permissive (upload)
       ...(httpsOpts ? { https: httpsOpts } : {}),
     });
+
+    // Connection-level protection (Slowloris, SYN flood, connection exhaustion)
+    this.connectionLimiter = new ConnectionLimiter(
+      this.config.connectionLimits ?? {
+        maxConnectionsPerIp: 50,
+        maxTotalConnections: 1000,
+        headersTimeoutMs: 10000,
+        requestTimeoutMs: 30000,
+        keepAliveTimeoutMs: 60000,
+        maxRequestsPerSocket: 1000,
+        connectionRatePerIpPerSec: 20,
+      }
+    );
+
+    // Backpressure / connection-draining
+    this.backpressureManager = new BackpressureManager(
+      this.config.backpressure ?? { enabled: true, drainPeriodMs: 30000 }
+    );
+
+    // IP reputation manager — automated blocklisting based on violation history
+    try {
+      const secCfg = this.secureYeoman.getConfig?.().security;
+      if (secCfg?.ipReputation?.enabled) {
+        this.ipReputationManager = new IpReputationManager(secCfg.ipReputation);
+      }
+    } catch {
+      // Config not available yet or security config missing — skip
+    }
+
+    // Low-rate distributed attack detection
+    try {
+      const secCfg = this.secureYeoman.getConfig?.().security;
+      if (secCfg?.lowRateDetection?.enabled) {
+        this.lowRateDetector = new LowRateDetector(
+          secCfg.lowRateDetection,
+          this.ipReputationManager ?? undefined
+        );
+      }
+    } catch {
+      // Config not available yet or security config missing — skip
+    }
+
+    // Request fingerprinting — bot detection via header ordering, behavioral heuristics
+    try {
+      const secCfg = this.secureYeoman.getConfig?.().security;
+      if (secCfg?.requestFingerprinting?.enabled) {
+        this.requestFingerprinter = new RequestFingerprinter(
+          secCfg.requestFingerprinting,
+          this.ipReputationManager ?? undefined
+        );
+      }
+    } catch {
+      // Config not available yet or security config missing — skip
+    }
 
     // Middleware and routes are set up in start()
   }
@@ -270,6 +335,19 @@ export class GatewayServer {
   private async setupMiddleware(): Promise<void> {
     // Register OpenTelemetry tracing plugin (spans + X-Trace-Id header)
     await this.app.register(otelFastifyPlugin);
+
+    // Backpressure hook — shed load before any expensive work
+    this.app.addHook('onRequest', createBackpressureHook(this.backpressureManager));
+
+    // Request fingerprinting hook — score requests for bot likelihood (before reputation check)
+    if (this.requestFingerprinter) {
+      this.app.addHook('onRequest', createFingerprintHook(this.requestFingerprinter));
+    }
+
+    // IP reputation hook — block IPs with bad reputation scores
+    if (this.ipReputationManager) {
+      this.app.addHook('onRequest', createIpReputationHook(this.ipReputationManager));
+    }
 
     // Register compression plugin (gzip/brotli for JSON + text responses)
     await this.app.register(fastifyCompress);
@@ -396,6 +474,19 @@ export class GatewayServer {
     //     Bearer-token model eliminates.
     // ─────────────────────────────────────────────────────────────────────────
 
+    // Per-route body size enforcement (reject oversized payloads before parsing)
+    this.app.addHook(
+      'onRequest',
+      createBodyLimitHook(
+        this.config.bodyLimits ?? {
+          defaultBytes: 1_048_576,
+          authBytes: 16_384,
+          uploadBytes: 10_485_760,
+          chatBytes: 524_288,
+        }
+      )
+    );
+
     // Global rate limiting hook — enforce per-IP limits on all API routes
     {
       const rateLimiter = this.secureYeoman.getRateLimiter();
@@ -426,6 +517,18 @@ export class GatewayServer {
       );
     }
 
+    // IP reputation violation recording — feed rate-limit and auth failure signals
+    if (this.ipReputationManager) {
+      const reputationMgr = this.ipReputationManager;
+      this.app.addHook('onResponse', async (request, reply) => {
+        if (reply.statusCode === 429) {
+          reputationMgr.recordViolation(request.ip, 10, 'rate_limit');
+        } else if (reply.statusCode === 401) {
+          reputationMgr.recordViolation(request.ip, 15, 'auth_failure');
+        }
+      });
+    }
+
     // Request logging
     this.app.addHook('onResponse', async (request, reply) => {
       this.getLogger().debug(
@@ -438,6 +541,11 @@ export class GatewayServer {
         'Request completed'
       );
     });
+
+    // Low-rate distributed attack detection — non-blocking onResponse hook
+    if (this.lowRateDetector) {
+      this.app.addHook('onResponse', createLowRateDetectorHook(this.lowRateDetector));
+    }
   }
 
   private async setupRoutes(): Promise<void> {
@@ -3956,6 +4064,10 @@ export class GatewayServer {
     try {
       await this.app.listen({ host, port });
 
+      // Attach connection limiter to the underlying Node HTTP/HTTPS server.
+      // Must happen after listen() so this.app.server is available.
+      this.connectionLimiter.attach(this.app.server);
+
       const scheme = this.config.tls.enabled ? 'https' : 'http';
       this.getLogger().info(
         {
@@ -4016,6 +4128,19 @@ export class GatewayServer {
       this.metricsInterval = null;
     }
 
+    // Enter drain mode — new requests get 503 while in-flight requests complete.
+    // Only wait when explicitly configured; default drain period of 0 skips the delay
+    // so tests and simple deployments shut down instantly.
+    const drainMs = this.config.backpressure?.drainPeriodMs ?? 0;
+    if (drainMs > 0 && this.clients.size > 0) {
+      this.backpressureManager.startDrain();
+      this.getLogger().info(
+        { drainMs, clients: this.clients.size },
+        'Draining in-flight requests before shutdown'
+      );
+      await new Promise<void>((resolve) => setTimeout(resolve, drainMs));
+    }
+
     // Close all WebSocket connections
     for (const [_clientId, client] of this.clients) {
       try {
@@ -4025,6 +4150,13 @@ export class GatewayServer {
       }
     }
     this.clients.clear();
+
+    // Stop connection limiter, IP reputation manager, and backpressure manager
+    this.connectionLimiter.stop();
+    this.ipReputationManager?.stop();
+    this.requestFingerprinter?.stop();
+    this.lowRateDetector?.stop();
+    this.backpressureManager.stop();
 
     // Close Fastify
     await this.app.close();

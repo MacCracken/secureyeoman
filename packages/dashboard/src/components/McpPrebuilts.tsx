@@ -229,8 +229,7 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
       'Create shipments, generate labels, get rates from 90+ carriers, track packages, and verify addresses via the official Shippo MCP server',
     command: 'npx -y @shippo/shippo-mcp start',
     requiredEnvVars: [{ key: 'SHIPPO_API_KEY', label: 'Shippo API Key' }],
-    note:
-      'Use test API keys (starting with shippo_test_) for sandbox mode — no real shipments or charges.',
+    note: 'Use test API keys (starting with shippo_test_) for sandbox mode — no real shipments or charges.',
   },
   {
     icon: <Truck className="w-5 h-5" />,

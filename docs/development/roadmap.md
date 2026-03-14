@@ -432,6 +432,20 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
+### DDoS & Distributed Denial of Detection (DDoD) Defense
+
+*Harden the platform against volumetric attacks, application-layer abuse, and distributed low-rate evasion patterns that slip past traditional rate limiting.*
+
+- [x] **Connection-level limits** — ✅ Implemented (`connection-limiter.ts`): Per-IP concurrent cap (default 50), global cap (default 1000), connection rate limit (20/sec), Slowloris protection via headers/request/keepalive timeouts, max requests per socket. 12 tests.
+- [x] **Request body size enforcement** — ✅ Implemented (`body-limit.ts`): Per-route limits (auth=16KB, chat=512KB, upload=10MB, default=1MB). Fastify `onRequest` hook checks `content-length` before parsing. 11 tests.
+- [x] **Adaptive rate limiting** — ✅ Implemented (`adaptive-rate-limiter.ts`): Wraps `RateLimiterLike`, samples CPU/memory/event-loop-lag every 5s, EMA-smoothed pressure score. Three tiers: normal (1x), elevated (0.7x at 40%), critical (0.4x at 70%). 11 tests.
+- [x] **Connection draining & backpressure** — ✅ Implemented (`backpressure.ts`): Three-level load shedding (normal/elevated/critical). Route priority classification (critical: auth+chat+health, low: metrics+diagnostics). Drain mode for graceful shutdown with configurable drain period. 17 tests.
+- [x] **IP reputation & auto-blocking** — ✅ Implemented (`ip-reputation.ts`): In-memory LRU cache with exponential score decay (half-life 1h). Violation recording from rate-limit hits (+10) and auth failures (+15). Auto-block at score 80, auto-unblock on decay, manual block/allow. 15 tests.
+- [x] **Distributed low-rate detection** — ✅ Implemented (`low-rate-detector.ts`): Time-bucketed counters per route prefix. Baseline tracking via 12-window circular buffer (1h history, median baseline). Alerts when unique IPs > 50 AND count > 3x baseline. Optional auto-penalty to reputation. 14 tests.
+- [x] **Request fingerprinting** — ✅ Implemented (`request-fingerprint.ts`): Header ordering hash, missing browser header detection, bot UA patterns, metronomic timing detection. Score-based classification (human <30, suspicious 30-70, bot >70). Feeds into IP reputation. 22 tests.
+
+---
+
 ### Consumer Experience
 
 *Lower barrier to entry and improve daily-use experience for individual users and small teams.*
