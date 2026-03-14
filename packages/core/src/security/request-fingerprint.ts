@@ -48,6 +48,9 @@ export class RequestFingerprinter {
   private readonly config: RequestFingerprintConfig;
   private readonly reputationManager: IpReputationManager | undefined;
   private readonly timingState = new Map<string, IpTimingState>();
+  /** Cache header-name strings → SHA256 hash to avoid recomputing per request. */
+  private readonly headerHashCache = new Map<string, string>();
+  private static readonly MAX_HASH_CACHE = 2000;
   private logger: SecureLogger;
   private cleanupInterval: NodeJS.Timeout | null = null;
 
@@ -80,13 +83,23 @@ export class RequestFingerprinter {
     const signals: string[] = [];
     let score = 0;
 
-    // ── Header fingerprint ──────────────────────────────────────────
+    // ── Header fingerprint (cached to avoid SHA256 per request) ────
     const headerNames = Object.keys(request.headers)
       .map((h) => h.toLowerCase())
       .join(',');
-    const headerHash = this.config.headerFingerprint
-      ? createHash('sha256').update(headerNames).digest('hex').slice(0, 16)
-      : '';
+    let headerHash = '';
+    if (this.config.headerFingerprint) {
+      headerHash = this.headerHashCache.get(headerNames) ?? '';
+      if (!headerHash) {
+        headerHash = createHash('sha256').update(headerNames).digest('hex').slice(0, 16);
+        if (this.headerHashCache.size >= RequestFingerprinter.MAX_HASH_CACHE) {
+          // Evict oldest entry (first key in Map iteration order)
+          const first = this.headerHashCache.keys().next().value;
+          if (first !== undefined) this.headerHashCache.delete(first);
+        }
+        this.headerHashCache.set(headerNames, headerHash);
+      }
+    }
 
     // ── Behavioral heuristics ────────────────────────────────────────
     if (this.config.behavioralHeuristics) {
@@ -222,11 +235,12 @@ export class RequestFingerprinter {
     return 0;
   }
 
-  /** Remove stale IP timing entries with no recent activity. */
+  /** Remove stale IP timing entries with no recent activity or when over hard cap. */
   private cleanupTimingState(): void {
     const now = Date.now();
+    const hardCap = 50_000;
     for (const [ip, state] of this.timingState) {
-      if (now - state.lastActivity > TIMING_EVICTION_MS) {
+      if (now - state.lastActivity > TIMING_EVICTION_MS || this.timingState.size > hardCap) {
         this.timingState.delete(ip);
       }
     }
@@ -250,6 +264,7 @@ export class RequestFingerprinter {
       this.cleanupInterval = null;
     }
     this.timingState.clear();
+    this.headerHashCache.clear();
     this.totalFingerprinted = 0;
     this.botsDetected = 0;
     this.suspiciousDetected = 0;

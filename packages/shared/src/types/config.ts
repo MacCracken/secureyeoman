@@ -690,6 +690,9 @@ export const SecurityConfigSchema = z.object({
       reputationPenaltyBot: z.number().int().min(0).max(100).default(15),
       reputationPenaltySuspicious: z.number().int().min(0).max(100).default(5),
     })
+    .refine((data) => data.suspiciousScoreThreshold < data.botScoreThreshold, {
+      message: 'suspiciousScoreThreshold must be less than botScoreThreshold',
+    })
     .default({}),
 });
 

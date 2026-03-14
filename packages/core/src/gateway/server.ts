@@ -32,6 +32,8 @@ import { RequestFingerprinter, createFingerprintHook } from '../security/request
 import { LowRateDetector, createLowRateDetectorHook } from '../security/low-rate-detector.js';
 import { BackpressureManager, createBackpressureHook } from '../security/backpressure.js';
 import { createBodyLimitHook } from '../security/body-limit.js';
+import { AdaptiveRateLimiter } from '../security/adaptive-rate-limiter.js';
+import { isPrivateIp, normalizeIp } from '../utils/ip.js';
 import { createAuthHook, createRbacHook } from './auth-middleware.js';
 import { registerAuthRoutes } from './auth-routes.js';
 import { registerOAuthRoutes, OAuthService } from './oauth-routes.js';
@@ -137,26 +139,6 @@ import { registerAnalyticsRoutes } from '../analytics/analytics-routes.js';
 import { registerScanningRoutes } from '../sandbox/scanning/scanning-routes.js';
 import { parsePagination } from '../utils/pagination.js';
 
-/**
- * Check if an IP address belongs to a private/loopback range.
- * Covers 127.0.0.0/8, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16.
- */
-function isPrivateIP(ip: string): boolean {
-  // Strip IPv6-mapped IPv4 prefix (e.g. ::ffff:172.20.0.3 → 172.20.0.3)
-  const addr = ip.startsWith('::ffff:') ? ip.slice(7) : ip;
-
-  if (addr === '127.0.0.1' || addr === '::1' || addr === 'localhost') return true;
-  if (addr.startsWith('10.') || addr.startsWith('192.168.')) return true;
-
-  // 172.16.0.0/12 → second octet 16–31
-  if (addr.startsWith('172.')) {
-    const secondOctet = Number(addr.split('.')[1]);
-    if (secondOctet >= 16 && secondOctet <= 31) return true;
-  }
-
-  return false;
-}
-
 interface WebSocketClient {
   ws: WebSocket;
   channels: Set<string>;
@@ -200,6 +182,8 @@ export class GatewayServer {
   private readonly requestFingerprinter: RequestFingerprinter | null = null;
   private readonly lowRateDetector: LowRateDetector | null = null;
   private readonly backpressureManager: BackpressureManager;
+  private adaptiveRateLimiter: AdaptiveRateLimiter | null = null;
+  private pressureInterval: NodeJS.Timeout | null = null;
   private logger: SecureLogger | null = null;
   private metricsInterval: NodeJS.Timeout | null = null;
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -336,6 +320,16 @@ export class GatewayServer {
     // Register OpenTelemetry tracing plugin (spans + X-Trace-Id header)
     await this.app.register(otelFastifyPlugin);
 
+    // Normalize IPv6-mapped IPv4 addresses so all downstream hooks see
+    // a consistent IP key (e.g. ::ffff:192.168.1.1 → 192.168.1.1).
+    this.app.addHook('onRequest', (request, _reply, done) => {
+      const raw = request.ip;
+      if (raw.startsWith('::ffff:')) {
+        Object.defineProperty(request, 'ip', { value: normalizeIp(raw), configurable: true });
+      }
+      done();
+    });
+
     // Backpressure hook — shed load before any expensive work
     this.app.addHook('onRequest', createBackpressureHook(this.backpressureManager));
 
@@ -372,7 +366,7 @@ export class GatewayServer {
       const ip = request.ip;
 
       // Allow localhost and private network ranges (RFC 1918 + loopback)
-      const isLocalNetwork = isPrivateIP(ip);
+      const isLocalNetwork = isPrivateIp(ip);
 
       if (!isLocalNetwork) {
         this.getLogger().warn({ ip }, 'Access denied from non-local IP');
@@ -487,10 +481,26 @@ export class GatewayServer {
       )
     );
 
-    // Global rate limiting hook — enforce per-IP limits on all API routes
+    // Global rate limiting hook — enforce per-IP limits on all API routes.
+    // When adaptive rate limiting is enabled, wrap the inner limiter to
+    // dynamically adjust thresholds based on system pressure and feed
+    // the composite pressure score into the backpressure manager.
     {
       const rateLimiter = this.secureYeoman.getRateLimiter();
       if (rateLimiter && 'createFastifyHook' in rateLimiter) {
+        const securityConfig = this.secureYeoman.getConfig?.()?.security;
+        const adaptiveConfig = securityConfig?.rateLimiting?.adaptive;
+        if (adaptiveConfig?.enabled) {
+          this.adaptiveRateLimiter = new AdaptiveRateLimiter(rateLimiter, adaptiveConfig);
+          // Periodically feed pressure into backpressure manager
+          this.pressureInterval = setInterval(() => {
+            const pressure = this.adaptiveRateLimiter?.getPressure();
+            if (pressure) {
+              this.backpressureManager.setPressure(pressure.composite);
+            }
+          }, adaptiveConfig.sampleIntervalMs ?? 5000);
+          this.pressureInterval.unref();
+        }
         this.app.addHook(
           'onRequest',
           (
@@ -3496,7 +3506,7 @@ export class GatewayServer {
     // and RFC-1918 private networks (Docker bridge / overlay).
     this.app.get('/api/v1/internal/mcp-bootstrap', async (request, reply) => {
       const ip = request.ip;
-      if (!isPrivateIP(ip)) {
+      if (!isPrivateIp(ip)) {
         return sendError(reply, 403, 'Bootstrap endpoint is internal-network-only');
       }
       try {
@@ -4151,12 +4161,17 @@ export class GatewayServer {
     }
     this.clients.clear();
 
-    // Stop connection limiter, IP reputation manager, and backpressure manager
+    // Stop all security modules
     this.connectionLimiter.stop();
     this.ipReputationManager?.stop();
     this.requestFingerprinter?.stop();
     this.lowRateDetector?.stop();
+    this.adaptiveRateLimiter?.stop();
     this.backpressureManager.stop();
+    if (this.pressureInterval) {
+      clearInterval(this.pressureInterval);
+      this.pressureInterval = null;
+    }
 
     // Close Fastify
     await this.app.close();

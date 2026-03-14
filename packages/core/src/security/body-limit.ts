@@ -78,7 +78,7 @@ export function createBodyLimitHook(
     }
 
     const bytes = Number(contentLength);
-    if (Number.isNaN(bytes)) {
+    if (Number.isNaN(bytes) || bytes < 0) {
       return;
     }
 

@@ -246,11 +246,25 @@ export class IpReputationManager {
   private evictIfNeeded(): void {
     if (this.cache.size <= this.config.maxCacheSize) return;
 
-    // Evict least-recently-used entries that are NOT blocked
+    // Phase 1: Evict non-blocked entries (LRU — Map iteration order)
     for (const [ip, record] of this.cache) {
       if (this.cache.size <= this.config.maxCacheSize) break;
       if (!record.blocked) {
         this.cache.delete(ip);
+      }
+    }
+
+    // Phase 2: If still over capacity (all entries blocked), evict expired blocks
+    if (this.cache.size > this.config.maxCacheSize) {
+      const now = Date.now();
+      for (const [ip, record] of this.cache) {
+        if (this.cache.size <= this.config.maxCacheSize) break;
+        if (record.blocked && record.blockedAt !== undefined) {
+          const elapsed = now - record.blockedAt;
+          if (elapsed >= this.config.blockDurationMs) {
+            this.cache.delete(ip);
+          }
+        }
       }
     }
   }

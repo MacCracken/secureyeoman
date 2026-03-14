@@ -19,6 +19,7 @@ import type { Server as HttpsServer } from 'node:https';
 import type { Socket } from 'node:net';
 import type { ConnectionLimitsConfig } from '@secureyeoman/shared';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
+import { normalizeIp } from '../utils/ip.js';
 
 interface IpState {
   /** Active connections from this IP. */
@@ -86,7 +87,7 @@ export class ConnectionLimiter {
   }
 
   private onConnection(socket: Socket): void {
-    const ip = socket.remoteAddress ?? 'unknown';
+    const ip = normalizeIp(socket.remoteAddress);
 
     // ── Global connection limit ──────────────────────────────────────
     if (

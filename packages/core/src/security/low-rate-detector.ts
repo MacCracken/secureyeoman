@@ -161,6 +161,9 @@ export class LowRateDetector {
           baseline,
           detectedAt: now,
         };
+        if (this.alerts.length >= 1000) {
+          this.alerts.shift();
+        }
         this.alerts.push(alert);
         this.alertsTriggered++;
 
