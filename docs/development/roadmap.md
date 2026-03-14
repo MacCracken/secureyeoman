@@ -14,6 +14,7 @@
 | — | E2E Test Expansion | P1 — quality | Planned |
 | 15 | Agent Binary (Tier 2.5) | P2 — platform | ✅ Complete (15A–C) |
 | 16 | Shruti DAW Ecosystem Integration | P2 — platform | 16B–C ✅, 16A blocked (Shruti repo) |
+| 17 | Native Mobile Experience | P2 — platform | Planned (17A–E) |
 | — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
 | Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Demand-gated |
 
@@ -347,14 +348,66 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### Native Clients
+### Native Clients — Desktop
 
-*Phase 91 delivered the Tauri v2 desktop scaffold and Capacitor v6 mobile scaffold (both complete 2026-03-01). These items extend the scaffolds into polished native experiences.*
+*Phase 91 delivered the Tauri v2 desktop scaffold (complete 2026-03-01).*
 
-- [ ] **Mobile app — full feature parity** — Native iOS/Android companion app. Primary view: chat interface + at-a-glance overview stats. The Capacitor scaffold is in place; this item covers icon production, App Store review compliance, and push notifications.
-- [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across devices via the existing REST API. Offline-first with conflict resolution on reconnect.
-- [ ] **Auto-update** — In-app update flow: Tauri updater for desktop (delta bundles via `tauri-plugin-updater`), App Store / Play Store release channels for mobile.
+- [ ] **Auto-update** — Tauri updater for desktop (delta bundles via `tauri-plugin-updater`).
 - [ ] **Desktop system tray enhancements** — Quick-access menu: active personality selector, last conversation shortcut, toggle notifications. Global keyboard shortcut to focus the window.
+
+---
+
+### Phase 17: Native Mobile Experience
+
+*Strategy: Build a sovereign, native-first mobile app — not just a WebView wrapper. Differentiator vs. OpenClaw (messaging-as-interface) and generic SaaS AI apps. SecureYeoman mobile = your private AI agent in your pocket, running on your infrastructure, secured by your rules. Capacitor v8 scaffold exists (2026-03-01); this phase builds it into a production-grade native app.*
+
+#### 17A — Foundation & Secure Connectivity
+
+*Core infrastructure that all subsequent mobile work depends on.*
+
+- [ ] **Tailscale / WireGuard connectivity layer** — Capacitor plugin or embedded Tailscale client for secure tunnel to private SY instances behind home networks or enterprise firewalls. Zero-config for Tailscale users (authenticate once, auto-discover SY instance via MagicDNS). Fallback: manual WireGuard config import. This is the killer feature — no port forwarding, no public exposure, just open the app and you're connected to your sovereign instance.
+- [ ] **Biometric authentication** — Face ID / Touch ID / fingerprint via `@capacitor/biometrics`. Gate app access and sensitive operations (API key viewing, personality deletion, license management). Store JWT refresh token in secure enclave (iOS Keychain / Android Keystore), unlock with biometric.
+- [ ] **Push notification bridge** — Firebase Cloud Messaging (Android) + APNs (iOS) via `@capacitor/push-notifications`. Core sends notification → new `PushDispatcher` in notification fan-out chain → device token registry (per-user, per-device) → platform-specific push. Notification types: proactive suggestions, security alerts, heartbeat warnings, task completions, agent messages. Tap-to-action deep links.
+- [ ] **Device token management** — `POST /api/v1/devices/register` endpoint. Tracks device ID, platform, push token, last seen. Auto-cleanup stale tokens (30 days inactive). Multi-device support — user can have phone + tablet registered simultaneously.
+- [ ] **Secure local storage** — `@capacitor/preferences` for non-sensitive settings. `@capacitor-community/secure-storage` for tokens, keys, connection profiles. Encrypted at rest on both platforms.
+
+#### 17B — Core Mobile UX
+
+*Mobile-optimized interface — not just responsive web, but native-feeling interactions.*
+
+- [ ] **Mobile navigation shell** — Bottom tab bar (Chat, Dashboard, Notifications, Settings) replacing sidebar. Gesture navigation (swipe between conversations, pull-to-refresh). Native status bar integration, safe area handling, haptic feedback on key actions.
+- [ ] **Mobile chat interface** — Optimized chat view: native keyboard handling, quick-reply suggestions, voice input button, attachment picker (camera, files, photos). Streaming responses with typing indicator. Conversation list with search, swipe-to-archive.
+- [ ] **At-a-glance dashboard** — Compact mission control: system health card, active personality, unread notification badge, recent agent activity feed, cost summary. Not a port of the full desktop dashboard — a purpose-built mobile overview.
+- [ ] **Notification center** — Native notification grouping (by source: security, proactive, agents, system). In-app notification tray with mark-read, dismiss, action buttons. Proactive suggestion cards with approve/dismiss inline. Badge count on app icon.
+- [ ] **Mobile settings** — Connection profile management (add/switch SY instances), notification preferences (per-type toggle, quiet hours), biometric toggle, theme selection (subset of 45 themes optimized for OLED), Tailscale/WireGuard status.
+
+#### 17C — Offline-First & Sync
+
+*Leverage existing IndexedDB/offline infrastructure in dashboard, extend with native capabilities.*
+
+- [ ] **Offline conversation cache** — Cache recent conversations in device storage. Read-only access when disconnected. Pending message queue (compose offline, send on reconnect). Sync status indicator per conversation.
+- [ ] **Background sync** — `@capacitor/background-task` for periodic sync when app is backgrounded. Pull new notifications, sync conversation updates, refresh proactive suggestions. Respect battery optimization (adaptive sync frequency).
+- [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across devices via the existing REST API. Offline-first with conflict resolution (last-write-wins for preferences, merge for conversations).
+- [ ] **Connection resilience** — Graceful handling of Tailscale tunnel drops (auto-reconnect with exponential backoff). Visual connection state indicator (connected / reconnecting / offline). Queue critical actions during brief disconnects.
+
+#### 17D — Native Device Integration
+
+*Capabilities that only a native app can provide — the reason this isn't just a PWA.*
+
+- [ ] **Voice interaction** — Push-to-talk or wake-word activation via `@capacitor-community/speech-recognition`. Stream audio to SY for transcription → agent processing → TTS response via device speaker. Hands-free mode for driving/cooking.
+- [ ] **Camera & document capture** — Snap a photo or scan a document → send to agent for analysis. OCR pipeline: capture → `@capacitor/camera` → upload to SY → vision model analysis → response. Useful for: receipt scanning, whiteboard capture, code screenshot analysis.
+- [ ] **Share extension** — iOS Share Sheet / Android Share Intent target. Share URLs, text, images, files from any app directly into SY for agent processing. "Send to SecureYeoman" as a system-wide action.
+- [ ] **Widgets** — iOS WidgetKit / Android App Widgets. At-a-glance: system health status, unread notification count, quick-chat launcher, active personality display. Home screen presence without opening the app.
+- [ ] **Shortcuts & automation** — iOS Shortcuts / Android Quick Settings tile. "Ask SecureYeoman" Siri Shortcut. Tasker/Automate integration on Android. Quick Settings tile for toggle notifications or switch personality.
+
+#### 17E — App Store & Distribution
+
+*Production readiness for public distribution.*
+
+- [ ] **App icons & splash screens** — Production icon set (all required sizes for iOS + Android). Adaptive icons (Android 13+). Splash screen with brand animation.
+- [ ] **App Store compliance** — Privacy nutrition labels (iOS), data safety section (Android). Review guideline compliance: no remote code execution claims, proper content ratings, privacy policy URL. TestFlight / Play Console internal testing tracks.
+- [ ] **Release pipeline** — CI workflow: `npm run build:dashboard` → `npx cap sync` → Fastlane (iOS) / Gradle (Android) → TestFlight / Play Console upload. Triggered by CalVer tag. Signing key management via CI secrets.
+- [ ] **Auto-update** — App Store / Play Store release channels. In-app update prompts for critical updates (`@capacitor/app-update` or platform APIs). Version compatibility check against SY server version.
 
 ---
 
@@ -399,7 +452,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 *Lower-priority IDE features. Implement when the core IDE experience is stable and user demand warrants.*
 
-- [ ] **Responsive / mobile layout** — Adaptive layout for smaller screens.
 - [ ] **Plugin / extension system** — Third-party editor extensions.
 
 ---
