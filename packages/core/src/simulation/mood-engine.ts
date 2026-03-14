@@ -4,6 +4,10 @@
  * Uses Russell's circumplex model of affect to map (valence, arousal) to
  * discrete mood labels. Mood decays exponentially toward personality-derived
  * baselines.
+ *
+ * Trait mapping uses the 15-trait × 5-level personality system (formality,
+ * warmth, confidence, etc.) to derive emotional baselines. Compound effects
+ * detect trait combinations that produce emergent behaviour.
  */
 
 import type { MoodState, MoodLabel, MoodEventCreate, MoodEvent } from '@secureyeoman/shared';
@@ -11,7 +15,187 @@ import type { SimulationStore } from './simulation-store.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { uuidv7 } from '../utils/crypto.js';
 
-// ── Trait → baseline modifiers ────────────────────────────────────────
+// ── Trait value → mood modifiers (15 traits × 5 levels) ─────────────
+
+/**
+ * Maps each standard trait key to its 5-level valence/arousal modifiers.
+ * Levels are ordered from far-left to far-right as defined in PersonalityEditor.
+ * "balanced" is always neutral (0, 0).
+ */
+export const TRAIT_VALUE_MODIFIERS: Record<string, Record<string, { valence: number; arousal: number }>> = {
+  // Communication
+  formality: {
+    street:      { valence: 0.05, arousal: 0.15 },
+    casual:      { valence: 0.05, arousal: 0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    formal:      { valence: -0.05, arousal: -0.1 },
+    ceremonial:  { valence: -0.05, arousal: -0.15 },
+  },
+  humor: {
+    deadpan:     { valence: -0.05, arousal: -0.15 },
+    dry:         { valence: 0.05, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    witty:       { valence: 0.15, arousal: 0.1 },
+    comedic:     { valence: 0.25, arousal: 0.2 },
+  },
+  verbosity: {
+    terse:       { valence: -0.05, arousal: -0.1 },
+    concise:     { valence: 0, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    detailed:    { valence: 0, arousal: 0.05 },
+    exhaustive:  { valence: -0.05, arousal: 0.1 },
+  },
+  directness: {
+    evasive:     { valence: -0.1, arousal: -0.1 },
+    diplomatic:  { valence: 0.05, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    candid:      { valence: 0, arousal: 0.1 },
+    blunt:       { valence: -0.1, arousal: 0.15 },
+  },
+  // Emotional
+  warmth: {
+    cold:        { valence: -0.25, arousal: -0.15 },
+    reserved:    { valence: -0.1, arousal: -0.1 },
+    balanced:    { valence: 0, arousal: 0 },
+    friendly:    { valence: 0.2, arousal: 0.1 },
+    effusive:    { valence: 0.3, arousal: 0.2 },
+  },
+  empathy: {
+    detached:    { valence: -0.15, arousal: -0.1 },
+    analytical:  { valence: -0.05, arousal: -0.1 },
+    balanced:    { valence: 0, arousal: 0 },
+    empathetic:  { valence: 0.2, arousal: 0.05 },
+    compassionate: { valence: 0.25, arousal: 0.1 },
+  },
+  patience: {
+    brisk:       { valence: -0.1, arousal: 0.15 },
+    efficient:   { valence: -0.05, arousal: 0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    patient:     { valence: 0.1, arousal: -0.1 },
+    nurturing:   { valence: 0.2, arousal: -0.15 },
+  },
+  confidence: {
+    humble:      { valence: 0, arousal: -0.15 },
+    modest:      { valence: 0, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    assertive:   { valence: 0.1, arousal: 0.15 },
+    authoritative: { valence: 0.15, arousal: 0.2 },
+  },
+  // Cognitive
+  creativity: {
+    rigid:       { valence: -0.1, arousal: -0.1 },
+    conventional: { valence: -0.05, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    imaginative: { valence: 0.15, arousal: 0.1 },
+    'avant-garde': { valence: 0.2, arousal: 0.2 },
+  },
+  risk_tolerance: {
+    'risk-averse': { valence: -0.1, arousal: -0.15 },
+    cautious:    { valence: -0.05, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    bold:        { valence: 0.1, arousal: 0.15 },
+    reckless:    { valence: 0.05, arousal: 0.3 },
+  },
+  curiosity: {
+    narrow:      { valence: -0.05, arousal: -0.1 },
+    focused:     { valence: 0, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    curious:     { valence: 0.15, arousal: 0.1 },
+    exploratory: { valence: 0.2, arousal: 0.15 },
+  },
+  skepticism: {
+    gullible:    { valence: 0.05, arousal: -0.1 },
+    trusting:    { valence: 0.1, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    skeptical:   { valence: -0.1, arousal: 0.1 },
+    contrarian:  { valence: -0.15, arousal: 0.2 },
+  },
+  // Professional
+  autonomy: {
+    dependent:   { valence: -0.1, arousal: -0.1 },
+    consultative: { valence: 0, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    proactive:   { valence: 0.1, arousal: 0.1 },
+    autonomous:  { valence: 0.15, arousal: 0.15 },
+  },
+  pedagogy: {
+    'terse-answer': { valence: -0.05, arousal: -0.1 },
+    'answer-focused': { valence: 0, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    explanatory: { valence: 0.1, arousal: 0.05 },
+    socratic:    { valence: 0.15, arousal: 0.1 },
+  },
+  precision: {
+    approximate: { valence: 0, arousal: -0.1 },
+    loose:       { valence: 0, arousal: -0.05 },
+    balanced:    { valence: 0, arousal: 0 },
+    precise:     { valence: 0, arousal: 0.05 },
+    meticulous:  { valence: -0.05, arousal: 0.1 },
+  },
+};
+
+// ── Compound trait effects ──────────────────────────────────────────
+
+export interface CompoundEffect {
+  /** Trait conditions: each key must have one of the listed values */
+  conditions: Record<string, string[]>;
+  /** Additional valence/arousal modifier when all conditions are met */
+  modifier: { valence: number; arousal: number };
+  /** Human-readable description */
+  label: string;
+}
+
+export const COMPOUND_EFFECTS: CompoundEffect[] = [
+  {
+    conditions: { warmth: ['friendly', 'effusive'], humor: ['witty', 'comedic'] },
+    modifier: { valence: 0.1, arousal: 0.1 },
+    label: 'playful',
+  },
+  {
+    conditions: { formality: ['formal', 'ceremonial'], humor: ['witty', 'comedic'] },
+    modifier: { valence: 0.05, arousal: -0.05 },
+    label: 'dry-wit',
+  },
+  {
+    conditions: { warmth: ['friendly', 'effusive'], empathy: ['empathetic', 'compassionate'] },
+    modifier: { valence: 0.1, arousal: -0.05 },
+    label: 'nurturing',
+  },
+  {
+    conditions: { confidence: ['assertive', 'authoritative'], directness: ['candid', 'blunt'] },
+    modifier: { valence: 0, arousal: 0.1 },
+    label: 'commanding',
+  },
+  {
+    conditions: { skepticism: ['skeptical', 'contrarian'], curiosity: ['curious', 'exploratory'] },
+    modifier: { valence: 0, arousal: 0.1 },
+    label: 'investigative',
+  },
+  {
+    conditions: { patience: ['patient', 'nurturing'], pedagogy: ['explanatory', 'socratic'] },
+    modifier: { valence: 0.1, arousal: -0.1 },
+    label: 'mentoring',
+  },
+  {
+    conditions: { warmth: ['cold', 'reserved'], directness: ['candid', 'blunt'] },
+    modifier: { valence: -0.1, arousal: 0.1 },
+    label: 'brusque',
+  },
+];
+
+/**
+ * Check which compound effects are active for a given trait set.
+ */
+export function getActiveCompoundEffects(traits: Record<string, string>): CompoundEffect[] {
+  return COMPOUND_EFFECTS.filter((effect) =>
+    Object.entries(effect.conditions).every(([traitKey, allowedValues]) => {
+      const value = traits[traitKey];
+      return value != null && allowedValues.includes(value);
+    })
+  );
+}
+
+// ── Legacy trait key modifiers (kept for backward compat with free-form traits) ──
 
 export const TRAIT_MOOD_MODIFIERS: Record<string, { valence: number; arousal: number }> = {
   cheerful: { valence: 0.3, arousal: 0.2 },
@@ -67,11 +251,16 @@ export class MoodEngine {
 
   /**
    * Apply a mood-influencing event. Records the event and updates state.
+   * Accepts optional traits to use for initialization if no mood state exists.
    */
-  async applyEvent(personalityId: string, input: MoodEventCreate): Promise<MoodState> {
+  async applyEvent(
+    personalityId: string,
+    input: MoodEventCreate,
+    traits?: Record<string, string>
+  ): Promise<MoodState> {
     let state = await this.store.getMoodState(personalityId);
     if (!state) {
-      state = await this.initializeMood(personalityId, {});
+      state = await this.initializeMood(personalityId, traits ?? {});
     }
 
     const now = Date.now();
@@ -153,21 +342,48 @@ export class MoodEngine {
   }
 
   /**
-   * Derive baseline valence/arousal from personality trait keys.
+   * Derive baseline valence/arousal from personality traits.
+   *
+   * Uses the 15-trait × 5-level system: looks up each trait key + value pair
+   * in TRAIT_VALUE_MODIFIERS. Falls back to TRAIT_MOOD_MODIFIERS for free-form
+   * trait keys (backward compat). Applies compound effects for trait combinations.
    */
   deriveBaseline(traits: Record<string, string>): { valence: number; arousal: number } {
-    const traitKeys = Object.keys(traits).map((k) => k.toLowerCase());
     let totalV = 0;
     let totalA = 0;
     let count = 0;
 
-    for (const key of traitKeys) {
-      const mod = TRAIT_MOOD_MODIFIERS[key];
-      if (mod) {
-        totalV += mod.valence;
-        totalA += mod.arousal;
+    for (const [key, value] of Object.entries(traits)) {
+      const lowerKey = key.toLowerCase();
+      const lowerValue = value.toLowerCase();
+
+      // Primary: look up trait key + value in the structured map
+      const traitLevels = TRAIT_VALUE_MODIFIERS[lowerKey];
+      if (traitLevels) {
+        const mod = traitLevels[lowerValue];
+        if (mod) {
+          totalV += mod.valence;
+          totalA += mod.arousal;
+          count++;
+          continue;
+        }
+      }
+
+      // Fallback: legacy key-based lookup (for free-form traits like "cheerful")
+      const legacyMod = TRAIT_MOOD_MODIFIERS[lowerKey];
+      if (legacyMod) {
+        totalV += legacyMod.valence;
+        totalA += legacyMod.arousal;
         count++;
       }
+    }
+
+    // Apply compound effects
+    const compounds = getActiveCompoundEffects(traits);
+    for (const effect of compounds) {
+      totalV += effect.modifier.valence;
+      totalA += effect.modifier.arousal;
+      count++;
     }
 
     if (count === 0) return { valence: 0, arousal: 0 };

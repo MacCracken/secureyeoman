@@ -45,6 +45,8 @@ import type {
 import { applySkillTrustFilter } from './skill-trust.js';
 import { getCreationTools } from './creation-tools.js';
 import { PersonalityMarkdownSerializer } from './personality-serializer.js';
+import type { MoodEngine } from '../simulation/mood-engine.js';
+import { composeTraitDisposition } from './trait-descriptions.js';
 
 export interface DistillationMetadata {
   activeSkills: { count: number; names: string[] };
@@ -161,6 +163,7 @@ export class SoulManager {
   private integrationManager: IntegrationManager | null = null;
   private strategyStorage: StrategyStorage | null = null;
   private personalityVersionManager: PersonalityVersionManager | null = null;
+  private moodEngine: MoodEngine | null = null;
 
   setPersonalityVersionManager(manager: PersonalityVersionManager): void {
     this.personalityVersionManager = manager;
@@ -172,6 +175,10 @@ export class SoulManager {
 
   setIntegrationManager(mgr: IntegrationManager): void {
     this.integrationManager = mgr;
+  }
+
+  setMoodEngine(engine: MoodEngine): void {
+    this.moodEngine = engine;
   }
 
   setMarketplaceManager(manager: MarketplaceManager): void {
@@ -997,11 +1004,23 @@ export class SoulManager {
 
       const traitEntries = Object.entries(personality.traits);
       if (traitEntries.length > 0) {
-        const traitStr = traitEntries.map(([k, v]) => `${k}: ${v}`).join(', ');
-        soulLines.push(`Traits: ${traitStr}`);
+        const disposition = composeTraitDisposition(personality.traits);
+        soulLines.push('', disposition);
       }
 
       parts.push(soulLines.join('\n'));
+
+      // Mood injection — if mood engine is wired and personality has a mood state
+      if (this.moodEngine) {
+        try {
+          const mood = await this.moodEngine.getMood(personality.id);
+          if (mood) {
+            parts.push(this.moodEngine.composeMoodPromptFragment(mood));
+          }
+        } catch {
+          // silently skip if mood retrieval fails
+        }
+      }
     }
 
     // Date/time context injection (per-personality opt-in)

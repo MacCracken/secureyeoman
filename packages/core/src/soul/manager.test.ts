@@ -1562,7 +1562,7 @@ describe('SoulManager', () => {
       expect(prompt).toContain('Preferred language: Japanese');
     });
 
-    it('includes traits in Soul section', async () => {
+    it('includes traits as Disposition section', async () => {
       const personality = {
         ...PERSONALITY,
         traits: { formality: 'formal', humor: 'dry', verbosity: 'concise' },
@@ -1572,9 +1572,10 @@ describe('SoulManager', () => {
       });
 
       const prompt = await manager.composeSoulPrompt();
-      expect(prompt).toContain('Traits:');
-      expect(prompt).toContain('formality: formal');
-      expect(prompt).toContain('humor: dry');
+      expect(prompt).toContain('## Disposition');
+      expect(prompt).toContain('**formality** (formal)');
+      expect(prompt).toContain('**humor** (dry)');
+      expect(prompt).toContain('**verbosity** (concise)');
     });
 
     it('omits archetypes when personality.includeArchetypes is false', async () => {

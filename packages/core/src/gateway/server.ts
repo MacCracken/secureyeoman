@@ -1847,6 +1847,11 @@ export class GatewayServer {
       const { TrainingExecutor } = await import('../simulation/training-executor.js');
       const simStore = new SimulationStore();
       const moodEngine = new MoodEngine({ store: simStore, logger: this.getLogger() });
+
+      // Wire mood engine into soul manager for prompt-time mood injection
+      const soulMgr = this.secureYeoman.getSoulManager();
+      if (soulMgr) soulMgr.setMoodEngine(moodEngine);
+
       const spatialEngine = new SpatialEngine({
         store: simStore,
         logger: this.getLogger(),

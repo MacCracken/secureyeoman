@@ -49,5 +49,6 @@ Consolidated architecture documents covering the core system design.
 | 038 | [Simulation Engine](038-simulation-engine-complete.md) | Accepted |
 | 039 | [Agent Binary (Tier 2.5)](039-agent-binary-tier.md) | Accepted |
 | 040 | [Proactive Config: Body → Brain](040-proactive-config-body-to-brain.md) | Accepted |
+| 041 | [Personality Traits & Mood Engine](041-personality-traits-mood-engine.md) | Accepted |
 
 Numbers 024, 035, 036, 037 were consolidated into 023, 033, and 034.

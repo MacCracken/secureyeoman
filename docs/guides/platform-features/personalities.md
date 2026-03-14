@@ -92,6 +92,28 @@ Personalities use a disposition system with 15 standard trait keys, each on a 5-
 
 Custom traits beyond these 15 can be added as additional key-value pairs.
 
+#### How Traits Affect Behavior
+
+Traits influence AI behavior through two channels:
+
+1. **Disposition prompting** — Non-balanced traits generate a `## Disposition` section in the system prompt with per-trait behavioral instructions (e.g. `formality: formal` → "Use professional, structured language. Avoid slang and contractions."). Balanced traits are omitted (neutral, no special instruction).
+
+2. **Mood baseline** — Trait values are mapped to valence/arousal modifiers via the mood engine (Russell's circumplex model). A personality with `warmth: effusive` + `confidence: assertive` will have a warm, energetic emotional baseline, while `warmth: cold` + `directness: blunt` produces a brusque baseline.
+
+#### Compound Trait Effects
+
+Certain trait combinations produce emergent personality effects beyond what individual traits provide:
+
+| Combination | Effect | Description |
+|-------------|--------|-------------|
+| warm + humorous | Playful | Naturally upbeat and fun-loving |
+| formal + humorous | Dry wit | Clever humor within a structured register |
+| warm + empathetic | Nurturing | Deeply supportive and caring |
+| confident + direct | Commanding | Authoritative and decisive |
+| skeptical + curious | Investigative | Probing and analytical |
+| patient + pedagogical | Mentoring | Guides learning at the user's pace |
+| cold + direct | Brusque | Efficient but impersonal |
+
 ### Sections
 
 | Section | Required | Description |

@@ -19,15 +19,33 @@ Moved per-personality proactive assistance configuration from the Body domain (`
 - Updated manager, presets (T.Ron), soul-routes defaults to use `brainConfig`
 - Existing data auto-migrated: `body->'proactiveConfig'` → `brain_config` on first startup
 
-### Personality Traits & Mood Engine — Backlog Items Added
+### Personality Traits & Mood Engine Overhaul (ADR-041)
 
-Audit of the personality traits and mood engine systems identified 5 issues added to the engineering backlog:
+Complete overhaul of the personality traits and mood engine systems — all 5 identified issues resolved.
 
-- Mood engine trait→mood vocabulary mismatch (trait keys never match `TRAIT_MOOD_MODIFIERS`)
-- `composeMoodPromptFragment()` exists but is never injected into system prompts
-- Trait prompt injection is a superficial flat string with no behavioral guidance
-- `applyEvent` falls back to empty traits instead of fetching actual personality traits
-- Trait compound effects (emergent behavior from trait combinations) not implemented
+**Trait→Mood Vocabulary Fix**
+- Created `TRAIT_VALUE_MODIFIERS` map: 15 traits × 5 levels → valence/arousal modifiers
+- `deriveBaseline()` now resolves trait key + value pairs (e.g. `warmth: "effusive"` → `{v: 0.3, a: 0.2}`)
+- Legacy free-form trait keys (`cheerful`, `energetic`) still supported via fallback to `TRAIT_MOOD_MODIFIERS`
+
+**Rich Trait Prompt Injection**
+- New `trait-descriptions.ts` with `composeTraitDisposition()` — generates `## Disposition` section
+- Each non-balanced trait produces a specific behavioral sentence (e.g. "Use professional, structured language.")
+- Replaces the flat `Traits: formality: formal, humor: balanced` line
+
+**Mood Prompt Injection**
+- Added `setMoodEngine()` to `SoulManager` — optional `MoodEngine` dependency
+- `composeSoulPrompt()` now appends mood state fragment when wired
+- Wired in `server.ts` during simulation initialization
+
+**applyEvent Trait Fallback**
+- `applyEvent()` now accepts optional `traits` parameter for initialization fallback
+
+**Compound Trait Effects**
+- 7 compound effects: playful, dry-wit, nurturing, commanding, investigative, mentoring, brusque
+- `getActiveCompoundEffects()` detects active combinations; `deriveBaseline()` folds them into baseline
+
+**Tests**: 26 new tests across `mood-engine.test.ts` (trait value mapping, compound effects, legacy fallback) and `trait-descriptions.test.ts` (disposition composition, all 15 traits, edge cases)
 
 ### Engineering Backlog — SQL Migration Consolidation Marked Complete
 

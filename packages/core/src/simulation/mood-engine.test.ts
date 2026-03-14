@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MoodEngine, getMoodLabel, TRAIT_MOOD_MODIFIERS } from './mood-engine.js';
+import {
+  MoodEngine,
+  getMoodLabel,
+  TRAIT_MOOD_MODIFIERS,
+  TRAIT_VALUE_MODIFIERS,
+  COMPOUND_EFFECTS,
+  getActiveCompoundEffects,
+} from './mood-engine.js';
 import type { SimulationStore } from './simulation-store.js';
 import type { MoodState } from '@secureyeoman/shared';
 import { createNoopLogger } from '../logging/logger.js';
@@ -48,7 +55,16 @@ describe('MoodEngine', () => {
       expect(store.upsertMoodState).toHaveBeenCalledOnce();
     });
 
-    it('derives baseline from traits', async () => {
+    it('derives baseline from standard traits (15-trait system)', async () => {
+      const mood = await engine.initializeMood('p-1', {
+        warmth: 'effusive',
+        confidence: 'assertive',
+      });
+      expect(mood.baselineValence).toBeGreaterThan(0);
+      expect(mood.baselineArousal).toBeGreaterThan(0);
+    });
+
+    it('derives baseline from legacy free-form traits', async () => {
       const mood = await engine.initializeMood('p-1', { cheerful: 'yes', energetic: 'yes' });
       expect(mood.baselineValence).toBeGreaterThan(0);
       expect(mood.baselineArousal).toBeGreaterThan(0);
@@ -105,7 +121,6 @@ describe('MoodEngine', () => {
     });
 
     it('initializes mood if none exists', async () => {
-      // getMoodState returns null, then returns the newly created state on second call
       const freshMood = makeMoodState();
       (store.getMoodState as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce(null)
@@ -123,6 +138,20 @@ describe('MoodEngine', () => {
       expect(store.upsertMoodState).toHaveBeenCalled();
       expect(result.valence).toBe(0.1);
     });
+
+    it('uses provided traits for initialization fallback', async () => {
+      (store.getMoodState as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+      await engine.applyEvent(
+        'p-1',
+        { eventType: 'test', valenceDelta: 0, arousalDelta: 0, source: 'test', metadata: {} },
+        { warmth: 'effusive', confidence: 'assertive' }
+      );
+
+      // Should have initialized with the provided traits (non-zero baseline)
+      const upsertCall = (store.upsertMoodState as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(upsertCall.baselineValence).toBeGreaterThan(0);
+    });
   });
 
   describe('decayMood', () => {
@@ -139,9 +168,7 @@ describe('MoodEngine', () => {
 
       const result = await engine.decayMood('p-1');
       expect(result).not.toBeNull();
-      // valence: 0.8 + (0 - 0.8) * 0.1 = 0.72
       expect(result!.valence).toBeCloseTo(0.72, 5);
-      // arousal: 0.6 + (0.2 - 0.6) * 0.1 = 0.56
       expect(result!.arousal).toBeCloseTo(0.56, 5);
     });
 
@@ -180,21 +207,153 @@ describe('MoodEngine', () => {
   });
 
   describe('deriveBaseline', () => {
-    it('returns zero for unknown traits', () => {
-      const result = engine.deriveBaseline({ unknown: 'yes' });
+    it('returns zero for empty traits', () => {
+      const result = engine.deriveBaseline({});
       expect(result.valence).toBe(0);
       expect(result.arousal).toBe(0);
     });
 
-    it('averages multiple traits', () => {
-      const result = engine.deriveBaseline({ cheerful: 'yes', serious: 'yes' });
-      const expected = {
-        valence: (TRAIT_MOOD_MODIFIERS.cheerful.valence + TRAIT_MOOD_MODIFIERS.serious.valence) / 2,
-        arousal: (TRAIT_MOOD_MODIFIERS.cheerful.arousal + TRAIT_MOOD_MODIFIERS.serious.arousal) / 2,
-      };
+    it('returns zero for unknown traits', () => {
+      const result = engine.deriveBaseline({ unknown: 'mystery' });
+      expect(result.valence).toBe(0);
+      expect(result.arousal).toBe(0);
+    });
+
+    it('maps standard trait values correctly (warmth: effusive)', () => {
+      const result = engine.deriveBaseline({ warmth: 'effusive' });
+      const expected = TRAIT_VALUE_MODIFIERS.warmth.effusive;
       expect(result.valence).toBeCloseTo(expected.valence, 5);
       expect(result.arousal).toBeCloseTo(expected.arousal, 5);
     });
+
+    it('maps standard trait values correctly (confidence: authoritative)', () => {
+      const result = engine.deriveBaseline({ confidence: 'authoritative' });
+      const expected = TRAIT_VALUE_MODIFIERS.confidence.authoritative;
+      expect(result.valence).toBeCloseTo(expected.valence, 5);
+      expect(result.arousal).toBeCloseTo(expected.arousal, 5);
+    });
+
+    it('returns neutral for balanced traits', () => {
+      const result = engine.deriveBaseline({
+        formality: 'balanced',
+        humor: 'balanced',
+        warmth: 'balanced',
+      });
+      expect(result.valence).toBe(0);
+      expect(result.arousal).toBe(0);
+    });
+
+    it('averages multiple standard traits', () => {
+      const result = engine.deriveBaseline({
+        warmth: 'effusive',
+        confidence: 'humble',
+      });
+      const warmthMod = TRAIT_VALUE_MODIFIERS.warmth.effusive;
+      const confMod = TRAIT_VALUE_MODIFIERS.confidence.humble;
+      // Two traits, averaged
+      expect(result.valence).toBeCloseTo((warmthMod.valence + confMod.valence) / 2, 5);
+    });
+
+    it('falls back to legacy modifiers for free-form trait keys', () => {
+      const result = engine.deriveBaseline({ cheerful: 'yes' });
+      expect(result.valence).toBeCloseTo(TRAIT_MOOD_MODIFIERS.cheerful.valence, 5);
+      expect(result.arousal).toBeCloseTo(TRAIT_MOOD_MODIFIERS.cheerful.arousal, 5);
+    });
+
+    it('mixes standard and legacy traits', () => {
+      const result = engine.deriveBaseline({
+        warmth: 'friendly',
+        cheerful: 'yes',
+      });
+      // Both should contribute
+      expect(result.valence).toBeGreaterThan(0);
+    });
+
+    it('applies compound effects for matching trait combinations', () => {
+      // warmth: friendly + humor: witty → "playful" compound effect
+      const withCompound = engine.deriveBaseline({ warmth: 'friendly', humor: 'witty' });
+      // Same traits but without matching compound (warmth: balanced + humor: witty)
+      const withoutCompound = engine.deriveBaseline({ warmth: 'balanced', humor: 'witty' });
+      // Compound should boost valence
+      expect(withCompound.valence).toBeGreaterThan(withoutCompound.valence);
+    });
+
+    it('handles cold + blunt brusque compound', () => {
+      const result = engine.deriveBaseline({ warmth: 'cold', directness: 'blunt' });
+      // Should be negative valence (brusque compound + cold + blunt base modifiers)
+      expect(result.valence).toBeLessThan(0);
+    });
+  });
+});
+
+describe('getActiveCompoundEffects', () => {
+  it('returns empty for balanced traits', () => {
+    const effects = getActiveCompoundEffects({ warmth: 'balanced', humor: 'balanced' });
+    expect(effects).toHaveLength(0);
+  });
+
+  it('detects playful compound (friendly + witty)', () => {
+    const effects = getActiveCompoundEffects({ warmth: 'friendly', humor: 'witty' });
+    expect(effects.some((e) => e.label === 'playful')).toBe(true);
+  });
+
+  it('detects nurturing compound (friendly + empathetic)', () => {
+    const effects = getActiveCompoundEffects({ warmth: 'effusive', empathy: 'compassionate' });
+    expect(effects.some((e) => e.label === 'nurturing')).toBe(true);
+  });
+
+  it('detects commanding compound (assertive + candid)', () => {
+    const effects = getActiveCompoundEffects({ confidence: 'authoritative', directness: 'blunt' });
+    expect(effects.some((e) => e.label === 'commanding')).toBe(true);
+  });
+
+  it('does not match partial conditions', () => {
+    const effects = getActiveCompoundEffects({ warmth: 'friendly', humor: 'balanced' });
+    expect(effects.some((e) => e.label === 'playful')).toBe(false);
+  });
+});
+
+describe('TRAIT_VALUE_MODIFIERS', () => {
+  it('covers all 15 standard traits', () => {
+    const expectedTraits = [
+      'formality', 'humor', 'verbosity', 'directness',
+      'warmth', 'empathy', 'patience', 'confidence',
+      'creativity', 'risk_tolerance', 'curiosity', 'skepticism',
+      'autonomy', 'pedagogy', 'precision',
+    ];
+    for (const trait of expectedTraits) {
+      expect(TRAIT_VALUE_MODIFIERS).toHaveProperty(trait);
+    }
+  });
+
+  it('each trait has exactly 5 levels', () => {
+    for (const [trait, levels] of Object.entries(TRAIT_VALUE_MODIFIERS)) {
+      expect(Object.keys(levels)).toHaveLength(5);
+      expect(levels).toHaveProperty('balanced');
+    }
+  });
+
+  it('balanced is always neutral (0, 0)', () => {
+    for (const [, levels] of Object.entries(TRAIT_VALUE_MODIFIERS)) {
+      expect(levels.balanced.valence).toBe(0);
+      expect(levels.balanced.arousal).toBe(0);
+    }
+  });
+});
+
+describe('COMPOUND_EFFECTS', () => {
+  it('has at least 5 defined compound effects', () => {
+    expect(COMPOUND_EFFECTS.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('each effect has conditions, modifier, and label', () => {
+    for (const effect of COMPOUND_EFFECTS) {
+      expect(effect.conditions).toBeDefined();
+      expect(Object.keys(effect.conditions).length).toBeGreaterThanOrEqual(2);
+      expect(effect.modifier).toHaveProperty('valence');
+      expect(effect.modifier).toHaveProperty('arousal');
+      expect(effect.label).toBeTruthy();
+    }
   });
 });
 
