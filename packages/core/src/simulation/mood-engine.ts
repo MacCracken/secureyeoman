@@ -187,9 +187,14 @@ export const COMPOUND_EFFECTS: CompoundEffect[] = [
  * Check which compound effects are active for a given trait set.
  */
 export function getActiveCompoundEffects(traits: Record<string, string>): CompoundEffect[] {
+  // Build a lowercased lookup for case-insensitive matching
+  const lower: Record<string, string> = {};
+  for (const [k, v] of Object.entries(traits)) {
+    lower[k.toLowerCase()] = v.toLowerCase();
+  }
   return COMPOUND_EFFECTS.filter((effect) =>
     Object.entries(effect.conditions).every(([traitKey, allowedValues]) => {
-      const value = traits[traitKey];
+      const value = lower[traitKey];
       return value != null && allowedValues.includes(value);
     })
   );
@@ -378,18 +383,23 @@ export class MoodEngine {
       }
     }
 
-    // Apply compound effects
+    if (count === 0) return { valence: 0, arousal: 0 };
+
+    // Average the per-trait contributions first
+    let avgV = totalV / count;
+    let avgA = totalA / count;
+
+    // Apply compound effects as additive bonuses (not averaged in — they're bonuses,
+    // not additional "traits", so they shouldn't dilute per-trait contributions)
     const compounds = getActiveCompoundEffects(traits);
     for (const effect of compounds) {
-      totalV += effect.modifier.valence;
-      totalA += effect.modifier.arousal;
-      count++;
+      avgV += effect.modifier.valence;
+      avgA += effect.modifier.arousal;
     }
 
-    if (count === 0) return { valence: 0, arousal: 0 };
     return {
-      valence: clamp(totalV / count, -1, 1),
-      arousal: clamp(totalA / count, 0, 1),
+      valence: clamp(avgV, -1, 1),
+      arousal: clamp(avgA, 0, 1),
     };
   }
 }

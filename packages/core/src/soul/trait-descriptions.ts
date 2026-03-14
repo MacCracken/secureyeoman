@@ -107,14 +107,15 @@ export function composeTraitDisposition(traits: Record<string, string>): string 
   const lines: string[] = ['## Disposition'];
 
   for (const [key, value] of Object.entries(traits)) {
+    const lowerKey = key.toLowerCase();
     const lowerValue = value.toLowerCase();
     if (lowerValue === 'balanced') continue;
 
-    const traitBehaviors = TRAIT_BEHAVIORS[key];
+    const traitBehaviors = TRAIT_BEHAVIORS[lowerKey];
     if (traitBehaviors) {
       const description = traitBehaviors[lowerValue];
       if (description) {
-        const label = key.replace(/_/g, ' ');
+        const label = lowerKey.replace(/_/g, ' ');
         lines.push(`- **${label}** (${value}): ${description}`);
       }
     }

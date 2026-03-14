@@ -822,24 +822,6 @@ describe('isPersonalityWithinActiveHours', () => {
         exposeBrowser: false,
         exposeDesktopControl: false,
       },
-      proactiveConfig: {
-        enabled: false,
-        builtins: {
-          dailyStandup: false,
-          weeklySummary: false,
-          contextualFollowup: false,
-          integrationHealthAlert: false,
-          securityAlertDigest: false,
-        },
-        builtinModes: {
-          dailyStandup: 'auto',
-          weeklySummary: 'suggest',
-          contextualFollowup: 'suggest',
-          integrationHealthAlert: 'auto',
-          securityAlertDigest: 'suggest',
-        },
-        learning: { enabled: true, minConfidence: 0.7 },
-      },
       activeHours: {
         enabled: false,
         start: '09:00',

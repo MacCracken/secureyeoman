@@ -40,6 +40,8 @@ const PERSONALITY = {
       exposeWebSearch: false,
       exposeBrowser: false,
     },
+  },
+  brainConfig: {
     proactiveConfig: {
       enabled: false,
       builtins: {},

@@ -53,7 +53,6 @@ function makePersonality(automationLevel: string = 'supervised_auto'): Personali
       selectedServers: [],
       selectedIntegrations: [],
       mcpFeatures: {} as any,
-      proactiveConfig: { enabled: false, triggers: [] } as any,
       activeHours: { enabled: false, timezone: 'UTC', schedule: [] } as any,
       omnipresentMind: false,
       resourcePolicy: {

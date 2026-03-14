@@ -77,4 +77,10 @@ describe('composeTraitDisposition', () => {
     expect(result).toContain('authoritative');
     expect(result).toContain('blunt');
   });
+
+  it('handles case-insensitive trait keys and values', () => {
+    const result = composeTraitDisposition({ Warmth: 'Friendly', Humor: 'Witty' });
+    expect(result).toContain('**warmth** (Friendly)');
+    expect(result).toContain('**humor** (Witty)');
+  });
 });

@@ -33,6 +33,7 @@ const TRACKED_FIELDS = [
   'empathyResonance',
   'avatarUrl',
   'body',
+  'brainConfig',
 ] as const;
 
 function detectChangedFields(a: Record<string, unknown>, b: Record<string, unknown>): string[] {

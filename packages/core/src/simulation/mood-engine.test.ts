@@ -283,6 +283,25 @@ describe('MoodEngine', () => {
       // Should be negative valence (brusque compound + cold + blunt base modifiers)
       expect(result.valence).toBeLessThan(0);
     });
+
+    it('compound effects are additive bonuses, not averaged in', () => {
+      // With 2 traits that trigger a compound, the compound should boost the result
+      // without diluting the per-trait average (i.e. compound doesn't increase divisor)
+      const warmthMod = TRAIT_VALUE_MODIFIERS.warmth.friendly;
+      const humorMod = TRAIT_VALUE_MODIFIERS.humor.witty;
+      const avgV = (warmthMod.valence + humorMod.valence) / 2;
+
+      const result = engine.deriveBaseline({ warmth: 'friendly', humor: 'witty' });
+      // Compound adds +0.1 valence; result should be avgV + 0.1 (not (sum+0.1)/3)
+      expect(result.valence).toBeCloseTo(avgV + 0.1, 5);
+    });
+
+    it('handles case-insensitive trait keys and values', () => {
+      const lower = engine.deriveBaseline({ warmth: 'friendly' });
+      const upper = engine.deriveBaseline({ Warmth: 'Friendly' });
+      expect(lower.valence).toBeCloseTo(upper.valence, 5);
+      expect(lower.arousal).toBeCloseTo(upper.arousal, 5);
+    });
   });
 });
 
@@ -310,6 +329,11 @@ describe('getActiveCompoundEffects', () => {
   it('does not match partial conditions', () => {
     const effects = getActiveCompoundEffects({ warmth: 'friendly', humor: 'balanced' });
     expect(effects.some((e) => e.label === 'playful')).toBe(false);
+  });
+
+  it('handles case-insensitive keys and values', () => {
+    const effects = getActiveCompoundEffects({ Warmth: 'Friendly', Humor: 'Witty' });
+    expect(effects.some((e) => e.label === 'playful')).toBe(true);
   });
 });
 
