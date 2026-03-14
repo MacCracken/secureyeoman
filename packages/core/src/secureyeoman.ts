@@ -385,20 +385,71 @@ export class SecureYeoman {
         try {
           const persistedKey = await this.brainStorage!.getMeta('license:key');
           if (persistedKey) {
-            process.env[this.config.licensing.licenseKeyEnv] = persistedKey;
-            this.licenseManager = new LicenseManager(
-              persistedKey,
-              this.config.licensing.enforcement
-            );
-            this.logger.info(
-              {
-                tier: this.licenseManager.getTier(),
-              },
-              'License key loaded from brain.meta'
-            );
+            const keyType = await this.brainStorage!.getMeta('license:key-type');
+
+            if (keyType === 'lemonsqueezy') {
+              // LS key — restore from cached claims (no API call at boot)
+              const cachedStr = await this.brainStorage!.getMeta('license:ls-cache');
+              if (cachedStr) {
+                try {
+                  const cached = JSON.parse(cachedStr);
+                  if (cached?.valid && cached?.claims) {
+                    process.env[this.config.licensing.licenseKeyEnv] = persistedKey;
+                    this.licenseManager = LicenseManager.fromClaims(
+                      cached.claims,
+                      this.config.licensing.enforcement
+                    );
+                    this.logger.info(
+                      { tier: this.licenseManager.getTier() },
+                      'LemonSqueezy license loaded from cache'
+                    );
+                  }
+                } catch {
+                  // Corrupt cache — fall through to community tier
+                }
+              }
+            } else {
+              // Ed25519 key — offline validation
+              process.env[this.config.licensing.licenseKeyEnv] = persistedKey;
+              this.licenseManager = new LicenseManager(
+                persistedKey,
+                this.config.licensing.enforcement
+              );
+              this.logger.info(
+                { tier: this.licenseManager.getTier() },
+                'License key loaded from brain.meta'
+              );
+            }
           }
         } catch {
           // Non-fatal: license remains at community tier
+        }
+      }
+
+      // Step 5.7.0b: Grace period — record install date on first boot, configure grace window
+      if (this.config.licensing.gracePeriodDays > 0) {
+        try {
+          let installedAt = await this.brainStorage!.getMeta('license:installed-at');
+          if (!installedAt) {
+            installedAt = new Date().toISOString();
+            await this.brainStorage!.setMeta('license:installed-at', installedAt);
+            this.logger.info({ installedAt }, 'First install — grace period started');
+          }
+          this.licenseManager.setGracePeriod(installedAt, this.config.licensing.gracePeriodDays);
+          const gp = this.licenseManager.getGracePeriod();
+          if (gp?.active) {
+            this.logger.info(
+              { daysRemaining: gp.daysRemaining, expiresAt: gp.expiresAt },
+              'License grace period active — all features unlocked'
+            );
+          } else if (gp && !this.licenseManager.isValid()) {
+            this.logger.warn(
+              { expiredAt: gp.expiresAt },
+              'License grace period expired — enforcement active'
+            );
+          }
+        } catch {
+          // Non-fatal: grace period unavailable, enforcement follows config flag
         }
       }
 
@@ -1817,6 +1868,16 @@ export class SecureYeoman {
     this.ensureInitialized();
     this.licenseManager = new LicenseManager(key, this.config!.licensing.enforcement);
     this.logger?.info({ tier: this.licenseManager.getTier() }, 'License key reloaded');
+  }
+
+  /**
+   * Reload license from pre-validated claims (e.g. from LemonSqueezy API validation).
+   * Creates a LicenseManager with the claims directly, bypassing Ed25519 signature check.
+   */
+  reloadLicenseKeyFromClaims(claims: import('./licensing/license-manager.js').LicenseClaims): void {
+    this.ensureInitialized();
+    this.licenseManager = LicenseManager.fromClaims(claims, this.config!.licensing.enforcement);
+    this.logger?.info({ tier: this.licenseManager.getTier() }, 'License key reloaded from claims');
   }
 
   // ------------------------------------------------------------------

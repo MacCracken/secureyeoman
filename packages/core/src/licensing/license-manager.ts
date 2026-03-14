@@ -137,10 +137,24 @@ MCowBQYDK2VwAyEAwlM7v9KTffJ5T67OtcZLenLdq4HfxL3gosI1q8T8syc=
 
 // ── LicenseManager ───────────────────────────────────────────────────────────
 
+export interface GracePeriodState {
+  /** ISO timestamp of first install */
+  installedAt: string;
+  /** Grace period duration in days */
+  gracePeriodDays: number;
+  /** ISO timestamp when grace period expires */
+  expiresAt: string;
+  /** Days remaining in grace period (0 if expired) */
+  daysRemaining: number;
+  /** Whether the grace period is currently active (features unlocked) */
+  active: boolean;
+}
+
 export class LicenseManager {
   private claims: LicenseClaims | null = null;
   private parseError: string | null = null;
   private enforcementEnabled: boolean;
+  private gracePeriod: GracePeriodState | null = null;
 
   constructor(licenseKey?: string, enforcement?: boolean) {
     this.enforcementEnabled =
@@ -198,6 +212,17 @@ export class LicenseManager {
     return claims;
   }
 
+  /**
+   * Create a LicenseManager from pre-validated claims (e.g. from LemonSqueezy API).
+   * Skips Ed25519 signature verification since claims were already validated externally.
+   */
+  static fromClaims(claims: LicenseClaims, enforcement?: boolean): LicenseManager {
+    const mgr = new LicenseManager(undefined, enforcement);
+    mgr.claims = claims;
+    mgr.parseError = null;
+    return mgr;
+  }
+
   /** Returns the license tier: 'enterprise', 'pro', or 'community'. */
   getTier(): LicenseTier {
     return this.claims?.tier ?? 'community';
@@ -210,18 +235,54 @@ export class LicenseManager {
     return this.claims.features.includes(feature);
   }
 
-  /** Whether license enforcement is active (env SECUREYEOMAN_LICENSE_ENFORCEMENT=true). */
+  /**
+   * Set grace period state from persisted install date.
+   * Called during boot after reading install date from brain.meta.
+   */
+  setGracePeriod(installedAt: string, gracePeriodDays: number): void {
+    const installDate = new Date(installedAt);
+    const expiresAt = new Date(installDate.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000);
+    const now = new Date();
+    const msRemaining = Math.max(0, expiresAt.getTime() - now.getTime());
+    const daysRemaining = Math.ceil(msRemaining / (24 * 60 * 60 * 1000));
+
+    this.gracePeriod = {
+      installedAt,
+      gracePeriodDays,
+      expiresAt: expiresAt.toISOString(),
+      daysRemaining,
+      active: daysRemaining > 0,
+    };
+  }
+
+  /** Get grace period state, if configured. */
+  getGracePeriod(): GracePeriodState | null {
+    return this.gracePeriod;
+  }
+
+  /**
+   * Whether license enforcement is effectively active.
+   * Enforcement is suppressed during an active grace period (even if the flag is true),
+   * UNLESS a valid license key is already applied (no need to suppress).
+   */
   isEnforcementEnabled(): boolean {
-    return this.enforcementEnabled;
+    // If they have a valid license, enforcement status doesn't matter for gating
+    // but we still report it accurately
+    if (!this.enforcementEnabled) return false;
+
+    // Grace period suppresses enforcement for unlicensed instances
+    if (this.gracePeriod?.active && !this.isValid()) return false;
+
+    return true;
   }
 
   /**
    * Returns true if the feature is allowed:
-   * - When enforcement is disabled (default), always true.
-   * - When enforcement is enabled, delegates to hasFeature().
+   * - When enforcement is disabled or grace period is active, always true.
+   * - When enforcement is enabled (post-grace), delegates to hasFeature().
    */
   isFeatureAllowed(feature: LicensedFeature): boolean {
-    if (!this.enforcementEnabled) return true;
+    if (!this.isEnforcementEnabled()) return true;
     return this.hasFeature(feature);
   }
 
@@ -252,7 +313,14 @@ export class LicenseManager {
       licenseId: claims?.licenseId ?? null,
       expiresAt: claims?.exp ? new Date(claims.exp * 1000).toISOString() : null,
       error: this.parseError,
-      enforcementEnabled: this.enforcementEnabled,
+      enforcementEnabled: this.isEnforcementEnabled(),
+      gracePeriod: this.gracePeriod
+        ? {
+            active: this.gracePeriod.active,
+            daysRemaining: this.gracePeriod.daysRemaining,
+            expiresAt: this.gracePeriod.expiresAt,
+          }
+        : null,
     };
   }
 }

@@ -2,8 +2,12 @@
  * LemonSqueezy checkout overlay hook.
  *
  * Loads lemon.js, opens the checkout overlay, and handles the success event.
- * After a successful purchase, polls the licensing service for the minted key
- * and auto-applies it to the SY instance.
+ * After a successful purchase, retrieves the license key from the LemonSqueezy
+ * checkout event and auto-applies it to the SY instance.
+ *
+ * Supports two flows:
+ *   1. Direct: LS checkout returns the license key in the success event
+ *   2. Fallback: Poll the licensing service for the key (legacy sy-licensing flow)
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,7 +26,9 @@ declare global {
 
 interface LemonEvent {
   event: string;
-  data?: { order?: { data?: { id?: string } } };
+  data?: {
+    order?: { data?: { id?: string; attributes?: { urls?: { license_key?: string } } } };
+  };
 }
 
 /** Checkout URLs per tier. Set via env vars at build time. */
@@ -32,7 +38,7 @@ const CHECKOUT_URLS = {
   enterprise: import.meta.env.VITE_LEMONSQUEEZY_ENTERPRISE_URL ?? '',
 };
 
-/** Licensing service base URL. */
+/** Licensing service base URL (optional — only needed for legacy polling flow). */
 const LICENSING_API = import.meta.env.VITE_LICENSING_API_URL ?? '';
 
 export type CheckoutTier = 'pro' | 'solopreneur' | 'enterprise';
@@ -83,13 +89,7 @@ export function useLemonCheckout() {
       window.LemonSqueezy.Setup({
         eventHandler: (event: LemonEvent) => {
           if (event.event === 'Checkout.Success') {
-            const orderId = event.data?.order?.data?.id;
-            if (orderId && LICENSING_API) {
-              void pollForLicenseKey(orderId);
-            } else {
-              setIsLoading(false);
-              // No licensing API configured — user will need to apply key manually
-            }
+            void handleCheckoutSuccess(event);
           }
         },
       });
@@ -101,7 +101,31 @@ export function useLemonCheckout() {
     []
   );
 
-  // Poll the licensing service for the minted key after purchase
+  async function handleCheckoutSuccess(event: LemonEvent): Promise<void> {
+    // Try to get the license key directly from the LS checkout event
+    const licenseKey = event.data?.order?.data?.attributes?.urls?.license_key;
+    if (licenseKey) {
+      try {
+        await setLicenseKey(licenseKey);
+        await refresh();
+        setIsLoading(false);
+        return;
+      } catch {
+        // Fall through to polling if direct application fails
+      }
+    }
+
+    // Fallback: poll the licensing service (legacy sy-licensing flow)
+    const orderId = event.data?.order?.data?.id;
+    if (orderId && LICENSING_API) {
+      await pollForLicenseKey(orderId);
+    } else {
+      setIsLoading(false);
+      setError('Purchase successful! Apply your license key from the confirmation email.');
+    }
+  }
+
+  // Poll the licensing service for the key after purchase (legacy fallback)
   async function pollForLicenseKey(orderId: string): Promise<void> {
     const maxAttempts = 10;
     const delayMs = 2000;
@@ -114,7 +138,6 @@ export function useLemonCheckout() {
         if (res.ok) {
           const data = (await res.json()) as { licenseKey?: string };
           if (data.licenseKey) {
-            // Auto-apply the key to this SY instance
             await setLicenseKey(data.licenseKey);
             await refresh();
             setIsLoading(false);
@@ -128,7 +151,7 @@ export function useLemonCheckout() {
     }
 
     setIsLoading(false);
-    setError('License key is being generated. Check back in a moment or apply it manually.');
+    setError('License key is being generated. Check your email or apply it manually.');
   }
 
   const isConfigured = Boolean(CHECKOUT_URLS.pro || CHECKOUT_URLS.enterprise);

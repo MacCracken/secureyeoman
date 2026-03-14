@@ -86,11 +86,27 @@ curl https://localhost:18789/api/v1/license/status \
 
 ---
 
+## Trial Period
+
+New installations include a **45-day grace period** during which all features are unlocked, regardless of the enforcement configuration. This gives you time to evaluate Pro and Enterprise features before deciding whether to purchase a license.
+
+- The grace period starts automatically on first boot
+- The dashboard shows a trial banner with the number of days remaining
+- After the grace period expires, unlicensed features are gated (if enforcement is enabled)
+- Applying a valid license key at any time — during or after the trial — unlocks features permanently
+
+The grace period duration is configurable via `licensing.gracePeriodDays` in your system config (default: 45, set to 0 to disable).
+
+---
+
 ## Purchasing a Commercial License
 
-Contact the project maintainers to purchase a commercial license key. Keys encode your organisation name, seat count, enabled features, and optional expiry date.
+Purchase a license through the in-app checkout (Settings → License → Upgrade) or via the LemonSqueezy store page. After purchase:
 
-Keys are validated entirely offline — no network call is made, no telemetry is sent.
+- **In-app checkout**: License key is applied automatically
+- **External purchase**: You'll receive your license key via email — paste it into Settings → License or set it via the CLI/API
+
+Keys are validated via the LemonSqueezy API on first use, then cached locally for offline resilience (24-hour refresh cycle, 7-day offline grace). Ed25519 self-signed keys (issued via CLI) are validated entirely offline.
 
 ---
 

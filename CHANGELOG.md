@@ -47,6 +47,44 @@ Complete overhaul of the personality traits and mood engine systems — all 5 id
 
 **Tests**: 26 new tests across `mood-engine.test.ts` (trait value mapping, compound effects, legacy fallback) and `trait-descriptions.test.ts` (disposition composition, all 15 traits, edge cases)
 
+### License Grace Period — 45-Day Trial
+
+Added a configurable grace period (default 45 days) from first install. During the grace period, all features are unlocked regardless of the enforcement flag, giving users time to evaluate before licensing is required.
+
+- `gracePeriodDays` config option in `LicensingConfigSchema` (0 = disable, default 45)
+- Install date recorded in `brain.meta` on first boot (`license:installed-at`)
+- `LicenseManager.setGracePeriod()` calculates remaining days and suppresses enforcement
+- `isEnforcementEnabled()` returns `false` during active grace period (unless a valid key exists)
+- `toStatusObject()` includes `gracePeriod: { active, daysRemaining, expiresAt }` for dashboard
+- Dashboard `LicenseCard` shows trial banner with days remaining and post-expiry warning
+- 7 new tests covering grace period active/expired, enforcement interaction, and status output
+
+### Licensing Simplification — LemonSqueezy Direct Key Validation
+
+Simplified the licensing architecture to use LemonSqueezy's built-in license key generation and API validation instead of self-minting Ed25519 keys.
+
+**New: LemonSqueezy Validator** (`lemonsqueezy-validator.ts`)
+- Validates LS license keys via `POST /v1/licenses/validate` API
+- Activates keys via `POST /v1/licenses/activate` for instance tracking
+- Local caching with 24h TTL and 7-day offline grace period
+- Auto-detects key type: LS keys (UUID format) vs Ed25519 keys (dot-separated)
+
+**Updated: Dual Key Support**
+- `LicenseManager.fromClaims()` — create manager from pre-validated claims (LS API path)
+- `license-routes.ts` — auto-detects key type on `POST /api/v1/license/key`, routes to LS API or Ed25519 validation
+- Boot sequence loads cached LS validation from `brain.meta` (no API call on startup)
+- Persists key type (`license:key-type`) and cached result (`license:ls-cache`) for offline resilience
+
+**Updated: Dashboard Checkout Flow**
+- `useLemonCheckout.ts` — retrieves LS license key directly from checkout success event (no polling sy-licensing)
+- Falls back to sy-licensing polling if direct key not available (backward compat)
+- External purchase via hosted LS checkout page → customer gets key via email → pastes in Settings
+
+**Updated: secureyeoman-licensing Service**
+- Ed25519 key minting commented out (preserved for potential future use)
+- Webhook handler now logs purchases for admin dashboard without minting keys
+- Serves as audit log and admin interface, no longer critical-path
+
 ### Engineering Backlog — SQL Migration Consolidation Marked Complete
 
 Consolidated 23+ migration files into 3 tier-based baselines (`001_community.sql`, `002_pro.sql`, `003_enterprise.sql`) — previously completed, now tracked as done.

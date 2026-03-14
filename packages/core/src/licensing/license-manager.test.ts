@@ -809,3 +809,77 @@ describe('Tier Audit — pro key with pro features', () => {
     }
   });
 });
+
+// ── Grace Period ──────────────────────────────────────────────────────────────
+
+describe('LicenseManager — grace period', () => {
+  it('grace period active — enforcement suppressed for unlicensed instance', () => {
+    const lm = new LicenseManager(undefined, true);
+    const recentInstall = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(); // 10 days ago
+    lm.setGracePeriod(recentInstall, 45);
+
+    expect(lm.getGracePeriod()?.active).toBe(true);
+    expect(lm.getGracePeriod()?.daysRemaining).toBeGreaterThan(0);
+    expect(lm.isEnforcementEnabled()).toBe(false); // Suppressed by grace period
+    expect(lm.isFeatureAllowed('adaptive_learning')).toBe(true);
+  });
+
+  it('grace period expired — enforcement active for unlicensed instance', () => {
+    const lm = new LicenseManager(undefined, true);
+    const oldInstall = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(); // 60 days ago
+    lm.setGracePeriod(oldInstall, 45);
+
+    expect(lm.getGracePeriod()?.active).toBe(false);
+    expect(lm.getGracePeriod()?.daysRemaining).toBe(0);
+    expect(lm.isEnforcementEnabled()).toBe(true);
+    expect(lm.isFeatureAllowed('adaptive_learning')).toBe(false);
+  });
+
+  it('grace period does not suppress enforcement when a valid license exists', () => {
+    const key = buildKey(validClaims({ tier: 'enterprise', features: [...ALL_LICENSED_FEATURES] }));
+    const lm = withTestKeyAndEnforcement(key, true);
+    const recentInstall = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    lm.setGracePeriod(recentInstall, 45);
+
+    expect(lm.isEnforcementEnabled()).toBe(true); // Valid license — no suppression
+    expect(lm.isFeatureAllowed('adaptive_learning')).toBe(true); // Licensed
+  });
+
+  it('grace period with enforcement=false — enforcement stays off', () => {
+    const lm = new LicenseManager(undefined, false);
+    const oldInstall = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+    lm.setGracePeriod(oldInstall, 45);
+
+    expect(lm.isEnforcementEnabled()).toBe(false);
+    expect(lm.isFeatureAllowed('adaptive_learning')).toBe(true);
+  });
+
+  it('toStatusObject includes grace period info', () => {
+    const lm = new LicenseManager(undefined, true);
+    const recentInstall = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+    lm.setGracePeriod(recentInstall, 45);
+
+    const status = lm.toStatusObject();
+    expect(status.gracePeriod).not.toBeNull();
+    expect(status.gracePeriod!.active).toBe(true);
+    expect(status.gracePeriod!.daysRemaining).toBe(40);
+    expect(status.enforcementEnabled).toBe(false); // Suppressed
+  });
+
+  it('toStatusObject returns null gracePeriod when not configured', () => {
+    const lm = new LicenseManager(undefined, true);
+    const status = lm.toStatusObject();
+    expect(status.gracePeriod).toBeNull();
+  });
+
+  it('fromClaims preserves grace period after set', () => {
+    const claims = validClaims({ tier: 'pro', features: [...PRO_FEATURES] });
+    const lm = LicenseManager.fromClaims(claims, true);
+    const recentInstall = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString();
+    lm.setGracePeriod(recentInstall, 45);
+
+    expect(lm.getGracePeriod()?.active).toBe(true);
+    expect(lm.isValid()).toBe(true);
+    expect(lm.isEnforcementEnabled()).toBe(true); // Valid key — no suppression
+  });
+});

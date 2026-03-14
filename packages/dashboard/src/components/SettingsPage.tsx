@@ -1260,6 +1260,21 @@ function LicenseCard() {
               </div>
             )}
 
+            {/* Grace period banner */}
+            {license?.gracePeriod?.active && !license.valid && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-primary/10 text-primary">
+                <BadgeCheck className="w-4 h-4 shrink-0" />
+                Trial period: {license.gracePeriod.daysRemaining} day{license.gracePeriod.daysRemaining === 1 ? '' : 's'} remaining.
+                All features are unlocked.
+              </div>
+            )}
+            {license?.gracePeriod && !license.gracePeriod.active && !license.valid && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-destructive/10 text-destructive">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                Trial period expired. Apply a license key to unlock Pro/Enterprise features.
+              </div>
+            )}
+
             {isEnterprise && license && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                 <div>

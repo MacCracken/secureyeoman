@@ -124,35 +124,31 @@ Annual revenue of **$25,000** (mixed tiers):
 ┌─────────────┐     checkout overlay      ┌──────────────────┐
 │  Dashboard   │ ──────────────────────►  │  LemonSqueezy    │
 │  (React)     │                          │  Checkout        │
-│              │ ◄── success event ────── │                  │
+│              │ ◄── success + LS key ─── │  (generates key) │
 └──────┬───────┘                          └────────┬─────────┘
        │                                           │
-       │ poll GET /api/v1/licenses/by-order/:id    │ webhook POST
-       │                                           │ /webhook/lemonsqueezy
+       │ POST /api/v1/license/key                  │ webhook POST
+       │ (LS key applied directly)                 │ /webhook/lemonsqueezy
        ▼                                           ▼
-┌──────────────────────────────────────────────────────────┐
-│                secureyeoman-licensing                     │
-│                                                          │
-│  • Validates webhook signature                           │
-│  • Mints Ed25519-signed license key                      │
-│  • Stores key + order metadata in SQLite                 │
-│  • Serves key to dashboard via API                       │
-└──────────────────────────────────────────────────────────┘
-       │
-       │ POST /api/v1/license/key
-       ▼
-┌─────────────┐
-│  SY Core    │  Validates signature, extracts tier,
-│  Instance   │  gates enterprise features
-└─────────────┘
+┌─────────────┐                          ┌──────────────────────┐
+│  SY Core    │                          │ sy-licensing (admin)  │
+│  Instance   │                          │                      │
+│             │──→ LS API: validate      │ • Audit log          │
+│  Cache tier │    (once + periodic)     │ • Purchase records   │
+│  Gate feats │                          │ • Revenue dashboard  │
+└─────────────┘                          └──────────────────────┘
 ```
+
+**Purchase page**: LemonSqueezy provides hosted checkout URLs (e.g. `https://yourstore.lemonsqueezy.com/buy/variant-id`) for external purchases without the dashboard. Customers receive their license key via email.
 
 ### Key Integration Points
 
-1. **`useLemonCheckout.ts`** — React hook that loads `lemon.js` overlay and handles checkout success events
-2. **Environment variables** — `VITE_LEMONSQUEEZY_PRO_URL`, `VITE_LEMONSQUEEZY_SOLOPRENEUR_URL`, `VITE_LEMONSQUEEZY_ENTERPRISE_URL`
-3. **Webhook handler** — `POST /webhook/lemonsqueezy` in the licensing service validates the signing secret and triggers key minting
-4. **License enforcement** — Controlled by `SECUREYEOMAN_LICENSE_ENFORCEMENT` env var (defaults to `false` for community edition)
+1. **`useLemonCheckout.ts`** — React hook that loads `lemon.js` overlay, receives LS license key on checkout success, auto-applies to SY instance
+2. **`lemonsqueezy-validator.ts`** — Validates LS keys via their API with local caching (24h TTL, 7-day offline grace period)
+3. **Dual key support** — SY accepts both LemonSqueezy keys (online validation, cached) and Ed25519 keys (offline validation via embedded public key)
+4. **Environment variables** — `VITE_LEMONSQUEEZY_PRO_URL`, `VITE_LEMONSQUEEZY_SOLOPRENEUR_URL`, `VITE_LEMONSQUEEZY_ENTERPRISE_URL`, plus optional `LEMONSQUEEZY_*_VARIANT_ID` for tier mapping
+5. **License enforcement** — Controlled by `SECUREYEOMAN_LICENSE_ENFORCEMENT` env var (defaults to `false` for community edition)
+6. **`secureyeoman-licensing`** — Now serves as an admin dashboard and audit log; Ed25519 key minting is preserved but disabled (LemonSqueezy handles key generation)
 
 ---
 

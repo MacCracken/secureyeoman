@@ -5608,6 +5608,11 @@ export interface LicenseStatus {
   expiresAt: string | null;
   error: string | null;
   enforcementEnabled: boolean;
+  gracePeriod: {
+    active: boolean;
+    daysRemaining: number;
+    expiresAt: string;
+  } | null;
 }
 
 export async function fetchLicenseStatus(): Promise<LicenseStatus> {
