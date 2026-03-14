@@ -137,6 +137,26 @@ describe('PersonalityVersionManager', () => {
       expect(createCall.changedFields).toContain('name');
     });
 
+    it('detects brainConfig changes', async () => {
+      const previous = {
+        ...VERSION,
+        id: 'pv-0',
+        snapshot: { ...PERSONALITY, brainConfig: { proactiveConfig: { enabled: false } } },
+      };
+      const current = {
+        ...PERSONALITY,
+        brainConfig: { proactiveConfig: { enabled: true } },
+      };
+      versionStorage = makeMockStorage({ getLatestVersion: vi.fn().mockResolvedValue(previous) });
+      soulStorage = makeMockSoulStorage({ getPersonality: vi.fn().mockResolvedValue(current) });
+      manager = new PersonalityVersionManager({ versionStorage, soulStorage, serializer });
+
+      await manager.recordVersion('pers-1');
+
+      const createCall = (versionStorage.createVersion as any).mock.calls[0][0];
+      expect(createCall.changedFields).toContain('brainConfig');
+    });
+
     it('records empty changedFields when no previous version', async () => {
       await manager.recordVersion('pers-1');
 

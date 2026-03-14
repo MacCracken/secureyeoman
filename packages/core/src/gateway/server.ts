@@ -1849,8 +1849,11 @@ export class GatewayServer {
       const moodEngine = new MoodEngine({ store: simStore, logger: this.getLogger() });
 
       // Wire mood engine into soul manager for prompt-time mood injection
-      const soulMgr = this.secureYeoman.getSoulManager();
-      if (soulMgr) soulMgr.setMoodEngine(moodEngine);
+      try {
+        this.secureYeoman.getSoulManager().setMoodEngine(moodEngine);
+      } catch {
+        // Soul module may not be initialized yet — mood injection will be unavailable
+      }
 
       const spatialEngine = new SpatialEngine({
         store: simStore,

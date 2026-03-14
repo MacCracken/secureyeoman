@@ -1580,6 +1580,53 @@ describe('SoulManager', () => {
       expect(prompt).toContain('**verbosity** (concise)');
     });
 
+    it('includes mood fragment when mood engine is wired', async () => {
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(PERSONALITY),
+      });
+
+      // Wire a mock mood engine
+      const mockMoodEngine = {
+        getMood: vi.fn().mockResolvedValue({
+          id: 'mood-1',
+          personalityId: PERSONALITY.id,
+          valence: 0.5,
+          arousal: 0.3,
+          dominance: 0.5,
+          label: 'happy',
+          decayRate: 0.05,
+          baselineValence: 0,
+          baselineArousal: 0,
+          updatedAt: Date.now(),
+        }),
+        composeMoodPromptFragment: vi.fn().mockReturnValue(
+          '## Current Emotional State\nYou are currently feeling **happy**.'
+        ),
+      };
+      manager.setMoodEngine(mockMoodEngine as any);
+
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('## Current Emotional State');
+      expect(prompt).toContain('happy');
+      expect(mockMoodEngine.getMood).toHaveBeenCalledWith(PERSONALITY.id);
+    });
+
+    it('omits mood fragment when no mood state exists', async () => {
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(PERSONALITY),
+      });
+
+      const mockMoodEngine = {
+        getMood: vi.fn().mockResolvedValue(null),
+        composeMoodPromptFragment: vi.fn(),
+      };
+      manager.setMoodEngine(mockMoodEngine as any);
+
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).not.toContain('Current Emotional State');
+      expect(mockMoodEngine.composeMoodPromptFragment).not.toHaveBeenCalled();
+    });
+
     it('omits archetypes when personality.includeArchetypes is false', async () => {
       const personality = { ...PERSONALITY, includeArchetypes: false };
       const { manager } = makeManager({
