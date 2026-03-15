@@ -109,13 +109,14 @@ describe('migrateCommand', () => {
       expect(ctx.err.join('')).toContain('No config file');
     });
 
-    it('uses noop logger when config fails', async () => {
+    it('returns 1 and writes error when config fails', async () => {
       mockLoadConfig.mockImplementation(() => {
         throw new Error('config missing');
       });
       const ctx = makeCtx([]);
-      await migrateCommand.run(ctx as any);
-      expect(mockCreateNoopLogger).toHaveBeenCalled();
+      const code = await migrateCommand.run(ctx as any);
+      expect(code).toBe(1);
+      expect(ctx.err.join('')).toContain('config missing');
     });
   });
 

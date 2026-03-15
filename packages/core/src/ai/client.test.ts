@@ -808,7 +808,7 @@ describe('AIClient', () => {
 
       // Intercept createProvider to inject a mock
       const originalCreate = (client as any).createProvider.bind(client);
-      const _createdCount = 0;
+      let createdCount = 0;
       (client as any).createProvider = (config: any) => {
         createdCount++;
         const p = originalCreate(config);

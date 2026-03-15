@@ -451,7 +451,9 @@ export class DynamicToolManager {
     try {
       new vm.Script(wrappedCode, { filename: 'dynamic-tool-syntax-check' });
     } catch (err) {
-      throw new Error(`Syntax error in dynamic tool implementation: ${errorToString(err)}`, { cause: err });
+      throw new Error(`Syntax error in dynamic tool implementation: ${errorToString(err)}`, {
+        cause: err,
+      });
     }
 
     if (isIsolatedVmAvailable()) {

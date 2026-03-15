@@ -946,7 +946,7 @@ describe('memory command', () => {
   // ── stats with health snapshot ─────────────────────────────────────────
 
   it('stats includes health snapshot when available', async () => {
-    const _callCount = 0;
+    let callCount = 0;
     vi.stubGlobal(
       'fetch',
       vi.fn().mockImplementation(async (url: string) => {

@@ -2649,7 +2649,10 @@ function BrainSection({
                 </>
               )}{' '}
               tabs, or create a personal skill in the{' '}
-              <button onClick={() => void navigate('/skills')} className="text-primary hover:underline">
+              <button
+                onClick={() => void navigate('/skills')}
+                className="text-primary hover:underline"
+              >
                 Skills → Personal
               </button>{' '}
               tab.

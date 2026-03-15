@@ -169,16 +169,6 @@ Upgraded from ESLint 9 → 10 with `typescript-eslint@8.57.0` and `eslint-plugin
 
 ---
 
-### Security Audit — Deferred Items (2026-03-13)
-
-Items identified during code audit rounds 1–3, intentionally deferred due to low exploitability or narrow attack surface. Pick up when touching adjacent code.
-
-| Area | File | Issue | Risk | Notes |
-|------|------|-------|------|-------|
-| Auth | `src/security/auth.ts` L145–164 | Timing side-channel on 2FA hydration — `scrypt` timing reveals whether a user has 2FA enabled | Low | Requires local network position + high-precision timing. Fix: constant-time dummy `scrypt` when no 2FA configured. |
-| Chaos | `src/chaos/chaos-manager.ts` L95–101 | TOCTOU race in experiment delete — running check and deletion are not atomic | Low | Admin-only feature, narrow window. Fix: `DELETE ... WHERE id = $1 AND status != 'running'` single-query guard. |
-| Workflow | `src/workflow/workflow-engine.ts` L559–569 | Webhook header prototype pollution residual — `__proto__`/`constructor`/`prototype` filtered, but `Object.create(null)` base would be safer | Very Low | Already filtered for known dangerous keys. Fix: use `Object.create(null)` for header accumulation object. |
-
 ---
 
 ## Future Features — Demand-Gated

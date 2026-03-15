@@ -271,7 +271,9 @@ export class McpServiceServer {
           if (!existing.includes('SecureYeoman managed')) {
             await writeFile(configPath, existing + configEntry, { mode: 0o600 });
           }
-          process.stderr.write(`[secureyeoman-mcp] Restored SSH key from secret ${name} → ${keyPath}\n`);
+          process.stderr.write(
+            `[secureyeoman-mcp] Restored SSH key from secret ${name} → ${keyPath}\n`
+          );
         } catch (err) {
           process.stderr.write(
             `[secureyeoman-mcp] Failed to restore SSH key ${name}: ${err instanceof Error ? err.message : String(err)}\n`

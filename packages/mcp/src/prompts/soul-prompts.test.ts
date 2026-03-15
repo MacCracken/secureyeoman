@@ -93,7 +93,9 @@ describe('soul-prompts', () => {
 
     it('falls back to personality systemPrompt when config.prompt is undefined', async () => {
       const client = mockClient();
-      (client.get as ReturnType<typeof vi.fn<(url: string) => Promise<unknown>>>).mockImplementation((url: string) => {
+      (
+        client.get as ReturnType<typeof vi.fn<(url: string) => Promise<unknown>>>
+      ).mockImplementation((url: string) => {
         if (url === '/api/v1/soul/personality') {
           return Promise.resolve({
             personality: { name: 'FRIDAY', systemPrompt: 'Custom system prompt' },
@@ -112,7 +114,9 @@ describe('soul-prompts', () => {
 
     it('falls back to default when both prompt and systemPrompt are undefined', async () => {
       const client = mockClient();
-      (client.get as ReturnType<typeof vi.fn<(url: string) => Promise<unknown>>>).mockImplementation((url: string) => {
+      (
+        client.get as ReturnType<typeof vi.fn<(url: string) => Promise<unknown>>>
+      ).mockImplementation((url: string) => {
         if (url === '/api/v1/soul/personality') {
           return Promise.resolve({ personality: { name: 'FRIDAY' } });
         }

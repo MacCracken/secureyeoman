@@ -257,25 +257,25 @@ export class CaptureProcess {
       const pid = this.pid;
 
       void (async () => {
-      try {
-        const usage = await this.getResourceUsage(pid);
+        try {
+          const usage = await this.getResourceUsage(pid);
 
-        const ok = this.sandbox.checkResourceLimits({
-          memoryMb: usage.memoryMb,
-          cpuPercent: usage.cpuPercent,
-        });
+          const ok = this.sandbox.checkResourceLimits({
+            memoryMb: usage.memoryMb,
+            cpuPercent: usage.cpuPercent,
+          });
 
-        if (!ok) {
-          const violations = this.sandbox.getViolations();
-          const latest = violations[violations.length - 1];
-          if (latest) {
-            this.onViolation?.(latest);
+          if (!ok) {
+            const violations = this.sandbox.getViolations();
+            const latest = violations[violations.length - 1];
+            if (latest) {
+              this.onViolation?.(latest);
+            }
+            await this.terminate('resource_limit_exceeded');
           }
-          await this.terminate('resource_limit_exceeded');
+        } catch {
+          // Process may have exited
         }
-      } catch {
-        // Process may have exited
-      }
       })();
     }, 1000);
   }

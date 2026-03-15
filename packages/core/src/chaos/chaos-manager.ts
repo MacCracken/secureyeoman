@@ -96,8 +96,13 @@ export class ChaosManager {
     if (this.runningExperiments.has(id)) {
       throw new Error('Cannot delete a running experiment — abort it first');
     }
-    await this.store.deleteResults(id);
-    return this.store.deleteExperiment(id);
+    // Atomic guard: only delete if status is not 'running' in the DB,
+    // preventing TOCTOU race between the in-memory check above and deletion.
+    const deleted = await this.store.deleteExperimentIfNotRunning(id);
+    if (deleted) {
+      await this.store.deleteResults(id);
+    }
+    return deleted;
   }
 
   // ── Experiment Execution ───────────────────────────────────────

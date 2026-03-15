@@ -147,6 +147,15 @@ export class ChaosStore extends PgBaseStorage {
     return count > 0;
   }
 
+  /** Atomic delete — only removes if status is not 'running' (prevents TOCTOU race). */
+  async deleteExperimentIfNotRunning(id: string): Promise<boolean> {
+    const count = await this.execute(
+      "DELETE FROM chaos.experiments WHERE id = $1 AND status != 'running'",
+      [id]
+    );
+    return count > 0;
+  }
+
   // ── Results ─────────────────────────────────────────────────────
 
   async saveResult(result: ChaosExperimentResult & { id: string }): Promise<void> {

@@ -135,7 +135,9 @@ describe('ChatPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     localStorage.clear();
-    mockFetch = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>().mockResolvedValue(createStreamResponse([DEFAULT_DONE_EVENT]));
+    mockFetch = vi
+      .fn<(url: string, init?: RequestInit) => Promise<Response>>()
+      .mockResolvedValue(createStreamResponse([DEFAULT_DONE_EVENT]));
     vi.stubGlobal('fetch', mockFetch);
     mockFetchPersonalities.mockResolvedValue({
       personalities: [defaultPersonality],

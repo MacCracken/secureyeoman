@@ -65,7 +65,7 @@ describe('McpServiceServer', () => {
 
   it('should warn when auto-registration fails but still start', async () => {
     vi.spyOn(client, 'post').mockRejectedValue(new Error('Registration failed'));
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     server = new McpServiceServer({
       config: makeConfig({ autoRegister: true }),
@@ -73,9 +73,10 @@ describe('McpServiceServer', () => {
     });
     await server.start();
 
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Auto-registration warning'));
+    const calls = stderrSpy.mock.calls.map((c) => String(c[0]));
+    expect(calls.some((c) => c.includes('Auto-registration warning'))).toBe(true);
     await server.stop();
-    warnSpy.mockRestore();
+    stderrSpy.mockRestore();
   });
 
   it('should include transport in health response', async () => {

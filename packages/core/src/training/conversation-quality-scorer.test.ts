@@ -57,7 +57,7 @@ describe('ConversationQualityScorer', () => {
     });
 
     it('scores conversations with baseline 0.5 when no negative signals', async () => {
-      const _callCount = 0;
+      let callCount = 0;
       const mockPool = {
         query: vi.fn(async (sql: string) => {
           callCount++;
@@ -211,7 +211,7 @@ describe('ConversationQualityScorer', () => {
     });
 
     it('handles individual conversation failures gracefully', async () => {
-      const _call = 0;
+      let call = 0;
       const mockPool = {
         query: vi.fn(async (sql: string) => {
           call++;

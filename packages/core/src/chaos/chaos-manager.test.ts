@@ -67,6 +67,7 @@ describe('ChaosManager', () => {
       listExperiments: vi.fn().mockResolvedValue({ items: [], total: 0 }),
       updateExperimentStatus: vi.fn().mockResolvedValue(true),
       deleteExperiment: vi.fn().mockResolvedValue(true),
+      deleteExperimentIfNotRunning: vi.fn().mockResolvedValue(true),
       saveResult: vi.fn().mockResolvedValue(undefined),
       getResults: vi.fn().mockResolvedValue([]),
       deleteResults: vi.fn().mockResolvedValue(0),
@@ -219,8 +220,8 @@ describe('ChaosManager', () => {
     const deleted = await manager.deleteExperiment('exp-1');
 
     expect(deleted).toBe(true);
+    expect(mockStore.deleteExperimentIfNotRunning).toHaveBeenCalledWith('exp-1');
     expect(mockStore.deleteResults).toHaveBeenCalledWith('exp-1');
-    expect(mockStore.deleteExperiment).toHaveBeenCalledWith('exp-1');
   });
 
   it('schedules an experiment', async () => {

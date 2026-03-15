@@ -266,7 +266,10 @@ export function ReportsTab({ reviewed, onMarkReviewed, onMarkAllReviewed }: Repo
                     </p>
                   </div>
                 </div>
-                <button className="btn btn-ghost text-xs" onClick={() => void handleDownload(report)}>
+                <button
+                  className="btn btn-ghost text-xs"
+                  onClick={() => void handleDownload(report)}
+                >
                   <Download className="w-4 h-4 mr-1" />
                   Download
                 </button>
@@ -288,7 +291,12 @@ export function ReportsTab({ reviewed, onMarkReviewed, onMarkAllReviewed }: Repo
           <AuditLogTab
             reviewed={reviewed ?? new Set()}
             onMarkReviewed={onMarkReviewed ?? (() => {})}
-            onMarkAllReviewed={onMarkAllReviewed ?? (() => { void Promise.resolve(); })}
+            onMarkAllReviewed={
+              onMarkAllReviewed ??
+              (() => {
+                void Promise.resolve();
+              })
+            }
           />
         </Suspense>
       </div>

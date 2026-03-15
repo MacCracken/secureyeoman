@@ -555,13 +555,14 @@ export class WorkflowEngine {
         const body = cfg.bodyTemplate
           ? this.resolveTemplate(String(cfg.bodyTemplate), ctx)
           : undefined;
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        // Use null-prototype object to prevent prototype pollution from user-supplied header keys
+        const headers: Record<string, string> = Object.create(null) as Record<string, string>;
+        headers['Content-Type'] = 'application/json';
         if (cfg.headersTemplate) {
           try {
             const resolvedHeaders = this.resolveTemplate(String(cfg.headersTemplate), ctx);
             const parsed = JSON.parse(resolvedHeaders) as Record<string, unknown>;
             for (const key of Object.keys(parsed)) {
-              if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
               headers[key] = String(parsed[key]);
             }
           } catch {

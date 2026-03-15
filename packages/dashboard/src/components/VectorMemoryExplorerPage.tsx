@@ -278,7 +278,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 }}
                 placeholder="Search for similar memories..."
                 className="w-full sm:flex-1 bg-card border border-border rounded-lg text-sm py-1.5 px-3"
-                onKeyDown={(e) => { if (e.key === 'Enter') void handleSearch(); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void handleSearch();
+                }}
               />
               <select
                 value={searchType}

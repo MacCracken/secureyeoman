@@ -91,13 +91,13 @@ const onlineJobs = [
   },
 ];
 
-let _fetchCallCount: number;
+let fetchCallCount: number;
 beforeEach(() => {
   vi.restoreAllMocks();
   fetchCallCount = 0;
 });
 
-function mockFetchFor(_panel: 'dataset' | 'drift' | 'online') {
+function mockFetchFor(_panel?: 'dataset' | 'drift' | 'online') {
   vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
     const u = String(url);
     if (u.includes('dataset-refresh')) {

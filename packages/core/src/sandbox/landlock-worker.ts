@@ -121,63 +121,63 @@ function applyLandlockRestrictions(opts?: SandboxOptions): {
 if (process.send) {
   process.on('message', (msg: WorkerMessage) => {
     void (async () => {
-    if (msg.type !== 'exec') return;
+      if (msg.type !== 'exec') return;
 
-    const { config } = msg;
-    const startTime = Date.now();
-    const memBefore = process.memoryUsage().heapUsed;
-    let peakMemoryBytes = memBefore;
+      const { config } = msg;
+      const startTime = Date.now();
+      const memBefore = process.memoryUsage().heapUsed;
+      let peakMemoryBytes = memBefore;
 
-    try {
-      // Apply Landlock restrictions if requested
-      const landlockResult = config.enforceLandlock
-        ? applyLandlockRestrictions(config.options)
-        : { enforced: false, violations: [] as SandboxViolation[] };
+      try {
+        // Apply Landlock restrictions if requested
+        const landlockResult = config.enforceLandlock
+          ? applyLandlockRestrictions(config.options)
+          : { enforced: false, violations: [] as SandboxViolation[] };
 
-      // SECURITY(121): Deferred — replace new Function() IPC with message protocol
-      // Execute the function
-      // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval -- Intentional: sandboxed code execution requires dynamic function creation
-      const fn = new Function(`return (${config.fnBody})`)() as () => Promise<unknown>;
-      const result = await fn();
+        // SECURITY(121): Deferred — replace new Function() IPC with message protocol
+        // Execute the function
+        // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval -- Intentional: sandboxed code execution requires dynamic function creation
+        const fn = new Function(`return (${config.fnBody})`)() as () => Promise<unknown>;
+        const result = await fn();
 
-      const endTime = Date.now();
-      const memAfter = process.memoryUsage().heapUsed;
-      peakMemoryBytes = Math.max(memBefore, memAfter);
+        const endTime = Date.now();
+        const memAfter = process.memoryUsage().heapUsed;
+        peakMemoryBytes = Math.max(memBefore, memAfter);
 
-      const response: WorkerResultMessage = {
-        type: 'result',
-        result: {
-          success: true,
-          result,
-          resourceUsage: {
-            memoryPeakMb: peakMemoryBytes / 1024 / 1024,
-            cpuTimeMs: endTime - startTime,
+        const response: WorkerResultMessage = {
+          type: 'result',
+          result: {
+            success: true,
+            result,
+            resourceUsage: {
+              memoryPeakMb: peakMemoryBytes / 1024 / 1024,
+              cpuTimeMs: endTime - startTime,
+            },
+            violations: landlockResult.violations,
           },
-          violations: landlockResult.violations,
-        },
-      };
-      process.send!(response);
-    } catch (error) {
-      const endTime = Date.now();
-      peakMemoryBytes = Math.max(peakMemoryBytes, process.memoryUsage().heapUsed);
+        };
+        process.send!(response);
+      } catch (error) {
+        const endTime = Date.now();
+        peakMemoryBytes = Math.max(peakMemoryBytes, process.memoryUsage().heapUsed);
 
-      const response: WorkerResultMessage = {
-        type: 'result',
-        result: {
-          success: false,
-          error:
-            error instanceof Error
-              ? ({ message: error.message, name: error.name } as any)
-              : new Error(String(error)),
-          resourceUsage: {
-            memoryPeakMb: peakMemoryBytes / 1024 / 1024,
-            cpuTimeMs: endTime - startTime,
+        const response: WorkerResultMessage = {
+          type: 'result',
+          result: {
+            success: false,
+            error:
+              error instanceof Error
+                ? ({ message: error.message, name: error.name } as any)
+                : new Error(String(error)),
+            resourceUsage: {
+              memoryPeakMb: peakMemoryBytes / 1024 / 1024,
+              cpuTimeMs: endTime - startTime,
+            },
+            violations: [],
           },
-          violations: [],
-        },
-      };
-      process.send!(response);
-    }
+        };
+        process.send!(response);
+      }
     })();
   });
 }

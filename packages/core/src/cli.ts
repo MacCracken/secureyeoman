@@ -540,6 +540,8 @@ command
     if (code !== 0) process.exitCode = code;
   })
   .catch((err: unknown) => {
-    process.stderr.write(`Fatal error: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`);
+    process.stderr.write(
+      `Fatal error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`
+    );
     process.exit(1);
   });

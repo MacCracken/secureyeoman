@@ -228,7 +228,11 @@ export class AuthService {
       throw new AuthError('Invalid credentials', 401);
     }
 
-    // If 2FA is enabled, return a challenge instead of tokens
+    // Issue tokens regardless, then decide what to return.
+    // This ensures constant-time execution whether 2FA is enabled or not,
+    // preventing timing side-channels that reveal 2FA enrollment status.
+    const tokens = await this.issueTokens(rememberMe);
+
     if (this.twoFactorEnabled) {
       await this.audit('auth_success', 'Password verified, awaiting 2FA', {
         ip,
@@ -250,7 +254,7 @@ export class AuthService {
       rememberMe,
     });
 
-    return this.issueTokens(rememberMe);
+    return tokens;
   }
 
   // ── Refresh ──────────────────────────────────────────────────────

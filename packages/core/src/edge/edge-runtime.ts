@@ -167,39 +167,39 @@ export class EdgeRuntime {
 
     this.server = createServer((req, res) => {
       void (async () => {
-      const url = req.url ?? '/';
+        const url = req.url ?? '/';
 
-      // Health endpoint
-      if (url === '/health' && req.method === 'GET') {
-        const body = JSON.stringify({
-          status: 'ok',
-          mode: 'edge',
-          version: VERSION,
-          uptime: this.startedAt ? Date.now() - this.startedAt : 0,
-          capabilities: this.getCapabilities(),
-        });
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(body);
-        return;
-      }
+        // Health endpoint
+        if (url === '/health' && req.method === 'GET') {
+          const body = JSON.stringify({
+            status: 'ok',
+            mode: 'edge',
+            version: VERSION,
+            uptime: this.startedAt ? Date.now() - this.startedAt : 0,
+            capabilities: this.getCapabilities(),
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(body);
+          return;
+        }
 
-      // A2A receive endpoint
-      if (url === '/api/v1/a2a/receive' && req.method === 'POST') {
-        await this.handleA2AReceive(req, res);
-        return;
-      }
+        // A2A receive endpoint
+        if (url === '/api/v1/a2a/receive' && req.method === 'POST') {
+          await this.handleA2AReceive(req, res);
+          return;
+        }
 
-      // A2A capabilities endpoint
-      if (url === '/api/v1/a2a/capabilities' && req.method === 'GET') {
-        const body = JSON.stringify({ capabilities: this.getCapabilities() });
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(body);
-        return;
-      }
+        // A2A capabilities endpoint
+        if (url === '/api/v1/a2a/capabilities' && req.method === 'GET') {
+          const body = JSON.stringify({ capabilities: this.getCapabilities() });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(body);
+          return;
+        }
 
-      // 404 for everything else
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Not found' }));
+        // 404 for everything else
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Not found' }));
       })();
     });
 

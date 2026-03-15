@@ -271,7 +271,7 @@ describe('chatCommand', () => {
   });
 
   it('copies to clipboard with --copy', async () => {
-    const { _execSync } = await import('node:child_process');
+    const { execSync: _execSync } = await import('node:child_process');
     mockFetch.mockReturnValue(apiOk({ response: 'Clip content' }));
     const ctx = makeCtx(['--copy', 'Hello']);
     const code = await chatCommand.run(ctx);
