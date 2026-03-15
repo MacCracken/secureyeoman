@@ -302,7 +302,7 @@ describe('startCommand', () => {
       const ctx = makeCtx([]);
       await startCommand.run(ctx as any);
       expect(ctx.out.join('')).toContain('/home/user/agnostic');
-      expect(ctx.out.join('')).toContain('Agnostic QA team started');
+      expect(ctx.out.join('')).toContain('Agnostic fleet started');
     });
 
     it('help text includes AGNOSTIC_AUTO_START', async () => {

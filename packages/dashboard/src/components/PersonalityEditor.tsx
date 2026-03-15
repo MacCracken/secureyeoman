@@ -6218,8 +6218,13 @@ export function PersonalityEditor({
                       </p>
                     )}
 
-                    {/* Tags row */}
+                    {/* Tags row — sex badge first if set */}
                     <div className="flex items-center gap-1.5 flex-wrap">
+                      {p.sex !== 'unspecified' && (
+                        <span className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full capitalize">
+                          {p.sex}
+                        </span>
+                      )}
                       {Object.entries(p.traits)
                         .slice(0, 2)
                         .map(([k, v]) => (
@@ -6233,11 +6238,6 @@ export function PersonalityEditor({
                       {Object.keys(p.traits).length > 2 && (
                         <span className="text-[10px] text-muted-foreground">
                           +{Object.keys(p.traits).length - 2}
-                        </span>
-                      )}
-                      {p.sex !== 'unspecified' && (
-                        <span className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full capitalize">
-                          {p.sex}
                         </span>
                       )}
                       {p.defaultModel && (
@@ -6604,6 +6604,11 @@ export function PersonalityView() {
                   )}
 
                   <div className="flex items-center gap-1.5 flex-wrap">
+                    {p.sex !== 'unspecified' && (
+                      <span className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full capitalize">
+                        {p.sex}
+                      </span>
+                    )}
                     {Object.entries(p.traits)
                       .slice(0, 2)
                       .map(([k, v]) => (
@@ -6617,11 +6622,6 @@ export function PersonalityView() {
                     {Object.keys(p.traits).length > 2 && (
                       <span className="text-[10px] text-muted-foreground">
                         +{Object.keys(p.traits).length - 2}
-                      </span>
-                    )}
-                    {p.sex !== 'unspecified' && (
-                      <span className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full capitalize">
-                        {p.sex}
                       </span>
                     )}
                     {p.defaultModel && (

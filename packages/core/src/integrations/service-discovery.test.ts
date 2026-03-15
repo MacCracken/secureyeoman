@@ -50,7 +50,7 @@ describe('ServiceDiscoveryManager', () => {
       expect(agnostic).toBeDefined();
       expect(agnostic!.status).toBe('disconnected');
       expect(agnostic!.enabled).toBe(false);
-      expect(agnostic!.displayName).toBe('Agnostic QA Platform');
+      expect(agnostic!.displayName).toBe('Agnostic Agentic System');
       expect(agnostic!.requiredSecrets).toEqual(['AGNOSTIC_API_KEY', 'AGNOSTIC_WEBHOOK_SECRET']);
 
       const agnos = services.find((s) => s.id === 'agnos');

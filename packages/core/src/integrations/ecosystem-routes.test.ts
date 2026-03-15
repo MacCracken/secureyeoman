@@ -20,7 +20,7 @@ const mockLogger = {
 
 const MOCK_AGNOSTIC: EcosystemServiceInfo = {
   id: 'agnostic',
-  displayName: 'Agnostic QA Platform',
+  displayName: 'Agnostic Agentic System',
   description: 'QA platform',
   url: 'http://127.0.0.1:8000',
   healthUrl: 'http://127.0.0.1:8000/health',
@@ -102,7 +102,7 @@ describe('Ecosystem Routes', () => {
       expect(res.statusCode).toBe(200);
       const body = JSON.parse(res.payload);
       expect(body.id).toBe('agnostic');
-      expect(body.displayName).toBe('Agnostic QA Platform');
+      expect(body.displayName).toBe('Agnostic Agentic System');
     });
 
     it('returns 404 for unknown id', async () => {

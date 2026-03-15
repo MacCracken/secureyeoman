@@ -157,11 +157,11 @@ describe('KeyRotationCard', () => {
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
-  it('should show error state', async () => {
+  it('should show disabled state when rotation manager unavailable', async () => {
     vi.mocked(api.fetchKeyRotationStatus).mockRejectedValue(new Error('fail'));
     renderCard();
     await waitFor(() => {
-      expect(screen.getByText(/Failed to load key rotation status/)).toBeInTheDocument();
+      expect(screen.getByText(/Key rotation is not enabled/)).toBeInTheDocument();
     });
   });
 
