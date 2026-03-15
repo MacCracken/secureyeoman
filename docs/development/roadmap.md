@@ -10,7 +10,6 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| — | Catalog & Marketplace Refactor | P1 — quality | In progress (tags + backend done, UI refactor needed) |
 | — | E2E Test Expansion | P1 — quality | Planned |
 | 17 | Native Mobile Experience | P2 — platform | Planned (17A–E) |
 | — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
@@ -120,33 +119,6 @@
 - [ ] **Brain & RAG flows** — Knowledge ingestion, recall, memory scoping across personalities
 - [ ] **Marketplace flows** — Skill install/uninstall, workflow import, community sync
 - [ ] **MCP tool execution flows** — Tool discovery, execution via streamable HTTP, config toggling
-
----
-
-## Catalog & Marketplace Refactor
-
-**Priority**: P1 — Quality. The catalog pages (Catalog > Community, Catalog > Marketplace) have grown organically and need a clean refactor.
-
-**Problems:**
-- `CommunityTab.tsx` is ~700+ lines with inline IIFE rendering blocks for skills, themes, and personalities — hard to maintain
-- Category filter (`CategoryFilter` in `shared.tsx`) was hardcoded to `SKILL_CATEGORIES` — fixed to use dynamic keys from `counts`, but needs verification across all views
-- Skills category pills disappear when selected — fixed with separate unfiltered counts query, needs same pattern for themes
-- Personality subcategories (sci-fi/antagonist, professional, etc.) now tag correctly from sync but rendering has JSX issues from incremental edits
-- Theme categorization (dark/light) added to sync and community repo but rendering not fully wired
-- Workflows and Swarms tabs may have similar category/pagination issues
-- Pagination removed for personalities/themes (small datasets) but pagination blocks left partially in code
-- `PersonalitiesTab.tsx` (MarketplacePage) was rewritten with install/uninstall/avatars but is a DIFFERENT component from the personalities section in `CommunityTab.tsx` — confusing duplication
-
-**Refactor goals:**
-- [ ] **Extract personality section** from `CommunityTab.tsx` into its own component (reuse or merge with `PersonalitiesTab.tsx`)
-- [ ] **Extract theme section** from `CommunityTab.tsx` into its own component
-- [ ] **Consistent category filter** — all content types (skills, themes, personalities) use the same `CategoryFilter` with dynamic categories from data, pills stay visible when selected
-- [ ] **No pagination for small datasets** — personalities and themes load all items; skills keep pagination
-- [ ] **One-click install for community personalities** — Install button on each card, Uninstall when already installed (backend endpoint exists: `POST /api/v1/marketplace/community/personalities/install`)
-- [ ] **Avatar support** — community personality cards show avatar SVGs (26 generated in community repo, backend endpoint exists: `GET /api/v1/marketplace/community/personalities/avatar/:path`)
-- [ ] **Verify workflows and swarms tabs** — ensure category filters and pagination work correctly in both Marketplace and Community views
-- [ ] **Clean up dead code** — remove unused pagination state, unused imports, stale IIFE patterns
-- [ ] **Tests** — update `CommunityTab.test.tsx` for refactored components
 
 ---
 
@@ -474,4 +446,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-14 (Completed: Phase 16 Shruti, DDoS/DDoD 7 modules, Dashboard Audit 15 fixes, Featured MCP shipping servers. All moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-15 (Completed: Catalog & Marketplace Refactor — moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*

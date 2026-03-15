@@ -3,11 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Bot, Store, Users, Download } from 'lucide-react';
 import { fetchSecurityPolicy } from '../api/client';
-import { type TabType, type ContentType } from './skills/shared';
-import { PersonalTab } from './skills/PersonalTab';
-import { MarketplaceTab } from './skills/MarketplaceTab';
-import { CommunityTab } from './skills/CommunityTab';
-import { InstalledTab } from './skills/InstalledTab';
+import { type TabType, type ContentType } from './catalog/shared';
+import { PersonalTab } from './catalog/PersonalTab';
+import { MarketplaceTab } from './catalog/MarketplaceTab';
+import { CommunityTab } from './catalog/CommunityTab';
+import { InstalledTab } from './catalog/InstalledTab';
 
 export function SkillsPage() {
   const location = useLocation();

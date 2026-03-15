@@ -1,12 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Shield, Store, Search, Loader2, Palette, UserCircle } from 'lucide-react';
-import {
-  fetchMarketplaceSkills,
-  installMarketplaceSkill,
-  uninstallMarketplaceSkill,
-  fetchPersonalities,
-} from '../../api/client';
+import { fetchMarketplaceSkills, fetchPersonalities } from '../../api/client';
 import type { CatalogSkill } from '../../types';
 import {
   SkillCard,
@@ -20,6 +15,9 @@ import {
   CategoryGroupedGrid,
   type ContentType,
 } from './shared';
+import { useCatalogInstall, usePersonalityInit } from './hooks';
+
+const MARKETPLACE_INVALIDATE_KEYS = [['marketplace'], ['skills']];
 
 export function MarketplaceTab({
   workflowsEnabled = false,
@@ -30,43 +28,29 @@ export function MarketplaceTab({
   subAgentsEnabled?: boolean;
   initialContentType?: ContentType;
 } = {}) {
-  const queryClient = useQueryClient();
   const hiddenTypes: ContentType[] = [
     ...(!workflowsEnabled ? ['workflows' as const] : []),
     ...(!subAgentsEnabled ? ['swarms' as const] : []),
   ];
   const [contentType, setContentType] = useState<ContentType>(initialContentType ?? 'skills');
 
-  // Sync from parent when navigating with a specific content type
   useEffect(() => {
     if (initialContentType) setContentType(initialContentType);
   }, [initialContentType]);
 
   const [query, setQuery] = useState('');
-  const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
-  const [installingId, setInstallingId] = useState<string | null>(null);
-  const [uninstallingId, setUninstallingId] = useState<string | null>(null);
   const [previewSkill, setPreviewSkill] = useState<CatalogSkill | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('');
-  const personalityInitialized = useRef(false);
+
+  const catalog = useCatalogInstall(MARKETPLACE_INVALIDATE_KEYS);
 
   const { data: personalitiesData } = useQuery({
     queryKey: ['personalities'],
     queryFn: fetchPersonalities,
   });
-
   const personalities = personalitiesData?.personalities ?? [];
-  const activePersonality = personalities.find((p) => p.isActive);
+  const [selectedPersonalityId, setSelectedPersonalityId] = usePersonalityInit(personalities);
 
-  // Pre-select the active personality once — user can then switch to Global or any other
-  useEffect(() => {
-    if (activePersonality && !personalityInitialized.current) {
-      personalityInitialized.current = true;
-      setSelectedPersonalityId(activePersonality.id);
-    }
-  }, [activePersonality]);
-
-  // Fetch marketplace (builtin + published) skills — exclude community via origin filter
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace', query, selectedPersonalityId],
     queryFn: () =>
@@ -81,52 +65,21 @@ export function MarketplaceTab({
       ),
   });
 
-  const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ['marketplace'] });
-    void queryClient.invalidateQueries({ queryKey: ['skills'] });
-  };
-
-  const installMut = useMutation({
-    mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
-      installMarketplaceSkill(id, personalityId),
-    onSuccess: () => {
-      invalidate();
-      setInstallingId(null);
-    },
-    onError: () => {
-      setInstallingId(null);
-    },
-  });
-
-  const uninstallMut = useMutation({
-    mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
-      uninstallMarketplaceSkill(id, personalityId),
-    onSuccess: () => {
-      invalidate();
-      setUninstallingId(null);
-    },
-    onError: () => {
-      setUninstallingId(null);
-    },
-  });
-
   // Separate builtin and published, exclude community
   const allRaw = (data?.skills ?? []).filter((s: CatalogSkill) => s.source !== 'community');
-  // Split out theme and personality items for their dedicated tabs
   const themeSkills = allRaw.filter((s: CatalogSkill) => s.category === 'theme');
   const personalitySkills = allRaw.filter((s: CatalogSkill) => s.category === 'personality');
   const allSkills =
     contentType === 'skills'
       ? allRaw.filter((s: CatalogSkill) => s.category !== 'theme' && s.category !== 'personality')
       : allRaw;
-  // Build category counts from full set (before client-side category filter)
+
   const categoryCounts = allSkills.reduce<Record<string, number>>((acc, s) => {
     const cat = s.category || 'general';
     acc[cat] = (acc[cat] ?? 0) + 1;
     return acc;
   }, {});
 
-  // Apply client-side category filter
   const filteredSkills = selectedCategory
     ? allSkills.filter((s: CatalogSkill) => (s.category || 'general') === selectedCategory)
     : allSkills;
@@ -138,18 +91,16 @@ export function MarketplaceTab({
       key={skill.id}
       skill={skill}
       badge={badgeFn?.(skill)}
-      installing={installingId === skill.id && installMut.isPending}
-      uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
-      onPreview={() => {
-        setPreviewSkill(skill);
-      }}
+      installing={catalog.isInstalling(skill.id)}
+      uninstalling={catalog.isUninstalling(skill.id)}
+      onPreview={() => { setPreviewSkill(skill); }}
       onInstall={() => {
-        setInstallingId(skill.id);
-        installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
+        catalog.setInstallingId(skill.id);
+        catalog.installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
       }}
       onUninstall={() => {
-        setUninstallingId(skill.id);
-        uninstallMut.mutate({
+        catalog.setUninstallingId(skill.id);
+        catalog.uninstallMut.mutate({
           id: skill.id,
           personalityId: selectedPersonalityId || undefined,
         });
@@ -157,27 +108,44 @@ export function MarketplaceTab({
     />
   );
 
+  /** Reusable grid for theme/personality item sections */
+  const renderCatalogItemGrid = (
+    items: CatalogSkill[],
+    icon: React.ReactNode,
+    label: string,
+    badgeFn: (s: CatalogSkill) => React.ReactNode
+  ) => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        {icon}
+        <h3 className="text-sm font-semibold text-foreground">{label}</h3>
+        <span className="text-xs text-muted-foreground">({items.length})</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {items.map((s) => renderCard(s, badgeFn))}
+      </div>
+    </div>
+  );
+
   return (
     <>
       {previewSkill && (
         <SkillPreviewModal
           skill={previewSkill}
-          onClose={() => {
-            setPreviewSkill(null);
-          }}
-          installing={installingId === previewSkill.id && installMut.isPending}
-          uninstalling={uninstallingId === previewSkill.id && uninstallMut.isPending}
+          onClose={() => { setPreviewSkill(null); }}
+          installing={catalog.isInstalling(previewSkill.id)}
+          uninstalling={catalog.isUninstalling(previewSkill.id)}
           onInstall={() => {
-            setInstallingId(previewSkill.id);
-            installMut.mutate({
+            catalog.setInstallingId(previewSkill.id);
+            catalog.installMut.mutate({
               id: previewSkill.id,
               personalityId: selectedPersonalityId || undefined,
             });
             setPreviewSkill(null);
           }}
           onUninstall={() => {
-            setUninstallingId(previewSkill.id);
-            uninstallMut.mutate({
+            catalog.setUninstallingId(previewSkill.id);
+            catalog.uninstallMut.mutate({
               id: previewSkill.id,
               personalityId: selectedPersonalityId || undefined,
             });
@@ -186,16 +154,12 @@ export function MarketplaceTab({
         />
       )}
       <div className="space-y-6">
-        {/* Type selector */}
         <ContentTypeSelector
           value={contentType}
-          onChange={(v) => {
-            setContentType(v);
-          }}
+          onChange={(v) => { setContentType(v); }}
           hiddenTypes={hiddenTypes}
         />
 
-        {/* Workflows / Swarms passthrough */}
         {contentType === 'workflows' && (
           <ContentSuspense>
             <LazyWorkflowsTab source="builtin" />
@@ -216,9 +180,7 @@ export function MarketplaceTab({
                 className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 placeholder="Search themes…"
                 value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                }}
+                onChange={(e) => { setQuery(e.target.value); }}
               />
             </div>
             {isLoading ? (
@@ -231,23 +193,17 @@ export function MarketplaceTab({
                 <p className="text-muted-foreground">No themes found</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-primary" />
-                  <h3 className="text-sm font-semibold text-foreground">Themes</h3>
-                  <span className="text-xs text-muted-foreground">({themeSkills.length})</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {themeSkills.map((s) =>
-                    renderCard(s, () => (
-                      <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                        <Palette className="w-2.5 h-2.5" />
-                        Theme
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
+              renderCatalogItemGrid(
+                themeSkills,
+                <Palette className="w-4 h-4 text-primary" />,
+                'Themes',
+                () => (
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                    <Palette className="w-2.5 h-2.5" />
+                    Theme
+                  </span>
+                )
+              )
             )}
           </>
         )}
@@ -261,9 +217,7 @@ export function MarketplaceTab({
                 className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 placeholder="Search personalities…"
                 value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                }}
+                onChange={(e) => { setQuery(e.target.value); }}
               />
             </div>
             {isLoading ? (
@@ -276,25 +230,17 @@ export function MarketplaceTab({
                 <p className="text-muted-foreground">No personalities found</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <UserCircle className="w-4 h-4 text-primary" />
-                  <h3 className="text-sm font-semibold text-foreground">Personalities</h3>
-                  <span className="text-xs text-muted-foreground">
-                    ({personalitySkills.length})
+              renderCatalogItemGrid(
+                personalitySkills,
+                <UserCircle className="w-4 h-4 text-primary" />,
+                'Personalities',
+                () => (
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                    <UserCircle className="w-2.5 h-2.5" />
+                    Personality
                   </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {personalitySkills.map((s) =>
-                    renderCard(s, () => (
-                      <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                        <UserCircle className="w-2.5 h-2.5" />
-                        Personality
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
+                )
+              )
             )}
           </>
         )}
@@ -309,9 +255,7 @@ export function MarketplaceTab({
                   className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="Search skills…"
                   value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                  }}
+                  onChange={(e) => { setQuery(e.target.value); }}
                 />
               </div>
               <PersonalitySelector
@@ -321,7 +265,6 @@ export function MarketplaceTab({
               />
             </div>
 
-            {/* Category filter */}
             <CategoryFilter
               value={selectedCategory}
               onChange={setSelectedCategory}
@@ -340,7 +283,6 @@ export function MarketplaceTab({
                 </p>
               </div>
             ) : (
-              /* When showing all categories, group by category within each source section */
               <div className="space-y-8">
                 {builtinSkills.length > 0 && (
                   <section>

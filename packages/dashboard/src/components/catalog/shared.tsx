@@ -543,7 +543,6 @@ export const SKILL_CATEGORIES = [
   'marketing',
   'education',
   'healthcare',
-  'personality',
 ] as const;
 
 export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
@@ -562,7 +561,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   marketing: 'Marketing',
   education: 'Education',
   healthcare: 'Healthcare',
-  personality: 'Personality',
 };
 
 export function categoryLabel(cat: string): string {

@@ -397,19 +397,6 @@ describe('a11y smoke tests (axe-core)', () => {
     (expect(results) as any).toHaveNoViolations();
   });
 
-  it('MarketplacePage has no critical/serious axe violations', async () => {
-    const { MarketplacePage } = await import('./components/MarketplacePage');
-    const { container } = render(
-      <Wrapper>
-        <MarketplacePage />
-      </Wrapper>
-    );
-
-    const results = await (axe as any)(container);
-
-    (expect(results) as any).toHaveNoViolations();
-  });
-
   // AgentsPage has a pre-existing unlabeled <input type="number"> (label) — tracked for fix
   it('AgentsPage has no critical/serious axe violations', async () => {
     const { AgentsPage } = await import('./components/AgentsPage');

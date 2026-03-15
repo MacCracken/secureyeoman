@@ -6,6 +6,26 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.15]
+
+### Catalog & Marketplace UI Refactor
+
+Bottom-up extraction of the catalog UI — 830-line `CommunityTab.tsx` split into focused components with shared hooks. Net reduction of ~400 lines of duplicated code across the catalog surface.
+
+- **Shared hooks** (`hooks.ts`): Extracted `useCatalogInstall()`, `usePersonalityInit()`, and `useCommunitySync()` — eliminates install/uninstall mutation duplication across CommunityTab + MarketplaceTab
+- **CommunityThemesSection**: Extracted themes content type (search, category filter, grid) from CommunityTab IIFE block
+- **CommunityPersonalitiesSection**: Extracted personalities content type (search, subcategory filter, grid) from CommunityTab IIFE block
+- **CommunitySkillsSection**: Extracted skills content type (search, personality selector, category filter, paginated grid) from CommunityTab
+- **CommunityTab slimmed**: 830 → ~230 lines — delegates to section components, owns only tab selection + sync banner + preview modal
+- **MarketplaceTab**: Refactored to use shared hooks, extracted `renderCatalogItemGrid()` helper for theme/personality sections
+- **MarketplacePage deleted**: Legacy entry point — `/marketplace` route already pointed to `SkillsPage` (CommunityTab + MarketplaceTab). Removed component, test, and a11y test reference
+- **SyncResultBanner**: Extracted as named component for readability
+- **Directory renamed**: `components/skills/` → `components/catalog/` — the directory holds themes, personalities, workflows, and swarms, not just skills
+- **Dead code cleanup**: Removed `'personality'` from `SKILL_CATEGORIES` (personalities have dedicated tab), removed unused `themePage`/`personalityPage` state
+- All 4,123 dashboard tests passing, 0 lint errors
+
+---
+
 ## [2026.3.14]
 
 ### DDoS & Distributed Denial of Detection (DDoD) Defense — 7 Modules

@@ -39,8 +39,8 @@ describe('categoryLabel', () => {
 });
 
 describe('SKILL_CATEGORIES', () => {
-  it('contains 14 categories', () => {
-    expect(SKILL_CATEGORIES).toHaveLength(14);
+  it('contains 13 categories', () => {
+    expect(SKILL_CATEGORIES).toHaveLength(13);
   });
 
   it('includes key categories', () => {
