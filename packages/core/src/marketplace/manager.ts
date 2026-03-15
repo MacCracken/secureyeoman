@@ -1020,6 +1020,13 @@ export class MarketplaceManager {
           if (typeof data.isDark === 'boolean') {
             tags.push(data.isDark ? 'dark' : 'light');
           }
+          // Add subdirectory as subcategory tag (e.g., "theme:dark", "theme:light")
+          const relPath = path.relative(themesDir, filePath);
+          const subDir = path.dirname(relPath);
+          if (subDir && subDir !== '.') {
+            const subCategory = subDir.split(path.sep).join('/');
+            tags.push(`theme:${subCategory}`);
+          }
 
           const skillData: Partial<CatalogSkill> = {
             name: data.name,

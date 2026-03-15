@@ -72,6 +72,7 @@ export function CommunityTab({
   const [workflowQuery, setWorkflowQuery] = useState('');
   const [swarmQuery, setSwarmQuery] = useState('');
   const [themeQuery, setThemeQuery] = useState('');
+  const [selectedThemeCategory, setSelectedThemeCategory] = useState('');
   const [themePage, setThemePage] = useState(0);
   const [personalityQuery, setPersonalityQuery] = useState('');
   const [personalityPage, setPersonalityPage] = useState(0);
@@ -91,31 +92,33 @@ export function CommunityTab({
       ),
   });
 
+  // Fetch ALL community themes (no pagination — small dataset, client-side category filtering)
   const { data: themesData, isLoading: themesLoading } = useQuery({
-    queryKey: ['marketplace-community-themes', themeQuery, themePage],
+    queryKey: ['marketplace-community-themes', themeQuery],
     queryFn: () =>
       fetchMarketplaceSkills(
         themeQuery || undefined,
         'community',
         undefined,
         undefined,
-        COMMUNITY_PAGE_SIZE,
-        themePage * COMMUNITY_PAGE_SIZE,
+        500,
+        0,
         'theme'
       ),
     enabled: contentType === 'themes',
   });
 
+  // Fetch ALL community personalities (no pagination — small dataset, client-side category filtering)
   const { data: personalitiesSkillData, isLoading: personalitiesSkillLoading } = useQuery({
-    queryKey: ['marketplace-community-personalities', personalityQuery, personalityPage],
+    queryKey: ['marketplace-community-personalities', personalityQuery],
     queryFn: () =>
       fetchMarketplaceSkills(
         personalityQuery || undefined,
         'community',
         undefined,
         undefined,
-        COMMUNITY_PAGE_SIZE,
-        personalityPage * COMMUNITY_PAGE_SIZE,
+        500,
+        0,
         'personality'
       ),
     enabled: contentType === 'personalities',
@@ -473,14 +476,36 @@ export function CommunityTab({
                 </p>
               </div>
             ) : (
+              (() => {
+                const allThemes = themesData?.skills ?? [];
+                const getThemeSubCategory = (s: CatalogSkill) => {
+                  const tag = s.tags?.find((t: string) => t.startsWith('theme:'));
+                  return tag ? tag.replace('theme:', '') : 'general';
+                };
+                const themeCategoryCounts = allThemes.reduce<Record<string, number>>((acc, s) => {
+                  const cat = getThemeSubCategory(s);
+                  acc[cat] = (acc[cat] ?? 0) + 1;
+                  return acc;
+                }, {});
+                const filteredThemes = selectedThemeCategory
+                  ? allThemes.filter((s) => getThemeSubCategory(s) === selectedThemeCategory)
+                  : allThemes;
+                return (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Palette className="w-4 h-4 text-muted-foreground" />
                   <h3 className="text-sm font-semibold text-foreground">Community Themes</h3>
-                  <span className="text-xs text-muted-foreground">({themesData?.total ?? 0})</span>
+                  <span className="text-xs text-muted-foreground">({allThemes.length})</span>
                 </div>
+                {Object.keys(themeCategoryCounts).length > 1 && (
+                  <CategoryFilter
+                    value={selectedThemeCategory}
+                    onChange={setSelectedThemeCategory}
+                    counts={themeCategoryCounts}
+                  />
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {(themesData?.skills ?? []).map((skill) => (
+                  {filteredThemes.map((skill) => (
                     <SkillCard
                       key={skill.id}
                       skill={skill}
@@ -510,36 +535,9 @@ export function CommunityTab({
                     />
                   ))}
                 </div>
-                {(themesData?.total ?? 0) > COMMUNITY_PAGE_SIZE && (
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-muted-foreground">
-                      Showing {themePage * COMMUNITY_PAGE_SIZE + 1}–
-                      {Math.min((themePage + 1) * COMMUNITY_PAGE_SIZE, themesData?.total ?? 0)} of{' '}
-                      {themesData?.total ?? 0}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        disabled={themePage === 0}
-                        onClick={() => {
-                          setThemePage((p) => p - 1);
-                        }}
-                      >
-                        ← Prev
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        disabled={(themePage + 1) * COMMUNITY_PAGE_SIZE >= (themesData?.total ?? 0)}
-                        onClick={() => {
-                          setThemePage((p) => p + 1);
-                        }}
-                      >
-                        Next →
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
+                );
+              })()
             )}
           </>
         )}
@@ -662,41 +660,6 @@ export function CommunityTab({
                         />
                       ))}
                     </div>
-                    {(personalitiesSkillData?.total ?? 0) > COMMUNITY_PAGE_SIZE && (
-                      <div className="flex items-center justify-between pt-2">
-                        <span className="text-xs text-muted-foreground">
-                          Showing {personalityPage * COMMUNITY_PAGE_SIZE + 1}–
-                          {Math.min(
-                            (personalityPage + 1) * COMMUNITY_PAGE_SIZE,
-                            personalitiesSkillData?.total ?? 0
-                          )}{' '}
-                          of {personalitiesSkillData?.total ?? 0}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="btn btn-ghost btn-sm"
-                            disabled={personalityPage === 0}
-                            onClick={() => {
-                              setPersonalityPage((p) => p - 1);
-                            }}
-                          >
-                            ← Prev
-                          </button>
-                          <button
-                            className="btn btn-ghost btn-sm"
-                            disabled={
-                              (personalityPage + 1) * COMMUNITY_PAGE_SIZE >=
-                              (personalitiesSkillData?.total ?? 0)
-                            }
-                            onClick={() => {
-                              setPersonalityPage((p) => p + 1);
-                            }}
-                          >
-                            Next →
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })()
