@@ -14,6 +14,22 @@ export const SEX_OPTIONS = ['unspecified', 'male', 'female', 'non-binary'] as co
 
 export const API_BASE = '/api/v1';
 
+/**
+ * Resolve an avatarUrl to an absolute src string.
+ * - Static public assets (e.g. '/avatars/friday.png') are used as-is.
+ * - API-relative paths get the API_BASE prefix + cache-buster appended.
+ * - null/undefined → null (show Bot icon fallback).
+ */
+export function resolveAvatarSrc(
+  avatarUrl: string | null | undefined,
+  updatedAt?: number
+): string | null {
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith('/avatars/')) return avatarUrl;
+  const bust = updatedAt ? `?v=${updatedAt}` : '';
+  return `${API_BASE}${avatarUrl}${bust}`;
+}
+
 /** Full-screen lightbox with zoom + pan for a personality avatar image. */
 export function AvatarLightbox({
   src,
@@ -445,9 +461,7 @@ export function PersonalityAvatar({
   if (!personality.avatarUrl) {
     return <Bot style={{ width: size, height: size }} />;
   }
-  const src = personality.avatarUrl.startsWith('/avatars/')
-    ? personality.avatarUrl
-    : `${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`;
+  const src = resolveAvatarSrc(personality.avatarUrl, personality.updatedAt)!;
   return (
     <>
       <img
@@ -477,6 +491,155 @@ export function PersonalityAvatar({
           }}
         />
       )}
+    </>
+  );
+}
+
+/** Upload/remove avatar UI shown inside the Soul section of PersonalityEditor. */
+export function AvatarUpload({
+  personality,
+  onUpdated,
+}: {
+  personality: Personality;
+  onUpdated: (updated: Personality) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  // Raster types go through the crop modal so users can position + resize.
+  // SVG is vector — upload directly (canvas can't rasterise cross-origin SVGs reliably).
+  const RASTER_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const ACCEPTED_TYPES = [...RASTER_TYPES, 'image/svg+xml'];
+  // Pre-crop size limit is generous; the exported 512×512 PNG will always be under 2 MB.
+  const MAX_PRE_CROP = 10 * 1024 * 1024;
+
+  function handleFileSelect(file: File) {
+    setError(null);
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setError('Unsupported type. Use JPEG, PNG, GIF, WebP or SVG.');
+      return;
+    }
+    if (file.size > MAX_PRE_CROP) {
+      setError('File too large (max 10 MB).');
+      return;
+    }
+    if (RASTER_TYPES.includes(file.type)) {
+      setCropFile(file); // open crop modal
+    } else {
+      void handleDirectUpload(file); // SVG: upload as-is
+    }
+  }
+
+  async function handleDirectUpload(file: File) {
+    setError(null);
+    setUploading(true);
+    try {
+      const { uploadPersonalityAvatar } = await import('../../api/client');
+      const result = await uploadPersonalityAvatar(personality.id, file);
+      onUpdated(result.personality);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleCropConfirm(blob: Blob) {
+    setCropFile(null);
+    await handleDirectUpload(new File([blob], 'avatar.png', { type: 'image/png' }));
+  }
+
+  async function handleRemove() {
+    setError(null);
+    setUploading(true);
+    try {
+      const { deletePersonalityAvatar } = await import('../../api/client');
+      const result = await deletePersonalityAvatar(personality.id);
+      onUpdated(result.personality);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Remove failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <>
+      {cropFile && (
+        <AvatarCropModal
+          file={cropFile}
+          onConfirm={(blob) => void handleCropConfirm(blob)}
+          onCancel={() => {
+            setCropFile(null);
+          }}
+        />
+      )}
+      <div className="flex items-center gap-4 mb-4">
+        <div
+          className={`w-24 h-24 rounded-full overflow-hidden flex items-center justify-center bg-muted flex-shrink-0${personality.avatarUrl ? ' cursor-zoom-in' : ''}`}
+          onClick={
+            personality.avatarUrl
+              ? () => {
+                  setLightboxOpen(true);
+                }
+              : undefined
+          }
+          title={personality.avatarUrl ? 'Click to zoom' : undefined}
+        >
+          {personality.avatarUrl ? (
+            <img
+              src={resolveAvatarSrc(personality.avatarUrl, personality.updatedAt)!}
+              alt={personality.name}
+              className="block w-full h-full object-cover"
+            />
+          ) : (
+            <Bot className="w-10 h-10 text-muted-foreground" />
+          )}
+        </div>
+        {lightboxOpen && personality.avatarUrl && (
+          <AvatarLightbox
+            src={resolveAvatarSrc(personality.avatarUrl, personality.updatedAt)!}
+            alt={personality.name}
+            onClose={() => {
+              setLightboxOpen(false);
+            }}
+          />
+        )}
+        <div className="flex flex-col gap-2">
+          <label
+            className={`btn btn-sm btn-outline cursor-pointer${uploading ? ' opacity-50 pointer-events-none' : ''}`}
+          >
+            {uploading ? 'Uploading…' : 'Upload Photo'}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileSelect(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          {personality.avatarUrl && (
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost text-muted-foreground"
+              disabled={uploading}
+              onClick={() => void handleRemove()}
+            >
+              Remove
+            </button>
+          )}
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <p className="text-[10px] text-muted-foreground">
+            JPEG · PNG · WebP · GIF · SVG · max 10 MB
+          </p>
+        </div>
+      </div>
     </>
   );
 }
