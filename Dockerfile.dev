@@ -26,7 +26,8 @@ COPY packages/dashboard/package.json packages/dashboard/
 
 # --ignore-scripts: skip "prepare" hook (git config for .githooks) — no .git in builder
 # npm install (not ci): tolerates transitive deps with unavailable git URLs (e.g. baileys → libsignal)
-RUN npm install --ignore-scripts
+# --include=optional: ensure platform-specific binaries (rollup musl) are installed in Alpine
+RUN npm install --ignore-scripts --include=optional
 
 # Copy source
 COPY tsconfig.json ./

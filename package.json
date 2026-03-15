@@ -81,5 +81,8 @@
   },
   "dependencies": {
     "dompurify": "3.3.2"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-musl": "^4.59.0"
   }
 }
