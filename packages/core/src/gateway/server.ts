@@ -1119,6 +1119,7 @@ export class GatewayServer {
           marketplaceManager,
           getConfig: () => this.secureYeoman.getConfig(),
           ensureDelegationReady: () => this.secureYeoman.ensureDelegationReady(),
+          getSoulManager: () => this.secureYeoman.getSoulManager(),
         });
       }
     });

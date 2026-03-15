@@ -124,7 +124,11 @@ export function KeyRotationCard() {
           <p className="text-sm text-muted-foreground">Loading...</p>
         ) : isError ? (
           <p className="text-sm text-muted-foreground">
-            Key rotation is not enabled. Enable it in your configuration with <code className="text-xs bg-surface px-1 py-0.5 rounded">security.rotation.enabled: true</code>.
+            Key rotation is not enabled. Enable it in your configuration with{' '}
+            <code className="text-xs bg-surface px-1 py-0.5 rounded">
+              security.rotation.enabled: true
+            </code>
+            .
           </p>
         ) : statuses.length === 0 ? (
           <p className="text-sm text-muted-foreground">No tracked secrets.</p>

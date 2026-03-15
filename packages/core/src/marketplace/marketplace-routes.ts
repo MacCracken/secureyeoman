@@ -7,12 +7,17 @@ import type { Config } from '@secureyeoman/shared';
 import type { MarketplaceManager } from './manager.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import { readCommunityPersonalities } from './community-personalities.js';
+import { readFile } from 'node:fs/promises';
+import { join, extname } from 'node:path';
 
 export interface MarketplaceRoutesOptions {
   marketplaceManager: MarketplaceManager;
   getConfig?: () => Config;
   /** Called before community sync to lazy-boot delegation managers (workflow/swarm). */
   ensureDelegationReady?: () => Promise<void>;
+  /** SoulManager for installing community personalities into local DB. */
+  getSoulManager?: () => { createPersonality: (data: any) => Promise<any> } | null;
 }
 
 export function registerMarketplaceRoutes(
@@ -135,6 +140,103 @@ export function registerMarketplaceRoutes(
         return result;
       } catch (err) {
         return sendError(reply, 500, toErrorMessage(err));
+      }
+    }
+  );
+
+  app.get('/api/v1/marketplace/community/personalities', async (_request, reply: FastifyReply) => {
+    try {
+      const config = opts.getConfig?.();
+      const repoPath =
+        config?.security.communityRepoPath ??
+        process.env.COMMUNITY_REPO_PATH ??
+        '../secureyeoman-community-repo';
+      const personalities = await readCommunityPersonalities(repoPath);
+      return { personalities };
+    } catch (err) {
+      return sendError(reply, 500, toErrorMessage(err));
+    }
+  });
+
+  // Install a community personality into the local database
+  app.post(
+    '/api/v1/marketplace/community/personalities/install',
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { filename } = request.body as { filename?: string };
+      if (!filename) return sendError(reply, 400, 'filename is required');
+
+      // Prevent path traversal
+      if (filename.includes('..') || filename.startsWith('/')) {
+        return sendError(reply, 400, 'Invalid filename');
+      }
+
+      const soulManager = opts.getSoulManager?.();
+      if (!soulManager) return sendError(reply, 503, 'Soul manager not available');
+
+      try {
+        const config = opts.getConfig?.();
+        const repoPath =
+          config?.security.communityRepoPath ??
+          process.env.COMMUNITY_REPO_PATH ??
+          '../secureyeoman-community-repo';
+
+        // Read and parse the personality file
+        const personalities = await readCommunityPersonalities(repoPath);
+        const personality = personalities.find((p) => p.filename === filename);
+        if (!personality) return sendError(reply, 404, 'Community personality not found');
+
+        // Create in local DB
+        const created = await soulManager.createPersonality({
+          name: personality.name,
+          description: `[community:${personality.category}] ${personality.description}`,
+          systemPrompt: personality.systemPrompt,
+          traits: personality.traits,
+          sex: personality.sex ?? 'unspecified',
+          voice: '',
+          preferredLanguage: '',
+          defaultModel: null,
+          includeArchetypes: false,
+        });
+
+        return reply.code(201).send({ personality: created });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
+    }
+  );
+
+  // Serve community personality avatar files
+  app.get(
+    '/api/v1/marketplace/community/personalities/avatar/:path',
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { path: avatarPath } = request.params as { path: string };
+      if (!avatarPath || avatarPath.includes('..')) {
+        return sendError(reply, 400, 'Invalid path');
+      }
+
+      try {
+        const config = opts.getConfig?.();
+        const repoPath =
+          config?.security.communityRepoPath ??
+          process.env.COMMUNITY_REPO_PATH ??
+          '../secureyeoman-community-repo';
+
+        const fullPath = join(repoPath, 'personalities', avatarPath);
+        const data = await readFile(fullPath);
+        const ext = extname(avatarPath).toLowerCase();
+        const contentType =
+          ext === '.svg' ? 'image/svg+xml' :
+          ext === '.png' ? 'image/png' :
+          ext === '.webp' ? 'image/webp' :
+          ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+          'application/octet-stream';
+
+        return reply
+          .header('Content-Type', contentType)
+          .header('Cache-Control', 'public, max-age=86400')
+          .send(data);
+      } catch {
+        return sendError(reply, 404, 'Avatar not found');
       }
     }
   );

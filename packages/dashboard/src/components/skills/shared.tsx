@@ -594,7 +594,7 @@ export function CategoryFilter({
       >
         All{counts ? ` (${Object.values(counts).reduce((a, b) => a + b, 0)})` : ''}
       </button>
-      {SKILL_CATEGORIES.map((cat) => {
+      {(counts ? Object.keys(counts) : SKILL_CATEGORIES).map((cat) => {
         const count = counts?.[cat];
         if (counts && !count) return null;
         return (

@@ -628,6 +628,34 @@ export async function fetchPersonalities(): Promise<{ personalities: Personality
   return request('/soul/personalities');
 }
 
+export interface CommunityPersonality {
+  name: string;
+  description: string;
+  category: string;
+  author: string;
+  version: string;
+  traits: Record<string, string>;
+  sex?: string;
+  filename: string;
+  avatarFile?: string;
+  systemPrompt: string;
+}
+
+export async function fetchCommunityPersonalities(): Promise<{
+  personalities: CommunityPersonality[];
+}> {
+  return request('/marketplace/community/personalities');
+}
+
+export async function installCommunityPersonality(
+  filename: string
+): Promise<{ personality: Personality }> {
+  return request('/marketplace/community/personalities/install', {
+    method: 'POST',
+    body: JSON.stringify({ filename }),
+  });
+}
+
 export async function fetchActivePersonality(): Promise<{ personality: Personality | null }> {
   return request('/soul/personality');
 }

@@ -151,6 +151,9 @@ export function CommunityTab({
     void queryClient.invalidateQueries({ queryKey: ['skills'] });
     void queryClient.invalidateQueries({ queryKey: ['community-workflows'] });
     void queryClient.invalidateQueries({ queryKey: ['community-swarm-templates'] });
+    void queryClient.invalidateQueries({ queryKey: ['personalities-community'] });
+    void queryClient.invalidateQueries({ queryKey: ['personalities'] });
+    void queryClient.invalidateQueries({ queryKey: ['marketplace-community-personalities'] });
   };
 
   const syncMut = useMutation({
@@ -185,14 +188,32 @@ export function CommunityTab({
     },
   });
 
+  // Separate unfiltered query for category counts — so pills stay visible when a category is selected
+  const { data: allSkillsData } = useQuery({
+    queryKey: ['marketplace-community-counts', query, selectedPersonalityId],
+    queryFn: () =>
+      fetchMarketplaceSkills(
+        query || undefined,
+        'community',
+        selectedPersonalityId,
+        undefined,
+        1000,
+        0,
+        undefined // no category filter
+      ),
+  });
+
   // Exclude theme and personality items from the skills view — they have dedicated tabs
   const skills: CatalogSkill[] = (data?.skills ?? []).filter(
     (s) => s.category !== 'theme' && s.category !== 'personality'
   );
   const canInstall = !!selectedPersonalityId;
 
-  // Build category counts for filter pills
-  const categoryCounts = skills.reduce<Record<string, number>>((acc, s) => {
+  // Build category counts from UNFILTERED data so all pills stay visible
+  const allSkills = (allSkillsData?.skills ?? []).filter(
+    (s) => s.category !== 'theme' && s.category !== 'personality'
+  );
+  const categoryCounts = allSkills.reduce<Record<string, number>>((acc, s) => {
     const cat = s.category || 'general';
     acc[cat] = (acc[cat] ?? 0) + 1;
     return acc;

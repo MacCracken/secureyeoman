@@ -947,8 +947,8 @@ export class MarketplaceManager {
             const subDir = path.dirname(relPath);
             const tags = ['personality', 'community-personality'];
             if (subDir && subDir !== '.') {
-              // Add the first-level subdirectory as a subcategory tag
-              const subCategory = subDir.split(path.sep)[0]!;
+              // Use full subdirectory path as subcategory tag (e.g., "sci-fi/antagonist")
+              const subCategory = subDir.split(path.sep).join('/');
               tags.push(`personality:${subCategory}`);
             }
             const skillData: Partial<CatalogSkill> = {

@@ -260,10 +260,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         PHOTISNADI_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
       )
         return false;
-      if (
-        !config.exposeSynapseTools &&
-        SYNAPSE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
-      )
+      if (!config.exposeSynapseTools && SYNAPSE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
       if (!config.exposeDeltaTools && DELTA_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
