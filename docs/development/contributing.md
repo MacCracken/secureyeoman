@@ -205,7 +205,9 @@ All integration code lives in SecureYeoman. External repos are read-only unless 
 | Delta (code forge) | 8070 | `/api/v1/repos`, `/api/v1/pulls`, `/api/v1/pipelines` |
 | Shruti (DAW) | 8050 | `/api/v1/session`, `/api/v1/tracks`, `/api/v1/transport` |
 | Rasa (image editor) | 8080 | MCP tools: `rasa_get_document`, `rasa_create_layer`, etc. |
-| Aequi (accounting) | 8060 | TBD |
+| Mneme (knowledge base) | 3838 | `/api/v1/notes`, `/api/v1/search`, `/api/v1/graph` |
+| Tazama (video editor) | TBD | Docker image pending |
+| Aequi (accounting) | 8060 | `/api/v1/invoices`, `/api/v1/expenses`, `/api/v1/reports` |
 
 ### MCP Tool Gating
 

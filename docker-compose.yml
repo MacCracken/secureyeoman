@@ -97,6 +97,8 @@ services:
       SHRUTI_URL: ${SHRUTI_URL:-http://shruti:8050}
       # Rasa Image Editor
       RASA_URL: ${RASA_URL:-http://rasa:8080}
+      # Mneme Knowledge Base
+      MNEME_URL: ${MNEME_URL:-http://mneme:3838}
     healthcheck:
       test:
         [
@@ -707,6 +709,50 @@ services:
       - full-dev
     restart: unless-stopped
 
+  # ── Mneme Knowledge Base ─────────────────────────────────────────────────────
+  # AI-native personal knowledge base with semantic search and RAG.
+  # Port 3838.
+  mneme:
+    image: ghcr.io/maccracken/mneme:latest
+    ports:
+      - '${MNEME_PORT:-3838}:3838'
+    volumes:
+      - mneme-data:/var/lib/mneme
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      MNEME_DATA_DIR: /var/lib/mneme
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:3838/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - mneme
+    restart: unless-stopped
+
+  # Mneme local build — uses sibling repo source for full integration dev.
+  mneme-dev:
+    build:
+      context: ../mneme
+      dockerfile: docker/Dockerfile
+    ports:
+      - '${MNEME_PORT:-3838}:3838'
+    volumes:
+      - mneme-data:/var/lib/mneme
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      MNEME_DATA_DIR: /var/lib/mneme
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:3838/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - full-dev
+    restart: unless-stopped
+
   # Dashboard is now served by the core gateway (SPA serving via @fastify/static).
   # The separate dashboard service below is for local development only.
   sy-dashboard-dev:
@@ -746,6 +792,7 @@ volumes:
   shruti-data:
   rasa-data:
   rasa-models:
+  mneme-data:
   delta-data:
   node-modules:
   dashboard-node-modules:

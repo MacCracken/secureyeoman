@@ -1,11 +1,11 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.3.13-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/2026.3.13)
+[![Version](https://img.shields.io/badge/Version-2026.3.14-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/2026.3.14)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: ~21,000](https://img.shields.io/badge/Tests-~21%2C000-brightgreen.svg)]()
+[![Tests: ~22,000](https://img.shields.io/badge/Tests-~22%2C000-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 
 > **Your AI. Your Rules. Your Infrastructure.**

@@ -290,6 +290,28 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
+### Mneme Knowledge Base Integration
+
+*AI-native personal knowledge base for the SecureYeoman ecosystem. Semantic search, auto-linking, graph visualization, and RAG over personal documents.*
+
+- [ ] **Ecosystem service registration** — Mneme added to service discovery, docker-compose, and contributing docs. Dashboard card renders automatically. Docker image being built.
+- [ ] **MCP tools (native)** — Built-in `mneme_*` MCP tool set: `mneme_search`, `mneme_create_note`, `mneme_get_note`, `mneme_link_notes`, `mneme_graph`. Registered in `manifest.ts`, gated by `exposeMnemeTools` flag.
+- [ ] **Brain integration** — Bridge Mneme's knowledge graph into SY's brain/RAG pipeline. Mneme notes as a knowledge source alongside existing document ingestion.
+- [ ] **Dashboard knowledge explorer** — Inline note viewer in chat, graph visualization widget showing note relationships.
+
+---
+
+### Tazama Video Editor Integration
+
+*AI-native non-linear video editor for the SecureYeoman ecosystem. Vulkan-accelerated rendering, GStreamer pipeline, and MCP tool integration.*
+
+- [ ] **Docker image setup** — Create Dockerfile and docker-compose entries for Tazama. Port TBD.
+- [ ] **Ecosystem service registration** — Add to service discovery, docker-compose, contributing docs once Docker is ready.
+- [ ] **MCP tools (native)** — Built-in `tazama_*` MCP tool set for programmatic video editing from chat and workflows.
+- [ ] **Vision pipeline bridge** — Connect Tazama's video analysis to SY's multimodal pipeline and DeepLens edge camera feed.
+
+---
+
 ### Shipping & Logistics Intelligence
 
 *Unified shipping operations via MCP integrations and native tools. Manage multi-carrier shipping, track packages, optimize fulfillment, and automate logistics workflows from within SecureYeoman.*

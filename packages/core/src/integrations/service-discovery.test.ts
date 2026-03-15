@@ -44,7 +44,7 @@ describe('ServiceDiscoveryManager', () => {
   describe('getServices', () => {
     it('returns all services in disconnected state initially', () => {
       const services = manager.getServices();
-      expect(services).toHaveLength(10);
+      expect(services).toHaveLength(11);
 
       const agnostic = services.find((s) => s.id === 'agnostic');
       expect(agnostic).toBeDefined();

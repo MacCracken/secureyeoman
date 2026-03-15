@@ -29,6 +29,7 @@ export type EcosystemServiceId =
   | 'aequi'
   | 'shruti'
   | 'rasa'
+  | 'mneme'
   | 'edge';
 
 export type EcosystemServiceStatus =
@@ -160,6 +161,17 @@ const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
     healthPath: '/health',
     requiredSecrets: [],
     mcpConfigKey: 'exposeRasaTools',
+  },
+  {
+    id: 'mneme',
+    displayName: 'Mneme Knowledge Base',
+    description:
+      'AI-native personal knowledge base with semantic search, auto-linking, and RAG over personal documents',
+    urlEnv: 'MNEME_URL',
+    defaultUrl: 'http://127.0.0.1:3838',
+    healthPath: '/health',
+    requiredSecrets: [],
+    mcpConfigKey: 'exposeMnemeTools',
   },
   {
     id: 'edge',
