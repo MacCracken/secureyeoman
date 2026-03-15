@@ -115,16 +115,16 @@ export function SwarmTemplatesTab({
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
       ) : !sourceFiltered.length ? (
-        <div className="card p-12 text-center">
-          <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">
+        <div className="card p-12 text-center space-y-3">
+          <Users className="w-12 h-12 mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground font-medium">
             {source === 'community'
-              ? 'No community swarm templates available'
+              ? 'No community swarm templates found'
               : 'No swarm templates available'}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
             {source === 'community'
-              ? 'Sync the community repo to discover swarm templates'
+              ? <>Click <strong>Sync</strong> to import swarm templates from the community repo.</>
               : 'No swarm template definitions found'}
           </p>
         </div>

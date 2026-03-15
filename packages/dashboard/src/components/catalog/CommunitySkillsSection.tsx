@@ -167,14 +167,8 @@ export function CommunitySkillsSection({
           <Users className="w-12 h-12 mx-auto text-muted-foreground" />
           <p className="text-muted-foreground font-medium">No community skills found</p>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Click <strong>Sync</strong> to import skills from the community repo — git fetch runs
-            automatically when <span className="font-mono">allowCommunityGitFetch</span> is enabled.
+            Click <strong>Sync</strong> to import skills from the community repo.
           </p>
-          {statusData?.communityRepoPath && (
-            <p className="text-xs text-muted-foreground font-mono">
-              {statusData.communityRepoPath}
-            </p>
-          )}
         </div>
       ) : (
         <div className="space-y-4">

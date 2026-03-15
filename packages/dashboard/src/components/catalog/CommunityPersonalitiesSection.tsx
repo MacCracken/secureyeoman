@@ -93,7 +93,6 @@ export function CommunityPersonalitiesSection({
           <p className="text-muted-foreground font-medium">No community personalities found</p>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
             Click <strong>Sync</strong> to import personalities from the community repo.
-            Personalities are not auto-installed — browse and install the ones you want.
           </p>
         </div>
       ) : (

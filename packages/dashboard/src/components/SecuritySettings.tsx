@@ -287,7 +287,6 @@ export function SecuritySettings() {
   const { data: agentConfigData } = useQuery({
     queryKey: ['agentConfig'],
     queryFn: fetchAgentConfig,
-    staleTime: 10000,
   });
 
   const { data: mcpData } = useQuery({
@@ -1238,23 +1237,18 @@ export function SecuritySettings() {
             onToggle={() => {
               const enabling = !subAgentsAllowed;
               policyMutation.mutate({ allowSubAgents: enabling });
-              // One-click provision: enabling sub-agents also activates delegation
-              // so the user doesn't need a separate second toggle.
-              if (enabling && !delegationEnabled) {
-                agentConfigMutation.mutate({ enabled: true });
-              }
+              // Sync delegation config with the policy toggle
+              agentConfigMutation.mutate({ enabled: enabling });
             }}
             description={
               subAgentsAllowed
-                ? delegationEnabled
-                  ? 'Sub-agent delegation is active. Personalities with the Sub-Agent Delegation toggle enabled in their Orchestration config can delegate tasks.'
-                  : 'Sub-agent delegation is allowed by policy but delegation is inactive. Enable "Delegate Tasks" below to activate.'
+                ? 'Sub-agent delegation is active. Personalities with the Sub-Agent Delegation toggle enabled in their Orchestration config can delegate tasks.'
                 : 'Sub-agent delegation is disabled at the security level. No personality can spawn sub-agents regardless of its creation config.'
             }
           />
 
-          {/* Status badge — shown when delegation is ready */}
-          {subAgentsAllowed && delegationEnabled && (
+          {/* Status badge — shown when delegation is enabled */}
+          {subAgentsAllowed && (
             <div className="flex items-center gap-2 text-xs text-success bg-success/5 border border-success/20 rounded px-3 py-2">
               <span>✓</span>
               <span>
@@ -1267,20 +1261,6 @@ export function SecuritySettings() {
           {/* A2A Networks and Swarms — sub-items of delegation, only visible when sub-agents enabled */}
           {subAgentsAllowed && (
             <div className="ml-6 pl-4 border-l-2 border-border space-y-4">
-              <PolicyToggle
-                label="Delegate Tasks"
-                icon={<Users className="w-4 h-4 text-muted-foreground" />}
-                enabled={delegationEnabled}
-                isPending={agentConfigMutation.isPending}
-                onToggle={() => {
-                  agentConfigMutation.mutate({ enabled: !delegationEnabled });
-                }}
-                description={
-                  delegationEnabled
-                    ? 'Delegation is active. Personalities with Sub-Agent Delegation enabled in their Orchestration config can delegate tasks.'
-                    : 'Delegation is inactive. Enable this to allow personalities to delegate tasks to sub-agent profiles.'
-                }
-              />
               <PolicyToggle
                 label="A2A Networks"
                 icon={<Network className="w-4 h-4 text-muted-foreground" />}

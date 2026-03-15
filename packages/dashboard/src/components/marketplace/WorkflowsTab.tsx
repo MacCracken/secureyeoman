@@ -110,14 +110,14 @@ export function WorkflowsTab({
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
       ) : !sourceFiltered.length ? (
-        <div className="card p-12 text-center">
-          <GitBranch className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">
-            {source === 'community' ? 'No community workflows available' : 'No workflows available'}
+        <div className="card p-12 text-center space-y-3">
+          <GitBranch className="w-12 h-12 mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground font-medium">
+            {source === 'community' ? 'No community workflows found' : 'No workflows available'}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
             {source === 'community'
-              ? 'Sync the community repo to discover workflows'
+              ? <>Click <strong>Sync</strong> to import workflows from the community repo.</>
               : 'No workflow definitions found'}
           </p>
         </div>

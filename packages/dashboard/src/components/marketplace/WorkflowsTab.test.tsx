@@ -85,7 +85,7 @@ describe('WorkflowsTab', () => {
     mockFetchCommunityWorkflows.mockResolvedValue({ definitions: [], total: 0 });
     renderTab('community');
     await waitFor(() => {
-      expect(screen.getByText('No community workflows available')).toBeDefined();
+      expect(screen.getByText('No community workflows found')).toBeDefined();
     });
   });
 
@@ -178,7 +178,7 @@ describe('WorkflowsTab', () => {
     mockFetchCommunityWorkflows.mockResolvedValue({ definitions: [], total: 0 });
     renderTab('community');
     await waitFor(() => {
-      expect(screen.getByText('No community workflows available')).toBeDefined();
+      expect(screen.getByText('No community workflows found')).toBeDefined();
     });
   });
 

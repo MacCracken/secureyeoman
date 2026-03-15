@@ -96,7 +96,7 @@ describe('SwarmTemplatesTab', () => {
     mockFetchCommunitySwarmTemplates.mockResolvedValue({ templates: [], total: 0 });
     renderTab('community');
     await waitFor(() => {
-      expect(screen.getByText('No community swarm templates available')).toBeDefined();
+      expect(screen.getByText('No community swarm templates found')).toBeDefined();
     });
   });
 
@@ -153,8 +153,7 @@ describe('SwarmTemplatesTab', () => {
     mockFetchCommunitySwarmTemplates.mockResolvedValue({ templates: [], total: 0 });
     renderTab('community');
     await waitFor(() => {
-      expect(screen.getByText('No community swarm templates available')).toBeDefined();
-      expect(screen.getByText('Sync the community repo to discover swarm templates')).toBeDefined();
+      expect(screen.getByText('No community swarm templates found')).toBeDefined();
     });
   });
 

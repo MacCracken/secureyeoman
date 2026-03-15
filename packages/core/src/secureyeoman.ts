@@ -586,14 +586,11 @@ export class SecureYeoman {
         });
         await this.delegationMod.init({ config: this.config, logger: this.logger });
 
-        const delegationNeeded =
-          this.config.delegation?.enabled ||
-          this.config.security?.allowSubAgents ||
-          this.config.security?.allowSwarms ||
-          this.config.security?.allowWorkflows;
-        if (delegationNeeded) {
-          await this.delegationMod.boot();
-        }
+        // Always boot the delegation module so workflow/swarm routes are
+        // registered even on a fresh DB where the security policy hasn't been
+        // persisted yet.  Individual route handlers still check the live
+        // security policy before executing, so this is safe.
+        await this.delegationMod.boot();
       }
 
       // Step 6.11b: Always seed workflow/swarm templates
