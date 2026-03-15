@@ -2,7 +2,7 @@
 
 Self-hosted AI that answers only to you. Keep it local. Go hybrid. Connect any provider. Your data moves when you say so.
 
-**v2026.3.14** | AGPL-3.0 | 462 MCP Tools | 56 CLI Commands | ~22,000 Tests
+**v2026.3.15** | AGPL-3.0 | 462 MCP Tools | 56 CLI Commands | ~22,000 Tests
 
 ---
 
