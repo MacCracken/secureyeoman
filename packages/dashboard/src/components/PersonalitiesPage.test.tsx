@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { PersonalityEditor, PersonalityView } from './PersonalityEditor';
+import { PersonalityEditor, PersonalityView } from './PersonalitiesPage';
 import { createSoulConfig } from '../test/mocks';
 
 // ── Capture navigate calls ──────────────────────────────────────────

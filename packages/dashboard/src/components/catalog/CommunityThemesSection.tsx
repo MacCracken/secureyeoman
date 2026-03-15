@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Search, Loader2, RefreshCw, Palette } from 'lucide-react';
 import { fetchMarketplaceSkills } from '../../api/client';
 import type { CatalogSkill } from '../../types';
-import { SkillCard, CategoryFilter } from './shared';
+import { SkillCard, CategoryFilter, CategoryGroupedGrid } from './shared';
 import type { useCatalogInstall, useCommunitySync } from './hooks';
 
 interface CommunityThemesSectionProps {
@@ -109,8 +109,12 @@ export function CommunityThemesSection({
               counts={themeCategoryCounts}
             />
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredThemes.map((skill) => (
+          <CategoryGroupedGrid
+            skills={filteredThemes.map((s) => ({
+              ...s,
+              category: getThemeSubCategory(s),
+            }))}
+            renderCard={(skill) => (
               <SkillCard
                 key={skill.id}
                 skill={skill}
@@ -136,8 +140,8 @@ export function CommunityThemesSection({
                   });
                 }}
               />
-            ))}
-          </div>
+            )}
+          />
         </div>
       )}
     </>

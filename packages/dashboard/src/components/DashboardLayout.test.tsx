@@ -19,7 +19,7 @@ vi.mock('./TaskHistory', () => ({
   OpenTasks: () => <div data-testid="task-history-page">OpenTasks</div>,
 }));
 
-vi.mock('./PersonalityEditor', () => ({
+vi.mock('./PersonalitiesPage', () => ({
   PersonalityEditor: () => <div>PersonalityEditor</div>,
 }));
 

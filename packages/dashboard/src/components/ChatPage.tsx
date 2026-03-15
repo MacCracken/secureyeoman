@@ -58,7 +58,7 @@ const ReplayDialog = lazy(() =>
 const BranchExplorer = lazy(() =>
   import('./chat/BranchExplorer').then((m) => ({ default: m.BranchExplorer }))
 );
-import { PersonalityAvatar } from './PersonalityEditor';
+import { PersonalityAvatar } from './PersonalitiesPage';
 import { Link } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 

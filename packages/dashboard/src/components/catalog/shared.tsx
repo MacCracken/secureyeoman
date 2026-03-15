@@ -547,6 +547,24 @@ export const SKILL_CATEGORIES = [
 
 export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
 
+export const THEME_CATEGORIES = ['dark', 'light', 'enterprise'] as const;
+export type ThemeCategory = (typeof THEME_CATEGORIES)[number];
+
+/**
+ * Derive a theme subcategory from tags.
+ * Priority: enterprise > dark/light > 'general' fallback.
+ */
+export function getThemeCategory(tags?: string[]): string {
+  if (!tags) return 'general';
+  if (tags.includes('enterprise')) return 'enterprise';
+  if (tags.includes('dark')) return 'dark';
+  if (tags.includes('light')) return 'light';
+  // Check theme: prefix tags from community themes
+  const prefixed = tags.find((t) => t.startsWith('theme:'));
+  if (prefixed) return prefixed.slice(6);
+  return 'general';
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   development: 'Development',
   productivity: 'Productivity',
@@ -561,6 +579,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   marketing: 'Marketing',
   education: 'Education',
   healthcare: 'Healthcare',
+  dark: 'Dark',
+  light: 'Light',
+  enterprise: 'Enterprise',
 };
 
 export function categoryLabel(cat: string): string {

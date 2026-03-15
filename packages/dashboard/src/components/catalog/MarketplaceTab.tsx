@@ -13,6 +13,7 @@ import {
   LazySwarmTemplatesTab,
   CategoryFilter,
   CategoryGroupedGrid,
+  getThemeCategory,
   type ContentType,
 } from './shared';
 import { useCatalogInstall, usePersonalityInit } from './hooks';
@@ -41,6 +42,7 @@ export function MarketplaceTab({
   const [query, setQuery] = useState('');
   const [previewSkill, setPreviewSkill] = useState<CatalogSkill | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedThemeCategory, setSelectedThemeCategory] = useState('');
 
   const catalog = useCatalogInstall(MARKETPLACE_INVALIDATE_KEYS);
 
@@ -68,6 +70,14 @@ export function MarketplaceTab({
   // Separate builtin and published, exclude community
   const allRaw = (data?.skills ?? []).filter((s: CatalogSkill) => s.source !== 'community');
   const themeSkills = allRaw.filter((s: CatalogSkill) => s.category === 'theme');
+  const themeCategoryCounts = themeSkills.reduce<Record<string, number>>((acc, s) => {
+    const cat = getThemeCategory(s.tags);
+    acc[cat] = (acc[cat] ?? 0) + 1;
+    return acc;
+  }, {});
+  const filteredThemes = selectedThemeCategory
+    ? themeSkills.filter((s) => getThemeCategory(s.tags) === selectedThemeCategory)
+    : themeSkills;
   const personalitySkills = allRaw.filter((s: CatalogSkill) => s.category === 'personality');
   const allSkills =
     contentType === 'skills'
@@ -183,27 +193,35 @@ export function MarketplaceTab({
                 onChange={(e) => { setQuery(e.target.value); }}
               />
             </div>
+
+            <CategoryFilter
+              value={selectedThemeCategory}
+              onChange={setSelectedThemeCategory}
+              counts={themeCategoryCounts}
+            />
+
             {isLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
               </div>
-            ) : themeSkills.length === 0 ? (
+            ) : filteredThemes.length === 0 ? (
               <div className="card p-12 text-center">
                 <Palette className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
                 <p className="text-muted-foreground">No themes found</p>
               </div>
             ) : (
-              renderCatalogItemGrid(
-                themeSkills,
-                <Palette className="w-4 h-4 text-primary" />,
-                'Themes',
-                () => (
+              <CategoryGroupedGrid
+                skills={filteredThemes.map((s) => ({
+                  ...s,
+                  category: getThemeCategory(s.tags),
+                }))}
+                renderCard={(s) => renderCard(s, () => (
                   <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                     <Palette className="w-2.5 h-2.5" />
                     Theme
                   </span>
-                )
-              )
+                ))}
+              />
             )}
           </>
         )}

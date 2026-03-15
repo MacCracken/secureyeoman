@@ -16,13 +16,13 @@ import { OnboardingWizard } from './OnboardingWizard';
 // Lazy-loaded route components — each becomes its own JS chunk
 const MetricsPage = lazy(() => import('./MetricsPage').then((m) => ({ default: m.MetricsPage })));
 const _PersonalityEditor = lazy(() =>
-  import('./PersonalityEditor').then((m) => ({ default: m.PersonalityEditor }))
+  import('./PersonalitiesPage').then((m) => ({ default: m.PersonalityEditor }))
 );
 const PersonalityView = lazy(() =>
-  import('./PersonalityEditor').then((m) => ({ default: m.PersonalityView }))
+  import('./PersonalitiesPage').then((m) => ({ default: m.PersonalityView }))
 );
 const PersonalityEditPage = lazy(() =>
-  import('./PersonalityEditor').then((m) => ({ default: m.PersonalityEditPage }))
+  import('./PersonalitiesPage').then((m) => ({ default: m.PersonalityEditPage }))
 );
 const EditorPage = lazy(() => import('./EditorPage').then((m) => ({ default: m.EditorPage })));
 const ChatPage = lazy(() => import('./ChatPage').then((m) => ({ default: m.ChatPage })));
