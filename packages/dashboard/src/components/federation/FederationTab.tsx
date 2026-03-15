@@ -354,7 +354,7 @@ function PeerMarketplacePanel({ peer, onClose }: { peer: FederationPeer; onClose
               setQuery(e.target.value);
             }}
           />
-          <button onClick={() => refetch()} className="btn btn-sm btn-ghost">
+          <button onClick={() => void refetch()} className="btn btn-sm btn-ghost">
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -558,7 +558,7 @@ function BundlesPanel() {
         </div>
         {exportError && <p className="text-xs text-red-400">{exportError}</p>}
         <button
-          onClick={handleExport}
+          onClick={() => void handleExport()}
           disabled={isExporting || !exportPersonalityId || !exportPassphrase}
           className="btn btn-sm btn-ghost flex items-center gap-1.5"
         >
@@ -804,7 +804,7 @@ export function FederationTab() {
                   onRemove={() => {
                     removeMut.mutate(peer.id);
                   }}
-                  onHealthCheck={() => handleHealthCheck(peer)}
+                  onHealthCheck={() => void handleHealthCheck(peer)}
                   isCheckingHealth={checkingHealthId === peer.id}
                   onToggleFeature={(feat, val) => {
                     setTogglingFeatureId(peer.id);

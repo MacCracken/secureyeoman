@@ -31,7 +31,7 @@ function makeConversation(id: string, personalityId = 'p1') {
   return { id, personalityId };
 }
 
-function makeMessages(count: number, altRoles = false) {
+function makeMessages(count: number, _altRoles = false) {
   return Array.from({ length: count }, (_, i) => ({
     id: `msg-${i}`,
     role: i % 2 === 0 ? 'user' : 'assistant',

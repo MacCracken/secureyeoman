@@ -7,7 +7,7 @@ import {
   fuseEmbeddings,
   computeCentroid,
   ContextRetriever,
-  DEFAULT_CONTEXT_RETRIEVAL_CONFIG,
+  _DEFAULT_CONTEXT_RETRIEVAL_CONFIG,
 } from './context-retrieval.js';
 import type { EmbeddingProvider } from '../ai/embeddings/types.js';
 
@@ -118,7 +118,7 @@ describe('ContextRetriever', () => {
     await retriever.addMessage('message 1');
     await retriever.addMessage('message 2');
 
-    const rawBefore = await mockProvider.embed(['standalone']);
+    const _rawBefore = await mockProvider.embed(['standalone']);
     const fused = await retriever.getSearchVector('test query');
 
     // Fused should differ from raw (context modifies the search vector)

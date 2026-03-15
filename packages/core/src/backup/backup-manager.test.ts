@@ -243,7 +243,7 @@ describe('BackupManager', () => {
   // ── listBackups ────────────────────────────────────────────────────────────────
 
   it('listBackups delegates to storage.list', async () => {
-    const result = await manager.listBackups(10, 5);
+    const _result = await manager.listBackups(10, 5);
     expect(storage.list).toHaveBeenCalledWith(10, 5);
   });
 

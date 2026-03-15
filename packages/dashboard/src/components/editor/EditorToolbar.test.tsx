@@ -169,7 +169,7 @@ describe('EditorToolbar', () => {
     const user = userEvent.setup();
     const { props } = renderToolbar();
     // There are two close buttons (one per tab)
-    const closeBtns = screen
+    const _closeBtns = screen
       .getAllByRole('button')
       .filter(
         (btn) =>
@@ -321,7 +321,7 @@ describe('EditorToolbar', () => {
   it('shows keybindings button when onToggleKeybindings is provided', async () => {
     const onToggleKeybindings = vi.fn();
     const user = userEvent.setup();
-    const { props } = renderToolbar({ onToggleKeybindings });
+    const { _props } = renderToolbar({ onToggleKeybindings });
     const btn = screen.getByTestId('keybindings-btn');
     await user.click(btn);
     expect(onToggleKeybindings).toHaveBeenCalled();

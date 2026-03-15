@@ -21,9 +21,16 @@ export function ConfirmDialog({
   destructive = false,
 }: ConfirmDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<Element | null>(null);
 
   useEffect(() => {
-    if (open) cancelRef.current?.focus();
+    if (open) {
+      previouslyFocusedRef.current = document.activeElement;
+      cancelRef.current?.focus();
+    } else if (previouslyFocusedRef.current) {
+      (previouslyFocusedRef.current as HTMLElement).focus?.();
+      previouslyFocusedRef.current = null;
+    }
   }, [open]);
 
   useEffect(() => {
@@ -65,10 +72,11 @@ export function ConfirmDialog({
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <button ref={cancelRef} onClick={onCancel} className="btn btn-ghost">
+          <button ref={cancelRef} type="button" onClick={onCancel} className="btn btn-ghost">
             Cancel
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             className={`btn ${destructive ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 py-2 rounded-md text-sm font-medium' : 'btn-primary'}`}
           >

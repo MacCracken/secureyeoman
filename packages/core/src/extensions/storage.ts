@@ -41,7 +41,7 @@ interface WebhookRow {
 // ─── Helpers ────────────────────────────────────────────────────────
 
 function extensionFromRow(row: ExtensionRow): ExtensionManifest {
-  let hooks: ExtensionManifest['hooks'] = [];
+  let hooks: ExtensionManifest['hooks'];
   try {
     hooks = typeof row.hooks === 'string' ? JSON.parse(row.hooks) : row.hooks;
   } catch {
@@ -76,7 +76,7 @@ function hookFromRow(row: HookRow): HookRecord {
 }
 
 function webhookFromRow(row: WebhookRow): WebhookConfig {
-  let hookPoints: HookPoint[] = [];
+  let hookPoints: HookPoint[];
   try {
     hookPoints =
       typeof row.hook_points === 'string' ? JSON.parse(row.hook_points) : row.hook_points;
@@ -145,7 +145,7 @@ export class ExtensionStorage extends PgBaseStorage {
       values.push(filter.extensionId);
     }
     if (filter?.hookPoint) {
-      conditions.push(`hook_point = $${paramIdx++}`);
+      conditions.push(`hook_point = $${paramIdx}`);
       values.push(filter.hookPoint);
     }
 

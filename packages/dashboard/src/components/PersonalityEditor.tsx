@@ -1848,7 +1848,7 @@ function BrainSection({
                 </span>
                 <button
                   type="button"
-                  onClick={() => navigate('/security-settings')}
+                  onClick={() => void navigate('/security-settings')}
                   className="mt-1 inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline self-start"
                 >
                   <ExternalLink className="w-3 h-3" />
@@ -2631,7 +2631,7 @@ function BrainSection({
             <p className="text-xs text-muted-foreground">
               Add skills from the{' '}
               <button
-                onClick={() => navigate('/marketplace')}
+                onClick={() => void navigate('/marketplace')}
                 className="text-primary hover:underline"
               >
                 Skills Marketplace
@@ -2641,7 +2641,7 @@ function BrainSection({
                   {' '}
                   or{' '}
                   <button
-                    onClick={() => navigate('/skills', { state: { initialTab: 'community' } })}
+                    onClick={() => void navigate('/skills', { state: { initialTab: 'community' } })}
                     className="text-primary hover:underline"
                   >
                     Community
@@ -2649,7 +2649,7 @@ function BrainSection({
                 </>
               )}{' '}
               tabs, or create a personal skill in the{' '}
-              <button onClick={() => navigate('/skills')} className="text-primary hover:underline">
+              <button onClick={() => void navigate('/skills')} className="text-primary hover:underline">
                 Skills → Personal
               </button>{' '}
               tab.
@@ -2667,7 +2667,7 @@ function BrainSection({
                   {sanitizeText(skill.name)}
                 </span>
                 <button
-                  onClick={() => navigate('/skills', { state: { openSkillId: skill.id } })}
+                  onClick={() => void navigate('/skills', { state: { openSkillId: skill.id } })}
                   className="btn-ghost p-1 text-muted-foreground hover:text-foreground"
                   title="Edit skill"
                 >
@@ -3333,7 +3333,7 @@ function VoiceLanguageSection({
             <button
               type="button"
               className="btn btn-ghost text-sm px-3 py-1.5"
-              onClick={handlePreview}
+              onClick={() => void handlePreview()}
               disabled={previewing}
             >
               {previewing ? 'Playing...' : 'Preview'}
@@ -6146,18 +6146,20 @@ export function PersonalityEditor({
                           </button>
                         )}
                         <button
-                          onClick={async () => {
-                            try {
-                              const blob = await exportPersonality(p.id, 'md');
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `${p.name}.md`;
-                              a.click();
-                              URL.revokeObjectURL(url);
-                            } catch {
-                              /* ignore */
-                            }
+                          onClick={() => {
+                            void (async () => {
+                              try {
+                                const blob = await exportPersonality(p.id, 'md');
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `${p.name}.md`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              } catch {
+                                /* ignore */
+                              }
+                            })();
                           }}
                           className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
                           title={`Export ${p.name}`}
@@ -6424,7 +6426,7 @@ export function PersonalityView() {
           </p>
         </div>
         <button
-          onClick={() => navigate('/personality/new')}
+          onClick={() => void navigate('/personality/new')}
           className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
         >
           <Plus className="w-4 h-4" />
@@ -6562,7 +6564,7 @@ export function PersonalityView() {
                         </button>
                       )}
                       <button
-                        onClick={() => navigate(`/personality/${p.id}/edit`)}
+                        onClick={() => void navigate(`/personality/${p.id}/edit`)}
                         className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
                         title={`Edit ${p.name}`}
                       >
@@ -6695,7 +6697,7 @@ export function PersonalityEditPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => navigate('/personality')}
+          onClick={() => void navigate('/personality')}
           className="btn btn-ghost flex items-center gap-1 text-sm"
         >
           <ChevronLeft className="w-4 h-4" /> Back to Personalities
@@ -6704,7 +6706,7 @@ export function PersonalityEditPage() {
       {/* Embed full PersonalityEditor with the target personality pre-opened.
           The editor's own cancel/save logic closes the form by setting editing=null;
           we intercept that via the ?expand search param so the full form renders. */}
-      <_PersonalityEditorWithId id={id ?? 'new'} onBack={() => navigate('/personality')} />
+      <_PersonalityEditorWithId id={id ?? 'new'} onBack={() => void navigate('/personality')} />
     </div>
   );
 }

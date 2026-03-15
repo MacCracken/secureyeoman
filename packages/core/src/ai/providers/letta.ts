@@ -384,7 +384,7 @@ export class LettaProvider extends BaseProvider {
   private extractToolCalls(msg: LettaMessage | undefined): ToolCall[] {
     if (!msg?.tool_calls?.length) return [];
     return msg.tool_calls.map((tc) => {
-      let args: Record<string, unknown> = {};
+      let args: Record<string, unknown>;
       try {
         args = JSON.parse(tc.function.arguments) as Record<string, unknown>;
       } catch {

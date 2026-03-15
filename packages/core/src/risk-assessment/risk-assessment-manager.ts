@@ -387,7 +387,7 @@ export class RiskAssessmentManager {
 
     let l5NoStop = 0;
     let l4NoStop = 0;
-    let noAudit = false;
+    let noAudit: boolean;
     let openItems = 0;
 
     try {
@@ -513,7 +513,7 @@ export class RiskAssessmentManager {
 
     let boundaryViolations = 0;
     let policyBlocks = 0;
-    let noIntent = false;
+    let noIntent: boolean;
 
     try {
       const logResult = await this.pool.query<{ event_type: string; cnt: string }>(

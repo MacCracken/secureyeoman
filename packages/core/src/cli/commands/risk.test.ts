@@ -2,7 +2,7 @@
  * Risk CLI command tests — Phase 111.
  */
 
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { riskCommand } from './risk.js';
 
 function createStreams() {
@@ -935,7 +935,7 @@ describe('risk command', () => {
 
   it('report register outputs content', async () => {
     const fm = mockFetchSequence({ data: '# Register Report\nEntries: 5' });
-    const { stdout, stderr, getStdout } = createStreams();
+    const { stdout, stderr, _getStdout } = createStreams();
     const code = await riskCommand.run({
       argv: ['report', 'register', '--format', 'md'],
       stdout,

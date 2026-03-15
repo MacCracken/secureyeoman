@@ -6,7 +6,7 @@ import {
   isValidHsl,
   validateCustomTheme,
   loadCustomThemes,
-  saveCustomThemes,
+  _saveCustomThemes,
   addCustomTheme,
   removeCustomTheme,
   exportCustomTheme,
@@ -15,7 +15,7 @@ import {
   getScheduledTheme,
   DEFAULT_SCHEDULE,
   type ThemeId,
-  type CustomTheme,
+  type _CustomTheme,
   type CustomThemeExport,
   type ThemeSchedule,
 } from './useTheme';

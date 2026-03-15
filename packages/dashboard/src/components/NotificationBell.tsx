@@ -119,6 +119,8 @@ export function NotificationBell() {
   const [serverNotifications, setServerNotifications] = useState<DisplayNotification[]>([]);
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const serverNotificationsRef = useRef(serverNotifications);
+  serverNotificationsRef.current = serverNotifications;
   const queryClient = useQueryClient();
   const { lastMessage, subscribe } = useWebSocket('/ws/metrics');
 
@@ -260,7 +262,7 @@ export function NotificationBell() {
 
   const clearAll = useCallback(() => {
     // Server notifications: delete each (fire-and-forget)
-    for (const n of serverNotifications) {
+    for (const n of serverNotificationsRef.current) {
       if (n.dbId)
         void deleteNotification(n.dbId).catch(() => {
           /* non-fatal */
@@ -271,7 +273,7 @@ export function NotificationBell() {
     setLocalNotifications([]);
     saveLocal([]);
     void queryClient.invalidateQueries({ queryKey: ['notifications'] });
-  }, [serverNotifications, queryClient]);
+  }, [queryClient]);
 
   // ── Icon helpers ──────────────────────────────────────────────────────────────
 
@@ -392,7 +394,7 @@ export function NotificationBell() {
                       removeItem(n);
                     }}
                     className="btn-ghost p-1 text-muted-foreground hover:text-destructive flex-shrink-0 self-start mt-0.5"
-                    aria-label="Dismiss notification"
+                    aria-label={`Dismiss: ${n.title}`}
                     title="Dismiss"
                   >
                     <X className="w-3 h-3" />

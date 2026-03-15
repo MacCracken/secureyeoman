@@ -59,8 +59,7 @@ Options:
       return 1;
     }
 
-    const { baseUrl, rest: argvAfterFlags } = extractCommonFlags(argv);
-    argv = argvAfterFlags;
+    const { baseUrl } = extractCommonFlags(argv);
 
     // History file
     const historyDir = path.join(os.homedir(), '.secureyeoman');

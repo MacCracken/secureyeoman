@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify from 'fastify';
 
 // ── Mock ConstitutionalEngine ────────────────────────────────────────────────
 

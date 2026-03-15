@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { parseLockFile, diffLockFiles, analyzeRisks } from './dependency-tracker.js';
 import type { DependencyDiff, LockEntry } from './dependency-tracker.js';
 

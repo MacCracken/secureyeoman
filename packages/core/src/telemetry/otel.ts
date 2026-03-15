@@ -76,7 +76,7 @@ export async function initTracing(config: TelemetryConfig = {}): Promise<void> {
     _initialized = true;
   } catch (err) {
     // Non-fatal — tracing degrades gracefully to no-op
-    console.error('[otel] Failed to initialize tracing:', err instanceof Error ? err.message : err);
+    process.stderr.write(`[otel] Failed to initialize tracing: ${err instanceof Error ? err.message : String(err)}\n`);
     _initialized = true;
   }
 }

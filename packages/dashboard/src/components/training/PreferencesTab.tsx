@@ -72,7 +72,7 @@ export function PreferencesTab() {
             </select>
           </div>
           <button
-            onClick={handleExport}
+            onClick={() => void handleExport()}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
           >
             <Download className="w-3.5 h-3.5" />

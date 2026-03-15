@@ -42,7 +42,7 @@ describe('AuditChain', () => {
 
   describe('chain linking', () => {
     it('should link entries via previousEntryHash', async () => {
-      const first = await chain.record({
+      const _first = await chain.record({
         event: 'event_1',
         level: 'info',
         message: 'First',

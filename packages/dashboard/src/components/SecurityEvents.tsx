@@ -123,7 +123,7 @@ export function SecurityEvents({ metrics }: SecurityEventsProps) {
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium">Audit Chain</h3>
             <button
-              onClick={handleVerifyChain}
+              onClick={() => void handleVerifyChain()}
               disabled={verifying}
               className="btn-ghost p-2"
               aria-label="Verify audit chain"

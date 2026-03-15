@@ -226,7 +226,7 @@ export class AgnosVideoBridge {
         { url: path, error: errorToString(err) },
         'AGNOS video bridge request failed'
       );
-      throw new Error(`AGNOS video bridge: ${errorToString(err)}`);
+      throw new Error(`AGNOS video bridge: ${errorToString(err)}`, { cause: err });
     }
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, Check, Loader2, X, Cpu, Download, Trash2 } from 'lucide-react';
 import {
@@ -53,14 +53,16 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
 
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
 
-  // Expand current provider on initial data load
-  const didAutoExpand = useRef(false);
+  // Expand current provider once on initial data load
+  const resolvedProvider = data?.current.provider;
   useEffect(() => {
-    if (data?.current.provider && !didAutoExpand.current) {
-      didAutoExpand.current = true;
-      setExpandedProviders(new Set([data.current.provider]));
+    if (resolvedProvider) {
+      setExpandedProviders((prev) => {
+        if (prev.size > 0) return prev; // already interacted — don't override
+        return new Set([resolvedProvider]);
+      });
     }
-  }, [data?.current.provider]);
+  }, [resolvedProvider]);
 
   const switchMutation = useMutation({
     mutationFn: switchModel,

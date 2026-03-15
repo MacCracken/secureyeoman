@@ -171,7 +171,7 @@ export function ResourceMonitor({ metrics }: ResourceMonitorProps) {
         {/* Cost */}
         <div
           className="p-4 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-          onClick={() => navigate('/metrics')}
+          onClick={() => void navigate('/metrics')}
           title="View cost analytics"
         >
           <div className="flex items-center gap-2 mb-2">

@@ -228,12 +228,12 @@ export class SkillScheduler {
 
     const delay = nextRunAt - Date.now();
     if (delay <= 0) {
-      this.executeScheduledSkill(skill);
+      void this.executeScheduledSkill(skill);
       return;
     }
 
     const timer = setTimeout(() => {
-      this.executeScheduledSkill(skill);
+      void this.executeScheduledSkill(skill);
     }, delay);
 
     this.timers.set(skill.id, timer);
@@ -464,7 +464,7 @@ export class SkillScheduler {
   private emitEvent(event: ScheduleEvent): void {
     for (const handler of this.eventHandlers) {
       try {
-        handler(event);
+        void handler(event);
       } catch (err) {
         logger.error({ err }, 'Schedule event handler error');
       }

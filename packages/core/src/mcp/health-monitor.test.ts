@@ -208,7 +208,7 @@ describe('McpHealthMonitor', () => {
         ],
         total: 2,
       });
-      (storage.getServer as ReturnType<typeof vi.fn>).mockImplementation(async (id: string) => {
+      (storage.getServer as ReturnType<typeof vi.fn>).mockImplementation((id: string) => {
         if (id === 'srv-enabled') {
           return { id: 'srv-enabled', name: 'Enabled', transport: 'stdio', enabled: true };
         }

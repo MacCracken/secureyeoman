@@ -16,7 +16,7 @@ const {
   mockCreateInterface,
   mockVaultSet,
 } = vi.hoisted(() => {
-  const flagCallCount = 0;
+  const _flagCallCount = 0;
 
   return {
     mockExistsSync: vi.fn().mockReturnValue(false),

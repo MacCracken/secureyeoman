@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConnectionManager } from './ConnectionManager';
@@ -20,8 +20,8 @@ import * as api from '../api/client';
 
 const mockFetchIntegrations = vi.mocked(api.fetchIntegrations);
 const mockFetchAvailablePlatforms = vi.mocked(api.fetchAvailablePlatforms);
-const mockCreateIntegration = vi.mocked(api.createIntegration);
-const mockStartIntegration = vi.mocked(api.startIntegration);
+const _mockCreateIntegration = vi.mocked(api.createIntegration);
+const _mockStartIntegration = vi.mocked(api.startIntegration);
 
 // ── Helpers ──────────────────────────────────────────────────────
 

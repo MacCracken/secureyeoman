@@ -184,7 +184,7 @@ export class BrowserSessionStorage extends PgBaseStorage {
     const total = parseInt(countResult?.count ?? '0', 10);
 
     const rows = await this.queryMany(
-      `SELECT * FROM browser.sessions ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      `SELECT * FROM browser.sessions ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
     );
 

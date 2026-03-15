@@ -21,7 +21,7 @@ import * as api from '../api/client';
 const mockFetchRules = vi.mocked(api.fetchRoutingRules);
 const mockCreateRule = vi.mocked(api.createRoutingRule);
 const mockUpdateRule = vi.mocked(api.updateRoutingRule);
-const mockDeleteRule = vi.mocked(api.deleteRoutingRule);
+const _mockDeleteRule = vi.mocked(api.deleteRoutingRule);
 const mockTestRule = vi.mocked(api.testRoutingRule);
 const mockFetchIntegrations = vi.mocked(api.fetchIntegrations);
 const mockFetchPersonalities = vi.mocked(api.fetchPersonalities);

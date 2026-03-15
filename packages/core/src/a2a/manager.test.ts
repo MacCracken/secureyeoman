@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { A2AManager } from './manager.js';
 import type { A2AConfig } from '@secureyeoman/shared';
 
@@ -285,9 +285,9 @@ describe('A2AManager', () => {
     });
 
     it('returns null when transport send fails', async () => {
-      const { manager } = makeManager({}, {});
-      const transport = makeTransport({ send: vi.fn().mockResolvedValue(false) });
-      const { manager: mgr } = makeManager({}, {});
+      const { _manager } = makeManager({}, {});
+      const _transport = makeTransport({ send: vi.fn().mockResolvedValue(false) });
+      const { manager: _mgr } = makeManager({}, {});
       // Create manager with failing transport
       const storage = makeStorage();
       const logger = makeLogger();

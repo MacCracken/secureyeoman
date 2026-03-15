@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { SwarmManager } from './swarm-manager.js';
 import type { SwarmStorage } from './swarm-storage.js';
 import type { SubAgentManager } from './manager.js';
@@ -385,7 +385,7 @@ describe('SwarmManager.executeSwarm — dynamic strategy', () => {
       { delegate: vi.fn().mockRejectedValue(new Error('coordinator crashed')) }
     );
 
-    const run = await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build' });
+    const _run = await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build' });
     // Run should be marked as failed, not completed
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',

@@ -6,7 +6,7 @@
  * covers all branches without a database connection.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { TaskStorage } from './task-storage.js';
 import { TaskStatus, TaskType } from '@secureyeoman/shared';
 import type { Task } from '@secureyeoman/shared';
@@ -288,7 +288,7 @@ describe('TaskStorage.getStats()', () => {
   it('calculates stats from row data', async () => {
     const storage = new TaskStorage();
     let queryOneCalled = 0;
-    vi.spyOn(storage as any, 'queryOne').mockImplementation(async () => {
+    vi.spyOn(storage as any, 'queryOne').mockImplementation(() => {
       queryOneCalled++;
       if (queryOneCalled === 1) {
         return {
@@ -323,7 +323,7 @@ describe('TaskStorage.getStats()', () => {
   it('handles null avg_duration', async () => {
     const storage = new TaskStorage();
     let queryOneCalled = 0;
-    vi.spyOn(storage as any, 'queryOne').mockImplementation(async () => {
+    vi.spyOn(storage as any, 'queryOne').mockImplementation(() => {
       queryOneCalled++;
       if (queryOneCalled === 1) {
         return {
@@ -347,7 +347,7 @@ describe('TaskStorage.getStats()', () => {
   it('counts timeout and cancelled in finishedCount for successRate', async () => {
     const storage = new TaskStorage();
     let queryOneCalled = 0;
-    vi.spyOn(storage as any, 'queryOne').mockImplementation(async () => {
+    vi.spyOn(storage as any, 'queryOne').mockImplementation(() => {
       queryOneCalled++;
       if (queryOneCalled === 1) {
         return {

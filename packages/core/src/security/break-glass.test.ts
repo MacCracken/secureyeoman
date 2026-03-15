@@ -24,7 +24,7 @@ const mockAuditChain = vi.hoisted(() => ({
 // We mock node:crypto randomBytes so we can predict the raw key.
 
 const MOCK_RAW_HEX = 'a'.repeat(64); // 64 hex chars = 32 bytes
-const MOCK_HASH = 'sha256_of_raw_key';
+const _MOCK_HASH = 'sha256_of_raw_key';
 
 vi.mock('node:crypto', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:crypto')>();

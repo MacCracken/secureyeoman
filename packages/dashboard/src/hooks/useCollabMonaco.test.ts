@@ -340,7 +340,7 @@ describe('useCollabMonaco', () => {
 
   it('does not open WebSocket when docId changes to null', async () => {
     const useCollabMonaco = await importHook();
-    const { result, rerender } = renderHook(
+    const { result, _rerender } = renderHook(
       ({ docId }: { docId: string | null }) => useCollabMonaco(docId),
       { initialProps: { docId: null } }
     );

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import {
   ContentTypeSelector,
@@ -11,8 +11,8 @@ import {
   CategoryGroupedGrid,
   categoryLabel,
   exportSkill,
-  CONTENT_TYPES,
-  SKILL_CATEGORIES,
+  _CONTENT_TYPES,
+  _SKILL_CATEGORIES,
 } from './shared';
 import type { CatalogSkill, Personality, Skill } from '../../types';
 

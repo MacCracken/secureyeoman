@@ -451,7 +451,7 @@ describe('LettaProvider', () => {
     function makeStreamResponse(lines: string[]) {
       const encoder = new TextEncoder();
       const data = lines.map((l) => `data: ${l}\n`).join('\n');
-      const done = false;
+      const _done = false;
       return {
         ok: true,
         body: {

@@ -88,7 +88,7 @@ export class ApprovalManager extends PgBaseStorage {
       `SELECT id, personality_id, tool_name, tool_args, status, created_at, resolved_at, resolved_by
        FROM soul.pending_approvals ${where}
        ORDER BY created_at DESC
-       LIMIT $${idx++} OFFSET $${idx++}`,
+       LIMIT $${idx++} OFFSET $${idx}`,
       [...params, limit, offset]
     );
 

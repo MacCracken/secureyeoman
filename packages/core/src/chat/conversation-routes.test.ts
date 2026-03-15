@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { registerConversationRoutes } from './conversation-routes.js';
 import type { ConversationStorage } from './conversation-storage.js';

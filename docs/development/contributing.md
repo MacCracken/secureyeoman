@@ -204,6 +204,7 @@ All integration code lives in SecureYeoman. External repos are read-only unless 
 | Synapse (LLM) | 8420/8421 | `/api/v1/models`, `/api/v1/inference`, `/api/v1/training/jobs` |
 | Delta (code forge) | 8070 | `/api/v1/repos`, `/api/v1/pulls`, `/api/v1/pipelines` |
 | Shruti (DAW) | 8050 | `/api/v1/session`, `/api/v1/tracks`, `/api/v1/transport` |
+| Rasa (image editor) | 8080 | MCP tools: `rasa_get_document`, `rasa_create_layer`, etc. |
 | Aequi (accounting) | 8060 | TBD |
 
 ### MCP Tool Gating

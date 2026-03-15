@@ -211,7 +211,7 @@ export class ExecutionStorage extends PgBaseStorage {
     );
 
     const rows = await this.queryMany<ExecutionRow>(
-      `SELECT * FROM execution.history ${where} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
+      `SELECT * FROM execution.history ${where} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx}`,
       [...values, limit, offset]
     );
 

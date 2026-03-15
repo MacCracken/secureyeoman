@@ -223,7 +223,7 @@ describe('startCommand', () => {
     it('writes banner after successful start (then sends SIGINT to stop)', async () => {
       // After startup succeeds, the command blocks on signal — emit SIGINT to unblock
       let signalHandler: (() => void) | null = null;
-      const origOn = process.on.bind(process);
+      const _origOn = process.on.bind(process);
       vi.spyOn(process, 'on').mockImplementation((event: string, handler: any) => {
         if (event === 'SIGINT') signalHandler = handler;
         return process;

@@ -5,7 +5,7 @@
  * through to the core API client correctly.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerGithubApiTools } from './github-api-tools.js';
 import type { CoreApiClient } from '../core-client.js';

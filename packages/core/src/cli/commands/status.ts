@@ -40,8 +40,7 @@ Options:
     argv = profileResult.rest;
     const showProfile = profileResult.value;
 
-    const { baseUrl, json: jsonOutput, rest: argvAfterFlags } = extractCommonFlags(argv);
-    argv = argvAfterFlags;
+    const { baseUrl, json: jsonOutput } = extractCommonFlags(argv);
 
     try {
       // Fetch all endpoints in parallel

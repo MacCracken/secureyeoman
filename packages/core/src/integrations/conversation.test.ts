@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ConversationManager } from './conversation.js';
 import type { UnifiedMessage } from '@secureyeoman/shared';
 

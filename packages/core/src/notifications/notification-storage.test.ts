@@ -5,7 +5,7 @@
  * No database required.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { NotificationStorage, type Notification } from './notification-storage.js';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ function makeRow(
   };
 }
 
-function makeNotification(overrides: Partial<Notification> = {}): Notification {
+function _makeNotification(overrides: Partial<Notification> = {}): Notification {
   return {
     id: 'notif-1',
     type: 'heartbeat_alert',

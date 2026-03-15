@@ -28,6 +28,7 @@ export type EcosystemServiceId =
   | 'photisnadi'
   | 'aequi'
   | 'shruti'
+  | 'rasa'
   | 'edge';
 
 export type EcosystemServiceStatus =
@@ -148,6 +149,17 @@ const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
     healthPath: '/health',
     requiredSecrets: ['SHRUTI_API_KEY'],
     mcpConfigKey: 'exposeShrutiTools',
+  },
+  {
+    id: 'rasa',
+    displayName: 'Rasa Image Editor',
+    description:
+      'AI-native image editor with GPU-accelerated rendering, generative AI, and MCP tool integration',
+    urlEnv: 'RASA_URL',
+    defaultUrl: 'http://127.0.0.1:8080',
+    healthPath: '/health',
+    requiredSecrets: [],
+    mcpConfigKey: 'exposeRasaTools',
   },
   {
     id: 'edge',

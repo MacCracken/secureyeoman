@@ -8,6 +8,76 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.14]
 
+### DDoS & Distributed Denial of Detection (DDoD) Defense — 7 Modules
+
+Complete application-layer defense stack for self-hosted deployments without a reverse proxy. 7 modules, 102 unit tests, all wired into the Fastify gateway hook chain.
+
+- **Connection Limiter** (`connection-limiter.ts`): Per-IP concurrent cap (50), global cap (1000), connection rate limit (20/s), Slowloris protection via headers/request/keepalive timeouts, max requests per socket. 12 tests.
+- **Body Size Enforcement** (`body-limit.ts`): Per-route limits (auth=16KB, chat=512KB, upload=10MB, default=1MB). Fastify `onRequest` hook checks `content-length` before parsing. 11 tests.
+- **Adaptive Rate Limiting** (`adaptive-rate-limiter.ts`): Wraps `RateLimiterLike`, samples CPU/memory/event-loop-lag every 5s, EMA-smoothed pressure score. Three tiers: normal (1x), elevated (0.7x at 40%), critical (0.4x at 70%). Wired to backpressure manager. 11 tests.
+- **Backpressure & Connection Draining** (`backpressure.ts`): Three-level load shedding (normal/elevated/critical). Route priority classification (critical: auth+chat+health, low: metrics+diagnostics). Drain mode for graceful shutdown. 17 tests.
+- **IP Reputation & Auto-Blocking** (`ip-reputation.ts`): In-memory LRU cache with exponential score decay (half-life 1h). Violation recording from rate-limit hits (+10) and auth failures (+15). Auto-block at score 80, auto-unblock on decay. 15 tests.
+- **Distributed Low-Rate Detection** (`low-rate-detector.ts`): Time-bucketed counters per route prefix. Baseline tracking via 12-window circular buffer. Alerts when unique IPs > 50 AND count > 3x baseline. 14 tests.
+- **Request Fingerprinting** (`request-fingerprint.ts`): Header ordering hash (SHA256, cached), missing browser header detection, bot UA patterns, metronomic timing detection. Score-based classification (human/suspicious/bot). 22 tests.
+
+**Shared utilities**: `PeriodicCleanup` class for timer lifecycle, `normalizeIp()` + `isPrivateIp()` in `utils/ip.ts` for IPv6-mapped IPv4 normalization across all modules.
+
+**Gateway hook chain order**: OpenTelemetry → IP normalization → Backpressure → Fingerprinting → IP Reputation → Local network check → Correlation ID → Security headers → Body size → CORS → Rate limiting (adaptive) → Auth+RBAC → Low-rate detection (onResponse).
+
+### Dashboard Audit & Repair — 15 Fixes
+
+Systematic audit of the dashboard codebase. 15 fixes across security, accessibility, state management, error handling, and UX.
+
+**Critical**
+- NotificationBell: Fixed memory leak from unstable `serverNotifications` dependency in `clearAll` callback — replaced with ref
+- useOffline: Fixed race condition in mutation sync — replaced state guard with synchronous ref
+
+**High**
+- ConfirmDialog: Added focus restore on close + `type="button"` on all buttons
+- API client: Preserved HTTP status code in retry error fallback
+- SearchBar: Added `aria-controls`, `aria-activedescendant`, result element IDs
+- LoginPage: Added `aria-required="true"` on password input
+- useChat: Added `console.warn` in dev mode for silent SSE parse failures
+
+**Medium**
+- DashboardLayout: Per-route error boundaries replacing single catchall
+- SearchBar: Added "Search failed" error state display
+- AgnosticMetricsWidget: Updated naming from "AGNOSTIC QA" to "Agnostic" (multi-agent platform)
+
+**Low**
+- ChatPage: aria-labels on message icons, aria-hidden on decorative metadata
+- NotificationBell: Specific dismiss aria-labels per notification
+- DashboardLayout: Health check error banner for unreachable server
+- ModelWidget: Replaced useRef flag anti-pattern with proper dependency tracking
+- useChat: Added `.catch()` on all `invalidateQueries` calls
+
+### Phase 16 Complete — Shruti DAW Ecosystem Integration
+
+- Fixed Shruti server bind address (`crates/shruti-ai/src/serve.rs`): respects `SHRUTI_HOST` env var (was hardcoded `127.0.0.1`)
+- Updated `docker-compose.yml`: added `SHRUTI_HOST: '0.0.0.0'` and `SHRUTI_URL` for Docker networking
+- Verified end-to-end: ecosystem service discovery → probe (1ms) → enable → connected, secrets provisioned
+- Dashboard card renders automatically from ecosystem services API — no separate component needed
+- All 85 Shruti integration tests passing
+
+### Featured MCP Servers — Shipping & Logistics
+
+Added Shippo, ShipBob, and ShipStation to the dashboard MCP prebuilt picker (`McpPrebuilts.tsx`). One-click connect with API key configuration for rate shopping, label generation, tracking, inventory, and fulfillment.
+
+### Edge Binary Builds
+
+Cross-compiled `secureyeoman-edge` for both target architectures:
+- `secureyeoman-edge-linux-arm64` (6.7MB, static) — Raspberry Pi 4
+- `secureyeoman-edge-linux-x64` (7.2MB, static) — Amazon DeepLens (Intel Atom)
+- All edge tests passing (83 tests)
+
+### AGNOS Edge Image Build Script
+
+Added `--edge` flag to `agnosticos/scripts/build-iso-aarch64.sh`:
+- 512MB minimal image (vs 2GB full desktop)
+- `--sy-edge-binary` flag bakes SY edge binary into `/usr/bin/secureyeoman-edge`
+- Auto-start via systemd unit, WireGuard included, GPU mem 16MB (headless)
+- CI job added to `build-iso.yml` for automated edge RPi4 image builds
+
 ### Proactive Config: Body → Brain Migration (ADR-040)
 
 Moved per-personality proactive assistance configuration from the Body domain (`body.proactiveConfig`) to a new Brain domain (`brainConfig.proactiveConfig`). Proactive assistance is a cognitive activity — pattern recognition, decision-making, learning — that belongs with the brain's memory and reasoning systems, not the body's integration wiring.

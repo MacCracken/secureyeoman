@@ -44,7 +44,8 @@ export class AgentCrypto {
         };
       } catch (err) {
         throw new Error(
-          `Failed to parse key store at ${keyStorePath}: ${err instanceof Error ? err.message : String(err)}`
+          `Failed to parse key store at ${keyStorePath}: ${err instanceof Error ? err.message : String(err)}`,
+          { cause: err }
         );
       }
       this.x25519PrivateKey = createPrivateKey({

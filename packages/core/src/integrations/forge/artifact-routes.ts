@@ -7,7 +7,7 @@
 
 import type { FastifyInstance } from 'fastify';
 import { sendError } from '../../utils/errors.js';
-import type { ArtifactRegistryAdapter, ForgeConfig, ForgeProvider } from './types.js';
+import type { ArtifactRegistryAdapter, ForgeConfig } from './types.js';
 import { createRegistryAdapter } from './registries/registry-factory.js';
 
 export interface ArtifactRoutesOptions {

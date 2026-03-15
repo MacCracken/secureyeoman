@@ -3,8 +3,7 @@ import { z } from 'zod';
 import { IntegrationStorage } from './storage.js';
 import { IntegrationManager } from './manager.js';
 import { MessageRouter } from './message-router.js';
-import type { Integration, IntegrationDeps } from './types.js';
-import type { IntegrationConfig, UnifiedMessage } from '@secureyeoman/shared';
+import type { Integration } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 

@@ -4,7 +4,7 @@
  * Tests all 4 REST endpoints using a Fastify test instance with a mocked storage.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import type { UserNotificationPref } from './user-notification-prefs-storage.js';
 import { registerUserNotificationPrefsRoutes } from './user-notification-prefs-routes.js';

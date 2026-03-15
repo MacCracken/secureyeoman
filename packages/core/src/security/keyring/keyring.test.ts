@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { EnvironmentProvider } from './environment-provider.js';
 import { LinuxSecretServiceProvider } from './linux-secret-service.js';
 import { MacOSKeychainProvider } from './macos-keychain.js';

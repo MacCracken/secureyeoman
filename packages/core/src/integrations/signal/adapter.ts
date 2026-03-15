@@ -115,6 +115,6 @@ export class SignalIntegration implements Integration {
       timestamp: envelope.message.timestamp || Date.now(),
     };
 
-    this.deps?.onMessage(unified);
+    void this.deps?.onMessage(unified);
   }
 }

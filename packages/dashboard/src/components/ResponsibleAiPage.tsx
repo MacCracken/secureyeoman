@@ -582,7 +582,7 @@ function DataProvenance() {
                     <td className="py-2 px-3 text-right">
                       {entry.status !== 'redacted' && (
                         <button
-                          onClick={() => handleRedact(entry.id)}
+                          onClick={() => void handleRedact(entry.id)}
                           className="px-2 py-1 text-xs bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded transition-colors"
                         >
                           GDPR Redact
@@ -657,7 +657,7 @@ function ModelCards() {
               <p className="text-zinc-400 text-sm">Version {data.version}</p>
             </div>
             <button
-              onClick={handleViewMarkdown}
+              onClick={() => void handleViewMarkdown()}
               className="px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded transition-colors"
             >
               View Markdown

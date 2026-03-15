@@ -10,9 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| — | Dashboard Audit & Repair | P1 — quality | Planned (pre-release) |
 | — | E2E Test Expansion | P1 — quality | Planned |
-| 16 | Shruti DAW Ecosystem Integration | P2 — platform | 16A–C done; dashboard panel remaining |
 | 17 | Native Mobile Experience | P2 — platform | Planned (17A–E) |
 | — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
 | Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Shipping & Logistics, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Demand-gated |
@@ -109,21 +107,6 @@
 
 ---
 
-## Dashboard Audit & Repair
-
-**Priority**: P1 — Quality. Pre-release.
-
-**Goal**: Systematic audit of the dashboard codebase for bugs, UX issues, accessibility, and code quality. Findings become tracked repair items — fix critical/high now, defer medium/low to engineering backlog.
-
-- [ ] **Component audit** — Review all major pages and panels for correctness, responsiveness, error states, and loading states
-- [ ] **Accessibility pass** — Keyboard navigation, ARIA labels, color contrast, screen reader compatibility
-- [ ] **State management audit** — TanStack Query cache invalidation, optimistic updates, stale data handling
-- [ ] **Error boundary coverage** — Ensure all major sections have error boundaries with user-friendly fallbacks
-- [ ] **Performance audit** — Bundle size analysis, unnecessary re-renders, lazy loading of heavy components
-- [ ] **Repair items** — Tracked as sub-tasks; critical/high fixed pre-release, medium/low added to engineering backlog
-
----
-
 ## E2E Test Expansion
 
 **Priority**: P1 — Quality. Currently 8 files / 67 tests. Target: cover all major user flows.
@@ -136,18 +119,6 @@
 - [ ] **Brain & RAG flows** — Knowledge ingestion, recall, memory scoping across personalities
 - [ ] **Marketplace flows** — Skill install/uninstall, workflow import, community sync
 - [ ] **MCP tool execution flows** — Tool discovery, execution via streamable HTTP, config toggling
-
----
-
-## Phase 16: Shruti DAW Ecosystem Integration
-
-**Priority**: P2 — Platform. See [ADR 034](../adr/034-ecosystem-integrations.md).
-
-**Goal**: Complete remaining Shruti DAW integration. Client, routes, MCP tools, voice bridge all complete (85 tests). Remaining: dashboard panel.
-
-### 16C: Dashboard Integration
-
-- [ ] **Dashboard panel** — Shruti card in ecosystem services panel. (Deferred — dashboard work tracked separately.)
 
 ---
 
@@ -176,6 +147,27 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
 | MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
 | Core E2E | Expand coverage | Currently 8 files / 67 tests (incl. binary smoke); add training, delegation, analytics flows |
+
+### ESLint 10 Warnings — Incremental Cleanup (2026-03-15)
+
+Upgraded from ESLint 9 → 10 with `typescript-eslint@8.57.0` and `eslint-plugin-react-hooks@7.0.1`. **0 errors** (CI-gated). 234 warnings remaining — fix incrementally.
+
+| Rule | Count | Category | Notes |
+|------|-------|----------|-------|
+| `no-floating-promises` | 96 | Code quality | Add `void` or `await` to unhandled promises |
+| `react-hooks/set-state-in-effect` | 29 | React 19 strict | Restructure setState in useEffect patterns |
+| `react-hooks/exhaustive-deps` | 24 | React hooks | Add missing deps to useEffect/useCallback |
+| `react-refresh/only-export-components` | 20 | HMR compat | Separate component/non-component exports |
+| `jsx-a11y/no-autofocus` | 15 | Accessibility | Review autoFocus usage, disable per-line if intentional |
+| `react-hooks/purity` | 14 | React 19 strict | Components with side effects |
+| `no-console` | 14 | Code quality | Replace with process.stderr.write or logger |
+| `react-hooks/refs` | 8 | React 19 strict | Ref usage patterns |
+| `react-hooks/immutability` | 6 | React 19 strict | Mutation of objects in render |
+| `react-hooks/static-components` | 4 | React 19 strict | Components defined inside other components |
+| `react-hooks/preserve-manual-memoization` | 3 | React 19 strict | useMemo/useCallback patterns |
+| `react-hooks/incompatible-library` | 1 | React 19 compat | Library compatibility |
+
+---
 
 ### Security Audit — Deferred Items (2026-03-13)
 
@@ -296,11 +288,22 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
+### Rasa Image Editor Integration
+
+*AI-native image editor for the SecureYeoman ecosystem. GPU-accelerated rendering, generative AI, and MCP tool integration for programmatic image manipulation from chat, workflows, and agents.*
+
+- [ ] **Ecosystem service registration** — Rasa added to service discovery (`service-discovery.ts`), docker-compose, and contributing docs. Dashboard card renders automatically. Docker image pending first GHCR release.
+- [ ] **MCP tools (native)** — Built-in `rasa_*` MCP tool set: `rasa_get_document`, `rasa_create_layer`, `rasa_apply_filter`, `rasa_generate_image`, `rasa_export`. Registered in `manifest.ts`, gated by `exposeRasaTools` flag.
+- [ ] **Image generation workflow** — Workflow templates: text-to-image via local models, batch image processing, thumbnail generation, screenshot annotation.
+- [ ] **Dashboard image viewer** — Inline image preview in chat messages when Rasa generates or edits images. Gallery view for document history.
+- [ ] **Vision pipeline integration** — Connect Rasa's AI engine to SY's multimodal pipeline for image understanding, OCR, and visual QA.
+
+---
+
 ### Shipping & Logistics Intelligence
 
 *Unified shipping operations via MCP integrations and native tools. Manage multi-carrier shipping, track packages, optimize fulfillment, and automate logistics workflows from within SecureYeoman.*
 
-- [ ] **Featured MCP servers** — Shippo, ShipBob, and ShipStation added to the dashboard MCP prebuilt picker. One-click connect with API key configuration. Covers rate shopping, label generation, tracking, inventory, and fulfillment.
 - [ ] **Logistics MCP tools (native)** — Built-in `logistics_*` MCP tool set: `logistics_track_shipment`, `logistics_get_rates`, `logistics_create_label`, `logistics_address_verify`. Unified interface across carriers via EasyPost or direct carrier APIs. Registered in `manifest.ts`, gated by `exposeLogisticsTools` flag.
 - [ ] **Shipment tracking dashboard widget** — Real-time package tracking card: carrier, status, ETA, map visualization. Multi-shipment list with filter/search. Status change notifications via proactive engine.
 - [ ] **Shipping workflow templates** — Pre-built workflows: order-to-ship automation (new order → rate shop → cheapest label → tracking notification), return processing, batch label generation, carrier performance comparison.
@@ -352,8 +355,8 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 - [ ] **Unified dev environment** — Shared `docker-compose.unified.yml` with networking across all three projects. Single `.env.unified` for common secrets.
 - [ ] **Unified SSO across all three projects** — OAuth2/OIDC federation: single identity provider, shared sessions. SecureYeoman as IdP or external OIDC provider.
-- [ ] **Cross-project agent delegation** — SecureYeoman brain delegates to AGNOSTIC QA agents running on AGNOS. Full chain: task → brain → A2A → QA agent → AGNOS sandbox → results → brain.
-- [ ] **Unified agent marketplace** — Single marketplace spanning SecureYeoman skills, AGNOSTIC QA capabilities, and AGNOS native agents. Cross-project discovery and installation.
+- [ ] **Cross-project agent delegation** — SecureYeoman brain delegates to AGNOSTIC agentic workers running on AGNOS. AGNOSTIC is a full multi-agent orchestration platform (not just QA) — supports autonomous task execution, code generation, research, security auditing, and custom agent workflows. Full chain: task → brain → A2A → AGNOSTIC agent worker → AGNOS sandbox → results → brain. Bi-directional: AGNOSTIC agents can also invoke SY skills and knowledge via A2A.
+- [ ] **Unified agent marketplace** — Single marketplace spanning SecureYeoman skills, AGNOSTIC agent capabilities, and AGNOS native agents. Cross-project discovery and installation.
 
 ---
 
@@ -431,4 +434,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-14 (Pruned completed items — Phases 14, 15, DDoS, WebSocket warm-up, Simulation core infra, PWA, and other `[x]` items moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-14 (Completed: Phase 16 Shruti, DDoS/DDoD 7 modules, Dashboard Audit 15 fixes, Featured MCP shipping servers. All moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*

@@ -11,7 +11,7 @@
  * - `unshare` command not available
  */
 
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { platform } from 'node:os';
 import { readFileSync } from 'node:fs';
 
@@ -60,7 +60,7 @@ export function detectNamespaceSupport(): NamespaceCapabilities {
   }
 
   // Check if unprivileged namespaces are allowed
-  let unprivilegedUserns = false;
+  let unprivilegedUserns: boolean;
   try {
     const val = readFileSync('/proc/sys/kernel/unprivileged_userns_clone', 'utf-8').trim();
     unprivilegedUserns = val === '1';

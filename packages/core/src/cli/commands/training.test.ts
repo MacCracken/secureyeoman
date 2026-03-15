@@ -43,7 +43,7 @@ function makeHeaders(contentType = 'application/json') {
   return { get: (key: string) => (key === 'content-type' ? contentType : null) };
 }
 
-function apiOk(data: unknown) {
+function _apiOk(data: unknown) {
   return Promise.resolve({
     ok: true,
     status: 200,
@@ -54,7 +54,7 @@ function apiOk(data: unknown) {
   });
 }
 
-function apiErr(status: number, message: string) {
+function _apiErr(status: number, message: string) {
   return Promise.resolve({
     ok: false,
     status,

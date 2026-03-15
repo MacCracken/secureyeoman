@@ -129,7 +129,7 @@ export class TraceStore extends PgBaseStorage {
               total_cost_usd, tool_iterations, success, error_message,
               tags, label, is_replay, source_trace_id, created_at, tenant_id
        FROM agent_replay.traces ${where}
-       ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+       ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...allValues, limit, offset]
     );
 

@@ -270,7 +270,7 @@ export class EvaluationManager {
     let outcomeCounted = 0;
 
     for (const sample of samples) {
-      let response = '';
+      let response: string;
       try {
         response = await config.modelFn(sample.prompt);
       } catch (err) {

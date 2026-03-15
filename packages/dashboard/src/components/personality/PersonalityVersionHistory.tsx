@@ -134,7 +134,7 @@ export default function PersonalityVersionHistory({ personalityId }: { personali
             )}
           </div>
           <button
-            onClick={handleTag}
+            onClick={() => void handleTag()}
             className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90"
           >
             Tag Release
@@ -146,7 +146,7 @@ export default function PersonalityVersionHistory({ personalityId }: { personali
         <div className="flex items-center justify-between bg-muted border border-border rounded px-4 py-3">
           <span className="text-muted-foreground">No tagged releases yet</span>
           <button
-            onClick={handleTag}
+            onClick={() => void handleTag()}
             className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90"
           >
             Tag First Release

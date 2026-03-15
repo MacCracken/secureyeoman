@@ -67,7 +67,7 @@ export class IacManager {
   async syncFromGit(): Promise<{ templates: IacTemplate[]; errors: string[] }> {
     this.log.info({}, 'Starting IaC sync from git');
 
-    let commitSha = '';
+    let commitSha: string;
     try {
       const pullResult = await this.gitRepo.pull();
       commitSha = pullResult.commitSha;

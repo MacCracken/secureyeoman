@@ -85,7 +85,7 @@ describe('Gateway Routes', () => {
     });
 
     it('should return 429 when RPM limit is exceeded', async () => {
-      const { app: a, keyId } = buildApp({
+      const { app: a, _keyId } = buildApp({
         gatewayRateLimitRpm: 2,
         gatewayRateLimitTpd: undefined,
         apiKeyId: `rpm-key-${testKeyCounter}`,

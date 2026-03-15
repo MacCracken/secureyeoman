@@ -590,7 +590,7 @@ export class SoulStorage extends PgBaseStorage {
         FROM soul.skills
        WHERE ${where}
        ORDER BY usage_count DESC, created_at DESC
-       LIMIT $${idx++} OFFSET $${idx++}`;
+       LIMIT $${idx++} OFFSET $${idx}`;
 
     const rows = await this.queryMany<SkillRow & { total_count: string }>(sql, [
       ...params,

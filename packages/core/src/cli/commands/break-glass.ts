@@ -71,7 +71,6 @@ export const breakGlassCommand: Command = {
     argv = rest1;
 
     const keyResult = extractFlag(argv, 'key');
-    argv = keyResult.rest;
 
     let recoveryKey = keyResult.value;
 

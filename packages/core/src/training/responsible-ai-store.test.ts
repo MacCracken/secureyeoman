@@ -16,7 +16,7 @@ vi.mock('../storage/pg-pool.js', () => ({
   getPool: () => ({ query: mockQuery }),
 }));
 
-const mockPool = { query: mockQuery } as any;
+const _mockPool = { query: mockQuery } as any;
 const mockLogger = {
   info: vi.fn(),
   debug: vi.fn(),

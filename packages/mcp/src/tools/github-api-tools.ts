@@ -448,8 +448,8 @@ export function registerGithubApiTools(
           const encrypted = encryptSshKey(privateKey, tokenSecret);
           await client.put(`/api/v1/secrets/${secretName}`, { value: encrypted });
         } catch (err) {
-          console.warn(
-            `[github_setup_ssh] Failed to persist encrypted key to SecretsManager: ${err instanceof Error ? err.message : String(err)}`
+          process.stderr.write(
+            `[github_setup_ssh] Failed to persist encrypted key to SecretsManager: ${err instanceof Error ? err.message : String(err)}\n`
           );
         }
       }
@@ -575,8 +575,8 @@ export function registerGithubApiTools(
           await client.put(`/api/v1/secrets/${newSecretName}`, { value: encrypted });
           secretNote += ` New key encrypted in SecretsManager as ${newSecretName}.`;
         } catch (err) {
-          console.warn(
-            `[github_rotate_ssh_key] Failed to persist encrypted key: ${err instanceof Error ? err.message : String(err)}`
+          process.stderr.write(
+            `[github_rotate_ssh_key] Failed to persist encrypted key: ${err instanceof Error ? err.message : String(err)}\n`
           );
         }
         if (oldSecretName && oldSecretName !== newSecretName) {

@@ -5,7 +5,7 @@
  * No DB required — AutonomyAuditManager is fully mocked.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { registerAutonomyRoutes } from './autonomy-routes.js';
 

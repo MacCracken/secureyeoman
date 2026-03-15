@@ -173,7 +173,7 @@ export class ConversationQualityScorer {
       params.push(fromTs);
     }
     if (toTs) {
-      conditions.push(`cq.scored_at <= $${idx++}`);
+      conditions.push(`cq.scored_at <= $${idx}`);
       params.push(toTs);
     }
 

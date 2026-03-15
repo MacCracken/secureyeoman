@@ -5,7 +5,7 @@
  * and pass through when enforcement is off or feature is licensed.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerTrainingRoutes } from '../training/training-routes.js';
 import { registerSsoRoutes } from '../gateway/sso-routes.js';

@@ -176,13 +176,15 @@ export class WindowsPermissionManager implements PlatformPermissionManager {
       return;
     }
 
-    this.pollInterval = setInterval(async () => {
-      try {
-        const status = await this.checkScreenCapturePermission();
-        callback(status);
-      } catch {
-        // Ignore errors
-      }
+    this.pollInterval = setInterval(() => {
+      void (async () => {
+        try {
+          const status = await this.checkScreenCapturePermission();
+          callback(status);
+        } catch {
+          // Ignore errors
+        }
+      })();
     }, 5000);
   }
 

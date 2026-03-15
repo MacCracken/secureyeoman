@@ -4,7 +4,7 @@
  * @see NEXT_STEP_05: Sandboxing
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { SandboxMonitor, getSandboxMonitor, resetSandboxMonitor } from '../sandbox/monitor.js';
 
 describe('SandboxMonitor', () => {

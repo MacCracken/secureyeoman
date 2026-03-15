@@ -45,7 +45,7 @@ export async function bootstrapAgnos(
   };
 
   // ── 1. Service discovery ───────────────────────────────────
-  let discovery: AgnosDiscoverResponse | null = null;
+  let discovery: AgnosDiscoverResponse | null;
   try {
     discovery = await client.discover();
     result.discovered = true;

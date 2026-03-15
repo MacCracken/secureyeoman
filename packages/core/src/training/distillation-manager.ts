@@ -427,7 +427,7 @@ export class DistillationManager {
         : '';
     const params: unknown[] = [...job.personalityIds];
 
-    let orderClause = '';
+    let orderClause: string;
     let joinClause = '';
 
     if (job.priorityMode === 'failure-first') {

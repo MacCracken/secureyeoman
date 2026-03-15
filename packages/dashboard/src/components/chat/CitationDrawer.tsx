@@ -124,13 +124,13 @@ export function CitationDrawer({ source, messageId, onClose }: CitationDrawerPro
         ) : (
           <div className="flex gap-2">
             <button
-              onClick={() => handleFeedback(true)}
+              onClick={() => void handleFeedback(true)}
               className="flex-1 px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800"
             >
               Relevant
             </button>
             <button
-              onClick={() => handleFeedback(false)}
+              onClick={() => void handleFeedback(false)}
               className="flex-1 px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
             >
               Not Relevant

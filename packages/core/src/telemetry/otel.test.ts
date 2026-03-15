@@ -2,7 +2,7 @@
  * OTel Bootstrap Tests (Phase 83)
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initTracing, getTracer, getCurrentTraceId, _resetForTests } from './otel.js';
 
 describe('initTracing', () => {

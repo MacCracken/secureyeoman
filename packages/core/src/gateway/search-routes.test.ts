@@ -29,7 +29,7 @@ vi.mock('../utils/process-env.js', () => ({
 }));
 
 import { execFile } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 const mockExecFile = vi.mocked(
   execFile as unknown as (...args: any[]) => Promise<{ stdout: string }>

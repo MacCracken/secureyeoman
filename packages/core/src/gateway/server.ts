@@ -4166,7 +4166,7 @@ export class GatewayServer {
     this.ipReputationManager?.stop();
     this.requestFingerprinter?.stop();
     this.lowRateDetector?.stop();
-    this.adaptiveRateLimiter?.stop();
+    void this.adaptiveRateLimiter?.stop();
     this.backpressureManager.stop();
     if (this.pressureInterval) {
       clearInterval(this.pressureInterval);

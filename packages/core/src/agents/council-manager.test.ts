@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { CouncilManager } from './council-manager.js';
 import type { CouncilStorage } from './council-storage.js';
 import type { SubAgentManager } from './manager.js';
@@ -294,7 +294,7 @@ describe('CouncilManager', () => {
         },
       });
 
-      const result = await manager.convene({ templateId: 'tmpl-1', topic: 'Should we expand?' });
+      const _result = await manager.convene({ templateId: 'tmpl-1', topic: 'Should we expand?' });
 
       // Should delegate to each member once (single pass)
       expect(subAgentManager.delegate).toHaveBeenCalledTimes(2);
@@ -476,7 +476,7 @@ describe('CouncilManager', () => {
 
     it('handles complete failure gracefully', async () => {
       const failedRun = { ...RUN, status: 'failed' as const, decision: 'Error: All agents down' };
-      const { manager, storage } = buildManager({
+      const { manager, _storage } = buildManager({
         storageOverrides: {
           getTemplate: vi.fn().mockResolvedValue({
             ...TEMPLATE,

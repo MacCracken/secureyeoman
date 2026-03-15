@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CategoryFilter, CategoryGroupedGrid, categoryLabel, SKILL_CATEGORIES } from './shared';
 import type { CatalogSkill } from '../../types';

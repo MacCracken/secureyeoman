@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ConstitutionalEngine, DEFAULT_PRINCIPLES } from './constitutional.js';
 import type { ConstitutionalConfig, ConstitutionalPrinciple } from '@secureyeoman/shared';
 import { createNoopLogger } from '../logging/logger.js';

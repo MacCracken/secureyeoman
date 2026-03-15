@@ -128,7 +128,7 @@ describe('IntegrationStorage', () => {
 
     it('filters by platform', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [integrationRow], rowCount: 1 });
-      const result = await storage.listIntegrations({ platform: 'slack' });
+      const _result = await storage.listIntegrations({ platform: 'slack' });
       const sql = mockQuery.mock.calls[0][0] as string;
       expect(sql).toContain('platform =');
     });

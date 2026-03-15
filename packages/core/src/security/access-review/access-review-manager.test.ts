@@ -6,7 +6,7 @@
  * No DB required — all dependencies are mocked.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { AccessReviewManager } from './access-review-manager.js';
 import type { CampaignRecord, EntitlementRecord, DecisionRecord } from './access-review-storage.js';
 
@@ -232,7 +232,7 @@ describe('AccessReviewManager.getEntitlementReport', () => {
   });
 
   it('deduplicates userId from in-memory and persisted assignments', async () => {
-    const { manager, rbac } = makeManager({
+    const { manager, _rbac } = makeManager({
       rbacOverrides: {
         listUserAssignments: vi.fn().mockReturnValue([
           { userId: 'user-1', roleId: 'role_operator' },

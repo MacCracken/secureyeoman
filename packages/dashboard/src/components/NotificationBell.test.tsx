@@ -261,7 +261,7 @@ describe('NotificationBell', () => {
     await user.click(screen.getByLabelText('Notifications'));
 
     // Click the first dismiss button
-    const dismissBtns = screen.getAllByLabelText('Dismiss notification');
+    const dismissBtns = screen.getAllByLabelText(/^Dismiss:/);
     await user.click(dismissBtns[0]);
 
     expect(screen.queryByText('Dismiss Me')).not.toBeInTheDocument();
@@ -640,7 +640,7 @@ describe('NotificationBell', () => {
 
     const user = userEvent.setup();
     await user.click(screen.getByLabelText('Notifications'));
-    const dismissBtns = screen.getAllByLabelText('Dismiss notification');
+    const dismissBtns = screen.getAllByLabelText(/^Dismiss:/);
     await user.click(dismissBtns[0]);
     expect(mockDeleteNotif).toHaveBeenCalledWith('db-99');
   });

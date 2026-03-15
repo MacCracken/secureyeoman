@@ -158,7 +158,7 @@ describe('BrainManager + Vector Memory', () => {
     it('uses semantic search when query.search is provided', async () => {
       vectorManager.searchMemories.mockResolvedValue([{ id: 'mem-1', score: 0.95 }]);
 
-      const results = await brain.recall({ search: 'test query' });
+      const _results = await brain.recall({ search: 'test query' });
 
       expect(vectorManager.searchMemories).toHaveBeenCalledWith('test query', 10, 0.7, undefined);
       expect(storage.getMemoryBatch as any).toHaveBeenCalledWith(['mem-1']);
@@ -168,7 +168,7 @@ describe('BrainManager + Vector Memory', () => {
       vectorManager.searchMemories.mockRejectedValue(new Error('Vector error'));
       (storage.queryMemories as any).mockResolvedValue([makeMemory('m1', 'fallback')]);
 
-      const results = await brain.recall({ search: 'test' });
+      const _results = await brain.recall({ search: 'test' });
       expect(storage.queryMemories).toHaveBeenCalled();
     });
   });

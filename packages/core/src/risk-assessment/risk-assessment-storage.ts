@@ -470,12 +470,11 @@ export class RiskAssessmentStorage extends PgBaseStorage {
     userId?: string
   ): Promise<ExternalFinding | null> {
     const now = Date.now();
-    let extra = '';
+    const extra = '';
     const params: unknown[] = [status, id];
 
     if (status === 'acknowledged') {
       params.splice(1, 0, userId ?? null, now);
-      extra = ', acknowledged_by = $2, acknowledged_at = $3';
       params[params.length - 1] = id;
       // rebuild properly
       const row = await this.queryOne<FindingRow>(

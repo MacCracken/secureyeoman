@@ -148,7 +148,7 @@ export class A2AStorage extends PgBaseStorage {
     );
 
     const rows = await this.queryMany<PeerRow>(
-      `SELECT * FROM a2a.peers ${where} ORDER BY last_seen DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
+      `SELECT * FROM a2a.peers ${where} ORDER BY last_seen DESC LIMIT $${paramIdx++} OFFSET $${paramIdx}`,
       [...values, limit, offset]
     );
 
@@ -306,7 +306,7 @@ export class A2AStorage extends PgBaseStorage {
     );
 
     const rows = await this.queryMany<MessageRow>(
-      `SELECT * FROM a2a.messages ${where} ORDER BY timestamp DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
+      `SELECT * FROM a2a.messages ${where} ORDER BY timestamp DESC LIMIT $${paramIdx++} OFFSET $${paramIdx}`,
       [...values, limit, offset]
     );
 

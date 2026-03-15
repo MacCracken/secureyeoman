@@ -62,7 +62,7 @@ const messageRow = {
   created_at: '2024-01-01T00:00:00Z',
 };
 
-function ok(rows: any[], rowCount = rows.length) {
+function _ok(rows: any[], rowCount = rows.length) {
   return Promise.resolve({ rows, rowCount });
 }
 

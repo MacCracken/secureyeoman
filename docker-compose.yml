@@ -95,6 +95,8 @@ services:
       SYNAPSE_GRPC_URL: ${SYNAPSE_GRPC_URL:-http://synapse:8421}
       # Shruti DAW — points to shruti/shruti-dev service on Docker network
       SHRUTI_URL: ${SHRUTI_URL:-http://shruti:8050}
+      # Rasa Image Editor
+      RASA_URL: ${RASA_URL:-http://rasa:8080}
     healthcheck:
       test:
         [
@@ -657,6 +659,54 @@ services:
       - full-dev
     restart: unless-stopped
 
+  # ── Rasa Image Editor ────────────────────────────────────────────────────────
+  # AI-native image editor with GPU-accelerated rendering and generative AI.
+  # Port 8080. Headless API mode.
+  rasa:
+    image: ghcr.io/maccracken/rasa:latest
+    ports:
+      - '${RASA_PORT:-8080}:8080'
+    volumes:
+      - rasa-data:/var/lib/rasa/data
+      - rasa-models:/var/lib/rasa/models
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      RASA_DATA_DIR: /var/lib/rasa/data
+      RASA_MODEL_DIR: /var/lib/rasa/models
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8080/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - rasa
+    restart: unless-stopped
+
+  # Rasa local build — uses sibling repo source for full integration dev.
+  rasa-dev:
+    build:
+      context: ../rasa
+      dockerfile: docker/Dockerfile
+    ports:
+      - '${RASA_PORT:-8080}:8080'
+    volumes:
+      - rasa-data:/var/lib/rasa/data
+      - rasa-models:/var/lib/rasa/models
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      RASA_DATA_DIR: /var/lib/rasa/data
+      RASA_MODEL_DIR: /var/lib/rasa/models
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8080/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - full-dev
+    restart: unless-stopped
+
   # Dashboard is now served by the core gateway (SPA serving via @fastify/static).
   # The separate dashboard service below is for local development only.
   sy-dashboard-dev:
@@ -694,6 +744,8 @@ volumes:
   synapse-data:
   aequi-data:
   shruti-data:
+  rasa-data:
+  rasa-models:
   delta-data:
   node-modules:
   dashboard-node-modules:

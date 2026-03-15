@@ -45,7 +45,7 @@ export default function CaptureTab() {
 
   useEffect(() => {
     refresh();
-    const interval = setInterval(refresh, 5000);
+    const interval = setInterval(() => void refresh(), 5000);
     return () => {
       clearInterval(interval);
     };
@@ -121,7 +121,7 @@ export default function CaptureTab() {
                   </span>
                 </div>
                 <button
-                  onClick={() => handleStopRecording(r.id)}
+                  onClick={() => void handleStopRecording(r.id)}
                   className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
                 >
                   Stop
@@ -153,13 +153,13 @@ export default function CaptureTab() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleDeny(c.id)}
+                    onClick={() => void handleDeny(c.id)}
                     className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
                   >
                     Deny
                   </button>
                   <button
-                    onClick={() => handleGrant(c.id)}
+                    onClick={() => void handleGrant(c.id)}
                     className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
                   >
                     Approve
@@ -199,8 +199,8 @@ export default function CaptureTab() {
         <Suspense fallback={null}>
           <ConsentDialog
             consent={selectedConsent}
-            onGrant={handleGrant}
-            onDeny={handleDeny}
+            onGrant={(id) => void handleGrant(id)}
+            onDeny={(id) => void handleDeny(id)}
             onClose={() => {
               setSelectedConsent(null);
             }}

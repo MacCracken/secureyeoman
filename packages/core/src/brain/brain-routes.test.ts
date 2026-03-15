@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { registerBrainRoutes } from './brain-routes.js';
 import type { BrainManager } from './manager.js';

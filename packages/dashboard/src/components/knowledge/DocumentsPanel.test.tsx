@@ -21,7 +21,7 @@ import * as api from '../../api/client';
 const mockListDocuments = vi.mocked(api.listDocuments);
 const mockDeleteDocument = vi.mocked(api.deleteDocument);
 const mockFetchPersonalities = vi.mocked(api.fetchPersonalities);
-const mockUploadDocument = vi.mocked(api.uploadDocument);
+const _mockUploadDocument = vi.mocked(api.uploadDocument);
 
 function createQC() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });

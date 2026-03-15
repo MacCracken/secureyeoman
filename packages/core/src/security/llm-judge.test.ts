@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { LLMJudge } from './llm-judge.js';
 import type { Personality } from '@secureyeoman/shared';
 import type { LLMJudgeConfig } from '@secureyeoman/shared';

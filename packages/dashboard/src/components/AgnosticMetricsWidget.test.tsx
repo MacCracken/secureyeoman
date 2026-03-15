@@ -65,7 +65,7 @@ describe('AgnosticMetricsWidget', () => {
     renderWithProvider(<AgnosticMetricsWidget />);
 
     await waitFor(() => {
-      expect(screen.getByText('AGNOSTIC QA')).toBeInTheDocument();
+      expect(screen.getByText('Agnostic')).toBeInTheDocument();
       expect(screen.getByText('healthy')).toBeInTheDocument();
       expect(screen.getByText('2')).toBeInTheDocument(); // pending
       expect(screen.getByText('1')).toBeInTheDocument(); // running

@@ -64,7 +64,7 @@ async function getNut(): Promise<NutLib> {
       '@nut-tree/nut-js is not installed. ' +
       'Install it as an optional dependency: npm install @nut-tree/nut-js. ' +
       `Original error: ${err instanceof Error ? err.message : String(err)}`;
-    throw new Error(_nutLoadError);
+    throw new Error(_nutLoadError, { cause: err });
   }
 }
 

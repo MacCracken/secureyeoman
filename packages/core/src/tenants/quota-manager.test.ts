@@ -124,7 +124,7 @@ describe('TenantQuotaManager', () => {
       const now = Date.now();
       const minuteStart = Math.floor(now / 60_000) * 60_000;
       (storage.getCounter as ReturnType<typeof vi.fn>).mockImplementation(
-        async (_tid: string, type: string, ws: number) => {
+        (_tid: string, type: string, ws: number) => {
           if (type === 'requests_per_minute' && ws === minuteStart) {
             return { currentValue: 60, maxValue: 60 } as UsageCounter;
           }
@@ -142,7 +142,7 @@ describe('TenantQuotaManager', () => {
       const minuteStart = Math.floor(now / 60_000) * 60_000;
       const hourStart = Math.floor(now / 3_600_000) * 3_600_000;
       (storage.getCounter as ReturnType<typeof vi.fn>).mockImplementation(
-        async (_tid: string, type: string, ws: number) => {
+        (_tid: string, type: string, ws: number) => {
           if (type === 'requests_per_minute' && ws === minuteStart) {
             return { currentValue: 10, maxValue: 60 } as UsageCounter;
           }
@@ -162,7 +162,7 @@ describe('TenantQuotaManager', () => {
       const minuteStart = Math.floor(now / 60_000) * 60_000;
       const hourStart = Math.floor(now / 3_600_000) * 3_600_000;
       (storage.getCounter as ReturnType<typeof vi.fn>).mockImplementation(
-        async (_tid: string, type: string, ws: number) => {
+        (_tid: string, type: string, ws: number) => {
           if (type === 'requests_per_minute' && ws === minuteStart) {
             return { currentValue: 50, maxValue: 60 } as UsageCounter;
           }
@@ -203,7 +203,7 @@ describe('TenantQuotaManager', () => {
       const now = Date.now();
       const dayStart = Math.floor(now / 86_400_000) * 86_400_000;
       (storage.getCounter as ReturnType<typeof vi.fn>).mockImplementation(
-        async (_tid: string, type: string, ws: number) => {
+        (_tid: string, type: string, ws: number) => {
           if (type === 'tokens_per_day' && ws === dayStart) {
             return { currentValue: 999_500, maxValue: 1_000_000 } as UsageCounter;
           }
@@ -220,7 +220,7 @@ describe('TenantQuotaManager', () => {
       const dayStart = Math.floor(now / 86_400_000) * 86_400_000;
       const monthStart = Math.floor(now / 2_592_000_000) * 2_592_000_000;
       (storage.getCounter as ReturnType<typeof vi.fn>).mockImplementation(
-        async (_tid: string, type: string, ws: number) => {
+        (_tid: string, type: string, ws: number) => {
           if (type === 'tokens_per_day' && ws === dayStart) {
             return { currentValue: 100_000, maxValue: 1_000_000 } as UsageCounter;
           }
@@ -240,7 +240,7 @@ describe('TenantQuotaManager', () => {
       const dayStart = Math.floor(now / 86_400_000) * 86_400_000;
       const monthStart = Math.floor(now / 2_592_000_000) * 2_592_000_000;
       (storage.getCounter as ReturnType<typeof vi.fn>).mockImplementation(
-        async (_tid: string, type: string, ws: number) => {
+        (_tid: string, type: string, ws: number) => {
           if (type === 'tokens_per_day' && ws === dayStart) {
             return { currentValue: 800_000, maxValue: 1_000_000 } as UsageCounter;
           }
@@ -276,13 +276,13 @@ describe('TenantQuotaManager', () => {
   describe('getUsageSummary', () => {
     it('returns structured summary with current counts and limits', async () => {
       const now = Date.now();
-      const minuteStart = Math.floor(now / 60_000) * 60_000;
-      const hourStart = Math.floor(now / 3_600_000) * 3_600_000;
-      const dayStart = Math.floor(now / 86_400_000) * 86_400_000;
-      const monthStart = Math.floor(now / 2_592_000_000) * 2_592_000_000;
+      const _minuteStart = Math.floor(now / 60_000) * 60_000;
+      const _hourStart = Math.floor(now / 3_600_000) * 3_600_000;
+      const _dayStart = Math.floor(now / 86_400_000) * 86_400_000;
+      const _monthStart = Math.floor(now / 2_592_000_000) * 2_592_000_000;
 
       (storage.getCounter as ReturnType<typeof vi.fn>).mockImplementation(
-        async (_tid: string, type: string, _ws: number) => {
+        (_tid: string, type: string, _ws: number) => {
           const map: Record<string, number> = {
             requests_per_minute: 15,
             requests_per_hour: 200,

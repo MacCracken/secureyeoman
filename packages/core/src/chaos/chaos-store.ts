@@ -116,7 +116,7 @@ export class ChaosStore extends PgBaseStorage {
 
     const rows = await this.queryMany<Record<string, unknown>>(
       `SELECT * FROM chaos.experiments ${where}
-       ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+       ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
     );
 

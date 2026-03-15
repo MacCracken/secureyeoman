@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExperimentRunner } from './experiment-runner.js';
 import { InMemoryExperimentStore } from './experiment-store.js';
 import type {
-  ExperimentSession,
+  _ExperimentSession,
   ExperimentHypothesis,
   ExperimentResult,
 } from './experiment-runner.js';

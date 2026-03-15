@@ -180,7 +180,7 @@ export class DataScanner implements ArtifactScanner {
 
     for (const sp of SERIALIZATION_PATTERNS) {
       if (findings.length >= MAX_FINDINGS) break;
-      let matched = false;
+      let matched: boolean;
       if (typeof sp.pattern === 'function') {
         matched = sp.pattern(buf);
       } else {

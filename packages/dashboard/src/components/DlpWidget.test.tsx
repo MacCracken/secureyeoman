@@ -52,7 +52,7 @@ const mockPolicies = {
 };
 
 function mockFetchAll() {
-  let callCount = 0;
+  const _callCount = 0;
   return vi.fn().mockImplementation((url: string) => {
     callCount++;
     if (url.includes('/classifications')) {

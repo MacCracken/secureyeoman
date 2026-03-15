@@ -118,7 +118,7 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
             )}
           </div>
           <button
-            onClick={handleTag}
+            onClick={() => void handleTag()}
             className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
           >
             Tag Release
@@ -130,7 +130,7 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
         <div className="flex items-center justify-between bg-gray-50 border rounded px-4 py-3">
           <span className="text-gray-500">No tagged releases yet</span>
           <button
-            onClick={handleTag}
+            onClick={() => void handleTag()}
             className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
           >
             Tag First Release

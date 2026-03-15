@@ -182,8 +182,8 @@ export class ConsentManager {
 
     // Set up auto-expiry timer
     if (this.config.autoDenyOnTimeout) {
-      const timer = setTimeout(async () => {
-        await this.handleTimeout(consent.id);
+      const timer = setTimeout(() => {
+        void this.handleTimeout(consent.id);
       }, effectiveTimeout);
       this.pendingTimers.set(consent.id, timer);
     }

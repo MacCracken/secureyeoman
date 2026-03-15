@@ -182,7 +182,7 @@ export class AuthStorage extends PgBaseStorage {
       params.push(fromTs);
     }
     if (toTs !== undefined) {
-      sql += ` AND timestamp <= $${idx++}`;
+      sql += ` AND timestamp <= $${idx}`;
       params.push(toTs);
     }
     sql += ' ORDER BY timestamp DESC LIMIT 1000';

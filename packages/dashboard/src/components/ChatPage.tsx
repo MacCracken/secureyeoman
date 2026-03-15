@@ -113,18 +113,22 @@ const MessageBubble = memo(function MessageBubble({
       >
         <div className="flex items-center gap-2 mb-1">
           {msg.role === 'user' ? (
-            <User className="w-3 h-3" />
+            <User className="w-3 h-3" aria-label="User message" />
           ) : personality ? (
             <PersonalityAvatar personality={personality} size={12} />
           ) : (
-            <Bot className="w-3 h-3" />
+            <Bot className="w-3 h-3" aria-label="Assistant message" />
           )}
           <span className="text-xs opacity-70">
             {msg.role === 'user' ? 'You' : (personality?.name ?? 'Assistant')}
           </span>
-          {msg.model && <span className="text-xs opacity-50">{msg.model}</span>}
+          {msg.model && (
+            <span className="text-xs opacity-50" aria-hidden="true">
+              {msg.model}
+            </span>
+          )}
           {msg.timestamp != null && (
-            <span className="text-xs opacity-40 ml-auto">
+            <span className="text-xs opacity-40 ml-auto" aria-hidden="true">
               {new Date(msg.timestamp).toLocaleDateString([], {
                 year: 'numeric',
                 month: 'short',
@@ -333,7 +337,9 @@ const MessageBubble = memo(function MessageBubble({
 
         <div className="flex items-center gap-2 mt-1">
           {msg.tokensUsed !== undefined && (
-            <span className="text-xs opacity-50">{msg.tokensUsed} tokens</span>
+            <span className="text-xs opacity-50" aria-hidden="true">
+              {msg.tokensUsed} tokens
+            </span>
           )}
 
           {/* Remember button on assistant messages */}
@@ -1369,7 +1375,7 @@ export function ChatPage() {
                           onRemember={handleRemember}
                           onFeedback={handleFeedback}
                           onEditStart={handleEditStart}
-                          onBranch={handleBranch}
+                          onBranch={(idx) => void handleBranch(idx)}
                         />
                       </div>
                     </div>

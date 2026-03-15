@@ -25,8 +25,8 @@ import * as api from '../../api/client';
 const mockFetchScenarios = vi.mocked(api.fetchAthiScenarios);
 const mockFetchMatrix = vi.mocked(api.fetchAthiMatrix);
 const mockFetchSummary = vi.mocked(api.fetchAthiSummary);
-const mockCreateScenario = vi.mocked(api.createAthiScenario);
-const mockDeleteScenario = vi.mocked(api.deleteAthiScenario);
+const _mockCreateScenario = vi.mocked(api.createAthiScenario);
+const _mockDeleteScenario = vi.mocked(api.deleteAthiScenario);
 
 function createQueryClient() {
   return new QueryClient({

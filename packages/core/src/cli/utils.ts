@@ -266,9 +266,9 @@ export async function apiCall(
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
-      throw new Error(`Connection refused: ${baseUrl} — is the server running?`);
+      throw new Error(`Connection refused: ${baseUrl} — is the server running?`, { cause: err });
     }
-    throw new Error(`HTTP request failed: ${msg}`);
+    throw new Error(`HTTP request failed: ${msg}`, { cause: err });
   }
 
   let data: unknown;

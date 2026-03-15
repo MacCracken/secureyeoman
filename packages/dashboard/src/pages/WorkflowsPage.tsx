@@ -39,7 +39,7 @@ export function WorkflowsPage() {
       const runId = result.run.id;
       setToast({ message: `Run started: ${runId}`, type: 'success' });
       setRunningId(null);
-      setTimeout(() => navigate(`/workflows/runs/${runId}`), 1200);
+      setTimeout(() => void navigate(`/workflows/runs/${runId}`), 1200);
     },
     onError: (err) => {
       setToast({
@@ -78,7 +78,7 @@ export function WorkflowsPage() {
           </div>
         </div>
         <button
-          onClick={() => navigate('/workflows/new/builder')}
+          onClick={() => void navigate('/workflows/new/builder')}
           className="btn btn-ghost flex items-center gap-2 text-sm font-medium"
         >
           <Plus className="w-4 h-4" />
@@ -157,7 +157,7 @@ export function WorkflowsPage() {
                 >
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => navigate(`/workflows/${def.id}/builder`)}
+                      onClick={() => void navigate(`/workflows/${def.id}/builder`)}
                       className="font-medium hover:text-primary transition-colors text-left"
                     >
                       {def.name}
@@ -200,7 +200,7 @@ export function WorkflowsPage() {
                         Run
                       </button>
                       <button
-                        onClick={() => navigate(`/workflows/${def.id}/builder`)}
+                        onClick={() => void navigate(`/workflows/${def.id}/builder`)}
                         className="px-3 py-1.5 rounded-md text-xs font-medium border hover:bg-muted/50 transition-colors"
                       >
                         Edit

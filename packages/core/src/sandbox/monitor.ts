@@ -207,15 +207,17 @@ export class SandboxMonitor {
       return;
     }
 
-    this.checkInterval = setInterval(async () => {
-      try {
-        const report = await this.checkIntegrity();
-        if (!report.allPassed) {
-          this.logger.error({ report }, 'Sandbox integrity check failed');
+    this.checkInterval = setInterval(() => {
+      void (async () => {
+        try {
+          const report = await this.checkIntegrity();
+          if (!report.allPassed) {
+            this.logger.error({ report }, 'Sandbox integrity check failed');
+          }
+        } catch (error) {
+          this.logger.error({ error }, 'Error during sandbox integrity check');
         }
-      } catch (error) {
-        this.logger.error({ error }, 'Error during sandbox integrity check');
-      }
+      })();
     }, intervalMs);
   }
 

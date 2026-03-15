@@ -154,7 +154,7 @@ export class ConstitutionalEngine {
 
     let currentResponse = response;
     let allCritiques: CritiqueResult[] = [];
-    let round = 0;
+    let round: number;
     let revised = false;
 
     for (round = 1; round <= this.config.maxRevisionRounds; round++) {

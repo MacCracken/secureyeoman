@@ -246,17 +246,19 @@ export class CaptureProcess {
   private startTimeout(): void {
     const timeoutMs = this.config.maxDuration * 1000;
     this.timeoutId = setTimeout(() => {
-      this.terminate('timeout');
+      void this.terminate('timeout');
       this.emitEvent('sandbox.timeout');
     }, timeoutMs);
   }
 
   private startMonitoring(): void {
-    this.monitorInterval = setInterval(async () => {
+    this.monitorInterval = setInterval(() => {
       if (!this.pid || this.status !== 'running') return;
+      const pid = this.pid;
 
+      void (async () => {
       try {
-        const usage = await this.getResourceUsage(this.pid);
+        const usage = await this.getResourceUsage(pid);
 
         const ok = this.sandbox.checkResourceLimits({
           memoryMb: usage.memoryMb,
@@ -274,6 +276,7 @@ export class CaptureProcess {
       } catch {
         // Process may have exited
       }
+      })();
     }, 1000);
   }
 

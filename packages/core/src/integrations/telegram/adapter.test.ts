@@ -272,7 +272,7 @@ describe('TelegramIntegration', () => {
     it('should not include reply_markup when no replyMarkup in metadata', async () => {
       await integration.init(makeConfig(), makeDeps());
       await integration.sendMessage('12345', 'Plain text');
-      const callArg = mockSendMessage.mock.calls[0][1];
+      const _callArg = mockSendMessage.mock.calls[0][1];
       // reply_markup key should be absent entirely
       expect(
         Object.prototype.hasOwnProperty.call(mockSendMessage.mock.calls[0][2], 'reply_markup')

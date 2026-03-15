@@ -159,7 +159,7 @@ export class EvalStore extends PgBaseStorage {
     const offset = opts.offset ?? 0;
     let idx = nextIdx;
     const rows = await this.queryMany<Record<string, unknown>>(
-      `SELECT * FROM eval.scenarios ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      `SELECT * FROM eval.scenarios ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
     );
 
@@ -210,7 +210,7 @@ export class EvalStore extends PgBaseStorage {
     values.push(id, tenantId);
 
     await this.execute(
-      `UPDATE eval.scenarios SET ${fullSetClause} WHERE id = $${idx++} AND tenant_id = $${idx++}`,
+      `UPDATE eval.scenarios SET ${fullSetClause} WHERE id = $${idx++} AND tenant_id = $${idx}`,
       values
     );
 
@@ -374,7 +374,7 @@ export class EvalStore extends PgBaseStorage {
     const offset = opts.offset ?? 0;
     let idx = nextIdx;
     const rows = await this.queryMany<Record<string, unknown>>(
-      `SELECT * FROM eval.suite_runs ${where} ORDER BY started_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      `SELECT * FROM eval.suite_runs ${where} ORDER BY started_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
     );
 

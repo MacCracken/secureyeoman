@@ -5,7 +5,7 @@
  * run cancellation, history retrieval, cleanup.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 const mockQuery = vi.fn();
 

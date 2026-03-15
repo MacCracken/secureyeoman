@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { PromptAbTestManager } from './prompt-ab-test.js';
 
 describe('PromptAbTestManager', () => {
@@ -114,8 +114,8 @@ describe('PromptAbTestManager', () => {
     });
 
     // All traffic goes to A
-    const r1 = manager.resolvePrompt('p1', 'c1')!;
-    const r2 = manager.resolvePrompt('p1', 'c2')!;
+    const _r1 = manager.resolvePrompt('p1', 'c1')!;
+    const _r2 = manager.resolvePrompt('p1', 'c2')!;
     manager.recordScore(test.id, 'c1', 0.8);
     manager.recordScore(test.id, 'c2', 0.9);
 

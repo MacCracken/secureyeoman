@@ -176,7 +176,7 @@ describe('TaskExecutor', () => {
       executor.registerHandler(slowHandler);
 
       // Create executor with very short timeout
-      const { executor: fastExecutor, auditChain: ac, rateLimiter: rl } = await createTestSetup();
+      const { executor: _fastExecutor, auditChain: ac, rateLimiter: rl } = await createTestSetup();
       await ac.initialize();
 
       const shortTimeoutExecutor = createTaskExecutor(

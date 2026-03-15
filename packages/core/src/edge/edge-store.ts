@@ -250,7 +250,7 @@ export class EdgeStore {
       params.push(opts.latencyMs);
     }
     if (opts?.currentVersion) {
-      sets.push(`current_version = $${idx++}`);
+      sets.push(`current_version = $${idx}`);
       params.push(opts.currentVersion);
     }
 
@@ -319,7 +319,7 @@ export class EdgeStore {
       params.push(requirements.tags);
     }
     if (requirements.maxLatencyMs) {
-      conditions.push(`(latency_ms IS NULL OR latency_ms <= $${idx++})`);
+      conditions.push(`(latency_ms IS NULL OR latency_ms <= $${idx})`);
       params.push(requirements.maxLatencyMs);
     }
 
@@ -374,7 +374,7 @@ export class EdgeStore {
   ): Promise<EdgeDeploymentRow | null> {
     const sets = ['status = $2'];
     const params: unknown[] = [id, update.status];
-    let idx = 3;
+    const idx = 3;
 
     if (update.status === 'running') {
       sets.push('started_at = now()');
@@ -383,7 +383,7 @@ export class EdgeStore {
       sets.push('stopped_at = now()');
     }
     if (update.errorMessage) {
-      sets.push(`error_message = $${idx++}`);
+      sets.push(`error_message = $${idx}`);
       params.push(update.errorMessage);
     }
 

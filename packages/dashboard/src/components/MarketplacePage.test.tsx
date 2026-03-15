@@ -17,7 +17,7 @@ vi.mock('../api/client', async (importOriginal) => {
 
 import * as api from '../api/client';
 const mockFetchSkills = vi.mocked(api.fetchMarketplaceSkills);
-const mockInstall = vi.mocked(api.installMarketplaceSkill);
+const _mockInstall = vi.mocked(api.installMarketplaceSkill);
 
 function createQC() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });

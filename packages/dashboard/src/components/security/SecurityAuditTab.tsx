@@ -186,19 +186,19 @@ export function AuditLogTab({
             {exportOpen && (
               <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
                 <button
-                  onClick={() => handleExport('jsonl')}
+                  onClick={() => void handleExport('jsonl')}
                   className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted/50"
                 >
                   JSONL
                 </button>
                 <button
-                  onClick={() => handleExport('csv')}
+                  onClick={() => void handleExport('csv')}
                   className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted/50"
                 >
                   CSV
                 </button>
                 <button
-                  onClick={() => handleExport('syslog')}
+                  onClick={() => void handleExport('syslog')}
                   className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted/50"
                 >
                   Syslog

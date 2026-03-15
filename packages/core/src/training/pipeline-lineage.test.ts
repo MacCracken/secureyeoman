@@ -3,7 +3,7 @@
  *
  * Tests lineage record creation and update operations with mocked pg.Pool.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { PipelineLineageStorage } from './pipeline-lineage.js';
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';

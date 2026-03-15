@@ -931,7 +931,7 @@ function StandardEditorPage() {
     if (!editor) return;
 
     const selection = editor.getSelection();
-    let text = '';
+    let text: string;
     if (selection && !selection.isEmpty()) {
       text = editor.getModel()?.getValueInRange(selection) ?? '';
     } else {
@@ -963,7 +963,7 @@ function StandardEditorPage() {
     if (!editor) return;
 
     const selection = editor.getSelection();
-    let code = '';
+    let code: string;
     if (selection && !selection.isEmpty()) {
       code = editor.getModel()?.getValueInRange(selection) ?? '';
     } else {
@@ -1155,7 +1155,7 @@ function StandardEditorPage() {
         label: 'Go to Dashboard',
         category: 'navigation',
         icon: <Globe className="w-3.5 h-3.5" />,
-        action: () => navigate('/'),
+        action: () => void navigate('/'),
         keywords: ['home'],
       },
       {
@@ -1163,7 +1163,7 @@ function StandardEditorPage() {
         label: 'Go to Personalities',
         category: 'navigation',
         icon: <Bot className="w-3.5 h-3.5" />,
-        action: () => navigate('/personality'),
+        action: () => void navigate('/personality'),
         keywords: ['souls'],
       },
       {
@@ -1171,7 +1171,7 @@ function StandardEditorPage() {
         label: 'Go to Security',
         category: 'navigation',
         icon: <Eye className="w-3.5 h-3.5" />,
-        action: () => navigate('/security'),
+        action: () => void navigate('/security'),
         keywords: ['policy'],
       },
     ];
@@ -2048,7 +2048,7 @@ function StandardEditorPage() {
                   commitMessage={aiCommit.message}
                   onCommitMessageChange={aiCommit.setMessage}
                   isGeneratingMessage={aiCommit.isGenerating}
-                  onGenerateMessage={aiCommit.generate}
+                  onGenerateMessage={() => void aiCommit.generate()}
                 />
               </div>
             )}
@@ -2091,7 +2091,7 @@ function StandardEditorPage() {
                 <AgentWorldWidget
                   maxAgents={8}
                   viewMode={worldViewMode}
-                  onAgentClick={(id) => navigate(`/soul/personalities?focus=${id}`)}
+                  onAgentClick={(id) => void navigate(`/soul/personalities?focus=${id}`)}
                 />
               </div>
             </div>

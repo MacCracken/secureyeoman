@@ -124,7 +124,6 @@ export class CommsStorage extends PgBaseStorage {
     if (query.limit) {
       sql += ` LIMIT $${paramIdx}`;
       params.push(query.limit);
-      paramIdx += 1;
     }
 
     return this.queryMany<MessageLogRow>(sql, params);

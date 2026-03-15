@@ -289,7 +289,7 @@ export function registerPhotisnadiTools(
       const sb = getSupabaseConfig();
 
       // Check Photisnadi web UI availability (raw fetch — one-off HEAD check)
-      let webUiStatus = 'unknown';
+      let webUiStatus: string;
       try {
         const uiRes = await fetch('http://photisnadi:8080/', {
           method: 'HEAD',

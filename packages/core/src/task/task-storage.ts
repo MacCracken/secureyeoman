@@ -260,7 +260,7 @@ export class TaskStorage extends PgBaseStorage {
       dataParams.push(filter.limit);
     }
     if (filter?.offset) {
-      dataQuery += ` OFFSET $${counter++}`;
+      dataQuery += ` OFFSET $${counter}`;
       dataParams.push(filter.offset);
     }
 

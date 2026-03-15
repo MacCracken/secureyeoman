@@ -66,7 +66,7 @@ export function registerDashboardRoutes(app: FastifyInstance, opts: DashboardRou
   app.delete(
     '/api/v1/dashboards/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-      if (!dashboardManager.delete(request.params.id)) {
+      if (!(await dashboardManager.delete(request.params.id))) {
         return sendError(reply, 404, 'Dashboard not found');
       }
       return reply.code(204).send();

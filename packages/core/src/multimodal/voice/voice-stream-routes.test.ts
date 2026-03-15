@@ -2,7 +2,7 @@
  * Tests for voice stream WebSocket routes — protocol message parsing and handling.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 // We test the protocol-level logic by importing the helpers indirectly.
 // Since the route handlers are module-private, we test via a lightweight
@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ─── Shared Mocks ────────────────────────────────────────────────────
 
-function createMockSocket() {
+function _createMockSocket() {
   const sent: Array<string | Buffer> = [];
   const handlers = new Map<string, Function[]>();
 
@@ -32,7 +32,7 @@ function createMockSocket() {
   };
 }
 
-function createMockManager() {
+function _createMockManager() {
   return {
     transcribeAudio: vi.fn().mockResolvedValue({
       text: 'transcribed text',
@@ -53,7 +53,7 @@ function createMockManager() {
   } as any;
 }
 
-function createMockCache() {
+function _createMockCache() {
   return {
     get: vi.fn().mockReturnValue(null),
     set: vi.fn(),

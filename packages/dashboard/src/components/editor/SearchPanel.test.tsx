@@ -132,7 +132,7 @@ describe('SearchPanel', () => {
   it('calls onClose when X is clicked', async () => {
     const onClose = vi.fn();
     renderPanel({ onClose });
-    const closeBtn = screen.getByTitle('Toggle replace').parentElement?.querySelector('[title]')
+    const _closeBtn = screen.getByTitle('Toggle replace').parentElement?.querySelector('[title]')
       ? screen.getAllByRole('button').find((btn) => {
           const svg = btn.querySelector('svg');
           return svg && btn.getAttribute('class')?.includes('muted-foreground');

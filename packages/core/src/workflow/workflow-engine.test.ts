@@ -283,7 +283,7 @@ describe('WorkflowEngine.execute — topological sort', () => {
     const executionOrder: string[] = [];
     const storage = makeStorage();
     (storage.createStepRun as ReturnType<typeof vi.fn>).mockImplementation(
-      async (_runId: string, stepId: string) => {
+      (_runId: string, stepId: string) => {
         executionOrder.push(stepId);
         return makeStepRun(stepId);
       }
@@ -1252,7 +1252,7 @@ describe('WorkflowEngine.execute — triggerMode: any', () => {
     const executionOrder: string[] = [];
     const storage = makeStorage();
     (storage.createStepRun as ReturnType<typeof vi.fn>).mockImplementation(
-      async (_runId: string, stepId: string) => {
+      (_runId: string, stepId: string) => {
         executionOrder.push(stepId);
         return makeStepRun(stepId);
       }
@@ -1299,7 +1299,7 @@ describe('WorkflowEngine.execute — triggerMode: any', () => {
     const executionOrder: string[] = [];
     const storage = makeStorage();
     (storage.createStepRun as ReturnType<typeof vi.fn>).mockImplementation(
-      async (_runId: string, stepId: string) => {
+      (_runId: string, stepId: string) => {
         executionOrder.push(stepId);
         return makeStepRun(stepId);
       }

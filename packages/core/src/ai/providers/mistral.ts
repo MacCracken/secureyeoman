@@ -223,7 +223,7 @@ export class MistralProvider extends BaseProvider {
     if (choice?.message.tool_calls) {
       for (const tc of choice.message.tool_calls) {
         if ('function' in tc) {
-          let args: Record<string, unknown> = {};
+          let args: Record<string, unknown>;
           try {
             args = JSON.parse(tc.function.arguments) as Record<string, unknown>;
           } catch {

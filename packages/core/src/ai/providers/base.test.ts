@@ -15,7 +15,7 @@ class TestProvider extends BaseProvider {
     };
   }
 
-  async *chatStream(request: AIRequest): AsyncGenerator<AIStreamChunk, void, unknown> {
+  async *chatStream(_request: AIRequest): AsyncGenerator<AIStreamChunk, void, unknown> {
     yield { type: 'content', content: 'stream chunk' };
   }
 

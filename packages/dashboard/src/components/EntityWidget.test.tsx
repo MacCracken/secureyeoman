@@ -166,7 +166,7 @@ describe('EntityWidget', () => {
   });
 
   it('does not show activity bars when dormant', () => {
-    const { container } = render(<EntityWidget state="dormant" />);
+    const { _container } = render(<EntityWidget state="dormant" />);
     // Activity indicator is only rendered when state !== 'dormant'
     // Look for the activity bars container with gap-1
     const label = screen.getByTestId('entity-label');

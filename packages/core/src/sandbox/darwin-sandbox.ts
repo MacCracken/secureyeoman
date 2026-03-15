@@ -118,7 +118,7 @@ export class DarwinSandbox implements Sandbox {
     const violations: SandboxViolation[] = [];
     const startTime = Date.now();
     const memBefore = process.memoryUsage().heapUsed;
-    let peakMemoryBytes = memBefore;
+    let peakMemoryBytes: number;
 
     // If sandbox-exec is not available, fall back to in-process execution
     if (!this.isAvailable()) {

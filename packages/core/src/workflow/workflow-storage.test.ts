@@ -273,7 +273,7 @@ describe('WorkflowStorage', () => {
       const run = await storage.createRun(def.id, def.name);
 
       const sr1 = await storage.createStepRun(run.id, 'step1', 'Step 1', 'transform');
-      const sr2 = await storage.createStepRun(run.id, 'step2', 'Step 2', 'condition');
+      const _sr2 = await storage.createStepRun(run.id, 'step2', 'Step 2', 'condition');
 
       expect(sr1.id).toBeDefined();
       expect(sr1.stepId).toBe('step1');

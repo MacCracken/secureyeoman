@@ -165,7 +165,7 @@ export function LogRetentionSettings() {
       <div className="border-t pt-4">
         <p className="text-xs text-muted-foreground mb-2">Backup</p>
         <button
-          onClick={handleExport}
+          onClick={() => void handleExport()}
           disabled={exporting}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-md hover:bg-muted/50 disabled:opacity-50"
         >

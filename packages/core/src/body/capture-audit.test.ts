@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { DEFAULT_RISK_RULES } from './capture-audit.js';
 import type {
   CaptureEventType,
-  CaptureAuditEvent,
-  DataProvenance,
+  _CaptureAuditEvent,
+  _DataProvenance,
   Anomaly,
-  AuditFilter,
-  RiskDetectionRules,
+  _AuditFilter,
+  _RiskDetectionRules,
 } from './capture-audit.js';
 
 describe('capture-audit', () => {

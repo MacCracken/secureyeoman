@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { RequestFingerprinter, createFingerprintHook } from './request-fingerprint.js';
 import type { RequestFingerprintConfig } from '@secureyeoman/shared';
 import type { IpReputationManager } from './ip-reputation.js';

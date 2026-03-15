@@ -260,7 +260,7 @@ export class EventBridge {
       }
     };
 
-    connect();
+    void connect();
   }
 
   /**

@@ -742,7 +742,7 @@ export class BrainStorage extends PgBaseStorage {
       }
     }
     if (filter?.forPersonalityId) {
-      sql += ` AND (personality_id = $${idx++} OR personality_id IS NULL)`;
+      sql += ` AND (personality_id = $${idx} OR personality_id IS NULL)`;
       params.push(filter.forPersonalityId);
     }
 
@@ -861,7 +861,7 @@ export class BrainStorage extends PgBaseStorage {
     params.push(ftsWeight, vectorWeight, limit);
     const fwParam = idx++;
     const vwParam = idx++;
-    const limitParam = idx++;
+    const limitParam = idx;
 
     const sql = `
       WITH fts AS (${ftsSubquery}),
@@ -933,7 +933,7 @@ export class BrainStorage extends PgBaseStorage {
     params.push(ftsWeight, vectorWeight, limit);
     const fwParam = idx++;
     const vwParam = idx++;
-    const limitParam = idx++;
+    const limitParam = idx;
 
     const sql = `
       WITH fts AS (${ftsSubquery}),
@@ -1030,7 +1030,7 @@ export class BrainStorage extends PgBaseStorage {
     }
 
     params.push(limit);
-    const limitParam = idx++;
+    const limitParam = idx;
 
     const sql = `
       WITH fts AS (${ftsSubquery}),
@@ -1241,7 +1241,7 @@ export class BrainStorage extends PgBaseStorage {
       params.push(opts.personalityId);
     }
     if (opts?.visibility) {
-      sql += ` AND visibility = $${idx++}`;
+      sql += ` AND visibility = $${idx}`;
       params.push(opts.visibility);
     }
 

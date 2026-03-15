@@ -2,7 +2,7 @@
  * Tests for GuardrailFilterLoader — Phase 143
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { loadCustomFilters } from './guardrail-filter-loader.js';
 import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';

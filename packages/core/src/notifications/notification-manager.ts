@@ -133,7 +133,7 @@ export class NotificationManager {
       }
 
       // Resolve adapter
-      let adapter: import('../integrations/types.js').Integration | null = null;
+      let adapter: import('../integrations/types.js').Integration | null;
       if (pref.integrationId) {
         adapter = this._integrationManager.getAdapter(pref.integrationId);
       } else {

@@ -152,7 +152,7 @@ describe('ModelRouter', () => {
   // Re-used task strings
   const SIMPLE_SUMMARIZE = 'summarize this document';
   const CODE_TASK = 'implement a binary search function in TypeScript with error handling';
-  const COMPLEX_CODE = 'implement a complex algorithm with extensive reasoning about edge cases';
+  const _COMPLEX_CODE = 'implement a complex algorithm with extensive reasoning about edge cases';
 
   describe('route()', () => {
     it('selects a fast-tier model for simple summarization tasks', () => {

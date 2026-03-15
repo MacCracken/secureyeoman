@@ -6,7 +6,7 @@
  * No database required — uses mocked IntentStorage.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { IntentManager } from './manager.js';
 import { OpaClient } from './opa-client.js';
 import type { IntentStorage } from './storage.js';

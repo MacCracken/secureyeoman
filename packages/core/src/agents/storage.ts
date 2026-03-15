@@ -463,7 +463,7 @@ export class SubAgentStorage extends PgBaseStorage {
     );
 
     const rows = await this.queryMany<DelegationRow>(
-      `SELECT * FROM agents.delegations ${where} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
+      `SELECT * FROM agents.delegations ${where} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx}`,
       [...values, limit, offset]
     );
 

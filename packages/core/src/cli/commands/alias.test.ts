@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   aliasCommand,
   loadAliases,
-  saveAliases,
+  _saveAliases,
   resolveAlias,
   getAliasesPath,
-  type AliasMap,
+  type _AliasMap,
 } from './alias.js';
 import type { CommandContext } from '../router.js';
 
@@ -103,7 +103,7 @@ describe('aliasCommand', () => {
   it('lists aliases', async () => {
     // Pre-populate a file
     const { writeFileSync } = await import('node:fs');
-    const path = (await import('./alias.js')).getAliasesPath();
+    const _path = (await import('./alias.js')).getAliasesPath();
     vi.mocked(writeFileSync).mockImplementation((p: any, content: any) => {
       mockStore[p as string] = content as string;
     });

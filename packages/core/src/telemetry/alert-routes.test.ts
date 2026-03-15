@@ -4,7 +4,7 @@
  * Fastify inject tests with mocked AlertManager. No DB required.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { registerAlertRoutes } from './alert-routes.js';
 import type { AlertRule } from './alert-storage.js';

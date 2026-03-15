@@ -2,7 +2,7 @@
  * Vector Store Adapter Tests
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import type { VectorStore, VectorResult } from './types.js';
 
 // In-memory vector store for testing (avoids faiss-node/qdrant dependency)

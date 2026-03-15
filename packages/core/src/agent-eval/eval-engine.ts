@@ -265,7 +265,7 @@ async function evaluateAssertion(
           reason: 'Regex pattern too long (max 500 chars)',
         };
       }
-      let passed = false;
+      let passed: boolean;
       try {
         const regex = new RegExp(assertion.pattern);
         // Test against first 100KB to limit ReDoS exposure

@@ -51,7 +51,7 @@ interface AgentStartMessage {
   language?: string;
 }
 
-interface AgentControlMessage {
+interface _AgentControlMessage {
   action: 'interrupt' | 'stop';
 }
 

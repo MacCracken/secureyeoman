@@ -65,7 +65,7 @@ describe('usePushToTalk', () => {
     }));
 
     // Mock requestAnimationFrame
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((_cb) => {
       // Don't call cb to avoid infinite loop
       return 1;
     });
@@ -211,7 +211,7 @@ describe('usePushToTalk', () => {
   });
 
   it('should not start capture when already active', async () => {
-    const { result } = renderHook(() => usePushToTalk());
+    const { _result } = renderHook(() => usePushToTalk());
 
     // First keydown starts capture
     await act(async () => {

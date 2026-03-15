@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DEFAULT_CONSENT_CONFIG } from './consent.js';
-import type { ConsentStatus, CaptureConsent, ConsentConfig, ConsentEvent } from './consent.js';
+import type { ConsentStatus, ConsentEvent } from './consent.js';
 
 describe('consent', () => {
   describe('DEFAULT_CONSENT_CONFIG', () => {

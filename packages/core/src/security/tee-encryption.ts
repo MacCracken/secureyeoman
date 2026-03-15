@@ -151,7 +151,8 @@ export class TeeEncryptionManager {
       return Buffer.from(keyHex.slice(0, 64), 'hex');
     } catch (err) {
       throw new Error(
-        `TPM key derivation failed: ${err instanceof Error ? err.message : String(err)}`
+        `TPM key derivation failed: ${err instanceof Error ? err.message : String(err)}`,
+        { cause: err }
       );
     }
   }

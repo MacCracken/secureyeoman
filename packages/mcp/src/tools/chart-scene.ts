@@ -353,7 +353,7 @@ export function renderLineChart(series: LineSeriesInput[], cfg?: ChartConfig): s
   const isNumeric = allX.every((v) => typeof v === 'number');
 
   let xFn: (v: number | string) => number;
-  let xLabels: string[] = [];
+  let xLabels: string[];
 
   if (isNumeric) {
     const nums = allX;

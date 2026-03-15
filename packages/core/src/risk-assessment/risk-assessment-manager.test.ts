@@ -5,7 +5,7 @@
  * Mocks pool.query() per-domain scorer and storage.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { RiskAssessmentManager } from './risk-assessment-manager.js';
 import { RiskReportGenerator } from './risk-assessment-report.js';
 
@@ -608,7 +608,7 @@ describe('RiskAssessmentManager', () => {
   describe('runAssessment — departmentId and getDepartmentRiskManager', () => {
     it('fires department snapshot when departmentId is set and DRM is available', async () => {
       const mockSnapshotFn = vi.fn().mockResolvedValue(undefined);
-      const { mgr, storage } = buildManager({ poolResults: [[]] });
+      const { mgr, _storage } = buildManager({ poolResults: [[]] });
 
       // Replace getDepartmentRiskManager on the instance
       (mgr as any).getDepartmentRiskManager = () => ({

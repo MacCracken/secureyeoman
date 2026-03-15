@@ -1057,7 +1057,7 @@ export class MultimodalManager {
       const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Vision analysis failed');
-      throw new Error(msg);
+      throw new Error(msg, { cause: error });
     }
   }
 
@@ -1164,7 +1164,7 @@ export class MultimodalManager {
       const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Audio transcription failed');
-      throw new Error(msg);
+      throw new Error(msg, { cause: error });
     }
   }
 
@@ -1268,7 +1268,7 @@ export class MultimodalManager {
       const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Speech synthesis failed');
-      throw new Error(msg);
+      throw new Error(msg, { cause: error });
     }
   }
 
@@ -1403,7 +1403,7 @@ export class MultimodalManager {
       const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Speech synthesis (binary) failed');
-      throw new Error(msg);
+      throw new Error(msg, { cause: error });
     }
   }
 
@@ -1487,7 +1487,7 @@ export class MultimodalManager {
       const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Image generation failed');
-      throw new Error(msg);
+      throw new Error(msg, { cause: error });
     }
   }
 
@@ -1539,7 +1539,7 @@ export class MultimodalManager {
       const msg = sanitizeErrorMessage(errorToString(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error({ error: msg }, 'Haptic trigger failed');
-      throw new Error(msg);
+      throw new Error(msg, { cause: error });
     }
   }
 

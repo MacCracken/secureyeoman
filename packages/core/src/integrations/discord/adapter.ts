@@ -86,27 +86,29 @@ export class DiscordIntegration implements Integration {
     });
 
     // ── Slash command registration on ready ──────────────
-    this.client.once('ready', async () => {
-      try {
-        const clientId = this.config?.config.clientId as string | undefined;
-        const guildId = this.config?.config.guildId as string | undefined;
-        if (!clientId) return;
+    this.client.once('ready', () => {
+      void (async () => {
+        try {
+          const clientId = this.config?.config.clientId as string | undefined;
+          const guildId = this.config?.config.guildId as string | undefined;
+          if (!clientId) return;
 
-        const rest = new REST().setToken(this.config!.config.botToken as string);
-        const route = guildId
-          ? Routes.applicationGuildCommands(clientId, guildId)
-          : Routes.applicationCommands(clientId);
+          const rest = new REST().setToken(this.config!.config.botToken as string);
+          const route = guildId
+            ? Routes.applicationGuildCommands(clientId, guildId)
+            : Routes.applicationCommands(clientId);
 
-        await rest.put(route, { body: SLASH_COMMANDS });
-        this.logger?.info('Discord slash commands registered');
-      } catch (err) {
-        this.logger?.warn(
-          {
-            error: errorToString(err),
-          },
-          'Discord slash command registration failed'
-        );
-      }
+          await rest.put(route, { body: SLASH_COMMANDS });
+          this.logger?.info('Discord slash commands registered');
+        } catch (err) {
+          this.logger?.warn(
+            {
+              error: errorToString(err),
+            },
+            'Discord slash command registration failed'
+          );
+        }
+      })();
     });
 
     // ── Handle regular messages ──────────────────────────
@@ -335,7 +337,7 @@ export class DiscordIntegration implements Integration {
   async stop(): Promise<void> {
     if (!this.client || !this.running) return;
     this.running = false;
-    this.client.destroy();
+    void this.client.destroy();
     this.logger?.info('Discord bot disconnected');
   }
 

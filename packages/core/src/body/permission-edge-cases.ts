@@ -61,8 +61,8 @@ export class PermissionEdgeCaseHandler {
       return;
     }
 
-    this.pollInterval = setInterval(async () => {
-      await this.checkForChanges();
+    this.pollInterval = setInterval(() => {
+      void this.checkForChanges();
     }, 5000);
   }
 

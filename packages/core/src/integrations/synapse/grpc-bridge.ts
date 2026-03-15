@@ -60,10 +60,18 @@ export class YeomanBridgeServer {
     this.server = new grpc.Server();
 
     this.server.addService(YeomanBridge.service, {
-      announceCapabilities: this._handleAnnounceCapabilities.bind(this),
-      submitInboundJob: this._handleSubmitInboundJob.bind(this),
-      reportJobStatus: this._handleReportJobStatus.bind(this),
-      registerModel: this._handleRegisterModel.bind(this),
+      announceCapabilities: (...args: Parameters<typeof this._handleAnnounceCapabilities>) => {
+        void this._handleAnnounceCapabilities(...args);
+      },
+      submitInboundJob: (...args: Parameters<typeof this._handleSubmitInboundJob>) => {
+        void this._handleSubmitInboundJob(...args);
+      },
+      reportJobStatus: (...args: Parameters<typeof this._handleReportJobStatus>) => {
+        void this._handleReportJobStatus(...args);
+      },
+      registerModel: (...args: Parameters<typeof this._handleRegisterModel>) => {
+        void this._handleRegisterModel(...args);
+      },
     });
 
     const credentials =

@@ -117,7 +117,7 @@ export function ReportsPage() {
               <button
                 className="btn btn-ghost p-2"
                 title="Download"
-                onClick={() => handleDownload(report)}
+                onClick={() => void handleDownload(report)}
               >
                 <Download className="w-4 h-4" />
               </button>

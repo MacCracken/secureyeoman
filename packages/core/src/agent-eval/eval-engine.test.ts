@@ -5,7 +5,7 @@
  * timeout handling, budget enforcement, and forbidden tool detection.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { runScenario, validateToolCalls, evaluateAssertions } from './eval-engine.js';
 import type { EvalAgentDeps } from './eval-engine.js';
 import type {

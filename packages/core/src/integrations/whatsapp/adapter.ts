@@ -93,19 +93,21 @@ export class WhatsAppIntegration implements Integration {
 
     this.sock.ev.on('creds.update', saveCreds);
 
-    this.sock.ev.on('messages.upsert', async (update: unknown) => {
-      const { messages, type } = update as { messages: Record<string, unknown>[]; type: string };
-      if (type !== 'notify') return;
+    this.sock.ev.on('messages.upsert', (update: unknown) => {
+      void (async () => {
+        const { messages, type } = update as { messages: Record<string, unknown>[]; type: string };
+        if (type !== 'notify') return;
 
-      for (const msg of messages) {
-        const key = msg.key as { fromMe?: boolean };
-        if (!key.fromMe && msg.message) {
-          const unified = this.normalizeMessage(msg);
-          if (unified) {
-            await this.deps!.onMessage(unified);
+        for (const msg of messages) {
+          const key = msg.key as { fromMe?: boolean };
+          if (!key.fromMe && msg.message) {
+            const unified = this.normalizeMessage(msg);
+            if (unified) {
+              await this.deps!.onMessage(unified);
+            }
           }
         }
-      }
+      })();
     });
 
     this.sock.ev.on('connection.update', (update: unknown) => {

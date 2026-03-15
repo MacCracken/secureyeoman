@@ -376,7 +376,7 @@ export class CouncilStorage extends PgBaseStorage {
     );
 
     const rows = await this.queryMany<CouncilRunRow>(
-      `SELECT * FROM agents.council_runs ${where} ORDER BY created_at DESC LIMIT $${p++} OFFSET $${p++}`,
+      `SELECT * FROM agents.council_runs ${where} ORDER BY created_at DESC LIMIT $${p++} OFFSET $${p}`,
       [...values, limit, offset]
     );
 

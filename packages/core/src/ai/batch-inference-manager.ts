@@ -168,7 +168,7 @@ export class BatchInferenceManager {
         // Remove completed tasks
         for (let i = active.length - 1; i >= 0; i--) {
           const settled = await Promise.race([active[i]!.then(() => true), Promise.resolve(false)]);
-          if (settled) active.splice(i, 1);
+          if (settled) void active.splice(i, 1);
         }
       }
     }

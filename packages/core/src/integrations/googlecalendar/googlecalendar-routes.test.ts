@@ -42,7 +42,7 @@ function mockOAuthTokenService(opts?: {
   } as unknown as OAuthTokenService;
 }
 
-function mockSoulManager(): SoulManager {
+function _mockSoulManager(): SoulManager {
   return {
     getActivePersonality: vi.fn().mockResolvedValue({
       id: 'p-1',

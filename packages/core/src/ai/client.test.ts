@@ -289,7 +289,7 @@ describe('AIClient', () => {
       primaryProvider.chat = vi.fn().mockRejectedValue(new RateLimitError('anthropic'));
 
       // The fallback provider gets created lazily — we need to mock it after first access
-      const response = await (async () => {
+      const _response = await (async () => {
         // Trigger fallback creation
         try {
           return await client.chat(mockRequest);
@@ -808,7 +808,7 @@ describe('AIClient', () => {
 
       // Intercept createProvider to inject a mock
       const originalCreate = (client as any).createProvider.bind(client);
-      let createdCount = 0;
+      const _createdCount = 0;
       (client as any).createProvider = (config: any) => {
         createdCount++;
         const p = originalCreate(config);

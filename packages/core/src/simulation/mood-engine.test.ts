@@ -362,7 +362,7 @@ describe('TRAIT_VALUE_MODIFIERS', () => {
   });
 
   it('each trait has exactly 5 levels', () => {
-    for (const [trait, levels] of Object.entries(TRAIT_VALUE_MODIFIERS)) {
+    for (const [_trait, levels] of Object.entries(TRAIT_VALUE_MODIFIERS)) {
       expect(Object.keys(levels)).toHaveLength(5);
       expect(levels).toHaveProperty('balanced');
     }

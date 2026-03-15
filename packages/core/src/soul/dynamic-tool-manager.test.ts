@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { DynamicToolManager } from './dynamic-tool-manager.js';
 import type { DynamicTool } from './dynamic-tool-storage.js';
 

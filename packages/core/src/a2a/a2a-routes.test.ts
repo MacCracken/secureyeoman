@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { registerA2ARoutes } from './a2a-routes.js';
 import type { A2AManager } from './manager.js';

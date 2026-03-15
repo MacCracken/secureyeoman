@@ -292,7 +292,7 @@ export class DepartmentRiskStorage extends PgBaseStorage {
     const total = Number(countRow?.count ?? 0);
 
     const rows = await this.queryMany<DepartmentRow>(
-      `SELECT * FROM risk.departments ${whereClause} ORDER BY name ASC LIMIT $${idx++} OFFSET $${idx++}`,
+      `SELECT * FROM risk.departments ${whereClause} ORDER BY name ASC LIMIT $${idx++} OFFSET $${idx}`,
       [...params, limit, offset]
     );
 
@@ -496,7 +496,7 @@ export class DepartmentRiskStorage extends PgBaseStorage {
     const total = Number(countRow?.count ?? 0);
 
     const rows = await this.queryMany<RegisterEntryRow>(
-      `SELECT * FROM risk.register_entries ${whereClause} ORDER BY risk_score DESC, created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      `SELECT * FROM risk.register_entries ${whereClause} ORDER BY risk_score DESC, created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...params, limit, offset]
     );
 

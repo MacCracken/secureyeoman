@@ -42,7 +42,7 @@ export class AutoRegistration {
     } catch (err) {
       // Registration is best-effort — don't crash the service
       const msg = err instanceof Error ? err.message : String(err);
-      throw new Error(`Auto-registration failed: ${msg}`);
+      throw new Error(`Auto-registration failed: ${msg}`, { cause: err });
     }
   }
 

@@ -299,7 +299,7 @@ describe('ConsolidationManager', () => {
     });
 
     it('continues when getMemory returns null for an id in the process list', async () => {
-      const { manager, storage, vectorManager } = makeManager();
+      const { manager, storage, _vectorManager } = makeManager();
       storage.queryMemories.mockResolvedValue([MEMORY]);
       // getMemory returns null → continue branch in for loop
       storage.getMemory.mockResolvedValue(null);
@@ -322,7 +322,7 @@ describe('ConsolidationManager', () => {
     });
 
     it('handles persistFlaggedIds setMeta error gracefully', async () => {
-      const { manager, storage } = makeManager({
+      const { manager, _storage } = makeManager({
         setMeta: vi.fn().mockRejectedValue(new Error('DB down')),
       });
       // runDeepConsolidation calls persistFlaggedIds at the end — should not throw

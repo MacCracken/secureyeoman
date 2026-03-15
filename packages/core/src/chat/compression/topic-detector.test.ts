@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
   isTopicBoundary,
   type TopicBoundaryConfig,
-  type BoundaryCheckInput,
+  type _BoundaryCheckInput,
 } from './topic-detector.js';
 
 const config: TopicBoundaryConfig = {

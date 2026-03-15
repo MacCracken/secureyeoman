@@ -20,9 +20,9 @@ export interface UseChatReturn {
   messages: ChatMessage[];
   input: string;
   setInput: React.Dispatch<React.SetStateAction<string>>;
-  handleSend: () => void;
+  handleSend: () => void | Promise<void>;
   /** Re-send from a specific message index, discarding later messages. */
-  resendFrom: (messageIndex: number, newContent: string) => void;
+  resendFrom: (messageIndex: number, newContent: string) => void | Promise<void>;
   isPending: boolean;
   clearMessages: () => void;
   conversationId: string | null;
@@ -102,7 +102,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         },
       ]);
       // Refresh conversation list so sidebar shows updated message counts / ordering
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] }).catch(() => {});
     },
     onError: (error: Error) => {
       setMessages((prev) => [
@@ -139,7 +139,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         autoCreatedIds.current.add(convId);
         setActiveConversationId(convId);
         // Immediately refresh conversation list so the new conversation appears in the sidebar
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['conversations'] }).catch(() => {});
       } catch {
         // Failed to create conversation — continue without persistence
       }
@@ -242,7 +242,7 @@ export interface UseChatStreamOptions {
 
 export interface UseChatStreamReturn {
   messages: ChatMessage[];
-  sendMessage: (text: string) => void;
+  sendMessage: (text: string) => void | Promise<void>;
   isPending: boolean;
   clearMessages: () => void;
   conversationId: string | null;
@@ -352,7 +352,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
           convId = conv.id;
           autoCreatedIds.current.add(convId);
           setActiveConversationId(convId);
-          queryClient.invalidateQueries({ queryKey: ['conversations'] });
+          queryClient.invalidateQueries({ queryKey: ['conversations'] }).catch(() => {});
         } catch {
           // Continue without persistence
         }
@@ -429,7 +429,10 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
             let event: Record<string, unknown>;
             try {
               event = JSON.parse(json);
-            } catch {
+            } catch (parseErr) {
+              if (import.meta.env.DEV) {
+                console.warn('[useChatStream] Failed to parse SSE event:', json, parseErr);
+              }
               continue;
             }
 
@@ -497,7 +500,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
               setStreamingThinking('');
               setStreamingContent('');
               setActiveToolCalls([]);
-              queryClient.invalidateQueries({ queryKey: ['conversations'] });
+              queryClient.invalidateQueries({ queryKey: ['conversations'] }).catch(() => {});
             } else if (type === 'error') {
               setMessages((prev) => [
                 ...prev,

@@ -52,7 +52,8 @@ export class MacOSKeychainProvider implements KeyringProvider {
       );
     } catch (err) {
       throw new Error(
-        `security add-generic-password failed: ${err instanceof Error ? err.message : 'unknown error'}`
+        `security add-generic-password failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+        { cause: err }
       );
     }
   }

@@ -174,7 +174,7 @@ export class ProactiveStorage extends PgBaseStorage {
     );
 
     const rows = await this.queryMany<TriggerRow>(
-      `SELECT * FROM proactive.triggers ${where} ORDER BY created_at ASC LIMIT $${idx++} OFFSET $${idx++}`,
+      `SELECT * FROM proactive.triggers ${where} ORDER BY created_at ASC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
     );
 
@@ -329,7 +329,7 @@ export class ProactiveStorage extends PgBaseStorage {
     const total = parseInt(countRow?.count ?? '0', 10);
 
     const rows = await this.queryMany<SuggestionRow>(
-      `SELECT * FROM proactive.suggestions ${where} ORDER BY suggested_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      `SELECT * FROM proactive.suggestions ${where} ORDER BY suggested_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
     );
 

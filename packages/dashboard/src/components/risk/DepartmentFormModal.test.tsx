@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DepartmentFormModal } from './DepartmentFormModal';
 
@@ -89,7 +89,7 @@ describe('DepartmentFormModal', () => {
   });
 
   it('does not submit when name is empty', async () => {
-    const user = userEvent.setup();
+    const _user = userEvent.setup();
     render(<DepartmentFormModal {...defaultProps} />);
     const submitBtn = screen.getByRole('button', { name: 'Create Department' });
     expect(submitBtn).toBeDisabled();

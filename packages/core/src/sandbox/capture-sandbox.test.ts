@@ -4,7 +4,7 @@
  * @see NEXT_STEP_05: Sandboxing
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { LinuxCaptureSandbox } from '../sandbox/linux-capture-sandbox.js';
 import { DarwinCaptureSandbox } from '../sandbox/darwin-capture-sandbox.js';
 import {

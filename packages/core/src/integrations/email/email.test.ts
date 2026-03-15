@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { EmailIntegration } from './adapter.js';
 import type { IntegrationConfig } from '@secureyeoman/shared';
 import type { IntegrationDeps } from '../types.js';

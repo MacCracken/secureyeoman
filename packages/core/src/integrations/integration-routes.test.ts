@@ -2,7 +2,7 @@
  * Integration Routes — credential masking tests (Phase 22 secrets hygiene)
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { registerIntegrationRoutes } from './integration-routes.js';
 import type { IntegrationConfig } from '@secureyeoman/shared';

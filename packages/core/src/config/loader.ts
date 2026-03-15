@@ -140,7 +140,8 @@ function loadConfigFile(path: string, masterKey?: string): PartialConfig | null 
       throw error;
     }
     throw new Error(
-      `Failed to load config from ${expandedPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to load config from ${expandedPath}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { cause: error }
     );
   }
 }

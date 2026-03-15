@@ -166,7 +166,7 @@ export function registerAnnotationRoutes(
       reply: FastifyReply
     ) => {
       const { personalityId, format = 'jsonl' } = request.query;
-      const tenantId = (request as any).tenantId;
+      const _tenantId = (request as any).tenantId;
       const allAnnotations = await storage.list({ personalityId });
       const annotations = allAnnotations.slice(0, 10000);
 

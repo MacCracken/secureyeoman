@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
@@ -19,6 +20,9 @@ export default tseslint.config(
       'packages/core/examples/**',
       'packages/dashboard/e2e/**',
       'packages/dashboard/playwright.config.ts',
+      'packages/dashboard/.storybook/**',
+      'packages/dashboard/coverage/**',
+      'packages/dashboard/public/**',
     ],
   },
 
@@ -95,10 +99,43 @@ export default tseslint.config(
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      'jsx-a11y': jsxA11y,
     },
     rules: {
-      // React hooks rules
+      // React hooks rules (v7 recommended includes strict React 19 rules)
       ...reactHooks.configs.recommended.rules,
+      // Downgrade new React 19 strict rules to warnings — fix incrementally
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/static-components': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/incompatible-library': 'warn',
+
+      // Accessibility rules (curated — deprecated/noisy rules excluded)
+      'jsx-a11y/alt-text': 'warn',
+      'jsx-a11y/anchor-has-content': 'warn',
+      'jsx-a11y/anchor-is-valid': 'warn',
+      'jsx-a11y/aria-props': 'warn',
+      'jsx-a11y/aria-proptypes': 'warn',
+      'jsx-a11y/aria-role': 'warn',
+      'jsx-a11y/aria-unsupported-elements': 'warn',
+      'jsx-a11y/heading-has-content': 'warn',
+      'jsx-a11y/html-has-lang': 'warn',
+      'jsx-a11y/img-redundant-alt': 'warn',
+      'jsx-a11y/interactive-supports-focus': 'warn',
+      'jsx-a11y/no-access-key': 'warn',
+      'jsx-a11y/no-autofocus': 'warn',
+      'jsx-a11y/no-distracting-elements': 'warn',
+      'jsx-a11y/no-redundant-roles': 'warn',
+      'jsx-a11y/role-has-required-aria-props': 'warn',
+      'jsx-a11y/role-supports-aria-props': 'warn',
+      'jsx-a11y/scope': 'warn',
+      'jsx-a11y/tabindex-no-positive': 'warn',
+      // Disabled: deprecated (label-has-for), too noisy (control-has-associated-label,
+      // no-static-element-interactions, click-events-have-key-events, no-onchange)
+      // Re-enable incrementally as dashboard a11y improves.
 
       // React refresh for HMR
       'react-refresh/only-export-components': ['warn', {

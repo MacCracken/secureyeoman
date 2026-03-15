@@ -70,7 +70,9 @@ export class RequestFingerprinter {
     }
 
     // Periodic cleanup of stale timing entries
-    this.cleanupTimer.start(() => { this.cleanupTimingState(); }, 30_000);
+    this.cleanupTimer.start(() => {
+      this.cleanupTimingState();
+    }, 30_000);
   }
 
   /**

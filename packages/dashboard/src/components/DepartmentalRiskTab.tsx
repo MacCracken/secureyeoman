@@ -363,12 +363,12 @@ export function DepartmentalRiskTab() {
                         <AppetiteRadarChart
                           department={scorecard.department}
                           latestScore={scorecard.latestScore}
-                          onAppetiteChange={handleAppetiteChange}
+                          onAppetiteChange={(appetite) => void handleAppetiteChange(appetite)}
                         />
 
                         <ObjectivesEditor
                           objectives={scorecard.department?.objectives ?? []}
-                          onChange={handleObjectivesChange}
+                          onChange={(objectives) => void handleObjectivesChange(objectives)}
                         />
 
                         <MitigationPlansPanel
@@ -392,8 +392,8 @@ export function DepartmentalRiskTab() {
 
                         <RiskRegisterTable
                           entries={registerEntries}
-                          onStatusChange={handleStatusChange}
-                          onDelete={handleDeleteEntry}
+                          onStatusChange={(id, status) => void handleStatusChange(id, status)}
+                          onDelete={(id) => void handleDeleteEntry(id)}
                           onAdd={handleAddEntry}
                         />
                       </div>
@@ -415,7 +415,7 @@ export function DepartmentalRiskTab() {
               setShowDeptModal(false);
               setEditingDept(null);
             }}
-            onSubmit={handleDeptSubmit}
+            onSubmit={(data) => void handleDeptSubmit(data)}
             department={editingDept}
           />
         </Suspense>

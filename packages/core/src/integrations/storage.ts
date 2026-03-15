@@ -137,7 +137,7 @@ export class IntegrationStorage extends PgBaseStorage {
       params.push(filter.platform);
     }
     if (filter?.enabled !== undefined) {
-      sql += ` AND enabled = $${counter++}`;
+      sql += ` AND enabled = $${counter}`;
       params.push(filter.enabled);
     }
 

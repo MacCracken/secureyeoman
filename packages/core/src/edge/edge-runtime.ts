@@ -18,7 +18,7 @@ import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { A2AManager } from '../a2a/manager.js';
 import { A2AStorage } from '../a2a/storage.js';
 import { RemoteDelegationTransport } from '../a2a/transport.js';
-import { initPoolFromConfig, getPool, closePool } from '../storage/pg-pool.js';
+import { initPoolFromConfig, closePool } from '../storage/pg-pool.js';
 import { runMigrations } from '../storage/migrations/runner.js';
 import type { Config } from '@secureyeoman/shared';
 import { VERSION } from '../version.js';
@@ -165,7 +165,8 @@ export class EdgeRuntime {
     const host = this.config!.gateway.host;
     const port = this.config!.gateway.port;
 
-    this.server = createServer(async (req, res) => {
+    this.server = createServer((req, res) => {
+      void (async () => {
       const url = req.url ?? '/';
 
       // Health endpoint
@@ -199,6 +200,7 @@ export class EdgeRuntime {
       // 404 for everything else
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Not found' }));
+      })();
     });
 
     return new Promise<void>((resolve, reject) => {

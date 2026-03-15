@@ -500,7 +500,7 @@ describe('MarketplaceManager', () => {
     });
 
     it('does not call setInstalled when skill already has installed=true', async () => {
-      const { manager, storage } = makeManager({
+      const { _manager, _storage } = makeManager({
         getSkill: vi.fn().mockResolvedValue({ ...SKILL, installed: true }),
       });
       // Already installed — the early return at line 97 returns true,
@@ -513,7 +513,7 @@ describe('MarketplaceManager', () => {
         listSkills: vi.fn().mockResolvedValue([]),
         deleteSkill: vi.fn(),
       };
-      const { manager: m2, storage: s2 } = makeManager(
+      const { manager: _m2, storage: _s2 } = makeManager(
         { getSkill: vi.fn().mockResolvedValue({ ...SKILL, installed: true }) },
         { brainManager: brainMgr }
       );
@@ -708,7 +708,7 @@ describe('MarketplaceManager', () => {
     it('syncs a security template directory with system.md + user.md + metadata.json', async () => {
       const { default: fs } = await import('fs');
       vi.mocked(fs.existsSync).mockImplementation((p: any) => {
-        const s = String(p);
+        const _s = String(p);
         // Repo path, skills dir, security-templates dir, metadata.json, system.md, user.md
         return true;
       });

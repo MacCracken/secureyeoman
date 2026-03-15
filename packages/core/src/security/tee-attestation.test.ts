@@ -506,7 +506,7 @@ describe('TeeAttestationVerifier', () => {
   });
 
   describe('detectHardware()', () => {
-    const mockExistsSync = vi.hoisted(() => vi.fn((_path: string) => false));
+    const _mockExistsSync = vi.hoisted(() => vi.fn((_path: string) => false));
 
     // We need a separate import with the mock applied — use dynamic reimport
     it('returns the expected shape with nothing available', async () => {

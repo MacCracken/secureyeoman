@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { TokenFederationService } from './token-federation.js';
 
 function makeService(
-  overrides?: Partial<Parameters<(typeof TokenFederationService)['prototype']['issueToken']>>
+  _overrides?: Partial<Parameters<(typeof TokenFederationService)['prototype']['issueToken']>>
 ) {
   return new TokenFederationService({
     signingSecret: 'test-federation-secret-32chars!!',

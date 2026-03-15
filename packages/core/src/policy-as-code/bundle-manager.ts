@@ -75,7 +75,7 @@ export class BundleManager {
     this.log.info({}, 'Starting policy sync from git');
 
     // Pull latest changes
-    let commitSha = '';
+    let commitSha: string;
     try {
       const pullResult = await this.gitRepo.pull();
       commitSha = pullResult.commitSha;

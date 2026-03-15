@@ -7,13 +7,14 @@
  *   - `syncPending()` — replay queued mutations when back online
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { drainMutations, removeMutation } from '../lib/offline-db';
 
 export function useOffline() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const syncingRef = useRef(false);
 
   useEffect(() => {
     const goOnline = () => {
@@ -49,7 +50,8 @@ export function useOffline() {
 
   // Auto-sync when coming back online
   const syncPending = useCallback(async () => {
-    if (syncing) return;
+    if (syncingRef.current) return;
+    syncingRef.current = true;
     setSyncing(true);
     try {
       const mutations = await drainMutations();
@@ -69,9 +71,10 @@ export function useOffline() {
       const remaining = await drainMutations();
       setPendingCount(remaining.length);
     } finally {
+      syncingRef.current = false;
       setSyncing(false);
     }
-  }, [syncing]);
+  }, []);
 
   // Auto-sync on reconnect
   useEffect(() => {

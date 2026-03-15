@@ -278,7 +278,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 }}
                 placeholder="Search for similar memories..."
                 className="w-full sm:flex-1 bg-card border border-border rounded-lg text-sm py-1.5 px-3"
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => { if (e.key === 'Enter') void handleSearch(); }}
               />
               <select
                 value={searchType}
@@ -307,7 +307,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
               </div>
               <button
                 className="btn-ghost text-xs px-3 py-1.5 flex items-center justify-center gap-1 bg-primary/10 text-primary w-full sm:w-auto"
-                onClick={handleSearch}
+                onClick={() => void handleSearch()}
                 disabled={isSearching || !searchQuery.trim()}
               >
                 {isSearching ? (

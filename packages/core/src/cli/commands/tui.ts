@@ -423,8 +423,7 @@ Options:
       return 1;
     }
 
-    const { baseUrl, rest: argvAfterFlags } = extractCommonFlags(argv);
-    argv = argvAfterFlags;
+    const { baseUrl } = extractCommonFlags(argv);
 
     const out = process.stdout as NodeJS.WriteStream;
     const renderer = new TuiRenderer(out);

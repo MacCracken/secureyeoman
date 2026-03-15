@@ -1,7 +1,7 @@
 /**
  * Phase 92 training route tests — quality, computer-use, SSE stream endpoints.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { registerTrainingRoutes } from './training-routes.js';
 import { LicenseManager } from '../licensing/license-manager.js';

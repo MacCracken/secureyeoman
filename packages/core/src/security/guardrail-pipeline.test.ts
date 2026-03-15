@@ -6,8 +6,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GuardrailPipeline } from './guardrail-pipeline.js';
 import type {
   GuardrailFilter,
-  GuardrailFilterContext,
-  GuardrailFilterResult,
+  _GuardrailFilterContext,
+  _GuardrailFilterResult,
   GuardrailPipelineConfig,
 } from '@secureyeoman/shared';
 

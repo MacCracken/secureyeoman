@@ -174,27 +174,29 @@ export class OnlineUpdateManager {
   private async _watchContainer(jobId: string, containerId: string): Promise<void> {
     return new Promise((resolve) => {
       const watcher = spawn('docker', ['wait', containerId]);
-      watcher.on('exit', async (code) => {
-        const exitCode = typeof code === 'number' ? code : -1;
+      watcher.on('exit', (code) => {
+        void (async () => {
+          const exitCode = typeof code === 'number' ? code : -1;
 
-        if (exitCode === 0) {
-          await this.deps.pool.query(
-            `UPDATE training.online_update_jobs
-             SET status='completed', completed_at=NOW()
-             WHERE id=$1`,
-            [jobId]
-          );
-          this.deps.logger.info({ jobId }, 'Online update job completed');
-        } else {
-          await this.deps.pool.query(
-            `UPDATE training.online_update_jobs
-             SET status='failed', error_message=$1, completed_at=NOW()
-             WHERE id=$2`,
-            [`Container exited with code ${exitCode}`, jobId]
-          );
-          this.deps.logger.error({ jobId, exitCode }, 'Online update job failed');
-        }
-        resolve();
+          if (exitCode === 0) {
+            await this.deps.pool.query(
+              `UPDATE training.online_update_jobs
+               SET status='completed', completed_at=NOW()
+               WHERE id=$1`,
+              [jobId]
+            );
+            this.deps.logger.info({ jobId }, 'Online update job completed');
+          } else {
+            await this.deps.pool.query(
+              `UPDATE training.online_update_jobs
+               SET status='failed', error_message=$1, completed_at=NOW()
+               WHERE id=$2`,
+              [`Container exited with code ${exitCode}`, jobId]
+            );
+            this.deps.logger.error({ jobId, exitCode }, 'Online update job failed');
+          }
+          resolve();
+        })();
       });
     });
   }

@@ -227,7 +227,7 @@ export class GitLabIntegration implements WebhookIntegration {
     const payload = JSON.parse(payloadStr) as GitLabWebhookPayload;
     const objectKind = payload.object_kind;
 
-    let unified: UnifiedMessage | null = null;
+    let unified: UnifiedMessage | null;
 
     switch (objectKind) {
       case 'push':

@@ -5,7 +5,7 @@
  * No real integrations, task executor, or DB required.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { MessageRouter } from './message-router.js';
 import { TaskType } from '@secureyeoman/shared';
 

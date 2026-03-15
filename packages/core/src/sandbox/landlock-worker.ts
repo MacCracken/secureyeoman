@@ -119,7 +119,8 @@ function applyLandlockRestrictions(opts?: SandboxOptions): {
 // ── Worker entry point ─────────────────────────────────────────────
 
 if (process.send) {
-  process.on('message', async (msg: WorkerMessage) => {
+  process.on('message', (msg: WorkerMessage) => {
+    void (async () => {
     if (msg.type !== 'exec') return;
 
     const { config } = msg;
@@ -177,5 +178,6 @@ if (process.send) {
       };
       process.send!(response);
     }
+    })();
   });
 }

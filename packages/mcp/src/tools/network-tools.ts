@@ -1436,9 +1436,9 @@ export async function registerNetworkTools(
       pcapStore.set(pcapId, tmpPath);
       // Auto-cleanup after 30 minutes
       setTimeout(
-        async () => {
+        () => {
           pcapStore.delete(pcapId);
-          await unlink(tmpPath).catch(() => undefined);
+          void unlink(tmpPath).catch(() => undefined);
         },
         30 * 60 * 1000
       );

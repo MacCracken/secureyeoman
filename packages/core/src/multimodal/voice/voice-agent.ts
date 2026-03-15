@@ -253,7 +253,7 @@ export class VoiceAgentSession {
   /**
    * Get a response from the LLM using the multimodal manager's AI client.
    */
-  private async getLLMResponse(userText: string): Promise<string> {
+  private async getLLMResponse(_userText: string): Promise<string> {
     if (!this.multimodalManager) {
       throw new Error('Session is closed');
     }

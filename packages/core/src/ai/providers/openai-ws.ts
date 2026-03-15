@@ -151,7 +151,6 @@ export class OpenAIWsProvider extends BaseProvider {
 
     const payload = this.buildWsPayload(model, request, conn.lastResponseId, false);
 
-    let response: AIResponse | null = null;
     const toolCalls: ToolCall[] = [];
     const contentParts: string[] = [];
     let usage: TokenUsage = { inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0 };
@@ -181,7 +180,7 @@ export class OpenAIWsProvider extends BaseProvider {
 
     this.transport.release(conn);
 
-    response = {
+    const response: AIResponse = {
       id: responseId || `ws-${Date.now()}`,
       content: contentParts.join(''),
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
@@ -410,7 +409,7 @@ export class OpenAIWsProvider extends BaseProvider {
           }
         }
         if (item.type === 'function_call') {
-          let args: Record<string, unknown> = {};
+          let args: Record<string, unknown>;
           try {
             args = JSON.parse(item.arguments ?? '{}') as Record<string, unknown>;
           } catch {

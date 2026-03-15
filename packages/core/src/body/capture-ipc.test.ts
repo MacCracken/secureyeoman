@@ -263,7 +263,7 @@ describe('SecureIPC', () => {
       const chunk1 = fullPayload.slice(0, midpoint);
       const chunk2 = fullPayload.slice(midpoint);
 
-      let dataHandler: ((chunk: Buffer) => void) | null = null;
+      const _dataHandler: ((chunk: Buffer) => void) | null = null;
 
       const mockReadable = {
         on: vi.fn((event: string, handler: (...args: any[]) => void) => {

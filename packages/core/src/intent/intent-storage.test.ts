@@ -5,7 +5,7 @@
  * No database required.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { IntentStorage } from './storage.js';
 import type { OrgIntentDoc } from './schema.js';
 
@@ -229,9 +229,9 @@ describe('IntentStorage.setActiveIntent()', () => {
   it('calls withTransaction to deactivate all then activate one', async () => {
     const storage = new IntentStorage();
     const clientMock = { query: vi.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
-    vi.spyOn(storage as any, 'withTransaction').mockImplementation(
-      async (fn: (client: typeof clientMock) => Promise<void>) => {
-        await fn(clientMock);
+    (vi.spyOn(storage as any, 'withTransaction') as ReturnType<typeof vi.fn<(fn: (client: typeof clientMock) => Promise<void>) => Promise<void>>>).mockImplementation(
+      (fn: (client: typeof clientMock) => Promise<void>) => {
+        return fn(clientMock);
       }
     );
 

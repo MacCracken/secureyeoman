@@ -23,6 +23,7 @@ export function SearchBar() {
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -70,6 +71,7 @@ export function SearchBar() {
     }
 
     setLoading(true);
+    setSearchError(false);
     try {
       const [tasksData, eventsData] = await Promise.all([
         fetchTasks({ limit: 5 }),
@@ -114,6 +116,7 @@ export function SearchBar() {
       setResults(matched.slice(0, 10));
     } catch {
       setResults([]);
+      setSearchError(true);
     } finally {
       setLoading(false);
     }
@@ -121,6 +124,7 @@ export function SearchBar() {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSearchError(false);
     if (!query.trim()) {
       setResults([]);
       setLoading(false);
@@ -197,6 +201,10 @@ export function SearchBar() {
           role="combobox"
           aria-expanded={open && (results.length > 0 || loading)}
           aria-haspopup="listbox"
+          aria-controls="search-results-listbox"
+          aria-activedescendant={
+            selectedIndex >= 0 ? `search-result-${results[selectedIndex]?.id}` : undefined
+          }
         />
         {query && (
           <button
@@ -215,6 +223,7 @@ export function SearchBar() {
       {/* Results dropdown */}
       {open && query.trim() && (
         <div
+          id="search-results-listbox"
           className="absolute top-full left-0 right-0 mt-1 bg-card border rounded-md shadow-lg z-50 max-h-80 overflow-y-auto"
           role="listbox"
         >
@@ -225,7 +234,13 @@ export function SearchBar() {
             </div>
           )}
 
-          {!loading && results.length === 0 && query.trim() && (
+          {!loading && searchError && (
+            <div className="px-4 py-3 text-sm text-destructive">
+              Search failed — please try again
+            </div>
+          )}
+
+          {!loading && !searchError && results.length === 0 && query.trim() && (
             <div className="px-4 py-3 text-sm text-muted-foreground">No results found</div>
           )}
 
@@ -239,6 +254,7 @@ export function SearchBar() {
                 return (
                   <button
                     key={result.id}
+                    id={`search-result-${result.id}`}
                     onClick={() => {
                       handleSelect(result);
                     }}

@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockPool, MockPool, mockRunMigrations } = vi.hoisted(() => ({
+const { _mockPool, MockPool, mockRunMigrations } = vi.hoisted(() => ({
   mockPool: {
     on: vi.fn(),
     end: vi.fn().mockResolvedValue(undefined),

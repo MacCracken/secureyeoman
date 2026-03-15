@@ -591,7 +591,7 @@ export function SecuritySettings() {
           </h3>
           <button
             className="text-xs text-primary hover:text-primary/80"
-            onClick={() => navigate('/connections?tab=mcp')}
+            onClick={() => void navigate('/connections?tab=mcp')}
           >
             Manage
           </button>

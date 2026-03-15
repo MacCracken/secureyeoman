@@ -133,7 +133,7 @@ export class FederationManager {
       return 'offline';
     }
 
-    let status: 'online' | 'offline' = 'offline';
+    let status: 'online' | 'offline';
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => {
@@ -294,7 +294,7 @@ export class FederationManager {
     if (!personality) throw new Error(`Personality not found: ${personalityId}`);
 
     // Get top 500 knowledge entries
-    let knowledgeEntries: unknown[] = [];
+    let knowledgeEntries: unknown[];
     try {
       knowledgeEntries = await this.brainManager.semanticSearch('', { limit: 500, personalityId });
     } catch {

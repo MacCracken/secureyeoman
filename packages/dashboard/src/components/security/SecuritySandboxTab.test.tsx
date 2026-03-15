@@ -25,7 +25,7 @@ vi.mock('../../api/client', () => ({
 }));
 
 import {
-  fetchScanStats,
+  _fetchScanStats,
   fetchQuarantineItems,
   approveQuarantine,
   deleteQuarantine,

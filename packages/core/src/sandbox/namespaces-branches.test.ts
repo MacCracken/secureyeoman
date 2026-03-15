@@ -5,7 +5,7 @@
  * so we must use vi.mock + vi.hoisted for all three modules.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // vi.hoisted makes these available before the hoisted vi.mock factories run
 const mocks = vi.hoisted(() => ({

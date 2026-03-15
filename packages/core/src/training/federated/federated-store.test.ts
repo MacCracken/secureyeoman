@@ -9,8 +9,8 @@ import { FederatedStore } from './federated-store.js';
 import type {
   FederatedSession,
   FederatedParticipant,
-  FederatedRound,
-  ModelUpdate,
+  _FederatedRound,
+  _ModelUpdate,
 } from '@secureyeoman/shared';
 
 function makeSession(overrides: Partial<FederatedSession> = {}): FederatedSession {

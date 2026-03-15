@@ -4,7 +4,7 @@
  * Tests the thin coordination layer using mocked storage and engine.
  * WorkflowEngine is mocked to avoid recursive execution side-effects.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { WorkflowManager } from './workflow-manager.js';
 import type { WorkflowStorage } from './workflow-storage.js';
 import type { WorkflowDefinition, WorkflowRun, WorkflowStepRun } from '@secureyeoman/shared';
@@ -326,7 +326,7 @@ describe('WorkflowManager.cancelRun', () => {
     });
     const manager = new WorkflowManager({ storage, logger: makeLogger() });
 
-    const result = await manager.cancelRun('run-1');
+    const _result = await manager.cancelRun('run-1');
     expect(storage.updateRun).not.toHaveBeenCalled();
   });
 });

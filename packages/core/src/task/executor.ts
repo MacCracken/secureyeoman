@@ -301,7 +301,7 @@ export class TaskExecutor {
     // Update status to running
     task.status = TaskStatus.RUNNING;
     task.startedAt = startTime;
-    this.taskStorage?.updateTask(task.id, { status: task.status, startedAt: startTime });
+    void this.taskStorage?.updateTask(task.id, { status: task.status, startedAt: startTime });
 
     const logContext: LogContext = {
       userId: context.userId,
@@ -383,7 +383,7 @@ export class TaskExecutor {
       task.resources = this.estimateResources(startTime, endTime);
 
       // Persist completion
-      this.taskStorage?.updateTask(task.id, {
+      void this.taskStorage?.updateTask(task.id, {
         status: task.status,
         completedAt: task.completedAt,
         durationMs: task.durationMs,
@@ -432,7 +432,7 @@ export class TaskExecutor {
       task.resources = this.estimateResources(startTime, endTime);
 
       // Persist failure
-      this.taskStorage?.updateTask(task.id, {
+      void this.taskStorage?.updateTask(task.id, {
         status: task.status,
         completedAt: task.completedAt,
         durationMs: task.durationMs,

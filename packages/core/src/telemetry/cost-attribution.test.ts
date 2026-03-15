@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CostAttributionTracker, type CostEntry, type CostBudget } from './cost-attribution.js';
+import { CostAttributionTracker, type CostEntry } from './cost-attribution.js';
 
 const mockLogger = {
   trace: vi.fn(),

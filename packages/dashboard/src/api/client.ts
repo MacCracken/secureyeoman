@@ -238,7 +238,9 @@ async function request<T>(
       });
 
       if (!retryResponse.ok) {
-        const error = await retryResponse.json().catch(() => ({ message: 'Unknown error' }));
+        const error = await retryResponse
+          .json()
+          .catch(() => ({ message: `HTTP ${retryResponse.status}` }));
         throw new APIError(
           error.message || `HTTP ${retryResponse.status}`,
           retryResponse.status,
@@ -255,7 +257,7 @@ async function request<T>(
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Unknown error' }));
+    const error = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
     throw new APIError(
       error.message || error.error || `HTTP ${response.status}`,
       response.status,

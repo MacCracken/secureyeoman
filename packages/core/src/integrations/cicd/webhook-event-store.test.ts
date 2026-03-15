@@ -104,7 +104,7 @@ describe('WebhookEventStore', () => {
       store.add(makeEvent({ repoUrl: 'https://github.com/acme/app' }));
       store.add(makeEvent({ repoUrl: 'https://github.com/acme/lib' }));
       store.add(makeEvent({ repoUrl: 'https://github.com/other/app' }));
-      const { events, total } = store.list({ repo: 'acme' });
+      const { _events, total } = store.list({ repo: 'acme' });
       expect(total).toBe(2);
     });
 
@@ -112,7 +112,7 @@ describe('WebhookEventStore', () => {
       store.add(makeEvent({ event: 'workflow_run.completed' }));
       store.add(makeEvent({ event: 'workflow_run.requested' }));
       store.add(makeEvent({ event: 'push' }));
-      const { events, total } = store.list({ event: 'workflow_run' });
+      const { _events, total } = store.list({ event: 'workflow_run' });
       expect(total).toBe(2);
     });
 

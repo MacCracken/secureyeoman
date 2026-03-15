@@ -43,7 +43,7 @@ export interface UseTalkModeReturn {
   audioLevel: number;
   duration: number;
   error: string | null;
-  start: () => void;
+  start: () => void | Promise<void>;
   stop: () => void;
 }
 

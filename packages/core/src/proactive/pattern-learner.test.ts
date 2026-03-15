@@ -58,7 +58,7 @@ function makeTemporalMemories(count: number, hour: number, context: string) {
 }
 
 /** Build multiple memory records spread across different hours */
-function makeScatteredMemories(count: number, context: string) {
+function _makeScatteredMemories(count: number, context: string) {
   return Array.from({ length: count }, (_, i) =>
     makeMemoryRecord({
       context: {

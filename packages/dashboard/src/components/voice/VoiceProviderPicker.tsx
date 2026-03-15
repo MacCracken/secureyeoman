@@ -229,7 +229,7 @@ export function VoiceProviderPicker() {
 
           <button
             className="btn btn-ghost text-sm px-3 py-1.5 flex items-center gap-1.5"
-            onClick={handleTestTts}
+            onClick={() => void handleTestTts()}
             disabled={!currentTts || ttsTestStatus === 'testing'}
           >
             {ttsTestStatus === 'testing' ? (
@@ -301,7 +301,7 @@ export function VoiceProviderPicker() {
 
           <button
             className="btn btn-ghost text-sm px-3 py-1.5 flex items-center gap-1.5"
-            onClick={handleTestStt}
+            onClick={() => void handleTestStt()}
             disabled={
               !currentStt || sttTestStatus === 'recording' || sttTestStatus === 'transcribing'
             }

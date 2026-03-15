@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { IntegrationManager } from './manager.js';
 
 const makeLogger = () => ({
@@ -614,7 +614,7 @@ describe('IntegrationManager', () => {
   describe('startAll — partial failure', () => {
     it('continues starting other integrations when one fails', async () => {
       const config2 = { ...CONFIG, id: 'int-2', displayName: 'Slack 2' };
-      const { manager, storage, logger } = makeManager({
+      const { manager, _storage, logger } = makeManager({
         listIntegrations: vi.fn().mockResolvedValue([CONFIG, config2]),
         getIntegration: vi.fn().mockImplementation((id: string) => {
           if (id === 'int-1') return CONFIG;
@@ -644,7 +644,7 @@ describe('IntegrationManager', () => {
 
   describe('reloadIntegration', () => {
     it('stops and restarts a running integration', async () => {
-      const { manager, storage } = makeManager();
+      const { manager, _storage } = makeManager();
       const integration1 = makeIntegration();
       const integration2 = makeIntegration();
       let callCount = 0;

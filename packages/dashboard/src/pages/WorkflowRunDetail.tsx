@@ -150,7 +150,7 @@ export function WorkflowRunDetail() {
         <AlertCircle className="w-8 h-8" />
         <p>Run not found or failed to load.</p>
         <button
-          onClick={() => navigate('/workflows')}
+          onClick={() => void navigate('/workflows')}
           className="text-sm text-primary hover:underline"
         >
           Back to Workflows
@@ -164,7 +164,7 @@ export function WorkflowRunDetail() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => void navigate(-1)}
           className="p-1.5 rounded-md hover:bg-muted/50 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />

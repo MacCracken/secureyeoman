@@ -2,7 +2,7 @@
  * LlmJudgeManager tests — Dataset CRUD, pointwise eval, pairwise comparison,
  * auto-eval gating, and prompt parsing (Phase 97).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { LlmJudgeManager, type LlmJudgeManagerDeps } from './llm-judge-manager.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -476,7 +476,7 @@ describe('LlmJudgeManager — Pairwise Comparison', () => {
     // Force swap (random < 0.5)
     vi.spyOn(Math, 'random').mockReturnValue(0.3);
 
-    const summary = await manager.runPairwiseComparison({
+    const _summary = await manager.runPairwiseComparison({
       datasetId: 'd-1',
       modelA: 'llama3',
       modelFnA: async () => 'Hi!',

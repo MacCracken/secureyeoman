@@ -6,7 +6,7 @@ import * as os from 'node:os';
 // ── cert-gen tests ──────────────────────────────────────────────────
 
 describe('cert-gen', () => {
-  const { isOpenSSLAvailable } = vi.hoisted(() => {
+  const { _isOpenSSLAvailable } = vi.hoisted(() => {
     return { isOpenSSLAvailable: vi.fn() };
   });
 

@@ -63,7 +63,7 @@ export class GitPolicyRepo {
         cwd: this.repoPath,
       });
     } catch (err) {
-      throw new Error(`Git pull failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(`Git pull failed: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
     }
     const after = await this.getGitInfo();
     return { updated: before.commitSha !== after.commitSha, commitSha: after.commitSha };

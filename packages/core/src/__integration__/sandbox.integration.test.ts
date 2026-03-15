@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { NoopSandbox } from '../sandbox/noop-sandbox.js';
 import { LinuxSandbox } from '../sandbox/linux-sandbox.js';
 import { SandboxManager, type SandboxManagerConfig } from '../sandbox/manager.js';

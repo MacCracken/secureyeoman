@@ -14,7 +14,7 @@ import { loadConfig } from '../../config/loader.js';
 import { initPoolFromConfig } from '../../storage/pg-pool.js';
 import { runMigrations } from '../../storage/migrations/runner.js';
 import { closePool } from '../../storage/pg-pool.js';
-import { initializeLogger, createNoopLogger } from '../../logging/logger.js';
+import { initializeLogger } from '../../logging/logger.js';
 import type { Command, CommandContext } from '../router.js';
 import { extractBoolFlag } from '../utils.js';
 import { errorToString } from '../../utils/errors.js';
@@ -47,7 +47,6 @@ migrations before the core Deployment rolls out.
       initPoolFromConfig(config.core.database);
     } catch (err) {
       // Fall back to noop logger if config fails; let the DB error surface below
-      logger = createNoopLogger();
       ctx.stderr.write(`Failed to load config: ${errorToString(err)}\n`);
       return 1;
     }

@@ -68,8 +68,8 @@ export class ScreenRecordingManager {
     await writeFile(filePath, Buffer.alloc(0));
 
     // Auto-stop timer
-    const timer = setTimeout(async () => {
-      await this.stopRecording(id);
+    const timer = setTimeout(() => {
+      void this.stopRecording(id);
     }, effectiveDuration * 1000);
 
     this.activeSessions.set(id, { ...session, timer });

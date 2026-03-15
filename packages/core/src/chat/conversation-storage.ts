@@ -604,7 +604,7 @@ export class ConversationStorage extends PgBaseStorage {
       values.push(data.failedConversations);
     }
     if (data.errorMessage !== undefined) {
-      sets.push(`error_message = $${idx++}`);
+      sets.push(`error_message = $${idx}`);
       values.push(data.errorMessage);
     }
 

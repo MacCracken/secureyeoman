@@ -93,7 +93,9 @@ export class LowRateDetector {
 
     if (this.config.enabled) {
       // Periodically rotate windows and analyze
-      this.analyzeTimer.start(() => { this.rotateAndAnalyze(); }, this.config.windowMs);
+      this.analyzeTimer.start(() => {
+        this.rotateAndAnalyze();
+      }, this.config.windowMs);
 
       this.logger.info(
         {

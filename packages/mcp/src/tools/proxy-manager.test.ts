@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { ProxyManager, detectCaptcha, fetchWithRetry, RetryableError } from './proxy-manager.js';
+import { ProxyManager, detectCaptcha, fetchWithRetry } from './proxy-manager.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 
 function makeConfig(overrides: Partial<McpServiceConfig> = {}): McpServiceConfig {

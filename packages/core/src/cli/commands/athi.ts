@@ -91,9 +91,7 @@ async function runList(
   argv: string[]
 ): Promise<number> {
   const actorResult = extractFlag(argv, 'actor');
-  argv = actorResult.rest;
-  const statusResult = extractFlag(argv, 'status');
-  argv = statusResult.rest;
+  const statusResult = extractFlag(actorResult.rest, 'status');
 
   const params = new URLSearchParams();
   if (actorResult.value) params.set('actor', actorResult.value);
@@ -213,7 +211,6 @@ async function runCreate(
   const likelihoodResult = extractFlag(argv, 'likelihood');
   argv = likelihoodResult.rest;
   const severityResult = extractFlag(argv, 'severity');
-  argv = severityResult.rest;
 
   if (!titleResult.value || !actorResult.value) {
     ctx.stderr.write('Required: --title and --actor\n');

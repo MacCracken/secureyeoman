@@ -18,7 +18,7 @@ FROM ${NODE_IMAGE} AS builder
 WORKDIR /app
 
 # Copy workspace manifests for layer caching
-COPY package.json package-lock.json ./
+COPY .npmrc package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/core/package.json packages/core/
 COPY packages/mcp/package.json packages/mcp/

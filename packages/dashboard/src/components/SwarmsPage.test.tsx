@@ -20,7 +20,7 @@ import * as api from '../api/client';
 
 const mockFetchSwarmTemplates = vi.mocked(api.fetchSwarmTemplates);
 const mockFetchSwarmRuns = vi.mocked(api.fetchSwarmRuns);
-const mockExecuteSwarm = vi.mocked(api.executeSwarm);
+const _mockExecuteSwarm = vi.mocked(api.executeSwarm);
 const mockCreateSwarmTemplate = vi.mocked(api.createSwarmTemplate);
 const mockUpdateSwarmTemplate = vi.mocked(api.updateSwarmTemplate);
 const mockDeleteSwarmTemplate = vi.mocked(api.deleteSwarmTemplate);
@@ -225,7 +225,7 @@ describe('SwarmsPage', () => {
     const newBtn = await screen.findByText('New Template');
     await user.click(newBtn);
     await screen.findByText('New Swarm Template');
-    const closeBtn = screen.getByRole('button', { name: '' });
+    const _closeBtn = screen.getByRole('button', { name: '' });
     // Find the X button inside the form header
     const formHeader = screen.getByText('New Swarm Template').parentElement!;
     const xBtn = formHeader.querySelector('button')!;

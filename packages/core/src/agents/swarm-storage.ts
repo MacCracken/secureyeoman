@@ -355,7 +355,7 @@ export class SwarmStorage extends PgBaseStorage {
     );
 
     const rows = await this.queryMany<SwarmRunRow>(
-      `SELECT * FROM agents.swarm_runs ${where} ORDER BY created_at DESC LIMIT $${p++} OFFSET $${p++}`,
+      `SELECT * FROM agents.swarm_runs ${where} ORDER BY created_at DESC LIMIT $${p++} OFFSET $${p}`,
       [...values, limit, offset]
     );
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach } from 'vitest';
 import { AuthService, AuthError } from './auth.js';
 import { AuthStorage } from './auth-storage.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';

@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Menu, WifiOff } from 'lucide-react';
+import { Loader2, Menu, WifiOff, RefreshCw } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSidebar } from '../hooks/useSidebar';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -117,7 +117,7 @@ export function DashboardLayout() {
         isConnected={isConnected}
         wsConnected={connected}
         reconnecting={reconnecting}
-        onRefresh={() => refetchMetrics()}
+        onRefresh={() => void refetchMetrics()}
         onLogout={() => void logout()}
       />
 
@@ -181,6 +181,27 @@ export function DashboardLayout() {
             </div>
           </header>
 
+          {/* Server Unreachable Banner */}
+          {healthError && (
+            <div
+              role="alert"
+              className="flex items-center gap-3 px-4 py-2.5 bg-destructive/10 border-b border-destructive/30 text-destructive text-sm"
+            >
+              <WifiOff className="w-4 h-4 shrink-0" />
+              <span>
+                <strong>Unable to connect to SecureYeoman server</strong> — retrying automatically
+                every 5 s.
+              </span>
+              <button
+                onClick={() => void refetchMetrics()}
+                className="btn-ghost p-1 rounded hover:bg-destructive/20"
+                aria-label="Retry connection"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* Local AI Unavailable Banner */}
           {aiHealth?.local && aiHealth.status === 'unreachable' && (
             <div
@@ -198,72 +219,246 @@ export function DashboardLayout() {
 
           {/* Main Content */}
           <main className="px-2 sm:px-3 py-3 sm:py-4 flex-1">
-            <ErrorBoundary>
-              <Suspense fallback={<PageSkeleton />}>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/metrics" replace />} />
-                  <Route
-                    path="/metrics"
-                    element={<MetricsPage metrics={metrics} health={health} />}
-                  />
-                  <Route path="/chat" element={<ChatPage />} />
-                  <Route path="/editor/advanced" element={<AdvancedEditorPage />} />
-                  <Route path="/editor" element={<EditorPage />} />
-                  <Route path="/code" element={<Navigate to="/editor" replace />} />
-                  <Route path="/security" element={<SecurityPage />} />
-                  <Route path="/automation" element={<AutomationPage />} />
-                  <Route path="/tasks" element={<Navigate to="/automation" replace />} />
-                  <Route
-                    path="/workflows"
-                    element={<Navigate to="/automation?tab=workflows" replace />}
-                  />
-                  <Route path="/workflows/:id/builder" element={<WorkflowBuilder />} />
-                  <Route path="/workflows/runs/:runId" element={<WorkflowRunDetail />} />
-                  <Route path="/reports" element={<SecurityPage />} />
-                  <Route path="/personality" element={<PersonalityView />} />
-                  <Route path="/personality/new" element={<PersonalityEditPage />} />
-                  <Route path="/personality/:id/edit" element={<PersonalityEditPage />} />
-                  <Route path="/skills" element={<SkillsPage />} />
-                  <Route path="/marketplace" element={<SkillsPage />} />
-                  <Route path="/agents" element={<AgentsPage />} />
-                  <Route path="/group-chat" element={<Navigate to="/chat" replace />} />
-                  <Route
-                    path="/routing-rules"
-                    element={<Navigate to="/connections?tab=routing" replace />}
-                  />
-                  <Route path="/connections/*" element={<ConnectionsPage />} />
-                  <Route path="/mcp" element={<ConnectionsPage />} />
-                  <Route path="/developers" element={<DeveloperPage />} />
-                  <Route path="/extensions" element={<Navigate to="/developers" replace />} />
-                  <Route path="/experiments" element={<Navigate to="/developers" replace />} />
-                  <Route path="/execution" element={<Navigate to="/editor" replace />} />
-                  <Route path="/a2a" element={<Navigate to="/agents" replace />} />
-                  <Route path="/proactive" element={<ProactivePage />} />
-                  <Route path="/multimodal" element={<Navigate to="/agents" replace />} />
-                  <Route path="/costs" element={<Navigate to="/metrics" replace />} />
-                  <Route path="/organization" element={<OrganizationPage />} />
-                  <Route path="/simulation" element={<SimulationPage />} />
-                  <Route
-                    path="/intent"
-                    element={<Navigate to="/organization?tab=intent" replace />}
-                  />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/security-settings" element={<SettingsPage />} />
-                  <Route path="/api-keys" element={<SettingsPage />} />
-                  <Route
-                    path="/users"
-                    element={<Navigate to="/organization?tab=users" replace />}
-                  />
-                  <Route
-                    path="/workspaces"
-                    element={<Navigate to="/organization?tab=workspaces" replace />}
-                  />
-                  <Route path="/roles" element={<SettingsPage />} />
-                  <Route path="/souls" element={<SettingsPage />} />
-                  <Route path="*" element={<Navigate to="/metrics" replace />} />
-                </Routes>
-              </Suspense>
-            </ErrorBoundary>
+            <Suspense fallback={<PageSkeleton />}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/metrics" replace />} />
+                <Route
+                  path="/metrics"
+                  element={
+                    <ErrorBoundary fallbackTitle="Metrics failed to load">
+                      <MetricsPage metrics={metrics} health={health} />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/chat"
+                  element={
+                    <ErrorBoundary fallbackTitle="Chat failed to load">
+                      <ChatPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/editor/advanced"
+                  element={
+                    <ErrorBoundary fallbackTitle="Advanced Editor failed to load">
+                      <AdvancedEditorPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/editor"
+                  element={
+                    <ErrorBoundary fallbackTitle="Editor failed to load">
+                      <EditorPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route path="/code" element={<Navigate to="/editor" replace />} />
+                <Route
+                  path="/security"
+                  element={
+                    <ErrorBoundary fallbackTitle="Security failed to load">
+                      <SecurityPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/automation"
+                  element={
+                    <ErrorBoundary fallbackTitle="Automation failed to load">
+                      <AutomationPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route path="/tasks" element={<Navigate to="/automation" replace />} />
+                <Route
+                  path="/workflows"
+                  element={<Navigate to="/automation?tab=workflows" replace />}
+                />
+                <Route
+                  path="/workflows/:id/builder"
+                  element={
+                    <ErrorBoundary fallbackTitle="Workflow Builder failed to load">
+                      <WorkflowBuilder />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/workflows/runs/:runId"
+                  element={
+                    <ErrorBoundary fallbackTitle="Workflow Run failed to load">
+                      <WorkflowRunDetail />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/reports"
+                  element={
+                    <ErrorBoundary fallbackTitle="Security failed to load">
+                      <SecurityPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/personality"
+                  element={
+                    <ErrorBoundary fallbackTitle="Personality failed to load">
+                      <PersonalityView />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/personality/new"
+                  element={
+                    <ErrorBoundary fallbackTitle="Personality Editor failed to load">
+                      <PersonalityEditPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/personality/:id/edit"
+                  element={
+                    <ErrorBoundary fallbackTitle="Personality Editor failed to load">
+                      <PersonalityEditPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/skills"
+                  element={
+                    <ErrorBoundary fallbackTitle="Skills failed to load">
+                      <SkillsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/marketplace"
+                  element={
+                    <ErrorBoundary fallbackTitle="Skills failed to load">
+                      <SkillsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/agents"
+                  element={
+                    <ErrorBoundary fallbackTitle="Agents failed to load">
+                      <AgentsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route path="/group-chat" element={<Navigate to="/chat" replace />} />
+                <Route
+                  path="/routing-rules"
+                  element={<Navigate to="/connections?tab=routing" replace />}
+                />
+                <Route
+                  path="/connections/*"
+                  element={
+                    <ErrorBoundary fallbackTitle="Connections failed to load">
+                      <ConnectionsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/mcp"
+                  element={
+                    <ErrorBoundary fallbackTitle="Connections failed to load">
+                      <ConnectionsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/developers"
+                  element={
+                    <ErrorBoundary fallbackTitle="Developer Tools failed to load">
+                      <DeveloperPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route path="/extensions" element={<Navigate to="/developers" replace />} />
+                <Route path="/experiments" element={<Navigate to="/developers" replace />} />
+                <Route path="/execution" element={<Navigate to="/editor" replace />} />
+                <Route path="/a2a" element={<Navigate to="/agents" replace />} />
+                <Route
+                  path="/proactive"
+                  element={
+                    <ErrorBoundary fallbackTitle="Proactive failed to load">
+                      <ProactivePage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route path="/multimodal" element={<Navigate to="/agents" replace />} />
+                <Route path="/costs" element={<Navigate to="/metrics" replace />} />
+                <Route
+                  path="/organization"
+                  element={
+                    <ErrorBoundary fallbackTitle="Organization failed to load">
+                      <OrganizationPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/simulation"
+                  element={
+                    <ErrorBoundary fallbackTitle="Simulation failed to load">
+                      <SimulationPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/intent"
+                  element={<Navigate to="/organization?tab=intent" replace />}
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ErrorBoundary fallbackTitle="Settings failed to load">
+                      <SettingsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/security-settings"
+                  element={
+                    <ErrorBoundary fallbackTitle="Settings failed to load">
+                      <SettingsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/api-keys"
+                  element={
+                    <ErrorBoundary fallbackTitle="Settings failed to load">
+                      <SettingsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route path="/users" element={<Navigate to="/organization?tab=users" replace />} />
+                <Route
+                  path="/workspaces"
+                  element={<Navigate to="/organization?tab=workspaces" replace />}
+                />
+                <Route
+                  path="/roles"
+                  element={
+                    <ErrorBoundary fallbackTitle="Settings failed to load">
+                      <SettingsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/souls"
+                  element={
+                    <ErrorBoundary fallbackTitle="Settings failed to load">
+                      <SettingsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route path="*" element={<Navigate to="/metrics" replace />} />
+              </Routes>
+            </Suspense>
           </main>
         </div>
       </div>

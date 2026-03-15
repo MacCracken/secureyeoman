@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MetricsGraph } from './MetricsGraph';
 import { createMetricsSnapshot } from '../test/mocks';
 import type { HealthStatus, McpServerConfig } from '../types';

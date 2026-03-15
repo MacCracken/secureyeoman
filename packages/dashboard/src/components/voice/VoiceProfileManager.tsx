@@ -206,7 +206,7 @@ export function VoiceProfileManager() {
       setFormError('Name, provider, and voice ID are required.');
       return;
     }
-    let settings: Record<string, unknown> = {};
+    let settings: Record<string, unknown>;
     try {
       settings = JSON.parse(form.settingsJson);
     } catch {
@@ -420,7 +420,7 @@ export function VoiceProfileManager() {
                 {!cloneRecording ? (
                   <button
                     className="btn btn-ghost text-sm px-3 py-1.5 flex items-center gap-1.5"
-                    onClick={startCloneRecording}
+                    onClick={() => void startCloneRecording()}
                   >
                     <Mic className="w-3.5 h-3.5" />
                     Record
@@ -579,7 +579,7 @@ export function VoiceProfileManager() {
               <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                 <button
                   className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => handlePreview(profile.id)}
+                  onClick={() => void handlePreview(profile.id)}
                   disabled={previewingId === profile.id}
                   title="Preview"
                 >

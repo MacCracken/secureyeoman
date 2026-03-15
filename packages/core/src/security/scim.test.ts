@@ -13,7 +13,7 @@ vi.mock('../utils/crypto.js', () => ({
   uuidv7: vi.fn(() => 'test-uuid-001'),
 }));
 
-function makeRow<T>(overrides: Partial<T>): T {
+function _makeRow<T>(overrides: Partial<T>): T {
   return overrides as T;
 }
 

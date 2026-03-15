@@ -269,7 +269,7 @@ describe('crew unknown subcommand', () => {
 describe('crew list — API error branch', () => {
   it('returns 1 and prints error on API failure', async () => {
     mockFetch([{ ok: false, status: 500, data: { error: 'server error' } }]);
-    const { stdout, stderr, getStdout, getStderr } = createStreams();
+    const { stdout, stderr, _getStdout, getStderr } = createStreams();
     const code = await crewCommand.run({ argv: ['list'], stdout, stderr });
     expect(code).toBe(1);
     expect(getStderr()).toContain('server error');
@@ -1007,7 +1007,7 @@ describe('crew list — license error', () => {
         data: { error: 'License required', feature: 'teams', statusCode: 402 },
       },
     ]);
-    const { stdout, stderr, getStderr } = createStreams();
+    const { stdout, stderr, _getStderr } = createStreams();
     const code = await crewCommand.run({ argv: ['list'], stdout, stderr });
     expect(code).toBe(1);
   });
@@ -1024,7 +1024,7 @@ describe('crew run — license error', () => {
         data: { error: 'License required', feature: 'teams', statusCode: 402 },
       },
     ]);
-    const { stdout, stderr, getStderr } = createStreams();
+    const { stdout, stderr, _getStderr } = createStreams();
     const code = await crewCommand.run({
       argv: ['run', 'team-1', 'task', '--timeout', '5000'],
       stdout,

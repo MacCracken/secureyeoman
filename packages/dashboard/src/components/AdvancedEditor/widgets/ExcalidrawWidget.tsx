@@ -422,7 +422,7 @@ export function ExcalidrawWidget({
           ))}
         </div>
         <button
-          onClick={handleSaveToKb}
+          onClick={() => void handleSaveToKb()}
           disabled={loading || (!scene && !sceneDataRef.current)}
           className="px-2 py-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary disabled:opacity-50"
         >

@@ -238,8 +238,8 @@ export class SynapseManager {
       clearInterval(this.heartbeatTimer);
     }
 
-    this.heartbeatTimer = setInterval(async () => {
-      await this.pollHeartbeat(instanceId);
+    this.heartbeatTimer = setInterval(() => {
+      void this.pollHeartbeat(instanceId);
     }, this.config.heartbeatIntervalMs);
   }
 

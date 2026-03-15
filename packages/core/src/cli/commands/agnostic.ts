@@ -215,7 +215,6 @@ Environment variables (set after start to wire MCP tools):
 
     if (subcommand === 'status') {
       const jsonResult = extractBoolFlag(argv, '--json');
-      argv = jsonResult.rest;
       const jsonOutput = jsonResult.value;
 
       // docker compose ps --format json gives structured output

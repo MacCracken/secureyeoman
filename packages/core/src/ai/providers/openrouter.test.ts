@@ -6,7 +6,7 @@ import {
   TokenLimitError,
   ProviderUnavailableError,
   InvalidResponseError,
-  AuthenticationError,
+  _AuthenticationError,
 } from '../errors.js';
 
 const mockCreate = vi.fn();

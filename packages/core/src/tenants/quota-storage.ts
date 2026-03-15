@@ -282,7 +282,7 @@ export class QuotaStorage extends PgBaseStorage {
       params.push(opts.to);
     }
     if (opts.model !== undefined) {
-      conditions.push(`model = $${idx++}`);
+      conditions.push(`model = $${idx}`);
       params.push(opts.model);
     }
 
@@ -313,7 +313,7 @@ export class QuotaStorage extends PgBaseStorage {
       params.push(opts.to);
     }
     if (opts.model !== undefined) {
-      conditions.push(`model = $${idx++}`);
+      conditions.push(`model = $${idx}`);
       params.push(opts.model);
     }
 

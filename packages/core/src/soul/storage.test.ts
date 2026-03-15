@@ -561,7 +561,7 @@ describe('SoulStorage', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // UPDATE
         .mockResolvedValueOnce({ rows: [{ ...personalityRow, default_model: null }], rowCount: 1 });
 
-      const p = await storage.updatePersonality('per-1', {
+      const _p = await storage.updatePersonality('per-1', {
         defaultModel: null,
       });
       const params = mockQuery.mock.calls[1][1] as unknown[];

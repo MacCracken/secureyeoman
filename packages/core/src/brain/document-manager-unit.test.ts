@@ -202,7 +202,7 @@ describe('DocumentManager', () => {
       deps.brainManager.learn.mockRejectedValue(new Error('learn failed'));
 
       const buf = Buffer.from('content');
-      const result = await dm.ingestBuffer(buf, 'file.txt', 'txt', null, 'private');
+      const _result = await dm.ingestBuffer(buf, 'file.txt', 'txt', null, 'private');
 
       expect(deps.logger.warn).toHaveBeenCalled();
       // chunkAndLearn catches per-chunk errors, so the overall ingest may still succeed.
@@ -214,7 +214,7 @@ describe('DocumentManager', () => {
     it('catches extractText error and returns error document', async () => {
       // Excalidraw parse will fail on invalid JSON
       const buf = Buffer.from('not json');
-      const result = await dm.ingestBuffer(buf, 'bad.excalidraw', 'excalidraw', null, 'private');
+      const _result = await dm.ingestBuffer(buf, 'bad.excalidraw', 'excalidraw', null, 'private');
 
       expect(deps.storage.updateDocument).toHaveBeenCalledWith(
         'doc-1',
@@ -310,7 +310,7 @@ describe('DocumentManager', () => {
         statusText: 'Not Found',
       });
 
-      const result = await dm.ingestUrl('https://example.com/missing', null);
+      const _result = await dm.ingestUrl('https://example.com/missing', null);
 
       expect(deps.storage.updateDocument).toHaveBeenCalledWith(
         'doc-1',
@@ -324,7 +324,7 @@ describe('DocumentManager', () => {
     it('handles fetch failure', async () => {
       mockFetch.mockRejectedValue(new Error('Network error'));
 
-      const result = await dm.ingestUrl('https://unreachable.test', null);
+      const _result = await dm.ingestUrl('https://unreachable.test', null);
 
       expect(deps.storage.updateDocument).toHaveBeenCalledWith(
         'doc-1',
@@ -342,7 +342,7 @@ describe('DocumentManager', () => {
     it('handles non-Error thrown in catch', async () => {
       mockFetch.mockRejectedValue('string error');
 
-      const result = await dm.ingestUrl('https://example.com', null);
+      const _result = await dm.ingestUrl('https://example.com', null);
 
       expect(deps.storage.updateDocument).toHaveBeenCalledWith(
         'doc-1',
@@ -700,7 +700,7 @@ describe('DocumentManager', () => {
     it('catches error and sets document to error status', async () => {
       deps.brainManager.learn.mockRejectedValue(new Error('embed failed'));
 
-      const result = await dm.ingestExcalidraw({ elements: [{ text: 'X' }] }, 'Fail', null);
+      const _result = await dm.ingestExcalidraw({ elements: [{ text: 'X' }] }, 'Fail', null);
 
       // chunkAndLearn catches per-chunk errors, so outer try still succeeds
       // unless chunkAndLearn itself throws. Let's test with storage failure instead.
@@ -714,7 +714,7 @@ describe('DocumentManager', () => {
         .mockResolvedValueOnce(makeDoc({ status: 'error', errorMessage: 'db down' }));
 
       // This will cause the outer catch to fire
-      const result = await dm.ingestExcalidraw({ elements: [] }, 'Fail', null);
+      const _result = await dm.ingestExcalidraw({ elements: [] }, 'Fail', null);
 
       expect(deps.logger.warn).toHaveBeenCalledWith(
         expect.objectContaining({ docId: 'doc-1' }),

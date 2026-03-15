@@ -22,7 +22,7 @@ const mockLogger = {
   level: 'info',
 };
 
-function makeSnapshot(overrides: Partial<AuditSnapshot> = {}): AuditSnapshot {
+function _makeSnapshot(overrides: Partial<AuditSnapshot> = {}): AuditSnapshot {
   return {
     totalMemories: 100,
     totalKnowledge: 20,

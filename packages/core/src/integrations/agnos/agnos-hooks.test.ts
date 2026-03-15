@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { registerAgnosHooks } from './agnos-hooks.js';
-import type { AgnosHooksConfig, AgnosHooksDeps } from './agnos-hooks.js';
+import type { AgnosHooksDeps } from './agnos-hooks.js';
 import type { ExtensionManager } from '../../extensions/manager.js';
 import type { AgnosClient } from './agnos-client.js';
 

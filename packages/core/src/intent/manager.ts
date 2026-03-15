@@ -348,7 +348,7 @@ export class IntentManager {
 
   private _buildSignalResult(signal: Signal, value: number | null): SignalReadResult {
     let status: SignalStatus = 'healthy';
-    let message = '';
+    let message: string;
 
     if (value !== null) {
       const isBad =
@@ -385,41 +385,43 @@ export class IntentManager {
 
   private _startSignalRefresh(): void {
     if (this.refreshTimer) return;
-    this.refreshTimer = setInterval(async () => {
-      const intent = this.activeIntent;
-      if (!intent) return;
+    this.refreshTimer = setInterval(() => {
+      void (async () => {
+        const intent = this.activeIntent;
+        if (!intent) return;
 
-      // 50 — Diff goal active states once per refresh cycle
-      try {
-        await this._diffGoals();
-      } catch {
-        // Non-fatal
-      }
-
-      // 48.2 — Refresh signal values and log degradation transitions
-      for (const signal of intent.signals ?? []) {
+        // 50 — Diff goal active states once per refresh cycle
         try {
-          const prevStatus = this.signalCache.get(signal.id)?.result.status;
-          const result = await this._fetchSignalValue(signal, intent);
-          this.signalCache.set(signal.id, { result, fetchedAt: Date.now() });
-
-          const isDegraded =
-            (prevStatus === 'healthy' &&
-              (result.status === 'warning' || result.status === 'critical')) ||
-            (prevStatus === 'warning' && result.status === 'critical');
-          if (isDegraded) {
-            await this.storage.logEnforcement({
-              eventType: 'intent_signal_degraded',
-              itemId: signal.id,
-              rule: `signal:${signal.id}`,
-              rationale: result.message,
-              metadata: { from: prevStatus, to: result.status },
-            });
-          }
+          await this._diffGoals();
         } catch {
           // Non-fatal
         }
-      }
+
+        // 48.2 — Refresh signal values and log degradation transitions
+        for (const signal of intent.signals ?? []) {
+          try {
+            const prevStatus = this.signalCache.get(signal.id)?.result.status;
+            const result = await this._fetchSignalValue(signal, intent);
+            this.signalCache.set(signal.id, { result, fetchedAt: Date.now() });
+
+            const isDegraded =
+              (prevStatus === 'healthy' &&
+                (result.status === 'warning' || result.status === 'critical')) ||
+              (prevStatus === 'warning' && result.status === 'critical');
+            if (isDegraded) {
+              await this.storage.logEnforcement({
+                eventType: 'intent_signal_degraded',
+                itemId: signal.id,
+                rule: `signal:${signal.id}`,
+                rationale: result.message,
+                metadata: { from: prevStatus, to: result.status },
+              });
+            }
+          } catch {
+            // Non-fatal
+          }
+        }
+      })();
     }, this.signalRefreshIntervalMs);
     this.refreshTimer.unref?.();
   }

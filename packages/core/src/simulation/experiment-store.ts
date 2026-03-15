@@ -4,7 +4,6 @@
  * Uses simulation schema tables for durable storage.
  */
 
-import { PgBaseStorage } from '../storage/pg-base.js';
 import type {
   ExperimentRunnerStore,
   ExperimentSession,

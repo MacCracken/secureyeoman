@@ -197,7 +197,7 @@ export function SandboxTab() {
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
           <h3 className="font-medium text-sm">Quarantined Artifacts ({quarantineItems.length})</h3>
           <button
-            onClick={() => quarantineQuery.refetch()}
+            onClick={() => void quarantineQuery.refetch()}
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             <RefreshCw className="w-3.5 h-3.5" />

@@ -101,6 +101,6 @@ export class TeamsIntegration implements Integration {
       timestamp: timestamp ? new Date(timestamp).getTime() : Date.now(),
     };
 
-    this.deps?.onMessage(unified);
+    void this.deps?.onMessage(unified);
   }
 }

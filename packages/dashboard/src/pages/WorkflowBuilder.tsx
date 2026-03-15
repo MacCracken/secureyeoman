@@ -279,7 +279,7 @@ export function WorkflowBuilder() {
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b bg-card shrink-0">
         <button
-          onClick={() => navigate('/workflows')}
+          onClick={() => void navigate('/workflows')}
           className="p-1.5 rounded-md hover:bg-muted/50 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />

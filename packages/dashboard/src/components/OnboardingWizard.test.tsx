@@ -85,7 +85,7 @@ beforeEach(() => {
 // Step order: personality → model → security → api-keys → done
 
 /** Navigate to a specific step by index (0-based) */
-async function navigateToStep(stepIndex: number) {
+async function _navigateToStep(stepIndex: number) {
   renderWizard();
   for (let i = 0; i < stepIndex; i++) {
     const skipBtn = screen.queryByRole('button', { name: /skip for now/i });

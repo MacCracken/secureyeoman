@@ -152,7 +152,7 @@ describe('personality command', () => {
       { data: '---\nname: "FRIDAY"\n---\n\n# Identity & Purpose\n\nHello.\n' }
     );
 
-    const { stdout, stderr, getStdout } = createStreams();
+    const { stdout, stderr, _getStdout } = createStreams();
     const code = await personalityCommand.run({
       argv: ['export', 'FRIDAY', '--format', 'md'],
       stdout,
@@ -183,7 +183,7 @@ describe('personality command', () => {
   });
 
   it('export with --output writes to file', async () => {
-    const fetchMock = mockFetchSequence(
+    const _fetchMock = mockFetchSequence(
       { data: { personalities: PERSONALITIES, total: 2 } },
       { data: { name: 'FRIDAY', systemPrompt: 'Hello' } }
     );
@@ -220,7 +220,7 @@ describe('personality command', () => {
   it('export accepts exp alias', async () => {
     mockFetchSequence({ data: { personalities: PERSONALITIES, total: 2 } }, { data: '# FRIDAY' });
 
-    const { stdout, stderr, getStdout } = createStreams();
+    const { stdout, stderr, _getStdout } = createStreams();
     const code = await personalityCommand.run({
       argv: ['exp', 'FRIDAY'],
       stdout,

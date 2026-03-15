@@ -165,7 +165,7 @@ export class McpServiceServer {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         // Log but don't crash
-        console.warn(`[secureyeoman-mcp] Auto-registration warning: ${msg}`);
+        process.stderr.write(`[secureyeoman-mcp] Auto-registration warning: ${msg}\n`);
       }
     }
 
@@ -271,17 +271,17 @@ export class McpServiceServer {
           if (!existing.includes('SecureYeoman managed')) {
             await writeFile(configPath, existing + configEntry, { mode: 0o600 });
           }
-          console.info(`[secureyeoman-mcp] Restored SSH key from secret ${name} → ${keyPath}`);
+          process.stderr.write(`[secureyeoman-mcp] Restored SSH key from secret ${name} → ${keyPath}\n`);
         } catch (err) {
-          console.warn(
-            `[secureyeoman-mcp] Failed to restore SSH key ${name}: ${err instanceof Error ? err.message : String(err)}`
+          process.stderr.write(
+            `[secureyeoman-mcp] Failed to restore SSH key ${name}: ${err instanceof Error ? err.message : String(err)}\n`
           );
         }
       }
     } catch (err) {
       // Core may not have SSH keys or the route may not be registered yet — non-fatal
-      console.warn(
-        `[secureyeoman-mcp] restoreSshKeys: ${err instanceof Error ? err.message : String(err)}`
+      process.stderr.write(
+        `[secureyeoman-mcp] restoreSshKeys: ${err instanceof Error ? err.message : String(err)}\n`
       );
     }
   }

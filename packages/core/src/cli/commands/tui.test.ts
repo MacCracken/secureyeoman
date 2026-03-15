@@ -6,7 +6,7 @@
  * - Non-TTY early exit
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { tuiCommand } from './tui.js';
 
 function makeCtx(argv: string[] = []) {

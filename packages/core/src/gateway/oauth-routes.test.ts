@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { OAuthService, registerOAuthRoutes } from './oauth-routes.js';
 import type { AuthService } from '../security/auth.js';

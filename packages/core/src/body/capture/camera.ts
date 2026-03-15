@@ -101,7 +101,8 @@ export async function captureCamera(deviceId?: string): Promise<CameraFrame> {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     throw new Error(
-      `Camera capture failed: ${msg}. Ensure ffmpeg is installed and a camera device is available.`
+      `Camera capture failed: ${msg}. Ensure ffmpeg is installed and a camera device is available.`,
+      { cause: err }
     );
   }
 

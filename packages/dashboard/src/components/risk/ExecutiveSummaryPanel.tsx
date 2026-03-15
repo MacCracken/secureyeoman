@@ -189,7 +189,7 @@ function ExportDropdown() {
             <button
               key={fmt.value}
               className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted transition-colors"
-              onClick={() => handleExport(fmt.value)}
+              onClick={() => void handleExport(fmt.value)}
             >
               {fmt.label}
             </button>

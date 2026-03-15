@@ -396,7 +396,7 @@ describe('ScopeValidator', () => {
 
     it('should return same instance from getScopeValidator', () => {
       initializeScopeValidator();
-      const instance1 = validator; // local
+      const _instance1 = validator; // local
       const instance2 = getScopeValidator(); // global
 
       // The global one should be the initialized one

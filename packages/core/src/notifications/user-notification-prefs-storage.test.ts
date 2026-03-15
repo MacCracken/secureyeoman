@@ -5,7 +5,7 @@
  * No database required.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   UserNotificationPrefsStorage,
   type UserNotificationPref,
@@ -46,7 +46,7 @@ function makeRow(
   };
 }
 
-function makePref(overrides: Partial<UserNotificationPref> = {}): UserNotificationPref {
+function _makePref(overrides: Partial<UserNotificationPref> = {}): UserNotificationPref {
   return {
     id: 'pref-1',
     userId: 'user-1',

@@ -315,7 +315,7 @@ describe('LinuxSandbox', () => {
   describe('run() — Landlock enforcement mode', () => {
     it('falls back to V1 when enforceLandlock is true but Landlock worker does not exist', async () => {
       mockExistsSync.mockReturnValue(false);
-      const sandbox = new LinuxSandbox({ enforceLandlock: true });
+      const _sandbox = new LinuxSandbox({ enforceLandlock: true });
       // Manually prime capabilities so landlock is detected
       // Since existsSync returns false and readFileSync gives 6.1 kernel, landlock=true via version check
       mockReadFileSync.mockReturnValue('Linux version 6.1.0-generic #1' as any);

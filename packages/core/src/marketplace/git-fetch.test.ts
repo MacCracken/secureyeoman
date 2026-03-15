@@ -34,7 +34,7 @@ function execFileOk() {
 }
 
 /** Helper: make execFile fail with an error */
-function execFileFail(msg = 'git error') {
+function _execFileFail(msg = 'git error') {
   mockExecFile.mockImplementation((_cmd: unknown, _args: unknown, _opts: unknown, cb: unknown) => {
     (cb as Function)(new Error(msg));
   });

@@ -91,7 +91,7 @@ describe('MarketplaceManager', () => {
 describe('MarketplaceManager with BrainManager', () => {
   let storage: MarketplaceStorage;
   let manager: MarketplaceManager;
-  let brainStorage: BrainStorage;
+  let _brainStorage: BrainStorage;
   let brainManager: BrainManager;
 
   beforeEach(async () => {

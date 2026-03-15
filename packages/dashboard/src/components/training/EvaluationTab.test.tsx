@@ -46,7 +46,7 @@ const mockDeleteDataset = vi.mocked(api.deleteEvalDataset);
 const mockFetchRuns = vi.mocked(api.fetchEvalRuns);
 const mockFetchComparisons = vi.mocked(api.fetchPairwiseComparisons);
 const mockRunPointwise = vi.mocked(api.runPointwiseEval);
-const mockRunPairwise = vi.mocked(api.runPairwiseComparison);
+const _mockRunPairwise = vi.mocked(api.runPairwiseComparison);
 
 const NOW = 1_700_000_000_000;
 

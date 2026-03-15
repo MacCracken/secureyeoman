@@ -1,10 +1,10 @@
 /**
- * AgnosticMetricsWidget — Compact dashboard card showing AAS (Agnostic Agentics Systems) metrics.
+ * AgnosticMetricsWidget — Compact dashboard card showing Agnostic multi-agent orchestration metrics.
  *
  * Fetches from the Agnostic widget endpoint (/api/dashboard/widget) proxied through
  * SecureYeoman's API. Shows task counts, agent status, crew presets, and recent activity.
  *
- * Phase B — AGNOSTIC as SecureYeoman Plugin
+ * Agnostic is the multi-agent orchestration platform integrated with SecureYeoman.
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -87,10 +87,10 @@ export default function AgnosticMetricsWidget() {
     return (
       <div className="p-4 text-sm">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-zinc-200">AGNOSTIC QA</h3>
+          <h3 className="text-base font-semibold text-zinc-200">Agnostic</h3>
           <StatusBadge status="offline" />
         </div>
-        <p className="mt-2 text-xs text-zinc-500">Unable to connect to AGNOSTIC platform</p>
+        <p className="mt-2 text-xs text-zinc-500">Unable to connect to Agnostic platform</p>
       </div>
     );
   }

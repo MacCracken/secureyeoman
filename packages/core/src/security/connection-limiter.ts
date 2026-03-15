@@ -68,7 +68,9 @@ export class ConnectionLimiter {
     });
 
     // Periodic cleanup of stale IP entries (no active connections, rate window expired)
-    this.cleanupTimer.start(() => { this.cleanup(); }, 30_000);
+    this.cleanupTimer.start(() => {
+      this.cleanup();
+    }, 30_000);
 
     this.logger.info(
       {

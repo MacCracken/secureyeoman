@@ -15,7 +15,7 @@ export interface EngagementResult {
   totalConversations: number;
 }
 
-const ABANDONMENT_STALE_HOURS = 24;
+const _ABANDONMENT_STALE_HOURS = 24;
 
 export class EngagementMetricsService {
   constructor(private readonly pool: Pool) {}

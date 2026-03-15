@@ -33,8 +33,7 @@ Options:
     }
     argv = helpResult.rest;
 
-    const { baseUrl, json: jsonOutput, rest: argvAfterFlags } = extractCommonFlags(argv);
-    argv = argvAfterFlags;
+    const { baseUrl, json: jsonOutput } = extractCommonFlags(argv);
 
     try {
       const result = await apiCall(baseUrl, '/health');

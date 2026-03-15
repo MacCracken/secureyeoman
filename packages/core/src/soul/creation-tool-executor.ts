@@ -162,7 +162,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       return { output: { error: 'Task storage not available' }, isError: true };
     }
     const { id, ...updates } = args;
-    taskStorage.updateTask(str(id), updates as any);
+    void taskStorage.updateTask(str(id), updates as any);
     return { output: { updated: true, id }, isError: false };
   },
 

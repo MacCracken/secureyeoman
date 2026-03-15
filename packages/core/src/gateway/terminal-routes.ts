@@ -310,7 +310,7 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
         }
 
         // Verify the target actually exists and is a directory
-        let isDir = false;
+        let isDir: boolean;
         try {
           isDir = statSync(target).isDirectory();
         } catch {

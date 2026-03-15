@@ -272,7 +272,7 @@ export class ProviderAccountStorage extends PgBaseStorage {
       values.push(opts.accountId);
     }
     if (opts.tenantId !== undefined) {
-      conditions.push(`r.tenant_id IS NOT DISTINCT FROM $${idx++}`);
+      conditions.push(`r.tenant_id IS NOT DISTINCT FROM $${idx}`);
       values.push(opts.tenantId);
     }
 
@@ -308,7 +308,7 @@ export class ProviderAccountStorage extends PgBaseStorage {
       values.push(opts.accountId);
     }
     if (opts.tenantId !== undefined) {
-      conditions.push(`r.tenant_id IS NOT DISTINCT FROM $${idx++}`);
+      conditions.push(`r.tenant_id IS NOT DISTINCT FROM $${idx}`);
       values.push(opts.tenantId);
     }
 

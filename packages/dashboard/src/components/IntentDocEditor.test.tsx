@@ -371,7 +371,7 @@ describe('IntentDocEditor', () => {
     expect(screen.getByText('Cancel')).toBeInTheDocument();
 
     // Fill in fields
-    const inputs = screen.getAllByRole('textbox');
+    const _inputs = screen.getAllByRole('textbox');
     // ID field (first input)
     const idInput = screen.getByPlaceholderText('goal-1');
     await user.type(idInput, 'g-2');

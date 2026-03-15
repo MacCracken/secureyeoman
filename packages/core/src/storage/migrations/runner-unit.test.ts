@@ -184,7 +184,7 @@ describe('runMigrations() — skip already-applied migrations', () => {
 describe('runMigrations() — empty manifest', () => {
   it('returns early with no pool calls when manifest is empty', async () => {
     // Temporarily override the manifest to be empty
-    const { MIGRATION_MANIFEST } = await import('./manifest.js');
+    const { _MIGRATION_MANIFEST } = await import('./manifest.js');
     // We can't re-mock after import, so just test the fast-path with pool mock
     // The module is already loaded with the 2-item MOCK_MANIFEST.
     // This test validates the pool CREATE TABLE call still happens.

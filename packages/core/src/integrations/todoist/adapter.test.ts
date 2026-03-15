@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TodoistIntegration } from './adapter.js';
-import type { IntegrationConfig, UnifiedMessage } from '@secureyeoman/shared';
+import type { IntegrationConfig } from '@secureyeoman/shared';
 import type { IntegrationDeps } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 

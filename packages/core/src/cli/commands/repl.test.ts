@@ -13,8 +13,8 @@ const {
   mockExistsSync,
   mockReadFileSync,
   mockAppendFileSync,
-  mockRLOn,
-  mockRLPrompt,
+  _mockRLOn,
+  _mockRLPrompt,
   createMockRL,
 } = vi.hoisted(() => {
   const mockApiCall = vi.fn();

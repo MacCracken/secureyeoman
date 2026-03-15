@@ -175,7 +175,7 @@ describe('ProviderAccountManager', () => {
       process.env.ANTHROPIC_API_KEY = 'sk-test-env';
       mockStorage.getAccountsByProvider.mockResolvedValue([makeAccount()]);
 
-      const count = await manager.importFromEnv();
+      const _count = await manager.importFromEnv();
       // Should not create for anthropic since it already has accounts
       const anthropicCalls = mockStorage.createAccount.mock.calls.filter(
         (call: any) => call[0]?.provider === 'anthropic'
@@ -213,7 +213,7 @@ describe('ProviderAccountManager', () => {
       mockSecretsManager.get.mockResolvedValue('sk-bad');
       mockValidator.validate.mockResolvedValue({ valid: false, error: 'Invalid API key' });
 
-      const result = await manager.validateAccount('acc-1');
+      const _result = await manager.validateAccount('acc-1');
       expect(mockStorage.updateValidation).toHaveBeenCalledWith(
         'acc-1',
         'invalid',
@@ -232,7 +232,7 @@ describe('ProviderAccountManager', () => {
       mockSecretsManager.get.mockResolvedValue('sk-new');
       mockValidator.validate.mockResolvedValue({ valid: true });
 
-      const result = await manager.rotateKey('acc-1', 'sk-new');
+      const _result = await manager.rotateKey('acc-1', 'sk-new');
       expect(mockSecretsManager.set).toHaveBeenCalledWith(account.secretName, 'sk-new');
     });
   });

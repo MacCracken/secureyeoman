@@ -341,67 +341,69 @@ export class FinetuneManager {
   ): Promise<void> {
     return new Promise((resolve) => {
       const watcher = spawn('docker', ['wait', containerId]);
-      watcher.on('exit', async (code) => {
-        const exitCode = typeof code === 'number' ? code : -1;
-        const job = await this.getJob(jobId);
-        if (!job || job.status === 'cancelled') {
-          resolve();
-          return;
-        }
-
-        if (exitCode === 0) {
-          await this.pool.query(
-            `UPDATE training.finetune_jobs
-             SET status='complete', adapter_path=$1, completed_at=NOW()
-             WHERE id=$2`,
-            [adapterDir, jobId]
-          );
-          this.logger.info({ jobId }, 'Finetune job completed');
-
-          emitJobCompletion(
-            this.getAlertManager?.() ?? null,
-            {
-              jobType: 'finetune',
-              status: 'completed',
-              jobId,
-            },
-            this.logger
-          );
-
-          if (this.onJobComplete) {
-            const updatedJob = await this.getJob(jobId);
-            if (updatedJob) {
-              this.onJobComplete(jobId, updatedJob).catch((err: unknown) => {
-                this.logger.error(
-                  {
-                    jobId,
-                    error: err instanceof Error ? err.message : 'unknown',
-                  },
-                  'onJobComplete callback failed'
-                );
-              });
-            }
+      watcher.on('exit', (code) => {
+        void (async () => {
+          const exitCode = typeof code === 'number' ? code : -1;
+          const job = await this.getJob(jobId);
+          if (!job || job.status === 'cancelled') {
+            resolve();
+            return;
           }
-        } else {
-          await this.pool.query(
-            `UPDATE training.finetune_jobs
-             SET status='failed', error_message=$1, completed_at=NOW()
-             WHERE id=$2`,
-            [`Container exited with code ${exitCode}`, jobId]
-          );
-          this.logger.error({ jobId, exitCode }, 'Finetune job failed');
 
-          emitJobCompletion(
-            this.getAlertManager?.() ?? null,
-            {
-              jobType: 'finetune',
-              status: 'failed',
-              jobId,
-            },
-            this.logger
-          );
-        }
-        resolve();
+          if (exitCode === 0) {
+            await this.pool.query(
+              `UPDATE training.finetune_jobs
+               SET status='complete', adapter_path=$1, completed_at=NOW()
+               WHERE id=$2`,
+              [adapterDir, jobId]
+            );
+            this.logger.info({ jobId }, 'Finetune job completed');
+
+            emitJobCompletion(
+              this.getAlertManager?.() ?? null,
+              {
+                jobType: 'finetune',
+                status: 'completed',
+                jobId,
+              },
+              this.logger
+            );
+
+            if (this.onJobComplete) {
+              const updatedJob = await this.getJob(jobId);
+              if (updatedJob) {
+                this.onJobComplete(jobId, updatedJob).catch((err: unknown) => {
+                  this.logger.error(
+                    {
+                      jobId,
+                      error: err instanceof Error ? err.message : 'unknown',
+                    },
+                    'onJobComplete callback failed'
+                  );
+                });
+              }
+            }
+          } else {
+            await this.pool.query(
+              `UPDATE training.finetune_jobs
+               SET status='failed', error_message=$1, completed_at=NOW()
+               WHERE id=$2`,
+              [`Container exited with code ${exitCode}`, jobId]
+            );
+            this.logger.error({ jobId, exitCode }, 'Finetune job failed');
+
+            emitJobCompletion(
+              this.getAlertManager?.() ?? null,
+              {
+                jobType: 'finetune',
+                status: 'failed',
+                jobId,
+              },
+              this.logger
+            );
+          }
+          resolve();
+        })();
       });
     });
   }

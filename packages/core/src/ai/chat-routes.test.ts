@@ -1289,7 +1289,7 @@ describe('Chat Routes — additional branch coverage', () => {
   });
 
   it('POST /api/v1/chat returns 400 when promptGuard blocks assembled prompt', async () => {
-    const blockingGuard = {
+    const _blockingGuard = {
       scan: vi.fn().mockReturnValue({
         passed: false,
         findings: [{ patternName: 'test', messageRole: 'user', severity: 'high' }],

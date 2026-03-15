@@ -340,11 +340,10 @@ async function runCreate(
   jsonOutput: boolean,
   args: string[]
 ): Promise<number> {
-  let argv = args;
+  const argv = args;
 
   const wizardResult = extractBoolFlag(argv, 'wizard');
   const useWizard = wizardResult.value;
-  argv = wizardResult.rest;
 
   if (!useWizard) {
     ctx.stderr.write('Usage: secureyeoman personality create --wizard\n');

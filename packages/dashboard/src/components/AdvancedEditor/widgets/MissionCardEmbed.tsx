@@ -99,7 +99,7 @@ function MissionCardSummary({
           <Stat label="Queued" value={m.queuedTasks ?? 0} />
           <button
             className="text-primary text-[10px] hover:underline mt-1"
-            onClick={() => navigate('/tasks')}
+            onClick={() => void navigate('/tasks')}
           >
             View all tasks
           </button>
@@ -112,7 +112,7 @@ function MissionCardSummary({
           <Stat label="Completed Today" value={m.completedWorkflows ?? 0} />
           <button
             className="text-primary text-[10px] hover:underline mt-1"
-            onClick={() => navigate('/workflows')}
+            onClick={() => void navigate('/workflows')}
           >
             View workflows
           </button>

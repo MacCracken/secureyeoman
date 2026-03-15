@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import Fastify from 'fastify';
 import { registerModelRoutes } from './model-routes.js';
 import { _clearDynamicCache } from './cost-calculator.js';

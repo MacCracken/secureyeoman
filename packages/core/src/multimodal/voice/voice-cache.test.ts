@@ -3,8 +3,8 @@ import {
   mkdtempSync,
   rmSync,
   readdirSync,
-  writeFileSync,
-  readFileSync,
+  _writeFileSync,
+  _readFileSync,
   utimesSync,
   chmodSync,
 } from 'node:fs';

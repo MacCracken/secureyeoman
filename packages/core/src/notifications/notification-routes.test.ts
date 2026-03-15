@@ -5,7 +5,7 @@
  * No database required.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { registerNotificationRoutes } from './notification-routes.js';
 import type { Notification } from './notification-storage.js';

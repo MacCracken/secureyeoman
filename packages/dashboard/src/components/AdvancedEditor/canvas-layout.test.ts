@@ -15,7 +15,7 @@ import {
   importLayoutFromJson,
   PRESET_LAYOUTS,
 } from './canvas-layout';
-import type { CanvasLayout, NamedLayouts } from './canvas-layout';
+import type { CanvasLayout } from './canvas-layout';
 
 // ── localStorage mock ─────────────────────────────────────────────────────────
 const store: Record<string, string> = {};

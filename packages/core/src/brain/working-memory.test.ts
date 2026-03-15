@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { WorkingMemoryBuffer, DEFAULT_WORKING_MEMORY_CONFIG } from './working-memory.js';
+import { WorkingMemoryBuffer } from './working-memory.js';
 import type { EmbeddingProvider } from '../ai/embeddings/types.js';
 import type { VectorStore, VectorResult } from './vector/types.js';
 

@@ -226,7 +226,7 @@ describe('LocalEmbeddingProvider.embed()', () => {
   });
 
   it('ignores stdout data with no pending handler in queue', async () => {
-    const { provider, proc } = makeProviderWithProcess();
+    const { _provider, proc } = makeProviderWithProcess();
     // Emit data with no pending request — should not throw
     proc.stdout.emit('data', Buffer.from(JSON.stringify({ embeddings: [[0.1]] }) + '\n'));
     // No error thrown, no result to check

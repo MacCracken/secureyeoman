@@ -352,7 +352,7 @@ export function SecurityPage() {
             warningCount={warningCount}
             verifying={verifying}
             verificationResult={verificationResult}
-            onVerify={handleVerifyChain}
+            onVerify={() => void handleVerifyChain()}
             onAcknowledge={acknowledgeEvent}
             onAcknowledgeAll={acknowledgeAll}
             onViewAuditLog={() => {

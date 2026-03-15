@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { CodeExecutionManager, ApprovalRequiredError } from './manager.js';
 import type { ExecutionConfig } from '@secureyeoman/shared';
 
@@ -281,7 +281,7 @@ describe('CodeExecutionManager — approval workflow', () => {
   });
 
   it('reject updates approval status', async () => {
-    const { manager, storage } = buildManager(undefined, {
+    const { manager, _storage } = buildManager(undefined, {
       updateApproval: vi.fn().mockResolvedValue({ ...APPROVAL, status: 'rejected' }),
     });
     const approval = await manager.reject('req-1');

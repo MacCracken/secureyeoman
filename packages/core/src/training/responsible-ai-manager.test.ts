@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ResponsibleAiManager, tokenize } from './responsible-ai-manager.js';
 import type {
-  CohortAnalysis,
-  FairnessReport,
-  ShapExplanation,
+  _CohortAnalysis,
+  _FairnessReport,
+  _ShapExplanation,
   ProvenanceEntry,
   ModelCard,
 } from '@secureyeoman/shared';

@@ -18,7 +18,7 @@ const mockDocumentManager = {
   generateSourceGuide: vi.fn(),
 };
 
-const mockBrainManager = {};
+const _mockBrainManager = {};
 
 const mockBrainStorage = {
   getAverageGroundingScore: vi.fn(),
@@ -33,7 +33,7 @@ vi.mock('fastify', () => {
 });
 
 // Inline test helpers — no Fastify needed
-function makeReply() {
+function _makeReply() {
   const state = { statusCode: 200, body: null as unknown };
   const reply = {
     code(n: number) {

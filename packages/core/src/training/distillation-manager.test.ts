@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DistillationManager } from './distillation-manager.js';
 
 // Mock training-stream to avoid side effects
@@ -277,7 +277,7 @@ describe('DistillationManager', () => {
 
       // Sequence: getJob (pending), update running, _collectOrderedConvIds, getJob (check cancel), batch messages, update complete
       let selectJobIdx = 0;
-      pool.query = vi.fn(async (sql: string, params?: unknown[]) => {
+      pool.query = vi.fn(async (sql: string, _params?: unknown[]) => {
         // Batch message fetch for distillation
         if (sql.includes('chat.messages') && sql.includes('ANY')) {
           return {
@@ -597,7 +597,7 @@ describe('DistillationManager — Phase 92 extensions', () => {
   describe('runJob() — instruction export format', () => {
     it('writes instruction format lines when exportFormat=instruction', async () => {
       let qc = 0;
-      pool.query = vi.fn(async (sql: string, args?: any[]) => {
+      pool.query = vi.fn(async (sql: string, _args?: any[]) => {
         qc++;
         if (qc === 1)
           return {

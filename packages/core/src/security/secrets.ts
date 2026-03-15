@@ -288,7 +288,7 @@ export class SecretStore {
         },
         'Failed to load secret store'
       );
-      throw new Error('Failed to decrypt secret store. Check master key.');
+      throw new Error('Failed to decrypt secret store. Check master key.', { cause: error });
     }
   }
 

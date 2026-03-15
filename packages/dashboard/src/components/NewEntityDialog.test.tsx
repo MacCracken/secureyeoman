@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NewEntityDialog } from './NewEntityDialog';
@@ -163,7 +163,7 @@ describe('NewEntityDialog', () => {
     // The X button is next to "Create New" header
     const header = screen.getByText('Create New');
     const headerParent = header.closest('.flex')!;
-    const xBtn = headerParent.querySelector('button')!;
+    const _xBtn = headerParent.querySelector('button')!;
     // The X button is the second element (after h3) in the flex container
     const buttons = headerParent.querySelectorAll('button');
     await user.click(buttons[buttons.length - 1]);
@@ -570,7 +570,7 @@ describe('NewEntityDialog', () => {
   it('proactive trigger submits with schedule type', async () => {
     mockCreateProactiveTrigger.mockResolvedValue({ id: 't1' });
     const user = userEvent.setup();
-    const { onClose } = renderDialog();
+    const { _onClose } = renderDialog();
     await user.click(screen.getByText('Proactive Trigger'));
     await waitFor(() => {
       expect(screen.getByText('New Proactive Trigger')).toBeInTheDocument();
@@ -765,7 +765,7 @@ describe('NewEntityDialog', () => {
   it('extension register submits with all fields', async () => {
     mockRegisterExtension.mockResolvedValue({ id: 'ext1' });
     const user = userEvent.setup();
-    const { onClose } = renderDialog();
+    const { _onClose } = renderDialog();
     await user.click(screen.getByText('Extension'));
     await waitFor(() => {
       expect(screen.getByText('New Extension')).toBeInTheDocument();
@@ -859,7 +859,7 @@ describe('NewEntityDialog', () => {
   it('user create submits all fields', async () => {
     mockCreateUser.mockResolvedValue({ id: 'u1' });
     const user = userEvent.setup();
-    const { onClose } = renderDialog();
+    const { _onClose } = renderDialog();
     await user.click(screen.getByText('User'));
     await waitFor(() => {
       expect(screen.getByText('New User')).toBeInTheDocument();
@@ -946,7 +946,7 @@ describe('NewEntityDialog', () => {
   it('workspace create submits with name only', async () => {
     mockCreateWorkspace.mockResolvedValue({ id: 'w1' });
     const user = userEvent.setup();
-    const { onClose } = renderDialog();
+    const { _onClose } = renderDialog();
     await user.click(screen.getByText('Workspace'));
     await waitFor(() => {
       expect(screen.getByText('New Workspace')).toBeInTheDocument();
@@ -1037,7 +1037,7 @@ describe('NewEntityDialog', () => {
   it('memory vector submit sends correct data', async () => {
     mockAddMemory.mockResolvedValue({ id: 'm1' });
     const user = userEvent.setup();
-    const { onClose } = renderDialog();
+    const { _onClose } = renderDialog();
     await user.click(screen.getByText('Memory'));
     await waitFor(() => {
       expect(screen.getByText('Add Memory')).toBeInTheDocument();
@@ -1140,7 +1140,7 @@ describe('NewEntityDialog', () => {
   it('knowledge base submit sends correct data', async () => {
     mockLearnKnowledge.mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    const { onClose } = renderDialog();
+    const { _onClose } = renderDialog();
     await user.click(screen.getByText('Memory'));
     await waitFor(() => {
       expect(screen.getByText('Add Memory')).toBeInTheDocument();

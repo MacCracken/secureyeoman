@@ -54,8 +54,8 @@ const mockRememberChatMessage = vi.mocked(api.rememberChatMessage);
 const mockFetchConversations = vi.mocked(api.fetchConversations);
 const mockFetchConversation = vi.mocked(api.fetchConversation);
 const mockCreateConversation = vi.mocked(api.createConversation);
-const mockDeleteConversation = vi.mocked(api.deleteConversation);
-const mockRenameConversation = vi.mocked(api.renameConversation);
+const _mockDeleteConversation = vi.mocked(api.deleteConversation);
+const _mockRenameConversation = vi.mocked(api.renameConversation);
 
 // ── SSE stream helpers ────────────────────────────────────────────
 
@@ -86,7 +86,7 @@ const DEFAULT_DONE_EVENT = {
   creationEvents: [],
 };
 
-let mockFetch: ReturnType<typeof vi.fn>;
+let mockFetch: ReturnType<typeof vi.fn<(url: string, init?: RequestInit) => Promise<Response>>>;
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -135,7 +135,7 @@ describe('ChatPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     localStorage.clear();
-    mockFetch = vi.fn().mockResolvedValue(createStreamResponse([DEFAULT_DONE_EVENT]));
+    mockFetch = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>().mockResolvedValue(createStreamResponse([DEFAULT_DONE_EVENT]));
     vi.stubGlobal('fetch', mockFetch);
     mockFetchPersonalities.mockResolvedValue({
       personalities: [defaultPersonality],

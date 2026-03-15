@@ -424,7 +424,7 @@ const KpiBarSection = memo(function KpiBarSection({
             ? `${defaultPersonality.name}${subPart}`
             : `${soulPart}${subPart}`;
         })()}
-        onClick={() => navigate('/personality')}
+        onClick={() => void navigate('/personality')}
       />
       <StatCard
         title="Heartbeat"
@@ -433,14 +433,14 @@ const KpiBarSection = memo(function KpiBarSection({
         subtitle={`${heartbeatStatus?.tasks?.filter((t) => t.enabled).length ?? 0} enabled`}
         trend={heartbeatRunning ? 'Running' : 'Stopped'}
         trendUp={heartbeatRunning}
-        onClick={() => navigate('/security?tab=tasks&heartbeat=1')}
+        onClick={() => void navigate('/security?tab=tasks&heartbeat=1')}
       />
       <StatCard
         title="Active Tasks"
         value={metrics?.tasks?.inProgress ?? 0}
         icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />}
         subtitle={`${metrics?.tasks?.queueDepth ?? 0} queued`}
-        onClick={() => navigate('/tasks')}
+        onClick={() => void navigate('/tasks')}
       />
       <StatCard
         title="Tasks Today"
@@ -466,7 +466,7 @@ const KpiBarSection = memo(function KpiBarSection({
         icon={<Shield className="w-4 h-4 sm:w-5 sm:h-5" />}
         trend={metrics?.security?.auditChainValid === false ? 'Chain Invalid' : 'Chain Valid'}
         trendUp={metrics?.security?.auditChainValid !== false}
-        onClick={() => navigate('/security?tab=audit')}
+        onClick={() => void navigate('/security?tab=audit')}
       />
     </div>
   );
@@ -581,7 +581,7 @@ const ActiveTasksSection = memo(function ActiveTasksSection({
           </div>
           <button
             className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
-            onClick={() => navigate('/automation')}
+            onClick={() => void navigate('/automation')}
           >
             All <ArrowRight className="w-3 h-3" />
           </button>
@@ -628,7 +628,7 @@ const WorkflowRunsSection = memo(function WorkflowRunsSection({ navigate }: Sect
           </div>
           <button
             className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
-            onClick={() => navigate('/automation?tab=workflows')}
+            onClick={() => void navigate('/automation?tab=workflows')}
           >
             All <ArrowRight className="w-3 h-3" />
           </button>
@@ -643,7 +643,7 @@ const WorkflowRunsSection = memo(function WorkflowRunsSection({ navigate }: Sect
               <div
                 key={wf.id}
                 className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => navigate('/automation?tab=workflows')}
+                onClick={() => void navigate('/automation?tab=workflows')}
               >
                 <GitMerge className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                 <span className="text-xs font-medium truncate flex-1">{wf.name}</span>
@@ -691,7 +691,7 @@ const AgentHealthSection = memo(function AgentHealthSection({
               <div
                 key={p.id}
                 className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => navigate('/personality')}
+                onClick={() => void navigate('/personality')}
               >
                 {p.avatarUrl ? (
                   <img
@@ -759,7 +759,7 @@ const SystemHealthSection = memo(function SystemHealthSection({
           ok={enabledMcp > 0}
           detail={`${enabledMcp}/${mcpServers.length} servers`}
           icon={<Link className="w-3.5 h-3.5" />}
-          onClick={() => navigate('/mcp')}
+          onClick={() => void navigate('/mcp')}
         />
         <ServiceStatusRow
           label="Uptime"
@@ -789,7 +789,7 @@ const IntegrationGridSection = memo(function IntegrationGridSection({
           </div>
           <button
             className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
-            onClick={() => navigate('/mcp')}
+            onClick={() => void navigate('/mcp')}
           >
             All <ArrowRight className="w-3 h-3" />
           </button>
@@ -845,7 +845,7 @@ const SecurityEventsSection = memo(function SecurityEventsSection({
           </div>
           <button
             className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
-            onClick={() => navigate('/security?tab=events')}
+            onClick={() => void navigate('/security?tab=events')}
           >
             All <ArrowRight className="w-3 h-3" />
           </button>
@@ -892,7 +892,7 @@ const AuditStreamSection = memo(function AuditStreamSection({ navigate }: Sectio
           </div>
           <button
             className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
-            onClick={() => navigate('/security?tab=audit')}
+            onClick={() => void navigate('/security?tab=audit')}
           >
             Full log <ArrowRight className="w-3 h-3" />
           </button>
@@ -1024,7 +1024,7 @@ const AgentWorldSection = memo(function AgentWorldSection({
           maxAgents={12}
           viewMode={worldViewMode}
           zoom={worldZoom}
-          onAgentClick={(id) => navigate(`/soul/personalities?focus=${id}`)}
+          onAgentClick={(id) => void navigate(`/soul/personalities?focus=${id}`)}
         />
       </div>
     </div>

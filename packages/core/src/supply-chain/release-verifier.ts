@@ -168,7 +168,7 @@ export async function verifyRelease(
     certificateOidcIssuer?: string;
   }
 ): Promise<VerifyResult> {
-  let checksum: ChecksumResult | null = null;
+  let checksum: ChecksumResult | null;
   let cosign: CosignResult | null = null;
 
   // 1. Checksum verification

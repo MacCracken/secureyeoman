@@ -205,7 +205,7 @@ export class AuthService {
 
     // Password verification — supports both legacy SHA256 and scrypt
     const storedHash = this.config.adminPassword;
-    let passwordValid = false;
+    let passwordValid: boolean;
 
     if (isLegacySha256(storedHash)) {
       // Legacy: constant-time compare against SHA256 hex digest
@@ -501,7 +501,7 @@ export class AuthService {
   async resetPassword(currentPassword: string, newPassword: string): Promise<void> {
     // Verify current password (supports both legacy SHA256 and scrypt)
     const storedHash = this.config.adminPassword;
-    let currentValid = false;
+    let currentValid: boolean;
 
     if (isLegacySha256(storedHash)) {
       currentValid = secureCompare(sha256(currentPassword), storedHash);
@@ -703,7 +703,7 @@ export class AuthService {
     try {
       const { payload } = await jwtVerify(token, this.secret, verifyOpts);
       return payload as JWTPayload & Record<string, unknown>;
-    } catch (err) {
+    } catch {
       // Fall back to previous secret during grace period
       if (this.previousSecret) {
         try {

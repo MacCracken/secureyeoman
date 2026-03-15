@@ -331,7 +331,7 @@ export class GitHubIntegration implements WebhookIntegration {
   verifyWebhook(payload: string, signature: string): boolean {
     if (!this.webhooks) return false;
     try {
-      this.webhooks.verify(payload, signature);
+      void this.webhooks.verify(payload, signature);
       return true;
     } catch {
       return false;

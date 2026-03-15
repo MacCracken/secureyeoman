@@ -133,7 +133,7 @@ export class FederatedStore extends PgBaseStorage {
 
     const rows = await this.queryMany<Record<string, unknown>>(
       `SELECT * FROM federated.sessions ${where}
-       ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+       ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
     );
     return { items: rows.map(rowToSession), total };

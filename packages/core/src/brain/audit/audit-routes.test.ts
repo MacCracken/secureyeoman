@@ -1,4 +1,4 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import type {
   MemoryAuditReport,
   MemoryHealthMetrics,
@@ -227,7 +227,7 @@ describe('registerAuditRoutes', () => {
     });
 
     it('rejects invalid scope', async () => {
-      const result = await callRoute('POST', '/api/v1/brain/audit/run', {
+      const _result = await callRoute('POST', '/api/v1/brain/audit/run', {
         body: { scope: 'hourly' },
       });
       expect(sendError).toHaveBeenCalledWith(
@@ -241,7 +241,7 @@ describe('registerAuditRoutes', () => {
     it('returns 500 on engine error', async () => {
       mockScheduler.runManualAudit.mockRejectedValue(new Error('Engine failure'));
 
-      const result = await callRoute('POST', '/api/v1/brain/audit/run', {
+      const _result = await callRoute('POST', '/api/v1/brain/audit/run', {
         body: { scope: 'daily' },
       });
       expect(sendError).toHaveBeenCalledWith(expect.anything(), 500, 'Engine failure');
@@ -267,7 +267,7 @@ describe('registerAuditRoutes', () => {
       expect(mockScheduler.runManualAudit).toHaveBeenCalledTimes(3);
 
       // 4th should be rate limited
-      const result = await callRoute('POST', '/api/v1/brain/audit/run');
+      const _result = await callRoute('POST', '/api/v1/brain/audit/run');
       expect(sendError).toHaveBeenCalledWith(
         expect.anything(),
         429,
@@ -461,7 +461,7 @@ describe('registerAuditRoutes', () => {
       const schedules = { daily: '30 3 * * *', weekly: '0 4 * * 0', monthly: '0 3 15 * *' };
       mockScheduler.getSchedules.mockReturnValue(schedules);
 
-      const result = await callRoute('PUT', '/api/v1/brain/audit/schedule', {
+      const _result = await callRoute('PUT', '/api/v1/brain/audit/schedule', {
         body: { scope: 'monthly', schedule: '0 3 15 * *' },
       });
       expect(mockScheduler.setSchedule).toHaveBeenCalledWith('monthly', '0 3 15 * *');

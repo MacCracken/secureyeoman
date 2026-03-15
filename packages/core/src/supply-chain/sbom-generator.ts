@@ -84,7 +84,8 @@ export function generateSbom(options: SbomOptions = {}): SbomDocument {
     lockData = JSON.parse(readFileSync(lockPath, 'utf-8'));
   } catch (err) {
     throw new Error(
-      `Failed to parse ${lockPath}: ${err instanceof Error ? err.message : String(err)}`
+      `Failed to parse ${lockPath}: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err }
     );
   }
 

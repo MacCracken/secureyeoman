@@ -238,7 +238,7 @@ describe('AwsIntegration', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await adapter.init(makeConfig(), makeDeps());
-      const id = await adapter.sendMessage('my-function', 'Test sig');
+      const _id = await adapter.sendMessage('my-function', 'Test sig');
 
       const [, opts] = mockFetch.mock.calls[0];
       expect(opts.headers['Authorization']).toMatch(/^AWS4-HMAC-SHA256/);
