@@ -266,9 +266,9 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
   },
   {
     icon: <Shield className="w-5 h-5" />,
-    name: 'Agnostic QA Platform',
+    name: 'Agnostic Agentic System',
     description:
-      'Multi-agent QA orchestration (6 AI agents): security audit, performance testing, regression, compliance (OWASP, GDPR, PCI DSS)',
+      'Multi-agent orchestration platform — autonomous task execution, code generation, research, security auditing, and custom agent workflows',
     transport: 'streamable-http',
     urlTemplate: '{AGNOSTIC_URL}',
     urlKeys: ['AGNOSTIC_URL'],
@@ -277,7 +277,7 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
       { key: 'AGNOSTIC_API_KEY', label: 'API Key' },
     ],
     note:
-      'Requires the Agnostic QA platform running (Docker Compose or native). ' +
+      'Requires the Agnostic platform running (Docker Compose or native). ' +
       'Alternatively, enable the built-in agnostic_* tools with MCP_EXPOSE_AGNOSTIC_TOOLS=true.',
   },
   {

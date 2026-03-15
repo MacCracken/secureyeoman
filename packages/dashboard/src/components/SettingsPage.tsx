@@ -158,19 +158,6 @@ export function SettingsPage() {
         </button>
         <button
           onClick={() => {
-            setActiveTab('roles');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'roles'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          Roles
-        </button>
-        <button
-          onClick={() => {
             setActiveTab('notifications');
           }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -194,6 +181,19 @@ export function SettingsPage() {
         >
           <Palette className="w-4 h-4" />
           Appearance
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('roles');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'roles'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Roles
         </button>
         <button
           onClick={() => {

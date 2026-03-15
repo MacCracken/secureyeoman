@@ -53,7 +53,7 @@ Environment Variables:
   OPENAI_API_KEY                 OpenAI API key
   GOOGLE_GENERATIVE_AI_API_KEY   Google Gemini API key
 
-  AGNOSTIC_AUTO_START=true       Also start the Agnostic QA Docker stack on launch
+  AGNOSTIC_AUTO_START=true       Also start the Agnostic Docker stack on launch
   AGNOSTIC_PATH=/path/to/agnostic  Path to the Agnostic project (auto-detected if omitted)
 \n`);
 }
@@ -136,11 +136,11 @@ export const startCommand: Command = {
       overrides.gateway = gw;
     }
 
-    // AGNOSTIC_AUTO_START: optionally bring up the Agnostic QA Docker stack first
+    // AGNOSTIC_AUTO_START: optionally bring up the Agnostic Docker stack first
     if (process.env.AGNOSTIC_AUTO_START === 'true') {
       const agnosticDir = resolveAgnosticPath();
       if (agnosticDir) {
-        ctx.stdout.write(`AGNOSTIC_AUTO_START: starting Agnostic QA team at ${agnosticDir}...\n`);
+        ctx.stdout.write(`AGNOSTIC_AUTO_START: starting Agnostic fleet at ${agnosticDir}...\n`);
         const agnosticResult = await compose(agnosticDir, ['up', '-d', '--remove-orphans']);
         if (agnosticResult.code !== 0) {
           ctx.stdout.write(
@@ -148,7 +148,7 @@ export const startCommand: Command = {
           );
           if (agnosticResult.stderr) ctx.stdout.write(agnosticResult.stderr + '\n');
         } else {
-          ctx.stdout.write('AGNOSTIC_AUTO_START: Agnostic QA team started.\n');
+          ctx.stdout.write('AGNOSTIC_AUTO_START: Agnostic fleet started.\n');
         }
       } else {
         ctx.stdout.write(

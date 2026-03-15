@@ -1981,7 +1981,7 @@ const SERVICE_KEYS: ServiceKeyDef[] = [
   { name: 'SECUREYEOMAN_SIGNING_KEY', label: 'Signing Key', category: 'SecureYeoman' },
   { name: 'SECUREYEOMAN_ENCRYPTION_KEY', label: 'Encryption Key', category: 'SecureYeoman' },
   // Yeoman MCP — ecosystem services & MCP tool integrations
-  { name: 'AGNOSTIC_API_KEY', label: 'Agnostic QA Platform API Key', category: 'Yeoman MCP' },
+  { name: 'AGNOSTIC_API_KEY', label: 'Agnostic API Key', category: 'Yeoman MCP' },
   { name: 'AGNOS_RUNTIME_API_KEY', label: 'AGNOS Agent Runtime API Key', category: 'Yeoman MCP' },
   { name: 'AGNOS_GATEWAY_API_KEY', label: 'AGNOS LLM Gateway API Key', category: 'Yeoman MCP' },
   {

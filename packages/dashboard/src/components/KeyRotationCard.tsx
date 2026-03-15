@@ -123,8 +123,8 @@ export function KeyRotationCard() {
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
         ) : isError ? (
-          <p className="text-sm text-destructive">
-            Failed to load key rotation status. The rotation manager may not be available.
+          <p className="text-sm text-muted-foreground">
+            Key rotation is not enabled. Enable it in your configuration with <code className="text-xs bg-surface px-1 py-0.5 rounded">security.rotation.enabled: true</code>.
           </p>
         ) : statuses.length === 0 ? (
           <p className="text-sm text-muted-foreground">No tracked secrets.</p>

@@ -73,6 +73,14 @@ export interface McpFeatureConfig {
   // Cross-project integration tools
   exposeAgnosticTools: boolean;
   exposeAgnosTools: boolean;
+  // Ecosystem service tools
+  exposeBullshiftTools: boolean;
+  exposePhotisnadiTools: boolean;
+  exposeSynapseTools: boolean;
+  exposeDeltaTools: boolean;
+  exposeEdgeTools: boolean;
+  exposeVoiceTools: boolean;
+  exposeShrutiTools: boolean;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -112,6 +120,13 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   terminalAllowedCommands: [],
   exposeAgnosticTools: false,
   exposeAgnosTools: false,
+  exposeBullshiftTools: false,
+  exposePhotisnadiTools: false,
+  exposeSynapseTools: false,
+  exposeDeltaTools: false,
+  exposeEdgeTools: false,
+  exposeVoiceTools: true,
+  exposeShrutiTools: false,
 };
 
 export class McpStorage extends PgBaseStorage {

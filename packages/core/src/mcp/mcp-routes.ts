@@ -49,6 +49,14 @@ const GITLAB_TOOL_PREFIXES = ['gitlab_'];
 const NORTHFLANK_TOOL_PREFIXES = ['northflank_'];
 const AGNOSTIC_TOOL_PREFIXES = ['agnostic_'];
 const AGNOS_TOOL_PREFIXES = ['agnos_'];
+const BULLSHIFT_TOOL_PREFIXES = ['bullshift_', 'trading_', 'market_'];
+const PHOTISNADI_TOOL_PREFIXES = ['photisnadi_'];
+const SYNAPSE_TOOL_PREFIXES = ['synapse_'];
+const DELTA_TOOL_PREFIXES = ['delta_'];
+const EDGE_TOOL_PREFIXES = ['edge_'];
+const VOICE_TOOL_PREFIXES = ['voice_'];
+const SHRUTI_TOOL_PREFIXES = ['shruti_'];
+const SECURITY_TOOL_PREFIXES = ['sec_'];
 
 export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions): void {
   const {
@@ -241,6 +249,34 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       )
         return false;
       if (!config.exposeAgnosTools && AGNOS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (
+        !config.exposeBullshiftTools &&
+        BULLSHIFT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+      )
+        return false;
+      if (
+        !config.exposePhotisnadiTools &&
+        PHOTISNADI_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+      )
+        return false;
+      if (
+        !config.exposeSynapseTools &&
+        SYNAPSE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+      )
+        return false;
+      if (!config.exposeDeltaTools && DELTA_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeEdgeTools && EDGE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeVoiceTools && VOICE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeShrutiTools && SHRUTI_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (
+        !config.exposeSecurityTools &&
+        SECURITY_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+      )
         return false;
       return true;
     });

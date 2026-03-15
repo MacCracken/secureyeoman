@@ -1943,25 +1943,25 @@ export function getToolManifest(): ToolManifestEntry[] {
       category: 'dlp',
     },
 
-    // Agnostic QA Platform tools
+    // Agnostic tools
     {
       name: 'agnostic_health',
-      description: 'Check if the Agnostic QA platform is reachable and healthy',
+      description: 'Check if the Agnostic platform is reachable and healthy',
       category: 'qa',
     },
     {
       name: 'agnostic_agents_status',
-      description: 'List all Agnostic QA agents and their current status',
+      description: 'List all Agnostic agents and their current status',
       category: 'qa',
     },
     {
       name: 'agnostic_agents_queues',
-      description: 'Get current queue depths for each Agnostic QA agent',
+      description: 'Get current queue depths for each Agnostic agent',
       category: 'qa',
     },
     {
       name: 'agnostic_dashboard',
-      description: 'Get the Agnostic QA platform dashboard overview',
+      description: 'Get the Agnostic platform dashboard overview',
       category: 'qa',
     },
     {

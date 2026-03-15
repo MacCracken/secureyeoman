@@ -29,7 +29,7 @@
  *   secureyeoman security             # Manage Kali security toolkit container
  *   secureyeoman mcp-server           # Start the MCP server
  *   secureyeoman mcp-quickbooks       # Manage QuickBooks Online MCP toolset
- *   secureyeoman agnostic             # Manage Agnostic QA Docker Compose stack
+ *   secureyeoman agnostic             # Manage Agnostic Docker Compose stack
  *   secureyeoman tui                  # Full-screen terminal dashboard
  *   secureyeoman agents               # View/toggle agent feature flags
  *   secureyeoman migrate              # Run database migrations
@@ -247,7 +247,7 @@ router.registerLazy({
 router.registerLazy({
   name: 'agnostic',
   aliases: ['ag'],
-  description: 'Manage the Agnostic QA sub-agent team Docker Compose stack',
+  description: 'Manage the Agnostic agent fleet Docker Compose stack',
   usage: 'secureyeoman agnostic <start|stop|status|logs|pull> [options]',
   loader: () => import('./cli/commands/agnostic.js').then((m) => m.agnosticCommand),
 });

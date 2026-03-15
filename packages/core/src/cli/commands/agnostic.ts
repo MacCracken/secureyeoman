@@ -1,5 +1,5 @@
 /**
- * Agnostic Command — Manage the Agnostic QA sub-agent team Docker Compose stack.
+ * Agnostic Command — Manage the Agnostic agent fleet Docker Compose stack.
  *
  * Agnostic is a Python/CrewAI 6-agent QA platform that YEOMAN can orchestrate
  * as a sub-agent team. This command manages its Docker Compose lifecycle so you
@@ -104,7 +104,7 @@ function extractBoolFlag(argv: string[], ...flags: string[]): { value: boolean; 
 export const agnosticCommand: Command = {
   name: 'agnostic',
   aliases: ['ag'],
-  description: 'Manage the Agnostic QA sub-agent team Docker Compose stack',
+  description: 'Manage the Agnostic agent fleet Docker Compose stack',
   usage: 'secureyeoman agnostic <start|stop|status|logs|pull> [options]',
 
   async run(ctx: CommandContext): Promise<number> {
@@ -171,7 +171,7 @@ Environment variables (set after start to wire MCP tools):
     // ── start ────────────────────────────────────────────────────────────────
 
     if (subcommand === 'start') {
-      ctx.stdout.write(`Starting Agnostic QA team at: ${projectDir}\n`);
+      ctx.stdout.write(`Starting Agnostic fleet at: ${projectDir}\n`);
       ctx.stdout.write('This may take a minute on first run while images are pulled...\n\n');
 
       const result = await compose(projectDir, ['up', '-d', '--remove-orphans']);
@@ -183,7 +183,7 @@ Environment variables (set after start to wire MCP tools):
         return 1;
       }
 
-      ctx.stdout.write('\nAgnostic QA team started.\n\n');
+      ctx.stdout.write('\nAgnostic fleet started.\n\n');
       ctx.stdout.write('Add these variables to your .env to enable MCP tools:\n\n');
       ctx.stdout.write('  MCP_EXPOSE_AGNOSTIC_TOOLS=true\n');
       ctx.stdout.write('  AGNOSTIC_URL=http://127.0.0.1:8000\n');
@@ -196,7 +196,7 @@ Environment variables (set after start to wire MCP tools):
     // ── stop ─────────────────────────────────────────────────────────────────
 
     if (subcommand === 'stop') {
-      ctx.stdout.write(`Stopping Agnostic QA team at: ${projectDir}\n`);
+      ctx.stdout.write(`Stopping Agnostic fleet at: ${projectDir}\n`);
 
       const result = await compose(projectDir, ['down']);
       if (result.stderr) ctx.stdout.write(result.stderr + '\n');
@@ -207,7 +207,7 @@ Environment variables (set after start to wire MCP tools):
         return 1;
       }
 
-      ctx.stdout.write('\nAgnostic QA team stopped.\n');
+      ctx.stdout.write('\nAgnostic fleet stopped.\n');
       return 0;
     }
 
@@ -274,7 +274,7 @@ Environment variables (set after start to wire MCP tools):
         return 0;
       }
 
-      ctx.stdout.write(`\nAgnostic QA team status (${projectDir})\n\n`);
+      ctx.stdout.write(`\nAgnostic fleet status (${projectDir})\n\n`);
       if (containers.length > 0) {
         const colW = 35;
         ctx.stdout.write(`${'Service'.padEnd(colW)} ${'State'.padEnd(12)} Status\n`);

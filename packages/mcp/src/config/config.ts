@@ -88,7 +88,7 @@ export const MCP_SECRET_MAPPINGS: {
     secretName: 'AGNOSTIC_API_KEY',
     configKey: 'agnosticApiKey',
     envVar: 'AGNOSTIC_API_KEY',
-    label: 'Agnostic QA API Key',
+    label: 'Agnostic API Key',
     category: 'Services',
   },
   {

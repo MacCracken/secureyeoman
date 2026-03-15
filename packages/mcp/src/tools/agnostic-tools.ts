@@ -33,7 +33,7 @@ import type { HttpResult } from './tool-utils.js';
 import type { CoreApiClient as ICoreApiClient } from '../core-client.js';
 
 const DISABLED_MSG =
-  'Agnostic QA tools are disabled. Set MCP_EXPOSE_AGNOSTIC_TOOLS=true and either AGNOSTIC_API_KEY or AGNOSTIC_EMAIL + AGNOSTIC_PASSWORD.';
+  'Agnostic tools are disabled. Set MCP_EXPOSE_AGNOSTIC_TOOLS=true and either AGNOSTIC_API_KEY or AGNOSTIC_EMAIL + AGNOSTIC_PASSWORD.';
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
@@ -129,7 +129,7 @@ export function registerAgnosticTools(
   server.registerTool(
     'agnostic_health',
     {
-      description: 'Check if the Agnostic QA platform is reachable and healthy',
+      description: 'Check if the Agnostic platform is reachable and healthy',
       inputSchema: {},
     },
     wrapToolHandler('agnostic_health', middleware, async () => {
@@ -150,7 +150,7 @@ export function registerAgnosticTools(
   server.registerTool(
     'agnostic_agents_status',
     {
-      description: 'List all Agnostic QA agents and their current status',
+      description: 'List all Agnostic agents and their current status',
       inputSchema: {},
     },
     wrapToolHandler('agnostic_agents_status', middleware, async () => {
@@ -167,7 +167,7 @@ export function registerAgnosticTools(
   server.registerTool(
     'agnostic_agents_queues',
     {
-      description: 'Get current queue depths for each Agnostic QA agent',
+      description: 'Get current queue depths for each Agnostic agent',
       inputSchema: {},
     },
     wrapToolHandler('agnostic_agents_queues', middleware, async () => {
@@ -185,7 +185,7 @@ export function registerAgnosticTools(
     'agnostic_dashboard',
     {
       description:
-        'Get the Agnostic QA platform dashboard overview (active sessions, metrics, agent status)',
+        'Get the Agnostic platform dashboard overview (active sessions, metrics, agent status)',
       inputSchema: {},
     },
     wrapToolHandler('agnostic_dashboard', middleware, async () => {
@@ -227,7 +227,7 @@ export function registerAgnosticTools(
   server.registerTool(
     'agnostic_session_detail',
     {
-      description: 'Get full details and results for a specific Agnostic QA session',
+      description: 'Get full details and results for a specific Agnostic session',
       inputSchema: {
         session_id: z.string().describe('The session ID to retrieve'),
       },
@@ -344,7 +344,7 @@ export function registerAgnosticTools(
     'agnostic_task_status',
     {
       description:
-        'Poll the status of a submitted Agnostic QA task. ' +
+        'Poll the status of a submitted Agnostic task. ' +
         'Returns status (pending | running | completed | failed) and the result when complete.',
       inputSchema: {
         task_id: z.string().describe('Task ID returned by agnostic_submit_qa'),
@@ -462,7 +462,7 @@ export function registerAgnosticTools(
     'agnostic_session_diff',
     {
       description:
-        'Compare test results between two Agnostic QA sessions to detect regressions, ' +
+        'Compare test results between two Agnostic sessions to detect regressions, ' +
         'fixes, new tests, and removed tests. Returns pass-rate and timing deltas. ' +
         'Requires DATABASE_ENABLED=true on the Agnostic side.',
       inputSchema: {

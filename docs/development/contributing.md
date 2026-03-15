@@ -198,7 +198,7 @@ All integration code lives in SecureYeoman. External repos are read-only unless 
 
 | Service | Port | Key Endpoints |
 |---------|------|---------------|
-| AGNOSTIC (QA) | 8000 | `/api/v1/tasks`, `/api/v1/webhooks`, `/events` (SSE) |
+| AGNOSTIC (agentic) | 8000 | `/api/v1/tasks`, `/api/v1/webhooks`, `/events` (SSE) |
 | AGNOS (runtime) | 8090/8088 | `/v1/policies/landlock`, `/v1/chat/completions`, `/health` |
 | BullShift (trading) | 8787 | `/api/portfolio`, `/api/orders`, `/api/market/:symbol` |
 | Synapse (LLM) | 8420/8421 | `/api/v1/models`, `/api/v1/inference`, `/api/v1/training/jobs` |

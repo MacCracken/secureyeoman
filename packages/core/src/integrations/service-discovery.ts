@@ -71,8 +71,8 @@ interface ServiceDefinition {
 const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
   {
     id: 'agnostic',
-    displayName: 'Agnostic QA Platform',
-    description: 'Quality assurance platform for task management and webhook automation',
+    displayName: 'Agnostic Agentic System',
+    description: 'Multi-agent orchestration platform — autonomous task execution, code generation, research, security auditing, and custom agent workflows',
     urlEnv: 'AGNOSTIC_URL',
     defaultUrl: 'http://127.0.0.1:8000',
     healthPath: '/health',
