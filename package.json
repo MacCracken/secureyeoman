@@ -58,7 +58,14 @@
     },
     "dompurify": "3.3.2",
     "nanoid": "5.1.6",
-    "@excalidraw/mermaid-to-excalidraw": "2.1.1",
+    "lodash-es": "4.17.23",
+    "@excalidraw/mermaid-to-excalidraw": {
+      "dompurify": "3.3.2",
+      "nanoid": "5.1.6",
+      "mermaid": {
+        "dompurify": "3.3.2"
+      }
+    },
     "serialize-javascript": ">=7.0.4"
   },
   "devDependencies": {
