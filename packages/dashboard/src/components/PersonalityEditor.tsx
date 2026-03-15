@@ -1564,7 +1564,7 @@ export function PersonalityView() {
                   )}
                 </div>
 
-                <div className="flex-1 min-w-0 p-3 sm:p-4 flex flex-col gap-2">
+                <div className="flex-1 min-w-0 p-3 sm:p-4 pl-5 sm:pl-6 flex flex-col gap-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
