@@ -10,6 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
+| — | Dashboard Component Refactors | P1 — quality | Planned (8 components, prioritized) |
 | — | E2E Test Expansion | P1 — quality | Planned |
 | 17 | Native Mobile Experience | P2 — platform | Planned (17A–E) |
 | — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
@@ -107,6 +108,87 @@
 
 ---
 
+## Dashboard Component Refactors
+
+**Priority**: P1 — Quality. Same pattern as the Catalog refactor — bottom-up extraction of large components into focused sub-components and shared hooks. No backend changes needed.
+
+### 1. PersonalityEditor (6,730 lines) — CRITICAL
+
+58 inline helper functions, 26 mutations, avatar crop modal, disposition trait editor, and 8 unrelated sections all in one file.
+
+- [ ] **Extract AvatarSection** — avatar upload, crop modal (250 lines), lightbox, canvas export → `personality/AvatarSection.tsx` + `personality/AvatarCropModal.tsx`
+- [ ] **Extract DispositionPanel** — 16 disposition traits across 4 categories, custom trait input → `personality/DispositionPanel.tsx`
+- [ ] **Extract SkillsSection** — skill list CRUD → `personality/SkillsSection.tsx`
+- [ ] **Extract KnowledgeSection** — knowledge learning UI → `personality/KnowledgeSection.tsx`
+- [ ] **Extract ProactivePanel** — proactive config toggles with deeply nested payload → `personality/ProactivePanel.tsx`
+- [ ] **Extract VoicePanel** — voice profile selection → `personality/VoicePanel.tsx`
+- [ ] **Extract BrainConfigSection** — external brain sync → `personality/BrainConfigSection.tsx`
+- [ ] **Extract usePersonalityMutations hook** — consolidate 26 mutations into `personality/hooks.ts`
+- [ ] **Slim PersonalityEditor** — becomes ~300 line tab orchestrator
+
+### 2. ConnectionsPage (4,785 lines) — CRITICAL
+
+800-line PLATFORM_META object, 19 mutations, 35+ platform forms inline, IntegrationCard with multiple responsibilities.
+
+- [ ] **Extract PLATFORM_META** — move 800-line metadata constant to `connections/platformMetadata.ts`
+- [ ] **Extract IntegrationCard** — card display + edit toggle + save config → `connections/IntegrationCard.tsx`
+- [ ] **Extract IntegrationForm** — dynamic form generator using platform metadata → `connections/IntegrationForm.tsx`
+- [ ] **Extract McpServerSection** — MCP server management tab → `connections/McpServerSection.tsx`
+- [ ] **Extract OAuthSection** — OAuth token management → `connections/OAuthSection.tsx`
+- [ ] **Extract useConnectionMutations hook** — consolidate 19 mutations into `connections/hooks.ts`
+- [ ] **Slim ConnectionsPage** — becomes ~400 line tab container
+
+### 3. MetricsPage (3,231 lines) — CRITICAL
+
+3 view tabs with independent data, 12 queries, duplicated section patterns, chart configs inline.
+
+- [ ] **Extract MetricsOverview** — KPI cards, health status, topology graph → `metrics/MetricsOverview.tsx`
+- [ ] **Extract CostsDashboard** — cost analytics with provider breakdown → `metrics/CostsDashboard.tsx`
+- [ ] **Extract FullMetrics** — deep-dive charts (tasks, resources, security) → `metrics/FullMetrics.tsx`
+- [ ] **Extract useCardLayout hook** — dnd-kit + persistence logic → `metrics/hooks.ts`
+- [ ] **Slim MetricsPage** — becomes view switcher + layout coordinator
+
+### 4. SecuritySettings (2,473 lines) — CRITICAL
+
+27 useState, inline RBAC forms, model fallback logic, rate limiting — 4 unrelated concerns in one file.
+
+- [ ] **Extract RbacManager** — role CRUD + user-role assignment → `security/RbacManager.tsx`
+- [ ] **Extract ModelManagement** — model selector, fallback manager, extended thinking config → `security/ModelManagement.tsx`
+- [ ] **Extract RateLimitingPanel** — rate limit configuration → `security/RateLimitingPanel.tsx`
+- [ ] **Extract useSecurityMutations hook** — consolidate role/assignment mutations
+
+### 5. EditorPage (2,124 lines) — HIGH
+
+27 useState, multi-terminal inline, voice + collab + command palette all in one.
+
+- [ ] **Extract MultiTerminal** — terminal tab system with command execution → `editor/MultiTerminal.tsx`
+- [ ] **Extract CollaborationLayer** — collab presence + PresenceBanner → `editor/CollaborationLayer.tsx`
+- [ ] **Extract VoiceInputPanel** — voice recording + transcription overlay → `editor/VoiceInputPanel.tsx`
+- [ ] **Extract useEditorState hook** — consolidate terminal, search, settings state
+
+### 6. NewEntityDialog (1,881 lines) — HIGH
+
+Multi-step wizard with all steps inline.
+
+- [ ] **Extract wizard steps** into separate components per step
+- [ ] **Extract useWizardState hook** — step tracking, validation, transitions
+
+### 7. TrainingTab (1,572 lines) — HIGH
+
+9 sub-tab variants, duplicated job lifecycle patterns for distillation and fine-tuning.
+
+- [ ] **Extract job lifecycle hooks** — shared create/delete/run mutation pattern
+- [ ] **Extract FORMAT_INFO constant** to separate file
+
+### 8. ChatPage (1,543 lines) — HIGH
+
+Chat logic + UI blended.
+
+- [ ] **Extract message rendering** — message list, attachments, actions
+- [ ] **Extract chat input** — input bar, file upload, voice toggle
+
+---
+
 ## E2E Test Expansion
 
 **Priority**: P1 — Quality. Currently 8 files / 67 tests. Target: cover all major user flows.
@@ -133,7 +215,7 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Suite | Files | Tests | Stmts % | Branch % | Status |
 |-------|-------|-------|---------|----------|--------|
 | Core Unit | 698 | 16,648 | 89.31 | 79.10 | All passing |
-| Dashboard | 180 | 4,131 | 71.12 | 67.71 | All passing — target met |
+| Dashboard | 180 | 4,123 | 71.12 | 67.71 | All passing — target met |
 | MCP | 76 | 1,124 | 70.20 | 51.50 | All passing |
 | Core E2E | 8 | 67 | — | — | All passing (incl. binary smoke) |
 | Core DB (integration) | 41 | 890 | — | — | All passing (clean DB verified) |
