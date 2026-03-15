@@ -1056,9 +1056,9 @@ export const LicensingConfigSchema = z
      * Grace period in days from first install before license enforcement auto-enables.
      * During the grace period, all features are available regardless of the enforcement flag.
      * Set to 0 to disable the grace period (enforcement follows the `enforcement` flag immediately).
-     * Default: 45 days.
+     * Default: 30 days.
      */
-    gracePeriodDays: z.number().int().min(0).max(365).default(45),
+    gracePeriodDays: z.number().int().min(0).max(365).default(30),
   })
   .default({});
 

@@ -47,11 +47,11 @@ Complete overhaul of the personality traits and mood engine systems — all 5 id
 
 **Tests**: 26 new tests across `mood-engine.test.ts` (trait value mapping, compound effects, legacy fallback) and `trait-descriptions.test.ts` (disposition composition, all 15 traits, edge cases)
 
-### License Grace Period — 45-Day Trial
+### License Grace Period — 30-Day Free Trial
 
-Added a configurable grace period (default 45 days) from first install. During the grace period, all features are unlocked regardless of the enforcement flag, giving users time to evaluate before licensing is required.
+Added a configurable grace period (default 30 days) from first install. During the grace period, all features are unlocked regardless of the enforcement flag, giving users time to evaluate before licensing is required.
 
-- `gracePeriodDays` config option in `LicensingConfigSchema` (0 = disable, default 45)
+- `gracePeriodDays` config option in `LicensingConfigSchema` (0 = disable, default 30)
 - Install date recorded in `brain.meta` on first boot (`license:installed-at`)
 - `LicenseManager.setGracePeriod()` calculates remaining days and suppresses enforcement
 - `isEnforcementEnabled()` returns `false` during active grace period (unless a valid key exists)

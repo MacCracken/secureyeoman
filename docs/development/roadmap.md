@@ -12,8 +12,7 @@
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | — | Dashboard Audit & Repair | P1 — quality | Planned (pre-release) |
 | — | E2E Test Expansion | P1 — quality | Planned |
-| 15 | Agent Binary (Tier 2.5) | P2 — platform | ✅ Complete (15A–C) |
-| 16 | Shruti DAW Ecosystem Integration | P2 — platform | 16B–C ✅, 16A blocked (Shruti repo) |
+| 16 | Shruti DAW Ecosystem Integration | P2 — platform | 16A–C done; dashboard panel remaining |
 | 17 | Native Mobile Experience | P2 — platform | Planned (17A–E) |
 | — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
 | Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Shipping & Logistics, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Demand-gated |
@@ -78,8 +77,6 @@
 ### Tasks
 
 - [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates. Currently defaults to `false` for development.
-- [x] **Upgrade prompts** — ✅ LemonSqueezy checkout overlay in dashboard LicenseCard (Pro $20/yr, Solopreneur $100/yr, Enterprise $1,000/yr). Gated by `VITE_LEMONSQUEEZY_*_URL` env vars — buttons hidden when URLs not configured.
-- [x] **Feature labels** — ✅ All 22 licensed features now have human-readable labels in the LicenseCard feature chip display.
 - [ ] **Solopreneur tier definition** — Define Solopreneur as enterprise-feature-equivalent with single-tenant / single-seat constraints. Decide on `LicenseTier` implementation approach (see note above).
 - [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
 - [ ] **Pricing page** — Public-facing pricing comparison page for secureyeoman.ai. Feature breakdown per tier, FAQ, upgrade flow.
@@ -94,8 +91,6 @@
 
 **Architecture**: Separate `secureyeoman-licensing` repo (`../secureyeoman-licensing/`). Lightweight Fastify + SQLite service that receives LemonSqueezy webhooks, mints Ed25519-signed keys, and serves key retrieval API. SY dashboard opens LemonSqueezy checkout overlay in-app, polls licensing service for key after purchase, auto-applies via `POST /api/v1/license/key`.
 
-- [x] **Licensing service scaffold** — ✅ `secureyeoman-licensing/` repo: Fastify server, SQLite records DB, HMAC-SHA256 webhook verification, Ed25519 key minting, CLI tool for manual issuance, license retrieval routes.
-- [x] **Dashboard checkout integration** — ✅ `useLemonCheckout` hook loads lemon.js, opens overlay, polls for key, auto-applies. Upgrade buttons in LicenseCard.
 - [ ] **LemonSqueezy account setup** — Create store, 3 products (Pro/Solopreneur/Enterprise), configure webhook URL, obtain API key + signing secret. Test mode available for end-to-end purchase testing without real charges.
 - [ ] **End-to-end test** — Test mode purchase → webhook → key mint → dashboard retrieval → auto-apply → enforcement check. Confirm round-trip.
 - [ ] **Renewal & lifecycle** — Auto-renewal reminders (30/14/7 days before expiry). Handle `subscription_expired` / `subscription_payment_failed` webhooks. Upgrade path: pro-rate remaining time when moving up tiers.
@@ -144,108 +139,14 @@
 
 ---
 
-## Phase 14: Edge/IoT A2A Binary — ✅ Complete
-
-**Priority**: P2 — Platform. Aligned with [AGNOS Phase 14](https://github.com/MacCracken/agnosticos/blob/main/docs/development/roadmap.md) (Edge Boot Profile, A2A Networking, Hardware Targets, Fleet Management).
-
-**Goal**: A minimal, headless SecureYeoman binary (`secureyeoman-edge`) that runs on edge/IoT devices as an A2A sub-agent. No dashboard, no brain/soul — just agent runtime, A2A transport, and task execution. Pairs with AGNOS to deliver a full OS + agent stack for edge hardware.
-
-> All Phase 14 sub-phases (14A–14E) are complete as of 2026-03-12. See [Changelog](../../CHANGELOG.md) `[2026.3.12-2]` for details.
-
-### 14A: Edge Binary — ✅ Complete (2026-03-11)
-
-- [x] **`secureyeoman-edge` build target** — 7.2 MB static Go binary (`CGO_ENABLED=0`). A2A transport, task executor, memory store, metrics, scheduler, sandbox, messaging, LLM, rate limiting. Cross-compiled: linux-amd64, linux-arm64, linux-armv7. Verified in AGNOS edge container. 83 unit tests + 20 smoke tests.
-- [x] **`secureyeoman edge --register` CLI mode** — Self-registration to parent SY. Sends capabilities (CPU, GPU, memory, arch, tags). TOFU certificate pinning for parent TLS.
-- [x] **Headless agent executor** — Sandboxed command execution (allowlist/blocklist, symlink resolution, output truncation), webhook tasks, LLM inference tasks via scheduler.
-- [x] **Minimal config schema** — `StartConfig`: parent URL, registration token, port, host, log level. No soul/spirit/brain/marketplace.
-
-### 14B: A2A Edge Networking — ✅ Complete (2026-03-12)
-
-- [x] **mDNS peer discovery** — `_secureyeoman._tcp` advertisement + `StartDiscoveryLoop()` auto-registers found peers.
-- [x] **WireGuard mesh support** — DB fields for WireGuard public key, endpoint, tunnel IP per edge node. `PUT /api/v1/edge/nodes/:id/wireguard` REST endpoint. Parent distributes mesh configs to fleet.
-- [x] **Heartbeat & watchdog** — 30s heartbeat loop, peer liveness tracking, configurable timeout.
-- [x] **Bandwidth-aware task acceptance** — Edge nodes report `bandwidthMbps` and `latencyMs` in capabilities (Go + TS). Parent-side routing via `findBestNodeForTask()` scoring (memory, cores, GPU, latency, bandwidth).
-
-### 14C: Fleet Management — ✅ Complete (2026-03-12)
-
-- [x] **Edge node registry** — `edge.nodes` DB table (migration 023) + `EdgeStore` CRUD + 14 REST endpoints under `/api/v1/edge/*`. Supports upsert, heartbeat, WireGuard config, decommission, delete.
-- [x] **SY dashboard — Fleet panel** — `FleetPanel.tsx`: node overview cards (total/online/offline/GPU), sortable table, 30s auto-refresh.
-- [x] **Capability-based task routing** — `POST /api/v1/edge/route` with scoring algorithm: factors memory, CPU cores, GPU, latency, bandwidth. `findBestNodeForTask()` in EdgeStore with tag/arch/latency constraints.
-- [x] **OTA updates with Ed25519** — SHA-256 + Ed25519 signature verification in Go updater. `edge.ota_updates` table tracks update history. `verifyEd25519()` in `updater.go`. REST: `POST /api/v1/edge/nodes/:id/update`, `GET /api/v1/edge/nodes/:id/updates`.
-
-### 14D: MCP Edge Tools — ✅ Complete (2026-03-12)
-
-- [x] **`edge_list`** — List registered edge nodes with health, capabilities, load. Filters by status, arch, tags.
-- [x] **`edge_deploy`** — Deploy a task to a specific edge node or auto-select by capability requirements.
-- [x] **`edge_update`** — Push OTA update with SHA-256 and Ed25519 signature verification.
-- [x] **`edge_health`** — Detailed health report for a specific edge node (capabilities, bandwidth, WireGuard, version, heartbeat).
-- [x] **`edge_decommission`** — Decommission an edge node, marking it permanently offline and removing from task routing.
-
-### 14E: Hardware Targets — ✅ Complete (2026-03-12)
-
-- [x] **Raspberry Pi 4/5 (aarch64)** — Cross-compiled `linux-arm64` binary. AGNOS Pi image validation pending.
-- [x] **x86_64 NUC/mini-PC** — `linux-amd64` binary. Validated in AGNOS edge container.
-- [x] **RISC-V** — `linux-riscv64` cross-compilation target added to `build-binary.sh` (both `--edge` and production paths).
-- [x] **OCI container image** — Verified running inside `ghcr.io/maccracken/agnosticos:edge` (10 MB Alpine). ARMv7 cross-compile for broader IoT targets.
-
----
-
-## Phase 15: Agent Binary (Tier 2.5)
-
-**Priority**: P2 — Platform. See [ADR 039](../adr/039-agent-binary-tier.md).
-
-**Goal**: A streamlined, headless SecureYeoman binary (`secureyeoman-agent`) for autonomous agent workloads. Includes soul, AI providers, and A2A delegation — but not brain/RAG, training, analytics, dashboard, or enterprise compliance subsystems. SQLite-only, <5s boot, 100–200 MB RAM. Enables scaling agent count independently of platform instances.
-
-### 15A: AgentRuntime Core — ✅ Complete (2026-03-12)
-
-- [x] **`AgentRuntime` class** — `src/agent/agent-runtime.ts`, parallel to `EdgeRuntime`. Initializes: config, logger, audit chain, security (early), auth, AI module, soul module, A2A transport, slim HTTP server. 11 tests.
-- [x] **Agent CLI entry point** — `src/agent/cli.ts` with `start`, `register`, `status` subcommands. `src/cli/commands/agent.ts` command handler with banner, parent auto-registration, signal handling.
-- [x] **Slim gateway** — 6 routes: `/health`, `/api/v1/agent/chat`, `/api/v1/agent/models`, `/api/v1/agent/personality`, `/api/v1/a2a/receive`, `/api/v1/a2a/capabilities`.
-- [x] **Build script tier** — `compile_agent_binary()` in `build-binary.sh`. Targets: `secureyeoman-agent-linux-x64`, `linux-arm64`, `darwin-arm64`. Tree-shakes out Qdrant, FAISS, pdfjs, sharp, mammoth, xlsx, csv-parse.
-- [x] **Main CLI registration** — `secureyeoman agent <start|register|status>` registered as lazy command.
-
-### 15B: Parent Registration & Delegation — ✅ Complete (2026-03-13)
-
-- [x] **Parent registration** — `registerWithParent()` in AgentRuntime. Auto-registers via `SECUREYEOMAN_PARENT_URL` env var or `--parent` CLI flag. Stores peerId from parent response.
-- [x] **Auth delegation** — `ParentAuthDelegate` class (`src/agent/parent-auth-delegate.ts`). Validates tokens against parent's `/api/v1/auth/validate`. LRU cache (500 entries, 5 min TTL). 13 tests.
-- [x] **Knowledge delegation** — `KnowledgeDelegate` class (`src/agent/knowledge-delegate.ts`). Forwards RAG queries to parent's `/api/v1/brain/query`. Also supports `remember()` for storing memories on parent. Graceful fallback on errors. 10 tests.
-- [x] **Audit forwarding** — `AuditForwarder` class (`src/agent/audit-forwarder.ts`). Batches events (default 50), flushes on timer (default 5s) or at capacity. Forwards to parent's `/api/v1/audit/forward`. Tracks forwarded/dropped counts. 9 tests.
-
-### 15C: Build & Distribution — ✅ Complete (2026-03-13)
-
-- [x] **Build script tier** — `--agent` flag in `build-binary.sh` for agent-only builds. `compile_agent_binary()` targets: linux-x64, linux-arm64, darwin-arm64. Dev mode builds current platform only.
-- [x] **Conditional module init** — AgentRuntime loads only: security (early), auth, AI, soul, A2A. Skips: brain, training, analytics, simulation, marketplace, dashboard, DLP, TEE, supply chain, edge fleet, SCIM, break glass. Parent delegation subsystems (auth, knowledge, audit) initialized when `parentUrl` is configured.
-- [x] **Container image** — `Dockerfile.agent` with `node:22-alpine` base + tini. Copies `secureyeoman-agent-linux-x64` binary. Exposes port 8099. Healthcheck via curl to `/health`.
-- [x] **Docker compose profile** — `sy-agent` service in `agent`, `full`, `full-dev` profiles. Auto-registers with parent SY. Resource limits: 256 MB RAM, 1 CPU. Scalable via `--scale sy-agent=N`.
-
----
-
 ## Phase 16: Shruti DAW Ecosystem Integration
 
 **Priority**: P2 — Platform. See [ADR 034](../adr/034-ecosystem-integrations.md).
 
-**Goal**: Add Shruti (Rust-native DAW) as the 8th ecosystem service, giving SY agents music production, audio recording/editing, spectral analysis, and AI-assisted mixing capabilities. Shruti is at MVP v1 (723 tests, 6 MCP tools, AgentApi with 35+ methods) but needs an HTTP server wrapper before SY can connect.
+**Goal**: Complete remaining Shruti DAW integration. Client, routes, MCP tools, voice bridge all complete (85 tests). Remaining: dashboard panel.
 
-### 16A: Shruti HTTP Server (Shruti repo) — Partially Complete
+### 16C: Dashboard Integration
 
-- [x] **`shruti serve` subcommand** — Axum server on port 8050 wrapping `AgentApi`. Rate limiting, CORS, 1 MB body limit. Endpoints: session CRUD, track management, transport control, export, analysis, mixer, undo/redo, MCP tool-call dispatch. Tests in `serve.rs`.
-- [x] **Health endpoint** — `GET /health` returning status and version.
-- [x] **Docker image (Shruti repo)** — ✅ `Dockerfile` added (2026-03-13). Multi-stage Rust build on `debian:bookworm-slim`. Builder installs ALSA + X11/Wayland/Vulkan build deps (eframe linked but unused). Runtime stage: ALSA + tini + curl only. Non-root user, healthcheck on `/health`, `shruti serve --port 8050`.
-- [ ] **First release / git tag** — Shruti repo has no tags or releases yet. Needed for versioned image references in SY docker-compose.
-
-### 16B: SY Integration — ✅ Complete (2026-03-12)
-
-- [x] **Ecosystem registration** — `shruti` added to `EcosystemServiceId` and `SERVICE_REGISTRY`. Port 8050, `SHRUTI_URL`, `SHRUTI_API_KEY`. 8 services total.
-- [x] **Integration client** — `integrations/shruti/shruti-client.ts`: 20 methods (session, tracks, transport, export, analysis, mixer, undo/redo, mcpToolCall). 31 tests.
-- [x] **MCP tools** — `mcp/tools/shruti-tools.ts`: 10 tools gated by `exposeShrutiTools`. Registered in manifest.
-- [x] **Config fields** — `shrutiUrl`, `shrutiApiKey`, `exposeShrutiTools` in `McpServiceConfig`. Secret mappings in `MCP_SECRET_MAPPINGS`.
-- [x] **Docker compose** — `shruti` (ghcr.io, port 8050, profile: shruti) and `shruti-dev` (build from ../shruti, profile: full-dev) services.
-
-### 16C: Voice-Driven Music Production — ✅ Complete (2026-03-12)
-
-- [x] **Voice intent parser** — `integrations/shruti/voice-intent-parser.ts`: TS port of Shruti's `parse_voice_input()`. 12 intent categories, confidence scoring. 28 tests.
-- [x] **Voice bridge** — `integrations/shruti/shruti-voice-bridge.ts`: `ShrutiVoiceBridge` class. Transcript → parse → resolve track → execute via ShrutiClient → confirmation text. Configurable gain/pan/tempo steps. 26 tests.
-- [x] **REST endpoints** — `integrations/shruti/shruti-voice-routes.ts`: `POST /api/v1/shruti/voice/command` (execute), `POST /api/v1/shruti/voice/parse` (parse-only).
 - [ ] **Dashboard panel** — Shruti card in ecosystem services panel. (Deferred — dashboard work tracked separately.)
 
 ---
@@ -267,10 +168,6 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Core DB (integration) | 41 | 890 | — | — | All passing (clean DB verified) |
 | Go Edge | 16 | 83 | — | — | All passing (19.4s) |
 
-**Refactoring:**
-
-- [x] **auth-middleware.test.ts decomposition** — ✅ Split into 3 focused files: `auth-middleware.test.ts` (56 tests, integration), `auth-middleware-db-authn.test.ts` (24 tests, authentication/bypass), `auth-middleware-db-rbac.test.ts` (32 tests, RBAC enforcement). Total: 112 tests across 2,036 lines.
-
 **Remaining improvement areas:**
 
 | Suite | Area | Notes |
@@ -289,18 +186,6 @@ Items identified during code audit rounds 1–3, intentionally deferred due to l
 | Auth | `src/security/auth.ts` L145–164 | Timing side-channel on 2FA hydration — `scrypt` timing reveals whether a user has 2FA enabled | Low | Requires local network position + high-precision timing. Fix: constant-time dummy `scrypt` when no 2FA configured. |
 | Chaos | `src/chaos/chaos-manager.ts` L95–101 | TOCTOU race in experiment delete — running check and deletion are not atomic | Low | Admin-only feature, narrow window. Fix: `DELETE ... WHERE id = $1 AND status != 'running'` single-query guard. |
 | Workflow | `src/workflow/workflow-engine.ts` L559–569 | Webhook header prototype pollution residual — `__proto__`/`constructor`/`prototype` filtered, but `Object.create(null)` base would be safer | Very Low | Already filtered for known dangerous keys. Fix: use `Object.create(null)` for header accumulation object. |
-
-### Personality Traits & Mood Engine — ✅ Complete (ADR-041)
-
-All 5 items implemented: trait→mood vocabulary fix, mood prompt injection, rich trait descriptions, applyEvent trait fallback, compound trait effects. 26 new tests added.
-
-### SQL Migration Consolidation — ✅ Complete
-
-Consolidated from 23+ individual files into 3 tier-based migrations: `001_community.sql`, `002_pro.sql`, `003_enterprise.sql`.
-
-### Proactive Config: Body → Brain Migration — ✅ Complete (ADR-040)
-
-Moved `proactiveConfig` from `BodyConfigSchema` to `PersonalityBrainConfigSchema` with new `brain_config` JSONB column, idempotent data migration, dashboard UI relocation, and full test coverage.
 
 ---
 
@@ -411,14 +296,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### WebSocket Mode for AI Providers
-
-*OpenAI WebSocket transport implemented (2026-03-09).*
-
-- [x] **Warm-up / pre-generation** — ✅ Complete (2026-03-12). `WsWarmup` class pre-acquires WS connection and sends minimal `max_output_tokens: 1` request with system prompt and tools to seed `lastResponseId` chain. Integrated into `OpenAIWsProvider.warmup()`. 7 tests.
-
----
-
 ### Shipping & Logistics Intelligence
 
 *Unified shipping operations via MCP integrations and native tools. Manage multi-carrier shipping, track packages, optimize fulfillment, and automate logistics workflows from within SecureYeoman.*
@@ -429,20 +306,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 - [ ] **Shipping workflow templates** — Pre-built workflows: order-to-ship automation (new order → rate shop → cheapest label → tracking notification), return processing, batch label generation, carrier performance comparison.
 - [ ] **Address validation integration** — Validate and autocorrect shipping addresses before label purchase. Surface suggestions in chat and dashboard. Reduces failed deliveries.
 - [ ] **Carrier analytics** — Cost-per-shipment, delivery time, and exception rate dashboards across carriers. Historical trend analysis. Carrier performance scoring to inform rate shopping decisions.
-
----
-
-### DDoS & Distributed Denial of Detection (DDoD) Defense
-
-*Harden the platform against volumetric attacks, application-layer abuse, and distributed low-rate evasion patterns that slip past traditional rate limiting.*
-
-- [x] **Connection-level limits** — ✅ Implemented (`connection-limiter.ts`): Per-IP concurrent cap (default 50), global cap (default 1000), connection rate limit (20/sec), Slowloris protection via headers/request/keepalive timeouts, max requests per socket. 12 tests.
-- [x] **Request body size enforcement** — ✅ Implemented (`body-limit.ts`): Per-route limits (auth=16KB, chat=512KB, upload=10MB, default=1MB). Fastify `onRequest` hook checks `content-length` before parsing. 11 tests.
-- [x] **Adaptive rate limiting** — ✅ Implemented (`adaptive-rate-limiter.ts`): Wraps `RateLimiterLike`, samples CPU/memory/event-loop-lag every 5s, EMA-smoothed pressure score. Three tiers: normal (1x), elevated (0.7x at 40%), critical (0.4x at 70%). 11 tests.
-- [x] **Connection draining & backpressure** — ✅ Implemented (`backpressure.ts`): Three-level load shedding (normal/elevated/critical). Route priority classification (critical: auth+chat+health, low: metrics+diagnostics). Drain mode for graceful shutdown with configurable drain period. 17 tests.
-- [x] **IP reputation & auto-blocking** — ✅ Implemented (`ip-reputation.ts`): In-memory LRU cache with exponential score decay (half-life 1h). Violation recording from rate-limit hits (+10) and auth failures (+15). Auto-block at score 80, auto-unblock on decay, manual block/allow. 15 tests.
-- [x] **Distributed low-rate detection** — ✅ Implemented (`low-rate-detector.ts`): Time-bucketed counters per route prefix. Baseline tracking via 12-window circular buffer (1h history, median baseline). Alerts when unique IPs > 50 AND count > 3x baseline. Optional auto-penalty to reputation. 14 tests.
-- [x] **Request fingerprinting** — ✅ Implemented (`request-fingerprint.ts`): Header ordering hash, missing browser header detection, bot UA patterns, metronomic timing detection. Score-based classification (human <30, suspicious 30-70, bot >70). Feeds into IP reputation. 22 tests.
 
 ---
 
@@ -489,9 +352,7 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 - [ ] **Unified dev environment** — Shared `docker-compose.unified.yml` with networking across all three projects. Single `.env.unified` for common secrets.
 - [ ] **Unified SSO across all three projects** — OAuth2/OIDC federation: single identity provider, shared sessions. SecureYeoman as IdP or external OIDC provider.
-- [x] **Cryptographic audit chain bridge** — ✅ Implemented (`agnos-hooks.ts`): batched forwarding (size 50, flush 5s) to AGNOS `POST /v1/audit/forward`. 13 tests. Shared correlation IDs via event metadata.
 - [ ] **Cross-project agent delegation** — SecureYeoman brain delegates to AGNOSTIC QA agents running on AGNOS. Full chain: task → brain → A2A → QA agent → AGNOS sandbox → results → brain.
-- [x] **Shared vector store / RAG pipeline** — ✅ Implemented (`brain/vector/agnos-store.ts`): `AgnosVectorStore` delegates to AGNOS runtime, batches inserts in chunks of 100. 7 tests.
 - [ ] **Unified agent marketplace** — Single marketplace spanning SecureYeoman skills, AGNOSTIC QA capabilities, and AGNOS native agents. Cross-project discovery and installation.
 
 ---
@@ -499,19 +360,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 ### Simulation Engine — Enterprise
 
 *Enterprise-tier licensed feature (`simulation`). A general-purpose live simulation framework built on existing personality, cognitive memory, workflow, voice, and multi-agent subsystems. Subsets below target specific simulation domains.*
-
-#### Core Simulation Infrastructure
-
-- [x] **Simulation tick driver** — ✅ Implemented (`simulation/tick-driver.ts`): Three modes (realtime, accelerated, turn-based). Per-personality configs, pause/resume, tick counting, sim-time epoch. Integrates with mood engine and cognitive memory decay. 17 tests.
-- [x] **Emotion & mood model** — ✅ Implemented (`simulation/mood-engine.ts`): Russell's circumplex model (valence/arousal → 10 mood labels). 12 personality trait modifiers. Exponential decay toward baselines. Mood state CRUD + event log. 14 tests.
-- [x] **Spatial & proximity awareness** — ✅ Implemented (`simulation/spatial-engine.ts`): 3D entity locations, named zones with bounding boxes, 6 proximity trigger types, declarative rules with cooldown and mood effects, per-tick evaluation. 30 tests.
-- [x] **Experiment runner (autoresearch)** — ✅ Implemented (`simulation/experiment-runner.ts`): Autonomous research loop inspired by Karpathy's autoresearch. Fixed-budget experimentation, single-scope modification, metric-driven retain/discard, baseline promotion, experiment journaling. Pluggable `createProposer()` / `createExecutor()` callbacks allow domain-specific autoresearch (see below). 34 tests. Three domain integrations already built:
-  - **Hyperparameter search** (`training/hyperparam-autoresearch.ts`): Iterative HP search with automatic space narrowing and convergence detection. 17 tests.
-  - **Chaos engineering** (`chaos/chaos-autoresearch.ts`): Iterative resilience improvement with escalation levels, target cycling, and composite resilience scoring. 16 tests.
-  - **Circuit breaker tuning** (`resilience/circuit-breaker-autotuner.ts`): Threshold/timeout tuning via observation-based detection scoring. 19 tests.
-- [x] **Training executor bridge** — ✅ Implemented (`simulation/training-executor.ts`): Bridges experiment runner to FinetuneManager, EvaluationManager, ExperimentRegistryManager via interface wrappers. 13 tests.
-- [x] **Entity relationship graph** — ✅ Implemented (`simulation/relationship-graph.ts`): Persistent inter-entity relationships with affinity (-1 to 1), trust (0 to 1), interaction tracking. 8 relationship types, group membership, tick-driven decay. 14 REST endpoints. Interaction events auto-adjust scores and optionally trigger mood effects. 40 tests.
-- [x] **Simulation dashboard panel** — ✅ Implemented (`dashboard/components/simulation/SimulationPanel.tsx`): 4-tab monitoring panel (Tick, Mood, Spatial, Relationships). Real-time tick state with play/pause/advance controls, valence/arousal progress bars with mood label badges, entity/zone tables, relationship affinity/trust bars, group membership display. Gated by `allowSimulation` security policy. 20 tests.
 
 #### Game NPCs
 
@@ -563,14 +411,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### Ideas & Exploration
-
-*Lower-priority ideas. Not scheduled — track here for future consideration.*
-
-- [x] **Offline-first PWA** — ✅ Complete (2026-03-12). `vite-plugin-pwa` with Workbox, `manifest.webmanifest`, service worker registration, `idb`-backed IndexedDB cache (`offline-db.ts`), `useOffline` hook with auto-sync mutation queue, `OfflineBanner` component, NetworkFirst caching for conversations/settings/personalities API. 5 tests.
-
----
-
 ## Dependency Watch
 
 See [dependency-watch.md](dependency-watch.md) for tracked third-party dependencies with known issues requiring upstream resolution.
@@ -591,4 +431,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-12 (Phase 15 Agent Binary + Phase 16 Shruti DAW added; Phase 14 complete). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-14 (Pruned completed items — Phases 14, 15, DDoS, WebSocket warm-up, Simulation core infra, PWA, and other `[x]` items moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*

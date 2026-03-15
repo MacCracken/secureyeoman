@@ -88,14 +88,14 @@ curl https://localhost:18789/api/v1/license/status \
 
 ## Trial Period
 
-New installations include a **45-day grace period** during which all features are unlocked, regardless of the enforcement configuration. This gives you time to evaluate Pro and Enterprise features before deciding whether to purchase a license.
+New installations include a **30-day free trial** during which all features are unlocked, regardless of the enforcement configuration. This gives you time to evaluate Pro and Enterprise features before deciding whether to purchase a license.
 
 - The grace period starts automatically on first boot
 - The dashboard shows a trial banner with the number of days remaining
 - After the grace period expires, unlicensed features are gated (if enforcement is enabled)
 - Applying a valid license key at any time — during or after the trial — unlocks features permanently
 
-The grace period duration is configurable via `licensing.gracePeriodDays` in your system config (default: 45, set to 0 to disable).
+The grace period duration is configurable via `licensing.gracePeriodDays` in your system config (default: 30, set to 0 to disable).
 
 ---
 

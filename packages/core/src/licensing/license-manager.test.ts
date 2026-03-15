@@ -816,7 +816,7 @@ describe('LicenseManager — grace period', () => {
   it('grace period active — enforcement suppressed for unlicensed instance', () => {
     const lm = new LicenseManager(undefined, true);
     const recentInstall = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(); // 10 days ago
-    lm.setGracePeriod(recentInstall, 45);
+    lm.setGracePeriod(recentInstall, 30);
 
     expect(lm.getGracePeriod()?.active).toBe(true);
     expect(lm.getGracePeriod()?.daysRemaining).toBeGreaterThan(0);
@@ -827,7 +827,7 @@ describe('LicenseManager — grace period', () => {
   it('grace period expired — enforcement active for unlicensed instance', () => {
     const lm = new LicenseManager(undefined, true);
     const oldInstall = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(); // 60 days ago
-    lm.setGracePeriod(oldInstall, 45);
+    lm.setGracePeriod(oldInstall, 30);
 
     expect(lm.getGracePeriod()?.active).toBe(false);
     expect(lm.getGracePeriod()?.daysRemaining).toBe(0);
@@ -839,7 +839,7 @@ describe('LicenseManager — grace period', () => {
     const key = buildKey(validClaims({ tier: 'enterprise', features: [...ALL_LICENSED_FEATURES] }));
     const lm = withTestKeyAndEnforcement(key, true);
     const recentInstall = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    lm.setGracePeriod(recentInstall, 45);
+    lm.setGracePeriod(recentInstall, 30);
 
     expect(lm.isEnforcementEnabled()).toBe(true); // Valid license — no suppression
     expect(lm.isFeatureAllowed('adaptive_learning')).toBe(true); // Licensed
@@ -848,7 +848,7 @@ describe('LicenseManager — grace period', () => {
   it('grace period with enforcement=false — enforcement stays off', () => {
     const lm = new LicenseManager(undefined, false);
     const oldInstall = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
-    lm.setGracePeriod(oldInstall, 45);
+    lm.setGracePeriod(oldInstall, 30);
 
     expect(lm.isEnforcementEnabled()).toBe(false);
     expect(lm.isFeatureAllowed('adaptive_learning')).toBe(true);
@@ -857,12 +857,12 @@ describe('LicenseManager — grace period', () => {
   it('toStatusObject includes grace period info', () => {
     const lm = new LicenseManager(undefined, true);
     const recentInstall = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
-    lm.setGracePeriod(recentInstall, 45);
+    lm.setGracePeriod(recentInstall, 30);
 
     const status = lm.toStatusObject();
     expect(status.gracePeriod).not.toBeNull();
     expect(status.gracePeriod!.active).toBe(true);
-    expect(status.gracePeriod!.daysRemaining).toBe(40);
+    expect(status.gracePeriod!.daysRemaining).toBe(25);
     expect(status.enforcementEnabled).toBe(false); // Suppressed
   });
 
@@ -876,7 +876,7 @@ describe('LicenseManager — grace period', () => {
     const claims = validClaims({ tier: 'pro', features: [...PRO_FEATURES] });
     const lm = LicenseManager.fromClaims(claims, true);
     const recentInstall = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString();
-    lm.setGracePeriod(recentInstall, 45);
+    lm.setGracePeriod(recentInstall, 30);
 
     expect(lm.getGracePeriod()?.active).toBe(true);
     expect(lm.isValid()).toBe(true);
