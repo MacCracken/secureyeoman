@@ -121,31 +121,13 @@ export function DashboardLayout() {
         onLogout={() => void logout()}
       />
 
-      {/* Main content column */}
-      <div
-        className="flex flex-col flex-1 min-h-screen transition-[margin-left] duration-200"
-        style={{
-          marginLeft: `var(--sidebar-collapsed)`,
-        }}
-      >
-        {/* Use CSS media query via class for responsive margin */}
-        <style>{`
-          @media (min-width: 768px) {
-            .sidebar-content-area {
-              margin-left: ${collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-expanded)'} !important;
-            }
-          }
-          @media (max-width: 767px) {
-            .sidebar-content-area {
-              margin-left: 0 !important;
-            }
-          }
-        `}</style>
-
-        <div
-          className="sidebar-content-area flex flex-col flex-1 min-h-0 transition-[margin-left] duration-200"
-          style={{ marginLeft: 0 }}
-        >
+      {/* Main content column – single wrapper; margin accounts for fixed sidebar */}
+      <style>{`
+        @media (min-width: 768px) {
+          .dashboard-main { margin-left: ${collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-expanded)'}; }
+        }
+      `}</style>
+      <div className="dashboard-main flex flex-col flex-1 min-h-screen transition-[margin-left] duration-200">
           {/* Header */}
           <header className="border-b bg-card sticky top-0 z-20 shrink-0">
             <div className="px-4 py-3 sm:py-4">
@@ -460,7 +442,6 @@ export function DashboardLayout() {
               </Routes>
             </Suspense>
           </main>
-        </div>
       </div>
     </div>
   );
