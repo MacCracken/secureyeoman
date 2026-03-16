@@ -1,6 +1,6 @@
 {
   "name": "@secureyeoman/mobile",
-  "version": "2026.3.16",
+  "version": "2026.3.15-1",
   "description": "SecureYeoman mobile app — Capacitor v8 shell",
   "private": true,
   "scripts": {
