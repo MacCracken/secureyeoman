@@ -1191,15 +1191,18 @@
                   </button>
                 </div>
                 <div class="window-body">
-                  <pre><code><span class="comment"># Start with Docker Compose</span>
-<span class="prompt">$</span> docker compose up -d
+                  <pre><code><span class="comment"># Pull and run (embedded PostgreSQL, all-in-one)</span>
+<span class="prompt">$</span> docker run -d --name secureyeoman \
+    -p 18789:18789 \
+    -e SECUREYEOMAN_ADMIN_PASSWORD=change-me-32chars \
+    -v sy-data:/home/secureyeoman/.secureyeoman \
+    ghcr.io/maccracken/secureyeoman:latest
 
-<span class="comment"># With MCP service</span>
-<span class="prompt">$</span> docker compose --profile mcp up -d
+<span class="comment"># Access the dashboard</span>
+<span class="prompt">$</span> open http://localhost:18789
 
-<span class="comment"># Fresh start</span>
-<span class="prompt">$</span> docker compose down -v
-<span class="prompt">$</span> docker compose up -d</code></pre>
+<span class="comment"># View logs</span>
+<span class="prompt">$</span> docker logs -f secureyeoman</code></pre>
                 </div>
               </div>
             </div>
@@ -1217,19 +1220,23 @@
                   </button>
                 </div>
                 <div class="window-body">
-                  <pre><code><span class="comment"># Deploy with Helm (EKS, GKE, AKS)</span>
-<span class="prompt">$</span> helm install secureyeoman deploy/helm/secureyeoman \
-    --namespace secureyeoman --create-namespace \
-    --set secrets.postgresPassword=your-password \
-    --set database.host=your-db.example.com
+                  <pre><code><span class="comment"># Add the Helm repo</span>
+<span class="prompt">$</span> helm repo add secureyeoman \
+    https://maccracken.github.io/secureyeoman
+<span class="prompt">$</span> helm repo update
 
-<span class="comment"># Production deployment</span>
-<span class="prompt">$</span> helm install secureyeoman deploy/helm/secureyeoman \
-    -f deploy/helm/secureyeoman/values-production.yaml \
-    --namespace secureyeoman-production --create-namespace
+<span class="comment"># Quick deploy (EKS, GKE, AKS, k3s)</span>
+<span class="prompt">$</span> helm install secureyeoman secureyeoman/secureyeoman \
+    --namespace secureyeoman --create-namespace \
+    --set adminPassword=change-me-32chars
+
+<span class="comment"># Production — use a values file</span>
+<span class="prompt">$</span> helm install secureyeoman secureyeoman/secureyeoman \
+    -f values-production.yaml \
+    --namespace secureyeoman --create-namespace
 
 <span class="comment"># Verify</span>
-<span class="prompt">$</span> helm test secureyeoman --namespace secureyeoman</code></pre>
+<span class="prompt">$</span> helm test secureyeoman -n secureyeoman</code></pre>
                 </div>
               </div>
             </div>
@@ -1247,16 +1254,21 @@
                   </button>
                 </div>
                 <div class="window-body">
-                  <pre><code><span class="comment"># Prerequisites</span>
-- Node.js 20 LTS+
-- npm or pnpm
-- AI Provider API Key
+                  <pre><code><span class="comment"># Prerequisites: Node.js 20 LTS+, npm or pnpm</span>
 
-<span class="comment"># Security Keys (32+ chars each)</span>
-SECUREYEOMAN_SIGNING_KEY="&lt;your-signing-key&gt;"
-SECUREYEOMAN_TOKEN_SECRET="&lt;your-token-secret&gt;"
-SECUREYEOMAN_ENCRYPTION_KEY="&lt;your-encryption-key&gt;"
-SECUREYEOMAN_ADMIN_PASSWORD="&lt;your-admin-password&gt;"</code></pre>
+<span class="comment"># Clone and install</span>
+<span class="prompt">$</span> git clone https://github.com/MacCracken/secureyeoman.git
+<span class="prompt">$</span> cd secureyeoman
+<span class="prompt">$</span> npm install
+
+<span class="comment"># Configure (only admin password is required)</span>
+<span class="prompt">$</span> cp .env.example .env
+<span class="comment"># Edit .env — set SECUREYEOMAN_ADMIN_PASSWORD</span>
+<span class="comment"># API keys can be added later via the dashboard</span>
+
+<span class="comment"># Build and start</span>
+<span class="prompt">$</span> npm run build
+<span class="prompt">$</span> npm start</code></pre>
                 </div>
               </div>
             </div>
