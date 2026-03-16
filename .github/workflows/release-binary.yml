@@ -276,7 +276,7 @@ jobs:
         run: |
           mkdir -p binaries/migrations
           cp "artifact/${{ matrix.binary }}" binaries/secureyeoman
-          cp -r artifact/migrations/ binaries/migrations/
+          cp -r artifact/migrations/* binaries/migrations/
           chmod +x binaries/secureyeoman
           ls -lh binaries/
 
