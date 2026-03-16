@@ -10,7 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| — | Dashboard Component Refactors | P1 — quality | Planned (8 components, prioritized) |
+| — | Dashboard Component Refactors | P1 — quality | ✅ Done (8/8) |
 | — | E2E Test Expansion | P1 — quality | Planned |
 | 17 | Native Mobile Experience | P2 — platform | Planned (17A–E) |
 | — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
@@ -112,80 +112,37 @@
 
 **Priority**: P1 — Quality. Same pattern as the Catalog refactor — bottom-up extraction of large components into focused sub-components and shared hooks. No backend changes needed.
 
-### 1. PersonalityEditor (6,730 lines) — CRITICAL
+### ~~1. PersonalityEditor (6,730 lines)~~ — Done (2026.3.15)
 
-58 inline helper functions, 26 mutations, avatar crop modal, disposition trait editor, and 8 unrelated sections all in one file.
+Renamed to `PersonalitiesPage.tsx`. 6,730 → 1,814 lines. 8 extracted files in `personality/`. See changelog.
 
-- [ ] **Extract AvatarSection** — avatar upload, crop modal (250 lines), lightbox, canvas export → `personality/AvatarSection.tsx` + `personality/AvatarCropModal.tsx`
-- [ ] **Extract DispositionPanel** — 16 disposition traits across 4 categories, custom trait input → `personality/DispositionPanel.tsx`
-- [ ] **Extract SkillsSection** — skill list CRUD → `personality/SkillsSection.tsx`
-- [ ] **Extract KnowledgeSection** — knowledge learning UI → `personality/KnowledgeSection.tsx`
-- [ ] **Extract ProactivePanel** — proactive config toggles with deeply nested payload → `personality/ProactivePanel.tsx`
-- [ ] **Extract VoicePanel** — voice profile selection → `personality/VoicePanel.tsx`
-- [ ] **Extract BrainConfigSection** — external brain sync → `personality/BrainConfigSection.tsx`
-- [ ] **Extract usePersonalityMutations hook** — consolidate 26 mutations into `personality/hooks.ts`
-- [ ] **Slim PersonalityEditor** — becomes ~300 line tab orchestrator
+### ~~2. ConnectionsPage (4,785 lines)~~ — Done (2026.3.15)
 
-### 2. ConnectionsPage (4,785 lines) — CRITICAL
+4,785 → 806 lines. 8 extracted files in `connections/`. See changelog.
 
-800-line PLATFORM_META object, 19 mutations, 35+ platform forms inline, IntegrationCard with multiple responsibilities.
+### ~~3. MetricsPage (3,231 lines)~~ — Done (2026.3.15)
 
-- [ ] **Extract PLATFORM_META** — move 800-line metadata constant to `connections/platformMetadata.ts`
-- [ ] **Extract IntegrationCard** — card display + edit toggle + save config → `connections/IntegrationCard.tsx`
-- [ ] **Extract IntegrationForm** — dynamic form generator using platform metadata → `connections/IntegrationForm.tsx`
-- [ ] **Extract McpServerSection** — MCP server management tab → `connections/McpServerSection.tsx`
-- [ ] **Extract OAuthSection** — OAuth token management → `connections/OAuthSection.tsx`
-- [ ] **Extract useConnectionMutations hook** — consolidate 19 mutations into `connections/hooks.ts`
-- [ ] **Slim ConnectionsPage** — becomes ~400 line tab container
+3,231 → 228 lines. 6 extracted files in `metrics/`. See changelog.
 
-### 3. MetricsPage (3,231 lines) — CRITICAL
+### ~~4. SecuritySettings (2,453 lines)~~ — Done (2026.3.15)
 
-3 view tabs with independent data, 12 queries, duplicated section patterns, chart configs inline.
+2,453 → 1,149 lines. 4 extracted files in `security/`. Dead code removed. See changelog.
 
-- [ ] **Extract MetricsOverview** — KPI cards, health status, topology graph → `metrics/MetricsOverview.tsx`
-- [ ] **Extract CostsDashboard** — cost analytics with provider breakdown → `metrics/CostsDashboard.tsx`
-- [ ] **Extract FullMetrics** — deep-dive charts (tasks, resources, security) → `metrics/FullMetrics.tsx`
-- [ ] **Extract useCardLayout hook** — dnd-kit + persistence logic → `metrics/hooks.ts`
-- [ ] **Slim MetricsPage** — becomes view switcher + layout coordinator
+### ~~5. EditorPage (2,124 lines)~~ — Done (2026.3.15)
 
-### 4. SecuritySettings (2,473 lines) — CRITICAL
+2,124 → 1,538 lines. 4 extracted files in `editor/`. MultiTerminal, BottomPanels, shared types/constants.
 
-27 useState, inline RBAC forms, model fallback logic, rate limiting — 4 unrelated concerns in one file.
+### ~~6. NewEntityDialog (1,881 lines)~~ — Done (2026.3.15)
 
-- [ ] **Extract RbacManager** — role CRUD + user-role assignment → `security/RbacManager.tsx`
-- [ ] **Extract ModelManagement** — model selector, fallback manager, extended thinking config → `security/ModelManagement.tsx`
-- [ ] **Extract RateLimitingPanel** — rate limit configuration → `security/RateLimitingPanel.tsx`
-- [ ] **Extract useSecurityMutations hook** — consolidate role/assignment mutations
+1,881 → 176 line orchestrator + re-export shim. 18 files in `new-entity/`. All 12 wizard steps + useWizardState hook + types/constants.
 
-### 5. EditorPage (2,124 lines) — HIGH
+### ~~7. TrainingTab (1,572 lines)~~ — Done (2026.3.15)
 
-27 useState, multi-terminal inline, voice + collab + command palette all in one.
+1,572 → 149 lines. 9 files in `training/`. Distillation, Finetune, Export, Live, ComputerUse tabs + shared components.
 
-- [ ] **Extract MultiTerminal** — terminal tab system with command execution → `editor/MultiTerminal.tsx`
-- [ ] **Extract CollaborationLayer** — collab presence + PresenceBanner → `editor/CollaborationLayer.tsx`
-- [ ] **Extract VoiceInputPanel** — voice recording + transcription overlay → `editor/VoiceInputPanel.tsx`
-- [ ] **Extract useEditorState hook** — consolidate terminal, search, settings state
+### ~~8. ChatPage (1,543 lines)~~ — Done (2026.3.15)
 
-### 6. NewEntityDialog (1,881 lines) — HIGH
-
-Multi-step wizard with all steps inline.
-
-- [ ] **Extract wizard steps** into separate components per step
-- [ ] **Extract useWizardState hook** — step tracking, validation, transitions
-
-### 7. TrainingTab (1,572 lines) — HIGH
-
-9 sub-tab variants, duplicated job lifecycle patterns for distillation and fine-tuning.
-
-- [ ] **Extract job lifecycle hooks** — shared create/delete/run mutation pattern
-- [ ] **Extract FORMAT_INFO constant** to separate file
-
-### 8. ChatPage (1,543 lines) — HIGH
-
-Chat logic + UI blended.
-
-- [ ] **Extract message rendering** — message list, attachments, actions
-- [ ] **Extract chat input** — input bar, file upload, voice toggle
+1,543 → 855 lines. 4 files in `chat/`. MessageBubble, ChatInputArea, StreamingResponse, ConversationSidebar.
 
 ---
 

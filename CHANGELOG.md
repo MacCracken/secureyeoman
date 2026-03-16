@@ -8,6 +8,77 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.15]
 
+### Dashboard Component Refactors (8/8 complete)
+
+Bottom-up extraction of the 8 largest dashboard components into focused sub-components and shared hooks.
+
+- **MetricsPage**: 3,231 → 228 lines (93% reduction)
+  - `metrics/shared.tsx` — constants, helpers, StatCard, CostSummaryCard, RecommendationCard
+  - `metrics/hooks.ts` — `useCardLayout` hook (dnd-kit + persistence)
+  - `metrics/MissionControlTab.tsx` — 15 memo'd section components + dnd layout + catalogue panel
+  - `metrics/CostsDashboard.tsx` — CostsTab, CostSummaryTab, CostHistoryTab
+  - `metrics/FullMetrics.tsx` — task perf, infrastructure, security deep-dive charts
+- **SecuritySettings**: 2,453 → 1,149 lines (53% reduction). Dead code removed (~80 lines of unused `_`-prefixed state/mutations)
+  - `security/RbacManager.tsx` — RoleForm, RolesSettings, UserRoleAssignments, permission utilities
+  - `security/ModelManagement.tsx` — model selector, fallback manager, provider labels
+  - `security/ServiceKeysPanel.tsx` — service key CRUD, category grouping, SecretsPanel alias
+  - `security/hooks.ts` — `useSecurityPolicyMutations` hook
+- **EditorPage**: 2,124 → 1,538 lines (28% reduction)
+  - `editor/MultiTerminal.tsx` — tabbed terminal system with command execution
+  - `editor/BottomPanels.tsx` — sessions, history, execution-gated panels
+  - `editor/shared.ts` — types, constants (LANG_MAP, RUN_COMMANDS), helpers
+- **NewEntityDialog**: 1,881 → 176 line orchestrator + re-export shim (91% reduction)
+  - `new-entity/useWizardState.ts` — all form state, 7 mutations, reset/navigation
+  - `new-entity/types.ts`, `new-entity/constants.ts` — shared types and config grid items
+  - 12 step components: Select, Personality, Task, Skill, Experiment, SubAgent, CustomRole, Proactive, Extension, User, Workspace, Memory, Intent
+- **TrainingTab**: 1,572 → 149 lines (91% reduction)
+  - `training/DistillationTab.tsx`, `training/FinetuneTab.tsx` — job lifecycle with shared StatusChip
+  - `training/ExportTab.tsx`, `training/LiveTab.tsx`, `training/ComputerUseTab.tsx`
+  - `training/FormatInfo.tsx`, `training/constants.ts`, `training/Step.tsx`
+- **ChatPage**: 1,543 → 855 lines (45% reduction)
+  - `chat/MessageBubble.tsx` — message rendering, citations, thinking blocks, feedback
+  - `chat/ChatInputArea.tsx` — textarea, voice transcript, PTT, vision upload
+  - `chat/StreamingResponse.tsx` — live streaming display with tool call badges
+  - `chat/ConversationSidebar.tsx` — conversation list with rename/delete
+
+### PersonalityEditor & ConnectionsPage Refactor
+
+Bottom-up extraction of the two largest dashboard components into focused sub-components and shared hooks.
+
+- **PersonalityEditor → PersonalitiesPage**: Renamed for consistency with ConnectionsPage. Slimmed from 6,730 → 1,814 lines (73% reduction)
+  - `personality/hooks.ts` — shared `usePersonalityMutations()` hook eliminates 7 duplicated mutations between editor and list views
+  - `personality/DispositionPanel.tsx` — trait definitions, disposition editor, custom trait input
+  - `personality/SpiritSection.tsx` — passions, inspirations, pain points CRUD
+  - `personality/BrainSection.tsx` — knowledge, thinking config, models, proactive, org-intent
+  - `personality/BodySection.tsx` — MCP connections, integration access, capabilities, resources
+  - `personality/HeartbeatSection.tsx` — heartbeat task management
+  - `personality/VoiceSection.tsx` — voice profile picker with preview
+  - `personality/shared.tsx` — updated with `resolveAvatarSrc()` and `AvatarUpload`
+- **ConnectionsPage**: Slimmed from 4,785 → 806 lines (83% reduction)
+  - `connections/platformMetadata.tsx` — PLATFORM_META (40+ platforms), category sets, types
+  - `connections/IntegrationCard.tsx` — integration status card with inline edit
+  - `connections/McpTab.tsx` — MCP server management tab
+  - `connections/LocalServerCard.tsx` — built-in YEOMAN MCP server card with feature toggles
+  - `connections/ServerCard.tsx` — external MCP server card
+  - `connections/MessagingTab.tsx` — messaging/productivity/devops integration grid
+  - `connections/EmailTab.tsx` — Gmail OAuth + IMAP/SMTP setup
+  - `connections/OAuthTab.tsx` — OAuth credentials and connected accounts
+- All 180 test suites, 4,123 tests passing, 0 lint errors
+
+### Theme Marketplace Categories
+
+- **Marketplace themes view**: Added `CategoryFilter` (Dark / Light / Enterprise) + `CategoryGroupedGrid` with collapsible sections — matches how skills have category filters
+- **Community themes view**: Added `CategoryGroupedGrid` for grouped display using existing `theme:` prefix subcategories
+- **`getThemeCategory()` helper**: Derives subcategory from tags — works for both built-in themes (tagged `dark`/`light`/`enterprise`) and community themes (tagged `theme:dark`, `theme:sci-fi`, etc.)
+
+### Community Tab Messaging Consistency
+
+Standardized empty-state messaging across all 5 community content types (Skills, Workflows, Swarm Templates, Themes, Personalities). Consistent pattern: type-specific icon, "No community {type} found" title, "Click **Sync** to import {type} from the community repo." subtitle.
+
+### Delegation Module Boot Fix
+
+- **Always boot delegation module** at startup regardless of initial security policy state. Routes for workflows, swarm templates, and delegations are now always registered. Route-level security checks handle gating instead of startup-time config checks. Fixes 404s on fresh DB where security policy defaults haven't been persisted yet.
+
 ### Catalog & Marketplace UI Refactor
 
 Bottom-up extraction of the catalog UI — 830-line `CommunityTab.tsx` split into focused components with shared hooks. Net reduction of ~400 lines of duplicated code across the catalog surface.
