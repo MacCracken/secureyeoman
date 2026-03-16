@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # smoke-test-binary.sh — Single binary smoke test for SecureYeoman.
 #
-# Verifies three commands against every compiled binary:
+# Verifies four commands against every compiled binary:
 #   1. --version          exits 0 and prints "secureyeoman v<VERSION>"
 #   2. config validate    exits 0 with valid JSON { "valid": true, ... }
-#   3. health --json      starts the binary, waits for /health 200, runs
+#   3. migrate            runs migrations against a fresh database, exits 0,
+#                         and prints "Migrations complete." — catches bundled
+#                         SQL issues before the release is posted.
+#   4. health --json      starts the binary, waits for /health 200, runs
 #                         health --json, confirms status=ok, stops the server.
 #
 # Usage:
@@ -256,11 +259,44 @@ smoke_test() {
     fail "config validate  →  non-JSON output (exit=${val_rc}): ${val_out:0:200}"
   fi
 
-  # ── 3. health --json ──────────────────────────────────────────────────────
+  # ── 3. migrate (explicit migration check) ────────────────────────────────
   if [ "${PG_AVAILABLE}" != "true" ]; then
+    fail "migrate          →  skipped (PostgreSQL not available at ${PG_HOST}:${PG_PORT})"
     fail "health --json    →  skipped (PostgreSQL not available at ${PG_HOST}:${PG_PORT})"
     return
   fi
+
+  # Fresh DB for the migration-only test
+  local migrate_db
+  migrate_db="sy_migrate_${$}_$(date +%s)"
+  local migrate_db_created=false
+  if pg_exec "CREATE DATABASE ${migrate_db};" postgres 2>/dev/null; then
+    migrate_db_created=true
+  fi
+
+  if [ "${migrate_db_created}" = "true" ]; then
+    local migrate_port
+    migrate_port="$(find_free_port)"
+    write_smoke_config "${tmpdir}" "${migrate_port}" "${migrate_db}"
+
+    local mig_out mig_rc=0
+    mig_out="$(env "${SMOKE_SECRETS[@]}" \
+      "${binary}" migrate \
+      --config "${tmpdir}/smoke.yaml" 2>&1)" || mig_rc=$?
+
+    if [ "${mig_rc}" -eq 0 ] && printf '%s' "${mig_out}" | grep -qi 'migrations\? complete'; then
+      pass "migrate          →  exit=0 (${mig_out})"
+    else
+      fail "migrate          →  exit=${mig_rc}  output: ${mig_out:0:300}"
+    fi
+
+    # Clean up the migration-only database
+    pg_exec "DROP DATABASE IF EXISTS ${migrate_db};" postgres 2>/dev/null || true
+  else
+    fail "migrate          →  could not create database ${migrate_db}"
+  fi
+
+  # ── 4. health --json ──────────────────────────────────────────────────────
 
   # Fresh per-run database prevents audit chain key conflicts across runs
   local run_db
