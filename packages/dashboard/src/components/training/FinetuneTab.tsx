@@ -1,13 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Layers,
-  Trash2,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  Cpu,
-} from 'lucide-react';
+import { Layers, Trash2, Loader2, AlertCircle, CheckCircle2, Cpu } from 'lucide-react';
 import {
   fetchFinetuneJobs,
   createFinetuneJob,

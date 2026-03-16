@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Play,
-  Trash2,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
+import { Play, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import {
   fetchDistillationJobs,
   createDistillationJob,

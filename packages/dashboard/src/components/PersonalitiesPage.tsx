@@ -43,10 +43,7 @@ import {
 import { ConfirmDialog } from './common/ConfirmDialog';
 import { useCollabEditor } from '../hooks/useCollabEditor.js';
 import { PresenceBanner } from './PresenceBanner.js';
-import type {
-  Personality,
-  PersonalityCreate,
-} from '../types';
+import type { Personality, PersonalityCreate } from '../types';
 import type { IntegrationAccess } from '@secureyeoman/shared';
 
 // ── Extracted sub-components ────────────────────────────────────────────────

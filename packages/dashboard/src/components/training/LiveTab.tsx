@@ -1,10 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import {
-  Loader2,
-  Zap,
-  Activity,
-} from 'lucide-react';
+import { Loader2, Zap, Activity } from 'lucide-react';
 import {
   LineChart,
   Line,

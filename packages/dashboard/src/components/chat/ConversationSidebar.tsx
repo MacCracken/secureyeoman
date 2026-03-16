@@ -1,12 +1,4 @@
-import {
-  Loader2,
-  Plus,
-  Trash2,
-  MessageSquare,
-  Pencil,
-  Check,
-  X,
-} from 'lucide-react';
+import { Loader2, Plus, Trash2, MessageSquare, Pencil, Check, X } from 'lucide-react';
 import type { Personality, Conversation } from '../../types';
 import { PersonalityAvatar } from '../PersonalitiesPage';
 
@@ -48,10 +40,7 @@ export function ConversationSidebar({
   return (
     <>
       {/* Backdrop on mobile */}
-      <div
-        className="fixed inset-0 bg-black/30 z-20 sm:hidden"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/30 z-20 sm:hidden" onClick={onClose} />
       <div
         className="fixed left-0 top-0 bottom-0 w-72 bg-background z-30 border-r p-3 flex flex-col sm:static sm:w-64 sm:z-auto sm:p-0 sm:pr-3"
         data-testid="conversation-sidebar"
@@ -59,10 +48,7 @@ export function ConversationSidebar({
         {/* Mobile header */}
         <div className="flex items-center justify-between mb-2 sm:hidden">
           <span className="text-sm font-semibold">Conversations</span>
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-muted/50 text-muted-foreground"
-          >
+          <button onClick={onClose} className="p-1 rounded hover:bg-muted/50 text-muted-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -163,9 +149,7 @@ export function ConversationSidebar({
           ))}
 
           {!conversationsLoading && conversations.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-4">
-              No conversations yet
-            </p>
+            <p className="text-xs text-muted-foreground text-center py-4">No conversations yet</p>
           )}
         </div>
       </div>

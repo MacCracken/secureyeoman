@@ -121,11 +121,15 @@ export function PersonalitiesTab() {
     onSuccess: (res) => {
       void queryClient.invalidateQueries({ queryKey: ['personalities'] });
       setToast(`Installed: ${res.personality.name}`);
-      setTimeout(() => setToast(null), 3000);
+      setTimeout(() => {
+        setToast(null);
+      }, 3000);
     },
     onError: (err: Error) => {
       setToast(`Install failed: ${err.message}`);
-      setTimeout(() => setToast(null), 5000);
+      setTimeout(() => {
+        setToast(null);
+      }, 5000);
     },
   });
 
@@ -134,11 +138,15 @@ export function PersonalitiesTab() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['personalities'] });
       setToast('Personality uninstalled');
-      setTimeout(() => setToast(null), 3000);
+      setTimeout(() => {
+        setToast(null);
+      }, 3000);
     },
     onError: (err: Error) => {
       setToast(`Uninstall failed: ${err.message}`);
-      setTimeout(() => setToast(null), 5000);
+      setTimeout(() => {
+        setToast(null);
+      }, 5000);
     },
   });
 
@@ -157,7 +165,9 @@ export function PersonalitiesTab() {
             className="w-full bg-card border border-border rounded-lg pl-10 pr-3 py-2.5 text-sm"
             placeholder="Search community personalities..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
           />
         </div>
         <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -189,7 +199,9 @@ export function PersonalitiesTab() {
                 <button
                   type="button"
                   className="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/50 transition-colors"
-                  onClick={() => toggleCategory(cat)}
+                  onClick={() => {
+                    toggleCategory(cat);
+                  }}
                 >
                   {isCollapsed ? (
                     <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -247,7 +259,9 @@ export function PersonalitiesTab() {
                               {isInstalled ? (
                                 <button
                                   className="btn btn-ghost text-xs px-2 py-1 flex items-center gap-1 text-destructive hover:text-destructive"
-                                  onClick={() => uninstallMut.mutate(installedId)}
+                                  onClick={() => {
+                                    uninstallMut.mutate(installedId);
+                                  }}
                                   disabled={uninstallMut.isPending}
                                 >
                                   {uninstallMut.isPending &&
@@ -261,11 +275,12 @@ export function PersonalitiesTab() {
                               ) : (
                                 <button
                                   className="btn btn-ghost text-xs px-2 py-1 flex items-center gap-1"
-                                  onClick={() => installMut.mutate(p.filename)}
+                                  onClick={() => {
+                                    installMut.mutate(p.filename);
+                                  }}
                                   disabled={installMut.isPending}
                                 >
-                                  {installMut.isPending &&
-                                  installMut.variables === p.filename ? (
+                                  {installMut.isPending && installMut.variables === p.filename ? (
                                     <Loader2 className="w-3 h-3 animate-spin" />
                                   ) : (
                                     <Download className="w-3 h-3" />

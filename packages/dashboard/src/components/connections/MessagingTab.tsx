@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import {
-  Cable,
-  Plus,
-  HelpCircle,
-} from 'lucide-react';
+import { Cable, Plus, HelpCircle } from 'lucide-react';
 import type { IntegrationInfo } from '../../types';
 import { PLATFORM_META } from './platformMetadata';
 import { IntegrationCard } from './IntegrationCard';

@@ -169,11 +169,7 @@ export function MemoryStep({
         <button onClick={handleClose} className="btn btn-ghost">
           Cancel
         </button>
-        <button
-          disabled={!canSubmit || isPending}
-          className="btn btn-ghost"
-          onClick={handleSubmit}
-        >
+        <button disabled={!canSubmit || isPending} className="btn btn-ghost" onClick={handleSubmit}>
           {isPending ? 'Saving...' : isMemory ? 'Add to Memory' : 'Save to Knowledge Base'}
         </button>
       </div>

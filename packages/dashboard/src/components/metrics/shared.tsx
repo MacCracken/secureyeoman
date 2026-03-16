@@ -3,14 +3,7 @@
  */
 
 import type React from 'react';
-import {
-  CheckCircle,
-  XCircle,
-  Loader2,
-  RotateCcw,
-  AlertTriangle,
-  ArrowRight,
-} from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, RotateCcw, AlertTriangle, ArrowRight } from 'lucide-react';
 import type { CostBreakdownResponse } from '../../api/client';
 import type {
   MetricsSnapshot,

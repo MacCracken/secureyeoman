@@ -251,10 +251,7 @@ export function IntentStep({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Rules the AI must never violate.</p>
-            <button
-              onClick={addBoundary}
-              className="btn btn-ghost text-xs flex items-center gap-1"
-            >
+            <button onClick={addBoundary} className="btn btn-ghost text-xs flex items-center gap-1">
               <Plus className="w-3 h-3" /> Add Boundary
             </button>
           </div>

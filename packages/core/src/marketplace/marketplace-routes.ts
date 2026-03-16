@@ -225,11 +225,15 @@ export function registerMarketplaceRoutes(
         const data = await readFile(fullPath);
         const ext = extname(avatarPath).toLowerCase();
         const contentType =
-          ext === '.svg' ? 'image/svg+xml' :
-          ext === '.png' ? 'image/png' :
-          ext === '.webp' ? 'image/webp' :
-          ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
-          'application/octet-stream';
+          ext === '.svg'
+            ? 'image/svg+xml'
+            : ext === '.png'
+              ? 'image/png'
+              : ext === '.webp'
+                ? 'image/webp'
+                : ext === '.jpg' || ext === '.jpeg'
+                  ? 'image/jpeg'
+                  : 'application/octet-stream';
 
         return reply
           .header('Content-Type', contentType)

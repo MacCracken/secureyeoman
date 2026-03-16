@@ -35,9 +35,7 @@ export function StreamingResponse({
         </div>
 
         {/* Phase 1 — Live thinking */}
-        {streamingThinking && (
-          <ThinkingBlock thinking={streamingThinking} live={true} />
-        )}
+        {streamingThinking && <ThinkingBlock thinking={streamingThinking} live={true} />}
 
         {/* Phase 2 — Active tool calls */}
         {activeToolCalls.length > 0 && (
@@ -77,9 +75,7 @@ export function StreamingResponse({
           !streamingThinking &&
           activeToolCalls.length === 0 && (
             <div className="flex items-center gap-2 mt-2">
-              <span className="text-xs text-muted-foreground animate-pulse">
-                Thinking
-              </span>
+              <span className="text-xs text-muted-foreground animate-pulse">Thinking</span>
               <div className="flex gap-1">
                 <span
                   className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"

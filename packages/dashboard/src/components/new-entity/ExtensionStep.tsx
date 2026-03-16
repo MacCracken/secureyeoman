@@ -19,8 +19,7 @@ export function ExtensionStep({
   const set = (patch: Partial<typeof extension>) => {
     setExtension((e) => ({ ...e, ...patch }));
   };
-  const canSubmit =
-    !!extension.id.trim() && !!extension.name.trim() && !!extension.version.trim();
+  const canSubmit = !!extension.id.trim() && !!extension.name.trim() && !!extension.version.trim();
 
   const handleSubmit = () => {
     const hooks = extension.hooksText

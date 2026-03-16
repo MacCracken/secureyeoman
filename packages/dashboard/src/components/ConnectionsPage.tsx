@@ -35,12 +35,7 @@ import {
 import type { EcosystemServiceInfo, AgnosSandboxProfile } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import { ForgePanel } from './ForgePanel';
-import type {
-  McpServerConfig,
-  McpToolDef,
-  McpFeatureConfig,
-  IntegrationInfo,
-} from '../types';
+import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo } from '../types';
 import { McpPrebuilts } from './McpPrebuilts';
 import { RoutingRulesPage } from './RoutingRulesPage';
 import { FederationTab } from './federation/FederationTab';

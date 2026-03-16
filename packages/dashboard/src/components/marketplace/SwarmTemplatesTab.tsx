@@ -123,9 +123,13 @@ export function SwarmTemplatesTab({
               : 'No swarm templates available'}
           </p>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            {source === 'community'
-              ? <>Click <strong>Sync</strong> to import swarm templates from the community repo.</>
-              : 'No swarm template definitions found'}
+            {source === 'community' ? (
+              <>
+                Click <strong>Sync</strong> to import swarm templates from the community repo.
+              </>
+            ) : (
+              'No swarm template definitions found'
+            )}
           </p>
         </div>
       ) : !templates.length ? (

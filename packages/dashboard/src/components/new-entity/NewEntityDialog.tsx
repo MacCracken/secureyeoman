@@ -21,9 +21,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   const renderContent = () => {
     switch (w.step) {
       case 'select':
-        return (
-          <SelectStep setStep={w.setStep} navigateTo={w.navigateTo} />
-        );
+        return <SelectStep setStep={w.setStep} navigateTo={w.navigateTo} />;
       case 'personality':
         return (
           <PersonalityStep

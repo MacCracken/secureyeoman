@@ -1,12 +1,4 @@
-import {
-  Plus,
-  Trash2,
-  ChevronDown,
-  ChevronRight,
-  Wrench,
-  Eye,
-  EyeOff,
-} from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronRight, Wrench, Eye, EyeOff } from 'lucide-react';
 import type { McpServerConfig, McpToolDef, McpFeatureConfig } from '../../types';
 import type { SecurityPolicy } from '../../api/client';
 import { LOCAL_MCP_NAME, type AddServerForm, type TransportType } from './platformMetadata';

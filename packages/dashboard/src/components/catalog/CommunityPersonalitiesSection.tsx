@@ -124,7 +124,9 @@ export function CommunityPersonalitiesSection({
                 }
                 installing={catalog.isInstalling(skill.id)}
                 uninstalling={catalog.isUninstalling(skill.id)}
-                onPreview={() => { onPreview(skill); }}
+                onPreview={() => {
+                  onPreview(skill);
+                }}
                 onInstall={() => {
                   if (!canInstall) return;
                   catalog.setInstallingId(skill.id);

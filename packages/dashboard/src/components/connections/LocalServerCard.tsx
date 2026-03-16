@@ -31,12 +31,7 @@ import {
   Terminal,
   Zap,
 } from 'lucide-react';
-import {
-  fetchApiKeys,
-  createApiKey,
-  revokeApiKey,
-  updateSecurityPolicy,
-} from '../../api/client';
+import { fetchApiKeys, createApiKey, revokeApiKey, updateSecurityPolicy } from '../../api/client';
 import type { McpServerConfig, McpFeatureConfig } from '../../types';
 import type { SecurityPolicy } from '../../api/client';
 import { LOCAL_MCP_NAME } from './platformMetadata';
@@ -245,7 +240,9 @@ export function LocalServerCard({
                 </p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-[10px] bg-black/20 rounded px-2 py-1 font-mono truncate text-amber-300">
-                    {showToken ? mcpToken : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
+                    {showToken
+                      ? mcpToken
+                      : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
                   </code>
                   <button
                     onClick={() => {
@@ -305,7 +302,8 @@ export function LocalServerCard({
                   <div key={k.id} className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30">
                     <Key className="w-3 h-3 text-muted-foreground shrink-0" />
                     <code className="flex-1 text-[10px] font-mono text-muted-foreground truncate">
-                      {k.prefix}\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022
+                      {k.prefix}
+                      \u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022
                     </code>
                     <span className="text-[10px] text-muted-foreground shrink-0">
                       {new Date(k.createdAt).toLocaleDateString()}

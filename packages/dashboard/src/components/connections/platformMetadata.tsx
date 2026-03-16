@@ -973,7 +973,15 @@ export type TabType = 'integrations' | 'mcp' | 'routing' | 'federation';
 export type IntegrationSubTab = 'messaging' | 'email' | 'productivity' | 'devops' | 'oauth';
 
 // Platform categorization for tab filtering
-export const DEVOPS_PLATFORMS = new Set(['github', 'gitlab', 'jira', 'aws', 'azure', 'figma', 'zapier']);
+export const DEVOPS_PLATFORMS = new Set([
+  'github',
+  'gitlab',
+  'jira',
+  'aws',
+  'azure',
+  'figma',
+  'zapier',
+]);
 export const EMAIL_PLATFORMS = new Set(['gmail', 'email']);
 export const PRODUCTIVITY_PLATFORMS = new Set([
   'notion',

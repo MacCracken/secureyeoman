@@ -175,9 +175,7 @@ export function CommunitySkillsSection({
           <div className="flex items-center gap-2">
             <GitBranch className="w-4 h-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold text-foreground">Community Skills</h3>
-            <span className="text-xs text-muted-foreground">
-              ({data?.total ?? skills.length})
-            </span>
+            <span className="text-xs text-muted-foreground">({data?.total ?? skills.length})</span>
           </div>
           <CategoryGroupedGrid
             skills={skills}
@@ -187,7 +185,9 @@ export function CommunitySkillsSection({
                 skill={skill}
                 installing={catalog.isInstalling(skill.id)}
                 uninstalling={catalog.isUninstalling(skill.id)}
-                onPreview={() => { onPreview(skill); }}
+                onPreview={() => {
+                  onPreview(skill);
+                }}
                 onInstall={() => {
                   if (!canInstall) return;
                   catalog.setInstallingId(skill.id);
@@ -207,8 +207,7 @@ export function CommunitySkillsSection({
             <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-muted-foreground">
                 Showing {page * COMMUNITY_PAGE_SIZE + 1}–
-                {Math.min((page + 1) * COMMUNITY_PAGE_SIZE, data?.total ?? 0)} of{' '}
-                {data?.total ?? 0}
+                {Math.min((page + 1) * COMMUNITY_PAGE_SIZE, data?.total ?? 0)} of {data?.total ?? 0}
               </span>
               <div className="flex items-center gap-2">
                 <button

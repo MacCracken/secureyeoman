@@ -39,11 +39,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import {
-  fetchSecurityPolicy,
-  fetchAgentConfig,
-  fetchMcpServers,
-} from '../api/client';
+import { fetchSecurityPolicy, fetchAgentConfig, fetchMcpServers } from '../api/client';
 import { useSecurityPolicyMutations } from './security/hooks';
 import { ModelManagement } from './security/ModelManagement';
 

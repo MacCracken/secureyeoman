@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  RefreshCw,
-  GitBranch,
-  Search,
-  AlertCircle,
-  CheckCircle,
-  X,
-} from 'lucide-react';
+import { RefreshCw, GitBranch, Search, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { fetchCommunityStatus, fetchPersonalities } from '../../api/client';
 import type { CatalogSkill } from '../../types';
 import {
@@ -84,7 +77,10 @@ export function CommunityTab({
           onInstall={() => {
             if (!canInstall) return;
             catalog.setInstallingId(previewSkill.id);
-            catalog.installMut.mutate({ id: previewSkill.id, personalityId: selectedPersonalityId });
+            catalog.installMut.mutate({
+              id: previewSkill.id,
+              personalityId: selectedPersonalityId,
+            });
             setPreviewSkill(null);
           }}
           onUninstall={() => {
@@ -124,7 +120,9 @@ export function CommunityTab({
                   className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="Search community workflows…"
                   value={workflowQuery}
-                  onChange={(e) => { setWorkflowQuery(e.target.value); }}
+                  onChange={(e) => {
+                    setWorkflowQuery(e.target.value);
+                  }}
                 />
               </div>
               <button
@@ -165,7 +163,9 @@ export function CommunityTab({
                   className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="Search community swarm templates…"
                   value={swarmQuery}
-                  onChange={(e) => { setSwarmQuery(e.target.value); }}
+                  onChange={(e) => {
+                    setSwarmQuery(e.target.value);
+                  }}
                 />
               </div>
               <button
@@ -293,15 +293,15 @@ function SyncResultBanner({
           (syncResult.workflowsAdded !== undefined ||
             syncResult.workflowsUpdated !== undefined) && (
             <p>
-              Workflows: {syncResult.workflowsAdded ?? 0} added,{' '}
-              {syncResult.workflowsUpdated ?? 0} updated
+              Workflows: {syncResult.workflowsAdded ?? 0} added, {syncResult.workflowsUpdated ?? 0}{' '}
+              updated
             </p>
           )}
         {subAgentsEnabled &&
           (syncResult.swarmsAdded !== undefined || syncResult.swarmsUpdated !== undefined) && (
             <p>
-              Swarm templates: {syncResult.swarmsAdded ?? 0} added,{' '}
-              {syncResult.swarmsUpdated ?? 0} updated
+              Swarm templates: {syncResult.swarmsAdded ?? 0} added, {syncResult.swarmsUpdated ?? 0}{' '}
+              updated
             </p>
           )}
         {syncResult.errors.length > 0 && (

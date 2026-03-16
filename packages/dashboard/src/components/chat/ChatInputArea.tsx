@@ -1,12 +1,5 @@
 import { useRef, useEffect, useState, memo } from 'react';
-import {
-  Send,
-  Loader2,
-  Pencil,
-  Check,
-  X,
-  ImagePlus,
-} from 'lucide-react';
+import { Send, Loader2, Pencil, Check, X, ImagePlus } from 'lucide-react';
 import { VoiceToggle } from '../VoiceToggle';
 import { VoiceOverlay } from '../VoiceOverlay';
 import type { useVoice } from '../../hooks/useVoice';

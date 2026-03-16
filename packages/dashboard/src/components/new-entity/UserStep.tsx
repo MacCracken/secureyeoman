@@ -9,13 +9,7 @@ interface UserStepProps {
   handleClose: () => void;
 }
 
-export function UserStep({
-  user,
-  setUser,
-  createUserMut,
-  goBack,
-  handleClose,
-}: UserStepProps) {
+export function UserStep({ user, setUser, createUserMut, goBack, handleClose }: UserStepProps) {
   const set = (patch: Partial<typeof user>) => {
     setUser((u) => ({ ...u, ...patch }));
   };

@@ -457,7 +457,9 @@ export function ChatPage() {
               onConfirmRename={handleConfirmRename}
               onCancelRename={handleCancelRename}
               onEditTitleChange={setEditTitle}
-              onClose={() => { setSidebarOpen(false); }}
+              onClose={() => {
+                setSidebarOpen(false);
+              }}
             />
           )}
 

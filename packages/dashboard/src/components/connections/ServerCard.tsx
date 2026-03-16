@@ -1,10 +1,4 @@
-import {
-  Terminal,
-  Globe,
-  Power,
-  PowerOff,
-  Trash2,
-} from 'lucide-react';
+import { Terminal, Globe, Power, PowerOff, Trash2 } from 'lucide-react';
 import type { McpServerConfig } from '../../types';
 
 export function ServerCard({

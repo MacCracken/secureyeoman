@@ -127,6 +127,8 @@ export function useCommunitySync(onSuccess?: () => void) {
     setSyncResult,
     syncMut,
     triggerSync,
-    dismissSync: () => setSyncResult(null),
+    dismissSync: () => {
+      setSyncResult(null);
+    },
   };
 }

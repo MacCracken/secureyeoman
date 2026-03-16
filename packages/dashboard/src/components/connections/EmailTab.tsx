@@ -1,17 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Mail,
-  Globe,
-  HelpCircle,
-  Loader2,
-} from 'lucide-react';
-import {
-  claimGmailOAuth,
-  createIntegration,
-  startIntegration,
-} from '../../api/client';
+import { Mail, Globe, HelpCircle, Loader2 } from 'lucide-react';
+import { claimGmailOAuth, createIntegration, startIntegration } from '../../api/client';
 import type { IntegrationInfo } from '../../types';
 import { IntegrationCard } from './IntegrationCard';
 

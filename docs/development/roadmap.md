@@ -4,18 +4,6 @@
 
 ---
 
-## Timeline
-
-| Phase | Name | Priority | Status |
-|-------|------|----------|--------|
-| XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| — | Dashboard Component Refactors | P1 — quality | ✅ Done (8/8) |
-| — | E2E Test Expansion | P1 — quality | Planned |
-| 17 | Native Mobile Experience | P2 — platform | Planned (17A–E) |
-| — | Engineering Backlog | Ongoing | Test coverage improvements ongoing |
-| Future | Consumer Experience, Enterprise Upgrades, Dev Ecosystem, Shipping & Logistics, Infra, Full Triangle, Simulation Engine | Future / Demand-Gated | Demand-gated |
-
 ## Phase XX: QA & Manual Testing (Ongoing)
 
 **Priority**: P0 — Ongoing. Continuous verification of features that lack automated integration coverage. Items move to Changelog when confirmed working; new regressions are added here as discovered.
@@ -108,44 +96,6 @@
 
 ---
 
-## Dashboard Component Refactors
-
-**Priority**: P1 — Quality. Same pattern as the Catalog refactor — bottom-up extraction of large components into focused sub-components and shared hooks. No backend changes needed.
-
-### ~~1. PersonalityEditor (6,730 lines)~~ — Done (2026.3.15)
-
-Renamed to `PersonalitiesPage.tsx`. 6,730 → 1,814 lines. 8 extracted files in `personality/`. See changelog.
-
-### ~~2. ConnectionsPage (4,785 lines)~~ — Done (2026.3.15)
-
-4,785 → 806 lines. 8 extracted files in `connections/`. See changelog.
-
-### ~~3. MetricsPage (3,231 lines)~~ — Done (2026.3.15)
-
-3,231 → 228 lines. 6 extracted files in `metrics/`. See changelog.
-
-### ~~4. SecuritySettings (2,453 lines)~~ — Done (2026.3.15)
-
-2,453 → 1,149 lines. 4 extracted files in `security/`. Dead code removed. See changelog.
-
-### ~~5. EditorPage (2,124 lines)~~ — Done (2026.3.15)
-
-2,124 → 1,538 lines. 4 extracted files in `editor/`. MultiTerminal, BottomPanels, shared types/constants.
-
-### ~~6. NewEntityDialog (1,881 lines)~~ — Done (2026.3.15)
-
-1,881 → 176 line orchestrator + re-export shim. 18 files in `new-entity/`. All 12 wizard steps + useWizardState hook + types/constants.
-
-### ~~7. TrainingTab (1,572 lines)~~ — Done (2026.3.15)
-
-1,572 → 149 lines. 9 files in `training/`. Distillation, Finetune, Export, Live, ComputerUse tabs + shared components.
-
-### ~~8. ChatPage (1,543 lines)~~ — Done (2026.3.15)
-
-1,543 → 855 lines. 4 files in `chat/`. MessageBubble, ChatInputArea, StreamingResponse, ConversationSidebar.
-
----
-
 ## E2E Test Expansion
 
 **Priority**: P1 — Quality. Currently 8 files / 67 tests. Target: cover all major user flows.
@@ -205,8 +155,6 @@ Upgraded from ESLint 9 → 10 with `typescript-eslint@8.57.0` and `eslint-plugin
 | `react-hooks/static-components` | 4 | React 19 strict | Components defined inside other components |
 | `react-hooks/preserve-manual-memoization` | 3 | React 19 strict | useMemo/useCallback patterns |
 | `react-hooks/incompatible-library` | 1 | React 19 compat | Library compatibility |
-
----
 
 ---
 
@@ -485,4 +433,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-15 (Completed: Catalog & Marketplace Refactor — moved to Changelog). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-15. See [Changelog](../../CHANGELOG.md) for full history of completed work.*

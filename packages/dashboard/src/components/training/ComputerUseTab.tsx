@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Loader2,
-  Trash2,
-} from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import {
   fetchComputerUseEpisodes,
   fetchComputerUseStats,

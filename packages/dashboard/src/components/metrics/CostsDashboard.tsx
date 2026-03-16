@@ -4,15 +4,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  DollarSign,
-  TrendingUp,
-  BarChart3,
-  Zap,
-  Loader2,
-  RotateCcw,
-  X,
-} from 'lucide-react';
+import { DollarSign, TrendingUp, BarChart3, Zap, Loader2, RotateCcw, X } from 'lucide-react';
 import {
   fetchMetrics,
   fetchCostBreakdown,

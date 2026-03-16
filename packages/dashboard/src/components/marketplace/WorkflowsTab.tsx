@@ -116,9 +116,13 @@ export function WorkflowsTab({
             {source === 'community' ? 'No community workflows found' : 'No workflows available'}
           </p>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            {source === 'community'
-              ? <>Click <strong>Sync</strong> to import workflows from the community repo.</>
-              : 'No workflow definitions found'}
+            {source === 'community' ? (
+              <>
+                Click <strong>Sync</strong> to import workflows from the community repo.
+              </>
+            ) : (
+              'No workflow definitions found'
+            )}
           </p>
         </div>
       ) : !workflows.length ? (

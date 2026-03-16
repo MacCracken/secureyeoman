@@ -103,10 +103,15 @@ export function MarketplaceTab({
       badge={badgeFn?.(skill)}
       installing={catalog.isInstalling(skill.id)}
       uninstalling={catalog.isUninstalling(skill.id)}
-      onPreview={() => { setPreviewSkill(skill); }}
+      onPreview={() => {
+        setPreviewSkill(skill);
+      }}
       onInstall={() => {
         catalog.setInstallingId(skill.id);
-        catalog.installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
+        catalog.installMut.mutate({
+          id: skill.id,
+          personalityId: selectedPersonalityId || undefined,
+        });
       }}
       onUninstall={() => {
         catalog.setUninstallingId(skill.id);
@@ -142,7 +147,9 @@ export function MarketplaceTab({
       {previewSkill && (
         <SkillPreviewModal
           skill={previewSkill}
-          onClose={() => { setPreviewSkill(null); }}
+          onClose={() => {
+            setPreviewSkill(null);
+          }}
           installing={catalog.isInstalling(previewSkill.id)}
           uninstalling={catalog.isUninstalling(previewSkill.id)}
           onInstall={() => {
@@ -166,7 +173,9 @@ export function MarketplaceTab({
       <div className="space-y-6">
         <ContentTypeSelector
           value={contentType}
-          onChange={(v) => { setContentType(v); }}
+          onChange={(v) => {
+            setContentType(v);
+          }}
           hiddenTypes={hiddenTypes}
         />
 
@@ -190,7 +199,9 @@ export function MarketplaceTab({
                 className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 placeholder="Search themes…"
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); }}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                }}
               />
             </div>
 
@@ -215,12 +226,14 @@ export function MarketplaceTab({
                   ...s,
                   category: getThemeCategory(s.tags),
                 }))}
-                renderCard={(s) => renderCard(s, () => (
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                    <Palette className="w-2.5 h-2.5" />
-                    Theme
-                  </span>
-                ))}
+                renderCard={(s) =>
+                  renderCard(s, () => (
+                    <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                      <Palette className="w-2.5 h-2.5" />
+                      Theme
+                    </span>
+                  ))
+                }
               />
             )}
           </>
@@ -235,7 +248,9 @@ export function MarketplaceTab({
                 className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 placeholder="Search personalities…"
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); }}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                }}
               />
             </div>
             {isLoading ? (
@@ -273,7 +288,9 @@ export function MarketplaceTab({
                   className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="Search skills…"
                   value={query}
-                  onChange={(e) => { setQuery(e.target.value); }}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                  }}
                 />
               </div>
               <PersonalitySelector

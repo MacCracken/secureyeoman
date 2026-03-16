@@ -7,7 +7,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
-import { fetchModelDefault, setModelDefault, clearModelDefault, fetchModelInfo } from '../../api/client';
+import {
+  fetchModelDefault,
+  setModelDefault,
+  clearModelDefault,
+  fetchModelInfo,
+} from '../../api/client';
 
 export const MODEL_PROVIDER_LABELS: Record<string, string> = {
   anthropic: 'Anthropic',

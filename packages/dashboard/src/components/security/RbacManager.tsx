@@ -6,15 +6,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Shield,
-  Lock,
-  Loader2,
-  Plus,
-  Pen,
-  Trash2,
-  UserPlus,
-} from 'lucide-react';
+import { Shield, Lock, Loader2, Plus, Pen, Trash2, UserPlus } from 'lucide-react';
 import {
   fetchRoles,
   createRole,

@@ -4,7 +4,7 @@
  */
 
 import { readdir, readFile, access } from 'node:fs/promises';
-import { join, relative, dirname, basename } from 'node:path';
+import { join, dirname, basename } from 'node:path';
 
 export interface CommunityPersonality {
   name: string;
@@ -32,7 +32,7 @@ export async function readCommunityPersonalities(
   const personalitiesDir = join(repoPath, 'personalities');
   let entries: string[];
   try {
-    entries = (await readdir(personalitiesDir, { recursive: true })) as string[];
+    entries = await readdir(personalitiesDir, { recursive: true });
   } catch {
     // Directory doesn't exist or isn't readable
     return [];
@@ -55,7 +55,7 @@ export async function readCommunityPersonalities(
       const category = dir === '.' ? 'other' : dir;
 
       // Extract system prompt (body after frontmatter)
-      const bodyMatch = content.match(/^---[\s\S]*?---\r?\n([\s\S]*)$/);
+      const bodyMatch = /^---[\s\S]*?---\r?\n([\s\S]*)$/.exec(content);
       const systemPrompt = bodyMatch?.[1]?.trim() ?? '';
 
       // Check for avatar file (same name, .svg or .png)
