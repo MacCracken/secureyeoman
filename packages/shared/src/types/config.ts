@@ -221,7 +221,30 @@ export const SandboxProxyCredentialSchema = z.object({
 const SandboxConfigSchema = z
   .object({
     enabled: z.boolean().default(true),
-    technology: z.enum(['auto', 'seccomp', 'landlock', 'none']).default('auto'),
+    technology: z
+      .enum(['auto', 'seccomp', 'landlock', 'gvisor', 'wasm', 'sgx', 'sev', 'firecracker', 'agnos', 'none'])
+      .default('auto'),
+    /** Firecracker microVM settings. Only used when technology is 'firecracker' or 'auto' with Firecracker available. */
+    firecracker: z
+      .object({
+        /** Path to firecracker binary. Auto-detected from PATH if not set. */
+        firecrackerPath: z.string().optional(),
+        /** Path to jailer binary. Auto-detected from PATH if not set. */
+        jailerPath: z.string().optional(),
+        /** Path to uncompressed Linux kernel image (vmlinux). */
+        kernelPath: z.string().optional(),
+        /** Path to root filesystem image (ext4). */
+        rootfsPath: z.string().optional(),
+        /** Guest memory size in MB. */
+        memorySizeMb: z.number().int().positive().max(4096).default(128),
+        /** Number of virtual CPUs. */
+        vcpuCount: z.number().int().positive().max(32).default(1),
+        /** Enable jailer hardening (cgroup + seccomp + chroot). Default: true if jailer available. */
+        useJailer: z.boolean().optional(),
+        /** Enable network inside the microVM. */
+        enableNetwork: z.boolean().default(false),
+      })
+      .default({}),
     allowedReadPaths: z.array(z.string()).default([]),
     allowedWritePaths: z.array(z.string()).default([]),
     maxMemoryMb: z.number().int().positive().max(4096).default(1024),
@@ -577,6 +600,8 @@ export const SecurityConfigSchema = z.object({
   sandboxWasm: z.boolean().default(false),
   /** Enable outbound credential injection at sandbox proxy boundary. Off by default. */
   sandboxCredentialProxy: z.boolean().default(false),
+  /** Enable Firecracker microVM isolation for sandboxed execution. Off by default; requires KVM and Firecracker on host. */
+  sandboxFirecracker: z.boolean().default(false),
   /** Allow simulation engine dashboard (tick driver, mood, spatial, relationships). Off by default. */
   allowSimulation: z.boolean().default(false),
   /** Allow git clone/pull from a URL during community skill sync. Off by default. */

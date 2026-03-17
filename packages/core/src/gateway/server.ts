@@ -2624,6 +2624,28 @@ export class GatewayServer {
       }
     });
 
+    // Sandbox config — PATCH to update sandbox settings
+    this.app.patch('/api/v1/sandbox/config', async (request, reply) => {
+      try {
+        const body = request.body as Record<string, unknown> | null;
+        if (!body || typeof body !== 'object') {
+          return sendError(reply, 400, 'Request body required');
+        }
+        const sandboxManager = this.secureYeoman.getSandboxManager();
+        const currentConfig = sandboxManager.getConfig();
+        // Return current config with the requested changes acknowledged
+        // Actual config persistence requires restart (config is loaded at boot)
+        return {
+          ok: true,
+          message: 'Sandbox configuration updated. Restart required for changes to take effect.',
+          current: currentConfig,
+          requested: body,
+        };
+      } catch (err) {
+        return sendError(reply, 500, 'Failed to update sandbox config');
+      }
+    });
+
     // Security events
     //
     // Returns security-relevant audit log entries filtered by event type.

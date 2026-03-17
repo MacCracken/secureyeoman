@@ -8,6 +8,28 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ## [2026.3.17]
 
+### Firecracker microVM Sandbox
+
+Hardware-isolated sandbox execution via Firecracker microVMs with KVM. Slots between gVisor (lighter, weaker) and SEV-SNP (heavier, encrypted memory) in the isolation hierarchy.
+
+- **`FirecrackerSandbox`** — New sandbox implementation (`packages/core/src/sandbox/firecracker-sandbox.ts`) conforming to `Sandbox` interface. Detects `/dev/kvm`, `firecracker` binary, kernel, and rootfs. Optional jailer hardening (cgroup + seccomp + chroot). Graceful fallback to in-process execution when prerequisites unavailable
+- **Config schema** — `security.sandbox.technology` now accepts `'firecracker'`; new `security.sandbox.firecracker` sub-object for kernel path, rootfs path, memory, vCPU count, jailer, and network settings
+- **Environment variables** — 8 optional `SECUREYEOMAN_FIRECRACKER_*` env vars plus `SECUREYEOMAN_SANDBOX_TECHNOLOGY` and `SECUREYEOMAN_SANDBOX_ENABLED` for override without YAML changes
+- **CLI `sandbox config`** — New subcommand: `secureyeoman sandbox config` shows runtime config, capabilities, and available technologies; `sandbox config set <key> <value>` updates settings
+- **Dashboard toggle** — Firecracker microVM toggle added to Admin > Security > Sandbox Isolation card
+- **API** — `PATCH /api/v1/sandbox/config` endpoint for sandbox configuration updates
+
+### Migrate Command — Config Path Fix
+
+- **`--config` / `-c` flag** — The `migrate` command now accepts an explicit config file path, matching `start`, `config`, `agent`, and `edge` commands. Previously `migrate` ignored `--config` and always used schema defaults (database name `secureyeoman`), causing CI smoke test failures when the database didn't exist
+
+### Test Coverage
+
+- **22 new tests** for FirecrackerSandbox (availability detection, capabilities, execution, jailer, error handling, VM config generation)
+- **2 new tests** for SandboxManager Firecracker integration
+- **4 new tests** for config loader sandbox/Firecracker env vars
+- **3 new tests** for migrate command `--config` flag
+
 ### AGNOS Bridge — Profile-Based Tool Exposure
 
 Bidirectional tool bridge between SecureYeoman and AGNOS (AI-Native OS). AGNOS agents can now discover, filter, and call SY's MCP tools through curated profiles.

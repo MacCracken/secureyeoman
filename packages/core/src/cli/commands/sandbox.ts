@@ -22,6 +22,8 @@ Subcommands:
   policy show            Show current externalization policy
   threats                List known threat patterns
   stats                  Show scan statistics
+  config                 Show sandbox runtime configuration and capabilities
+  config set <key> <val> Update sandbox config (technology, maxMemoryMb, etc.)
 
 Options:
   --url <url>       Server URL (default: http://127.0.0.1:3000)
@@ -64,6 +66,8 @@ export const sandboxCommand: Command = {
           return await runThreats(ctx, baseUrl, token, jsonOutput);
         case 'stats':
           return await runStats(ctx, baseUrl, token, jsonOutput);
+        case 'config':
+          return await runConfig(ctx, baseUrl, token, jsonOutput, args);
         default:
           ctx.stderr.write(`Unknown subcommand: ${sub ?? '(none)'}\n${USAGE}\n`);
           return 1;
@@ -344,5 +348,152 @@ async function runStats(
     }
   }
   ctx.stdout.write('\n');
+  return 0;
+}
+
+// ── config ───────────────────────────────────────────────────────────────────
+
+const TECHNOLOGIES = [
+  'auto',
+  'seccomp',
+  'landlock',
+  'gvisor',
+  'wasm',
+  'sgx',
+  'sev',
+  'firecracker',
+  'agnos',
+  'none',
+] as const;
+
+async function runConfig(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  jsonOutput: boolean,
+  args: string[]
+): Promise<number> {
+  const action = args[0];
+
+  if (action === 'set') {
+    return await runConfigSet(ctx, baseUrl, token, jsonOutput, args.slice(1));
+  }
+
+  // Default: show current config + capabilities
+  const res = await apiCall(baseUrl, '/api/v1/sandbox/status', { token });
+  if (!res?.ok) {
+    ctx.stderr.write('Failed to fetch sandbox status\n');
+    return 1;
+  }
+  if (jsonOutput) {
+    ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+    return 0;
+  }
+
+  const data = res.data as any;
+  const c = colorContext(ctx.stdout);
+  ctx.stdout.write(`\n  ${c.bold('Sandbox Runtime Configuration')}\n\n`);
+  ctx.stdout.write(`  Enabled:       ${data?.enabled ? c.green('yes') : c.red('no')}\n`);
+  ctx.stdout.write(`  Technology:    ${c.cyan(data?.technology ?? 'unknown')}\n`);
+  ctx.stdout.write(`  Active:        ${data?.sandboxType ?? 'NoopSandbox'}\n`);
+  ctx.stdout.write(
+    `  Cred Proxy:    ${data?.credentialProxyUrl ? c.green(data.credentialProxyUrl) : c.dim('not running')}\n`
+  );
+
+  if (data?.capabilities) {
+    const caps = data.capabilities;
+    ctx.stdout.write(`\n  ${c.bold('Platform Capabilities')}\n\n`);
+    ctx.stdout.write(`  Platform:      ${caps.platform}\n`);
+    ctx.stdout.write(`  Landlock:      ${caps.landlock ? c.green('yes') : c.dim('no')}\n`);
+    ctx.stdout.write(`  Seccomp:       ${caps.seccomp ? c.green('yes') : c.dim('no')}\n`);
+    ctx.stdout.write(`  Namespaces:    ${caps.namespaces ? c.green('yes') : c.dim('no')}\n`);
+    ctx.stdout.write(`  RLimits:       ${caps.rlimits ? c.green('yes') : c.dim('no')}\n`);
+    if (caps.sgx !== undefined) {
+      ctx.stdout.write(`  SGX:           ${caps.sgx ? c.green('yes') : c.dim('no')}\n`);
+    }
+    if (caps.sev !== undefined) {
+      ctx.stdout.write(`  SEV-SNP:       ${caps.sev ? c.green('yes') : c.dim('no')}\n`);
+    }
+    if (caps.firecracker !== undefined) {
+      ctx.stdout.write(`  Firecracker:   ${caps.firecracker ? c.green('yes') : c.dim('no')}\n`);
+    }
+  }
+
+  ctx.stdout.write(`\n  ${c.bold('Available Technologies')}\n\n`);
+  for (const tech of TECHNOLOGIES) {
+    const active = tech === data?.technology ? ` ${c.green('(active)')}` : '';
+    ctx.stdout.write(`  ${c.cyan(tech.padEnd(14))}${active}\n`);
+  }
+
+  ctx.stdout.write(`\n  Use ${c.cyan('sandbox config set <key> <value>')} to update.\n`);
+  ctx.stdout.write(
+    `  Keys: technology, maxMemoryMb, maxCpuPercent, maxFileSizeMb, networkAllowed\n\n`
+  );
+  return 0;
+}
+
+async function runConfigSet(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  jsonOutput: boolean,
+  args: string[]
+): Promise<number> {
+  const key = args[0];
+  const value = args[1];
+
+  if (!key || !value) {
+    ctx.stderr.write(
+      'Usage: secureyeoman sandbox config set <key> <value>\n\n' +
+        'Keys:\n' +
+        '  technology       Sandbox technology (auto|landlock|gvisor|wasm|sgx|sev|firecracker|none)\n' +
+        '  maxMemoryMb      Max memory in MB (1-4096)\n' +
+        '  maxCpuPercent    Max CPU percentage (1-100)\n' +
+        '  maxFileSizeMb    Max file size in MB (1-10240)\n' +
+        '  networkAllowed   Allow network access (true|false)\n'
+    );
+    return 1;
+  }
+
+  // Validate technology value
+  if (key === 'technology' && !TECHNOLOGIES.includes(value as any)) {
+    ctx.stderr.write(`Invalid technology: ${value}\nValid values: ${TECHNOLOGIES.join(', ')}\n`);
+    return 1;
+  }
+
+  // Build patch payload
+  let patch: Record<string, unknown>;
+  if (key === 'technology') {
+    patch = { technology: value };
+  } else if (key === 'networkAllowed') {
+    patch = { networkAllowed: value === 'true' };
+  } else if (['maxMemoryMb', 'maxCpuPercent', 'maxFileSizeMb'].includes(key)) {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 1) {
+      ctx.stderr.write(`Invalid number: ${value}\n`);
+      return 1;
+    }
+    patch = { [key]: num };
+  } else {
+    ctx.stderr.write(`Unknown config key: ${key}\n`);
+    return 1;
+  }
+
+  const res = await apiCall(baseUrl, '/api/v1/sandbox/config', {
+    method: 'PATCH',
+    token,
+    body: patch,
+  });
+
+  if (!res?.ok) {
+    ctx.stderr.write(`Failed to update sandbox config: ${JSON.stringify((res as any)?.data)}\n`);
+    return 1;
+  }
+
+  const c = colorContext(ctx.stdout);
+  ctx.stdout.write(`  ${c.green('Updated')} ${key} = ${value}\n`);
+  if (key === 'technology') {
+    ctx.stdout.write(`  ${c.dim('Restart required for technology change to take effect.')}\n`);
+  }
   return 0;
 }

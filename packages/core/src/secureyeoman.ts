@@ -482,6 +482,7 @@ export class SecureYeoman {
         maxCpuPercent: this.config.security.sandbox.maxCpuPercent,
         maxFileSizeMb: this.config.security.sandbox.maxFileSizeMb,
         networkAllowed: this.config.security.sandbox.networkAllowed,
+        firecracker: this.config.security.sandbox.firecracker,
       };
       this.sandboxManager = new SandboxManager(sandboxConfig, {
         logger: this.logger.child({ component: 'SandboxManager' }),

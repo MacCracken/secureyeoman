@@ -140,4 +140,24 @@ describe('migrateCommand', () => {
       expect(mockClosePool).toHaveBeenCalled();
     });
   });
+
+  describe('--config flag', () => {
+    it('passes configPath to loadConfig', async () => {
+      const ctx = makeCtx(['--config', '/tmp/smoke.yaml']);
+      await migrateCommand.run(ctx as any);
+      expect(mockLoadConfig).toHaveBeenCalledWith({ configPath: '/tmp/smoke.yaml' });
+    });
+
+    it('passes configPath via -c shorthand', async () => {
+      const ctx = makeCtx(['-c', '/tmp/smoke.yaml']);
+      await migrateCommand.run(ctx as any);
+      expect(mockLoadConfig).toHaveBeenCalledWith({ configPath: '/tmp/smoke.yaml' });
+    });
+
+    it('passes undefined configPath when not specified', async () => {
+      const ctx = makeCtx([]);
+      await migrateCommand.run(ctx as any);
+      expect(mockLoadConfig).toHaveBeenCalledWith({ configPath: undefined });
+    });
+  });
 });

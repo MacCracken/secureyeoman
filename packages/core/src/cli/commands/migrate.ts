@@ -16,16 +16,18 @@ import { runMigrations } from '../../storage/migrations/runner.js';
 import { closePool } from '../../storage/pg-pool.js';
 import { initializeLogger } from '../../logging/logger.js';
 import type { Command, CommandContext } from '../router.js';
-import { extractBoolFlag } from '../utils.js';
+import { extractBoolFlag, extractFlag } from '../utils.js';
 import { errorToString } from '../../utils/errors.js';
 
 export const migrateCommand: Command = {
   name: 'migrate',
   description: 'Run database migrations and exit (for CI / Helm pre-upgrade hooks)',
-  usage: 'secureyeoman migrate [--help]',
+  usage: 'secureyeoman migrate [-c, --config <path>] [--help]',
 
   async run(ctx: CommandContext): Promise<number> {
-    const helpResult = extractBoolFlag(ctx.argv, 'help', 'h');
+    let argv = ctx.argv;
+
+    const helpResult = extractBoolFlag(argv, 'help', 'h');
     if (helpResult.value) {
       ctx.stdout.write(`
 Usage: ${this.usage}
@@ -33,16 +35,24 @@ Usage: ${this.usage}
 Applies all pending database migrations and exits with code 0 on success.
 Exits with code 1 on failure.
 
+Options:
+  -c, --config <path>  Config file path (YAML)
+  -h, --help           Show this help
+
 Use as a Kubernetes Job with helm.sh/hook: pre-install,pre-upgrade to run
 migrations before the core Deployment rolls out.
 \n`);
       return 0;
     }
+    argv = helpResult.rest;
+
+    const configResult = extractFlag(argv, 'config', 'c');
+    const configPath = configResult.value;
 
     // Minimal logger — migrations run before full system init
     let logger;
     try {
-      const config = loadConfig();
+      const config = loadConfig({ configPath: configPath ?? undefined });
       logger = initializeLogger(config.logging);
       initPoolFromConfig(config.core.database);
     } catch (err) {

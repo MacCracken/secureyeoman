@@ -158,7 +158,22 @@ Upgraded from ESLint 9 → 10 with `typescript-eslint@8.57.0` and `eslint-plugin
 
 ### Firecracker Sandbox Runtime
 
-- [ ] **Firecracker microVM sandbox** — Add Firecracker as a sandbox technology option alongside existing gVisor, WASM, Linux Landlock, macOS sandbox-exec, SGX, and SEV-SNP runtimes. Lightweight microVM with minimal device model, hardware-enforced isolation via KVM, sub-second boot times. Implement `FirecrackerSandbox` class conforming to `Sandbox` interface in `packages/core/src/sandbox/`. Register as `technology: 'firecracker'` in `SandboxManager`. Strongest isolation tier for untrusted or high-risk sub-agent execution.
+*Core implementation complete (2026-03-17). See [Changelog](../../CHANGELOG.md). Remaining items are hardening and optimization.*
+
+- [ ] **Firecracker rootfs builder** — CI workflow or script to build minimal rootfs image (Alpine + Node.js, ~50MB) and stripped kernel (~5MB). Ship as container layer or downloadable artifact. Currently requires user to provide kernel/rootfs paths.
+- [ ] **Firecracker jailer production hardening** — Validate jailer integration with cgroup v2, seccomp filters, and chroot. Test uid/gid mapping in Docker (requires `--device /dev/kvm` on host).
+- [ ] **Firecracker virtio-vsock communication** — Replace stdio-based task output with virtio-vsock (AF_VSOCK) for host↔guest communication. Eliminates need for shared filesystem for task I/O. Cleaner than 9p virtfs.
+- [ ] **Firecracker snapshot/restore** — Pre-boot a microVM, snapshot it, and restore for sub-100ms task starts. Useful for high-frequency sandbox invocations (e.g., per-tool-call isolation).
+- [ ] **Firecracker TAP network isolation** — When `enableNetwork: true`, auto-create TAP device with per-VM iptables rules scoped to `allowedHosts`. Tear down on VM exit.
+
+### Sandbox Selection & Configuration Improvements
+
+- [ ] **Intelligent auto-selection** — Upgrade `technology: 'auto'` to rank available technologies by isolation strength and select the strongest available: Firecracker > gVisor > Landlock > WASM > Noop. Currently auto only considers Landlock (Linux) or sandbox-exec (macOS).
+- [ ] **Per-task technology override** — Allow callers of `SandboxManager.createSandbox()` to request a specific technology per invocation (e.g., use Firecracker for untrusted agent code, WASM for lightweight skill execution). Currently technology is global.
+- [ ] **Sandbox capability probe endpoint** — `GET /api/v1/sandbox/capabilities` returns a detailed availability matrix: which technologies are installed, which are missing prerequisites, and what to install to unlock them. Surface in dashboard as a setup wizard.
+- [ ] **Dashboard sandbox config panel** — Editable sandbox settings in Admin > Security (technology selector dropdown, memory/CPU limits, firecracker paths). Currently dashboard has toggles only; full config requires YAML or env vars.
+- [ ] **Live technology switching** — Allow changing sandbox technology without full restart via `PATCH /api/v1/sandbox/config`. Currently requires restart. Involves invalidating cached sandbox instance in `SandboxManager`.
+- [ ] **Sandbox health monitoring** — Periodic liveness checks for the active sandbox technology (e.g., can Firecracker boot a test VM? Is runsc responding?). Surface degraded state in `/api/v1/sandbox/status` and dashboard.
 
 ---
 
@@ -437,4 +452,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-15. See [Changelog](../../CHANGELOG.md) for full history of completed work.*
+*Last updated: 2026-03-17. See [Changelog](../../CHANGELOG.md) for full history of completed work.*

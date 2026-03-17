@@ -247,6 +247,39 @@ describe('loadConfig', () => {
       rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('should handle SECUREYEOMAN_SANDBOX_TECHNOLOGY env var', () => {
+    process.env.SECUREYEOMAN_SANDBOX_TECHNOLOGY = 'firecracker';
+    const config = loadConfig();
+    expect(config.security.sandbox.technology).toBe('firecracker');
+  });
+
+  it('should handle SECUREYEOMAN_SANDBOX_ENABLED=false env var', () => {
+    process.env.SECUREYEOMAN_SANDBOX_ENABLED = 'false';
+    const config = loadConfig();
+    expect(config.security.sandbox.enabled).toBe(false);
+  });
+
+  it('should handle Firecracker env vars', () => {
+    process.env.SECUREYEOMAN_FIRECRACKER_KERNEL_PATH = '/opt/fc/vmlinux';
+    process.env.SECUREYEOMAN_FIRECRACKER_ROOTFS_PATH = '/opt/fc/rootfs.ext4';
+    process.env.SECUREYEOMAN_FIRECRACKER_MEMORY_MB = '256';
+    process.env.SECUREYEOMAN_FIRECRACKER_VCPU_COUNT = '2';
+    process.env.SECUREYEOMAN_FIRECRACKER_ENABLE_NETWORK = 'true';
+    const config = loadConfig();
+    expect(config.security.sandbox.firecracker.kernelPath).toBe('/opt/fc/vmlinux');
+    expect(config.security.sandbox.firecracker.rootfsPath).toBe('/opt/fc/rootfs.ext4');
+    expect(config.security.sandbox.firecracker.memorySizeMb).toBe(256);
+    expect(config.security.sandbox.firecracker.vcpuCount).toBe(2);
+    expect(config.security.sandbox.firecracker.enableNetwork).toBe(true);
+  });
+
+  it('should ignore invalid numeric Firecracker env vars', () => {
+    process.env.SECUREYEOMAN_FIRECRACKER_MEMORY_MB = 'not-a-number';
+    const config = loadConfig();
+    // Default should be used, not NaN
+    expect(config.security.sandbox.firecracker.memorySizeMb).toBe(128);
+  });
 });
 
 describe('getSecret', () => {

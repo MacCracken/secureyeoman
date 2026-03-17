@@ -341,6 +341,55 @@ function loadEnvConfig(): PartialConfig {
     } as PartialConfig['security'];
   }
 
+  // Sandbox settings from env vars (optional overrides)
+  const sandbox: Record<string, unknown> = {};
+  if (process.env.SECUREYEOMAN_SANDBOX_TECHNOLOGY) {
+    sandbox.technology = process.env.SECUREYEOMAN_SANDBOX_TECHNOLOGY;
+  }
+  if (process.env.SECUREYEOMAN_SANDBOX_ENABLED) {
+    sandbox.enabled = process.env.SECUREYEOMAN_SANDBOX_ENABLED === 'true';
+  }
+  // Firecracker-specific env vars
+  const firecracker: Record<string, unknown> = {};
+  if (process.env.SECUREYEOMAN_FIRECRACKER_PATH) {
+    firecracker.firecrackerPath = process.env.SECUREYEOMAN_FIRECRACKER_PATH;
+  }
+  if (process.env.SECUREYEOMAN_FIRECRACKER_JAILER_PATH) {
+    firecracker.jailerPath = process.env.SECUREYEOMAN_FIRECRACKER_JAILER_PATH;
+  }
+  if (process.env.SECUREYEOMAN_FIRECRACKER_KERNEL_PATH) {
+    firecracker.kernelPath = process.env.SECUREYEOMAN_FIRECRACKER_KERNEL_PATH;
+  }
+  if (process.env.SECUREYEOMAN_FIRECRACKER_ROOTFS_PATH) {
+    firecracker.rootfsPath = process.env.SECUREYEOMAN_FIRECRACKER_ROOTFS_PATH;
+  }
+  if (process.env.SECUREYEOMAN_FIRECRACKER_MEMORY_MB) {
+    const n = parseInt(process.env.SECUREYEOMAN_FIRECRACKER_MEMORY_MB, 10);
+    if (!isNaN(n) && n > 0) firecracker.memorySizeMb = n;
+  }
+  if (process.env.SECUREYEOMAN_FIRECRACKER_VCPU_COUNT) {
+    const n = parseInt(process.env.SECUREYEOMAN_FIRECRACKER_VCPU_COUNT, 10);
+    if (!isNaN(n) && n > 0) firecracker.vcpuCount = n;
+  }
+  if (process.env.SECUREYEOMAN_FIRECRACKER_USE_JAILER) {
+    firecracker.useJailer = process.env.SECUREYEOMAN_FIRECRACKER_USE_JAILER === 'true';
+  }
+  if (process.env.SECUREYEOMAN_FIRECRACKER_ENABLE_NETWORK) {
+    firecracker.enableNetwork = process.env.SECUREYEOMAN_FIRECRACKER_ENABLE_NETWORK === 'true';
+  }
+  if (Object.keys(firecracker).length > 0) {
+    sandbox.firecracker = firecracker;
+  }
+  if (Object.keys(sandbox).length > 0) {
+    config.security = {
+      ...config.security,
+      sandbox: {
+        ...((config.security as any)?.sandbox ?? {}),
+        ...sandbox,
+      },
+    } as PartialConfig['security'];
+  }
+
   return config;
 }
 

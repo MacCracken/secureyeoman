@@ -119,4 +119,73 @@ describe('SandboxManager', () => {
       expect(caps).toHaveProperty('platform');
     });
   });
+
+  describe('agnos technology', () => {
+    it('falls back to NoopSandbox when AGNOS daimon is not available', () => {
+      const originalUrl = process.env.AGNOS_RUNTIME_URL;
+      delete process.env.AGNOS_RUNTIME_URL;
+      const manager = new SandboxManager(
+        makeConfig({ enabled: true, technology: 'agnos' }),
+        { logger: makeLogger() as any }
+      );
+      const sandbox = manager.createSandbox();
+      // AGNOS requires /etc/agnos/version or AGNOS_RUNTIME_URL
+      expect(sandbox.constructor.name).toBe('NoopSandbox');
+      if (originalUrl) process.env.AGNOS_RUNTIME_URL = originalUrl;
+    });
+
+    it('auto-detects AGNOS when AGNOS_RUNTIME_URL is set', () => {
+      const originalUrl = process.env.AGNOS_RUNTIME_URL;
+      process.env.AGNOS_RUNTIME_URL = 'http://127.0.0.1:8090';
+      const manager = new SandboxManager(
+        makeConfig({ enabled: true, technology: 'auto' }),
+        { logger: makeLogger() as any }
+      );
+      const sandbox = manager.createSandbox();
+      expect(sandbox.constructor.name).toBe('AgnosSandbox');
+      if (originalUrl) {
+        process.env.AGNOS_RUNTIME_URL = originalUrl;
+      } else {
+        delete process.env.AGNOS_RUNTIME_URL;
+      }
+    });
+  });
+
+  describe('firecracker technology', () => {
+    it('falls back to NoopSandbox when firecracker is not available', () => {
+      const manager = new SandboxManager(
+        makeConfig({
+          enabled: true,
+          technology: 'firecracker',
+          firecracker: {
+            kernelPath: '/nonexistent/vmlinux',
+            rootfsPath: '/nonexistent/rootfs.ext4',
+          },
+        }),
+        { logger: makeLogger() as any }
+      );
+      const sandbox = manager.createSandbox();
+      // Firecracker requires /dev/kvm + binary + kernel + rootfs, so falls back
+      expect(sandbox.constructor.name).toBe('NoopSandbox');
+    });
+
+    it('accepts firecracker config in SandboxManagerConfig', () => {
+      const config = makeConfig({
+        technology: 'firecracker',
+        firecracker: {
+          kernelPath: '/opt/fc/vmlinux',
+          rootfsPath: '/opt/fc/rootfs.ext4',
+          memorySizeMb: 256,
+          vcpuCount: 2,
+        },
+      });
+      const manager = new SandboxManager(config);
+      expect(manager.getConfig().firecracker).toEqual({
+        kernelPath: '/opt/fc/vmlinux',
+        rootfsPath: '/opt/fc/rootfs.ext4',
+        memorySizeMb: 256,
+        vcpuCount: 2,
+      });
+    });
+  });
 });

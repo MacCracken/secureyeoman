@@ -16,6 +16,8 @@ import { GVisorSandbox } from './gvisor-sandbox.js';
 import { WasmSandbox } from './wasm-sandbox.js';
 import { SgxSandbox } from './sgx-sandbox.js';
 import { SevSandbox } from './sev-sandbox.js';
+import { FirecrackerSandbox } from './firecracker-sandbox.js';
+import { AgnosSandbox, isAgnosticOS } from './agnos-sandbox.js';
 import {
   CredentialProxy,
   type CredentialProxyHandle,
@@ -24,13 +26,34 @@ import {
 
 export interface SandboxManagerConfig {
   enabled: boolean;
-  technology: 'auto' | 'seccomp' | 'landlock' | 'gvisor' | 'wasm' | 'sgx' | 'sev' | 'none';
+  technology:
+    | 'auto'
+    | 'seccomp'
+    | 'landlock'
+    | 'gvisor'
+    | 'wasm'
+    | 'sgx'
+    | 'sev'
+    | 'firecracker'
+    | 'agnos'
+    | 'none';
   allowedReadPaths: string[];
   allowedWritePaths: string[];
   maxMemoryMb: number;
   maxCpuPercent: number;
   maxFileSizeMb: number;
   networkAllowed: boolean;
+  /** Firecracker-specific options. Passed to FirecrackerSandbox constructor. */
+  firecracker?: {
+    firecrackerPath?: string;
+    jailerPath?: string;
+    kernelPath?: string;
+    rootfsPath?: string;
+    memorySizeMb?: number;
+    vcpuCount?: number;
+    useJailer?: boolean;
+    enableNetwork?: boolean;
+  };
 }
 
 export interface SandboxManagerDeps {
@@ -119,7 +142,31 @@ export class SandboxManager {
 
     const caps = this.detect();
 
+    if (this.config.technology === 'agnos') {
+      const agnos = new AgnosSandbox();
+      if (agnos.isAvailable()) {
+        this.getLogger().info('Using AGNOS kernel sandbox (daimon enforcement)');
+        this.sandbox = agnos;
+        return this.sandbox;
+      }
+      this.getLogger().warn(
+        'AGNOS requested but daimon not available, falling back to NoopSandbox'
+      );
+      this.sandbox = new NoopSandbox();
+      return this.sandbox;
+    }
+
     if (this.config.technology === 'auto') {
+      // Prefer AGNOS kernel enforcement when running on AgnosticOS
+      if (isAgnosticOS()) {
+        const agnos = new AgnosSandbox();
+        if (agnos.isAvailable()) {
+          this.getLogger().info('Detected AgnosticOS — using kernel sandbox (daimon)');
+          this.sandbox = agnos;
+          return this.sandbox;
+        }
+      }
+
       if (caps.platform === 'linux') {
         const enforceLandlock = caps.landlock;
         this.getLogger().info(
@@ -200,6 +247,20 @@ export class SandboxManager {
       return this.sandbox;
     }
 
+    if (this.config.technology === 'firecracker') {
+      const fc = new FirecrackerSandbox(this.config.firecracker);
+      if (fc.isAvailable()) {
+        this.getLogger().info('Using Firecracker microVM sandbox');
+        this.sandbox = fc;
+        return this.sandbox;
+      }
+      this.getLogger().warn(
+        'Firecracker requested but not available (requires /dev/kvm, firecracker binary, kernel, and rootfs), falling back to NoopSandbox'
+      );
+      this.sandbox = new NoopSandbox();
+      return this.sandbox;
+    }
+
     // seccomp or other — not yet implemented, fall back
     this.getLogger().warn(
       { technology: this.config.technology },
@@ -236,6 +297,26 @@ export class SandboxManager {
    * Calling startProxy() when one is already running replaces it.
    */
   async startProxy(credentials: CredentialRule[], allowedHosts: string[]): Promise<string> {
+    // On AGNOS, delegate to daimon's credential proxy
+    if (this.sandbox instanceof AgnosSandbox) {
+      const envVars = await (this.sandbox as AgnosSandbox).startCredentialProxy(
+        credentials.map((c) => ({
+          host_pattern: c.host,
+          header_name: c.headerName,
+          header_value: c.headerValue,
+        })),
+        allowedHosts
+      );
+      if (envVars.http_proxy) {
+        this.getLogger().info(
+          { url: envVars.http_proxy },
+          'Credential proxy started via AGNOS daimon'
+        );
+        return envVars.http_proxy;
+      }
+      // Fall through to local proxy if AGNOS proxy failed
+    }
+
     if (this.proxyHandle) {
       await this.proxyHandle.stop().catch(() => undefined);
       this.proxyHandle = null;

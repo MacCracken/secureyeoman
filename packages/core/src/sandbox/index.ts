@@ -11,6 +11,8 @@ export { LinuxSandbox } from './linux-sandbox.js';
 export { DarwinSandbox } from './darwin-sandbox.js';
 export { GVisorSandbox, type GVisorSandboxOptions } from './gvisor-sandbox.js';
 export { WasmSandbox, type WasmSandboxOptions } from './wasm-sandbox.js';
+export { FirecrackerSandbox, type FirecrackerSandboxOptions } from './firecracker-sandbox.js';
+export { AgnosSandbox, isAgnosticOS } from './agnos-sandbox.js';
 export { SandboxManager, type SandboxManagerConfig, type SandboxManagerDeps } from './manager.js';
 
 export { LinuxCaptureSandbox } from './linux-capture-sandbox.js';

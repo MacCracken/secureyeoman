@@ -182,6 +182,7 @@ export function SecuritySettings() {
   const gvisorAllowed = securityPolicy?.sandboxGvisor ?? false;
   const wasmAllowed = securityPolicy?.sandboxWasm ?? false;
   const credentialProxyAllowed = securityPolicy?.sandboxCredentialProxy ?? false;
+  const firecrackerAllowed = securityPolicy?.sandboxFirecracker ?? false;
 
   return (
     <div className="space-y-6">
@@ -966,6 +967,16 @@ export function SecuritySettings() {
               policyMutation.mutate({ sandboxGvisor: !gvisorAllowed });
             }}
             description="Add a gVisor (runsc) kernel-level isolation layer to sandboxed execution. Requires gVisor installed on the host system."
+          />
+          <PolicyToggle
+            label="Firecracker microVM"
+            icon={<Cpu className="w-4 h-4 text-muted-foreground" />}
+            enabled={firecrackerAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ sandboxFirecracker: !firecrackerAllowed });
+            }}
+            description="Run untrusted code in Firecracker microVMs with KVM hardware isolation. Sub-second boot, minimal attack surface. Requires /dev/kvm and firecracker binary."
           />
           <PolicyToggle
             label="WASM Isolation"
