@@ -21,4 +21,19 @@ Check these whenever running `npm update` or when the relevant packages release 
 
 ---
 
-*Last updated: 2026-03-15 — 2 active items (7 vulns). ESLint 10 upgrade resolved minimatch (dev-only). Nested npm overrides resolved dompurify, nanoid, lodash-es inside @excalidraw/mermaid-to-excalidraw. undici will be resolved by discord.js v15 stable (dev channel already bundles undici@7.22.0). yauzl blocked by Capacitor CLI (dev-only).*
+## npm audit Summary (2026-03-17)
+
+`npm audit` reports 4 vulnerabilities (1 high, 3 moderate) — all in the undici → discord.js chain tracked above. No new advisories since last check. `yauzl` does not appear in audit output (optional dev dependency in `@capacitor/cli`).
+
+| Severity | Count | Source |
+|----------|-------|--------|
+| Critical | 0 | — |
+| High | 1 | undici (6 advisories) |
+| Moderate | 3 | @discordjs/rest, @discordjs/ws, discord.js (transitive undici) |
+| Low | 0 | — |
+
+**No actionable fixes available** without a semver-major downgrade of `discord.js` to v13 (breaking). Waiting for `discord.js@15` stable.
+
+---
+
+*Last updated: 2026-03-17 — 2 active items (7 vulns). ESLint 10 upgrade resolved minimatch (dev-only). Nested npm overrides resolved dompurify, nanoid, lodash-es inside @excalidraw/mermaid-to-excalidraw. undici will be resolved by discord.js v15 stable (dev channel already bundles undici@7.22.0). yauzl blocked by Capacitor CLI (dev-only).*

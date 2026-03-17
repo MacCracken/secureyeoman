@@ -238,17 +238,33 @@ const fn = ${fn.toString()};
       const configPath = path.join(tmpDir, 'vm-config.json');
       writeFileSync(configPath, JSON.stringify(vmConfig, null, 2));
 
-      const firecrackerBin = this.detectFirecracker()!;
-      const useJailer = this.opts.useJailer !== false && this.detectJailer() !== null;
+      const firecrackerBin = this.detectFirecracker();
+      if (!firecrackerBin) {
+        this.getLogger().warn('Firecracker binary not found during execution');
+        return this.runFallback(fn, opts);
+      }
+
+      const jailerBin = this.detectJailer();
+      const useJailer = this.opts.useJailer !== false && jailerBin !== null;
 
       const args = useJailer
         ? this.buildJailerArgs(firecrackerBin, configPath, socketPath, tmpDir)
         : this.buildFirecrackerArgs(configPath);
 
-      const binary = useJailer ? this.detectJailer()! : firecrackerBin;
+      const binary = useJailer ? jailerBin! : firecrackerBin;
 
       const result = await new Promise<SandboxResult<T>>((resolve) => {
+        let child: ReturnType<typeof execFile> | null = null;
+
         const timer = setTimeout(() => {
+          // Kill the child process on timeout to avoid resource waste
+          if (child?.pid) {
+            try {
+              process.kill(child.pid, 'SIGKILL');
+            } catch {
+              /* process may have already exited */
+            }
+          }
           resolve({
             success: false,
             error: new Error(`Firecracker execution timed out after ${timeoutMs}ms`),
@@ -259,7 +275,7 @@ const fn = ${fn.toString()};
           });
         }, timeoutMs);
 
-        execFile(
+        child = execFile(
           binary,
           args,
           {
@@ -316,12 +332,13 @@ const fn = ${fn.toString()};
       // Clean up socket and temp dir
       try {
         if (existsSync(socketPath)) unlinkSync(socketPath);
-      } catch {
-        /* best effort */
+      } catch (e) {
+        this.getLogger().debug({ error: String(e) }, 'Failed to remove socket');
       }
       try {
         rmSync(tmpDir, { recursive: true, force: true });
-      } catch {
+      } catch (e) {
+        this.getLogger().debug({ error: String(e), tmpDir }, 'Failed to clean up temp dir');
         /* best effort */
       }
     }

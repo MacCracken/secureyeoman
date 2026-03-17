@@ -135,7 +135,7 @@ export class AgnosSandbox implements Sandbox {
         // Daimon unreachable — run unprotected with warning
         this.getLogger().warn('AGNOS daimon unreachable — running without kernel enforcement');
         violations.push({
-          type: 'syscall',
+          type: 'network',
           description: 'AGNOS daimon unreachable — running without kernel enforcement',
           timestamp: Date.now(),
         });

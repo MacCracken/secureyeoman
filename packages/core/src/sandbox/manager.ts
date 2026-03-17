@@ -272,7 +272,7 @@ export class SandboxManager {
   async startProxy(credentials: CredentialRule[], allowedHosts: string[]): Promise<string> {
     // On AGNOS, delegate to daimon's credential proxy
     if (this.sandbox instanceof AgnosSandbox) {
-      const envVars = await (this.sandbox as AgnosSandbox).startCredentialProxy(
+      const envVars = await this.sandbox.startCredentialProxy(
         credentials.map((c) => ({
           host_pattern: c.host,
           header_name: c.headerName,
@@ -292,7 +292,9 @@ export class SandboxManager {
     }
 
     if (this.proxyHandle) {
-      await this.proxyHandle.stop().catch(() => undefined);
+      await this.proxyHandle.stop().catch((err: unknown) => {
+        this.getLogger().warn({ error: String(err) }, 'Failed to stop previous credential proxy');
+      });
       this.proxyHandle = null;
     }
 

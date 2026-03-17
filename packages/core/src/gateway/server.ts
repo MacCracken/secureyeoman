@@ -2608,7 +2608,8 @@ export class GatewayServer {
       try {
         const sandboxManager = this.secureYeoman.getSandboxManager();
         return sandboxManager.getStatus();
-      } catch {
+      } catch (err) {
+        this.getLogger().warn({ error: String(err) }, 'Failed to get sandbox status');
         return {
           enabled: false,
           technology: 'none',
