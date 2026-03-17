@@ -90,7 +90,7 @@ export function useWebSocket(path: string): UseWebSocketReturn {
         }
       };
 
-      ws.onclose = (event) => {
+      ws.onclose = (_event) => {
         setConnected(false);
         wsRef.current = null;
 

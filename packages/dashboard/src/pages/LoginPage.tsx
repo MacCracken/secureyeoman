@@ -76,6 +76,7 @@ export function LoginPage() {
               }}
               placeholder="Admin password"
               aria-required="true"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               disabled={isSubmitting}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm

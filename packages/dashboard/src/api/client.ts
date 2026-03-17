@@ -3170,6 +3170,7 @@ export interface SecurityPolicy {
   sandboxDynamicTools: boolean;
   allowAnomalyDetection: boolean;
   allowSimulation: boolean;
+  sandboxFirecracker: boolean;
   sandboxGvisor: boolean;
   sandboxWasm: boolean;
   sandboxCredentialProxy: boolean;
@@ -3223,6 +3224,7 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       sandboxDynamicTools: true,
       allowAnomalyDetection: false,
       allowSimulation: false,
+      sandboxFirecracker: false,
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,

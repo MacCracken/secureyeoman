@@ -2642,7 +2642,7 @@ export class GatewayServer {
           current: currentConfig,
           requested: body,
         };
-      } catch (_err) {
+      } catch {
         return sendError(reply, 500, 'Failed to update sandbox config');
       }
     });

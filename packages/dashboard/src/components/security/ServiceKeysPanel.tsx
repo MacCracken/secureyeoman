@@ -298,6 +298,7 @@ export function ServiceKeysPanel() {
                               }}
                               placeholder={keyDef.isUrl ? 'https://...' : 'Paste key...'}
                               className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                              // eslint-disable-next-line jsx-a11y/no-autofocus
                               autoFocus
                             />
                             <div className="flex gap-2">
@@ -417,6 +418,7 @@ export function ServiceKeysPanel() {
                               }}
                               placeholder="New value..."
                               className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                              // eslint-disable-next-line jsx-a11y/no-autofocus
                               autoFocus
                             />
                             <div className="flex gap-2">
@@ -467,6 +469,7 @@ export function ServiceKeysPanel() {
                         }}
                         placeholder="MY_SECRET_KEY"
                         className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                        // eslint-disable-next-line jsx-a11y/no-autofocus
                         autoFocus
                       />
                     </div>
