@@ -2036,6 +2036,24 @@ export function getToolManifest(): ToolManifestEntry[] {
       description: 'Revoke previously provisioned API credentials for a service via A2A',
       category: 'qa',
     },
+    {
+      name: 'agnostic_smart_submit',
+      description:
+        'Submit a task to the best-matching Agnostic crew with automatic preset recommendation',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_preset_detail',
+      description:
+        'Get full details of an Agnostic preset including agent definitions and roles',
+      category: 'qa',
+    },
+    {
+      name: 'agnostic_council_review',
+      description:
+        'Submit Agnostic crew results to a SecureYeoman council for consensus-based review',
+      category: 'qa',
+    },
 
     // Agnostic REST API proxy tools (registerApiProxyTool)
     {

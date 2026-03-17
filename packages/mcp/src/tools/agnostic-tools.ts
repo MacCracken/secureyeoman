@@ -734,6 +734,22 @@ export function registerAgnosticTools(
           .optional()
           .describe('Webhook URL for completion notification'),
         callback_secret: z.string().optional().describe('HMAC-SHA256 secret for webhook signature'),
+        process: z
+          .enum(['sequential', 'hierarchical'])
+          .default('sequential')
+          .describe('Crew execution process — sequential (one at a time) or hierarchical (manager delegates)'),
+        team: z
+          .object({
+            members: z.array(z.object({
+              role: z.string().describe('Role title (e.g. "UX Researcher", "Backend Engineer")'),
+              context: z.string().optional().describe('Focus area for this member'),
+              lead: z.boolean().default(false).describe('Whether this member leads the team'),
+              tools: z.array(z.string()).default([]).describe('Tool names to attach'),
+            })),
+            project_context: z.string().optional().describe('Overall project description'),
+          })
+          .optional()
+          .describe('Custom team composition — alternative to presets. Describe roles and the system matches or generates agents.'),
       },
     },
     wrapToolHandler('agnostic_run_crew', middleware, async (args) => {
@@ -748,6 +764,8 @@ export function registerAgnosticTools(
       if (args.target_url) payload.target_url = args.target_url;
       if (args.callback_url) payload.callback_url = args.callback_url;
       if (args.callback_secret) payload.callback_secret = args.callback_secret;
+      if (args.process) payload.process = args.process;
+      if (args.team) payload.team = args.team;
 
       const result = await agnosticRequest(config, 'post', '/api/v1/crews', payload);
       return (
@@ -788,17 +806,25 @@ export function registerAgnosticTools(
     {
       description:
         'List available agent crew presets on the Agnostic platform. ' +
-        'Presets are pre-built crew configurations (e.g. "qa-standard" with 6 agents, ' +
-        '"data-engineering" with 3 agents, "devops" with 3 agents).',
+        'Presets follow {domain}-{size} naming: quality, software-engineering, design, ' +
+        'data-engineering, devops, complete. Sizes: lean (2 agents), standard (3-6), large (extended). ' +
+        'Returns agent summaries per preset.',
       inputSchema: {
         domain: z
           .string()
           .optional()
           .describe('Filter presets by domain (e.g. "qa", "data-engineering", "devops")'),
+        size: z
+          .string()
+          .optional()
+          .describe('Filter by size: lean, standard, or large'),
       },
     },
     wrapToolHandler('agnostic_list_presets', middleware, async (args) => {
-      const query = args.domain ? `?domain=${encodeURIComponent(args.domain)}` : '';
+      const params = new URLSearchParams();
+      if (args.domain) params.set('domain', args.domain);
+      if (args.size) params.set('size', args.size);
+      const query = params.toString() ? `?${params.toString()}` : '';
       const result = await agnosticRequest(config, 'get', `/api/v1/presets${query}`);
       return (
         checkHttpOk(result, 'List presets failed') ??
@@ -1003,6 +1029,197 @@ export function registerAgnosticTools(
           result.body
         )
       );
+    })
+  );
+
+  // ── agnostic_smart_submit ─────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_smart_submit',
+    {
+      description:
+        'Submit a task to the best-matching Agnostic crew. Automatically recommends the ' +
+        'optimal preset (domain + size) based on your task description, then kicks off the crew. ' +
+        'Replaces domain-specific submit tools — works for QA, design, software engineering, ' +
+        'data engineering, and DevOps without hardcoding preset names.',
+      inputSchema: {
+        title: z.string().describe('Short title for the task'),
+        description: z
+          .string()
+          .describe('What to accomplish — the more detail, the better the preset recommendation'),
+        target_url: z.string().optional().describe('Target URL (app, repo, PR, etc.)'),
+        priority: z
+          .enum(['critical', 'high', 'medium', 'low'])
+          .default('high')
+          .describe('Task priority'),
+        domain: z
+          .string()
+          .optional()
+          .describe(
+            'Override domain (quality, software-engineering, design, data-engineering, devops). ' +
+            'If omitted, auto-recommended from description.'
+          ),
+        size: z
+          .enum(['lean', 'standard', 'large'])
+          .default('standard')
+          .describe('Crew size — lean (2 agents), standard (3-6), large (extended)'),
+        callback_url: z
+          .string()
+          .url()
+          .optional()
+          .describe('Webhook URL for completion notification'),
+        callback_secret: z
+          .string()
+          .optional()
+          .describe('HMAC-SHA256 secret for webhook signature'),
+      },
+    },
+    wrapToolHandler('agnostic_smart_submit', middleware, async (args) => {
+      let domain = args.domain;
+
+      // If no domain specified, ask Agnostic to recommend one
+      if (!domain) {
+        try {
+          const recResult = await agnosticRequest(
+            config,
+            'post',
+            '/api/v1/mcp/invoke',
+            {
+              tool: 'agnostic_preset_recommend',
+              arguments: { description: args.description },
+            }
+          );
+          if (recResult.ok) {
+            const rec = recResult.body as Record<string, unknown>;
+            const result = rec?.result as Record<string, unknown> | undefined;
+            // Extract domain from recommended preset name (e.g. "design-standard" → "design")
+            const presetName = (result?.preset ?? '') as string;
+            domain = presetName.includes('-')
+              ? presetName.slice(0, presetName.lastIndexOf('-'))
+              : presetName;
+          }
+        } catch {
+          // Recommendation failed — fall back to complete
+        }
+      }
+
+      // Build preset name: {domain}-{size}
+      const preset = `${domain || 'complete'}-${args.size}`;
+
+      const payload: Record<string, unknown> = {
+        title: args.title,
+        description: args.description,
+        preset,
+        priority: args.priority,
+      };
+      if (args.target_url) payload.target_url = args.target_url;
+      if (args.callback_url) payload.callback_url = args.callback_url;
+      if (args.callback_secret) payload.callback_secret = args.callback_secret;
+
+      const result = await agnosticRequest(config, 'post', '/api/v1/crews', payload);
+      return (
+        checkHttpOk(result, 'Smart submit failed') ??
+        labelledResponse(`Crew Started (preset: ${preset})`, result.body)
+      );
+    })
+  );
+
+  // ── agnostic_preset_detail ────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_preset_detail',
+    {
+      description:
+        'Get full details of an Agnostic preset including all agent definitions, roles, ' +
+        'goals, and tool assignments. Use to inspect what a preset does before running it.',
+      inputSchema: {
+        preset_name: z
+          .string()
+          .describe('Preset name (e.g. "design-standard", "quality-lean", "software-engineering-large")'),
+      },
+    },
+    wrapToolHandler('agnostic_preset_detail', middleware, async (args) => {
+      const result = await agnosticRequest(
+        config,
+        'get',
+        `/api/v1/presets/${encodeURIComponent(args.preset_name)}`
+      );
+      return (
+        checkHttpOk(result, 'Preset detail failed') ??
+        labelledResponse(`Preset: ${args.preset_name}`, result.body)
+      );
+    })
+  );
+
+  // ── agnostic_council_review ───────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_council_review',
+    {
+      description:
+        'Submit Agnostic crew results to a SecureYeoman council for deliberation. ' +
+        'The council members review the crew output and produce a consensus decision. ' +
+        'Use this to validate crew findings before acting on them.',
+      inputSchema: {
+        crew_id: z.string().describe('Agnostic crew ID whose results to review'),
+        council_template: z
+          .string()
+          .default('risk-committee')
+          .describe('Council template name (e.g. "risk-committee", "incident-response-council")'),
+        topic: z.string().optional().describe('Override topic for the council deliberation'),
+      },
+    },
+    wrapToolHandler('agnostic_council_review', middleware, async (args) => {
+      // 1. Fetch crew results from Agnostic
+      const crewResult = await agnosticRequest(
+        config,
+        'get',
+        `/api/v1/crews/${encodeURIComponent(args.crew_id)}`
+      );
+      const crewErr = checkHttpOk(crewResult, 'Failed to fetch crew results');
+      if (crewErr) return crewErr;
+
+      const crewData = crewResult.body as Record<string, unknown>;
+      const status = crewData.status as string;
+      if (status !== 'completed' && status !== 'partial') {
+        return errorResponse(
+          `Crew ${args.crew_id} is "${status}" — council review requires completed or partial results.`
+        );
+      }
+
+      // 2. Convene a council via the SY core API
+      const topic = args.topic ?? `Review crew results: ${(crewData.title as string) ?? args.crew_id}`;
+      const context = JSON.stringify(crewData, null, 2);
+
+      try {
+        // Use the MCP service's core client to call the council API
+        const { globalToolRegistry } = await import('./tool-utils.js');
+
+        // Check if council tools are available
+        const conveneHandler = globalToolRegistry.get('council_convene');
+        if (!conveneHandler) {
+          return errorResponse(
+            'Council tools are not available. Ensure councils are enabled in SecureYeoman.'
+          );
+        }
+
+        const councilResult = await conveneHandler({
+          template: args.council_template,
+          topic,
+          context,
+        });
+
+        return labelledResponse(`Council Review of Crew ${args.crew_id}`, {
+          crew_id: args.crew_id,
+          crew_status: status,
+          council_template: args.council_template,
+          council_decision: councilResult,
+        });
+      } catch (err) {
+        return errorResponse(
+          `Council convocation failed: ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
     })
   );
 

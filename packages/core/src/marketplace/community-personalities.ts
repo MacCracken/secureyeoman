@@ -48,27 +48,48 @@ export async function readCommunityPersonalities(
       const parsed = parseFrontmatter(content);
       if (!parsed) continue;
 
-      // Derive category from directory path relative to personalities/
-      // Normalize backslashes to forward slashes before dirname (Windows compat)
+      // Normalize backslashes to forward slashes (Windows compat)
       const normalized = filepath.replace(/\\/g, '/');
       const dir = dirname(normalized);
-      const category = dir === '.' ? 'other' : dir;
+      const mdBasename = basename(normalized, '.md');
+
+      // Detect folderized format: personality.md inside a named folder
+      const isFolderized = mdBasename === 'personality';
+      // For folderized: category is grandparent (e.g. "sci-fi/antagonist" from "sci-fi/antagonist/ares/personality.md")
+      // For flat: category is parent directory (e.g. "sci-fi/antagonist" from "sci-fi/antagonist/master-control.md")
+      const category = isFolderized
+        ? (dirname(dir) === '.' ? 'other' : dirname(dir))
+        : (dir === '.' ? 'other' : dir);
 
       // Extract system prompt (body after frontmatter)
       const bodyMatch = /^---[\s\S]*?---\r?\n([\s\S]*)$/.exec(content);
       const systemPrompt = bodyMatch?.[1]?.trim() ?? '';
 
-      // Check for avatar file (same name, .svg or .png)
-      const stem = basename(normalized, '.md');
+      // Check for avatar file
       const avatarDir = dirname(fullPath);
       let avatarFile: string | undefined;
-      for (const ext of ['.svg', '.png', '.webp', '.jpg']) {
-        try {
-          await access(join(avatarDir, `${stem}${ext}`));
-          avatarFile = `${dirname(normalized)}/${stem}${ext}`;
-          break;
-        } catch {
-          // No avatar with this extension
+      if (isFolderized) {
+        // Folderized: look for avatar.svg, avatar.png, etc. in the same folder
+        for (const ext of ['.svg', '.png', '.webp', '.jpg']) {
+          try {
+            await access(join(avatarDir, `avatar${ext}`));
+            avatarFile = `${dir}/avatar${ext}`;
+            break;
+          } catch {
+            // No avatar with this extension
+          }
+        }
+      } else {
+        // Flat: look for same-name file with image extension
+        const stem = mdBasename;
+        for (const ext of ['.svg', '.png', '.webp', '.jpg']) {
+          try {
+            await access(join(avatarDir, `${stem}${ext}`));
+            avatarFile = `${dir}/${stem}${ext}`;
+            break;
+          } catch {
+            // No avatar with this extension
+          }
         }
       }
 
@@ -80,7 +101,8 @@ export async function readCommunityPersonalities(
         version: String(parsed.version ?? '').trim(),
         traits: parseTraits(parsed.traits, content),
         sex: parsed.sex != null ? String(parsed.sex).trim() : undefined,
-        filename: normalized,
+        // Use folder path as identifier for folderized format, filename for flat
+        filename: isFolderized ? dir : normalized,
         avatarFile,
         systemPrompt,
       });

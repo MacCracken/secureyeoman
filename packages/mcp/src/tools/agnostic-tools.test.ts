@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerAgnosticTools } from './agnostic-tools.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
@@ -314,6 +314,138 @@ describe('agnostic-tools', () => {
       registerAgnosticTools(server, makeConfig({ agnosticApiKey: 'my-key' }), noopMiddleware());
       // Verify the endpoint pattern is correct — tool posts to /api/v1/a2a/receive
       expect(true).toBe(true);
+    });
+  });
+
+  describe('dynamic tool tests', () => {
+    // Shared state for dynamic tool tests — registers tools once, extracts handlers
+    let registeredTools: Map<string, (args: any) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>>;
+    let fetchMock: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({}),
+        text: () => Promise.resolve(''),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      registerAgnosticTools(server, makeConfig({ agnosticApiKey: 'test-key' }), noopMiddleware());
+
+      // Extract registered tool handlers from McpServer internals
+      const rt = (server as any)._registeredTools as Record<string, { handler: (args: any) => Promise<any> }>;
+      registeredTools = new Map(
+        Object.entries(rt).map(([name, entry]) => [name, entry.handler])
+      );
+    });
+
+    describe('agnostic_smart_submit', () => {
+      it('registers agnostic_smart_submit tool without error', () => {
+        expect(registeredTools.has('agnostic_smart_submit')).toBe(true);
+      });
+
+      it('calls preset recommend then submits to crew API', async () => {
+        // Mock recommend response
+        fetchMock.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ result: { preset: 'design-standard' } }),
+          text: () => Promise.resolve(''),
+        });
+        // Mock crew submission response
+        fetchMock.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ crew_id: 'c-1', task_id: 't-1', status: 'pending' }),
+          text: () => Promise.resolve(''),
+        });
+
+        const handler = registeredTools.get('agnostic_smart_submit')!;
+        const result = await handler({
+          title: 'Review mobile UI',
+          description: 'Check the mobile design for accessibility issues',
+          priority: 'high',
+          size: 'standard',
+        });
+
+        expect(result.isError).toBeUndefined();
+        expect(result.content[0]?.text).toContain('Crew Started');
+      });
+
+      it('uses domain override when specified', async () => {
+        fetchMock.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ crew_id: 'c-2', status: 'pending' }),
+          text: () => Promise.resolve(''),
+        });
+
+        const handler = registeredTools.get('agnostic_smart_submit')!;
+        const result = await handler({
+          title: 'QA check',
+          description: 'Run quality tests',
+          domain: 'quality',
+          size: 'lean',
+          priority: 'medium',
+        });
+
+        // Should NOT call recommend when domain is specified
+        expect(result.isError).toBeUndefined();
+        // Should have called /api/v1/crews with preset quality-lean
+        const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+        const body = JSON.parse(lastCall[1].body);
+        expect(body.preset).toBe('quality-lean');
+      });
+    });
+
+    describe('agnostic_preset_detail', () => {
+      it('registers agnostic_preset_detail tool without error', () => {
+        expect(registeredTools.has('agnostic_preset_detail')).toBe(true);
+      });
+
+      it('fetches preset details from API', async () => {
+        fetchMock.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({
+            name: 'design-standard',
+            domain: 'design',
+            size: 'standard',
+            agent_count: 4,
+            agents: [{ agent_key: 'ux-lead', name: 'UX Lead' }],
+          }),
+          text: () => Promise.resolve(''),
+        });
+
+        const handler = registeredTools.get('agnostic_preset_detail')!;
+        const result = await handler({ preset_name: 'design-standard' });
+
+        expect(result.isError).toBeUndefined();
+        expect(result.content[0]?.text).toContain('design-standard');
+      });
+    });
+
+    describe('agnostic_council_review', () => {
+      it('registers agnostic_council_review tool without error', () => {
+        expect(registeredTools.has('agnostic_council_review')).toBe(true);
+      });
+
+      it('rejects non-completed crews', async () => {
+        fetchMock.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ crew_id: 'c-1', status: 'running' }),
+          text: () => Promise.resolve(''),
+        });
+
+        const handler = registeredTools.get('agnostic_council_review')!;
+        const result = await handler({ crew_id: 'c-1', council_template: 'risk-committee' });
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0]?.text).toContain('running');
+      });
     });
   });
 

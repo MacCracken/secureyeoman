@@ -29,6 +29,10 @@ export interface AgnosticHooksConfig {
   defaultAgents?: string[];
   /** Default compliance standards to check */
   defaultStandards?: string[];
+  /** Override preset for PR-triggered reviews (e.g. 'software-engineering-standard'). If unset, Agnostic recommends dynamically. */
+  prReviewPreset?: string;
+  /** Override preset for deployment-triggered reviews (e.g. 'design-standard'). If unset, Agnostic recommends dynamically. */
+  deployReviewPreset?: string;
 }
 
 export interface AgnosticHooksDeps {
@@ -50,7 +54,12 @@ export function registerAgnosticHooks(
   }
 
   const hookIds: string[] = [];
-  const hookPoints = config.triggerHookPoints ?? ['agent:after-delegate', 'swarm:after-execute'];
+  const hookPoints = config.triggerHookPoints ?? [
+    'agent:after-delegate',
+    'swarm:after-execute',
+    'pr:created',
+    'deployment:after',
+  ];
 
   for (const hookPoint of hookPoints) {
     const id = deps.extensionManager.registerHook(
@@ -101,6 +110,82 @@ async function submitQATask(
   const title = buildTitle(hookPoint, context);
   const description = buildDescription(hookPoint, context);
 
+  // Route to preset-based crews for specific hook points
+  const crewHookPoints = ['pr:created', 'deployment:after'];
+  const isCrewHook = crewHookPoints.includes(hookPoint);
+
+  let preset: string | undefined;
+  if (isCrewHook) {
+    // Use configured override if set, otherwise ask Agnostic to recommend
+    const overrides: Record<string, string | undefined> = {
+      'pr:created': config.prReviewPreset,
+      'deployment:after': config.deployReviewPreset,
+    };
+    preset = overrides[hookPoint];
+
+    if (!preset) {
+      // Dynamic recommendation via Agnostic MCP
+      try {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (config.apiKey) headers['X-API-Key'] = config.apiKey;
+        const recRes = await fetch(`${config.agnosticUrl}/api/v1/mcp/invoke`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            tool: 'agnostic_preset_recommend',
+            arguments: { description },
+          }),
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (recRes.ok) {
+          const rec = (await recRes.json()) as { result?: { preset?: string } };
+          preset = rec.result?.preset;
+        }
+      } catch {
+        // Fallback defaults if recommendation fails
+        preset = hookPoint === 'pr:created' ? 'software-engineering-standard' : 'design-standard';
+      }
+    }
+  }
+
+  if (preset) {
+    // Use crew API for preset-based reviews
+    const crewPayload = {
+      title,
+      description,
+      preset,
+      priority: config.defaultPriority ?? 'high',
+      target_url: (context?.targetUrl ?? context?.url ?? context?.prUrl) as string | undefined,
+    };
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (config.apiKey) headers['X-API-Key'] = config.apiKey;
+
+    const res = await fetch(`${config.agnosticUrl}/api/v1/crews`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(crewPayload),
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      logger.warn(
+        { hookPoint, preset, status: res.status, body: body.slice(0, 500) },
+        'AGNOSTIC crew submission failed'
+      );
+      return;
+    }
+
+    const result = (await res.json()) as { crew_id?: string; task_id?: string };
+    logger.info(
+      { hookPoint, preset, crewId: result.crew_id, taskId: result.task_id },
+      'AGNOSTIC crew submitted via hook'
+    );
+    return;
+  }
+
+  // Default: submit as QA task (original behavior)
   const payload = {
     title,
     description,
@@ -201,6 +286,10 @@ function buildTitle(hookPoint: string, context?: Record<string, unknown>): strin
       return `Post-swarm QA: ${context?.swarmId ?? 'unknown'}`;
     case 'task:after-execute':
       return `Post-task QA: ${context?.taskId ?? 'unknown'}`;
+    case 'pr:created':
+      return `Code Review: ${context?.prTitle ?? context?.prUrl ?? 'PR'}`;
+    case 'deployment:after':
+      return `Design Review: ${context?.environment ?? context?.url ?? 'deployment'}`;
     default:
       return `Auto QA: ${hookPoint}`;
   }
@@ -213,6 +302,11 @@ function buildDescription(hookPoint: string, context?: Record<string, unknown>):
   if (context?.delegationId) parts.push(`Delegation ID: ${context.delegationId}`);
   if (context?.status) parts.push(`Status: ${context.status}`);
   if (context?.durationMs) parts.push(`Duration: ${context.durationMs}ms`);
+
+  if (context?.prUrl) parts.push(`PR URL: ${context.prUrl}`);
+  if (context?.prTitle) parts.push(`PR Title: ${context.prTitle}`);
+  if (context?.environment) parts.push(`Environment: ${context.environment}`);
+  if (context?.url) parts.push(`URL: ${context.url}`);
 
   return parts.join('\n');
 }

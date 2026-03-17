@@ -22,26 +22,26 @@ function makeConfig(overrides?: Partial<AgnosticHooksConfig>): AgnosticHooksConf
   };
 }
 
+type HookHandler = (ctx: { data: unknown }) => Promise<{ vetoed: boolean; errors: string[] }>;
+
 function makeDeps(): AgnosticHooksDeps & {
-  hookHandlers: Map<
-    string,
-    (ctx: { data: unknown }) => Promise<{ vetoed: boolean; errors: string[] }>
-  >;
+  hookHandlers: Map<string, HookHandler>;
+  hookPointMap: Map<string, HookHandler>;
   hookIdCounter: number;
 } {
-  const hookHandlers = new Map<
-    string,
-    (ctx: { data: unknown }) => Promise<{ vetoed: boolean; errors: string[] }>
-  >();
+  const hookHandlers = new Map<string, HookHandler>();
+  const hookPointMap = new Map<string, HookHandler>();
   let hookIdCounter = 0;
 
   return {
     hookHandlers,
+    hookPointMap,
     hookIdCounter,
     extensionManager: {
       registerHook: vi.fn((hookPoint: string, handler: any) => {
         const id = `hook-${hookIdCounter++}`;
         hookHandlers.set(id, handler);
+        hookPointMap.set(hookPoint, handler);
         return id;
       }),
       unregisterHook: vi.fn((id: string) => {
@@ -103,11 +103,18 @@ describe('agnostic-hooks', () => {
       unregister();
     });
 
-    it('uses default hook points when none specified', () => {
+    it('uses default hook points when none specified (includes pr:created and deployment:after)', () => {
       const deps = makeDeps();
       const config = makeConfig({ triggerHookPoints: undefined });
       const unregister = registerAgnosticHooks(config, deps);
-      expect(deps.extensionManager.registerHook).toHaveBeenCalledTimes(2);
+      expect(deps.extensionManager.registerHook).toHaveBeenCalledTimes(4);
+      const registeredPoints = (deps.extensionManager.registerHook as any).mock.calls.map(
+        (c: any[]) => c[0]
+      );
+      expect(registeredPoints).toContain('agent:after-delegate');
+      expect(registeredPoints).toContain('swarm:after-execute');
+      expect(registeredPoints).toContain('pr:created');
+      expect(registeredPoints).toContain('deployment:after');
       unregister();
     });
 
@@ -170,6 +177,186 @@ describe('agnostic-hooks', () => {
       expect(deps.logger.warn).toHaveBeenCalledWith(
         expect.objectContaining({ status: 500 }),
         'AGNOSTIC QA task submission failed'
+      );
+    });
+
+    it('pr:created hook calls recommend then submits to crew API', async () => {
+      const fetchSpy = mockFetch([
+        {
+          ok: true,
+          status: 200,
+          json: { result: { preset: 'software-engineering-standard' } },
+        },
+        {
+          ok: true,
+          status: 200,
+          json: { crew_id: 'c-1' },
+        },
+      ]);
+      vi.stubGlobal('fetch', fetchSpy);
+
+      const deps = makeDeps();
+      registerAgnosticHooks(
+        makeConfig({ triggerHookPoints: ['pr:created'] }),
+        deps
+      );
+
+      const handler = deps.hookPointMap.get('pr:created')!;
+      const result = await handler({
+        data: { prUrl: 'http://github.com/org/repo/pull/42', prTitle: 'Add auth' },
+      });
+
+      expect(result.vetoed).toBe(false);
+      // First call: recommend endpoint
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://127.0.0.1:8000/api/v1/mcp/invoke',
+        expect.objectContaining({ method: 'POST' })
+      );
+      // Second call: crew submission
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://127.0.0.1:8000/api/v1/crews',
+        expect.objectContaining({ method: 'POST' })
+      );
+      const crewBody = JSON.parse(fetchSpy.mock.calls[1][1].body as string);
+      expect(crewBody.preset).toBe('software-engineering-standard');
+      expect(crewBody.target_url).toBe('http://github.com/org/repo/pull/42');
+    });
+
+    it('deployment:after hook calls recommend then submits to crew API', async () => {
+      const fetchSpy = mockFetch([
+        {
+          ok: true,
+          status: 200,
+          json: { result: { preset: 'software-engineering-standard' } },
+        },
+        {
+          ok: true,
+          status: 200,
+          json: { crew_id: 'c-1' },
+        },
+      ]);
+      vi.stubGlobal('fetch', fetchSpy);
+
+      const deps = makeDeps();
+      registerAgnosticHooks(
+        makeConfig({ triggerHookPoints: ['deployment:after'] }),
+        deps
+      );
+
+      const handler = deps.hookPointMap.get('deployment:after')!;
+      const result = await handler({
+        data: { url: 'https://staging.example.com', environment: 'staging' },
+      });
+
+      expect(result.vetoed).toBe(false);
+      // First call: recommend endpoint
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://127.0.0.1:8000/api/v1/mcp/invoke',
+        expect.objectContaining({ method: 'POST' })
+      );
+      // Second call: crew submission
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://127.0.0.1:8000/api/v1/crews',
+        expect.objectContaining({ method: 'POST' })
+      );
+      const crewBody = JSON.parse(fetchSpy.mock.calls[1][1].body as string);
+      expect(crewBody.target_url).toBe('https://staging.example.com');
+    });
+
+    it('pr:created hook uses custom prReviewPreset when configured', async () => {
+      const fetchSpy = mockFetch([
+        { ok: true, status: 200, json: { crew_id: 'crew-1' } },
+      ]);
+      vi.stubGlobal('fetch', fetchSpy);
+
+      const deps = makeDeps();
+      registerAgnosticHooks(
+        makeConfig({
+          triggerHookPoints: ['pr:created'],
+          prReviewPreset: 'qa-standard',
+        }),
+        deps
+      );
+
+      const handler = deps.hookPointMap.get('pr:created')!;
+      await handler({ data: { prUrl: 'http://example.com/pr/1' } });
+
+      const body = JSON.parse(fetchSpy.mock.calls[0][1].body as string);
+      expect(body.preset).toBe('qa-standard');
+    });
+
+    it('deployment:after hook uses custom deployReviewPreset when configured', async () => {
+      const fetchSpy = mockFetch([
+        { ok: true, status: 200, json: { crew_id: 'crew-1' } },
+      ]);
+      vi.stubGlobal('fetch', fetchSpy);
+
+      const deps = makeDeps();
+      registerAgnosticHooks(
+        makeConfig({
+          triggerHookPoints: ['deployment:after'],
+          deployReviewPreset: 'devops',
+        }),
+        deps
+      );
+
+      const handler = deps.hookPointMap.get('deployment:after')!;
+      await handler({ data: { url: 'https://prod.example.com' } });
+
+      const body = JSON.parse(fetchSpy.mock.calls[0][1].body as string);
+      expect(body.preset).toBe('devops');
+    });
+
+    it('crew hook warns on non-200 response from crew API', async () => {
+      const fetchSpy = mockFetch([
+        // recommend call succeeds
+        { ok: true, status: 200, json: { result: { preset: 'software-engineering-standard' } } },
+        // crew call fails
+        { ok: false, status: 502, text: 'Bad Gateway' },
+      ]);
+      vi.stubGlobal('fetch', fetchSpy);
+
+      const deps = makeDeps();
+      registerAgnosticHooks(
+        makeConfig({ triggerHookPoints: ['pr:created'] }),
+        deps
+      );
+
+      const handler = deps.hookPointMap.get('pr:created')!;
+      await handler({ data: { prUrl: 'http://example.com/pr/1' } });
+
+      expect(deps.logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 502, preset: 'software-engineering-standard' }),
+        'AGNOSTIC crew submission failed'
+      );
+    });
+
+    it('crew hook logs success with crew_id and task_id', async () => {
+      const fetchSpy = mockFetch([
+        // recommend call
+        { ok: true, status: 200, json: { result: { preset: 'software-engineering-standard' } } },
+        // crew call
+        { ok: true, status: 200, json: { crew_id: 'crew-abc', task_id: 'task-xyz' } },
+      ]);
+      vi.stubGlobal('fetch', fetchSpy);
+
+      const deps = makeDeps();
+      registerAgnosticHooks(
+        makeConfig({ triggerHookPoints: ['pr:created'] }),
+        deps
+      );
+
+      const handler = deps.hookPointMap.get('pr:created')!;
+      await handler({ data: { prTitle: 'Fix login bug' } });
+
+      expect(deps.logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hookPoint: 'pr:created',
+          preset: 'software-engineering-standard',
+          crewId: 'crew-abc',
+          taskId: 'task-xyz',
+        }),
+        'AGNOSTIC crew submitted via hook'
       );
     });
   });
