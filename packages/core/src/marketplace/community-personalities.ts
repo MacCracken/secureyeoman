@@ -58,8 +58,12 @@ export async function readCommunityPersonalities(
       // For folderized: category is grandparent (e.g. "sci-fi/antagonist" from "sci-fi/antagonist/ares/personality.md")
       // For flat: category is parent directory (e.g. "sci-fi/antagonist" from "sci-fi/antagonist/master-control.md")
       const category = isFolderized
-        ? (dirname(dir) === '.' ? 'other' : dirname(dir))
-        : (dir === '.' ? 'other' : dir);
+        ? dirname(dir) === '.'
+          ? 'other'
+          : dirname(dir)
+        : dir === '.'
+          ? 'other'
+          : dir;
 
       // Extract system prompt (body after frontmatter)
       const bodyMatch = /^---[\s\S]*?---\r?\n([\s\S]*)$/.exec(content);

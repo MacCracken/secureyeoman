@@ -20,7 +20,6 @@ import {
   AGNOS_BRIDGE_CATEGORIES,
   getToolPrefixesForProfile,
   toolMatchesProfile,
-  type AgnosBridgeProfile,
 } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
 import {
@@ -30,6 +29,7 @@ import {
   checkHttpOk,
   registerDisabledStub,
   createHttpClient,
+  globalToolRegistry,
 } from './tool-utils.js';
 
 const DISABLED_MSG =
@@ -436,7 +436,7 @@ export function registerAgnosTools(
       const params = new URLSearchParams();
       if (args.agent) params.set('agent', args.agent);
       if (args.action) params.set('action', args.action);
-      if (args.limit) params.set('limit', String(args.limit));
+      if (args.limit !== undefined) params.set('limit', String(args.limit));
       const qs = params.toString();
       const path = `/v1/audit${qs ? `?${qs}` : ''}`;
       const result = await runtime.get(path);
@@ -620,10 +620,6 @@ export function registerAgnosTools(
         'Discover available SecureYeoman MCP tools filtered by bridge profile or category. ' +
         'Returns tool names and descriptions that AGNOS agents in the given profile can access.',
       inputSchema: {
-        profile: z
-          .enum(['sensor', 'security', 'devops', 'web', 'analysis', 'full'])
-          .optional()
-          .describe('Bridge profile to filter by. Defaults to the active profile.'),
         category: z
           .string()
           .optional()
@@ -631,10 +627,9 @@ export function registerAgnosTools(
       },
     },
     wrapToolHandler('agnos_bridge_discover', middleware, async (args) => {
-      const profile = (args.profile ?? config.agnosBridgeProfile ?? 'full') as AgnosBridgeProfile;
+      const profile = config.agnosBridgeProfile ?? 'full';
 
       // Get all tools from the global registry
-      const { globalToolRegistry } = await import('./tool-utils.js');
       const allToolNames = Array.from(globalToolRegistry.keys());
 
       // Filter by profile
@@ -644,19 +639,24 @@ export function registerAgnosTools(
       if (args.category) {
         const cat = AGNOS_BRIDGE_CATEGORIES.find((c) => c.name === args.category);
         if (!cat) {
-          return errorResponse(`Unknown category: ${args.category}. Valid: ${AGNOS_BRIDGE_CATEGORIES.map((c) => c.name).join(', ')}`);
+          return errorResponse(
+            `Unknown category: ${args.category}. Valid: ${AGNOS_BRIDGE_CATEGORIES.map((c) => c.name).join(', ')}`
+          );
         }
         matchingTools = matchingTools.filter((name) =>
           cat.toolPrefixes.some((p) => name.startsWith(p))
         );
       }
 
-      return labelledResponse(`Bridge Tools (profile=${profile}${args.category ? `, category=${args.category}` : ''})`, {
-        profile,
-        category: args.category ?? 'all',
-        toolCount: matchingTools.length,
-        tools: matchingTools.sort(),
-      });
+      return labelledResponse(
+        `Bridge Tools (profile=${profile}${args.category ? `, category=${args.category}` : ''})`,
+        {
+          profile,
+          category: args.category ?? 'all',
+          toolCount: matchingTools.length,
+          tools: matchingTools.sort(),
+        }
+      );
     })
   );
 
@@ -670,31 +670,29 @@ export function registerAgnosTools(
         'the active bridge profile. Returns the tool result.',
       inputSchema: {
         tool_name: z.string().describe('Name of the SY MCP tool to call'),
-        arguments: z.record(z.string(), z.unknown()).default({}).describe('Tool arguments as key-value pairs'),
-        profile: z
-          .enum(['sensor', 'security', 'devops', 'web', 'analysis', 'full'])
-          .optional()
-          .describe('Override bridge profile for this call'),
+        arguments: z
+          .record(z.string(), z.unknown())
+          .default({})
+          .describe('Tool arguments as key-value pairs'),
       },
     },
     wrapToolHandler('agnos_bridge_call', middleware, async (args) => {
-      const profile = (args.profile ?? config.agnosBridgeProfile ?? 'full') as AgnosBridgeProfile;
+      const profile = config.agnosBridgeProfile ?? 'full';
 
       // Enforce profile-based access control
       if (!toolMatchesProfile(args.tool_name, profile)) {
         return errorResponse(
           `Tool "${args.tool_name}" is not allowed in bridge profile "${profile}". ` +
-          `Use agnos_bridge_discover to see available tools.`
+            `Use agnos_bridge_discover to see available tools.`
         );
       }
 
       // Look up the tool in the global registry and call it
-      const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get(args.tool_name);
       if (!handler) {
         return errorResponse(
           `Tool "${args.tool_name}" not found in the MCP registry. ` +
-          `It may be disabled or not registered.`
+            `It may be disabled or not registered.`
         );
       }
 
@@ -716,18 +714,12 @@ export function registerAgnosTools(
       description:
         'Push the current tool manifest to AGNOS daimon, filtered by profile. ' +
         'Registers available SY tools so AGNOS agents can discover them natively.',
-      inputSchema: {
-        profile: z
-          .enum(['sensor', 'security', 'devops', 'web', 'analysis', 'full'])
-          .optional()
-          .describe('Profile to sync. Defaults to active profile.'),
-      },
+      inputSchema: {},
     },
-    wrapToolHandler('agnos_bridge_sync', middleware, async (args) => {
-      const profile = (args.profile ?? config.agnosBridgeProfile ?? 'full') as AgnosBridgeProfile;
+    wrapToolHandler('agnos_bridge_sync', middleware, async () => {
+      const profile = config.agnosBridgeProfile ?? 'full';
 
       // Collect tools matching the profile
-      const { globalToolRegistry } = await import('./tool-utils.js');
       const allToolNames = Array.from(globalToolRegistry.keys());
       const matchingTools = allToolNames
         .filter((name) => toolMatchesProfile(name, profile))
@@ -767,19 +759,18 @@ export function registerAgnosTools(
       inputSchema: {},
     },
     wrapToolHandler('agnos_bridge_status', middleware, async () => {
-      const profile = (config.agnosBridgeProfile ?? 'full') as AgnosBridgeProfile;
-      const { globalToolRegistry } = await import('./tool-utils.js');
+      const profile = config.agnosBridgeProfile ?? 'full';
       const allToolNames = Array.from(globalToolRegistry.keys());
 
       // Count tools per category for the active profile
-      const categoryStats = AGNOS_BRIDGE_CATEGORIES
-        .filter((c) => c.profiles.includes(profile))
-        .map((c) => {
+      const categoryStats = AGNOS_BRIDGE_CATEGORIES.filter((c) => c.profiles.includes(profile)).map(
+        (c) => {
           const tools = allToolNames.filter((name) =>
             c.toolPrefixes.some((p) => name.startsWith(p))
           );
           return { category: c.name, toolCount: tools.length };
-        });
+        }
+      );
 
       const totalBridgeTools = allToolNames.filter((name) =>
         toolMatchesProfile(name, profile)

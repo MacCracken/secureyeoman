@@ -21,9 +21,9 @@ function mockClient(overrides: Partial<AgnosClient> = {}): AgnosClient {
       capabilities: ['agents', 'audit', 'mcp'],
       endpoints: { agents: '/v1/agents', health: '/v1/health' },
     }),
-    listSandboxProfiles: vi.fn().mockResolvedValue([
-      { id: 'default', name: 'default', seccomp: true, landlock: true },
-    ]),
+    listSandboxProfiles: vi
+      .fn()
+      .mockResolvedValue([{ id: 'default', name: 'default', seccomp: true, landlock: true }]),
     registerMcpTools: vi.fn().mockResolvedValue({ registered: 5 }),
     registerMcpToolsByProfile: vi.fn().mockResolvedValue({ registered: 5 }),
     ...overrides,
@@ -68,9 +68,7 @@ describe('bootstrapAgnos', () => {
   });
 
   it('falls back to unfiltered registration on profile error', async () => {
-    const tools: McpToolDefinition[] = [
-      { name: 'edge_list', description: 'List edge nodes' },
-    ];
+    const tools: McpToolDefinition[] = [{ name: 'edge_list', description: 'List edge nodes' }];
     const client = mockClient({
       registerMcpToolsByProfile: vi.fn().mockRejectedValue(new Error('405')),
     });
@@ -92,6 +90,18 @@ describe('bootstrapAgnos', () => {
 
     expect(result.discovered).toBe(false);
     expect(result.error).toContain('ECONNREFUSED');
+  });
+
+  it('continues when sandbox profile load fails', async () => {
+    const client = mockClient({
+      listSandboxProfiles: vi.fn().mockRejectedValue(new Error('timeout')),
+    });
+    const logger = mockLogger();
+
+    const result = await bootstrapAgnos(client, logger);
+
+    expect(result.discovered).toBe(true);
+    expect(result.sandboxProfiles).toEqual([]);
   });
 
   it('defaults bridgeProfile to full when not specified', async () => {

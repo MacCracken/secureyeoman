@@ -311,6 +311,13 @@ export {
   type McpServiceConfig,
   type McpConfig,
   type McpServerHealth,
+  AgnosBridgeProfileSchema,
+  type AgnosBridgeProfile,
+  AgnosBridgeToolCategorySchema,
+  type AgnosBridgeToolCategory,
+  AGNOS_BRIDGE_CATEGORIES,
+  getToolPrefixesForProfile,
+  toolMatchesProfile,
 } from './mcp.js';
 
 // Reporting types

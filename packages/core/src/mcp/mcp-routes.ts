@@ -11,6 +11,7 @@ import type { McpHealthMonitor } from './health-monitor.js';
 import type { McpCredentialManager } from './credential-manager.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
+import { toolMatchesProfile, AgnosBridgeProfileSchema } from '@secureyeoman/shared';
 
 export interface McpRoutesOptions {
   mcpStorage: McpStorage;
@@ -194,105 +195,119 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
   app.get(
     '/api/v1/mcp/tools',
     async (request: FastifyRequest<{ Querystring: { profile?: string } }>) => {
-    const allTools = mcpClient.getAllTools();
-    const config = await mcpStorage.getConfig();
+      const allTools = mcpClient.getAllTools();
+      const config = await mcpStorage.getConfig();
 
-    const tools = allTools.filter((tool) => {
-      if (tool.serverName !== LOCAL_MCP_NAME) return true; // external tools always pass
-      if (!config.exposeGit && GIT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) return false;
-      if (!config.exposeFilesystem && FS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeWeb && WEB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) return false;
-      if (config.exposeWeb) {
-        if (!config.exposeWebScraping && WEB_SCRAPING_TOOLS.includes(tool.name)) return false;
-        if (!config.exposeWebSearch && WEB_SEARCH_TOOLS.includes(tool.name)) return false;
-      }
-      if (!config.exposeBrowser && BROWSER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (
-        !config.exposeDesktopControl &&
-        DESKTOP_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
-      )
-        return false;
-      if (!config.exposeNetworkTools && NETWORK_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (
-        getNetBoxWriteAllowed &&
-        !getNetBoxWriteAllowed() &&
-        NETBOX_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
-      )
-        return false;
-      if (
-        !config.exposeTwingateTools &&
-        TWINGATE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
-      )
-        return false;
-      if (!config.exposeGmail && GMAIL_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeTwitter && TWITTER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeOrgIntentTools && INTENT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeKnowledgeBase && KB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeDockerTools && DOCKER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeGithubActions && GHA_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeJenkins && JENKINS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeGitlabCi && GITLAB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeNorthflank && NORTHFLANK_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (
-        !config.exposeAgnosticTools &&
-        AGNOSTIC_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
-      )
-        return false;
-      if (!config.exposeAgnosTools && AGNOS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (
-        !config.exposeBullshiftTools &&
-        BULLSHIFT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
-      )
-        return false;
-      if (
-        !config.exposePhotisnadiTools &&
-        PHOTISNADI_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
-      )
-        return false;
-      if (!config.exposeSynapseTools && SYNAPSE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeDeltaTools && DELTA_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeEdgeTools && EDGE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeVoiceTools && VOICE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (!config.exposeShrutiTools && SHRUTI_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
-        return false;
-      if (
-        !config.exposeSecurityTools &&
-        SECURITY_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
-      )
-        return false;
-      return true;
-    });
+      const tools = allTools.filter((tool) => {
+        if (tool.serverName !== LOCAL_MCP_NAME) return true; // external tools always pass
+        if (!config.exposeGit && GIT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (!config.exposeFilesystem && FS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (!config.exposeWeb && WEB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (config.exposeWeb) {
+          if (!config.exposeWebScraping && WEB_SCRAPING_TOOLS.includes(tool.name)) return false;
+          if (!config.exposeWebSearch && WEB_SEARCH_TOOLS.includes(tool.name)) return false;
+        }
+        if (!config.exposeBrowser && BROWSER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (
+          !config.exposeDesktopControl &&
+          DESKTOP_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        if (
+          !config.exposeNetworkTools &&
+          NETWORK_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        if (
+          getNetBoxWriteAllowed &&
+          !getNetBoxWriteAllowed() &&
+          NETBOX_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        if (
+          !config.exposeTwingateTools &&
+          TWINGATE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        if (!config.exposeGmail && GMAIL_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (!config.exposeTwitter && TWITTER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (
+          !config.exposeOrgIntentTools &&
+          INTENT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        if (!config.exposeKnowledgeBase && KB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (!config.exposeDockerTools && DOCKER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (!config.exposeGithubActions && GHA_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (!config.exposeJenkins && JENKINS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (!config.exposeGitlabCi && GITLAB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (
+          !config.exposeNorthflank &&
+          NORTHFLANK_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        if (
+          !config.exposeAgnosticTools &&
+          AGNOSTIC_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        if (!config.exposeAgnosTools && AGNOS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (
+          !config.exposeBullshiftTools &&
+          BULLSHIFT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        if (
+          !config.exposePhotisnadiTools &&
+          PHOTISNADI_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        if (
+          !config.exposeSynapseTools &&
+          SYNAPSE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        if (!config.exposeDeltaTools && DELTA_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (!config.exposeEdgeTools && EDGE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (!config.exposeVoiceTools && VOICE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (!config.exposeShrutiTools && SHRUTI_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+          return false;
+        if (
+          !config.exposeSecurityTools &&
+          SECURITY_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+        )
+          return false;
+        return true;
+      });
 
-    // Optional AGNOS bridge profile filtering
-    const profile = request.query.profile;
-    if (profile) {
-      const { toolMatchesProfile, AgnosBridgeProfileSchema } = await import('@secureyeoman/shared');
-      const parsed = AgnosBridgeProfileSchema.safeParse(profile);
-      if (parsed.success) {
-        const profileFiltered = tools.filter((t) => toolMatchesProfile(t.name, parsed.data));
-        return { tools: profileFiltered, total: profileFiltered.length, profile: parsed.data };
+      // Optional AGNOS bridge profile filtering
+      const profile = request.query.profile;
+      if (profile) {
+        const parsed = AgnosBridgeProfileSchema.safeParse(profile);
+        if (parsed.success) {
+          const profileFiltered = tools.filter((t) => toolMatchesProfile(t.name, parsed.data));
+          return { tools: profileFiltered, total: profileFiltered.length, profile: parsed.data };
+        }
       }
+
+      return { tools, total: tools.length };
     }
-
-    return { tools, total: tools.length };
-  });
+  );
 
   // Call a tool on an MCP server
   app.post(

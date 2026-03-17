@@ -158,9 +158,7 @@ describe('readCommunityPersonalities', () => {
   // ── Folderized format tests ──────────────────────────────────────────────
 
   it('reads folderized personality.md files', async () => {
-    mockReaddir.mockResolvedValue([
-      'sci-fi/antagonist/ares/personality.md',
-    ] as any);
+    mockReaddir.mockResolvedValue(['sci-fi/antagonist/ares/personality.md'] as any);
     mockReadFile.mockResolvedValue(VALID_MD);
     mockAccess.mockRejectedValue(new Error('ENOENT')); // no avatar
 
@@ -190,9 +188,7 @@ describe('readCommunityPersonalities', () => {
   });
 
   it('finds avatar.svg in folderized format', async () => {
-    mockReaddir.mockResolvedValue([
-      'sci-fi/antagonist/ares/personality.md',
-    ] as any);
+    mockReaddir.mockResolvedValue(['sci-fi/antagonist/ares/personality.md'] as any);
     mockReadFile.mockResolvedValue(VALID_MD);
     mockAccess.mockImplementation(async (path: any) => {
       if (String(path).endsWith('avatar.svg')) return undefined;
@@ -224,9 +220,7 @@ describe('readCommunityPersonalities', () => {
   });
 
   it('folderized personality in root-level folder gets category other', async () => {
-    mockReaddir.mockResolvedValue([
-      'some-personality/personality.md',
-    ] as any);
+    mockReaddir.mockResolvedValue(['some-personality/personality.md'] as any);
     mockReadFile.mockResolvedValue(VALID_MD);
     mockAccess.mockRejectedValue(new Error('ENOENT'));
 

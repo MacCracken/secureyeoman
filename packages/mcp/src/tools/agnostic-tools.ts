@@ -737,19 +737,25 @@ export function registerAgnosticTools(
         process: z
           .enum(['sequential', 'hierarchical'])
           .default('sequential')
-          .describe('Crew execution process — sequential (one at a time) or hierarchical (manager delegates)'),
+          .describe(
+            'Crew execution process — sequential (one at a time) or hierarchical (manager delegates)'
+          ),
         team: z
           .object({
-            members: z.array(z.object({
-              role: z.string().describe('Role title (e.g. "UX Researcher", "Backend Engineer")'),
-              context: z.string().optional().describe('Focus area for this member'),
-              lead: z.boolean().default(false).describe('Whether this member leads the team'),
-              tools: z.array(z.string()).default([]).describe('Tool names to attach'),
-            })),
+            members: z.array(
+              z.object({
+                role: z.string().describe('Role title (e.g. "UX Researcher", "Backend Engineer")'),
+                context: z.string().optional().describe('Focus area for this member'),
+                lead: z.boolean().default(false).describe('Whether this member leads the team'),
+                tools: z.array(z.string()).default([]).describe('Tool names to attach'),
+              })
+            ),
             project_context: z.string().optional().describe('Overall project description'),
           })
           .optional()
-          .describe('Custom team composition — alternative to presets. Describe roles and the system matches or generates agents.'),
+          .describe(
+            'Custom team composition — alternative to presets. Describe roles and the system matches or generates agents.'
+          ),
       },
     },
     wrapToolHandler('agnostic_run_crew', middleware, async (args) => {
@@ -814,10 +820,7 @@ export function registerAgnosticTools(
           .string()
           .optional()
           .describe('Filter presets by domain (e.g. "qa", "data-engineering", "devops")'),
-        size: z
-          .string()
-          .optional()
-          .describe('Filter by size: lean, standard, or large'),
+        size: z.string().optional().describe('Filter by size: lean, standard, or large'),
       },
     },
     wrapToolHandler('agnostic_list_presets', middleware, async (args) => {
@@ -1057,7 +1060,7 @@ export function registerAgnosticTools(
           .optional()
           .describe(
             'Override domain (quality, software-engineering, design, data-engineering, devops). ' +
-            'If omitted, auto-recommended from description.'
+              'If omitted, auto-recommended from description.'
           ),
         size: z
           .enum(['lean', 'standard', 'large'])
@@ -1068,10 +1071,7 @@ export function registerAgnosticTools(
           .url()
           .optional()
           .describe('Webhook URL for completion notification'),
-        callback_secret: z
-          .string()
-          .optional()
-          .describe('HMAC-SHA256 secret for webhook signature'),
+        callback_secret: z.string().optional().describe('HMAC-SHA256 secret for webhook signature'),
       },
     },
     wrapToolHandler('agnostic_smart_submit', middleware, async (args) => {
@@ -1080,15 +1080,10 @@ export function registerAgnosticTools(
       // If no domain specified, ask Agnostic to recommend one
       if (!domain) {
         try {
-          const recResult = await agnosticRequest(
-            config,
-            'post',
-            '/api/v1/mcp/invoke',
-            {
-              tool: 'agnostic_preset_recommend',
-              arguments: { description: args.description },
-            }
-          );
+          const recResult = await agnosticRequest(config, 'post', '/api/v1/mcp/invoke', {
+            tool: 'agnostic_preset_recommend',
+            arguments: { description: args.description },
+          });
           if (recResult.ok) {
             const rec = recResult.body as Record<string, unknown>;
             const result = rec?.result as Record<string, unknown> | undefined;
@@ -1135,7 +1130,9 @@ export function registerAgnosticTools(
       inputSchema: {
         preset_name: z
           .string()
-          .describe('Preset name (e.g. "design-standard", "quality-lean", "software-engineering-large")'),
+          .describe(
+            'Preset name (e.g. "design-standard", "quality-lean", "software-engineering-large")'
+          ),
       },
     },
     wrapToolHandler('agnostic_preset_detail', middleware, async (args) => {
@@ -1188,7 +1185,8 @@ export function registerAgnosticTools(
       }
 
       // 2. Convene a council via the SY core API
-      const topic = args.topic ?? `Review crew results: ${(crewData.title as string) ?? args.crew_id}`;
+      const topic =
+        args.topic ?? `Review crew results: ${(crewData.title as string) ?? args.crew_id}`;
       const context = JSON.stringify(crewData, null, 2);
 
       try {

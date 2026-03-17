@@ -182,8 +182,6 @@ describe('McpServiceConfigSchema agnosBridgeProfile', () => {
   });
 
   it('rejects invalid profiles', () => {
-    expect(() =>
-      McpServiceConfigSchema.parse({ agnosBridgeProfile: 'invalid' })
-    ).toThrow();
+    expect(() => McpServiceConfigSchema.parse({ agnosBridgeProfile: 'invalid' })).toThrow();
   });
 });

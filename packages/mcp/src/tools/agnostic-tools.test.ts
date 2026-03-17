@@ -319,7 +319,10 @@ describe('agnostic-tools', () => {
 
   describe('dynamic tool tests', () => {
     // Shared state for dynamic tool tests — registers tools once, extracts handlers
-    let registeredTools: Map<string, (args: any) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>>;
+    let registeredTools: Map<
+      string,
+      (args: any) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>
+    >;
     let fetchMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
@@ -335,10 +338,11 @@ describe('agnostic-tools', () => {
       registerAgnosticTools(server, makeConfig({ agnosticApiKey: 'test-key' }), noopMiddleware());
 
       // Extract registered tool handlers from McpServer internals
-      const rt = (server as any)._registeredTools as Record<string, { handler: (args: any) => Promise<any> }>;
-      registeredTools = new Map(
-        Object.entries(rt).map(([name, entry]) => [name, entry.handler])
-      );
+      const rt = (server as any)._registeredTools as Record<
+        string,
+        { handler: (args: any) => Promise<any> }
+      >;
+      registeredTools = new Map(Object.entries(rt).map(([name, entry]) => [name, entry.handler]));
     });
 
     describe('agnostic_smart_submit', () => {
@@ -372,6 +376,31 @@ describe('agnostic-tools', () => {
 
         expect(result.isError).toBeUndefined();
         expect(result.content[0]?.text).toContain('Crew Started');
+      });
+
+      it('falls back to complete preset when recommendation fails', async () => {
+        // Mock recommend failure
+        fetchMock.mockRejectedValueOnce(new Error('timeout'));
+        // Mock crew submission
+        fetchMock.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ crew_id: 'c-fallback', status: 'pending' }),
+          text: () => Promise.resolve(''),
+        });
+
+        const handler = registeredTools.get('agnostic_smart_submit')!;
+        const result = await handler({
+          title: 'Test task',
+          description: 'Something generic',
+          priority: 'medium',
+          size: 'lean',
+        });
+
+        expect(result.isError).toBeUndefined();
+        const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+        const body = JSON.parse(lastCall[1].body);
+        expect(body.preset).toBe('complete-lean');
       });
 
       it('uses domain override when specified', async () => {
@@ -409,13 +438,14 @@ describe('agnostic-tools', () => {
         fetchMock.mockResolvedValueOnce({
           ok: true,
           status: 200,
-          json: () => Promise.resolve({
-            name: 'design-standard',
-            domain: 'design',
-            size: 'standard',
-            agent_count: 4,
-            agents: [{ agent_key: 'ux-lead', name: 'UX Lead' }],
-          }),
+          json: () =>
+            Promise.resolve({
+              name: 'design-standard',
+              domain: 'design',
+              size: 'standard',
+              agent_count: 4,
+              agents: [{ agent_key: 'ux-lead', name: 'UX Lead' }],
+            }),
           text: () => Promise.resolve(''),
         });
 

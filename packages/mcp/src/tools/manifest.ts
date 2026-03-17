@@ -2044,8 +2044,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'agnostic_preset_detail',
-      description:
-        'Get full details of an Agnostic preset including agent definitions and roles',
+      description: 'Get full details of an Agnostic preset including agent definitions and roles',
       category: 'qa',
     },
     {
@@ -2226,8 +2225,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'agnos_bridge_sync',
-      description:
-        'Push the current tool manifest to AGNOS daimon filtered by profile',
+      description: 'Push the current tool manifest to AGNOS daimon filtered by profile',
       category: 'agnos',
     },
     {

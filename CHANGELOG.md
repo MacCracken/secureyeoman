@@ -6,6 +6,48 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.17]
+
+### AGNOS Bridge — Profile-Based Tool Exposure
+
+Bidirectional tool bridge between SecureYeoman and AGNOS (AI-Native OS). AGNOS agents can now discover, filter, and call SY's MCP tools through curated profiles.
+
+- **Bridge profiles** (`sensor`, `security`, `devops`, `web`, `analysis`, `full`) — curated tool subsets for AGNOS agents with different resource budgets and security postures
+- **5 bridge tools**: `agnos_bridge_profiles`, `agnos_bridge_discover`, `agnos_bridge_call` (profile-enforced), `agnos_bridge_sync`, `agnos_bridge_status`
+- **Profile-aware bootstrap** — `registerMcpToolsByProfile()` in `agnos-client.ts` pushes categorized tool manifests to AGNOS daimon at startup, with unfiltered fallback
+- **`GET /api/v1/mcp/tools?profile=`** — Optional profile query param filters tools by bridge profile in the core API
+- **`PATCH /api/v1/mcp/config`** — Added `exposeAgnosTools` and `agnosBridgeProfile` toggles
+- **Shared types** — `AGNOS_BRIDGE_CATEGORIES`, `getToolPrefixesForProfile()`, `toolMatchesProfile()` in `@secureyeoman/shared`
+- **Security**: Bridge call enforces server-side profile (no client override); static imports replace dynamic imports in hot paths
+
+### Agnostic (AAS) — Dynamic Crew Integration
+
+Reworked Agnostic tools from hardcoded preset wrappers to fully dynamic integration. SY no longer needs to know preset names — Agnostic recommends the right crew.
+
+- **`agnostic_smart_submit`** — Auto-recommends preset via Agnostic's `agnostic_preset_recommend` MCP endpoint, then submits to `/api/v1/crews`. Works for all domains (quality, design, software-engineering, data-engineering, devops) without hardcoding
+- **`agnostic_preset_detail`** — Fetch full preset details including agent definitions, roles, and tools
+- **`agnostic_council_review`** — Council-crew bridge: feed Agnostic crew results into a SY council for consensus-based validation before acting on findings
+- **`agnostic_run_crew`** — Added `team` (custom composition) and `process` (sequential/hierarchical) params
+- **`agnostic_list_presets`** — Added `size` filter (lean/standard/large), updated for `{domain}-{size}` naming
+- **Dynamic hooks** — `pr:created` and `deployment:after` now call Agnostic's recommend endpoint instead of hardcoded presets, with configurable overrides and sensible fallbacks
+
+### Community Personality Loader — Folderized Format
+
+- **Folderized format support** — Each personality can now live in its own folder (`name/personality.md` + `name/avatar.svg`) alongside the original flat format. Both formats supported simultaneously
+- **Category derivation** — Correctly resolves category from grandparent directory for folderized format
+- **Avatar lookup** — Finds `avatar.{svg,png,webp,jpg}` in folderized folders, `{name}.{ext}` for flat files
+- **Unique identifiers** — Folderized personalities use folder path as `filename` identifier
+
+### Test Coverage
+
+- **30 new tests** for AGNOS bridge profiles and shared type helpers
+- **23 new tests** for bridge tool security enforcement, profile filtering, and connectivity
+- **8 new tests** for Agnostic dynamic tools (smart_submit, preset_detail, council_review)
+- **7 new tests** for bootstrap profile registration and hook fallback paths
+- **5 new tests** for folderized community personality format
+
+---
+
 ## [2026.3.15]
 
 ### Dashboard Component Refactors (8/8 complete)

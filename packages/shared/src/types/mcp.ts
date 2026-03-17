@@ -141,7 +141,9 @@ export const McpServiceConfigSchema = z.object({
   /** AGNOS LLM gateway API key. From env AGNOS_GATEWAY_API_KEY. */
   agnosGatewayApiKey: z.string().optional(),
   /** AGNOS bridge profile — controls which tool categories are exposed to AGNOS agents. Default: 'full'. */
-  agnosBridgeProfile: z.enum(['sensor', 'security', 'devops', 'web', 'analysis', 'full']).default('full'),
+  agnosBridgeProfile: z
+    .enum(['sensor', 'security', 'devops', 'web', 'analysis', 'full'])
+    .default('full'),
   exposeQuickBooksTools: z.boolean().default(false),
   quickBooksEnvironment: z.enum(['sandbox', 'production']).default('sandbox'),
   quickBooksClientId: z.string().optional(),
@@ -285,12 +287,12 @@ export type McpServerHealth = z.infer<typeof McpServerHealthSchema>;
 
 /** Tool profiles that AGNOS agents can request to receive curated tool subsets. */
 export const AgnosBridgeProfileSchema = z.enum([
-  'sensor',    // telemetry, health, edge fleet
-  'security',  // network, security, CVE, PCAP, DLP
-  'devops',    // docker, CI/CD, git, terminal
-  'web',       // web scraping, search, browser
-  'analysis',  // PDF, charting, excalidraw
-  'full',      // all enabled tools
+  'sensor', // telemetry, health, edge fleet
+  'security', // network, security, CVE, PCAP, DLP
+  'devops', // docker, CI/CD, git, terminal
+  'web', // web scraping, search, browser
+  'analysis', // PDF, charting, excalidraw
+  'full', // all enabled tools
 ]);
 
 export type AgnosBridgeProfile = z.infer<typeof AgnosBridgeProfileSchema>;
@@ -314,7 +316,16 @@ export const AGNOS_BRIDGE_CATEGORIES: AgnosBridgeToolCategory[] = [
     name: 'core',
     description: 'Brain, tasks, audit, integrations, and system management',
     profiles: ['sensor', 'security', 'devops', 'web', 'analysis', 'full'],
-    toolPrefixes: ['knowledge_', 'memory_', 'task_', 'system_', 'integration_', 'audit_', 'personality_', 'skill_'],
+    toolPrefixes: [
+      'knowledge_',
+      'memory_',
+      'task_',
+      'system_',
+      'integration_',
+      'audit_',
+      'personality_',
+      'skill_',
+    ],
   },
   {
     name: 'sensor',
@@ -326,13 +337,32 @@ export const AGNOS_BRIDGE_CATEGORIES: AgnosBridgeToolCategory[] = [
     name: 'security',
     description: 'Network security, vulnerability scanning, PCAP analysis, and DLP',
     profiles: ['security', 'full'],
-    toolPrefixes: ['network_', 'netbox_', 'nvd_', 'subnet_', 'wildcard_', 'pcap_', 'sec_', 'dlp_', 'twingate_'],
+    toolPrefixes: [
+      'network_',
+      'netbox_',
+      'nvd_',
+      'subnet_',
+      'wildcard_',
+      'pcap_',
+      'sec_',
+      'dlp_',
+      'twingate_',
+    ],
   },
   {
     name: 'devops',
     description: 'Docker, CI/CD pipelines, Git operations, and terminal access',
     profiles: ['devops', 'full'],
-    toolPrefixes: ['docker_', 'gha_', 'jenkins_', 'gitlab_', 'northflank_', 'git_', 'github_', 'terminal_'],
+    toolPrefixes: [
+      'docker_',
+      'gha_',
+      'jenkins_',
+      'gitlab_',
+      'northflank_',
+      'git_',
+      'github_',
+      'terminal_',
+    ],
   },
   {
     name: 'web',

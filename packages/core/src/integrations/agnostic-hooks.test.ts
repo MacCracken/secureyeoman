@@ -196,10 +196,7 @@ describe('agnostic-hooks', () => {
       vi.stubGlobal('fetch', fetchSpy);
 
       const deps = makeDeps();
-      registerAgnosticHooks(
-        makeConfig({ triggerHookPoints: ['pr:created'] }),
-        deps
-      );
+      registerAgnosticHooks(makeConfig({ triggerHookPoints: ['pr:created'] }), deps);
 
       const handler = deps.hookPointMap.get('pr:created')!;
       const result = await handler({
@@ -238,10 +235,7 @@ describe('agnostic-hooks', () => {
       vi.stubGlobal('fetch', fetchSpy);
 
       const deps = makeDeps();
-      registerAgnosticHooks(
-        makeConfig({ triggerHookPoints: ['deployment:after'] }),
-        deps
-      );
+      registerAgnosticHooks(makeConfig({ triggerHookPoints: ['deployment:after'] }), deps);
 
       const handler = deps.hookPointMap.get('deployment:after')!;
       const result = await handler({
@@ -264,9 +258,7 @@ describe('agnostic-hooks', () => {
     });
 
     it('pr:created hook uses custom prReviewPreset when configured', async () => {
-      const fetchSpy = mockFetch([
-        { ok: true, status: 200, json: { crew_id: 'crew-1' } },
-      ]);
+      const fetchSpy = mockFetch([{ ok: true, status: 200, json: { crew_id: 'crew-1' } }]);
       vi.stubGlobal('fetch', fetchSpy);
 
       const deps = makeDeps();
@@ -286,9 +278,7 @@ describe('agnostic-hooks', () => {
     });
 
     it('deployment:after hook uses custom deployReviewPreset when configured', async () => {
-      const fetchSpy = mockFetch([
-        { ok: true, status: 200, json: { crew_id: 'crew-1' } },
-      ]);
+      const fetchSpy = mockFetch([{ ok: true, status: 200, json: { crew_id: 'crew-1' } }]);
       vi.stubGlobal('fetch', fetchSpy);
 
       const deps = makeDeps();
@@ -307,6 +297,35 @@ describe('agnostic-hooks', () => {
       expect(body.preset).toBe('devops');
     });
 
+    it('falls back to default preset when recommendation fails', async () => {
+      // Recommendation fetch throws
+      const fetchSpy = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+        // Crew submission succeeds
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ crew_id: 'c-fallback' }),
+          text: () => Promise.resolve(''),
+        });
+      vi.stubGlobal('fetch', fetchSpy);
+
+      const deps = makeDeps();
+      registerAgnosticHooks(makeConfig({ triggerHookPoints: ['pr:created'] }), deps);
+
+      const handler = deps.hookPointMap.get('pr:created')!;
+      await handler({ data: { prUrl: 'http://example.com/pr/1' } });
+
+      // Should have fallen back to software-engineering-standard
+      const crewCall = fetchSpy.mock.calls.find((c: any[]) =>
+        String(c[0]).includes('/api/v1/crews')
+      );
+      expect(crewCall).toBeDefined();
+      const body = JSON.parse(crewCall![1].body);
+      expect(body.preset).toBe('software-engineering-standard');
+    });
+
     it('crew hook warns on non-200 response from crew API', async () => {
       const fetchSpy = mockFetch([
         // recommend call succeeds
@@ -317,10 +336,7 @@ describe('agnostic-hooks', () => {
       vi.stubGlobal('fetch', fetchSpy);
 
       const deps = makeDeps();
-      registerAgnosticHooks(
-        makeConfig({ triggerHookPoints: ['pr:created'] }),
-        deps
-      );
+      registerAgnosticHooks(makeConfig({ triggerHookPoints: ['pr:created'] }), deps);
 
       const handler = deps.hookPointMap.get('pr:created')!;
       await handler({ data: { prUrl: 'http://example.com/pr/1' } });
@@ -341,10 +357,7 @@ describe('agnostic-hooks', () => {
       vi.stubGlobal('fetch', fetchSpy);
 
       const deps = makeDeps();
-      registerAgnosticHooks(
-        makeConfig({ triggerHookPoints: ['pr:created'] }),
-        deps
-      );
+      registerAgnosticHooks(makeConfig({ triggerHookPoints: ['pr:created'] }), deps);
 
       const handler = deps.hookPointMap.get('pr:created')!;
       await handler({ data: { prTitle: 'Fix login bug' } });
