@@ -60,7 +60,7 @@ export function TeeStatusWidget() {
         { method: 'POST' }
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tee-providers'] });
+      void queryClient.invalidateQueries({ queryKey: ['tee-providers'] });
     },
   });
 

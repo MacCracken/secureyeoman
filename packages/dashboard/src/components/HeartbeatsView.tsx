@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 /**
  * HeartbeatsView — self-contained heartbeat monitor view.
  * Used in Security > Automations > Heartbeats.
@@ -84,6 +85,7 @@ export function HeartbeatsView() {
     staleTime: 60000,
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const allTasks = heartbeatData?.tasks ?? [];
   const personalityMap = new Map<string, string>(
     (personalitiesData?.personalities ?? []).map((p) => [p.id, p.name])

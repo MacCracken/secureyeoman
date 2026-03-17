@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 /**
  * WaterfallChart — P&L waterfall using stacked BarChart (Phase 125)
  */

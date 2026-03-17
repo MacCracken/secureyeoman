@@ -144,9 +144,10 @@ export function PersonalTab() {
       const skill = skills.find((s) => s.id === openSkillId);
       if (skill) {
         startEdit(skill);
-        navigate('/skills', { replace: true, state: null });
+        void navigate('/skills', { replace: true, state: null });
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, skills]); // navigate and startEdit are stable
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['skills'] });

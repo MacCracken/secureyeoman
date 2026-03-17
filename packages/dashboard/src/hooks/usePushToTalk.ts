@@ -113,7 +113,7 @@ export function usePushToTalk(
     }
 
     if (audioContextRef.current) {
-      audioContextRef.current.close();
+      void audioContextRef.current.close();
       audioContextRef.current = null;
     }
 
@@ -241,6 +241,7 @@ export function usePushToTalk(
       setError(message);
       stopCapture();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isSupported,
     resolvedConfig.maxDurationMs,
@@ -267,7 +268,7 @@ export function usePushToTalk(
 
       if (key === resolvedConfig.hotkey.toLowerCase() && !isActive) {
         event.preventDefault();
-        startCapture();
+        void startCapture();
       }
     };
 

@@ -189,6 +189,7 @@ export function WorkflowBuilder() {
       setNodes(n);
       setEdges(e);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingData]);
 
   const onConnect = useCallback(
@@ -212,7 +213,7 @@ export function WorkflowBuilder() {
     onSuccess: (result) => {
       setToast('Saved successfully');
       if (isNew && result.definition?.id) {
-        navigate(`/workflows/${result.definition.id}/builder`, { replace: true });
+        void navigate(`/workflows/${result.definition.id}/builder`, { replace: true });
       }
       setTimeout(() => {
         setToast(null);
@@ -233,7 +234,7 @@ export function WorkflowBuilder() {
       return triggerWorkflow(id);
     },
     onSuccess: (result) => {
-      navigate(`/workflows/runs/${result.run.id}`);
+      void navigate(`/workflows/runs/${result.run.id}`);
     },
     onError: (err) => {
       setToast(err instanceof Error ? err.message : 'Failed to run');

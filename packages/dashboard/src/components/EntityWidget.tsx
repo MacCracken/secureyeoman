@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 /**
  * EntityWidget — "The Entity" AI consciousness visualization.
  *

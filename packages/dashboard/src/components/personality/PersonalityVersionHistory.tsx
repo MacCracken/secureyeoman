@@ -56,7 +56,7 @@ export default function PersonalityVersionHistory({ personalityId }: { personali
   }, [personalityId]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
   const handleTag = async () => {
@@ -183,7 +183,7 @@ export default function PersonalityVersionHistory({ personalityId }: { personali
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteTag(v.id, v.versionTag!);
+                              void handleDeleteTag(v.id, v.versionTag!);
                             }}
                             className="ml-0.5 hover:text-destructive"
                             title="Remove tag"
@@ -213,7 +213,7 @@ export default function PersonalityVersionHistory({ personalityId }: { personali
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDiff(versions[i + 1].id, v.id);
+                            void handleDiff(versions[i + 1].id, v.id);
                           }}
                           className="text-xs text-primary hover:underline"
                         >
@@ -223,7 +223,7 @@ export default function PersonalityVersionHistory({ personalityId }: { personali
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleRollback(v.id);
+                          void handleRollback(v.id);
                         }}
                         className="text-xs text-warning hover:underline"
                       >

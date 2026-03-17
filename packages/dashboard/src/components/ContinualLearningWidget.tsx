@@ -70,7 +70,7 @@ function DatasetRefreshPanel() {
         method: 'POST',
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['continual-dataset-refresh'] });
+      void queryClient.invalidateQueries({ queryKey: ['continual-dataset-refresh'] });
     },
   });
 

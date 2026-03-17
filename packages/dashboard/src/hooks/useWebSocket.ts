@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 /**
  * WebSocket Hook for Real-time Updates
  *

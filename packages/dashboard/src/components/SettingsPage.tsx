@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/static-components */
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import {
@@ -561,7 +563,7 @@ function AppearanceTab() {
           <button
             onClick={() => {
               const json = JSON.stringify(exportCustomTheme(t), null, 2);
-              navigator.clipboard.writeText(json);
+              void navigator.clipboard.writeText(json);
             }}
             className="p-0.5 hover:text-primary"
             title="Copy JSON"

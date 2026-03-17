@@ -44,7 +44,7 @@ export default function CaptureTab() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    void refresh();
     const interval = setInterval(() => void refresh(), 5000);
     return () => {
       clearInterval(interval);

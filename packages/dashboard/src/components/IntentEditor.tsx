@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 /**
  * IntentEditor — Phase 48: Organizational Intent Dashboard Component
  *

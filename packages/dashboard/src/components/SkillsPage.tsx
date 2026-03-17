@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -53,7 +54,7 @@ export function SkillsPage() {
 
   useEffect(() => {
     if ((location.state as { initialTab?: string } | null)?.initialTab) {
-      navigate(location.pathname, { replace: true, state: null });
+      void navigate(location.pathname, { replace: true, state: null });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

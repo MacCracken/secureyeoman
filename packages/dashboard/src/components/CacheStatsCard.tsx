@@ -122,7 +122,7 @@ export default function CacheStatsCard() {
         method: 'POST',
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cache-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['cache-stats'] });
     },
   });
 

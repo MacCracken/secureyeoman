@@ -113,7 +113,7 @@ export default function AdvancedTrainingWidget() {
         body: JSON.stringify(config),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['advanced-training-jobs'] });
+      void queryClient.invalidateQueries({ queryKey: ['advanced-training-jobs'] });
     },
   });
 
@@ -124,7 +124,7 @@ export default function AdvancedTrainingWidget() {
         body: JSON.stringify({ checkpointId }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['advanced-training-jobs'] });
+      void queryClient.invalidateQueries({ queryKey: ['advanced-training-jobs'] });
     },
   });
 

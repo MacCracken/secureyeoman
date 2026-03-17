@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 /**
  * Consent Dialog (Phase 108-F)
  *

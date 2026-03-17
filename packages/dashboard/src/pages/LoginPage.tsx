@@ -31,7 +31,7 @@ export function LoginPage() {
     try {
       localStorage.setItem('friday_remember_me', String(rememberMe));
       await login(password, rememberMe);
-      navigate('/', { replace: true });
+      void navigate('/', { replace: true });
     } catch (err) {
       setError(
         err instanceof Error && err.message !== 'Authentication failed'

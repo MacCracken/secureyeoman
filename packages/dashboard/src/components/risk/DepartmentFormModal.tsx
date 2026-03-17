@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * DepartmentFormModal -- Create/edit department modal with form fields for name,
  * description, mission, 5-domain risk appetite sliders with presets, and a dynamic

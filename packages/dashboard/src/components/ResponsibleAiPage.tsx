@@ -479,7 +479,7 @@ function DataProvenance() {
     if (!submittedId) return;
     try {
       await redactProvenance(submittedId, entryId);
-      refetch();
+      void refetch();
     } catch {
       // Error handling deferred to UI feedback
     }

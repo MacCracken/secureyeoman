@@ -107,7 +107,7 @@ export function VoiceProviderPicker() {
       }
       const audio = new Audio(`data:audio/${result.format || 'mp3'};base64,${result.audioBase64}`);
       ttsAudioRef.current = audio;
-      audio.play();
+      void audio.play();
       setTtsTestStatus('success');
       setTimeout(() => {
         setTtsTestStatus('idle');

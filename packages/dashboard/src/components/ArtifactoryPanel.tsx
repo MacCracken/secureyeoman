@@ -78,7 +78,7 @@ export function ArtifactoryPanel() {
     mutationFn: (data: { baseUrl: string; token?: string; username?: string; password?: string }) =>
       addArtifactoryConnection(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['artifactoryConnections'] });
+      void queryClient.invalidateQueries({ queryKey: ['artifactoryConnections'] });
       setShowAddForm(false);
       setAddForm({ baseUrl: '', token: '', username: '', password: '' });
     },
@@ -87,7 +87,7 @@ export function ArtifactoryPanel() {
   const removeMut = useMutation({
     mutationFn: removeArtifactoryConnection,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['artifactoryConnections'] });
+      void queryClient.invalidateQueries({ queryKey: ['artifactoryConnections'] });
       if (selectedConn) setSelectedConn(null);
     },
   });
@@ -145,7 +145,7 @@ export function ArtifactoryPanel() {
     onSuccess: () => {
       setPromoteBuildTarget(null);
       setPromoteForm({ targetRepo: '', status: '' });
-      queryClient.invalidateQueries({ queryKey: ['artifactoryBuilds'] });
+      void queryClient.invalidateQueries({ queryKey: ['artifactoryBuilds'] });
     },
   });
 

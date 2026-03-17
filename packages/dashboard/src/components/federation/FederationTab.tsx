@@ -321,7 +321,7 @@ function PeerMarketplacePanel({ peer, onClose }: { peer: FederationPeer; onClose
     mutationFn: ({ skillId }: { skillId: string }) =>
       installSkillFromPeer(peer.id, skillId, installTarget || undefined),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['skills'] });
+      void queryClient.invalidateQueries({ queryKey: ['skills'] });
       setInstallingSkillId(null);
     },
     onSettled: () => {
@@ -654,7 +654,7 @@ export function FederationTab() {
   const addMut = useMutation({
     mutationFn: addFederationPeer,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['federationPeers'] });
+      void queryClient.invalidateQueries({ queryKey: ['federationPeers'] });
       setShowAddForm(false);
     },
   });
@@ -677,7 +677,7 @@ export function FederationTab() {
     setCheckingHealthId(peer.id);
     try {
       await checkFederationPeerHealth(peer.id);
-      queryClient.invalidateQueries({ queryKey: ['federationPeers'] });
+      void queryClient.invalidateQueries({ queryKey: ['federationPeers'] });
     } finally {
       setCheckingHealthId(null);
     }

@@ -98,7 +98,7 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
   const closeMutation = useMutation({
     mutationFn: closeBrowserSession,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['browserSessions'] });
+      void queryClient.invalidateQueries({ queryKey: ['browserSessions'] });
     },
   });
 

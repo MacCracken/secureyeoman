@@ -744,7 +744,7 @@ const SystemTopologySection = memo(function SystemTopologySection({
                   tasks: '/security?tab=tasks',
                   mcp: '/mcp',
                 };
-                navigate(routes[nodeId] ?? `/security?tab=nodes&node=${nodeId}`);
+                void navigate(routes[nodeId] ?? `/security?tab=nodes&node=${nodeId}`);
               }}
             />
           </Suspense>
@@ -1248,7 +1248,7 @@ export function MissionControlTab({
               zoom={worldZoom}
               onAgentClick={(id) => {
                 setIsFullscreen(false);
-                navigate(`/soul/personalities?focus=${id}`);
+                void navigate(`/soul/personalities?focus=${id}`);
               }}
               maxAgents={999}
             />

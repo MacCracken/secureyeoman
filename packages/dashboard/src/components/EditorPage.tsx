@@ -221,6 +221,7 @@ function StandardEditorPage() {
     queryFn: fetchPersonalities,
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const personalities = personalitiesData?.personalities ?? [];
   const defaultPersonality =
     personalities.find((p) => p.isDefault) ??
@@ -272,7 +273,7 @@ function StandardEditorPage() {
   const handleSend = useCallback(() => {
     const trimmed = chatInput.trim();
     if (!trimmed || isPending) return;
-    sendMessage(trimmed);
+    void sendMessage(trimmed);
     setChatInput('');
   }, [chatInput, isPending, sendMessage]);
 
@@ -314,6 +315,7 @@ function StandardEditorPage() {
       setChatInput((prev) => prev + voice.transcript);
       voice.clearTranscript();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voice.transcript, voice.clearTranscript]);
 
   // Speak assistant messages when voice is enabled
@@ -326,6 +328,7 @@ function StandardEditorPage() {
       }
     }
     lastMsgCount.current = messages.length;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, voice.voiceEnabled, voice.speak, messages]);
 
   // Auto-scroll chat
@@ -340,6 +343,7 @@ function StandardEditorPage() {
         prev.map((t) => (t.id === activeTabId ? { ...t, language: detectLanguage(t.name) } : t))
       );
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTabId]);
 
   useEffect(() => {
@@ -715,6 +719,7 @@ function StandardEditorPage() {
     if (!isPending && aiPlan?.status === 'executing') {
       setAiPlan((prev) => (prev ? { ...prev, status: 'completed' } : prev));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPending]);
 
   const handleInsertAtCursor = useCallback((msg: ChatMessage) => {

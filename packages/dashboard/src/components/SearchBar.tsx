@@ -140,7 +140,7 @@ export function SearchBar() {
   }, [query, search]);
 
   const handleSelect = (result: SearchResult) => {
-    navigate(result.route);
+    void navigate(result.route);
     setOpen(false);
     setQuery('');
   };

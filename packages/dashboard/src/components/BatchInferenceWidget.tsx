@@ -66,7 +66,7 @@ export default function BatchInferenceWidget() {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['batch-inference-jobs'] });
+      void queryClient.invalidateQueries({ queryKey: ['batch-inference-jobs'] });
       setName('');
       setPrompts('');
     },

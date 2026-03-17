@@ -47,19 +47,19 @@ export function ApiKeysSettings() {
       setCreatedKey(result);
       setShowCreateKey(false);
       setNewKeyForm({ name: '', role: 'viewer', expiresInDays: 90 });
-      queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+      void queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
     },
   });
 
   const revokeKeyMutation = useMutation({
     mutationFn: (id: string) => revokeApiKey(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+      void queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
     },
   });
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
     setCopiedKey(true);
     setTimeout(() => {
       setCopiedKey(false);

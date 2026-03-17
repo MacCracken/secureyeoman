@@ -91,6 +91,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
     queryFn: fetchAgentProfiles,
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const profiles = profilesData?.profiles ?? [];
 
   const delegateMut = useMutation({

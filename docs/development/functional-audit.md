@@ -1,6 +1,6 @@
 # Competitive Analysis
 
-> Last updated: **2026-03-13** | SecureYeoman **v2026.3.13**
+> Last updated: **2026-03-17** | SecureYeoman **v2026.3.17**
 
 ---
 
@@ -16,22 +16,22 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 
 ## Landscape
 
-| | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
-|---|---|---|---|---|---|
-| **Version** | 2026.3.13 | 2026.3.8 | v0.9.8.2 | v0.2.0 | v0.13.1 |
-| **Stars** | — | ~250K | ~15.7K | ~21.7K | ~4K |
-| **Language** | TypeScript | TypeScript | Python | Go | Rust |
-| **Focus** | Enterprise self-hosted | Personal AI | Personal assistant | Embedded/edge | Privacy-first TEE |
-| **RAM** | ~1 GB | ~1.5 GB | 4 GB | **10-20 MB** | Unknown |
-| **Startup** | ~30 s | ~6 s | > 30 s | **< 1 s** | Unknown |
+| | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw | NemoClaw |
+|---|---|---|---|---|---|---|
+| **Version** | 2026.3.17 | 2026.3.8 | v0.9.8.2 | v0.2.0 | v0.13.1 | Preview (GTC 2026) |
+| **Stars** | — | ~250K | ~15.7K | ~21.7K | ~4K | New |
+| **Language** | TypeScript | TypeScript | Python | Go | Rust | TypeScript (wraps OpenClaw) |
+| **Focus** | Enterprise self-hosted | Personal AI | Personal assistant | Embedded/edge | Privacy-first TEE | Agent sandbox + privacy |
+| **RAM** | ~1 GB | ~1.5 GB | 4 GB | **10-20 MB** | Unknown | ~1.5 GB+ (inherits OC) |
+| **Startup** | ~30 s | ~6 s | > 30 s | **< 1 s** | Unknown | ~6 s+ (inherits OC) |
 
 ### New entrants (2026)
 
-| | TrustClaw | Manus AI (Meta) | OpenAI Frontier | Devin 2.0 | OpenHands | ZeroClaw | NanoBot |
-|---|---|---|---|---|---|---|---|
-| **Type** | OpenClaw fork | SaaS (acquired ~$2B) | Enterprise SaaS | AI coding agent | OSS code agent | Rust edge agent | Research agent |
-| **Threat** | High | Medium-High | High | Medium | Medium | Low | Low |
-| **Self-hosted** | No (cloud sandbox) | No | Partial (on-prem option) | No | Yes | Yes | Yes |
+| | TrustClaw | NemoClaw (NVIDIA) | Manus AI (Meta) | OpenAI Frontier | Devin 2.0 | OpenHands | ZeroClaw | NanoBot |
+|---|---|---|---|---|---|---|---|---|
+| **Type** | OpenClaw fork | OpenClaw security wrapper | SaaS (acquired ~$2B) | Enterprise SaaS | AI coding agent | OSS code agent | Rust edge agent | Research agent |
+| **Threat** | High | **High** | Medium-High | High | Medium | Medium | Low | Low |
+| **Self-hosted** | No (cloud sandbox) | Yes (OSS) | No | Partial (on-prem option) | No | Yes | Yes | Yes |
 
 ---
 
@@ -44,6 +44,8 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 **PicoClaw** (~21.7K stars) — Go binary, 10-20 MB, < 1 s startup on $10 hardware. MCP client in v0.2.0. Added Telegram, Discord, QQ, DingTalk, LINE, WeCom, and Slack integrations. New agent memory system, cron scheduler, ClawdChat social network, and security sandbox. Growing fast but still early development — no RBAC, persistent memory, or production security guarantees.
 
 **Ironclaw** (~4K stars) — Rust, NEAR AI. Launched at NEARCON 2026 alongside Confidential GPU Marketplace. TEE + WASM execution. AES-256-GCM encryption. PostgreSQL storage with comprehensive audit log. Free Starter tier (1 hosted agent) with paid tiers for scaling. Cannot self-host air-gapped (requires NEAR AI Cloud). No RBAC, SSO, K8s, multi-agent orchestration, or dashboard.
+
+**NemoClaw** (NVIDIA) — Open-source enterprise security wrapper around OpenClaw, announced at GTC 2026 (March 16). Bundles NVIDIA OpenShell runtime for process-level sandboxing (filesystem isolation, network policy, syscall blocking via YAML-based declarative security policies), Privacy Router for routing agents to cloud LLMs while enforcing data-handling policies, and local Nemotron model execution on NVIDIA GPUs (GeForce RTX, RTX PRO, DGX Spark/Station). Compute-aware routing evaluates local GPU resources to decide local vs. cloud inference. Not model-exclusive — works with OpenAI, Anthropic, and others. Installs in a single command on top of OpenClaw. **High threat** to SY because it addresses OpenClaw's biggest weakness (security) while leveraging NVIDIA's brand and GPU ecosystem. However, it inherits OpenClaw's architecture (no RBAC, SSO, multi-tenancy, DAG workflows, dashboard, or training pipeline), provides only infrastructure-level sandboxing (no content guardrails, DLP, or governance), and cannot operate air-gapped without GPU hardware. No formal compliance posture (SOC 2, HIPAA, ISO 27001).
 
 **TrustClaw** — Cloud-native OpenClaw fork with 1,000+ tools, OAuth authentication, and sandboxed cloud execution. All execution in cloud — nothing runs locally. Trades one cloud dependency for two. Keys still pass through a third party — fails data residency for regulated industries. Limited infrastructure visibility problematic for compliance demonstration.
 
@@ -63,57 +65,60 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 
 **Y** = shipped, **P** = partial, **-** = absent
 
-| Category | Feature | SY | OC | AZ | PC | IC |
-|----------|---------|:--:|:--:|:--:|:--:|:--:|
-| **Security** | RBAC (4 levels) | Y | - | - | - | - |
-| | SSO/OIDC + SAML 2.0 | Y | - | - | - | - |
-| | Encryption at rest (AES-256-GCM) | Y | - | - | - | Y |
-| | Secrets management (Vault/OpenBao) | Y | - | - | - | P |
-| | TLS lifecycle + mTLS | Y | - | - | - | - |
-| | Cryptographic audit (HMAC-SHA256) | Y | - | - | - | Y |
-| | Credential redaction (20 patterns) | Y | - | - | - | Y |
-| | Output injection scanner | Y | - | - | - | - |
-| | OPA + CEL governance | Y | - | - | - | - |
-| | Sandboxing (Landlock/seccomp/V8 isolate/WASM/gVisor) | Y | P | P | P | Y |
-| | DLP (classification, egress, watermarking) | Y | - | - | - | - |
-| | Supply chain (SBOM, SLSA L3, cosign) | Y | - | - | - | - |
-| | Multi-tenancy (PostgreSQL RLS) | Y | - | - | - | - |
-| | Chaos engineering | Y | - | - | - | - |
-| **Knowledge** | Vector memory (FAISS/Qdrant/ChromaDB) | Y | - | Y | - | Y |
-| | Hybrid FTS + vector (RRF) | Y | - | - | - | Y |
-| | Per-personality memory scoping | Y | - | - | - | - |
-| | Proactive context compaction | Y | Y | - | - | Y |
-| **Orchestration** | MCP tools | 462 | P | P | P | P |
-| | DAG workflow engine (19 step types) | Y | - | - | - | - |
-| | Visual workflow builder (ReactFlow) | Y | - | - | - | - |
-| | Agent swarms (3 strategies) | Y | - | Y | - | - |
-| | A2A protocol | Y | - | Y | - | - |
-| | Agent evaluation harness | Y | - | - | - | - |
-| | Browser automation (Playwright) | Y | Y | Y | - | - |
-| | Network security toolkit (38 tools) | Y | - | - | - | - |
-| **Integrations** | Platform count | 38 | 23+ | 2 | 11+ | 4 |
-| | OAuth2 auto-refresh | Y | - | - | - | - |
-| | Per-user notification prefs | Y | - | - | - | - |
-| **Dashboard** | Web dashboard | Y | Y | Y | - | Y |
-| | Terminal UI (TUI) | Y | - | - | - | Y |
-| | CLI commands | 56 | Y | Y | Y | REPL |
-| | Monaco code editor | Y | - | - | - | - |
-| | Inline AI completion | Y | - | - | - | - |
-| | Mission Control | Y | - | - | - | - |
-| | 45 themes | Y | - | - | - | - |
-| | CRDT collaborative editing | Y | - | - | - | - |
-| | Mobile app | - | Y | - | - | - |
-| **Enterprise** | Kubernetes / Helm | Y | P | - | - | - |
-| | Prometheus / Grafana | Y | - | - | - | - |
-| | Multi-region HA | Y | - | - | - | - |
-| | Backup & DR API | Y | - | - | - | - |
-| | Single binary | Y | - | - | Y | Y |
-| | Docker (GHCR, multi-arch, cosign) | Y | Y | Y | - | Y |
-| | Air-gap / offline | Y | Y | Y | Y | - |
-| | Dual DB (PostgreSQL + SQLite) | Y | - | - | - | Y |
-| **Quality** | Tests | ~21,000+ | Limited | Minimal | Minimal | Unknown |
-| | Coverage | ~89% | - | - | - | - |
-| | ADRs | 37 | - | - | - | - |
+| Category | Feature | SY | OC | AZ | PC | IC | NC |
+|----------|---------|:--:|:--:|:--:|:--:|:--:|:--:|
+| **Security** | RBAC (4 levels) | Y | - | - | - | - | - |
+| | SSO/OIDC + SAML 2.0 | Y | - | - | - | - | - |
+| | Encryption at rest (AES-256-GCM) | Y | - | - | - | Y | - |
+| | Secrets management (Vault/OpenBao) | Y | - | - | - | P | - |
+| | TLS lifecycle + mTLS | Y | - | - | - | - | - |
+| | Cryptographic audit (HMAC-SHA256) | Y | - | - | - | Y | - |
+| | Credential redaction (20 patterns) | Y | - | - | - | Y | - |
+| | Output injection scanner | Y | - | - | - | - | - |
+| | OPA + CEL governance | Y | - | - | - | - | - |
+| | Sandboxing (Landlock/seccomp/V8 isolate/WASM/gVisor) | Y | P | P | P | Y | Y |
+| | Process-level isolation (OpenShell) | - | - | - | - | - | Y |
+| | Privacy router (data policy enforcement) | - | - | - | - | - | Y |
+| | DLP (classification, egress, watermarking) | Y | - | - | - | - | - |
+| | Supply chain (SBOM, SLSA L3, cosign) | Y | - | - | - | - | - |
+| | Multi-tenancy (PostgreSQL RLS) | Y | - | - | - | - | - |
+| | Chaos engineering | Y | - | - | - | - | - |
+| **Knowledge** | Vector memory (FAISS/Qdrant/ChromaDB) | Y | - | Y | - | Y | - |
+| | Hybrid FTS + vector (RRF) | Y | - | - | - | Y | - |
+| | Per-personality memory scoping | Y | - | - | - | - | - |
+| | Proactive context compaction | Y | Y | - | - | Y | - |
+| **Orchestration** | MCP tools | 462 | P | P | P | P | P |
+| | DAG workflow engine (19 step types) | Y | - | - | - | - | - |
+| | Visual workflow builder (ReactFlow) | Y | - | - | - | - | - |
+| | Agent swarms (3 strategies) | Y | - | Y | - | - | - |
+| | A2A protocol | Y | - | Y | - | - | - |
+| | Agent evaluation harness | Y | - | - | - | - | - |
+| | Browser automation (Playwright) | Y | Y | Y | - | - | - |
+| | Network security toolkit (38 tools) | Y | - | - | - | - | - |
+| | GPU-aware local inference routing | - | - | - | - | - | Y |
+| **Integrations** | Platform count | 38 | 23+ | 2 | 11+ | 4 | - |
+| | OAuth2 auto-refresh | Y | - | - | - | - | - |
+| | Per-user notification prefs | Y | - | - | - | - | - |
+| **Dashboard** | Web dashboard | Y | Y | Y | - | Y | - |
+| | Terminal UI (TUI) | Y | - | - | - | Y | - |
+| | CLI commands | 56 | Y | Y | Y | REPL | - |
+| | Monaco code editor | Y | - | - | - | - | - |
+| | Inline AI completion | Y | - | - | - | - | - |
+| | Mission Control | Y | - | - | - | - | - |
+| | 45 themes | Y | - | - | - | - | - |
+| | CRDT collaborative editing | Y | - | - | - | - | - |
+| | Mobile app | - | Y | - | - | - | - |
+| **Enterprise** | Kubernetes / Helm | Y | P | - | - | - | - |
+| | Prometheus / Grafana | Y | - | - | - | - | - |
+| | Multi-region HA | Y | - | - | - | - | - |
+| | Backup & DR API | Y | - | - | - | - | - |
+| | Single binary | Y | - | - | Y | Y | - |
+| | Docker (GHCR, multi-arch, cosign) | Y | Y | Y | - | Y | Y |
+| | Air-gap / offline | Y | Y | Y | Y | - | P |
+| | Dual DB (PostgreSQL + SQLite) | Y | - | - | - | Y | - |
+| **Quality** | Tests | ~21,000+ | Limited | Minimal | Minimal | Unknown | Unknown |
+| | Coverage | ~89% | - | - | - | - | - |
+| | ADRs | 37 | - | - | - | - | - |
 
 ---
 
@@ -214,4 +219,4 @@ The Pro tier at $20/yr vs Devin's $20/mo ($480 over the same period) is a 24x pr
 
 ---
 
-*Updated: 2026-03-13 (gap analysis validated against codebase, enterprise gaps closed: SCIM, break-glass, access reviews, per-tenant quotas, compliance SoA)*
+*Updated: 2026-03-17 (added NVIDIA NemoClaw as competitor — GTC 2026 announcement; feature matrix NC column; GPU inference routing noted as competitive differentiator)*

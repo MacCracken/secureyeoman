@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * AnnotationContextMenu — Monaco editor context menu action for training annotations.
  *

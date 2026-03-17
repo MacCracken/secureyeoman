@@ -130,16 +130,16 @@ export function SandboxTab() {
   const approveMut = useMutation({
     mutationFn: (id: string) => approveQuarantine(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sandbox', 'quarantine'] });
-      queryClient.invalidateQueries({ queryKey: ['sandbox', 'stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['sandbox', 'quarantine'] });
+      void queryClient.invalidateQueries({ queryKey: ['sandbox', 'stats'] });
     },
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteQuarantine(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sandbox', 'quarantine'] });
-      queryClient.invalidateQueries({ queryKey: ['sandbox', 'stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['sandbox', 'quarantine'] });
+      void queryClient.invalidateQueries({ queryKey: ['sandbox', 'stats'] });
     },
   });
 

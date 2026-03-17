@@ -166,7 +166,7 @@ export function DepartmentalRiskTab() {
     description?: string;
   }) => {
     if (!selectedDept) return;
-    createRegisterEntry({
+    void createRegisterEntry({
       departmentId: selectedDept,
       title: data.title,
       category: data.category as any,
@@ -334,7 +334,7 @@ export function DepartmentalRiskTab() {
                     <button
                       className="ml-auto text-xs px-2 py-1 border border-border rounded hover:bg-base-200"
                       onClick={() => {
-                        snapshotDepartment(selectedDept).then(() => {
+                        void snapshotDepartment(selectedDept).then(() => {
                           invalidateAll();
                         });
                       }}

@@ -55,7 +55,7 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
   }, [workflowId]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
   const handleTag = async () => {
@@ -177,7 +177,7 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDiff(versions[i + 1].id, v.id);
+                          void handleDiff(versions[i + 1].id, v.id);
                         }}
                         className="text-xs text-blue-600 hover:underline"
                       >
@@ -187,7 +187,7 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleRollback(v.id);
+                        void handleRollback(v.id);
                       }}
                       className="text-xs text-orange-600 hover:underline"
                     >

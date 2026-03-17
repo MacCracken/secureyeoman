@@ -86,7 +86,7 @@ export function DeploymentTab() {
     mutationFn: () =>
       deployModel({ personalityId: deployPersonalityId, modelName: deployModelName }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['model-versions'] });
+      void queryClient.invalidateQueries({ queryKey: ['model-versions'] });
       setDeployModelName('');
     },
   });
@@ -99,7 +99,7 @@ export function DeploymentTab() {
   const createTestMutation = useMutation({
     mutationFn: () => createAbTest(abForm),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ab-tests'] });
+      void queryClient.invalidateQueries({ queryKey: ['ab-tests'] });
       setAbForm({ personalityId: '', name: '', modelA: '', modelB: '', trafficPctB: 50 });
     },
   });

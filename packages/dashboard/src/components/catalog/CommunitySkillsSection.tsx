@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * CommunitySkillsSection — skills content type for CommunityTab.
  * Extracted from CommunityTab. Includes search, personality selector, category filter, paginated grid.

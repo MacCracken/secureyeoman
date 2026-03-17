@@ -97,7 +97,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
   const addMutation = useMutation({
     mutationFn: addMemory,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['memories'] });
+      void queryClient.invalidateQueries({ queryKey: ['memories'] });
       setNewContent('');
       setNewSource('manual');
       setNewImportance(0.5);

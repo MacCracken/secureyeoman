@@ -21,7 +21,7 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
   const saveMutation = useMutation({
     mutationFn: updateMcpConfig,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mcpConfig'] });
+      void queryClient.invalidateQueries({ queryKey: ['mcpConfig'] });
       setDirty(false);
     },
   });

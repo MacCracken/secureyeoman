@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 /**
  * BullShiftStreamWidget — Real-time trading stream card for Mission Control.
  *

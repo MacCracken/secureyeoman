@@ -37,7 +37,7 @@ export function VoiceLanguageSection({
       );
       const audio = new Audio(`data:audio/${result.format || 'mp3'};base64,${result.audioBase64}`);
       audioRef.current = audio;
-      audio.play();
+      void audio.play();
       audio.onended = () => {
         setPreviewing(false);
       };

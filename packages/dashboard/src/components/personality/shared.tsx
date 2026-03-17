@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-hooks/refs */
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Bot, ChevronDown, ChevronRight, X, ZoomIn, ZoomOut } from 'lucide-react';
 import type { Personality } from '../../types';

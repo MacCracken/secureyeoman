@@ -208,7 +208,7 @@ export default function HyperparamSearchWidget() {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hyperparam-searches'] });
+      void queryClient.invalidateQueries({ queryKey: ['hyperparam-searches'] });
     },
   });
 

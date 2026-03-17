@@ -62,6 +62,7 @@ export function ChatPage() {
   const [selectedConversationId, setSelectedConversationIdRaw] = useState<string | null>(() =>
     localStorage.getItem('soul:chatConversationId')
   );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const setSelectedConversationId = (id: string | null) => {
     if (id) localStorage.setItem('soul:chatConversationId', id);
     else localStorage.removeItem('soul:chatConversationId');
@@ -213,14 +214,14 @@ export function ChatPage() {
   useEffect(() => {
     if (conversationId && !selectedConversationId) {
       setSelectedConversationId(conversationId);
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      void queryClient.invalidateQueries({ queryKey: ['conversations'] });
     }
   }, [conversationId, selectedConversationId, queryClient]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteConversation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      void queryClient.invalidateQueries({ queryKey: ['conversations'] });
       if (selectedConversationId) {
         setSelectedConversationId(null);
         clearMessages();
@@ -231,7 +232,7 @@ export function ChatPage() {
   const renameMutation = useMutation({
     mutationFn: ({ id, title }: { id: string; title: string }) => renameConversation(id, title),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      void queryClient.invalidateQueries({ queryKey: ['conversations'] });
       setEditingConversationId(null);
     },
   });
@@ -288,7 +289,7 @@ export function ChatPage() {
   const handleSendWrapper = useCallback(
     (text: string) => {
       setEditingMsgIdx(null);
-      sendMessage(text);
+      void sendMessage(text);
     },
     [sendMessage]
   );
@@ -358,12 +359,13 @@ export function ChatPage() {
         model: personality.defaultModel.model,
       })
         .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['model-info'] });
+          void queryClient.invalidateQueries({ queryKey: ['model-info'] });
         })
         .catch(() => {
           // Silently fail - user can manually switch if needed
         });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectivePersonalityId, queryClient]);
 
   // Speak assistant messages when voice is enabled
@@ -376,6 +378,7 @@ export function ChatPage() {
       }
     }
     lastMsgCount.current = messages.length;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, voice.voiceEnabled, voice.speak, messages]);
 
   // Auto-scroll on new messages / streaming
@@ -540,7 +543,7 @@ export function ChatPage() {
                               model: p.defaultModel.model,
                             })
                               .then(() => {
-                                queryClient.invalidateQueries({ queryKey: ['model-info'] });
+                                void queryClient.invalidateQueries({ queryKey: ['model-info'] });
                               })
                               .catch(() => {});
                           }

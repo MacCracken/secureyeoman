@@ -435,7 +435,7 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
   const createMut = useMutation({
     mutationFn: createProactiveTrigger,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['proactive-triggers'] });
+      void queryClient.invalidateQueries({ queryKey: ['proactive-triggers'] });
       onClose();
     },
   });
@@ -757,8 +757,8 @@ function PatternsTab() {
   const convertMut = useMutation({
     mutationFn: convertPatternToTrigger,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['proactive-triggers'] });
-      queryClient.invalidateQueries({ queryKey: ['proactive-patterns'] });
+      void queryClient.invalidateQueries({ queryKey: ['proactive-triggers'] });
+      void queryClient.invalidateQueries({ queryKey: ['proactive-patterns'] });
     },
   });
 

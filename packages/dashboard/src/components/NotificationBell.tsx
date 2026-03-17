@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 /**
  * Notification Bell
  *

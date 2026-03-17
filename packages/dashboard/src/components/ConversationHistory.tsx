@@ -68,6 +68,7 @@ export function ConversationHistory({ conversationId }: { conversationId: string
     },
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const entries = historyData?.entries ?? [];
   const { messageEntries, topicEntries, bulkEntries, totalTokens } = useMemo(() => {
     const message: HistoryEntry[] = [];

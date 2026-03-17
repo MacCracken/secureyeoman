@@ -131,7 +131,7 @@ export function useWizardState(onClose: () => void) {
   const createTriggerMut = useMutation({
     mutationFn: createProactiveTrigger,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['proactive-triggers'] });
+      void queryClient.invalidateQueries({ queryKey: ['proactive-triggers'] });
       handleClose();
     },
   });
@@ -139,7 +139,7 @@ export function useWizardState(onClose: () => void) {
   const registerExtensionMut = useMutation({
     mutationFn: registerExtension,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['extensions'] });
+      void queryClient.invalidateQueries({ queryKey: ['extensions'] });
       handleClose();
     },
     onError: (err) => {
@@ -153,7 +153,7 @@ export function useWizardState(onClose: () => void) {
   const createUserMut = useMutation({
     mutationFn: createUser,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auth-users'] });
+      void queryClient.invalidateQueries({ queryKey: ['auth-users'] });
       handleClose();
     },
     onError: (err) => {
@@ -167,7 +167,7 @@ export function useWizardState(onClose: () => void) {
   const createWorkspaceMut = useMutation({
     mutationFn: createWorkspace,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
       handleClose();
     },
     onError: (err) => {
@@ -181,7 +181,7 @@ export function useWizardState(onClose: () => void) {
   const addMemoryMut = useMutation({
     mutationFn: addMemory,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['memories'] });
+      void queryClient.invalidateQueries({ queryKey: ['memories'] });
       handleClose();
     },
     onError: (err) => {
@@ -196,7 +196,7 @@ export function useWizardState(onClose: () => void) {
     mutationFn: ({ topic, content }: { topic: string; content: string }) =>
       learnKnowledge(topic, content),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+      void queryClient.invalidateQueries({ queryKey: ['knowledge'] });
       handleClose();
     },
     onError: (err) => {
@@ -210,7 +210,7 @@ export function useWizardState(onClose: () => void) {
   const createIntentMut = useMutation({
     mutationFn: (doc: Record<string, unknown>) => createIntent(doc),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['intents'] });
+      void queryClient.invalidateQueries({ queryKey: ['intents'] });
       handleClose();
       window.location.href = '/intent';
     },

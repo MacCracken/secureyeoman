@@ -22,7 +22,7 @@ export function LogRetentionSettings() {
   const retentionMutation = useMutation({
     mutationFn: () => enforceRetention({ maxAgeDays, maxEntries }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['audit-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['audit-stats'] });
     },
   });
 

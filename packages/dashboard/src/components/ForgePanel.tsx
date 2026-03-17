@@ -57,7 +57,7 @@ export function ForgePanel() {
     mutationFn: (data: { provider: string; baseUrl: string; token?: string }) =>
       addForgeConnection(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['forgeConnections'] });
+      void queryClient.invalidateQueries({ queryKey: ['forgeConnections'] });
       setShowAddForm(false);
       setAddForm({ provider: 'github', baseUrl: '', token: '' });
     },
@@ -66,7 +66,7 @@ export function ForgePanel() {
   const removeMut = useMutation({
     mutationFn: removeForgeConnection,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['forgeConnections'] });
+      void queryClient.invalidateQueries({ queryKey: ['forgeConnections'] });
       if (selectedForge) setSelectedForge(null);
     },
   });

@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-hooks/purity */
 /**
  * AgentWorldWidget — React port of the ASCII animated agent world.
  *

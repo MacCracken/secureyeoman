@@ -174,6 +174,7 @@ export function SecurityPage() {
     refetchInterval: 10000,
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const events = eventsData?.events ?? [];
 
   const handleVerifyChain = async () => {

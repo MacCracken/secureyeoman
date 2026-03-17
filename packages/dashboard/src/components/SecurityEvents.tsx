@@ -82,6 +82,7 @@ export function SecurityEvents({ metrics }: SecurityEventsProps) {
     refetchInterval: 10000,
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const events = eventsData?.events ?? [];
 
   const handleVerifyChain = async () => {

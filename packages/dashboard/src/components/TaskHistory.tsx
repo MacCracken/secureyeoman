@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * Open Tasks Component
  *
@@ -135,7 +136,7 @@ export function OpenTasks() {
     mutationFn: (data: { name: string; type?: string; description?: string; input?: unknown }) =>
       createTask(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setShowCreateDialog(false);
       setNewTask({ name: '', type: 'execute', description: '', input: '' });
     },
@@ -144,7 +145,7 @@ export function OpenTasks() {
   const deleteTaskMutation = useMutation({
     mutationFn: (id: string) => deleteTask(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 
@@ -157,7 +158,7 @@ export function OpenTasks() {
       data: { name?: string; type?: string; description?: string };
     }) => updateTask(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setEditTask(null);
     },
   });

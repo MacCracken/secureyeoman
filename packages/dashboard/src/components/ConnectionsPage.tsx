@@ -227,18 +227,18 @@ export function ConnectionsPage() {
   const enableServiceMut = useMutation({
     mutationFn: enableEcosystemService,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ecosystemServices'] });
-      queryClient.invalidateQueries({ queryKey: ['mcpConfig'] });
-      queryClient.invalidateQueries({ queryKey: ['mcpTools'] });
+      void queryClient.invalidateQueries({ queryKey: ['ecosystemServices'] });
+      void queryClient.invalidateQueries({ queryKey: ['mcpConfig'] });
+      void queryClient.invalidateQueries({ queryKey: ['mcpTools'] });
     },
   });
 
   const disableServiceMut = useMutation({
     mutationFn: disableEcosystemService,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ecosystemServices'] });
-      queryClient.invalidateQueries({ queryKey: ['mcpConfig'] });
-      queryClient.invalidateQueries({ queryKey: ['mcpTools'] });
+      void queryClient.invalidateQueries({ queryKey: ['ecosystemServices'] });
+      void queryClient.invalidateQueries({ queryKey: ['mcpConfig'] });
+      void queryClient.invalidateQueries({ queryKey: ['mcpTools'] });
     },
   });
 

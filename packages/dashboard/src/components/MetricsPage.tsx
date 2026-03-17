@@ -102,6 +102,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
     };
     historyRef.current = [...historyRef.current, point].slice(-MAX_HISTORY);
     setHistory([...historyRef.current]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metrics?.resources?.cpuPercent, metrics?.resources?.memoryUsedMb]);
 
   const heartbeatTasks = heartbeatStatus?.tasks ?? [];
@@ -118,6 +119,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
 
   const handleViewCosts = useCallback(() => {
     setActiveTab('costs');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const TAB_LABELS: Record<Tab, string> = {

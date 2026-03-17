@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -26,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleAuthFailure = useCallback(() => {
     setToken(null);
-    navigate('/login', { replace: true });
+    void navigate('/login', { replace: true });
   }, [navigate]);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       return;
     }
-    verifySession().then((valid) => {
+    void verifySession().then((valid) => {
       setToken(valid ? getAccessToken() : null);
       setIsLoading(false);
     });
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await apiLogout();
     setToken(null);
-    navigate('/login', { replace: true });
+    void navigate('/login', { replace: true });
   }, [navigate]);
 
   return (

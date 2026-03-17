@@ -398,9 +398,9 @@ function InstalledSystem({
   const handleEdit = (s: Skill) => {
     const cat = getSystemCategory(s);
     if (cat === 'theme') {
-      navigate('/settings/appearance');
+      void navigate('/settings/appearance');
     } else {
-      navigate('/settings/souls');
+      void navigate('/settings/souls');
     }
   };
 

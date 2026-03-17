@@ -443,7 +443,7 @@ export function ATHITab() {
   const [editingScenario, setEditingScenario] = useState<any>(null);
 
   const invalidate = useCallback(() => {
-    qc.invalidateQueries({ queryKey: ['athi'] });
+    void qc.invalidateQueries({ queryKey: ['athi'] });
   }, [qc]);
 
   // Queries

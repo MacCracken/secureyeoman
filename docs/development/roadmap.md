@@ -284,6 +284,18 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
+### GPU-Aware Inference Routing
+
+*Inspired by NVIDIA NemoClaw's compute-aware routing (GTC 2026). Detect available GPU resources and intelligently route inference requests to local models vs. cloud providers based on capability, privacy requirements, and cost.*
+
+- [ ] **GPU capability probe** — `GET /api/v1/system/gpu` endpoint returns detected GPUs (NVIDIA via `nvidia-smi`, AMD via `rocm-smi`), VRAM, driver version, and CUDA/ROCm availability. Surface in dashboard System Settings.
+- [ ] **Local model registry** — Track locally available models (Ollama, LM Studio, LocalAI) with VRAM requirements and capability tags (e.g., `vision`, `code`, `reasoning`). Auto-detect via provider health checks.
+- [ ] **Smart inference router** — When processing a request, evaluate: (1) local GPU availability + VRAM headroom, (2) model capability match, (3) privacy policy (e.g., "never send PII to cloud"), (4) cost preference. Route to local model when viable, cloud when necessary. Configurable routing policy per personality.
+- [ ] **Privacy-aware routing** — DLP classifier tags content before routing. Content marked as sensitive (PII, credentials, proprietary) routes exclusively to local models. Extends existing DLP pipeline with a routing decision layer.
+- [ ] **AGNOS edge GPU support** — Extend AGNOS images with GPU passthrough for edge devices with NVIDIA Jetson or Intel integrated GPUs. Enable local inference on edge fleet without cloud dependency.
+
+---
+
 ### Rasa Image Editor Integration
 
 *AI-native image editor for the SecureYeoman ecosystem. GPU-accelerated rendering, generative AI, and MCP tool integration for programmatic image manipulation from chat, workflows, and agents.*

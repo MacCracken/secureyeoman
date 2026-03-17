@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/purity */
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {

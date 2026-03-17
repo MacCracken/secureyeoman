@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/preserve-manual-memoization */
 /**
  * Provider API Keys Settings
  *

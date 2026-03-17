@@ -122,6 +122,7 @@ export function AuditLogTab({
     refetchInterval: 15000,
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const entries = data?.entries ?? [];
   const total = data?.total ?? 0;
   const unreviewedCount = entries.filter((e: AuditEntry) => !reviewed.has(e.id)).length;

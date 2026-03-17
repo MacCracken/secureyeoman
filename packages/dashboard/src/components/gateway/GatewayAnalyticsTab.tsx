@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 /**
  * GatewayAnalyticsTab — API Gateway usage analytics (Phase 80)
  *

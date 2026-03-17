@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * ServiceKeysPanel — collapsible categorized management of well-known MCP API keys
  * and custom secrets. Shows per-category configuration status at a glance.

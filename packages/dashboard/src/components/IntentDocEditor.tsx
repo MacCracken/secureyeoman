@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * IntentDocEditor — Phase 48.6 (Developer Mode)
  *

@@ -120,7 +120,7 @@ export function useTalkMode(
     }
 
     if (audioContextRef.current) {
-      audioContextRef.current.close();
+      void audioContextRef.current.close();
       audioContextRef.current = null;
     }
 
@@ -274,6 +274,7 @@ export function useTalkMode(
       setError(message);
       cleanup();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isSupported,
     resolvedConfig.maxDurationMs,

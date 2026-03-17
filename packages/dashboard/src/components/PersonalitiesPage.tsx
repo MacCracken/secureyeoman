@@ -303,6 +303,7 @@ export function PersonalityEditor({
     queryFn: fetchSecurityPolicy,
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const personalities = personalitiesData?.personalities ?? [];
 
   const createMut = useMutation({

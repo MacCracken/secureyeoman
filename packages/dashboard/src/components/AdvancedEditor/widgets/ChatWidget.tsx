@@ -15,7 +15,7 @@ export function ChatWidget() {
 
   const handleSend = () => {
     if (!input.trim() || isPending) return;
-    sendMessage(input.trim());
+    void sendMessage(input.trim());
     setInput('');
   };
 

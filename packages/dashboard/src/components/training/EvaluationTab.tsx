@@ -54,7 +54,7 @@ function DatasetSection() {
   const createMutation = useMutation({
     mutationFn: createEvalDataset,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['eval-datasets'] });
+      void queryClient.invalidateQueries({ queryKey: ['eval-datasets'] });
       setShowCreate(false);
       setNewName('');
       setNewSamples('');

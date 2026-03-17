@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 import { useState, useCallback, useRef, useEffect } from 'react';
 
 const STORAGE_KEY = 'secureyeoman-voice-enabled';

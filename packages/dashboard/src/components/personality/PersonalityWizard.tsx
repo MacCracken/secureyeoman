@@ -49,7 +49,7 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
   const createMutation = useMutation({
     mutationFn: (data: PersonalityCreate) => createPersonality(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personalities'] });
+      void queryClient.invalidateQueries({ queryKey: ['personalities'] });
       onComplete();
     },
     onError: (err: Error) => {

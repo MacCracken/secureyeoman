@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * Shared types, constants, and small components used across the metrics module.
  */

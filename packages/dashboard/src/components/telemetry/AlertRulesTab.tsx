@@ -518,7 +518,7 @@ export function AlertRulesTab() {
         channels: form.channels,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
+      void queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
       setShowForm(false);
       showToast('Rule created', 'success');
     },
@@ -531,7 +531,7 @@ export function AlertRulesTab() {
     mutationFn: ({ id, patch }: { id: string; patch: Partial<AlertRule> }) =>
       patchAlertRule(id, patch),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
+      void queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
       setEditingId(null);
       showToast('Rule updated', 'success');
     },
@@ -543,7 +543,7 @@ export function AlertRulesTab() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteAlertRule(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
+      void queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
       showToast('Rule deleted', 'success');
     },
     onError: (e: Error) => {

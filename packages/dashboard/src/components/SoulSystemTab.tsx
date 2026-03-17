@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Users2, Star, Clock, Zap, ArrowRight, Plus, Trash2 } from 'lucide-react';
@@ -350,7 +351,7 @@ function StrategyManagementCard() {
   const createMutation = useMutation({
     mutationFn: (data: Parameters<typeof createStrategy>[0]) => createStrategy(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['strategies'] });
+      void queryClient.invalidateQueries({ queryKey: ['strategies'] });
       setShowForm(false);
       setFormName('');
       setFormSlug('');

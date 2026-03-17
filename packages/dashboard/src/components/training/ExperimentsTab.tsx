@@ -88,7 +88,7 @@ export function ExperimentsTab() {
   const createMutation = useMutation({
     mutationFn: (name: string) => createTrainingExperiment({ name }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['training-experiments'] });
+      void queryClient.invalidateQueries({ queryKey: ['training-experiments'] });
       setNewName('');
     },
   });
@@ -96,7 +96,7 @@ export function ExperimentsTab() {
   const deleteMutation = useMutation({
     mutationFn: deleteTrainingExperiment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['training-experiments'] });
+      void queryClient.invalidateQueries({ queryKey: ['training-experiments'] });
       if (selectedId) setSelectedId(null);
     },
   });

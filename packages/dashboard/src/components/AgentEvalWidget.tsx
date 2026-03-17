@@ -60,7 +60,7 @@ export function AgentEvalWidget() {
   const runSuiteMutation = useMutation({
     mutationFn: (suiteId: string) => apiFetch(`/eval/suites/${suiteId}/run`, { method: 'POST' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['eval-runs'] });
+      void queryClient.invalidateQueries({ queryKey: ['eval-runs'] });
     },
   });
 

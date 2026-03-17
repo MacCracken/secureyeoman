@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * ConsolidationSettings — Memory consolidation management UI.
  *

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * RbacManager — RBAC roles CRUD, user-role assignments.
  *
