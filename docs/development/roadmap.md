@@ -156,6 +156,10 @@ Upgraded from ESLint 9 → 10 with `typescript-eslint@8.57.0` and `eslint-plugin
 | `react-hooks/preserve-manual-memoization` | 3 | React 19 strict | useMemo/useCallback patterns |
 | `react-hooks/incompatible-library` | 1 | React 19 compat | Library compatibility |
 
+### Firecracker Sandbox Runtime
+
+- [ ] **Firecracker microVM sandbox** — Add Firecracker as a sandbox technology option alongside existing gVisor, WASM, Linux Landlock, macOS sandbox-exec, SGX, and SEV-SNP runtimes. Lightweight microVM with minimal device model, hardware-enforced isolation via KVM, sub-second boot times. Implement `FirecrackerSandbox` class conforming to `Sandbox` interface in `packages/core/src/sandbox/`. Register as `technology: 'firecracker'` in `SandboxManager`. Strongest isolation tier for untrusted or high-risk sub-agent execution.
+
 ---
 
 ## Future Features — Demand-Gated
