@@ -133,6 +133,7 @@ export function EditorToolbar({
               <input
                 type="text"
                 value={renameValue}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
                 className="max-w-[100px] bg-transparent border-b border-primary outline-none font-mono text-xs w-[80px]"
                 onChange={(e) => {

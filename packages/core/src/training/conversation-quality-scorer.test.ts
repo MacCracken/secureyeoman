@@ -57,10 +57,10 @@ describe('ConversationQualityScorer', () => {
     });
 
     it('scores conversations with baseline 0.5 when no negative signals', async () => {
-      let callCount = 0;
+      let _callCount = 0;
       const mockPool = {
         query: vi.fn(async (sql: string) => {
-          callCount++;
+          _callCount++;
           // First query: unscored conversations
           if (sql.includes('chat.conversations')) {
             return {
@@ -211,10 +211,10 @@ describe('ConversationQualityScorer', () => {
     });
 
     it('handles individual conversation failures gracefully', async () => {
-      let call = 0;
+      let _call = 0;
       const mockPool = {
         query: vi.fn(async (sql: string) => {
-          call++;
+          _call++;
           if (sql.includes('chat.conversations')) {
             return {
               rows: [{ id: 'conv-err', pipeline_outcome: null }],

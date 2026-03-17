@@ -8,7 +8,6 @@ import {
   Search,
   Monitor,
   Network,
-  Wrench,
   Box,
   Mail,
   MessageSquare,

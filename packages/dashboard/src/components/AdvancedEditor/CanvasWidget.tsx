@@ -210,6 +210,7 @@ export const CanvasWidget = memo(function CanvasWidget({
     >
       <span className="text-muted-foreground">{WIDGET_ICONS[data.widgetType]}</span>
       {editingTitle ? (
+        {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
         <input
           autoFocus
           className="flex-1 text-xs font-medium bg-transparent border-b border-primary outline-none min-w-0"

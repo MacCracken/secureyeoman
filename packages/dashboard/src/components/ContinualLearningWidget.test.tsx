@@ -91,10 +91,10 @@ const onlineJobs = [
   },
 ];
 
-let fetchCallCount: number;
+let _fetchCallCount: number;
 beforeEach(() => {
   vi.restoreAllMocks();
-  fetchCallCount = 0;
+  _fetchCallCount = 0;
 });
 
 function mockFetchFor(_panel?: 'dataset' | 'drift' | 'online') {

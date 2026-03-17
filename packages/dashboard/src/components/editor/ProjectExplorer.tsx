@@ -152,6 +152,7 @@ function TreeNode({
           </>
         )}
         {renaming ? (
+          // eslint-disable-next-line jsx-a11y/no-autofocus
           <input
             autoFocus
             className="flex-1 bg-transparent border-b border-primary outline-none text-xs font-mono"
@@ -254,6 +255,7 @@ function TreeNode({
           ) : (
             <File className="w-3.5 h-3.5 text-muted-foreground" />
           )}
+          {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
           <input
             autoFocus
             className="flex-1 bg-transparent border-b border-primary outline-none text-xs font-mono"

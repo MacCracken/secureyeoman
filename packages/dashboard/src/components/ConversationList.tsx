@@ -178,6 +178,7 @@ export function ConversationList({
                     if (e.key === 'Escape') handleCancelRename();
                   }}
                   className="flex-1 min-w-0 text-xs bg-background border rounded px-1.5 py-1"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                   onClick={(e) => {
                     e.stopPropagation();

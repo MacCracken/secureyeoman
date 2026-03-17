@@ -52,9 +52,9 @@ const mockPolicies = {
 };
 
 function mockFetchAll() {
-  let callCount = 0;
+  let _callCount = 0;
   return vi.fn().mockImplementation((url: string) => {
-    callCount++;
+    _callCount++;
     if (url.includes('/classifications')) {
       return Promise.resolve({
         ok: true,

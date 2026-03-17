@@ -103,6 +103,7 @@ export function ConversationSidebar({
                         onEditTitleChange(e.target.value);
                       }}
                       className="flex-1 min-w-0 text-sm bg-background border rounded px-1 py-0.5"
+                      // eslint-disable-next-line jsx-a11y/no-autofocus
                       autoFocus
                       data-testid="rename-input"
                     />

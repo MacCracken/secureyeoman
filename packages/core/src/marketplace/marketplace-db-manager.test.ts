@@ -91,14 +91,14 @@ describe('MarketplaceManager', () => {
 describe('MarketplaceManager with BrainManager', () => {
   let storage: MarketplaceStorage;
   let manager: MarketplaceManager;
-  let brainStorage: BrainStorage;
+  let _brainStorage: BrainStorage;
   let brainManager: BrainManager;
 
   beforeEach(async () => {
     await truncateAllTables();
     storage = new MarketplaceStorage();
     const brain = createBrainManager();
-    brainStorage = brain.brainStorage;
+    _brainStorage = brain.brainStorage;
     brainManager = brain.brainManager;
     manager = new MarketplaceManager(storage, {
       logger: createNoopLogger(),

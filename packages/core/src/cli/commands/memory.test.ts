@@ -946,11 +946,11 @@ describe('memory command', () => {
   // ── stats with health snapshot ─────────────────────────────────────────
 
   it('stats includes health snapshot when available', async () => {
-    let callCount = 0;
+    let _callCount = 0;
     vi.stubGlobal(
       'fetch',
       vi.fn().mockImplementation(async (url: string) => {
-        callCount++;
+        _callCount++;
         if (url.includes('/audit/health')) {
           return {
             ok: true,

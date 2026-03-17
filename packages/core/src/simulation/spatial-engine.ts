@@ -14,7 +14,6 @@ import type {
   ProximityRule,
   ProximityRuleCreate,
   ProximityEvent,
-  ProximityTriggerType,
   TickEvent,
 } from '@secureyeoman/shared';
 import type { SimulationStore } from './simulation-store.js';

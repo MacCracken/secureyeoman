@@ -104,6 +104,7 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
                       onChange={(e) => {
                         handleUpdate(index, 'title', e.target.value);
                       }}
+                      // eslint-disable-next-line jsx-a11y/no-autofocus
                       autoFocus
                     />
                     <select

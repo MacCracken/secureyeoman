@@ -96,7 +96,7 @@ export async function bootstrapAgnos(
         { registered: res.registered, total: mcpTools.length, profile },
         'MCP tools registered with AGNOS daimon (profile-filtered)'
       );
-    } catch (err) {
+    } catch (_err) {
       // Fallback to unfiltered registration
       try {
         const res = await client.registerMcpTools(mcpTools);

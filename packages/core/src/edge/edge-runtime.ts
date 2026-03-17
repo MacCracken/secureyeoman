@@ -9,7 +9,6 @@
 
 import {
   loadConfig,
-  validateSecrets,
   getSecret,
   type LoadConfigOptions,
 } from '../config/loader.js';

@@ -444,6 +444,7 @@ function PeersTab() {
                     onBlur={() => {
                       setEditingTrust(null);
                     }}
+                    {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
                     autoFocus
                     className="bg-card border border-border rounded-lg text-xs py-1 px-1.5 w-24"
                   >

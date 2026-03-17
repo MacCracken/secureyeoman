@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Terminal, Clock, CheckCircle, XCircle, Square, Trash2 } from 'lucide-react';
+import { Loader2, Terminal, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import {
   fetchExecutionSessions,
   terminateExecutionSession,

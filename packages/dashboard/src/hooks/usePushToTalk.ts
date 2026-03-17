@@ -221,6 +221,7 @@ export function usePushToTalk(
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         if (event.error !== 'aborted' && event.error !== 'no-speech') {
+          // eslint-disable-next-line no-console
           console.warn('Speech recognition error:', event.error);
           setError(event.error);
         }

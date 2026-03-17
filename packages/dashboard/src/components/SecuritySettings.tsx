@@ -139,7 +139,7 @@ export function SecuritySettings() {
 
   // ── Derived state ─────────────────────────────────────────────────
   const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
-  const delegationEnabled = (agentConfigData?.config?.enabled as boolean | undefined) ?? false;
+  const _delegationEnabled = (agentConfigData?.config?.enabled as boolean | undefined) ?? false;
   const a2aAllowed = securityPolicy?.allowA2A ?? false;
   const swarmsAllowed = securityPolicy?.allowSwarms ?? false;
   const extensionsAllowed = securityPolicy?.allowExtensions ?? false;

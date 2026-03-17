@@ -49,7 +49,6 @@ export function useWebSocket(path: string): UseWebSocketReturn {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.debug('WebSocket connected');
         setConnected(true);
         setReconnecting(false);
         reconnectAttempts.current = 0;
@@ -86,6 +85,7 @@ export function useWebSocket(path: string): UseWebSocketReturn {
           const message = JSON.parse(event.data) as WebSocketMessage;
           setLastMessage(message);
         } catch (error) {
+          // eslint-disable-next-line no-console
           console.error('Failed to parse WebSocket message:', error);
         }
       };
@@ -101,15 +101,12 @@ export function useWebSocket(path: string): UseWebSocketReturn {
             baseReconnectDelay * Math.pow(2, reconnectAttempts.current),
             maxReconnectDelay
           );
-          console.debug(
-            `WebSocket closed (${event.code}), retrying in ${(delay / 1000).toFixed(0)}s (${reconnectAttempts.current + 1}/${maxReconnectAttempts})`
-          );
-
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current++;
             connect();
           }, delay);
         } else {
+          // eslint-disable-next-line no-console
           console.warn('WebSocket: max reconnect attempts reached, falling back to polling');
           setReconnecting(false);
         }
@@ -119,6 +116,7 @@ export function useWebSocket(path: string): UseWebSocketReturn {
         // Suppress noisy console errors — onclose handles reconnection
       };
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to create WebSocket:', error);
     }
   }, [path]);

@@ -143,6 +143,7 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
               }}
               placeholder="e.g., FRIDAY, SecurityBot, DataAnalyst"
               className="w-full px-3 py-2 border rounded-md bg-background"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
             <label className="block text-sm font-medium mt-4 mb-1">Mission (System Prompt)</label>

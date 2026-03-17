@@ -263,12 +263,12 @@ describe('SecureIPC', () => {
       const chunk1 = fullPayload.slice(0, midpoint);
       const chunk2 = fullPayload.slice(midpoint);
 
-      let dataHandler: ((chunk: Buffer) => void) | null = null;
+      let _dataHandler: ((chunk: Buffer) => void) | null = null;
 
       const mockReadable = {
         on: vi.fn((event: string, handler: (...args: any[]) => void) => {
           if (event === 'data') {
-            dataHandler = handler;
+            _dataHandler = handler;
             // Send first chunk immediately
             setTimeout(() => handler(Buffer.from(chunk1)), 5);
             // Send second chunk after a short delay

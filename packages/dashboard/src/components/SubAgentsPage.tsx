@@ -594,12 +594,8 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
               edges={graphEdges}
               height={480}
               layout="dagre"
-              onNodeClick={(id) => {
-                const node = tree.find((d) => d.id === id);
-                if (node) {
-                  // Highlight in console for now; future: scroll-to or modal
-                  console.debug('Graph node clicked:', node.task);
-                }
+              onNodeClick={(_id) => {
+                // Future: scroll-to or modal on graph node click
               }}
             />
           ) : (

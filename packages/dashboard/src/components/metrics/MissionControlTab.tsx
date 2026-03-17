@@ -31,7 +31,6 @@ import {
   GripVertical,
 } from 'lucide-react';
 import {
-  fetchActiveDelegations,
   fetchCostBreakdown,
   fetchTasks,
   fetchSecurityEvents,
@@ -53,7 +52,7 @@ import type {
   AuditEntry,
 } from '../../types';
 
-import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CARD_REGISTRY, type MissionCardId } from '../MissionControl/registry';

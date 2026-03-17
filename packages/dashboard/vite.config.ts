@@ -129,6 +129,7 @@ export default defineConfig(({ mode }) => {
           secure: false,
           configure: (proxy) => {
             proxy.on('error', (err, _req, res) => {
+              // eslint-disable-next-line no-console
               console.error('[vite proxy /api] error:', err.message);
               if ('writeHead' in res && !res.headersSent) {
                 res.writeHead(502, {
@@ -166,6 +167,7 @@ export default defineConfig(({ mode }) => {
             proxy.on('error', (err) => {
               const code = (err as NodeJS.ErrnoException).code ?? '';
               if (!['ECONNREFUSED', 'ENOTFOUND', 'ECONNRESET'].includes(code)) {
+                // eslint-disable-next-line no-console
                 console.error('[vite proxy /ws] error:', err.message);
               }
             });

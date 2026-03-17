@@ -808,9 +808,9 @@ describe('AIClient', () => {
 
       // Intercept createProvider to inject a mock
       const originalCreate = (client as any).createProvider.bind(client);
-      let createdCount = 0;
+      let _createdCount = 0;
       (client as any).createProvider = (config: any) => {
-        createdCount++;
+        _createdCount++;
         const p = originalCreate(config);
         p.chat = vi.fn().mockResolvedValue(geminiResponse);
         return p;

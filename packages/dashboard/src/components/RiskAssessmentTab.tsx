@@ -278,6 +278,7 @@ function AssessmentsSection() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.error('Download failed', e);
     } finally {
       setDownloading(null);

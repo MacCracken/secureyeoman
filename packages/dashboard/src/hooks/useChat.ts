@@ -431,6 +431,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
               event = JSON.parse(json);
             } catch (parseErr) {
               if (import.meta.env.DEV) {
+                // eslint-disable-next-line no-console
                 console.warn('[useChatStream] Failed to parse SSE event:', json, parseErr);
               }
               continue;

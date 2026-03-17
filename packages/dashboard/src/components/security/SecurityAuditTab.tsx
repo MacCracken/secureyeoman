@@ -332,6 +332,7 @@ export function AuditLogTab({
               }}
               placeholder="Preset name"
               className="bg-card border border-border rounded px-2 py-1 text-xs w-28"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && presetName.trim()) {
