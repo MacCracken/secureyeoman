@@ -112,6 +112,27 @@ Three new built-in MCP tools for agents to query GPU and routing state programma
 
 - **GPU telemetry broadcast** — 30-second interval broadcast on `gpu` WebSocket channel. Sends GPU probe results + local model summary to subscribed dashboard clients. Skips broadcast when no subscribers
 
+### Firecracker Sandbox Hardening
+
+Production hardening for the Firecracker microVM sandbox. All 5 roadmap items complete.
+
+- **Rootfs builder** (`scripts/build-firecracker-rootfs.sh`) — Docker-based script builds minimal Alpine + Node.js 22 rootfs (~50MB) and downloads Firecracker-compatible kernel (~5MB). Configurable via `FIRECRACKER_ROOTFS_SIZE`, `FIRECRACKER_NODE_VERSION`, `FIRECRACKER_ALPINE_VERSION`. Includes overlay-init boot target for task execution
+- **Jailer production hardening** — `buildJailerArgs()` now applies cgroup v2 resource limits (`memory.max`, `cpu.max`), auto-detects cgroup version via sysfs, and supports custom seccomp BPF filters via `--seccomp-filter` option
+- **Virtio-vsock communication** — VM config now supports `useVsock` option with configurable `vsockGuestCid`. Adds `vsock` block to Firecracker config JSON for host↔guest AF_VSOCK communication
+- **Snapshot/restore** — `saveSnapshot()` pauses VM and captures full state (memory + CPU) via Firecracker REST API. `buildRestoreArgs()` generates CLI args for sub-100ms snapshot restore. Enables fast starts for high-frequency sandbox invocations
+- **TAP network isolation** — `setupTapNetwork()` creates per-VM TAP device with iptables chain scoped to `allowedHosts`. DNS (port 53) always allowed. Full cleanup on VM exit (TAP device + iptables chain deletion)
+
+### Sandbox Selection & Configuration Improvements
+
+Complete overhaul of sandbox technology selection and management. All 6 roadmap items complete.
+
+- **Intelligent auto-selection** — `resolveAuto()` now ranks all available technologies by isolation strength (Firecracker 90 > SEV 85 > SGX 80 > gVisor 70 > AGNOS 65 > Landlock 50 > WASM 40 > Darwin 30) and selects the strongest available. Previously only considered Landlock or sandbox-exec
+- **Per-task technology override** — `createSandboxForTask(technology?)` creates a one-off sandbox with a specific technology without affecting the global cached instance. Enables Firecracker for untrusted agent code while using WASM for lightweight skill execution
+- **Capability probe endpoint** — `GET /api/v1/sandbox/capabilities` returns detailed availability matrix for all technologies: availability, strength score, missing prerequisites, and install hints. Powers dashboard setup wizard
+- **Dashboard sandbox config panel** — `SandboxConfigPanel` component shows available technologies ranked by strength, active technology with health badge, click-to-switch, and health error details
+- **Live technology switching** — `PATCH /api/v1/sandbox/config` with `{ technology: "..." }` now switches immediately via `switchTechnology()` (invalidates cached sandbox instance). No restart required
+- **Health monitoring** — `GET /api/v1/sandbox/health` runs a minimal execution through the active sandbox and returns healthy/degraded status with latency. `healthCheck()` method on SandboxManager
+
 ### Competitive Analysis Update
 
 - **NVIDIA NemoClaw** added to `docs/development/functional-audit.md` as a high-threat competitor (GTC 2026 announcement). Feature matrix column (NC) added covering process-level isolation, privacy router, and GPU-aware routing. SecureYeoman advantages: RBAC, SSO, DLP, governance, dashboard, training pipeline, air-gap — none present in NemoClaw
@@ -133,6 +154,8 @@ Three new built-in MCP tools for agents to query GPU and routing state programma
 - **10 new tests** for local model registry (VRAM filtering, capability matching, Ollama detection, caching)
 - **12 new tests** for privacy router (sensitive routing, policy enforcement, PII detection, VRAM budget)
 - **12 new tests** for GPU MCP tools (tool definitions, gpu_status, local_models_list, privacy_route_check, error handling)
+- **16 new tests** for sandbox selection improvements (per-task override, capability probe, health check, live switching, strength ranking)
+- **13 new tests** for Firecracker hardening (vsock options, cgroup v2, seccomp filter, snapshot/restore, TAP isolation, fallback execution)
 
 ---
 

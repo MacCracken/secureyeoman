@@ -137,44 +137,6 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
 | Core E2E | Expand coverage | Currently 8 files / 67 tests (incl. binary smoke); add training, delegation, analytics flows |
 
-### ESLint 10 Warnings — Incremental Cleanup (2026-03-17)
-
-Upgraded from ESLint 9 → 10 with `typescript-eslint@8.57.0` and `eslint-plugin-react-hooks@7.0.1`. **0 errors** (CI-gated). 267 warnings remaining — fix incrementally.
-
-| Rule | Count | Category | Notes |
-|------|-------|----------|-------|
-| `no-floating-promises` | 96 | Code quality | Add `void` or `await` to unhandled promises |
-| `react-hooks/set-state-in-effect` | 29 | React 19 strict | Restructure setState in useEffect patterns |
-| `react-hooks/exhaustive-deps` | 24 | React hooks | Add missing deps to useEffect/useCallback |
-| `react-refresh/only-export-components` | 20 | HMR compat | Separate component/non-component exports |
-| `jsx-a11y/no-autofocus` | 15 | Accessibility | Review autoFocus usage, disable per-line if intentional |
-| `react-hooks/purity` | 14 | React 19 strict | Components with side effects |
-| `no-console` | 14 | Code quality | Replace with process.stderr.write or logger |
-| `react-hooks/refs` | 8 | React 19 strict | Ref usage patterns |
-| `react-hooks/immutability` | 6 | React 19 strict | Mutation of objects in render |
-| `react-hooks/static-components` | 4 | React 19 strict | Components defined inside other components |
-| `react-hooks/preserve-manual-memoization` | 3 | React 19 strict | useMemo/useCallback patterns |
-| `react-hooks/incompatible-library` | 1 | React 19 compat | Library compatibility |
-
-### Firecracker Sandbox Runtime
-
-*Core implementation complete (2026-03-17). See [Changelog](../../CHANGELOG.md). Remaining items are hardening and optimization.*
-
-- [ ] **Firecracker rootfs builder** — CI workflow or script to build minimal rootfs image (Alpine + Node.js, ~50MB) and stripped kernel (~5MB). Ship as container layer or downloadable artifact. Currently requires user to provide kernel/rootfs paths.
-- [ ] **Firecracker jailer production hardening** — Validate jailer integration with cgroup v2, seccomp filters, and chroot. Test uid/gid mapping in Docker (requires `--device /dev/kvm` on host).
-- [ ] **Firecracker virtio-vsock communication** — Replace stdio-based task output with virtio-vsock (AF_VSOCK) for host↔guest communication. Eliminates need for shared filesystem for task I/O. Cleaner than 9p virtfs.
-- [ ] **Firecracker snapshot/restore** — Pre-boot a microVM, snapshot it, and restore for sub-100ms task starts. Useful for high-frequency sandbox invocations (e.g., per-tool-call isolation).
-- [ ] **Firecracker TAP network isolation** — When `enableNetwork: true`, auto-create TAP device with per-VM iptables rules scoped to `allowedHosts`. Tear down on VM exit.
-
-### Sandbox Selection & Configuration Improvements
-
-- [ ] **Intelligent auto-selection** — Upgrade `technology: 'auto'` to rank available technologies by isolation strength and select the strongest available: Firecracker > gVisor > Landlock > WASM > Noop. Currently auto only considers Landlock (Linux) or sandbox-exec (macOS).
-- [ ] **Per-task technology override** — Allow callers of `SandboxManager.createSandbox()` to request a specific technology per invocation (e.g., use Firecracker for untrusted agent code, WASM for lightweight skill execution). Currently technology is global.
-- [ ] **Sandbox capability probe endpoint** — `GET /api/v1/sandbox/capabilities` returns a detailed availability matrix: which technologies are installed, which are missing prerequisites, and what to install to unlock them. Surface in dashboard as a setup wizard.
-- [ ] **Dashboard sandbox config panel** — Editable sandbox settings in Admin > Security (technology selector dropdown, memory/CPU limits, firecracker paths). Currently dashboard has toggles only; full config requires YAML or env vars.
-- [ ] **Live technology switching** — Allow changing sandbox technology without full restart via `PATCH /api/v1/sandbox/config`. Currently requires restart. Involves invalidating cached sandbox instance in `SandboxManager`.
-- [ ] **Sandbox health monitoring** — Periodic liveness checks for the active sandbox technology (e.g., can Firecracker boot a test VM? Is runsc responding?). Surface degraded state in `/api/v1/sandbox/status` and dashboard.
-
 ---
 
 ## Future Features — Demand-Gated
@@ -281,30 +243,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 - [ ] **App Store compliance** — Privacy nutrition labels (iOS), data safety section (Android). Review guideline compliance: no remote code execution claims, proper content ratings, privacy policy URL. TestFlight / Play Console internal testing tracks.
 - [ ] **Release pipeline** — CI workflow: `npm run build:dashboard` → `npx cap sync` → Fastlane (iOS) / Gradle (Android) → TestFlight / Play Console upload. Triggered by CalVer tag. Signing key management via CI secrets.
 - [ ] **Auto-update** — App Store / Play Store release channels. In-app update prompts for critical updates (`@capacitor/app-update` or platform APIs). Version compatibility check against SY server version.
-
----
-
-### GPU-Aware Inference Routing
-
-*Inspired by NVIDIA NemoClaw's compute-aware routing (GTC 2026). Detect available GPU resources and intelligently route inference requests to local models vs. cloud providers based on capability, privacy requirements, and cost.*
-
-- [x] **GPU capability probe** — `GET /api/v1/system/gpu` endpoint returns detected GPUs (NVIDIA via `nvidia-smi`, AMD via `rocm-smi`), VRAM, driver version, and CUDA/ROCm availability. Surface in dashboard System Settings.
-- [x] **Local model registry** — Track locally available models (Ollama, LM Studio, LocalAI) with VRAM requirements and capability tags (e.g., `vision`, `code`, `reasoning`). Auto-detect via provider health checks.
-- [x] **Smart inference router** — When processing a request, evaluate: (1) local GPU availability + VRAM headroom, (2) model capability match, (3) privacy policy (e.g., "never send PII to cloud"), (4) cost preference. Route to local model when viable, cloud when necessary. Configurable routing policy per personality.
-- [x] **Privacy-aware routing** — DLP classifier tags content before routing. Content marked as sensitive (PII, credentials, proprietary) routes exclusively to local models. Extends existing DLP pipeline with a routing decision layer.
-- [x] **Wire into chat flow** — Integrate `PrivacyRouter` upstream of `ModelRouter` in `AIClient.chat()` so routing decisions actually affect provider selection. When privacy router returns `target: 'local'`, bypass cloud providers and use the recommended local model.
-- [x] **Per-personality routing policy** — Add `routingPolicy` field to personality config schema (`auto | local-preferred | local-only | cloud-only`). Personality-level override for the global routing policy.
-- [x] **Dashboard GPU panel** — GPU status card in System Settings showing detected devices, VRAM usage, local models, and routing policy selector. Privacy routing indicator in chat ("routed locally" badge).
-- [x] **MCP tools** — `gpu_status`, `local_models_list`, `privacy_route_check` tools for agents to query GPU and routing state programmatically.
-- [x] **WebSocket GPU telemetry** — Periodic GPU utilization broadcast for live Mission Control dashboard updates.
-
-#### AGNOS Integration (optional enhancement)
-
-*GPU routing works standalone on any host with nvidia-smi/rocm-smi. AGNOS integration extends this to edge fleet scenarios.*
-
-- [ ] **Fleet GPU telemetry** — When running on AGNOS, report GPU utilization from edge devices via MCP bridge. SY aggregates fleet-wide GPU status for distributed inference routing decisions.
-- [ ] **Edge model offload** — AGNOS edge devices advertise locally available models to SY. SY's smart router can offload inference to edge devices with available GPU capacity, reducing cloud costs and improving latency for on-premises deployments.
-- [ ] **Firecracker GPU passthrough** — When `sandboxFirecracker` is enabled on AGNOS edge devices with NVIDIA Jetson or Intel iGPUs, pass GPU access through to sandboxed inference workloads.
 
 ---
 

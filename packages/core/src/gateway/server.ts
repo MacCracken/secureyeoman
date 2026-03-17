@@ -2625,7 +2625,7 @@ export class GatewayServer {
       }
     });
 
-    // Sandbox config — PATCH to update sandbox settings
+    // Sandbox config — PATCH to update sandbox settings (supports live switching)
     this.app.patch('/api/v1/sandbox/config', async (request, reply) => {
       try {
         const body = request.body as Record<string, unknown> | null;
@@ -2633,17 +2633,56 @@ export class GatewayServer {
           return sendError(reply, 400, 'Request body required');
         }
         const sandboxManager = this.secureYeoman.getSandboxManager();
+
+        // Live technology switching
+        if (typeof body.technology === 'string') {
+          sandboxManager.switchTechnology(body.technology as any);
+          return {
+            ok: true,
+            message: `Sandbox technology switched to '${body.technology}'. Active immediately.`,
+            status: sandboxManager.getStatus(),
+          };
+        }
+
         const currentConfig = sandboxManager.getConfig();
-        // Return current config with the requested changes acknowledged
-        // Actual config persistence requires restart (config is loaded at boot)
         return {
           ok: true,
-          message: 'Sandbox configuration updated. Restart required for changes to take effect.',
+          message: 'Sandbox configuration updated. Restart required for non-technology changes.',
           current: currentConfig,
           requested: body,
         };
       } catch {
         return sendError(reply, 500, 'Failed to update sandbox config');
+      }
+    });
+
+    // Sandbox capabilities — detailed availability matrix for all technologies
+    this.app.get('/api/v1/sandbox/capabilities', async () => {
+      try {
+        const sandboxManager = this.secureYeoman.getSandboxManager();
+        return {
+          technologies: sandboxManager.probeCapabilities(),
+          activeTechnology: sandboxManager.getStatus().technology,
+          activeStrength: sandboxManager.getStatus().strength,
+        };
+      } catch {
+        return { technologies: [], activeTechnology: 'none', activeStrength: 0 };
+      }
+    });
+
+    // Sandbox health check — verify the active sandbox is functional
+    this.app.get('/api/v1/sandbox/health', async () => {
+      try {
+        const sandboxManager = this.secureYeoman.getSandboxManager();
+        return sandboxManager.healthCheck();
+      } catch (err) {
+        return {
+          healthy: false,
+          technology: 'unknown',
+          lastChecked: new Date().toISOString(),
+          checkDurationMs: 0,
+          error: String(err),
+        };
       }
     });
 

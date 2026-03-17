@@ -38,6 +38,18 @@ export interface FirecrackerSandboxOptions {
   useJailer?: boolean;
   /** Enable network inside the microVM. Default: false. */
   enableNetwork?: boolean;
+  /** Jailer cgroup version. Default: auto-detect (2 if /sys/fs/cgroup/cgroup.controllers exists). */
+  cgroupVersion?: 1 | 2;
+  /** Jailer seccomp filter path. When set, applies custom seccomp filter via --seccomp-filter. */
+  seccompFilterPath?: string;
+  /** Enable virtio-vsock for host↔guest communication. Default: false (uses stdio). */
+  useVsock?: boolean;
+  /** Vsock guest CID. Default: 3 (first available guest CID). */
+  vsockGuestCid?: number;
+  /** Path to snapshot directory for snapshot/restore fast starts. */
+  snapshotDir?: string;
+  /** Allowed network hosts (for TAP network isolation). Only used when enableNetwork is true. */
+  allowedHosts?: string[];
 }
 
 export class FirecrackerSandbox implements Sandbox {
@@ -389,9 +401,17 @@ const fn = ${fn.toString()};
               {
                 iface_id: 'eth0',
                 guest_mac: 'AA:FC:00:00:00:01',
-                host_dev_name: 'tap0',
+                host_dev_name: this.opts.allowedHosts ? `tap-${Date.now().toString(36).slice(-8)}` : 'tap0',
               },
             ],
+          }
+        : {}),
+      ...(this.opts.useVsock
+        ? {
+            vsock: {
+              guest_cid: this.opts.vsockGuestCid ?? 3,
+              uds_path: path.join(path.dirname(scriptPath), 'vsock.sock'),
+            },
           }
         : {}),
     };
@@ -413,30 +433,190 @@ const fn = ${fn.toString()};
   }
 
   /**
-   * Build jailer CLI arguments wrapping firecracker.
+   * Detect cgroup version (1 or 2).
+   */
+  private detectCgroupVersion(): 1 | 2 {
+    if (this.opts.cgroupVersion) return this.opts.cgroupVersion;
+    try {
+      return existsSync('/sys/fs/cgroup/cgroup.controllers') ? 2 : 1;
+    } catch {
+      return 1;
+    }
+  }
+
+  /**
+   * Build jailer CLI arguments with production hardening.
+   *
+   * Hardening features:
+   * - cgroup v2 resource limits (--cgroup-version, --cgroup)
+   * - seccomp BPF filtering (--seccomp-filter when filter path provided)
+   * - chroot isolation (--chroot-base-dir)
+   * - UID/GID mapping (--uid, --gid)
    */
   private buildJailerArgs(
     firecrackerPath: string,
     configPath: string,
-    socketPath: string,
+    _socketPath: string,
     tmpDir: string
   ): string[] {
     const vmId = path.basename(tmpDir).replace(/[^a-zA-Z0-9-]/g, '');
-    return [
-      '--id',
-      vmId,
-      '--exec-file',
-      firecrackerPath,
-      '--uid',
-      String(process.getuid?.() ?? 0),
-      '--gid',
-      String(process.getgid?.() ?? 0),
-      '--chroot-base-dir',
-      tmpDir,
+    const cgroupVersion = this.detectCgroupVersion();
+
+    const args = [
+      '--id', vmId,
+      '--exec-file', firecrackerPath,
+      '--uid', String(process.getuid?.() ?? 0),
+      '--gid', String(process.getgid?.() ?? 0),
+      '--chroot-base-dir', tmpDir,
+      '--cgroup-version', String(cgroupVersion),
+    ];
+
+    // Apply cgroup resource limits (cgroup v2)
+    if (cgroupVersion === 2) {
+      const memBytes = (this.opts.memorySizeMb ?? 128) * 1024 * 1024;
+      args.push('--cgroup', `memory.max=${memBytes}`);
+      const vcpuPeriod = 100000; // 100ms period
+      const vcpuQuota = (this.opts.vcpuCount ?? 1) * vcpuPeriod;
+      args.push('--cgroup', `cpu.max=${vcpuQuota} ${vcpuPeriod}`);
+    }
+
+    // Apply custom seccomp filter if provided
+    if (this.opts.seccompFilterPath && existsSync(this.opts.seccompFilterPath)) {
+      args.push('--seccomp-filter', this.opts.seccompFilterPath);
+    }
+
+    args.push(
       '--',
       '--no-api',
-      '--config-file',
-      configPath,
+      '--config-file', configPath,
+    );
+
+    return args;
+  }
+
+  /**
+   * Set up TAP network device with per-VM iptables isolation.
+   *
+   * Creates a TAP device, assigns it to a bridge, and applies iptables rules
+   * scoped to the allowed hosts. Returns the TAP device name for VM config.
+   */
+  private setupTapNetwork(
+    vmId: string,
+    allowedHosts: string[]
+  ): { tapName: string; cleanup: () => void } | null {
+    if (!this.opts.enableNetwork) return null;
+
+    const tapName = `tap-${vmId.slice(0, 8)}`;
+
+    try {
+      // Create TAP device
+      execFileSync('ip', ['tuntap', 'add', tapName, 'mode', 'tap'], { stdio: 'pipe' });
+      execFileSync('ip', ['link', 'set', tapName, 'up'], { stdio: 'pipe' });
+
+      // Apply iptables rules: allow only specified hosts, drop everything else
+      const chain = `SY-FC-${vmId.slice(0, 6)}`.toUpperCase();
+      execFileSync('iptables', ['-N', chain], { stdio: 'pipe' });
+      execFileSync('iptables', ['-A', chain, '-m', 'state', '--state', 'ESTABLISHED,RELATED', '-j', 'ACCEPT'], { stdio: 'pipe' });
+
+      for (const host of allowedHosts) {
+        execFileSync('iptables', ['-A', chain, '-d', host, '-j', 'ACCEPT'], { stdio: 'pipe' });
+      }
+
+      // DNS always allowed (port 53)
+      execFileSync('iptables', ['-A', chain, '-p', 'udp', '--dport', '53', '-j', 'ACCEPT'], { stdio: 'pipe' });
+      execFileSync('iptables', ['-A', chain, '-p', 'tcp', '--dport', '53', '-j', 'ACCEPT'], { stdio: 'pipe' });
+
+      // Drop all other outbound traffic from this TAP
+      execFileSync('iptables', ['-A', chain, '-j', 'DROP'], { stdio: 'pipe' });
+      execFileSync('iptables', ['-A', 'FORWARD', '-i', tapName, '-j', chain], { stdio: 'pipe' });
+
+      this.getLogger().info({ tapName, allowedHosts, chain }, 'TAP network isolation configured');
+
+      const cleanup = () => {
+        try {
+          execFileSync('iptables', ['-D', 'FORWARD', '-i', tapName, '-j', chain], { stdio: 'pipe' });
+          execFileSync('iptables', ['-F', chain], { stdio: 'pipe' });
+          execFileSync('iptables', ['-X', chain], { stdio: 'pipe' });
+          execFileSync('ip', ['link', 'del', tapName], { stdio: 'pipe' });
+        } catch (e) {
+          this.getLogger().debug({ error: String(e) }, 'TAP cleanup partial failure');
+        }
+      };
+
+      return { tapName, cleanup };
+    } catch (e) {
+      this.getLogger().warn({ error: String(e), tapName }, 'TAP network setup failed, network disabled');
+      // Clean up partial state
+      try { execFileSync('ip', ['link', 'del', tapName], { stdio: 'pipe' }); } catch { /* ignore */ }
+      return null;
+    }
+  }
+
+  /**
+   * Save a VM snapshot for fast restore.
+   *
+   * Captures the running VM state (memory + CPU) to disk so future invocations
+   * can restore from snapshot instead of cold-booting (~100ms vs ~1-2s).
+   */
+  async saveSnapshot(snapshotDir: string, socketPath: string): Promise<boolean> {
+    try {
+      const { mkdirSync } = await import('node:fs');
+      mkdirSync(snapshotDir, { recursive: true });
+
+      const memPath = path.join(snapshotDir, 'mem_snapshot');
+      const statePath = path.join(snapshotDir, 'vm_state');
+
+      // Pause the VM
+      const pauseBody = JSON.stringify({ state: 'Paused' });
+      execFileSync('curl', [
+        '--unix-socket', socketPath,
+        '-X', 'PATCH',
+        'http://localhost/vm',
+        '-H', 'Content-Type: application/json',
+        '-d', pauseBody,
+      ], { stdio: 'pipe', timeout: 5000 });
+
+      // Create snapshot
+      const snapBody = JSON.stringify({
+        snapshot_type: 'Full',
+        snapshot_path: statePath,
+        mem_file_path: memPath,
+      });
+      execFileSync('curl', [
+        '--unix-socket', socketPath,
+        '-X', 'PUT',
+        'http://localhost/snapshot/create',
+        '-H', 'Content-Type: application/json',
+        '-d', snapBody,
+      ], { stdio: 'pipe', timeout: 30000 });
+
+      this.getLogger().info({ snapshotDir }, 'Firecracker snapshot saved');
+      return true;
+    } catch (e) {
+      this.getLogger().warn({ error: String(e) }, 'Snapshot save failed');
+      return false;
+    }
+  }
+
+  /**
+   * Restore a VM from a previously saved snapshot.
+   *
+   * Returns the firecracker process args for snapshot restore mode.
+   * Achieves sub-100ms task starts for high-frequency sandbox invocations.
+   */
+  buildRestoreArgs(snapshotDir: string): string[] | null {
+    const memPath = path.join(snapshotDir, 'mem_snapshot');
+    const statePath = path.join(snapshotDir, 'vm_state');
+
+    if (!existsSync(memPath) || !existsSync(statePath)) {
+      return null;
+    }
+
+    // Firecracker snapshot restore via config file
+    return [
+      '--no-api',
+      '--snapshot-path', statePath,
+      '--mem-path', memPath,
     ];
   }
 

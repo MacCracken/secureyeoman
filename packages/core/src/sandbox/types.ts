@@ -59,3 +59,34 @@ export interface Sandbox {
   getCapabilities(): SandboxCapabilities;
   isAvailable(): boolean;
 }
+
+/** Technology names with their relative isolation strength (higher = stronger). */
+export const SANDBOX_STRENGTH: Record<string, number> = {
+  firecracker: 90,
+  sev: 85,
+  sgx: 80,
+  gvisor: 70,
+  agnos: 65,
+  landlock: 50,
+  wasm: 40,
+  darwin: 30,
+  none: 0,
+};
+
+/** Detailed capability info for a single sandbox technology. */
+export interface SandboxTechnologyStatus {
+  technology: string;
+  available: boolean;
+  strength: number;
+  missingPrerequisites: string[];
+  installHint: string;
+}
+
+/** Health check result for the active sandbox. */
+export interface SandboxHealthStatus {
+  healthy: boolean;
+  technology: string;
+  lastChecked: string;
+  checkDurationMs: number;
+  error: string | null;
+}
