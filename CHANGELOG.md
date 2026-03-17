@@ -68,6 +68,40 @@ Reworked Agnostic tools from hardcoded preset wrappers to fully dynamic integrat
 - **7 new tests** for bootstrap profile registration and hook fallback paths
 - **5 new tests** for folderized community personality format
 
+### GPU-Aware Inference Routing
+
+Privacy-aware, GPU-conscious inference routing inspired by NVIDIA NemoClaw (GTC 2026). Detects local GPU resources and routes requests to local models when privacy policy or cost preference dictates.
+
+- **`GpuProbe`** (`packages/core/src/ai/gpu-probe.ts`) — Detects NVIDIA (`nvidia-smi`), AMD (`rocm-smi`), and Intel GPUs. Returns VRAM total/used/free, utilization, temperature, driver version, CUDA/ROCm availability. 30-second TTL cache. VRAM requirement estimator for common model sizes (1B–70B parameters)
+- **`LocalModelRegistry`** (`packages/core/src/ai/local-model-registry.ts`) — Auto-discovers locally available models from Ollama, LM Studio, and LocalAI providers. Infers capabilities (`vision`, `code`, `reasoning`, `tool_use`), model family, parameter count, and VRAM requirements. 60-second TTL cache. VRAM-budget filtering and capability matching
+- **`PrivacyRouter`** (`packages/core/src/ai/privacy-router.ts`) — Integrates DLP classification with GPU probe and local model registry. Four routing policies: `auto`, `local-preferred`, `local-only`, `cloud-only`. Sensitive content (PII, confidential, restricted) routes exclusively to local models when GPU available. Returns routing decision with confidence score, reason, and recommended local model
+- **API endpoints**:
+  - `GET /api/v1/system/gpu` — GPU capability probe (optional `?refresh=true`)
+  - `GET /api/v1/system/local-models` — Local model inventory
+  - `POST /api/v1/ai/privacy-route` — Privacy-aware routing decision for content
+- **`sandboxFirecracker`** property added to `SecurityPolicy` interface and default fallback (Docker build fix)
+
+### Competitive Analysis Update
+
+- **NVIDIA NemoClaw** added to `docs/development/functional-audit.md` as a high-threat competitor (GTC 2026 announcement). Feature matrix column (NC) added covering process-level isolation, privacy router, and GPU-aware routing. SecureYeoman advantages: RBAC, SSO, DLP, governance, dashboard, training pipeline, air-gap — none present in NemoClaw
+
+### Lint Cleanup
+
+- **269 → 0 warnings** — Fixed all ESLint warnings across the codebase:
+  - 96 floating promises (added `void`)
+  - 17 unused variables (removed imports, `_` prefixed)
+  - 15 autoFocus accessibility (eslint-disable)
+  - 14 console statements (auto-fixed)
+  - 47 react-refresh/only-export-components (file-level disables)
+  - 57 react-compiler purity warnings (rule-specific disables)
+  - 23 exhaustive-deps (eslint-disable-next-line)
+
+### Test Coverage
+
+- **12 new tests** for GPU probe (nvidia-smi parsing, VRAM detection, caching, multi-GPU)
+- **10 new tests** for local model registry (VRAM filtering, capability matching, Ollama detection, caching)
+- **12 new tests** for privacy router (sensitive routing, policy enforcement, PII detection, VRAM budget)
+
 ---
 
 ## [2026.3.15]

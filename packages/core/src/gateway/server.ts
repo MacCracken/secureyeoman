@@ -2647,6 +2647,60 @@ export class GatewayServer {
       }
     });
 
+    // GPU probe — detect available GPU devices for inference routing
+    this.app.get('/api/v1/system/gpu', async (request) => {
+      const { probeGpu } = await import('../ai/gpu-probe.js');
+      const query = request.query as Record<string, string>;
+      const forceRefresh = query.refresh === 'true';
+      return probeGpu(forceRefresh);
+    });
+
+    // Local models — list locally available models from Ollama/LM Studio/LocalAI
+    this.app.get('/api/v1/system/local-models', async (request) => {
+      const { refreshLocalModels } = await import('../ai/local-model-registry.js');
+      const query = request.query as Record<string, string>;
+      const forceRefresh = query.refresh === 'true';
+      return refreshLocalModels(forceRefresh);
+    });
+
+    // Privacy routing decision — evaluate content for local vs cloud routing
+    this.app.post('/api/v1/ai/privacy-route', async (request, reply) => {
+      const body = request.body as { content?: string; capabilities?: string[]; policy?: string } | null;
+      if (!body?.content) {
+        return sendError(reply, 400, 'content field required');
+      }
+
+      const { probeGpu } = await import('../ai/gpu-probe.js');
+      const { refreshLocalModels } = await import('../ai/local-model-registry.js');
+      const { routeWithPrivacy } = await import('../ai/privacy-router.js');
+
+      const dlpManager = this.secureYeoman.getDlpManager?.();
+      let classificationLevel: 'public' | 'internal' | 'confidential' | 'restricted' = 'public';
+      let piiFound: string[] = [];
+
+      if (dlpManager) {
+        const classification = dlpManager.getClassificationEngine().classify(body.content);
+        classificationLevel = classification.level;
+        piiFound = classification.piiFound;
+      }
+
+      const [gpu, localModels] = await Promise.all([
+        probeGpu(),
+        refreshLocalModels(),
+      ]);
+
+      const decision = routeWithPrivacy(
+        classificationLevel,
+        piiFound,
+        gpu,
+        localModels,
+        body.capabilities ?? [],
+        body.policy ? { policy: body.policy as any } : {}
+      );
+
+      return decision;
+    });
+
     // Security events
     //
     // Returns security-relevant audit log entries filtered by event type.
