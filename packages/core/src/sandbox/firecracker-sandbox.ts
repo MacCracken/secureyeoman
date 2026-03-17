@@ -8,11 +8,10 @@
  * Falls back to in-process execution if Firecracker/KVM is not available.
  */
 
-import { execFileSync, execFile, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdtempSync, writeFileSync, readFileSync, rmSync, unlinkSync } from 'node:fs';
+import { execFileSync, execFile } from 'node:child_process';
+import { existsSync, mkdtempSync, writeFileSync, rmSync, unlinkSync } from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import * as net from 'node:net';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
 import type {
   Sandbox,
@@ -244,7 +243,7 @@ const fn = ${fn.toString()};
 
       const args = useJailer
         ? this.buildJailerArgs(firecrackerBin, configPath, socketPath, tmpDir)
-        : this.buildFirecrackerArgs(configPath, socketPath);
+        : this.buildFirecrackerArgs(configPath);
 
       const binary = useJailer ? this.detectJailer()! : firecrackerBin;
 
@@ -331,7 +330,7 @@ const fn = ${fn.toString()};
   /**
    * Build Firecracker VM configuration JSON.
    */
-  buildVmConfig(
+  private buildVmConfig(
     scriptPath: string,
     memorySizeMb: number,
     vcpuCount: number,
@@ -381,7 +380,7 @@ const fn = ${fn.toString()};
   /**
    * Build Firecracker direct CLI arguments.
    */
-  private buildFirecrackerArgs(configPath: string, socketPath: string): string[] {
+  private buildFirecrackerArgs(configPath: string): string[] {
     return [
       '--no-api',
       '--config-file',

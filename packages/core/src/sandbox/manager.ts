@@ -129,6 +129,19 @@ export class SandboxManager {
   }
 
   /**
+   * Try to use a sandbox instance, logging success or falling back to NoopSandbox.
+   * Returns the sandbox if available, or null to continue trying other options.
+   */
+  private tryBackend(instance: Sandbox, label: string): Sandbox | null {
+    if (instance.isAvailable()) {
+      this.getLogger().info(`Using ${label}`);
+      return instance;
+    }
+    this.getLogger().warn(`${label} requested but not available, falling back to NoopSandbox`);
+    return null;
+  }
+
+  /**
    * Create the appropriate sandbox implementation based on config and capabilities.
    */
   createSandbox(): Sandbox {
@@ -140,134 +153,94 @@ export class SandboxManager {
       return this.sandbox;
     }
 
+    this.sandbox = this.resolveBackend();
+    return this.sandbox;
+  }
+
+  /**
+   * Resolve the sandbox backend based on config technology and platform capabilities.
+   */
+  private resolveBackend(): Sandbox {
+    const tech = this.config.technology;
     const caps = this.detect();
 
-    if (this.config.technology === 'agnos') {
-      const agnos = new AgnosSandbox();
-      if (agnos.isAvailable()) {
-        this.getLogger().info('Using AGNOS kernel sandbox (daimon enforcement)');
-        this.sandbox = agnos;
-        return this.sandbox;
-      }
-      this.getLogger().warn(
-        'AGNOS requested but daimon not available, falling back to NoopSandbox'
-      );
-      this.sandbox = new NoopSandbox();
-      return this.sandbox;
-    }
-
-    if (this.config.technology === 'auto') {
-      // Prefer AGNOS kernel enforcement when running on AgnosticOS
-      if (isAgnosticOS()) {
-        const agnos = new AgnosSandbox();
-        if (agnos.isAvailable()) {
-          this.getLogger().info('Detected AgnosticOS — using kernel sandbox (daimon)');
-          this.sandbox = agnos;
-          return this.sandbox;
-        }
-      }
-
-      if (caps.platform === 'linux') {
-        const enforceLandlock = caps.landlock;
-        this.getLogger().info(
-          enforceLandlock
-            ? 'Using Linux sandbox (Landlock V2 enforcement)'
-            : 'Using Linux sandbox (soft enforcement)'
+    // Explicit technology selection
+    switch (tech) {
+      case 'agnos':
+        return (
+          this.tryBackend(new AgnosSandbox(), 'AGNOS kernel sandbox (daimon)') ?? new NoopSandbox()
         );
-        this.sandbox = new LinuxSandbox({ enforceLandlock });
-        return this.sandbox;
-      }
-      if (caps.platform === 'darwin') {
-        this.getLogger().info('Using macOS sandbox (sandbox-exec)');
-        this.sandbox = new DarwinSandbox();
-        return this.sandbox;
-      }
-      // No sandbox available for this platform
-      this.getLogger().warn(
-        {
-          platform: caps.platform,
-        },
-        'No sandbox available for platform, falling back to NoopSandbox'
+
+      case 'landlock':
+        if (caps.platform !== 'linux') {
+          this.getLogger().warn('Landlock requested but not on Linux, falling back to NoopSandbox');
+          return new NoopSandbox();
+        }
+        return new LinuxSandbox({ enforceLandlock: true });
+
+      case 'gvisor':
+        return this.tryBackend(new GVisorSandbox(), 'gVisor (runsc) sandbox') ?? new NoopSandbox();
+
+      case 'wasm':
+        this.getLogger().info('Using WASM sandbox (isolated VM context)');
+        return new WasmSandbox();
+
+      case 'sgx':
+        return this.tryBackend(new SgxSandbox(), 'SGX (Gramine-SGX) sandbox') ?? new NoopSandbox();
+
+      case 'sev':
+        return this.tryBackend(new SevSandbox(), 'SEV-SNP (QEMU) sandbox') ?? new NoopSandbox();
+
+      case 'firecracker':
+        return (
+          this.tryBackend(
+            new FirecrackerSandbox(this.config.firecracker),
+            'Firecracker microVM sandbox'
+          ) ?? new NoopSandbox()
+        );
+
+      case 'auto':
+        return this.resolveAuto(caps);
+
+      default:
+        // seccomp or other — not yet implemented
+        this.getLogger().warn(
+          { technology: tech },
+          'Requested sandbox technology not implemented, falling back to NoopSandbox'
+        );
+        return new NoopSandbox();
+    }
+  }
+
+  /**
+   * Auto-detect the best available sandbox for the current platform.
+   */
+  private resolveAuto(caps: SandboxCapabilities): Sandbox {
+    // Prefer AGNOS kernel enforcement when running on AgnosticOS
+    if (isAgnosticOS()) {
+      const agnos = this.tryBackend(new AgnosSandbox(), 'AgnosticOS kernel sandbox (daimon)');
+      if (agnos) return agnos;
+    }
+
+    if (caps.platform === 'linux') {
+      this.getLogger().info(
+        caps.landlock
+          ? 'Using Linux sandbox (Landlock V2 enforcement)'
+          : 'Using Linux sandbox (soft enforcement)'
       );
-      this.sandbox = new NoopSandbox();
-      return this.sandbox;
+      return new LinuxSandbox({ enforceLandlock: caps.landlock });
     }
 
-    if (this.config.technology === 'landlock') {
-      if (caps.platform !== 'linux') {
-        this.getLogger().warn('Landlock requested but not on Linux, falling back to NoopSandbox');
-        this.sandbox = new NoopSandbox();
-        return this.sandbox;
-      }
-      this.sandbox = new LinuxSandbox({ enforceLandlock: true });
-      return this.sandbox;
+    if (caps.platform === 'darwin') {
+      this.getLogger().info('Using macOS sandbox (sandbox-exec)');
+      return new DarwinSandbox();
     }
 
-    if (this.config.technology === 'gvisor') {
-      const gvisor = new GVisorSandbox();
-      if (gvisor.isAvailable()) {
-        this.getLogger().info('Using gVisor (runsc) sandbox');
-        this.sandbox = gvisor;
-        return this.sandbox;
-      }
-      this.getLogger().warn(
-        'gVisor requested but runsc not available, falling back to NoopSandbox'
-      );
-      this.sandbox = new NoopSandbox();
-      return this.sandbox;
-    }
-
-    if (this.config.technology === 'wasm') {
-      this.getLogger().info('Using WASM sandbox (isolated VM context)');
-      this.sandbox = new WasmSandbox();
-      return this.sandbox;
-    }
-
-    if (this.config.technology === 'sgx') {
-      const sgx = new SgxSandbox();
-      if (sgx.isAvailable()) {
-        this.getLogger().info('Using SGX (Gramine-SGX) sandbox');
-        this.sandbox = sgx;
-        return this.sandbox;
-      }
-      this.getLogger().warn('SGX requested but not available, falling back to NoopSandbox');
-      this.sandbox = new NoopSandbox();
-      return this.sandbox;
-    }
-
-    if (this.config.technology === 'sev') {
-      const sev = new SevSandbox();
-      if (sev.isAvailable()) {
-        this.getLogger().info('Using SEV-SNP (QEMU) sandbox');
-        this.sandbox = sev;
-        return this.sandbox;
-      }
-      this.getLogger().warn('SEV requested but not available, falling back to NoopSandbox');
-      this.sandbox = new NoopSandbox();
-      return this.sandbox;
-    }
-
-    if (this.config.technology === 'firecracker') {
-      const fc = new FirecrackerSandbox(this.config.firecracker);
-      if (fc.isAvailable()) {
-        this.getLogger().info('Using Firecracker microVM sandbox');
-        this.sandbox = fc;
-        return this.sandbox;
-      }
-      this.getLogger().warn(
-        'Firecracker requested but not available (requires /dev/kvm, firecracker binary, kernel, and rootfs), falling back to NoopSandbox'
-      );
-      this.sandbox = new NoopSandbox();
-      return this.sandbox;
-    }
-
-    // seccomp or other — not yet implemented, fall back
     this.getLogger().warn(
-      { technology: this.config.technology },
-      'Requested sandbox technology not implemented, falling back to NoopSandbox'
+      { platform: caps.platform },
+      'No sandbox available for platform, falling back to NoopSandbox'
     );
-    this.sandbox = new NoopSandbox();
-    return this.sandbox;
+    return new NoopSandbox();
   }
 
   /**
@@ -315,6 +288,7 @@ export class SandboxManager {
         return envVars.http_proxy;
       }
       // Fall through to local proxy if AGNOS proxy failed
+      this.getLogger().warn('AGNOS credential proxy unavailable, falling back to local proxy');
     }
 
     if (this.proxyHandle) {

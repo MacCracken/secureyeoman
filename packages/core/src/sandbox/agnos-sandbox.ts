@@ -63,7 +63,6 @@ interface DaimonCredProxyResponse {
 export class AgnosSandbox implements Sandbox {
   private logger: SecureLogger | null = null;
   private available: boolean | null = null;
-  private sandboxId: string | null = null;
   private readonly agentId: string;
   private readonly daimonUrl: string;
   private readonly daimonToken: string;
@@ -140,8 +139,6 @@ export class AgnosSandbox implements Sandbox {
           description: 'AGNOS daimon unreachable — running without kernel enforcement',
           timestamp: Date.now(),
         });
-      } else {
-        this.sandboxId = enforceResult.sandbox_id;
       }
 
       // Step 2: Execute the function
@@ -184,6 +181,7 @@ export class AgnosSandbox implements Sandbox {
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
+      if (!res.ok) return { allowed: true, findings: [] };
       const body = (await res.json()) as DaimonScanResponse;
       return { allowed: body.allowed, findings: body.findings || [] };
     } catch {

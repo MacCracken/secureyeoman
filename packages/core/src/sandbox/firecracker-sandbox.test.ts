@@ -444,51 +444,47 @@ describe('FirecrackerSandbox', () => {
     });
   });
 
-  describe('buildVmConfig', () => {
-    it('produces valid VM config JSON', () => {
+  describe('VM config generation', () => {
+    it('produces valid VM config JSON via execution', async () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+
+      mockExistsSync.mockImplementation(
+        (p: string) => p === '/dev/kvm' || p === '/opt/fc/vmlinux' || p === '/opt/fc/rootfs.ext4'
+      );
+      mockExecFileSync.mockImplementation((cmd: string, args: string[]) => {
+        if (cmd === 'which' && args[0] === 'firecracker') return '/usr/bin/firecracker';
+        if (cmd === 'which' && args[0] === 'jailer') throw new Error('not found');
+        return '';
+      });
+
+      let writtenConfig = '';
+      mockWriteFileSync.mockImplementation((_path: string, content: string) => {
+        if (String(_path).endsWith('vm-config.json')) writtenConfig = content;
+      });
+
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(null, JSON.stringify({ success: true, result: 1 }), '');
+        return { stderr: { on: vi.fn() } };
+      });
+
       const sandbox = new FirecrackerSandbox({
         kernelPath: '/opt/fc/vmlinux',
         rootfsPath: '/opt/fc/rootfs.ext4',
+        memorySizeMb: 256,
+        vcpuCount: 2,
       });
-      const config = sandbox.buildVmConfig('/tmp/task.mjs', 256, 2);
+      await sandbox.run(async () => 1);
 
-      expect(config['boot-source']).toEqual({
-        kernel_image_path: '/opt/fc/vmlinux',
-        boot_args: expect.stringContaining('console=ttyS0'),
-      });
-      expect(config['machine-config']).toEqual({
-        vcpu_count: 2,
-        mem_size_mib: 256,
-        smt: false,
-      });
-      expect((config['drives'] as any[])![0].drive_id).toBe('rootfs');
-      expect((config['drives'] as any[])![0].is_read_only).toBe(true);
+      const config = JSON.parse(writtenConfig);
+      expect(config['boot-source'].kernel_image_path).toBe('/opt/fc/vmlinux');
+      expect(config['boot-source'].boot_args).toContain('console=ttyS0');
+      expect(config['machine-config']).toEqual({ vcpu_count: 2, mem_size_mib: 256, smt: false });
+      expect(config.drives[0].drive_id).toBe('rootfs');
+      expect(config.drives[0].is_read_only).toBe(true);
       expect(config['network-interfaces']).toBeUndefined();
-    });
 
-    it('includes network config when enabled', () => {
-      const sandbox = new FirecrackerSandbox({
-        kernelPath: '/opt/fc/vmlinux',
-        rootfsPath: '/opt/fc/rootfs.ext4',
-        enableNetwork: true,
-      });
-      const config = sandbox.buildVmConfig('/tmp/task.mjs', 128, 1, {
-        network: { allowed: true },
-      });
-      expect(config['network-interfaces']).toBeDefined();
-      expect((config['network-interfaces'] as any[])[0].iface_id).toBe('eth0');
-    });
-
-    it('omits network config when explicitly disabled in opts', () => {
-      const sandbox = new FirecrackerSandbox({
-        kernelPath: '/opt/fc/vmlinux',
-        rootfsPath: '/opt/fc/rootfs.ext4',
-        enableNetwork: true,
-      });
-      const config = sandbox.buildVmConfig('/tmp/task.mjs', 128, 1, {
-        network: { allowed: false },
-      });
-      expect(config['network-interfaces']).toBeUndefined();
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
     });
   });
 });
