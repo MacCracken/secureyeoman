@@ -191,7 +191,9 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
   // List discovered tools. External tools are always included. YEOMAN's own tools
   // (serverName === LOCAL_MCP_NAME) are filtered by the global feature config so the
   // Discovered Tools view reflects exactly what is currently exposed to the system.
-  app.get('/api/v1/mcp/tools', async () => {
+  app.get(
+    '/api/v1/mcp/tools',
+    async (request: FastifyRequest<{ Querystring: { profile?: string } }>) => {
     const allTools = mcpClient.getAllTools();
     const config = await mcpStorage.getConfig();
 
@@ -278,6 +280,17 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       return true;
     });
 
+    // Optional AGNOS bridge profile filtering
+    const profile = request.query.profile;
+    if (profile) {
+      const { toolMatchesProfile, AgnosBridgeProfileSchema } = await import('@secureyeoman/shared');
+      const parsed = AgnosBridgeProfileSchema.safeParse(profile);
+      if (parsed.success) {
+        const profileFiltered = tools.filter((t) => toolMatchesProfile(t.name, parsed.data));
+        return { tools: profileFiltered, total: profileFiltered.length, profile: parsed.data };
+      }
+    }
+
     return { tools, total: tools.length };
   });
 
@@ -362,6 +375,8 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           exposeVoiceTools?: boolean;
           exposeAequiTools?: boolean;
           exposeShrutiTools?: boolean;
+          exposeAgnosTools?: boolean;
+          agnosBridgeProfile?: string;
         };
       }>
     ) => {

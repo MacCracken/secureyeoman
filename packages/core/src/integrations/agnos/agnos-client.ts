@@ -114,6 +114,20 @@ export class AgnosClient {
     }) as Promise<{ registered: number }>;
   }
 
+  /**
+   * Register MCP tools with AGNOS filtered by bridge profile.
+   * Sends profile metadata so AGNOS can organize tools by category.
+   */
+  async registerMcpToolsByProfile(
+    tools: { name: string; description: string; inputSchema?: unknown }[],
+    profile: string
+  ): Promise<{ registered: number }> {
+    return this._fetch('/v1/mcp/tools', {
+      method: 'POST',
+      body: { tools, source: 'secureyeoman', profile },
+    }) as Promise<{ registered: number }>;
+  }
+
   // ── Audit Forwarding ───────────────────────────────────────
   async forwardAuditEvents(events: Record<string, unknown>[]): Promise<{ accepted: number }> {
     const withTimestamps = events.map((e) => ({

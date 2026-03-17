@@ -238,6 +238,7 @@ export function loadConfig(
     agnosGatewayUrl: env.AGNOS_GATEWAY_URL ?? 'http://127.0.0.1:8088',
     agnosRuntimeApiKey: env.AGNOS_RUNTIME_API_KEY,
     agnosGatewayApiKey: env.AGNOS_GATEWAY_API_KEY,
+    agnosBridgeProfile: env.AGNOS_BRIDGE_PROFILE ?? 'full',
     exposeQuickBooksTools: parseBool(env.MCP_EXPOSE_QUICKBOOKS_TOOLS, false),
     quickBooksEnvironment: (env.QUICKBOOKS_ENVIRONMENT ?? 'sandbox') as 'sandbox' | 'production',
     quickBooksClientId: env.QUICKBOOKS_CLIENT_ID,

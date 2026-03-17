@@ -9,6 +9,8 @@ export default defineConfig({
   test: {
     globals: true,
     projects: [
+      // shared — type-level unit tests, parallel
+      'packages/shared/vitest.config.ts',
       // core:unit — ~370 pure unit tests, run in parallel across all CPU cores
       'packages/core/vitest.unit.config.ts',
       // core:db — ~38 DB integration tests, serial (shared PostgreSQL test DB)

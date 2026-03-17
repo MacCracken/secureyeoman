@@ -18,6 +18,7 @@ export interface AgnosBootstrapResult {
   endpoints: Record<string, string>;
   sandboxProfiles: AgnosSandboxProfile[];
   mcpToolsRegistered: number;
+  bridgeProfile: string;
   error?: string;
 }
 
@@ -34,7 +35,8 @@ export interface McpToolDefinition {
 export async function bootstrapAgnos(
   client: AgnosClient,
   logger: SecureLogger,
-  mcpTools?: McpToolDefinition[]
+  mcpTools?: McpToolDefinition[],
+  bridgeProfile?: string
 ): Promise<AgnosBootstrapResult> {
   const result: AgnosBootstrapResult = {
     discovered: false,
@@ -42,6 +44,7 @@ export async function bootstrapAgnos(
     endpoints: {},
     sandboxProfiles: [],
     mcpToolsRegistered: 0,
+    bridgeProfile: bridgeProfile ?? 'full',
   };
 
   // ── 1. Service discovery ───────────────────────────────────
@@ -83,20 +86,31 @@ export async function bootstrapAgnos(
     );
   }
 
-  // ── 3. MCP tool registration ───────────────────────────────
+  // ── 3. MCP tool registration (profile-aware) ────────────────
   if (mcpTools && mcpTools.length > 0) {
+    const profile = bridgeProfile ?? 'full';
     try {
-      const res = await client.registerMcpTools(mcpTools);
+      const res = await client.registerMcpToolsByProfile(mcpTools, profile);
       result.mcpToolsRegistered = res.registered;
       logger.info(
-        { registered: res.registered, total: mcpTools.length },
-        'MCP tools registered with AGNOS daimon'
+        { registered: res.registered, total: mcpTools.length, profile },
+        'MCP tools registered with AGNOS daimon (profile-filtered)'
       );
     } catch (err) {
-      logger.debug(
-        { error: err instanceof Error ? err.message : String(err) },
-        'Failed to register MCP tools with AGNOS'
-      );
+      // Fallback to unfiltered registration
+      try {
+        const res = await client.registerMcpTools(mcpTools);
+        result.mcpToolsRegistered = res.registered;
+        logger.info(
+          { registered: res.registered, total: mcpTools.length },
+          'MCP tools registered with AGNOS daimon (unfiltered fallback)'
+        );
+      } catch (fallbackErr) {
+        logger.debug(
+          { error: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr) },
+          'Failed to register MCP tools with AGNOS'
+        );
+      }
     }
   }
 

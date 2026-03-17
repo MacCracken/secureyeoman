@@ -2188,6 +2188,36 @@ export function getToolManifest(): ToolManifestEntry[] {
         'Get a unified AGNOS platform overview: runtime health, gateway health, agents, metrics, models',
       category: 'agnos',
     },
+    {
+      name: 'agnos_bridge_profiles',
+      description:
+        'List available AGNOS bridge profiles with their tool categories and descriptions',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_bridge_discover',
+      description:
+        'Discover available SecureYeoman MCP tools filtered by bridge profile or category',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_bridge_call',
+      description:
+        'Call a SecureYeoman MCP tool through the AGNOS bridge with profile-based access control',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_bridge_sync',
+      description:
+        'Push the current tool manifest to AGNOS daimon filtered by profile',
+      category: 'agnos',
+    },
+    {
+      name: 'agnos_bridge_status',
+      description:
+        'Check AGNOS bridge status including active profile, tool counts, and connectivity',
+      category: 'agnos',
+    },
 
     // Google Calendar tools
     {

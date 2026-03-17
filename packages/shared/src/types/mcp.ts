@@ -140,6 +140,8 @@ export const McpServiceConfigSchema = z.object({
   agnosRuntimeApiKey: z.string().optional(),
   /** AGNOS LLM gateway API key. From env AGNOS_GATEWAY_API_KEY. */
   agnosGatewayApiKey: z.string().optional(),
+  /** AGNOS bridge profile — controls which tool categories are exposed to AGNOS agents. Default: 'full'. */
+  agnosBridgeProfile: z.enum(['sensor', 'security', 'devops', 'web', 'analysis', 'full']).default('full'),
   exposeQuickBooksTools: z.boolean().default(false),
   quickBooksEnvironment: z.enum(['sandbox', 'production']).default('sandbox'),
   quickBooksClientId: z.string().optional(),
@@ -278,3 +280,87 @@ export const McpServerHealthSchema = z.object({
 });
 
 export type McpServerHealth = z.infer<typeof McpServerHealthSchema>;
+
+// ─── AGNOS Bridge Profiles ──────────────────────────────────
+
+/** Tool profiles that AGNOS agents can request to receive curated tool subsets. */
+export const AgnosBridgeProfileSchema = z.enum([
+  'sensor',    // telemetry, health, edge fleet
+  'security',  // network, security, CVE, PCAP, DLP
+  'devops',    // docker, CI/CD, git, terminal
+  'web',       // web scraping, search, browser
+  'analysis',  // PDF, charting, excalidraw
+  'full',      // all enabled tools
+]);
+
+export type AgnosBridgeProfile = z.infer<typeof AgnosBridgeProfileSchema>;
+
+/** A category of tools that maps to one or more bridge profiles. */
+export const AgnosBridgeToolCategorySchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  profiles: z.array(AgnosBridgeProfileSchema),
+  toolPrefixes: z.array(z.string()),
+});
+
+export type AgnosBridgeToolCategory = z.infer<typeof AgnosBridgeToolCategorySchema>;
+
+/**
+ * Canonical mapping of tool categories → profiles → prefixes.
+ * Used by both the MCP bridge tools and the core API routes for consistent filtering.
+ */
+export const AGNOS_BRIDGE_CATEGORIES: AgnosBridgeToolCategory[] = [
+  {
+    name: 'core',
+    description: 'Brain, tasks, audit, integrations, and system management',
+    profiles: ['sensor', 'security', 'devops', 'web', 'analysis', 'full'],
+    toolPrefixes: ['knowledge_', 'memory_', 'task_', 'system_', 'integration_', 'audit_', 'personality_', 'skill_'],
+  },
+  {
+    name: 'sensor',
+    description: 'Telemetry, health monitoring, and edge fleet management',
+    profiles: ['sensor', 'full'],
+    toolPrefixes: ['edge_'],
+  },
+  {
+    name: 'security',
+    description: 'Network security, vulnerability scanning, PCAP analysis, and DLP',
+    profiles: ['security', 'full'],
+    toolPrefixes: ['network_', 'netbox_', 'nvd_', 'subnet_', 'wildcard_', 'pcap_', 'sec_', 'dlp_', 'twingate_'],
+  },
+  {
+    name: 'devops',
+    description: 'Docker, CI/CD pipelines, Git operations, and terminal access',
+    profiles: ['devops', 'full'],
+    toolPrefixes: ['docker_', 'gha_', 'jenkins_', 'gitlab_', 'northflank_', 'git_', 'github_', 'terminal_'],
+  },
+  {
+    name: 'web',
+    description: 'Web scraping, search, and browser automation',
+    profiles: ['web', 'full'],
+    toolPrefixes: ['web_', 'browser_'],
+  },
+  {
+    name: 'analysis',
+    description: 'PDF analysis, charting, diagramming, and document processing',
+    profiles: ['analysis', 'full'],
+    toolPrefixes: ['pdf_', 'chart_', 'excalidraw_'],
+  },
+];
+
+/** Given a profile, return all tool prefixes that profile includes. */
+export function getToolPrefixesForProfile(profile: AgnosBridgeProfile): string[] {
+  const prefixes: string[] = [];
+  for (const cat of AGNOS_BRIDGE_CATEGORIES) {
+    if (cat.profiles.includes(profile)) {
+      prefixes.push(...cat.toolPrefixes);
+    }
+  }
+  return prefixes;
+}
+
+/** Check if a tool name matches any prefix in the given profile. */
+export function toolMatchesProfile(toolName: string, profile: AgnosBridgeProfile): boolean {
+  const prefixes = getToolPrefixesForProfile(profile);
+  return prefixes.some((p) => toolName.startsWith(p));
+}
