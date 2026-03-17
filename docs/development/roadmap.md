@@ -137,9 +137,9 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
 | Core E2E | Expand coverage | Currently 8 files / 67 tests (incl. binary smoke); add training, delegation, analytics flows |
 
-### ESLint 10 Warnings — Incremental Cleanup (2026-03-15)
+### ESLint 10 Warnings — Incremental Cleanup (2026-03-17)
 
-Upgraded from ESLint 9 → 10 with `typescript-eslint@8.57.0` and `eslint-plugin-react-hooks@7.0.1`. **0 errors** (CI-gated). 234 warnings remaining — fix incrementally.
+Upgraded from ESLint 9 → 10 with `typescript-eslint@8.57.0` and `eslint-plugin-react-hooks@7.0.1`. **0 errors** (CI-gated). 267 warnings remaining — fix incrementally.
 
 | Rule | Count | Category | Notes |
 |------|-------|----------|-------|

@@ -460,7 +460,7 @@ describe('FirecrackerSandbox', () => {
 
       let writtenConfig = '';
       mockWriteFileSync.mockImplementation((_path: string, content: string) => {
-        if (String(_path).endsWith('vm-config.json')) writtenConfig = content;
+        if (_path.endsWith('vm-config.json')) writtenConfig = content;
       });
 
       mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {

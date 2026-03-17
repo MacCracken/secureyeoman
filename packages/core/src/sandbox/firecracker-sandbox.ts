@@ -244,14 +244,17 @@ const fn = ${fn.toString()};
         return this.runFallback(fn, opts);
       }
 
-      const jailerBin = this.detectJailer();
-      const useJailer = this.opts.useJailer !== false && jailerBin !== null;
+      const jailerBin = this.opts.useJailer !== false ? this.detectJailer() : null;
 
-      const args = useJailer
-        ? this.buildJailerArgs(firecrackerBin, configPath, socketPath, tmpDir)
-        : this.buildFirecrackerArgs(configPath);
-
-      const binary = useJailer ? jailerBin! : firecrackerBin;
+      let binary: string;
+      let args: string[];
+      if (jailerBin) {
+        binary = jailerBin;
+        args = this.buildJailerArgs(firecrackerBin, configPath, socketPath, tmpDir);
+      } else {
+        binary = firecrackerBin;
+        args = this.buildFirecrackerArgs(configPath);
+      }
 
       const result = await new Promise<SandboxResult<T>>((resolve) => {
         let child: ReturnType<typeof execFile> | null = null;

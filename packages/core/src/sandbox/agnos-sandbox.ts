@@ -43,12 +43,12 @@ interface DaimonEnforceResponse {
 interface DaimonScanResponse {
   allowed: boolean;
   findings_count: number;
-  findings: Array<{
+  findings: {
     pattern: string;
     severity: string;
     category: string;
     redacted: string;
-  }>;
+  }[];
 }
 
 interface DaimonCredProxyResponse {
@@ -195,7 +195,7 @@ export class AgnosSandbox implements Sandbox {
    * Returns env vars to set in child processes.
    */
   async startCredentialProxy(
-    rules: Array<{ host_pattern: string; header_name: string; header_value: string }>,
+    rules: { host_pattern: string; header_name: string; header_value: string }[],
     allowedHosts: string[]
   ): Promise<Record<string, string>> {
     try {
@@ -224,8 +224,8 @@ export class AgnosSandbox implements Sandbox {
    */
   async applyLandlockPolicy(policy: {
     name: string;
-    filesystemRules: Array<{ path: string; access: string[] }>;
-    networkRules: Array<{ port: number; access: string[] }>;
+    filesystemRules: { path: string; access: string[] }[];
+    networkRules: { port: number; access: string[] }[];
     resourceLimits: { maxMemoryBytes: number; cpuQuotaPercent: number };
     requireCredentialProxy: boolean;
   }): Promise<{ ok: boolean; policyId?: string }> {
