@@ -28,11 +28,33 @@ When DLP classifies content as `confidential` or `restricted`, or when PII is de
 - `GET /api/v1/system/local-models` — Local model inventory
 - `POST /api/v1/ai/privacy-route` — Routing decision for content
 
+### MCP Tools
+
+- `gpu_status` — Query available GPU devices
+- `local_models_list` — List locally available models with capability filtering
+- `privacy_route_check` — Evaluate content for local vs cloud routing
+
+### Chat Flow Integration
+
+`AIClient.chat()` calls `evaluatePrivacyRouting()` before the primary provider attempt. When the privacy router returns `target: 'local'` with a recommended model, `AIClient` creates a temporary local provider and routes the request directly. On local failure, the normal fallback chain takes over.
+
+### Per-Personality Policy
+
+The `PersonalitySchema` includes a `routingPolicy` field (`auto | local-preferred | local-only | cloud-only`). This is injected into `AIClientDeps` at personality load time, allowing each personality to independently control routing behavior.
+
+### WebSocket Telemetry
+
+A 30-second GPU telemetry broadcast on the `gpu` WebSocket channel sends GPU probe results and local model summary to subscribed dashboard clients.
+
+### Dashboard
+
+`GpuStatusPanel` component shows GPU devices with VRAM bars, local models with capability badges, and a routing policy selector. Dashboard API client provides typed wrappers for the 3 endpoints.
+
 ### Integration Points
 
 - **DLP Classification Engine** — Reuses existing `ClassificationEngine` for content sensitivity tagging
 - **Model Router** — Privacy Router operates upstream of the existing `ModelRouter`; when it returns `target: 'local'`, the `ModelRouter` is bypassed and the recommended local model is used directly
-- **AGNOS Edge** — Edge devices report GPU capabilities via MCP bridge; SY can query fleet GPU status for distributed inference routing
+- **AGNOS Edge** (optional) — Edge devices can expose GPU capabilities via MCP bridge; SY aggregates fleet GPU status for distributed inference routing. GPU routing works standalone without AGNOS
 
 ## Consequences
 

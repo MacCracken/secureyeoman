@@ -394,6 +394,9 @@ export const PersonalitySchema = z.object({
   isWithinActiveHours: z.boolean().optional(),
   body: BodyConfigSchema.default({}),
   brainConfig: PersonalityBrainConfigSchema.default({}),
+  routingPolicy: z
+    .enum(['auto', 'local-preferred', 'local-only', 'cloud-only'])
+    .default('auto'),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
 });

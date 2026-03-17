@@ -292,7 +292,19 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 - [x] **Local model registry** — Track locally available models (Ollama, LM Studio, LocalAI) with VRAM requirements and capability tags (e.g., `vision`, `code`, `reasoning`). Auto-detect via provider health checks.
 - [x] **Smart inference router** — When processing a request, evaluate: (1) local GPU availability + VRAM headroom, (2) model capability match, (3) privacy policy (e.g., "never send PII to cloud"), (4) cost preference. Route to local model when viable, cloud when necessary. Configurable routing policy per personality.
 - [x] **Privacy-aware routing** — DLP classifier tags content before routing. Content marked as sensitive (PII, credentials, proprietary) routes exclusively to local models. Extends existing DLP pipeline with a routing decision layer.
-- [ ] **AGNOS edge GPU support** — Extend AGNOS images with GPU passthrough for edge devices with NVIDIA Jetson or Intel integrated GPUs. Enable local inference on edge fleet without cloud dependency.
+- [x] **Wire into chat flow** — Integrate `PrivacyRouter` upstream of `ModelRouter` in `AIClient.chat()` so routing decisions actually affect provider selection. When privacy router returns `target: 'local'`, bypass cloud providers and use the recommended local model.
+- [x] **Per-personality routing policy** — Add `routingPolicy` field to personality config schema (`auto | local-preferred | local-only | cloud-only`). Personality-level override for the global routing policy.
+- [x] **Dashboard GPU panel** — GPU status card in System Settings showing detected devices, VRAM usage, local models, and routing policy selector. Privacy routing indicator in chat ("routed locally" badge).
+- [x] **MCP tools** — `gpu_status`, `local_models_list`, `privacy_route_check` tools for agents to query GPU and routing state programmatically.
+- [x] **WebSocket GPU telemetry** — Periodic GPU utilization broadcast for live Mission Control dashboard updates.
+
+#### AGNOS Integration (optional enhancement)
+
+*GPU routing works standalone on any host with nvidia-smi/rocm-smi. AGNOS integration extends this to edge fleet scenarios.*
+
+- [ ] **Fleet GPU telemetry** — When running on AGNOS, report GPU utilization from edge devices via MCP bridge. SY aggregates fleet-wide GPU status for distributed inference routing decisions.
+- [ ] **Edge model offload** — AGNOS edge devices advertise locally available models to SY. SY's smart router can offload inference to edge devices with available GPU capacity, reducing cloud costs and improving latency for on-premises deployments.
+- [ ] **Firecracker GPU passthrough** — When `sandboxFirecracker` is enabled on AGNOS edge devices with NVIDIA Jetson or Intel iGPUs, pass GPU access through to sandboxed inference workloads.
 
 ---
 

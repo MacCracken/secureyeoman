@@ -3264,6 +3264,81 @@ export async function updateSecurityPolicy(data: Partial<SecurityPolicy>): Promi
   });
 }
 
+// ─── GPU & Inference Routing API ──────────────────────────────────
+
+export interface GpuDevice {
+  index: number;
+  name: string;
+  vendor: 'nvidia' | 'amd' | 'intel' | 'unknown';
+  vramTotalMb: number;
+  vramUsedMb: number;
+  vramFreeMb: number;
+  utilizationPercent: number;
+  temperatureCelsius: number | null;
+  driverVersion: string;
+  computeCapability: string | null;
+  cudaAvailable: boolean;
+  rocmAvailable: boolean;
+}
+
+export interface GpuProbeResult {
+  available: boolean;
+  devices: GpuDevice[];
+  totalVramMb: number;
+  totalFreeVramMb: number;
+  bestDevice: GpuDevice | null;
+  localInferenceViable: boolean;
+  probedAt: string;
+}
+
+export interface LocalModel {
+  name: string;
+  provider: 'ollama' | 'lmstudio' | 'localai';
+  sizeBytes: number;
+  estimatedVramMb: number;
+  lastSeen: string;
+  capabilities: string[];
+  tier: string;
+  family: string;
+  parameterCount: string | null;
+}
+
+export interface LocalModelRegistryState {
+  models: LocalModel[];
+  lastRefreshed: string;
+  ollamaAvailable: boolean;
+  lmstudioAvailable: boolean;
+  localaiAvailable: boolean;
+}
+
+export interface PrivacyRoutingDecision {
+  target: 'local' | 'cloud';
+  reason: string;
+  localModel: LocalModel | null;
+  classificationLevel: string;
+  containsPii: boolean;
+  localViable: boolean;
+  confidence: number;
+}
+
+export async function fetchGpuStatus(refresh = false): Promise<GpuProbeResult> {
+  return request(`/system/gpu${refresh ? '?refresh=true' : ''}`);
+}
+
+export async function fetchLocalModels(refresh = false): Promise<LocalModelRegistryState> {
+  return request(`/system/local-models${refresh ? '?refresh=true' : ''}`);
+}
+
+export async function checkPrivacyRoute(
+  content: string,
+  policy?: string
+): Promise<PrivacyRoutingDecision> {
+  return request('/ai/privacy-route', {
+    method: 'POST',
+    body: JSON.stringify({ content, policy }),
+  });
+}
+
 // ─── Extensions API (Phase 6.4a) ──────────────────────────────────
 
 export async function fetchExtensions(): Promise<{

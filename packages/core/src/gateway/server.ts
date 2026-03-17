@@ -4140,6 +4140,44 @@ export class GatewayServer {
   }
 
   /**
+   * Start periodic GPU telemetry broadcast (every 30 seconds)
+   */
+  private startGpuTelemetryBroadcast(): void {
+    const gpuInterval = setInterval(() => {
+      void (async () => {
+        try {
+          if (!this.hasSubscribers('gpu')) return;
+
+          const { probeGpu } = await import('../ai/gpu-probe.js');
+          const { refreshLocalModels } = await import('../ai/local-model-registry.js');
+          const [gpu, localModels] = await Promise.all([
+            probeGpu(),
+            refreshLocalModels(),
+          ]);
+
+          this.broadcast('gpu', {
+            gpu,
+            localModels: {
+              count: localModels.models.length,
+              ollamaAvailable: localModels.ollamaAvailable,
+              lmstudioAvailable: localModels.lmstudioAvailable,
+              localaiAvailable: localModels.localaiAvailable,
+              lastRefreshed: localModels.lastRefreshed,
+            },
+          });
+        } catch (error) {
+          this.getLogger().debug(
+            { error: error instanceof Error ? error.message : 'Unknown' },
+            'GPU telemetry broadcast skipped'
+          );
+        }
+      })();
+    }, 30_000);
+
+    gpuInterval.unref();
+  }
+
+  /**
    * Start the server
    */
   async start(): Promise<void> {
@@ -4170,6 +4208,9 @@ export class GatewayServer {
 
       // Start metrics broadcast
       this.startMetricsBroadcast();
+
+      // Start GPU telemetry broadcast
+      this.startGpuTelemetryBroadcast();
 
       // Start WebSocket heartbeat (ping every 30s, terminate after 60s without pong)
       this.heartbeatInterval = setInterval(() => {

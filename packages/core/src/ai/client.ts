@@ -56,6 +56,7 @@ import { CircuitBreakerOpenError } from '../resilience/circuit-breaker.js';
 import { getTracer } from '../telemetry/otel.js';
 import { SpanStatusCode } from '@opentelemetry/api';
 import { toErrorMessage } from '../utils/errors.js';
+import type { RoutingPolicy, PrivacyRoutingDecision } from './privacy-router.js';
 
 export interface AIClientConfig {
   model: ModelConfig;
@@ -93,6 +94,10 @@ export interface AIClientDeps {
   teeVerifier?: TeeAttestationVerifier;
   /** Circuit breaker registry for fail-fast on unhealthy providers. */
   circuitBreakerRegistry?: CircuitBreakerRegistry;
+  /** DLP classification engine for privacy-aware routing. */
+  classificationEngine?: import('../security/dlp/classification-engine.js').ClassificationEngine;
+  /** Per-personality routing policy override. */
+  routingPolicy?: RoutingPolicy;
 }
 
 const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'localai']);
@@ -116,8 +121,13 @@ export class AIClient {
   private readonly healthTracker: ProviderHealthTracker | null;
   private readonly teeVerifier: TeeAttestationVerifier | null;
   private readonly circuitBreakers: CircuitBreakerRegistry | null;
+  private readonly classificationEngine:
+    | import('../security/dlp/classification-engine.js').ClassificationEngine
+    | null;
+  private readonly routingPolicy: RoutingPolicy;
   private resolvedAccountId: string | null = null;
   private initPromise: Promise<void> | null = null;
+  private lastPrivacyDecision: PrivacyRoutingDecision | null = null;
 
   constructor(config: AIClientConfig, deps: AIClientDeps = {}) {
     this.costCalculator = new CostCalculator();
@@ -134,6 +144,8 @@ export class AIClient {
     this.healthTracker = deps.healthTracker ?? null;
     this.teeVerifier = deps.teeVerifier ?? null;
     this.circuitBreakers = deps.circuitBreakerRegistry ?? null;
+    this.classificationEngine = deps.classificationEngine ?? null;
+    this.routingPolicy = deps.routingPolicy ?? 'auto';
     this.resolvedAccountId = deps.accountId ?? null;
     this.provider = this.createProvider(config);
     this.responseCache =
@@ -144,6 +156,73 @@ export class AIClient {
   /** Inject or replace the SoulManager after construction. */
   setSoulManager(manager: SoulManager): void {
     this.soulManager = manager;
+  }
+
+  /** Get the last privacy routing decision (for UI display). */
+  getLastPrivacyDecision(): PrivacyRoutingDecision | null {
+    return this.lastPrivacyDecision;
+  }
+
+  /**
+   * Evaluate privacy-aware routing for a request.
+   * When the classification engine is available and routing policy is not cloud-only,
+   * this checks content sensitivity and GPU availability to decide local vs cloud.
+   * Returns null when privacy routing is not configured.
+   */
+  private async evaluatePrivacyRouting(
+    content: string
+  ): Promise<PrivacyRoutingDecision | null> {
+    // Skip when no classification engine or policy is cloud-only
+    if (!this.classificationEngine || this.routingPolicy === 'cloud-only') {
+      return null;
+    }
+
+    // Skip when primary is already a local provider
+    if (LOCAL_PROVIDERS.has(this.providerName)) {
+      return null;
+    }
+
+    try {
+      const { probeGpu } = await import('./gpu-probe.js');
+      const { refreshLocalModels } = await import('./local-model-registry.js');
+      const { routeWithPrivacy } = await import('./privacy-router.js');
+
+      const classification = this.classificationEngine.classify(content);
+      const [gpu, localModels] = await Promise.all([
+        probeGpu(),
+        refreshLocalModels(),
+      ]);
+
+      const decision = routeWithPrivacy(
+        classification.level,
+        classification.piiFound,
+        gpu,
+        localModels,
+        [],
+        { policy: this.routingPolicy }
+      );
+
+      this.lastPrivacyDecision = decision;
+
+      if (decision.target === 'local' && decision.localModel) {
+        void this.auditRecord('ai_privacy_route_local', {
+          reason: decision.reason,
+          classification: decision.classificationLevel,
+          containsPii: decision.containsPii,
+          localModel: decision.localModel.name,
+          localProvider: decision.localModel.provider,
+          confidence: decision.confidence,
+        });
+      }
+
+      return decision;
+    } catch (error) {
+      this.logger?.warn(
+        { error: toErrorMessage(error) },
+        'Privacy routing evaluation failed, falling back to default'
+      );
+      return null;
+    }
   }
 
   /**
@@ -196,6 +275,44 @@ export class AIClient {
     }
 
     const fallbacks = requestFallbacks ?? this.fallbackConfigs;
+
+    // Privacy-aware routing: check if content should be routed to a local model
+    const messageContent = request.messages
+      .map((m) => (typeof m.content === 'string' ? m.content : ''))
+      .join(' ');
+    const privacyDecision = messageContent.length > 0
+      ? await this.evaluatePrivacyRouting(messageContent)
+      : null;
+
+    if (privacyDecision?.target === 'local' && privacyDecision.localModel) {
+      const localModel = privacyDecision.localModel;
+      try {
+        const localProvider = this.createProvider({
+          model: {
+            ...this.primaryModelConfig,
+            provider: localModel.provider as AIProviderName,
+            model: localModel.name,
+          },
+        });
+        const response = await this.doChatWithProvider(
+          localProvider,
+          localModel.provider as AIProviderName,
+          { ...request, model: localModel.name },
+          { ...context, privacyRouted: true, routingReason: privacyDecision.reason }
+        );
+        return response;
+      } catch (error) {
+        this.logger?.warn(
+          { error: toErrorMessage(error as Error), model: localModel.name },
+          'Privacy-routed local inference failed, falling back to default provider'
+        );
+        void this.auditRecord('ai_privacy_route_fallback', {
+          reason: privacyDecision.reason,
+          localModel: localModel.name,
+          error: toErrorMessage(error as Error),
+        });
+      }
+    }
 
     // Local-first pre-attempts: try local fallbacks before cloud primary
     const preAttemptIndices = this.getLocalFirstPreAttemptIndices();

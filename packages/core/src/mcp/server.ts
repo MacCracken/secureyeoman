@@ -6,22 +6,27 @@ import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { SoulManager } from '../soul/manager.js';
 import type { McpToolDef, McpResourceDef } from '@secureyeoman/shared';
+import { GPU_TOOL_DEFINITIONS, handleGpuToolCall } from '../ai/gpu-tools.js';
+import type { ClassificationEngine } from '../security/dlp/classification-engine.js';
 
 export interface McpServerDeps {
   logger: SecureLogger;
   brainManager?: BrainManager;
   soulManager?: SoulManager;
+  classificationEngine?: ClassificationEngine;
 }
 
 export class McpServer {
   private logger: SecureLogger;
   private brainManager?: BrainManager;
   private soulManager?: SoulManager;
+  private classificationEngine?: ClassificationEngine;
 
   constructor(deps: McpServerDeps) {
     this.logger = deps.logger;
     this.brainManager = deps.brainManager;
     this.soulManager = deps.soulManager;
+    this.classificationEngine = deps.classificationEngine;
   }
 
   async getExposedTools(): Promise<McpToolDef[]> {
@@ -39,6 +44,9 @@ export class McpServer {
         });
       }
     }
+
+    // GPU-aware inference routing tools
+    tools.push(...GPU_TOOL_DEFINITIONS);
 
     return tools;
   }
@@ -62,6 +70,15 @@ export class McpServer {
 
   async handleToolCall(toolName: string, args: Record<string, unknown>): Promise<unknown> {
     this.logger.info({ toolName }, 'MCP tool call received');
+
+    // GPU tools
+    if (toolName === 'gpu_status' || toolName === 'local_models_list' || toolName === 'privacy_route_check') {
+      return handleGpuToolCall(toolName, args, {
+        logger: this.logger,
+        classificationEngine: this.classificationEngine,
+      });
+    }
+
     return { status: 'ok', toolName, args };
   }
 }

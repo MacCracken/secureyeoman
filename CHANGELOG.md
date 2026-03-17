@@ -81,6 +81,37 @@ Privacy-aware, GPU-conscious inference routing inspired by NVIDIA NemoClaw (GTC 
   - `POST /api/v1/ai/privacy-route` — Privacy-aware routing decision for content
 - **`sandboxFirecracker`** property added to `SecurityPolicy` interface and default fallback (Docker build fix)
 
+### GPU Routing — Chat Flow Integration
+
+End-to-end wiring: the privacy router now runs inside `AIClient.chat()` before every request. Sensitive content is automatically redirected to local models when GPU is available.
+
+- **`AIClient.chat()` integration** — `evaluatePrivacyRouting()` runs before primary provider attempt. Classifies message content via DLP, probes GPU + local models, and redirects to a local model when privacy policy requires it. Falls back to default provider chain on local failure. Audit trail records `ai_privacy_route_local` and `ai_privacy_route_fallback` events
+- **`AIClientDeps.classificationEngine`** — Optional DLP classification engine injection. When provided, enables privacy-aware routing in the chat flow
+- **`AIClientDeps.routingPolicy`** — Per-personality routing policy override (`auto | local-preferred | local-only | cloud-only`)
+- **`getLastPrivacyDecision()`** — Public method to retrieve the most recent routing decision for UI display (chat badge)
+
+### Per-Personality Routing Policy
+
+- **`routingPolicy`** field added to `PersonalitySchema` in `@secureyeoman/shared` — Zod-validated enum (`auto | local-preferred | local-only | cloud-only`), defaults to `auto`. Each personality can independently control whether inference stays local or goes to cloud
+
+### MCP Tools — GPU & Privacy Routing
+
+Three new built-in MCP tools for agents to query GPU and routing state programmatically:
+
+- **`gpu_status`** — Query available GPU devices, VRAM, utilization, temperature, driver info
+- **`local_models_list`** — List locally available models with capability filtering
+- **`privacy_route_check`** — Evaluate content for local vs cloud routing with DLP classification
+- Tools registered in `McpServer.getExposedTools()` and handled via `handleGpuToolCall()`
+
+### Dashboard — GPU Status Panel
+
+- **`GpuStatusPanel`** component — GPU devices with VRAM usage bars, local models with capability badges, privacy routing policy dropdown selector. Auto-refreshes (GPU every 30s, models every 60s)
+- **Dashboard API client** — `fetchGpuStatus()`, `fetchLocalModels()`, `checkPrivacyRoute()` wrappers with TypeScript types for `GpuProbeResult`, `LocalModelRegistryState`, `PrivacyRoutingDecision`
+
+### WebSocket GPU Telemetry
+
+- **GPU telemetry broadcast** — 30-second interval broadcast on `gpu` WebSocket channel. Sends GPU probe results + local model summary to subscribed dashboard clients. Skips broadcast when no subscribers
+
 ### Competitive Analysis Update
 
 - **NVIDIA NemoClaw** added to `docs/development/functional-audit.md` as a high-threat competitor (GTC 2026 announcement). Feature matrix column (NC) added covering process-level isolation, privacy router, and GPU-aware routing. SecureYeoman advantages: RBAC, SSO, DLP, governance, dashboard, training pipeline, air-gap — none present in NemoClaw
@@ -101,6 +132,7 @@ Privacy-aware, GPU-conscious inference routing inspired by NVIDIA NemoClaw (GTC 
 - **12 new tests** for GPU probe (nvidia-smi parsing, VRAM detection, caching, multi-GPU)
 - **10 new tests** for local model registry (VRAM filtering, capability matching, Ollama detection, caching)
 - **12 new tests** for privacy router (sensitive routing, policy enforcement, PII detection, VRAM budget)
+- **12 new tests** for GPU MCP tools (tool definitions, gpu_status, local_models_list, privacy_route_check, error handling)
 
 ---
 
