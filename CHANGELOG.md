@@ -140,7 +140,7 @@ Complete overhaul of sandbox technology selection and management. All 6 roadmap 
   - `GpuStatusPanel` → SettingsPage > General tab
   - `SandboxConfigPanel` → SecuritySettings (after Sandbox Isolation toggles)
   - `AgnosticPanel` → ConnectionsPage > Integrations > new "Agnostic" subtab with Bot icon
-- **GPU probe cleanup** — Replaced `ls` shell-out with `readdir` in `probeIntel()` (found in round 1, applied)
+- **GPU/model probe caching review** — Reviewed 30s GPU and 60s model cache TTLs. Both appropriate: probes are fail-fast (3-5s timeouts), fail-safe (return empty arrays on error), and cache prevents hot-path blocking after first call. No changes needed
 
 ### Security Audit & Code Review
 

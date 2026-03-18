@@ -115,21 +115,9 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### Code Review & Audit (2026-03-17)
+### ~~Code Review & Audit (2026-03-17)~~ — Complete
 
-*Post-feature audit — security, then code quality.*
-
-**Done:**
-- [x] **Security audit — GPU probe** — Replaced `ls` shell-out with `readdir` in `probeIntel()`. `execFile` calls verified safe (hardcoded binary + args, no user input)
-- [x] **Security audit — privacy router** — Added audit log (`ai_privacy_cloud_fallback_sensitive`) when sensitive content falls back to cloud due to no local GPU. Pure function, no injection vectors
-- [x] **Security audit — Firecracker hardening** — Added host format validation (`/^[\da-fA-F.:/]+$/`) before iptables `-d` argument. Chain names verified safe (sanitized vmId). Snapshot curl calls verified safe (Unix socket, no user URLs)
-- [x] **Security audit — Agnostic workflow steps** — Added `assertPublicUrl(targetUrl)` SSRF guard before forwarding to Agnostic. JWT token verified instance-scoped (no cross-run leakage). Template resolution verified safe (no eval)
-- [x] **Test review — mock quality** — Added `afterEach` fetch restoration to `agnostic-crew-steps.test.ts`. Other test files verified clean
-
-**Backlog (done):**
-- [x] **eslint-disable audit** — All 89 suppressions reviewed. All legitimate: react-hooks (70, intentional patterns), react-refresh (16, structural), no-autofocus (15, UX), no-console (10, browser-side), typescript (14, dynamic access). No changes needed
-- [x] **Dashboard panel wiring** — GpuStatusPanel wired into SettingsPage GeneralTab. SandboxConfigPanel wired into SecuritySettings. AgnosticPanel wired into ConnectionsPage as new 'Agnostic' subtab with Bot icon
-- [ ] **GPU/model probe caching** — Review 30s/60s TTLs. Consider background refresh
+*All 8 audit items completed. See [Changelog](../../CHANGELOG.md). Fixes: `readdir` over `ls`, privacy fallback audit log, iptables host validation, SSRF guard on Agnostic targetUrl, fetch mock restoration. Reviews: eslint-disable (89 files, all legitimate), dashboard panel wiring (3 panels connected), probe caching (TTLs appropriate).*
 
 ### Test Coverage
 
