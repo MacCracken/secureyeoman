@@ -1,12 +1,12 @@
 # SecureYeoman
 
-> SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (13 AI providers), enterprise-grade security (RBAC, SSO/SAML, WebAuthn/FIDO2, sandboxing, TEE-aware routing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 485-tool MCP server, a full ML lifecycle platform, and a simulation engine — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
+> Sovereign AI agent platform — self-hosted, enterprise-hardened, answerable only to you. 13 AI providers, RBAC/SSO/SAML/WebAuthn, 7 sandboxing modes (Landlock/seccomp/V8 isolate/WASM/gVisor/Firecracker microVM), GPU-aware privacy routing, cryptographic audit trails, multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), 485 MCP tools, full ML lifecycle, simulation engine. 4 deployment tiers: Prime (PostgreSQL, ~123 MB), Lite (SQLite), Agent (fleet), Edge/IoT (Go, 7.2 MB). ~22,000 tests. AGPL-3.0 + Commercial.
 
 - Version: 2026.3.18
-- 39 ADRs, 68 guides
+- 39 ADRs, 68 guides, ~22,000 tests
 - 38 platform integrations, 485 MCP tools, 56 CLI commands
 - 5 code forge adapters (Delta, GitHub, GitLab, Bitbucket, Gitea)
-- Edge/IoT binary (Go, 7.2 MB, zero dependencies)
+- 4 deployment tiers: Prime, Lite (SQLite), Agent (fleet), Edge/IoT (Go, 7.2 MB)
 
 ## Documentation
 
@@ -20,30 +20,50 @@
 - [Architecture](https://github.com/MacCracken/secureyeoman/blob/main/docs/development/architecture.md): System architecture overview
 - [Security Model](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/security-model.md): Security architecture and threat model
 - [White Paper](https://github.com/MacCracken/secureyeoman/blob/main/docs/white-paper.md): Architectural sovereignty and agentic governance
+- [Deployment](https://github.com/MacCracken/secureyeoman/blob/main/docs/deployment.md): Binary, Docker, Kubernetes, Edge/IoT
 
 ## Guides
 
-- [Integrations](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/integrations/integrations.md): Platform integration setup
-- [Knowledge & Memory](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/ai-and-llm/knowledge-memory.md): RAG, document ingestion, citations, memory scoping
-- [Observability](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/enterprise/observability.md): OpenTelemetry, Prometheus, alerts
-- [CI/CD Integration](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/integrations/cicd-integration.md): GitHub Actions, Jenkins, GitLab CI
-- [Security Testing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/security-testing.md): Security testing guide
-- [Content Guardrails](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/content-guardrails.md): PII, toxicity, topic restrictions
-- [Kubernetes](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/deployment/kubernetes-deployment.md): Helm chart deployment
-- [Deployment](https://github.com/MacCracken/secureyeoman/blob/main/docs/deployment.md): Docker and deployment guide
-- [Licensing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/enterprise/licensing.md): AGPL-3.0 and commercial license details
-- [Confidential Computing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/confidential-computing.md): TEE-aware provider routing and attestation
-- [Cognitive ML Memory](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/ai-and-llm/knowledge-memory.md#cognitive-ml-memory-enhancements): Context retrieval, working memory, salience classification
-- [Notifications](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/platform-features/notifications.md): Alert rules, job completion notifications, ntfy channel
-- [Constitutional AI](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/constitutional-ai.md): Self-critique, revision, and DPO training
-- [Federated Learning](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/ai-and-llm/federated-learning.md): Privacy-preserving distributed training
-- [Chaos Engineering](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/enterprise/chaos-engineering.md): Fault injection and resilience testing
+### Security
 - [SSO/SAML](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/sso-saml.md): Identity provider setup
+- [Security Testing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/security-testing.md): Penetration testing, vulnerability scanning
+- [Content Guardrails](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/content-guardrails.md): PII, toxicity, topic restrictions
+- [DLP](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/data-loss-prevention.md): Classification, egress scanning, watermarking
+- [Sandbox Profiles](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/sandbox-profiles.md): Landlock, seccomp, V8 isolate, gVisor, WASM, Firecracker
+- [Confidential Computing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/confidential-computing.md): TEE-aware provider routing
+- [Secrets Management](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/secrets-management.md): Vault, keyring, secret rotation
+
+### AI & Training
+- [AI Providers](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/ai-and-llm/ai-providers.md): 13 providers, fallback chains, cost tracking
+- [Knowledge & Memory](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/ai-and-llm/knowledge-memory.md): RAG, document ingestion, cognitive memory
+- [Training & ML](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/ai-and-llm/training-ml.md): Distillation, LoRA, evaluation
+- [Federated Learning](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/ai-and-llm/federated-learning.md): Privacy-preserving distributed training
+
+### Platform
+- [Workflows](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/platform-features/workflows.md): DAG orchestration, 19 step types, visual builder
+- [Swarms](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/platform-features/swarms.md): Sequential, parallel, dynamic strategies
+- [Integrations](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/integrations/integrations.md): 38 platform integrations
+- [Notifications](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/platform-features/notifications.md): Alert rules, job notifications
+
+### Enterprise
+- [Licensing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/enterprise/licensing.md): AGPL-3.0 and commercial license
+- [Observability](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/enterprise/observability.md): OpenTelemetry, Prometheus, Grafana
+- [Chaos Engineering](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/enterprise/chaos-engineering.md): Fault injection and resilience testing
+- [Multi-Region HA](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/enterprise/multi-region-ha.md): Active-passive/active-active HA
+
+### Deployment
+- [Kubernetes](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/deployment/kubernetes-deployment.md): Helm chart deployment
+- [Edge/IoT](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/deployment/edge-iot.md): Go binary for constrained devices
+- [CI/CD Integration](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/integrations/cicd-integration.md): GitHub Actions, Jenkins, GitLab CI
+
+### Other
+- [Constitutional AI](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security/constitutional-ai.md): Self-critique, revision, DPO training
 - [Troubleshooting](https://github.com/MacCracken/secureyeoman/blob/main/docs/troubleshooting.md): Common problems and fixes
 
 ## Optional
 
 - [ADRs](https://github.com/MacCracken/secureyeoman/tree/main/docs/adr): 39 architecture decision records
 - [Roadmap](https://github.com/MacCracken/secureyeoman/blob/main/docs/development/roadmap.md): Development roadmap
+- [Competitive Analysis](https://github.com/MacCracken/secureyeoman/blob/main/docs/development/functional-audit.md): Feature matrix vs OpenClaw, NemoClaw, Ironclaw, PicoClaw, Agent Zero
 - [Changelog](https://github.com/MacCracken/secureyeoman/blob/main/CHANGELOG.md): Release history
 - [Contributing](https://github.com/MacCracken/secureyeoman/blob/main/CONTRIBUTING.md): Contribution guide
