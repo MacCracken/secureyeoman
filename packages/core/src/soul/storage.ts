@@ -412,7 +412,9 @@ export class SoulStorage extends PgBaseStorage {
           JSON.stringify(
             data.modelFallbacks !== undefined ? data.modelFallbacks : existing.modelFallbacks
           ),
-          data.includeArchetypes !== undefined ? data.includeArchetypes : existing.includeArchetypes,
+          data.includeArchetypes !== undefined
+            ? data.includeArchetypes
+            : existing.includeArchetypes,
           data.injectDateTime !== undefined ? data.injectDateTime : existing.injectDateTime,
           data.empathyResonance !== undefined ? data.empathyResonance : existing.empathyResonance,
           JSON.stringify(
@@ -476,7 +478,9 @@ export class SoulStorage extends PgBaseStorage {
           JSON.stringify(
             data.modelFallbacks !== undefined ? data.modelFallbacks : existing.modelFallbacks
           ),
-          data.includeArchetypes !== undefined ? data.includeArchetypes : existing.includeArchetypes,
+          data.includeArchetypes !== undefined
+            ? data.includeArchetypes
+            : existing.includeArchetypes,
           data.injectDateTime !== undefined ? data.injectDateTime : existing.injectDateTime,
           data.empathyResonance !== undefined ? data.empathyResonance : existing.empathyResonance,
           JSON.stringify(
@@ -646,10 +650,7 @@ export class SoulStorage extends PgBaseStorage {
         throw new VersionConflictError('Skill', id);
       }
     } else {
-      await this.execute(
-        `UPDATE soul.skills SET ${fields} WHERE id = $18`,
-        values
-      );
+      await this.execute(`UPDATE soul.skills SET ${fields} WHERE id = $18`, values);
     }
 
     const result = await this.getSkill(id);

@@ -88,14 +88,11 @@ describe('Personality optimistic locking', () => {
 
   it('update with correct version succeeds and increments', async () => {
     const personality = await createPersonality();
-    const res = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities/${personality.id}`,
-      {
-        method: 'PUT',
-        headers: authHeaders(token),
-        body: JSON.stringify({ name: 'Updated-Bot', version: 1 }),
-      }
-    );
+    const res = await fetch(`${server.baseUrl}/api/v1/soul/personalities/${personality.id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ name: 'Updated-Bot', version: 1 }),
+    });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.personality.name).toBe('Updated-Bot');
@@ -106,25 +103,19 @@ describe('Personality optimistic locking', () => {
     const personality = await createPersonality();
 
     // First update succeeds (version 1 → 2)
-    const res1 = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities/${personality.id}`,
-      {
-        method: 'PUT',
-        headers: authHeaders(token),
-        body: JSON.stringify({ name: 'First-Edit', version: 1 }),
-      }
-    );
+    const res1 = await fetch(`${server.baseUrl}/api/v1/soul/personalities/${personality.id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ name: 'First-Edit', version: 1 }),
+    });
     expect(res1.status).toBe(200);
 
     // Second update with stale version 1 fails
-    const res2 = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities/${personality.id}`,
-      {
-        method: 'PUT',
-        headers: authHeaders(token),
-        body: JSON.stringify({ name: 'Stale-Edit', version: 1 }),
-      }
-    );
+    const res2 = await fetch(`${server.baseUrl}/api/v1/soul/personalities/${personality.id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ name: 'Stale-Edit', version: 1 }),
+    });
     expect(res2.status).toBe(409);
     const body = await res2.json();
     expect(body.error).toMatch(/reload/i);
@@ -132,14 +123,11 @@ describe('Personality optimistic locking', () => {
 
   it('update without version still succeeds (backwards-compatible)', async () => {
     const personality = await createPersonality();
-    const res = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities/${personality.id}`,
-      {
-        method: 'PUT',
-        headers: authHeaders(token),
-        body: JSON.stringify({ name: 'No-Version-Edit' }),
-      }
-    );
+    const res = await fetch(`${server.baseUrl}/api/v1/soul/personalities/${personality.id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ name: 'No-Version-Edit' }),
+    });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.personality.name).toBe('No-Version-Edit');
@@ -148,10 +136,9 @@ describe('Personality optimistic locking', () => {
 
   it('version is returned in GET response', async () => {
     const personality = await createPersonality();
-    const res = await fetch(
-      `${server.baseUrl}/api/v1/soul/personalities/${personality.id}`,
-      { headers: authHeaders(token) }
-    );
+    const res = await fetch(`${server.baseUrl}/api/v1/soul/personalities/${personality.id}`, {
+      headers: authHeaders(token),
+    });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.personality.version).toBe(1);

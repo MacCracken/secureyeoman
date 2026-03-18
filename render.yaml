@@ -6,7 +6,7 @@ services:
       url: ghcr.io/maccracken/secureyeoman:latest
     envVars:
       - key: PORT
-        value: "18789"
+        value: '18789'
       - key: DATABASE_HOST
         fromDatabase:
           name: secureyeoman-db
@@ -42,6 +42,6 @@ services:
 databases:
   - name: secureyeoman-db
     engine: postgres
-    version: "16"
+    version: '16'
     ipAllowList: []
-    postgresMajorVersion: "16"
+    postgresMajorVersion: '16'

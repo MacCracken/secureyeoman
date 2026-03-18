@@ -208,8 +208,7 @@ describe('MCP Tool Discovery', () => {
 
     // With exposeGit defaulting to false, YEOMAN MCP git_ tools should be filtered out
     const gitTools = body.tools.filter(
-      (t: Record<string, unknown>) =>
-        typeof t.name === 'string' && t.name.startsWith('git_')
+      (t: Record<string, unknown>) => typeof t.name === 'string' && t.name.startsWith('git_')
     );
     expect(gitTools).toHaveLength(0);
   });
@@ -245,16 +244,13 @@ describe('MCP Tool Discovery', () => {
     const body = await res.json();
 
     const gitTools = body.tools.filter(
-      (t: Record<string, unknown>) =>
-        typeof t.name === 'string' && t.name.startsWith('git_')
+      (t: Record<string, unknown>) => typeof t.name === 'string' && t.name.startsWith('git_')
     );
     expect(gitTools.length).toBeGreaterThanOrEqual(2);
   });
 
   it('always includes external (non-YEOMAN) server tools regardless of config', async () => {
-    const tools = [
-      { name: 'git_external', description: 'External git tool', inputSchema: {} },
-    ];
+    const tools = [{ name: 'git_external', description: 'External git tool', inputSchema: {} }];
 
     await fetch(`${server.baseUrl}/api/v1/mcp/servers`, {
       method: 'POST',
@@ -273,9 +269,7 @@ describe('MCP Tool Discovery', () => {
     });
     const body = await res.json();
 
-    const extTool = body.tools.find(
-      (t: Record<string, unknown>) => t.name === 'git_external'
-    );
+    const extTool = body.tools.find((t: Record<string, unknown>) => t.name === 'git_external');
     expect(extTool).toBeDefined();
   });
 });
