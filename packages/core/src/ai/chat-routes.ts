@@ -81,6 +81,19 @@ const COMPACTION_MODEL = 'claude-haiku-3-5-20241022';
 /** Max character length for tool descriptions sent in schemas. */
 const TOOL_DESCRIPTION_MAX_CHARS = 200;
 
+/**
+ * Max character length for tool result content appended to the message array.
+ * Prevents a single oversized tool output (e.g. web scrape, large file read)
+ * from consuming the entire context window in the agentic tool loop.
+ */
+const TOOL_RESULT_MAX_CHARS = 16_000;
+
+/** Truncate a tool result string, appending an indicator if trimmed. */
+function truncateToolResult(content: string): string {
+  if (content.length <= TOOL_RESULT_MAX_CHARS) return content;
+  return content.slice(0, TOOL_RESULT_MAX_CHARS) + '\n…[truncated — output exceeded 16 000 chars]';
+}
+
 const CREATION_TOOL_LABELS: Record<string, string> = {
   create_skill: 'Skill',
   update_skill: 'Skill',
@@ -1644,7 +1657,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               role: 'tool' as const,
               toolResult: {
                 toolCallId: toolCall.id,
-                content: JSON.stringify(result.output),
+                content: truncateToolResult(JSON.stringify(result.output)),
                 isError: result.isError,
               },
             });
@@ -2735,7 +2748,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 role: 'tool' as const,
                 toolResult: {
                   toolCallId: toolCall.id,
-                  content: JSON.stringify(result.output),
+                  content: truncateToolResult(JSON.stringify(result.output)),
                   isError: result.isError,
                 },
               });

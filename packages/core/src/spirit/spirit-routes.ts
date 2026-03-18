@@ -13,6 +13,7 @@ import type {
   PainUpdate,
 } from './types.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { countTokens } from '../chat/compression/token-counter.js';
 import { parsePagination } from '../utils/pagination.js';
 
 export interface SpiritRoutesOptions {
@@ -217,6 +218,6 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
 
   app.get('/api/v1/spirit/prompt/preview', async () => {
     const prompt = await spiritManager.composeSpiritPrompt();
-    return { prompt, charCount: prompt.length, estimatedTokens: Math.ceil(prompt.length / 4) };
+    return { prompt, charCount: prompt.length, estimatedTokens: countTokens(prompt) };
   });
 }

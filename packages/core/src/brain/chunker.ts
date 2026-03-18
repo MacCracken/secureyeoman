@@ -29,13 +29,7 @@ export interface DocumentChunk {
 
 // ── Token estimation ──────────────────────────────────────────────────────────
 
-/**
- * Cheap token estimate: ~4 characters per token.
- * Accurate enough for budget decisions without a real tokeniser.
- */
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
+import { countTokens as estimateTokens } from '../chat/compression/token-counter.js';
 
 // ── Sentence splitting ────────────────────────────────────────────────────────
 

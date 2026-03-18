@@ -13,6 +13,7 @@ import type { CostCalculator, AvailableModel } from './cost-calculator.js';
 import { getAvailableModels } from './cost-calculator.js';
 import { getModelTier } from './model-registry.js';
 import type { TeeAttestationVerifier } from '../security/tee-attestation.js';
+import { countTokens } from '../chat/compression/token-counter.js';
 
 // ── Task Complexity ───────────────────────────────────────────────────────────
 
@@ -138,8 +139,7 @@ function scoreComplexity(task: string, taskType: TaskType): TaskComplexity {
 /** Rough token estimate for a task string (input side only). */
 function estimateInputTokens(task: string, context?: string): number {
   const combined = task + (context ?? '');
-  // ~4 chars per token is a reasonable heuristic
-  return Math.ceil(combined.length / 4);
+  return countTokens(combined);
 }
 
 export function profileTask(task: string, context?: string): TaskProfile {

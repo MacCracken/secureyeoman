@@ -23,6 +23,7 @@ import type {
 } from './types.js';
 import { getAvatarDir, VersionConflictError } from './storage.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { countTokens } from '../chat/compression/token-counter.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 import type { InputValidator } from '../security/input-validator.js';
@@ -788,7 +789,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         prompt,
         tools,
         charCount: prompt.length,
-        estimatedTokens: Math.ceil(prompt.length / 4),
+        estimatedTokens: countTokens(prompt),
       };
     }
   );
