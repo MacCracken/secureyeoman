@@ -44,32 +44,40 @@ export interface GpuProbeResult {
 
 async function probeNvidia(): Promise<GpuDevice[]> {
   try {
-    const { stdout } = await execFileAsync('nvidia-smi', [
-      '--query-gpu=index,name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu,driver_version,compute_cap',
-      '--format=csv,noheader,nounits',
-    ], { timeout: 5000 });
+    const { stdout } = await execFileAsync(
+      'nvidia-smi',
+      [
+        '--query-gpu=index,name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu,driver_version,compute_cap',
+        '--format=csv,noheader,nounits',
+      ],
+      { timeout: 5000 }
+    );
 
-    return stdout.trim().split('\n').filter(Boolean).map((line) => {
-      const parts = line.split(',').map((s) => s.trim());
-      const vramTotal = parseInt(parts[2] ?? '0', 10);
-      const vramUsed = parseInt(parts[3] ?? '0', 10);
-      const vramFree = parseInt(parts[4] ?? '0', 10);
+    return stdout
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const parts = line.split(',').map((s) => s.trim());
+        const vramTotal = parseInt(parts[2] ?? '0', 10);
+        const vramUsed = parseInt(parts[3] ?? '0', 10);
+        const vramFree = parseInt(parts[4] ?? '0', 10);
 
-      return {
-        index: parseInt(parts[0] ?? '0', 10),
-        name: parts[1] ?? 'Unknown NVIDIA GPU',
-        vendor: 'nvidia' as const,
-        vramTotalMb: vramTotal,
-        vramUsedMb: vramUsed,
-        vramFreeMb: vramFree,
-        utilizationPercent: parseInt(parts[5] ?? '0', 10),
-        temperatureCelsius: parts[6] ? parseInt(parts[6], 10) : null,
-        driverVersion: parts[7] ?? 'unknown',
-        computeCapability: parts[8] ?? null,
-        cudaAvailable: true,
-        rocmAvailable: false,
-      };
-    });
+        return {
+          index: parseInt(parts[0] ?? '0', 10),
+          name: parts[1] ?? 'Unknown NVIDIA GPU',
+          vendor: 'nvidia' as const,
+          vramTotalMb: vramTotal,
+          vramUsedMb: vramUsed,
+          vramFreeMb: vramFree,
+          utilizationPercent: parseInt(parts[5] ?? '0', 10),
+          temperatureCelsius: parts[6] ? parseInt(parts[6], 10) : null,
+          driverVersion: parts[7] ?? 'unknown',
+          computeCapability: parts[8] ?? null,
+          cudaAvailable: true,
+          rocmAvailable: false,
+        };
+      });
   } catch {
     return [];
   }
@@ -77,9 +85,11 @@ async function probeNvidia(): Promise<GpuDevice[]> {
 
 async function probeAmd(): Promise<GpuDevice[]> {
   try {
-    const { stdout } = await execFileAsync('rocm-smi', [
-      '--showmeminfo', 'vram', '--showtemp', '--showuse', '--csv',
-    ], { timeout: 5000 });
+    const { stdout } = await execFileAsync(
+      'rocm-smi',
+      ['--showmeminfo', 'vram', '--showtemp', '--showuse', '--csv'],
+      { timeout: 5000 }
+    );
 
     // rocm-smi CSV output varies by version; parse what we can
     const lines = stdout.trim().split('\n').filter(Boolean);
@@ -127,13 +137,14 @@ async function probeIntel(): Promise<GpuDevice[]> {
 
     // Check if it's Intel via lspci (hardcoded binary + args, no user input)
     const { stdout: lspci } = await execFileAsync('lspci', ['-nn'], { timeout: 5000 });
-    const intelGpus = lspci.split('\n').filter(
-      (line) => line.includes('VGA') && line.toLowerCase().includes('intel')
-    );
+    const intelGpus = lspci
+      .split('\n')
+      .filter((line) => line.includes('VGA') && line.toLowerCase().includes('intel'));
 
     return intelGpus.map((line, i) => ({
       index: i,
-      name: line.replace(/.*VGA compatible controller:\s*/, '').replace(/\s*\[.*/, '') || 'Intel GPU',
+      name:
+        line.replace(/.*VGA compatible controller:\s*/, '').replace(/\s*\[.*/, '') || 'Intel GPU',
       vendor: 'intel' as const,
       vramTotalMb: 0, // Intel iGPUs share system RAM
       vramUsedMb: 0,
@@ -164,20 +175,17 @@ export async function probeGpu(forceRefresh = false): Promise<GpuProbeResult> {
     return _cached;
   }
 
-  const [nvidia, amd, intel] = await Promise.all([
-    probeNvidia(),
-    probeAmd(),
-    probeIntel(),
-  ]);
+  const [nvidia, amd, intel] = await Promise.all([probeNvidia(), probeAmd(), probeIntel()]);
 
   const devices = [...nvidia, ...amd, ...intel];
   const totalVramMb = devices.reduce((sum, d) => sum + d.vramTotalMb, 0);
   const totalFreeVramMb = devices.reduce((sum, d) => sum + d.vramFreeMb, 0);
 
   // Best device = most free VRAM
-  const bestDevice = devices.length > 0
-    ? devices.reduce((best, d) => (d.vramFreeMb > best.vramFreeMb ? d : best))
-    : null;
+  const bestDevice =
+    devices.length > 0
+      ? devices.reduce((best, d) => (d.vramFreeMb > best.vramFreeMb ? d : best))
+      : null;
 
   // Local inference viable if any device has >= 4 GB free VRAM
   const localInferenceViable = devices.some((d) => d.vramFreeMb >= 4096);

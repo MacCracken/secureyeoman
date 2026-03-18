@@ -4,7 +4,11 @@ import type { AgnosticEngineConfig, WorkflowEngineDeps } from './workflow-engine
 import type { WorkflowDefinition, WorkflowRun } from '@secureyeoman/shared';
 
 const noopLogger = {
-  info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), child: () => noopLogger,
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  child: () => noopLogger,
 } as any;
 
 const mockStorage = {
@@ -61,13 +65,15 @@ describe('agnostic_crew workflow step', () => {
 
   it('fails step when agnostic is not configured', async () => {
     const engine = makeEngine(); // no config
-    const def = makeDefinition([{
-      id: 'crew',
-      type: 'agnostic_crew',
-      name: 'Run QA Crew',
-      config: { preset: 'qa-standard', title: 'QA run' },
-      dependsOn: [],
-    }]);
+    const def = makeDefinition([
+      {
+        id: 'crew',
+        type: 'agnostic_crew',
+        name: 'Run QA Crew',
+        config: { preset: 'qa-standard', title: 'QA run' },
+        dependsOn: [],
+      },
+    ]);
 
     await engine.execute(makeRun(), def);
     // Engine catches the error and marks run as failed
@@ -78,11 +84,10 @@ describe('agnostic_crew workflow step', () => {
   });
 
   it('submits crew and returns crewId', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ crew_id: 'crew-abc', status: 'queued' }),
-      });
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ crew_id: 'crew-abc', status: 'queued' }),
+    });
     global.fetch = fetchMock;
 
     const engine = makeEngine({
@@ -90,13 +95,15 @@ describe('agnostic_crew workflow step', () => {
       apiKey: 'test-key',
     });
 
-    const def = makeDefinition([{
-      id: 'crew',
-      type: 'agnostic_crew',
-      name: 'Run QA Crew',
-      config: { preset: 'qa-standard', title: 'QA analysis', description: 'Test run' },
-      dependsOn: [],
-    }]);
+    const def = makeDefinition([
+      {
+        id: 'crew',
+        type: 'agnostic_crew',
+        name: 'Run QA Crew',
+        config: { preset: 'qa-standard', title: 'QA analysis', description: 'Test run' },
+        dependsOn: [],
+      },
+    ]);
 
     await engine.execute(makeRun(), def);
 
@@ -114,13 +121,15 @@ describe('agnostic_crew workflow step', () => {
     global.fetch = fetchMock;
 
     const engine = makeEngine({ url: 'http://agnostic:8000', apiKey: 'my-api-key' });
-    const def = makeDefinition([{
-      id: 'crew',
-      type: 'agnostic_crew',
-      name: 'Crew',
-      config: { preset: 'qa-lean', title: 'test' },
-      dependsOn: [],
-    }]);
+    const def = makeDefinition([
+      {
+        id: 'crew',
+        type: 'agnostic_crew',
+        name: 'Crew',
+        config: { preset: 'qa-lean', title: 'test' },
+        dependsOn: [],
+      },
+    ]);
 
     await engine.execute(makeRun(), def);
 
@@ -136,17 +145,19 @@ describe('agnostic_crew workflow step', () => {
     global.fetch = fetchMock;
 
     const engine = makeEngine({ url: 'http://agnostic:8000', apiKey: 'key' });
-    const def = makeDefinition([{
-      id: 'crew',
-      type: 'agnostic_crew',
-      name: 'Crew',
-      config: {
-        preset: 'qa-standard',
-        title: 'QA for {{input.project}}',
-        targetUrl: '{{input.url}}',
+    const def = makeDefinition([
+      {
+        id: 'crew',
+        type: 'agnostic_crew',
+        name: 'Crew',
+        config: {
+          preset: 'qa-standard',
+          title: 'QA for {{input.project}}',
+          targetUrl: '{{input.url}}',
+        },
+        dependsOn: [],
       },
-      dependsOn: [],
-    }]);
+    ]);
 
     await engine.execute(makeRun({ project: 'MyApp', url: 'https://myapp.com' }), def);
 
@@ -163,13 +174,15 @@ describe('agnostic_crew workflow step', () => {
     });
 
     const engine = makeEngine({ url: 'http://agnostic:8000', apiKey: 'key' });
-    const def = makeDefinition([{
-      id: 'crew',
-      type: 'agnostic_crew',
-      name: 'Crew',
-      config: { preset: 'qa', title: 'test' },
-      dependsOn: [],
-    }]);
+    const def = makeDefinition([
+      {
+        id: 'crew',
+        type: 'agnostic_crew',
+        name: 'Crew',
+        config: { preset: 'qa', title: 'test' },
+        dependsOn: [],
+      },
+    ]);
 
     await engine.execute(makeRun(), def);
     expect(mockStorage.updateRun).toHaveBeenCalledWith(
@@ -190,13 +203,15 @@ describe('agnostic_crew_wait workflow step', () => {
 
   it('fails step when agnostic is not configured', async () => {
     const engine = makeEngine();
-    const def = makeDefinition([{
-      id: 'wait',
-      type: 'agnostic_crew_wait',
-      name: 'Wait for crew',
-      config: { crewId: 'crew-123' },
-      dependsOn: [],
-    }]);
+    const def = makeDefinition([
+      {
+        id: 'wait',
+        type: 'agnostic_crew_wait',
+        name: 'Wait for crew',
+        config: { crewId: 'crew-123' },
+        dependsOn: [],
+      },
+    ]);
 
     await engine.execute(makeRun(), def);
     expect(mockStorage.updateRun).toHaveBeenCalledWith(
@@ -207,13 +222,15 @@ describe('agnostic_crew_wait workflow step', () => {
 
   it('fails step when crewId is empty', async () => {
     const engine = makeEngine({ url: 'http://agnostic:8000', apiKey: 'key' });
-    const def = makeDefinition([{
-      id: 'wait',
-      type: 'agnostic_crew_wait',
-      name: 'Wait',
-      config: { crewId: '' },
-      dependsOn: [],
-    }]);
+    const def = makeDefinition([
+      {
+        id: 'wait',
+        type: 'agnostic_crew_wait',
+        name: 'Wait',
+        config: { crewId: '' },
+        dependsOn: [],
+      },
+    ]);
 
     await engine.execute(makeRun(), def);
     expect(mockStorage.updateRun).toHaveBeenCalledWith(
@@ -239,13 +256,15 @@ describe('agnostic_crew_wait workflow step', () => {
       pollIntervalMs: 10,
       timeoutMs: 5000,
     });
-    const def = makeDefinition([{
-      id: 'wait',
-      type: 'agnostic_crew_wait',
-      name: 'Wait',
-      config: { crewId: 'crew-123', pollIntervalMs: 10, timeoutMs: 5000 },
-      dependsOn: [],
-    }]);
+    const def = makeDefinition([
+      {
+        id: 'wait',
+        type: 'agnostic_crew_wait',
+        name: 'Wait',
+        config: { crewId: 'crew-123', pollIntervalMs: 10, timeoutMs: 5000 },
+        dependsOn: [],
+      },
+    ]);
 
     await engine.execute(makeRun(), def);
     // Should have polled at least 3 times (2 running + 1 completed) + 1 final fetch
@@ -277,13 +296,15 @@ describe('agnostic_crew_wait workflow step', () => {
       pollIntervalMs: 10,
       timeoutMs: 5000,
     });
-    const def = makeDefinition([{
-      id: 'wait',
-      type: 'agnostic_crew_wait',
-      name: 'Wait',
-      config: { crewId: '{{input.crew_id}}', pollIntervalMs: 10, timeoutMs: 5000 },
-      dependsOn: [],
-    }]);
+    const def = makeDefinition([
+      {
+        id: 'wait',
+        type: 'agnostic_crew_wait',
+        name: 'Wait',
+        config: { crewId: '{{input.crew_id}}', pollIntervalMs: 10, timeoutMs: 5000 },
+        dependsOn: [],
+      },
+    ]);
 
     await engine.execute(makeRun({ crew_id: 'crew-from-input' }), def);
 

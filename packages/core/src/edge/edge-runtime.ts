@@ -7,11 +7,7 @@
  * Designed for <128 MB RAM and <5s boot on constrained hardware.
  */
 
-import {
-  loadConfig,
-  getSecret,
-  type LoadConfigOptions,
-} from '../config/loader.js';
+import { loadConfig, getSecret, type LoadConfigOptions } from '../config/loader.js';
 import { initializeLogger, type SecureLogger } from '../logging/logger.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { A2AManager } from '../a2a/manager.js';

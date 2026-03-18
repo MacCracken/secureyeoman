@@ -169,9 +169,7 @@ export class AIClient {
    * this checks content sensitivity and GPU availability to decide local vs cloud.
    * Returns null when privacy routing is not configured.
    */
-  private async evaluatePrivacyRouting(
-    content: string
-  ): Promise<PrivacyRoutingDecision | null> {
+  private async evaluatePrivacyRouting(content: string): Promise<PrivacyRoutingDecision | null> {
     // Skip when no classification engine or policy is cloud-only
     if (!this.classificationEngine || this.routingPolicy === 'cloud-only') {
       return null;
@@ -188,10 +186,7 @@ export class AIClient {
       const { routeWithPrivacy } = await import('./privacy-router.js');
 
       const classification = this.classificationEngine.classify(content);
-      const [gpu, localModels] = await Promise.all([
-        probeGpu(),
-        refreshLocalModels(),
-      ]);
+      const [gpu, localModels] = await Promise.all([probeGpu(), refreshLocalModels()]);
 
       const decision = routeWithPrivacy(
         classification.level,
@@ -280,9 +275,8 @@ export class AIClient {
     const messageContent = request.messages
       .map((m) => (typeof m.content === 'string' ? m.content : ''))
       .join(' ');
-    const privacyDecision = messageContent.length > 0
-      ? await this.evaluatePrivacyRouting(messageContent)
-      : null;
+    const privacyDecision =
+      messageContent.length > 0 ? await this.evaluatePrivacyRouting(messageContent) : null;
 
     // Warn when sensitive content must go to cloud (no local GPU available)
     if (

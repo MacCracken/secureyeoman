@@ -29,14 +29,24 @@ function makeCtx(argv: string[] = []): CommandContext & { stdoutData: string; st
   return {
     argv,
     stdout: {
-      write: (data: string) => { stdoutData += data; return true; },
+      write: (data: string) => {
+        stdoutData += data;
+        return true;
+      },
       isTTY: false,
     } as any,
     stderr: {
-      write: (data: string) => { stderrData += data; return true; },
+      write: (data: string) => {
+        stderrData += data;
+        return true;
+      },
     } as any,
-    get stdoutData() { return stdoutData; },
-    get stderrData() { return stderrData; },
+    get stdoutData() {
+      return stdoutData;
+    },
+    get stderrData() {
+      return stderrData;
+    },
   };
 }
 

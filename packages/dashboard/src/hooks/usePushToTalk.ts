@@ -241,7 +241,7 @@ export function usePushToTalk(
       setError(message);
       stopCapture();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isSupported,
     resolvedConfig.maxDurationMs,

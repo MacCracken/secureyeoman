@@ -65,7 +65,7 @@ export function EmailTab({
     if (oauthEmail && !gmailForm.displayName) {
       setGmailForm((f) => ({ ...f, displayName: oauthEmail }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [oauthEmail]);
 
   // Show config form when we get a successful OAuth callback

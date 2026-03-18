@@ -401,7 +401,9 @@ const fn = ${fn.toString()};
               {
                 iface_id: 'eth0',
                 guest_mac: 'AA:FC:00:00:00:01',
-                host_dev_name: this.opts.allowedHosts ? `tap-${Date.now().toString(36).slice(-8)}` : 'tap0',
+                host_dev_name: this.opts.allowedHosts
+                  ? `tap-${Date.now().toString(36).slice(-8)}`
+                  : 'tap0',
               },
             ],
           }
@@ -463,12 +465,18 @@ const fn = ${fn.toString()};
     const cgroupVersion = this.detectCgroupVersion();
 
     const args = [
-      '--id', vmId,
-      '--exec-file', firecrackerPath,
-      '--uid', String(process.getuid?.() ?? 0),
-      '--gid', String(process.getgid?.() ?? 0),
-      '--chroot-base-dir', tmpDir,
-      '--cgroup-version', String(cgroupVersion),
+      '--id',
+      vmId,
+      '--exec-file',
+      firecrackerPath,
+      '--uid',
+      String(process.getuid?.() ?? 0),
+      '--gid',
+      String(process.getgid?.() ?? 0),
+      '--chroot-base-dir',
+      tmpDir,
+      '--cgroup-version',
+      String(cgroupVersion),
     ];
 
     // Apply cgroup resource limits (cgroup v2)
@@ -485,11 +493,7 @@ const fn = ${fn.toString()};
       args.push('--seccomp-filter', this.opts.seccompFilterPath);
     }
 
-    args.push(
-      '--',
-      '--no-api',
-      '--config-file', configPath,
-    );
+    args.push('--', '--no-api', '--config-file', configPath);
 
     return args;
   }
@@ -516,7 +520,11 @@ const fn = ${fn.toString()};
       // Apply iptables rules: allow only specified hosts, drop everything else
       const chain = `SY-FC-${vmId.slice(0, 6)}`.toUpperCase();
       execFileSync('iptables', ['-N', chain], { stdio: 'pipe' });
-      execFileSync('iptables', ['-A', chain, '-m', 'state', '--state', 'ESTABLISHED,RELATED', '-j', 'ACCEPT'], { stdio: 'pipe' });
+      execFileSync(
+        'iptables',
+        ['-A', chain, '-m', 'state', '--state', 'ESTABLISHED,RELATED', '-j', 'ACCEPT'],
+        { stdio: 'pipe' }
+      );
 
       // Validate host format before passing to iptables (prevent argument injection)
       const validHostRe = /^[\da-fA-F.:/]+$/; // IPv4, IPv6, CIDR only
@@ -529,8 +537,12 @@ const fn = ${fn.toString()};
       }
 
       // DNS always allowed (port 53)
-      execFileSync('iptables', ['-A', chain, '-p', 'udp', '--dport', '53', '-j', 'ACCEPT'], { stdio: 'pipe' });
-      execFileSync('iptables', ['-A', chain, '-p', 'tcp', '--dport', '53', '-j', 'ACCEPT'], { stdio: 'pipe' });
+      execFileSync('iptables', ['-A', chain, '-p', 'udp', '--dport', '53', '-j', 'ACCEPT'], {
+        stdio: 'pipe',
+      });
+      execFileSync('iptables', ['-A', chain, '-p', 'tcp', '--dport', '53', '-j', 'ACCEPT'], {
+        stdio: 'pipe',
+      });
 
       // Drop all other outbound traffic from this TAP
       execFileSync('iptables', ['-A', chain, '-j', 'DROP'], { stdio: 'pipe' });
@@ -540,7 +552,9 @@ const fn = ${fn.toString()};
 
       const cleanup = () => {
         try {
-          execFileSync('iptables', ['-D', 'FORWARD', '-i', tapName, '-j', chain], { stdio: 'pipe' });
+          execFileSync('iptables', ['-D', 'FORWARD', '-i', tapName, '-j', chain], {
+            stdio: 'pipe',
+          });
           execFileSync('iptables', ['-F', chain], { stdio: 'pipe' });
           execFileSync('iptables', ['-X', chain], { stdio: 'pipe' });
           execFileSync('ip', ['link', 'del', tapName], { stdio: 'pipe' });
@@ -551,9 +565,16 @@ const fn = ${fn.toString()};
 
       return { tapName, cleanup };
     } catch (e) {
-      this.getLogger().warn({ error: String(e), tapName }, 'TAP network setup failed, network disabled');
+      this.getLogger().warn(
+        { error: String(e), tapName },
+        'TAP network setup failed, network disabled'
+      );
       // Clean up partial state
-      try { execFileSync('ip', ['link', 'del', tapName], { stdio: 'pipe' }); } catch { /* ignore */ }
+      try {
+        execFileSync('ip', ['link', 'del', tapName], { stdio: 'pipe' });
+      } catch {
+        /* ignore */
+      }
       return null;
     }
   }
@@ -574,13 +595,21 @@ const fn = ${fn.toString()};
 
       // Pause the VM
       const pauseBody = JSON.stringify({ state: 'Paused' });
-      execFileSync('curl', [
-        '--unix-socket', socketPath,
-        '-X', 'PATCH',
-        'http://localhost/vm',
-        '-H', 'Content-Type: application/json',
-        '-d', pauseBody,
-      ], { stdio: 'pipe', timeout: 5000 });
+      execFileSync(
+        'curl',
+        [
+          '--unix-socket',
+          socketPath,
+          '-X',
+          'PATCH',
+          'http://localhost/vm',
+          '-H',
+          'Content-Type: application/json',
+          '-d',
+          pauseBody,
+        ],
+        { stdio: 'pipe', timeout: 5000 }
+      );
 
       // Create snapshot
       const snapBody = JSON.stringify({
@@ -588,13 +617,21 @@ const fn = ${fn.toString()};
         snapshot_path: statePath,
         mem_file_path: memPath,
       });
-      execFileSync('curl', [
-        '--unix-socket', socketPath,
-        '-X', 'PUT',
-        'http://localhost/snapshot/create',
-        '-H', 'Content-Type: application/json',
-        '-d', snapBody,
-      ], { stdio: 'pipe', timeout: 30000 });
+      execFileSync(
+        'curl',
+        [
+          '--unix-socket',
+          socketPath,
+          '-X',
+          'PUT',
+          'http://localhost/snapshot/create',
+          '-H',
+          'Content-Type: application/json',
+          '-d',
+          snapBody,
+        ],
+        { stdio: 'pipe', timeout: 30000 }
+      );
 
       this.getLogger().info({ snapshotDir }, 'Firecracker snapshot saved');
       return true;
@@ -619,11 +656,7 @@ const fn = ${fn.toString()};
     }
 
     // Firecracker snapshot restore via config file
-    return [
-      '--no-api',
-      '--snapshot-path', statePath,
-      '--mem-path', memPath,
-    ];
+    return ['--no-api', '--snapshot-path', statePath, '--mem-path', memPath];
   }
 
   /**

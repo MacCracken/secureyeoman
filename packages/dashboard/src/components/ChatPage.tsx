@@ -365,7 +365,7 @@ export function ChatPage() {
           // Silently fail - user can manually switch if needed
         });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectivePersonalityId, queryClient]);
 
   // Speak assistant messages when voice is enabled
@@ -378,7 +378,7 @@ export function ChatPage() {
       }
     }
     lastMsgCount.current = messages.length;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, voice.voiceEnabled, voice.speak, messages]);
 
   // Auto-scroll on new messages / streaming

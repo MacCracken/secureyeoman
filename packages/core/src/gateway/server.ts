@@ -2704,7 +2704,11 @@ export class GatewayServer {
 
     // Privacy routing decision — evaluate content for local vs cloud routing
     this.app.post('/api/v1/ai/privacy-route', async (request, reply) => {
-      const body = request.body as { content?: string; capabilities?: string[]; policy?: string } | null;
+      const body = request.body as {
+        content?: string;
+        capabilities?: string[];
+        policy?: string;
+      } | null;
       if (!body?.content) {
         return sendError(reply, 400, 'content field required');
       }
@@ -2723,10 +2727,7 @@ export class GatewayServer {
         piiFound = classification.piiFound;
       }
 
-      const [gpu, localModels] = await Promise.all([
-        probeGpu(),
-        refreshLocalModels(),
-      ]);
+      const [gpu, localModels] = await Promise.all([probeGpu(), refreshLocalModels()]);
 
       const decision = routeWithPrivacy(
         classificationLevel,
@@ -4189,10 +4190,7 @@ export class GatewayServer {
 
           const { probeGpu } = await import('../ai/gpu-probe.js');
           const { refreshLocalModels } = await import('../ai/local-model-registry.js');
-          const [gpu, localModels] = await Promise.all([
-            probeGpu(),
-            refreshLocalModels(),
-          ]);
+          const [gpu, localModels] = await Promise.all([probeGpu(), refreshLocalModels()]);
 
           this.broadcast('gpu', {
             gpu,

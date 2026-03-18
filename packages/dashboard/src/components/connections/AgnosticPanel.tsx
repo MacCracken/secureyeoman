@@ -64,7 +64,9 @@ function PresetCard({
     <div className="border border-border rounded-lg bg-card overflow-hidden">
       <div
         className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50"
-        onClick={() => { setExpanded(!expanded); }}
+        onClick={() => {
+          setExpanded(!expanded);
+        }}
       >
         <div className="flex items-center gap-2 min-w-0">
           <Users className="w-4 h-4 text-primary flex-shrink-0" />
@@ -77,12 +79,19 @@ function PresetCard({
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
-            onClick={(e) => { e.stopPropagation(); onSubmit(preset.name); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSubmit(preset.name);
+            }}
             className="px-2 py-1 text-[10px] font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90"
           >
             Run Crew
           </button>
-          {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+          {expanded ? (
+            <ChevronDown className="w-3.5 h-3.5" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5" />
+          )}
         </div>
       </div>
       {expanded && (
@@ -122,18 +131,20 @@ export default function AgnosticPanel() {
 
   const { data: presets } = useQuery({
     queryKey: ['agnostic-presets', domainFilter, sizeFilter],
-    queryFn: () => api.fetchAgnosticPresets({
-      domain: domainFilter || undefined,
-      size: sizeFilter || undefined,
-    }),
+    queryFn: () =>
+      api.fetchAgnosticPresets({
+        domain: domainFilter || undefined,
+        size: sizeFilter || undefined,
+      }),
   });
 
   const { data: crews } = useQuery({
     queryKey: ['agnostic-crews', crewStatusFilter],
-    queryFn: () => api.fetchAgnosticCrews({
-      status: crewStatusFilter || undefined,
-      limit: 10,
-    }),
+    queryFn: () =>
+      api.fetchAgnosticCrews({
+        status: crewStatusFilter || undefined,
+        limit: 10,
+      }),
     refetchInterval: 15_000,
   });
 
@@ -167,11 +178,12 @@ export default function AgnosticPanel() {
     submitMutation.mutate({ title: submitTitle, description: submitDesc, preset: submitPreset });
   };
 
-  const statusBadge = widget?.status === 'healthy'
-    ? 'text-green-500'
-    : widget?.status === 'degraded'
-      ? 'text-yellow-500'
-      : 'text-red-500';
+  const statusBadge =
+    widget?.status === 'healthy'
+      ? 'text-green-500'
+      : widget?.status === 'degraded'
+        ? 'text-yellow-500'
+        : 'text-red-500';
 
   return (
     <div className="space-y-6">
@@ -181,13 +193,13 @@ export default function AgnosticPanel() {
           <Cpu className="w-5 h-5 text-primary" />
           <div>
             <h3 className="text-sm font-semibold">Agnostic Agent Platform</h3>
-            <span className={`text-[10px] ${statusBadge}`}>
-              {widget?.status ?? 'unknown'}
-            </span>
+            <span className={`text-[10px] ${statusBadge}`}>{widget?.status ?? 'unknown'}</span>
           </div>
         </div>
         <button
-          onClick={() => { void queryClient.invalidateQueries({ queryKey: ['agnostic-widget'] }); }}
+          onClick={() => {
+            void queryClient.invalidateQueries({ queryKey: ['agnostic-widget'] });
+          }}
           className="p-1.5 rounded hover:bg-muted"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${widgetLoading ? 'animate-spin' : ''}`} />
@@ -212,13 +224,17 @@ export default function AgnosticPanel() {
           <div className="text-xs font-medium">Submit Crew: {submitPreset}</div>
           <input
             value={submitTitle}
-            onChange={(e) => { setSubmitTitle(e.target.value); }}
+            onChange={(e) => {
+              setSubmitTitle(e.target.value);
+            }}
             placeholder="Crew title..."
             className="w-full px-2 py-1.5 text-xs rounded border border-border bg-background"
           />
           <textarea
             value={submitDesc}
-            onChange={(e) => { setSubmitDesc(e.target.value); }}
+            onChange={(e) => {
+              setSubmitDesc(e.target.value);
+            }}
             placeholder="Description (optional)..."
             rows={2}
             className="w-full px-2 py-1.5 text-xs rounded border border-border bg-background resize-none"
@@ -232,7 +248,9 @@ export default function AgnosticPanel() {
               {submitMutation.isPending ? 'Submitting...' : 'Submit'}
             </button>
             <button
-              onClick={() => { setSubmitPreset(null); }}
+              onClick={() => {
+                setSubmitPreset(null);
+              }}
               className="px-3 py-1 text-xs rounded border border-border hover:bg-muted"
             >
               Cancel
@@ -251,11 +269,15 @@ export default function AgnosticPanel() {
             <Filter className="w-3 h-3 text-muted-foreground" />
             <select
               value={domainFilter}
-              onChange={(e) => { setDomainFilter(e.target.value as Domain); }}
+              onChange={(e) => {
+                setDomainFilter(e.target.value as Domain);
+              }}
               className="text-[10px] bg-transparent border-none text-muted-foreground cursor-pointer"
             >
               {Object.entries(DOMAIN_LABELS).map(([val, label]) => (
-                <option key={val} value={val}>{label}</option>
+                <option key={val} value={val}>
+                  {label}
+                </option>
               ))}
             </select>
           </div>
@@ -280,7 +302,9 @@ export default function AgnosticPanel() {
           </h4>
           <select
             value={crewStatusFilter}
-            onChange={(e) => { setCrewStatusFilter(e.target.value); }}
+            onChange={(e) => {
+              setCrewStatusFilter(e.target.value);
+            }}
             className="text-[10px] bg-transparent border-none text-muted-foreground cursor-pointer"
           >
             <option value="">All</option>
@@ -294,19 +318,25 @@ export default function AgnosticPanel() {
             const Icon = STATUS_ICONS[crew.status] ?? Clock;
             const color = STATUS_COLORS[crew.status] ?? 'text-muted-foreground';
             return (
-              <div key={crew.id} className="flex items-center justify-between p-2 rounded border border-border bg-card">
+              <div
+                key={crew.id}
+                className="flex items-center justify-between p-2 rounded border border-border bg-card"
+              >
                 <div className="flex items-center gap-2 min-w-0">
                   <Icon className={`w-3.5 h-3.5 ${color} flex-shrink-0`} />
                   <div className="min-w-0">
                     <div className="text-xs truncate">{crew.title}</div>
                     <div className="text-[10px] text-muted-foreground">
-                      {crew.preset ?? crew.domain ?? 'custom'} &middot; {new Date(crew.created_at).toLocaleTimeString()}
+                      {crew.preset ?? crew.domain ?? 'custom'} &middot;{' '}
+                      {new Date(crew.created_at).toLocaleTimeString()}
                     </div>
                   </div>
                 </div>
                 {(crew.status === 'running' || crew.status === 'pending') && (
                   <button
-                    onClick={() => { cancelMutation.mutate(crew.id); }}
+                    onClick={() => {
+                      cancelMutation.mutate(crew.id);
+                    }}
                     className="p-1 rounded hover:bg-muted"
                     title="Cancel crew"
                   >

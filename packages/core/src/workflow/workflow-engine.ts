@@ -1220,7 +1220,9 @@ export class WorkflowEngine {
           throw new Error('agnostic_crew_wait: crewId is required');
         }
 
-        const pollIntervalMs = Number(cfg.pollIntervalMs ?? this.agnosticConfig.pollIntervalMs ?? 10_000);
+        const pollIntervalMs = Number(
+          cfg.pollIntervalMs ?? this.agnosticConfig.pollIntervalMs ?? 10_000
+        );
         const timeoutMs = Number(cfg.timeoutMs ?? this.agnosticConfig.timeoutMs ?? 1_800_000);
 
         this.logger.info(

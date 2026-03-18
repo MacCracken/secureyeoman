@@ -10,7 +10,12 @@ import { existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
 import type { AuditChain } from '../logging/audit-chain.js';
-import type { Sandbox, SandboxCapabilities, SandboxTechnologyStatus, SandboxHealthStatus } from './types.js';
+import type {
+  Sandbox,
+  SandboxCapabilities,
+  SandboxTechnologyStatus,
+  SandboxHealthStatus,
+} from './types.js';
 import { SANDBOX_STRENGTH } from './types.js';
 import { NoopSandbox } from './noop-sandbox.js';
 import { LinuxSandbox } from './linux-sandbox.js';
@@ -351,8 +356,17 @@ export class SandboxManager {
         prerequisites: () => {
           const missing: string[] = [];
           if (caps.platform !== 'linux') missing.push('Linux OS');
-          try { execFileSync('which', ['runsc'], { stdio: 'pipe', timeout: 3000 }); } catch { missing.push('runsc binary (gVisor)'); }
-          return { missing, hint: missing.length ? 'Install gVisor: https://gvisor.dev/docs/user_guide/install/' : '' };
+          try {
+            execFileSync('which', ['runsc'], { stdio: 'pipe', timeout: 3000 });
+          } catch {
+            missing.push('runsc binary (gVisor)');
+          }
+          return {
+            missing,
+            hint: missing.length
+              ? 'Install gVisor: https://gvisor.dev/docs/user_guide/install/'
+              : '',
+          };
         },
       },
       {
@@ -362,8 +376,15 @@ export class SandboxManager {
           const missing: string[] = [];
           if (caps.platform !== 'linux') missing.push('Linux OS');
           if (!caps.sgx) missing.push('SGX-capable CPU');
-          try { execFileSync('which', ['gramine-sgx'], { stdio: 'pipe', timeout: 3000 }); } catch { missing.push('gramine-sgx binary'); }
-          return { missing, hint: missing.length ? 'Install Gramine: https://gramine.readthedocs.io/' : '' };
+          try {
+            execFileSync('which', ['gramine-sgx'], { stdio: 'pipe', timeout: 3000 });
+          } catch {
+            missing.push('gramine-sgx binary');
+          }
+          return {
+            missing,
+            hint: missing.length ? 'Install Gramine: https://gramine.readthedocs.io/' : '',
+          };
         },
       },
       {
@@ -537,9 +558,10 @@ export class SandboxManager {
     strength: number;
   } {
     const sandbox = this.createSandbox();
-    const techName = this.config.technology === 'auto'
-      ? sandbox.constructor.name.replace('Sandbox', '').toLowerCase()
-      : this.config.technology;
+    const techName =
+      this.config.technology === 'auto'
+        ? sandbox.constructor.name.replace('Sandbox', '').toLowerCase()
+        : this.config.technology;
     return {
       enabled: this.isEnabled(),
       technology: this.config.technology,

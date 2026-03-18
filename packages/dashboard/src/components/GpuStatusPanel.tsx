@@ -7,15 +7,7 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Cpu,
-  HardDrive,
-  Shield,
-  RefreshCw,
-  Wifi,
-  WifiOff,
-  ChevronDown,
-} from 'lucide-react';
+import { Cpu, HardDrive, Shield, RefreshCw, Wifi, WifiOff, ChevronDown } from 'lucide-react';
 import * as api from '../api/client';
 
 type RoutingPolicy = 'auto' | 'local-preferred' | 'local-only' | 'cloud-only';
@@ -41,10 +33,13 @@ function VramBar({ used, total }: { used: number; total: number }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+        <div
+          className={`h-full ${color} rounded-full transition-all`}
+          style={{ width: `${pct}%` }}
+        />
       </div>
       <span className="text-muted-foreground whitespace-nowrap">
-        {Math.round(used / 1024 * 10) / 10}/{Math.round(total / 1024 * 10) / 10} GB
+        {Math.round((used / 1024) * 10) / 10}/{Math.round((total / 1024) * 10) / 10} GB
       </span>
     </div>
   );
@@ -60,7 +55,9 @@ function CapabilityBadge({ cap }: { cap: string }) {
     streaming: 'bg-gray-500/20 text-gray-400',
   };
   return (
-    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${colors[cap] ?? 'bg-gray-500/20 text-gray-400'}`}>
+    <span
+      className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${colors[cap] ?? 'bg-gray-500/20 text-gray-400'}`}
+    >
       {cap}
     </span>
   );
@@ -110,7 +107,9 @@ export default function GpuStatusPanel() {
 
       {/* GPU Devices */}
       <div className="space-y-2">
-        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">GPU Devices</h4>
+        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          GPU Devices
+        </h4>
         {!gpu?.available ? (
           <div className="text-xs text-muted-foreground flex items-center gap-1.5 py-2">
             <WifiOff className="w-3.5 h-3.5" />
@@ -118,7 +117,10 @@ export default function GpuStatusPanel() {
           </div>
         ) : (
           gpu.devices.map((device) => (
-            <div key={device.index} className="p-2.5 rounded-lg border border-border bg-card space-y-1.5">
+            <div
+              key={device.index}
+              className="p-2.5 rounded-lg border border-border bg-card space-y-1.5"
+            >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium">{device.name}</span>
                 <span className="text-[10px] text-muted-foreground">
@@ -149,7 +151,10 @@ export default function GpuStatusPanel() {
         ) : (
           <div className="space-y-1">
             {localModels.models.slice(0, 8).map((model) => (
-              <div key={`${model.provider}-${model.name}`} className="flex items-center justify-between p-1.5 rounded border border-border bg-card">
+              <div
+                key={`${model.provider}-${model.name}`}
+                className="flex items-center justify-between p-1.5 rounded border border-border bg-card"
+              >
                 <div className="flex items-center gap-2 min-w-0">
                   <HardDrive className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                   <span className="text-xs truncate">{model.name}</span>
@@ -175,13 +180,19 @@ export default function GpuStatusPanel() {
         )}
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           {localModels?.ollamaAvailable && (
-            <span className="flex items-center gap-0.5"><Wifi className="w-2.5 h-2.5 text-green-500" /> Ollama</span>
+            <span className="flex items-center gap-0.5">
+              <Wifi className="w-2.5 h-2.5 text-green-500" /> Ollama
+            </span>
           )}
           {localModels?.lmstudioAvailable && (
-            <span className="flex items-center gap-0.5"><Wifi className="w-2.5 h-2.5 text-green-500" /> LM Studio</span>
+            <span className="flex items-center gap-0.5">
+              <Wifi className="w-2.5 h-2.5 text-green-500" /> LM Studio
+            </span>
           )}
           {localModels?.localaiAvailable && (
-            <span className="flex items-center gap-0.5"><Wifi className="w-2.5 h-2.5 text-green-500" /> LocalAI</span>
+            <span className="flex items-center gap-0.5">
+              <Wifi className="w-2.5 h-2.5 text-green-500" /> LocalAI
+            </span>
           )}
         </div>
       </div>
@@ -194,11 +205,15 @@ export default function GpuStatusPanel() {
         </h4>
         <div className="relative">
           <button
-            onClick={() => { setPolicyOpen(!policyOpen); }}
+            onClick={() => {
+              setPolicyOpen(!policyOpen);
+            }}
             className="w-full flex items-center justify-between p-2 rounded-lg border border-border bg-card text-xs hover:bg-muted/50 transition-colors"
           >
             <span>{POLICY_LABELS[routingPolicy]}</span>
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${policyOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform ${policyOpen ? 'rotate-180' : ''}`}
+            />
           </button>
           {policyOpen && (
             <div className="absolute z-10 w-full mt-1 rounded-lg border border-border bg-card shadow-lg">
@@ -214,7 +229,9 @@ export default function GpuStatusPanel() {
                   }`}
                 >
                   <div className="font-medium">{POLICY_LABELS[policy]}</div>
-                  <div className="text-[10px] text-muted-foreground">{POLICY_DESCRIPTIONS[policy]}</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {POLICY_DESCRIPTIONS[policy]}
+                  </div>
                 </button>
               ))}
             </div>

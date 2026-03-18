@@ -17,7 +17,9 @@ vi.mock('./linux-sandbox.js', () => ({
     constructor(opts?: any) {
       this.opts = opts;
     }
-    isAvailable() { return true; }
+    isAvailable() {
+      return true;
+    }
     getCapabilities() {
       return mockLinuxGetCapabilities();
     }
@@ -27,7 +29,9 @@ vi.mock('./linux-sandbox.js', () => ({
 
 vi.mock('./darwin-sandbox.js', () => ({
   DarwinSandbox: class MockDarwinSandbox {
-    isAvailable() { return true; }
+    isAvailable() {
+      return true;
+    }
     getCapabilities() {
       return mockDarwinGetCapabilities();
     }
@@ -37,22 +41,64 @@ vi.mock('./darwin-sandbox.js', () => ({
 
 // Mock all sandbox backends that resolveAuto() tries (return isAvailable=false)
 vi.mock('./firecracker-sandbox.js', () => ({
-  FirecrackerSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'linux' }; } },
+  FirecrackerSandbox: class {
+    isAvailable() {
+      return false;
+    }
+    getCapabilities() {
+      return { platform: 'linux' };
+    }
+  },
 }));
 vi.mock('./gvisor-sandbox.js', () => ({
-  GVisorSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'linux' }; } },
+  GVisorSandbox: class {
+    isAvailable() {
+      return false;
+    }
+    getCapabilities() {
+      return { platform: 'linux' };
+    }
+  },
 }));
 vi.mock('./sgx-sandbox.js', () => ({
-  SgxSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'linux' }; } },
+  SgxSandbox: class {
+    isAvailable() {
+      return false;
+    }
+    getCapabilities() {
+      return { platform: 'linux' };
+    }
+  },
 }));
 vi.mock('./sev-sandbox.js', () => ({
-  SevSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'linux' }; } },
+  SevSandbox: class {
+    isAvailable() {
+      return false;
+    }
+    getCapabilities() {
+      return { platform: 'linux' };
+    }
+  },
 }));
 vi.mock('./wasm-sandbox.js', () => ({
-  WasmSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'other' }; } },
+  WasmSandbox: class {
+    isAvailable() {
+      return false;
+    }
+    getCapabilities() {
+      return { platform: 'other' };
+    }
+  },
 }));
 vi.mock('./agnos-sandbox.js', () => ({
-  AgnosSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'linux' }; } },
+  AgnosSandbox: class {
+    isAvailable() {
+      return false;
+    }
+    getCapabilities() {
+      return { platform: 'linux' };
+    }
+  },
   isAgnosticOS: () => false,
 }));
 

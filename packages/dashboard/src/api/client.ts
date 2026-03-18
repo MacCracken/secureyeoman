@@ -3421,7 +3421,13 @@ export async function cancelAgnosticCrew(crewId: string): Promise<{ status: stri
 // ─── Sandbox API ─────────────────────────────────────────────────
 
 export async function fetchSandboxCapabilities(): Promise<{
-  technologies: { technology: string; available: boolean; strength: number; missingPrerequisites: string[]; installHint: string }[];
+  technologies: {
+    technology: string;
+    available: boolean;
+    strength: number;
+    missingPrerequisites: string[];
+    installHint: string;
+  }[];
   activeTechnology: string;
   activeStrength: number;
 }> {

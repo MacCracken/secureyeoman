@@ -41,7 +41,8 @@ export const GPU_TOOL_DEFINITIONS: McpToolDef[] = [
         },
         capability: {
           type: 'string',
-          description: 'Filter models by required capability (chat, vision, code, reasoning, tool_use)',
+          description:
+            'Filter models by required capability (chat, vision, code, reasoning, tool_use)',
         },
       },
     },

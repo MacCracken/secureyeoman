@@ -93,7 +93,9 @@ function inferTier(name: string): ModelTier {
 async function fetchOllamaModels(baseUrl = 'http://127.0.0.1:11434'): Promise<LocalModel[]> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => { controller.abort(); }, 3000);
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 3000);
 
     const response = await fetch(`${baseUrl}/api/tags`, { signal: controller.signal });
     clearTimeout(timeout);
@@ -122,7 +124,9 @@ async function fetchOllamaModels(baseUrl = 'http://127.0.0.1:11434'): Promise<Lo
 async function fetchLmStudioModels(baseUrl = 'http://127.0.0.1:1234'): Promise<LocalModel[]> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => { controller.abort(); }, 3000);
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 3000);
 
     const response = await fetch(`${baseUrl}/v1/models`, { signal: controller.signal });
     clearTimeout(timeout);
@@ -151,7 +155,9 @@ async function fetchLmStudioModels(baseUrl = 'http://127.0.0.1:1234'): Promise<L
 async function fetchLocalAIModels(baseUrl = 'http://127.0.0.1:8080'): Promise<LocalModel[]> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => { controller.abort(); }, 3000);
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 3000);
 
     const response = await fetch(`${baseUrl}/v1/models`, { signal: controller.signal });
     clearTimeout(timeout);
@@ -212,10 +218,7 @@ export async function refreshLocalModels(forceRefresh = false): Promise<LocalMod
 /**
  * Find local models that can run within the given VRAM budget.
  */
-export function findModelsWithinVram(
-  models: LocalModel[],
-  availableVramMb: number
-): LocalModel[] {
+export function findModelsWithinVram(models: LocalModel[], availableVramMb: number): LocalModel[] {
   return models
     .filter((m) => m.estimatedVramMb <= availableVramMb)
     .sort((a, b) => b.estimatedVramMb - a.estimatedVramMb); // largest first (best quality)
@@ -228,9 +231,7 @@ export function findLocalModelsWithCapabilities(
   models: LocalModel[],
   requiredCapabilities: ModelCapability[]
 ): LocalModel[] {
-  return models.filter((m) =>
-    requiredCapabilities.every((cap) => m.capabilities.includes(cap))
-  );
+  return models.filter((m) => requiredCapabilities.every((cap) => m.capabilities.includes(cap)));
 }
 
 /** @internal — Reset cache for testing. */

@@ -527,8 +527,18 @@ back-end DBMS: MySQL >= 5.0`;
   describe('parseNucleiJsonl — additional cases', () => {
     it('parses multiple findings with severity', () => {
       const jsonl = [
-        JSON.stringify({ 'template-id': 'cve-2021-1234', host: 'target.com', severity: 'critical', matched: '/login' }),
-        JSON.stringify({ 'template-id': 'xss-reflected', host: 'target.com', severity: 'high', matched: '/search' }),
+        JSON.stringify({
+          'template-id': 'cve-2021-1234',
+          host: 'target.com',
+          severity: 'critical',
+          matched: '/login',
+        }),
+        JSON.stringify({
+          'template-id': 'xss-reflected',
+          host: 'target.com',
+          severity: 'high',
+          matched: '/search',
+        }),
       ].join('\n');
       const result = parseNucleiJsonl(jsonl);
       expect(result.findings).toHaveLength(2);

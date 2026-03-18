@@ -124,10 +124,9 @@ describe('SandboxManager', () => {
     it('falls back to NoopSandbox when AGNOS daimon is not available', () => {
       const originalUrl = process.env.AGNOS_RUNTIME_URL;
       delete process.env.AGNOS_RUNTIME_URL;
-      const manager = new SandboxManager(
-        makeConfig({ enabled: true, technology: 'agnos' }),
-        { logger: makeLogger() as any }
-      );
+      const manager = new SandboxManager(makeConfig({ enabled: true, technology: 'agnos' }), {
+        logger: makeLogger() as any,
+      });
       const sandbox = manager.createSandbox();
       // AGNOS requires /etc/agnos/version or AGNOS_RUNTIME_URL
       expect(sandbox.constructor.name).toBe('NoopSandbox');
@@ -137,10 +136,9 @@ describe('SandboxManager', () => {
     it('auto-detects AGNOS when AGNOS_RUNTIME_URL is set', () => {
       const originalUrl = process.env.AGNOS_RUNTIME_URL;
       process.env.AGNOS_RUNTIME_URL = 'http://127.0.0.1:8090';
-      const manager = new SandboxManager(
-        makeConfig({ enabled: true, technology: 'auto' }),
-        { logger: makeLogger() as any }
-      );
+      const manager = new SandboxManager(makeConfig({ enabled: true, technology: 'auto' }), {
+        logger: makeLogger() as any,
+      });
       const sandbox = manager.createSandbox();
       expect(sandbox.constructor.name).toBe('AgnosSandbox');
       if (originalUrl) {

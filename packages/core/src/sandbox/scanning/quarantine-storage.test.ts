@@ -32,11 +32,10 @@ describe('QuarantineStorage', () => {
 
   describe('quarantine', () => {
     it('stores string content', async () => {
-      const meta = await storage.quarantine(
-        'malicious content',
-        makeScanResult(),
-        { artifactType: 'skill', sourceContext: 'install' }
-      );
+      const meta = await storage.quarantine('malicious content', makeScanResult(), {
+        artifactType: 'skill',
+        sourceContext: 'install',
+      });
       expect(meta.id).toBeTruthy();
       expect(meta.status).toBe('quarantined');
       expect(meta.artifactType).toBe('skill');
@@ -46,11 +45,10 @@ describe('QuarantineStorage', () => {
 
     it('stores Buffer content', async () => {
       const buf = Buffer.from([0x89, 0x50, 0x4e, 0x47]); // PNG magic bytes
-      const meta = await storage.quarantine(
-        buf,
-        makeScanResult(),
-        { artifactType: 'file', sourceContext: 'upload' }
-      );
+      const meta = await storage.quarantine(buf, makeScanResult(), {
+        artifactType: 'file',
+        sourceContext: 'upload',
+      });
       expect(meta.id).toBeTruthy();
 
       const artifact = await storage.getArtifact(meta.id);
@@ -59,23 +57,25 @@ describe('QuarantineStorage', () => {
     });
 
     it('stores optional personality and user IDs', async () => {
-      const meta = await storage.quarantine(
-        'content',
-        makeScanResult(),
-        {
-          artifactType: 'skill',
-          sourceContext: 'install',
-          personalityId: 'friday',
-          userId: 'user-1',
-        }
-      );
+      const meta = await storage.quarantine('content', makeScanResult(), {
+        artifactType: 'skill',
+        sourceContext: 'install',
+        personalityId: 'friday',
+        userId: 'user-1',
+      });
       expect(meta.personalityId).toBe('friday');
       expect(meta.userId).toBe('user-1');
     });
 
     it('generates unique IDs', async () => {
-      const a = await storage.quarantine('a', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
-      const b = await storage.quarantine('b', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
+      const a = await storage.quarantine('a', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
+      const b = await storage.quarantine('b', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
       expect(a.id).not.toBe(b.id);
     });
   });
@@ -87,10 +87,18 @@ describe('QuarantineStorage', () => {
     });
 
     it('returns quarantined items sorted by createdAt desc', async () => {
-      await storage.quarantine('first', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
+      await storage.quarantine('first', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
       // Tiny delay to ensure different timestamps
-      await new Promise((r) => { setTimeout(r, 5); });
-      await storage.quarantine('second', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
+      await new Promise((r) => {
+        setTimeout(r, 5);
+      });
+      await storage.quarantine('second', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
 
       const items = await storage.list();
       expect(items).toHaveLength(2);
@@ -100,7 +108,10 @@ describe('QuarantineStorage', () => {
 
   describe('get', () => {
     it('retrieves metadata by ID', async () => {
-      const meta = await storage.quarantine('content', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
+      const meta = await storage.quarantine('content', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
       const retrieved = await storage.get(meta.id);
       expect(retrieved).not.toBeNull();
       expect(retrieved!.id).toBe(meta.id);
@@ -115,7 +126,10 @@ describe('QuarantineStorage', () => {
 
   describe('getArtifact', () => {
     it('retrieves artifact content', async () => {
-      const meta = await storage.quarantine('test content', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
+      const meta = await storage.quarantine('test content', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
       const artifact = await storage.getArtifact(meta.id);
       expect(artifact).not.toBeNull();
       expect(artifact!.toString('utf-8')).toBe('test content');
@@ -129,7 +143,10 @@ describe('QuarantineStorage', () => {
 
   describe('approve', () => {
     it('updates status to approved', async () => {
-      const meta = await storage.quarantine('content', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
+      const meta = await storage.quarantine('content', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
       const approved = await storage.approve(meta.id, 'admin-user');
       expect(approved).not.toBeNull();
       expect(approved!.status).toBe('approved');
@@ -138,7 +155,10 @@ describe('QuarantineStorage', () => {
     });
 
     it('persists approval to disk', async () => {
-      const meta = await storage.quarantine('content', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
+      const meta = await storage.quarantine('content', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
       await storage.approve(meta.id, 'admin');
 
       const retrieved = await storage.get(meta.id);
@@ -154,7 +174,10 @@ describe('QuarantineStorage', () => {
 
   describe('release', () => {
     it('releases an approved item', async () => {
-      const meta = await storage.quarantine('content', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
+      const meta = await storage.quarantine('content', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
       await storage.approve(meta.id, 'admin');
       const released = await storage.release(meta.id);
       expect(released).toBe(true);
@@ -164,7 +187,10 @@ describe('QuarantineStorage', () => {
     });
 
     it('refuses to release non-approved items', async () => {
-      const meta = await storage.quarantine('content', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
+      const meta = await storage.quarantine('content', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
       const released = await storage.release(meta.id);
       expect(released).toBe(false);
     });
@@ -177,7 +203,10 @@ describe('QuarantineStorage', () => {
 
   describe('delete', () => {
     it('removes quarantined item', async () => {
-      const meta = await storage.quarantine('content', makeScanResult(), { artifactType: 't', sourceContext: 'c' });
+      const meta = await storage.quarantine('content', makeScanResult(), {
+        artifactType: 't',
+        sourceContext: 'c',
+      });
       const deleted = await storage.delete(meta.id);
       expect(deleted).toBe(true);
 
@@ -194,7 +223,9 @@ describe('QuarantineStorage', () => {
 
   describe('close', () => {
     it('is a no-op (does not throw)', () => {
-      expect(() => { storage.close(); }).not.toThrow();
+      expect(() => {
+        storage.close();
+      }).not.toThrow();
     });
   });
 });

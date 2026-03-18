@@ -315,7 +315,7 @@ function StandardEditorPage() {
       setChatInput((prev) => prev + voice.transcript);
       voice.clearTranscript();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voice.transcript, voice.clearTranscript]);
 
   // Speak assistant messages when voice is enabled
@@ -328,7 +328,7 @@ function StandardEditorPage() {
       }
     }
     lastMsgCount.current = messages.length;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, voice.voiceEnabled, voice.speak, messages]);
 
   // Auto-scroll chat
@@ -343,7 +343,7 @@ function StandardEditorPage() {
         prev.map((t) => (t.id === activeTabId ? { ...t, language: detectLanguage(t.name) } : t))
       );
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTabId]);
 
   useEffect(() => {
@@ -719,7 +719,7 @@ function StandardEditorPage() {
     if (!isPending && aiPlan?.status === 'executing') {
       setAiPlan((prev) => (prev ? { ...prev, status: 'completed' } : prev));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPending]);
 
   const handleInsertAtCursor = useCallback((msg: ChatMessage) => {

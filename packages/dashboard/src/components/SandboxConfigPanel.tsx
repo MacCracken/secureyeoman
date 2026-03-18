@@ -32,7 +32,6 @@ function StrengthBar({ strength }: { strength: number }) {
 export default function SandboxConfigPanel() {
   const queryClient = useQueryClient();
 
-
   const { data: capabilities } = useQuery({
     queryKey: ['sandbox-capabilities'],
     queryFn: () => api.fetchSandboxCapabilities(),
@@ -67,14 +66,22 @@ export default function SandboxConfigPanel() {
         </div>
         <div className="flex items-center gap-2">
           {health && (
-            <span className={`flex items-center gap-1 text-[10px] ${health.healthy ? 'text-green-500' : 'text-red-500'}`}>
-              {health.healthy ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+            <span
+              className={`flex items-center gap-1 text-[10px] ${health.healthy ? 'text-green-500' : 'text-red-500'}`}
+            >
+              {health.healthy ? (
+                <CheckCircle className="w-3 h-3" />
+              ) : (
+                <XCircle className="w-3 h-3" />
+              )}
               {health.healthy ? 'Healthy' : 'Degraded'}
               <span className="text-muted-foreground">({health.checkDurationMs}ms)</span>
             </span>
           )}
           <button
-            onClick={() => { void refetchHealth(); }}
+            onClick={() => {
+              void refetchHealth();
+            }}
             className="p-1 rounded hover:bg-muted transition-colors"
             title="Run health check"
           >

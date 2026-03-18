@@ -687,7 +687,9 @@ describe('calculateVlsm — additional cases', () => {
   it('allocates many small subnets', () => {
     const allocs = calculateVlsm('10.0.0.0/24', [2, 2, 2, 2, 2, 2]);
     expect(allocs).toHaveLength(6);
-    allocs.forEach(a => { expect(a.allocatedHosts).toBeGreaterThanOrEqual(2); });
+    allocs.forEach((a) => {
+      expect(a.allocatedHosts).toBeGreaterThanOrEqual(2);
+    });
   });
 });
 
@@ -726,7 +728,11 @@ describe('disabled tool stubs — network categories', () => {
     await registerNetworkTools(server, config, noopMiddleware());
     const tools = getRegistered(server);
     // Discovery tools should be stubs
-    const discoveryTools = ['network_discovery_cdp', 'network_discovery_lldp', 'network_topology_map'];
+    const discoveryTools = [
+      'network_discovery_cdp',
+      'network_discovery_lldp',
+      'network_topology_map',
+    ];
     for (const name of discoveryTools) {
       if (tools[name]) {
         const result = await tools[name]!.handler({});
@@ -757,7 +763,10 @@ describe('vlsm_calculator tool handler', () => {
     const tools = getRegistered(server);
     const vlsmTool = tools['vlsm_calculator'];
     if (vlsmTool) {
-      const result = await vlsmTool.handler({ parent_cidr: '10.0.0.0/24', host_counts: [50, 20, 10] });
+      const result = await vlsmTool.handler({
+        parent_cidr: '10.0.0.0/24',
+        host_counts: [50, 20, 10],
+      });
       expect(result.isError).toBeFalsy();
       const parsed = JSON.parse(result.content[0]!.text);
       expect(parsed.allocations).toHaveLength(3);

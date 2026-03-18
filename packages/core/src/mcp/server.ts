@@ -72,7 +72,11 @@ export class McpServer {
     this.logger.info({ toolName }, 'MCP tool call received');
 
     // GPU tools
-    if (toolName === 'gpu_status' || toolName === 'local_models_list' || toolName === 'privacy_route_check') {
+    if (
+      toolName === 'gpu_status' ||
+      toolName === 'local_models_list' ||
+      toolName === 'privacy_route_check'
+    ) {
       return handleGpuToolCall(toolName, args, {
         logger: this.logger,
         classificationEngine: this.classificationEngine,

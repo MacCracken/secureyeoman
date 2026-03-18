@@ -17,7 +17,11 @@ function makeConfig(overrides: Partial<SandboxManagerConfig> = {}): SandboxManag
 }
 
 const noopLogger = {
-  info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), child: () => noopLogger,
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  child: () => noopLogger,
 } as any;
 
 describe('SandboxManager — selection & configuration', () => {

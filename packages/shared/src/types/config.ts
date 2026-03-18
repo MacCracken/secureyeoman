@@ -222,7 +222,18 @@ const SandboxConfigSchema = z
   .object({
     enabled: z.boolean().default(true),
     technology: z
-      .enum(['auto', 'seccomp', 'landlock', 'gvisor', 'wasm', 'sgx', 'sev', 'firecracker', 'agnos', 'none'])
+      .enum([
+        'auto',
+        'seccomp',
+        'landlock',
+        'gvisor',
+        'wasm',
+        'sgx',
+        'sev',
+        'firecracker',
+        'agnos',
+        'none',
+      ])
       .default('auto'),
     /** Firecracker microVM settings. Only used when technology is 'firecracker' or 'auto' with Firecracker available. */
     firecracker: z

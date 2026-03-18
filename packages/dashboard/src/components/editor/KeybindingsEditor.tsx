@@ -24,7 +24,7 @@ function KeyCapture({ binding, onCapture, onCancel, conflict }: KeyCaptureProps)
 
   return (
     <div className="flex items-center gap-2">
-      { }
+      {}
       <input
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus

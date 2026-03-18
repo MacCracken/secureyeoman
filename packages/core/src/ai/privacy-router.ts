@@ -23,14 +23,14 @@ import type { ClassificationLevel } from '../security/dlp/types.js';
 export type RoutingPolicy = 'auto' | 'local-preferred' | 'local-only' | 'cloud-only';
 
 export type RoutingReason =
-  | 'privacy-enforced'        // DLP classified content as sensitive → must use local
-  | 'policy-local-only'       // Personality policy requires local-only
-  | 'policy-cloud-only'       // Personality policy requires cloud-only
-  | 'local-preferred'         // User prefers local when available
-  | 'local-capable'           // Local GPU can handle the request
-  | 'local-insufficient'      // Not enough GPU resources → fall back to cloud
-  | 'no-local-models'         // No local models available
-  | 'cost-optimized';         // Chose cheapest viable option
+  | 'privacy-enforced' // DLP classified content as sensitive → must use local
+  | 'policy-local-only' // Personality policy requires local-only
+  | 'policy-cloud-only' // Personality policy requires cloud-only
+  | 'local-preferred' // User prefers local when available
+  | 'local-capable' // Local GPU can handle the request
+  | 'local-insufficient' // Not enough GPU resources → fall back to cloud
+  | 'no-local-models' // No local models available
+  | 'cost-optimized'; // Chose cheapest viable option
 
 export interface PrivacyRoutingDecision {
   /** Whether to use a local model or cloud provider. */
@@ -93,9 +93,10 @@ export function routeWithPrivacy(
   // Check if local inference is viable
   const freeVram = gpu.totalFreeVramMb;
   const viableModels = findModelsWithinVram(localModels.models, freeVram);
-  const capableModels = requiredCapabilities.length > 0
-    ? findLocalModelsWithCapabilities(viableModels, requiredCapabilities as any)
-    : viableModels;
+  const capableModels =
+    requiredCapabilities.length > 0
+      ? findLocalModelsWithCapabilities(viableModels, requiredCapabilities as any)
+      : viableModels;
   const localViable = gpu.available && freeVram >= cfg.minFreeVramMb && capableModels.length > 0;
 
   // Policy overrides
@@ -124,8 +125,8 @@ export function routeWithPrivacy(
   }
 
   // Privacy enforcement: sensitive content must stay local
-  const isSensitive = cfg.sensitivityThreshold.includes(classificationLevel) ||
-    (cfg.piiForcesLocal && containsPii);
+  const isSensitive =
+    cfg.sensitivityThreshold.includes(classificationLevel) || (cfg.piiForcesLocal && containsPii);
 
   if (isSensitive) {
     if (localViable) {
@@ -178,9 +179,12 @@ export function routeWithPrivacy(
   }
 
   // Fall back to cloud
-  const reason: RoutingReason = localModels.models.length === 0
-    ? 'no-local-models'
-    : localViable ? 'cost-optimized' : 'local-insufficient';
+  const reason: RoutingReason =
+    localModels.models.length === 0
+      ? 'no-local-models'
+      : localViable
+        ? 'cost-optimized'
+        : 'local-insufficient';
 
   return {
     target: 'cloud',

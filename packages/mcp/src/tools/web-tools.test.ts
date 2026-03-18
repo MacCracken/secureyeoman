@@ -731,7 +731,9 @@ describe('validateUrl — additional SSRF vectors', () => {
   const config = makeConfig();
 
   it('blocks 0.0.0.0', () => {
-    expect(() => { validateUrl('http://0.0.0.0/path', config); }).toThrow();
+    expect(() => {
+      validateUrl('http://0.0.0.0/path', config);
+    }).toThrow();
   });
 
   it('allows standard external HTTPS URLs', () => {
@@ -745,11 +747,15 @@ describe('validateUrl — additional SSRF vectors', () => {
   });
 
   it('blocks data: URLs', () => {
-    expect(() => { validateUrl('data:text/html,<h1>test</h1>', config); }).toThrow();
+    expect(() => {
+      validateUrl('data:text/html,<h1>test</h1>', config);
+    }).toThrow();
   });
 
   it('blocks javascript: URLs', () => {
-    expect(() => { validateUrl('javascript:alert(1)', config); }).toThrow();
+    expect(() => {
+      validateUrl('javascript:alert(1)', config);
+    }).toThrow();
   });
 });
 
@@ -830,13 +836,17 @@ describe('aggregateResults — additional cases', () => {
 
   it('ranks cross-referenced results first', () => {
     const results = aggregateResults([
-      { provider: 'brave', results: [
-        { title: 'Unique', url: 'https://unique.com', snippet: 'u' },
-        { title: 'Shared', url: 'https://shared.com', snippet: 's1' },
-      ]},
-      { provider: 'bing', results: [
-        { title: 'Shared', url: 'https://shared.com', snippet: 's2' },
-      ]},
+      {
+        provider: 'brave',
+        results: [
+          { title: 'Unique', url: 'https://unique.com', snippet: 'u' },
+          { title: 'Shared', url: 'https://shared.com', snippet: 's1' },
+        ],
+      },
+      {
+        provider: 'bing',
+        results: [{ title: 'Shared', url: 'https://shared.com', snippet: 's2' }],
+      },
     ]);
     expect(results[0]!.url).toBe('https://shared.com');
   });
@@ -851,11 +861,13 @@ describe('getAvailableProviders — additional cases', () => {
   });
 
   it('includes multiple providers when keys set', () => {
-    const providers = getAvailableProviders(makeConfig({
-      braveSearchApiKey: 'key',
-      bingSearchApiKey: 'key',
-      exaApiKey: 'key',
-    }));
+    const providers = getAvailableProviders(
+      makeConfig({
+        braveSearchApiKey: 'key',
+        bingSearchApiKey: 'key',
+        exaApiKey: 'key',
+      })
+    );
     expect(providers).toContain('duckduckgo');
     expect(providers).toContain('brave');
     expect(providers).toContain('bing');

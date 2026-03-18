@@ -274,7 +274,7 @@ export function useTalkMode(
       setError(message);
       cleanup();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isSupported,
     resolvedConfig.maxDurationMs,

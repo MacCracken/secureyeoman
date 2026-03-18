@@ -32,7 +32,11 @@ describe('McpServer', () => {
       const tools = await server.getExposedTools();
       // GPU tools are always registered (gpu_status, local_models_list, privacy_route_check)
       expect(tools.length).toBe(3);
-      expect(tools.every((t) => ['gpu_status', 'local_models_list', 'privacy_route_check'].includes(t.name))).toBe(true);
+      expect(
+        tools.every((t) =>
+          ['gpu_status', 'local_models_list', 'privacy_route_check'].includes(t.name)
+        )
+      ).toBe(true);
     });
 
     it('maps active skills to MCP tool definitions', async () => {

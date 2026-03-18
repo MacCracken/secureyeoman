@@ -117,12 +117,13 @@ describe('local-model-registry', () => {
         if (url.includes('11434')) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({
-              models: [
-                { name: 'llama3.1:8b', size: 4_500_000_000 },
-                { name: 'codellama:7b', size: 3_800_000_000 },
-              ],
-            }),
+            json: () =>
+              Promise.resolve({
+                models: [
+                  { name: 'llama3.1:8b', size: 4_500_000_000 },
+                  { name: 'codellama:7b', size: 3_800_000_000 },
+                ],
+              }),
           });
         }
         return Promise.reject(new Error('Connection refused'));

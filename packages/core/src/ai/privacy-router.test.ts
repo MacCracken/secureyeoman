@@ -6,20 +6,22 @@ import type { LocalModelRegistryState, LocalModel } from './local-model-registry
 function makeGpu(overrides: Partial<GpuProbeResult> = {}): GpuProbeResult {
   return {
     available: true,
-    devices: [{
-      index: 0,
-      name: 'Test GPU',
-      vendor: 'nvidia',
-      vramTotalMb: 24000,
-      vramUsedMb: 2000,
-      vramFreeMb: 22000,
-      utilizationPercent: 10,
-      temperatureCelsius: 40,
-      driverVersion: '550.0',
-      computeCapability: '8.9',
-      cudaAvailable: true,
-      rocmAvailable: false,
-    }],
+    devices: [
+      {
+        index: 0,
+        name: 'Test GPU',
+        vendor: 'nvidia',
+        vramTotalMb: 24000,
+        vramUsedMb: 2000,
+        vramFreeMb: 22000,
+        utilizationPercent: 10,
+        temperatureCelsius: 40,
+        driverVersion: '550.0',
+        computeCapability: '8.9',
+        cudaAvailable: true,
+        rocmAvailable: false,
+      },
+    ],
     totalVramMb: 24000,
     totalFreeVramMb: 22000,
     bestDevice: null,
@@ -29,7 +31,9 @@ function makeGpu(overrides: Partial<GpuProbeResult> = {}): GpuProbeResult {
   };
 }
 
-function makeLocalModels(models: Partial<LocalModel>[] = [{ name: 'llama-3.1-8b' }]): LocalModelRegistryState {
+function makeLocalModels(
+  models: Partial<LocalModel>[] = [{ name: 'llama-3.1-8b' }]
+): LocalModelRegistryState {
   return {
     models: models.map((m) => ({
       name: m.name ?? 'test-model',
@@ -49,7 +53,12 @@ function makeLocalModels(models: Partial<LocalModel>[] = [{ name: 'llama-3.1-8b'
   };
 }
 
-const noGpu = makeGpu({ available: false, devices: [], totalFreeVramMb: 0, localInferenceViable: false });
+const noGpu = makeGpu({
+  available: false,
+  devices: [],
+  totalFreeVramMb: 0,
+  localInferenceViable: false,
+});
 const noModels: LocalModelRegistryState = {
   models: [],
   lastRefreshed: new Date().toISOString(),
@@ -82,14 +91,18 @@ describe('privacy-router', () => {
     });
 
     it('respects cloud-only policy', () => {
-      const result = routeWithPrivacy('public', [], makeGpu(), makeLocalModels(), [], { policy: 'cloud-only' });
+      const result = routeWithPrivacy('public', [], makeGpu(), makeLocalModels(), [], {
+        policy: 'cloud-only',
+      });
       expect(result.target).toBe('cloud');
       expect(result.reason).toBe('policy-cloud-only');
       expect(result.confidence).toBe(1.0);
     });
 
     it('respects local-only policy', () => {
-      const result = routeWithPrivacy('public', [], makeGpu(), makeLocalModels(), [], { policy: 'local-only' });
+      const result = routeWithPrivacy('public', [], makeGpu(), makeLocalModels(), [], {
+        policy: 'local-only',
+      });
       expect(result.target).toBe('local');
       expect(result.reason).toBe('policy-local-only');
     });
@@ -101,7 +114,9 @@ describe('privacy-router', () => {
     });
 
     it('prefers local when policy is local-preferred and GPU available', () => {
-      const result = routeWithPrivacy('public', [], makeGpu(), makeLocalModels(), [], { policy: 'local-preferred' });
+      const result = routeWithPrivacy('public', [], makeGpu(), makeLocalModels(), [], {
+        policy: 'local-preferred',
+      });
       expect(result.target).toBe('local');
       expect(result.reason).toBe('local-preferred');
     });

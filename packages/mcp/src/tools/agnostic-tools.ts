@@ -1157,18 +1157,14 @@ export function registerAgnosticTools(
         'Get GPU status for the Agnostic host — available devices, VRAM, utilization, ' +
         'and temperature. Shows whether GPU-accelerated crew scheduling is available.',
       inputSchema: {
-        force: z
-          .boolean()
-          .default(false)
-          .describe('Force a fresh hardware probe (bypasses cache)'),
+        force: z.boolean().default(false).describe('Force a fresh hardware probe (bypasses cache)'),
       },
     },
     wrapToolHandler('agnostic_gpu_status', middleware, async (args) => {
       const query = args.force ? '?force=true' : '';
       const result = await agnosticRequest(config, 'get', `/api/v1/gpu/status${query}`);
       return (
-        checkHttpOk(result, 'GPU status failed') ??
-        labelledResponse('GPU Status', result.body)
+        checkHttpOk(result, 'GPU status failed') ?? labelledResponse('GPU Status', result.body)
       );
     })
   );
@@ -1186,8 +1182,7 @@ export function registerAgnosticTools(
     wrapToolHandler('agnostic_gpu_memory', middleware, async () => {
       const result = await agnosticRequest(config, 'get', '/api/v1/gpu/memory');
       return (
-        checkHttpOk(result, 'GPU memory failed') ??
-        labelledResponse('GPU Memory', result.body)
+        checkHttpOk(result, 'GPU memory failed') ?? labelledResponse('GPU Memory', result.body)
       );
     })
   );
@@ -1286,8 +1281,7 @@ export function registerAgnosticTools(
         `/api/v1/crews/${encodeURIComponent(args.crew_id)}/cancel`
       );
       return (
-        checkHttpOk(result, 'Crew cancel failed') ??
-        labelledResponse('Crew Cancelled', result.body)
+        checkHttpOk(result, 'Crew cancel failed') ?? labelledResponse('Crew Cancelled', result.body)
       );
     })
   );
@@ -1311,10 +1305,7 @@ export function registerAgnosticTools(
       if (args.status) params.set('status', args.status);
       params.set('limit', String(args.limit));
       const result = await agnosticRequest(config, 'get', `/api/v1/crews?${params.toString()}`);
-      return (
-        checkHttpOk(result, 'List crews failed') ??
-        labelledResponse('Crews', result.body)
-      );
+      return checkHttpOk(result, 'List crews failed') ?? labelledResponse('Crews', result.body);
     })
   );
 

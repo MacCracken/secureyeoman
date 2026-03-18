@@ -147,7 +147,7 @@ export function PersonalTab() {
         void navigate('/skills', { replace: true, state: null });
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, skills]); // navigate and startEdit are stable
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['skills'] });
