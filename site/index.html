@@ -523,19 +523,19 @@
           </div>
         </div>
 
-        <!-- Comparison grid table -->
+        <!-- Comparison grid table — ordered by threat level -->
         <div class="compare-table">
           <div class="compare-header-row">
             <div class="compare-feature-col">Feature</div>
             <div class="compare-col compare-col-sy">SecureYeoman</div>
             <div class="compare-col">OpenClaw</div>
-            <div class="compare-col">Agent Zero</div>
-            <div class="compare-col">PicoClaw</div>
+            <div class="compare-col">NemoClaw</div>
             <div class="compare-col">Ironclaw</div>
+            <div class="compare-col">PicoClaw</div>
           </div>
 
           <div class="compare-row">
-            <div class="compare-feature-col"><i class="fas fa-users-cog"></i> RBAC · SSO/OIDC · SAML · WebAuthn</div>
+            <div class="compare-feature-col"><i class="fas fa-users-cog"></i> RBAC · SSO · SAML · WebAuthn</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> Full</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
@@ -544,62 +544,53 @@
           </div>
 
           <div class="compare-row compare-row-alt">
-            <div class="compare-feature-col"><i class="fas fa-building"></i> Multi-tenancy</div>
-            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> RLS-enforced</span></div>
+            <div class="compare-feature-col"><i class="fas fa-shield-alt"></i> Sandboxing</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 6 modes + Firecracker</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Basic</span></div>
+            <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> OpenShell</span></div>
+            <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> TEE + WASM</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Basic</span></div>
+          </div>
+
+          <div class="compare-row">
+            <div class="compare-feature-col"><i class="fas fa-user-secret"></i> Privacy Router</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> DLP + GPU</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> Gretel DP</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
           </div>
 
-          <div class="compare-row">
+          <div class="compare-row compare-row-alt">
             <div class="compare-feature-col"><i class="fas fa-key"></i> Secrets / Vault</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> SecretsManager</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> TEE vault</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
           </div>
 
           <div class="compare-row">
-            <div class="compare-feature-col"><i class="fas fa-link"></i> Cryptographic Audit</div>
-            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> HMAC-SHA256</span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Local DB only</span></div>
-          </div>
-
-          <div class="compare-row compare-row-alt">
             <div class="compare-feature-col"><i class="fas fa-tools"></i> MCP Tools</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 485</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Limited</span></div>
-            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> External</span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Inherits OC</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Via path</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
           </div>
 
-          <div class="compare-row">
+          <div class="compare-row compare-row-alt">
             <div class="compare-feature-col"><i class="fas fa-bug"></i> CVEs (2026)</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 0</span></div>
             <div class="compare-col"><span class="cmp-no cmp-danger"><i class="fas fa-skull-crossbones"></i> 13+</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Inherits OC</span></div>
             <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> 0</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Pre-prod</span></div>
-            <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> 0</span></div>
-          </div>
-
-          <div class="compare-row compare-row-alt">
-            <div class="compare-feature-col"><i class="fas fa-network-wired"></i> Network Security Tools</div>
-            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 37 tools</span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
           </div>
 
           <div class="compare-row">
-            <div class="compare-feature-col"><i class="fas fa-project-diagram"></i> Workflow Orchestration</div>
-            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> DAG + Visual</span></div>
+            <div class="compare-feature-col"><i class="fas fa-project-diagram"></i> DAG Workflows</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 19 step types</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
@@ -607,34 +598,16 @@
           </div>
 
           <div class="compare-row compare-row-alt">
-            <div class="compare-feature-col"><i class="fas fa-dharmachakra"></i> Kubernetes / Helm</div>
-            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> Full</span></div>
-            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Community</span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-          </div>
-
-          <div class="compare-row">
             <div class="compare-feature-col"><i class="fas fa-plug"></i> Integrations</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 38 platforms</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 23+</span></div>
-            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> CLI / Web</span></div>
-            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 13+</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i> ~2</span></div>
-          </div>
-
-          <div class="compare-row compare-row-alt">
-            <div class="compare-feature-col"><i class="fas fa-memory"></i> RAM Footprint</div>
-            <div class="compare-col compare-col-sy"><span class="cmp-neutral">~1 GB</span></div>
-            <div class="compare-col"><span class="cmp-warn">~1.5 GB+</span></div>
-            <div class="compare-col"><span class="cmp-warn">4 GB min</span></div>
-            <div class="compare-col"><span class="cmp-yes"><i class="fas fa-star"></i> 10–20 MB</span></div>
-            <div class="compare-col"><span class="cmp-neutral">Not published</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 11+</span></div>
           </div>
 
           <div class="compare-row">
-            <div class="compare-feature-col"><i class="fas fa-graduation-cap"></i> AI Training Pipeline</div>
+            <div class="compare-feature-col"><i class="fas fa-graduation-cap"></i> Training Pipeline</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> Full</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
@@ -643,12 +616,21 @@
           </div>
 
           <div class="compare-row compare-row-alt">
-            <div class="compare-feature-col"><i class="fas fa-flask"></i> ML Lifecycle (A/B, Versioning)</div>
+            <div class="compare-feature-col"><i class="fas fa-wifi"></i> Air-Gap / Offline</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> Full</span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
-            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> Yes</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Needs GPU</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i> Cloud req</span></div>
+            <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> Yes</span></div>
+          </div>
+
+          <div class="compare-row">
+            <div class="compare-feature-col"><i class="fas fa-layer-group"></i> Deployment Tiers</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 4 tiers</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 1</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 1</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 1</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 1</span></div>
           </div>
         </div>
       </div>

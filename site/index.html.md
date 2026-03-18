@@ -99,19 +99,19 @@ The OpenClaw security crisis (2026): 13+ CVEs (20+ GHSAs) including CVSS 8.8 RCE
 
 ### Competitive Comparison
 
-| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
+| Feature | SecureYeoman | OpenClaw | NemoClaw | Ironclaw | PicoClaw |
 |---|---|---|---|---|---|
-| RBAC / SSO / SAML / WebAuthn | Yes | No | No | No | Partial |
-| Multi-tenancy | Yes | No | No | No | No |
-| Secrets / Vault | Yes | No | No | No | Partial |
-| Cryptographic Audit | Yes | No | No | No | No |
-| MCP Tools | 485 | ~100 | ~50 | ~30 | ~200 |
-| CVEs (2026) | 0 | 13+ | 0 | - | 0 |
-| Network Security Tools | 37 | 0 | 0 | 0 | 0 |
-| Workflow Orchestration | DAG (19 types) | Basic | No | No | Basic |
-| Kubernetes / Helm | Yes | No | No | No | Yes |
-| Integrations | 38 | ~15 | ~10 | ~5 | ~20 |
-| AI Training Pipeline | Yes | No | No | No | No |
+| RBAC / SSO / SAML / WebAuthn | Yes | No | No | No | No |
+| Sandboxing | 6 modes + Firecracker | Basic | OpenShell | TEE + WASM | Basic |
+| Privacy Router | DLP + GPU | No | Gretel DP | No | No |
+| Secrets / Vault | SecretsManager | No | No | TEE vault | No |
+| MCP Tools | 485 | Limited | Inherits OC | Via path | No |
+| CVEs (2026) | 0 | 13+ | Inherits OC | 0 | Pre-prod |
+| DAG Workflows | 19 step types | No | No | No | No |
+| Integrations | 38 | 23+ | No | ~2 | 11+ |
+| Training Pipeline | Full | No | No | No | No |
+| Air-Gap / Offline | Full | Yes | Needs GPU | Cloud req | Yes |
+| Deployment Tiers | 4 (Prime/Lite/Agent/Edge) | 1 | 1 | 1 | 1 |
 
 ---
 
