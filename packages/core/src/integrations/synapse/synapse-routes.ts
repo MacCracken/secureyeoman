@@ -11,6 +11,7 @@ import { sendError, toErrorMessage } from '../../utils/errors.js';
 import type { SecureYeoman } from '../../secureyeoman.js';
 import { licenseGuard } from '../../licensing/license-guard.js';
 import type { SynapseInboundJobRequest, SynapseCapabilities } from './types.js';
+import type { SynapseClient } from './synapse-client.js';
 
 const SYNAPSE_API_URL = (process.env.SYNAPSE_API_URL ?? 'http://localhost:8420').replace(/\/$/, '');
 
@@ -82,6 +83,11 @@ export interface SynapseRouteOptions {
   secureYeoman?: SecureYeoman;
 }
 
+/** Get the typed SynapseClient from the manager when available. */
+function getClient(opts?: SynapseRouteOptions): SynapseClient | null {
+  return opts?.secureYeoman?.getSynapseManager()?.getClient() ?? null;
+}
+
 export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteOptions): void {
   const featureGuardOpts = licenseGuard('synapse', opts?.secureYeoman);
 
@@ -92,13 +98,17 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.getStatus();
+          return reply.send(data);
+        }
         const res = await synapseFetch('/system/status');
         if (!res.ok) {
           const body = await res.text().catch(() => '');
           return sendError(reply, 502, `Synapse status error: ${body}`);
         }
-        const data = await res.json();
-        return reply.send(data);
+        return reply.send(await res.json());
       } catch (err) {
         return sendError(reply, 502, `Synapse unreachable: ${toErrorMessage(err)}`);
       }
@@ -112,13 +122,17 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.listModels();
+          return reply.send(data);
+        }
         const res = await synapseFetch('/models');
         if (!res.ok) {
           const body = await res.text().catch(() => '');
           return sendError(reply, 502, `Synapse models error: ${body}`);
         }
-        const data = await res.json();
-        return reply.send(data);
+        return reply.send(await res.json());
       } catch (err) {
         return sendError(reply, 502, `Synapse unreachable: ${toErrorMessage(err)}`);
       }
@@ -169,6 +183,16 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         if (!model || !prompt)
           return sendError(reply, 400, 'Missing required fields: model, prompt');
 
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.runInference({
+            model,
+            prompt,
+            maxTokens: maxTokens ?? 512,
+          });
+          return reply.send(data);
+        }
+
         const res = await synapseFetch('/inference', {
           method: 'POST',
           body: JSON.stringify({ model, prompt, maxTokens: maxTokens ?? 512 }),
@@ -178,9 +202,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           const body = await res.text().catch(() => '');
           return sendError(reply, 502, `Synapse inference error: ${body}`);
         }
-
-        const data = await res.json();
-        return reply.send(data);
+        return reply.send(await res.json());
       } catch (err) {
         return sendError(reply, 502, `Synapse inference failed: ${toErrorMessage(err)}`);
       }
@@ -229,7 +251,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           baseModel: string;
           datasetPath: string;
           method: string;
-          configJson?: Record<string, unknown>;
+          configJson?: string;
         };
       }>,
       reply: FastifyReply
@@ -241,10 +263,21 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
             baseModel?: string;
             datasetPath?: string;
             method?: string;
-            configJson?: Record<string, unknown>;
+            configJson?: string;
           });
         if (!baseModel || !method)
           return sendError(reply, 400, 'Missing required fields: baseModel, method');
+
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.submitTrainingJob({
+            baseModel,
+            datasetPath: datasetPath ?? '',
+            method,
+            configJson,
+          });
+          return reply.code(201).send(data);
+        }
 
         const res = await synapseFetch('/training/jobs', {
           method: 'POST',
@@ -255,9 +288,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           const body = await res.text().catch(() => '');
           return sendError(reply, 502, `Synapse training submit error: ${body}`);
         }
-
-        const data = await res.json();
-        return reply.code(201).send(data);
+        return reply.code(201).send(await res.json());
       } catch (err) {
         return sendError(reply, 502, `Synapse training submit failed: ${toErrorMessage(err)}`);
       }
@@ -274,8 +305,14 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
       reply: FastifyReply
     ) => {
       try {
-        const params = new URLSearchParams();
         const { status, limit, offset } = req.query;
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.listJobs({ status, limit, offset });
+          return reply.send(data);
+        }
+
+        const params = new URLSearchParams();
         if (status) params.set('status', status);
         if (limit) params.set('limit', limit);
         if (offset) params.set('offset', offset);
@@ -288,9 +325,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           const body = await res.text().catch(() => '');
           return sendError(reply, 502, `Synapse jobs list error: ${body}`);
         }
-
-        const data = await res.json();
-        return reply.send(data);
+        return reply.send(await res.json());
       } catch (err) {
         return sendError(reply, 502, `Synapse jobs list failed: ${toErrorMessage(err)}`);
       }
@@ -305,15 +340,18 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const { id } = req.params;
-        const res = await synapseFetch(`/training/jobs/${encodeURIComponent(id)}`);
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.getJobStatus(id);
+          return reply.send(data);
+        }
 
+        const res = await synapseFetch(`/training/jobs/${encodeURIComponent(id)}`);
         if (!res.ok) {
           const body = await res.text().catch(() => '');
           return sendError(reply, res.status === 404 ? 404 : 502, `Synapse job error: ${body}`);
         }
-
-        const data = await res.json();
-        return reply.send(data);
+        return reply.send(await res.json());
       } catch (err) {
         return sendError(reply, 502, `Synapse job fetch failed: ${toErrorMessage(err)}`);
       }
@@ -347,17 +385,20 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const { id } = req.params;
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.cancelJob(id);
+          return reply.send(data);
+        }
+
         const res = await synapseFetch(`/training/jobs/${encodeURIComponent(id)}/cancel`, {
           method: 'POST',
         });
-
         if (!res.ok) {
           const body = await res.text().catch(() => '');
           return sendError(reply, res.status === 404 ? 404 : 502, `Synapse cancel error: ${body}`);
         }
-
-        const data = await res.json();
-        return reply.send(data);
+        return reply.send(await res.json());
       } catch (err) {
         return sendError(reply, 502, `Synapse cancel failed: ${toErrorMessage(err)}`);
       }

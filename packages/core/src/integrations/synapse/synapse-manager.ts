@@ -245,6 +245,8 @@ export class SynapseManager {
 
   private async pollHeartbeat(instanceId: string): Promise<void> {
     const client = this.getClient();
+    const wasDisconnected = this.registry.get(instanceId)?.status !== 'connected';
+
     try {
       const healthy = await client.isHealthy();
       if (!healthy) {
@@ -254,6 +256,24 @@ export class SynapseManager {
       }
 
       const status = await client.getStatus();
+
+      // Reconnection: if instance was previously disconnected, re-register
+      // with fresh capabilities and log the recovery
+      if (wasDisconnected) {
+        this.logger.info(
+          { instanceId, version: status.version },
+          'Synapse instance reconnected after disconnect'
+        );
+        const instance: SynapseInstance = {
+          ...status,
+          status: 'connected',
+          lastHeartbeat: Date.now(),
+        };
+        this.registry.register(instance);
+        await this.store?.upsertInstance(instance);
+        return;
+      }
+
       const heartbeat: SynapseHeartbeat = {
         instanceId: status.id,
         timestamp: Date.now(),

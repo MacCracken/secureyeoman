@@ -97,6 +97,33 @@ export class SynapseClient {
     }
   }
 
+  async listModels(): Promise<unknown[]> {
+    const res = await this._fetch('/models');
+    return res as unknown[];
+  }
+
+  async cancelJob(jobId: string): Promise<unknown> {
+    this.logger.info({ jobId }, 'cancelling training job on Synapse');
+    const res = await this._fetch(`/training/jobs/${encodeURIComponent(jobId)}/cancel`, {
+      method: 'POST',
+    });
+    return res;
+  }
+
+  async listJobs(params?: {
+    status?: string;
+    limit?: string;
+    offset?: string;
+  }): Promise<unknown> {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.limit) qs.set('limit', params.limit);
+    if (params?.offset) qs.set('offset', params.offset);
+    const query = qs.toString();
+    const path = `/training/jobs${query ? `?${query}` : ''}`;
+    return this._fetch(path);
+  }
+
   async isHealthy(): Promise<boolean> {
     try {
       const response = await fetch(`${this.apiUrl}/health`, {

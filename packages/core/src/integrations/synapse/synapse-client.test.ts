@@ -125,6 +125,76 @@ describe('SynapseClient', () => {
     });
   });
 
+  describe('listModels', () => {
+    it('should GET /models', async () => {
+      const models = [{ name: 'llama-7b', loaded: true }];
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(models), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const result = await client.listModels();
+      expect(result).toEqual(models);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8420/models',
+        expect.objectContaining({ method: 'GET' })
+      );
+    });
+  });
+
+  describe('cancelJob', () => {
+    it('should POST /training/jobs/:id/cancel', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify({ cancelled: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const result = await client.cancelJob('sj-1');
+      expect(result).toEqual({ cancelled: true });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8420/training/jobs/sj-1/cancel',
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+  });
+
+  describe('listJobs', () => {
+    it('should GET /training/jobs with query params', async () => {
+      const jobs = [{ jobId: 'sj-1', status: 'running' }];
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(jobs), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      await client.listJobs({ status: 'running', limit: '10' });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8420/training/jobs?status=running&limit=10',
+        expect.objectContaining({ method: 'GET' })
+      );
+    });
+
+    it('should GET /training/jobs without query params', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      await client.listJobs();
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8420/training/jobs',
+        expect.objectContaining({ method: 'GET' })
+      );
+    });
+  });
+
   describe('isHealthy', () => {
     it('should return true on 200', async () => {
       fetchSpy.mockResolvedValueOnce(new Response('ok', { status: 200 }));

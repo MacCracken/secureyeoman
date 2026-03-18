@@ -99,7 +99,7 @@ export function registerSynapseTools(
     },
     wrapToolHandler('synapse_pull_model', middleware, async ({ modelName, quant }) => {
       const result = await syn('post', '/marketplace/pull', {
-        model_name: modelName,
+        modelName,
         quant: quant ?? '',
       });
       return jsonResponse(result);
@@ -130,7 +130,7 @@ export function registerSynapseTools(
       const result = await syn('post', '/inference', {
         model,
         prompt,
-        max_tokens: maxTokens ?? 512,
+        maxTokens: maxTokens ?? 512,
       });
       return jsonResponse(result);
     })
@@ -163,10 +163,10 @@ export function registerSynapseTools(
       middleware,
       async ({ baseModel, datasetPath, method, configJson }) => {
         const result = await syn('post', '/training/jobs', {
-          base_model: baseModel,
-          dataset_path: datasetPath,
+          baseModel,
+          datasetPath,
           method,
-          config_json: configJson ?? '{}',
+          configJson: configJson ?? '{}',
         });
         return jsonResponse(result);
       }

@@ -128,6 +128,94 @@ describe('SynapseRegistry', () => {
       expect(best!.id).toBe('syn-large');
     });
 
+    it('should prefer the instance with more free GPU memory from heartbeats', () => {
+      registry.register(
+        makeInstance({
+          id: 'syn-big-total',
+          capabilities: {
+            gpuCount: 4,
+            totalGpuMemoryMb: 96000,
+            supportedMethods: ['sft'],
+            loadedModels: [],
+          },
+        })
+      );
+      registry.register(
+        makeInstance({
+          id: 'syn-small-total',
+          capabilities: {
+            gpuCount: 2,
+            totalGpuMemoryMb: 48000,
+            supportedMethods: ['sft'],
+            loadedModels: [],
+          },
+        })
+      );
+
+      // Simulate heartbeats: big-total instance is nearly full, small-total has more free
+      registry.updateHeartbeat('syn-big-total', {
+        instanceId: 'syn-big-total',
+        timestamp: Date.now(),
+        loadedModels: [],
+        gpuMemoryFreeMb: 5000,
+        activeTrainingJobs: 3,
+      });
+      registry.updateHeartbeat('syn-small-total', {
+        instanceId: 'syn-small-total',
+        timestamp: Date.now(),
+        loadedModels: [],
+        gpuMemoryFreeMb: 40000,
+        activeTrainingJobs: 0,
+      });
+
+      const best = registry.getBestForTraining('sft');
+      expect(best!.id).toBe('syn-small-total');
+    });
+
+    it('should break ties by fewest active training jobs', () => {
+      registry.register(
+        makeInstance({
+          id: 'syn-busy',
+          capabilities: {
+            gpuCount: 4,
+            totalGpuMemoryMb: 48000,
+            supportedMethods: ['sft'],
+            loadedModels: [],
+          },
+        })
+      );
+      registry.register(
+        makeInstance({
+          id: 'syn-idle',
+          capabilities: {
+            gpuCount: 4,
+            totalGpuMemoryMb: 48000,
+            supportedMethods: ['sft'],
+            loadedModels: [],
+          },
+        })
+      );
+
+      // Same free memory, different job counts
+      registry.updateHeartbeat('syn-busy', {
+        instanceId: 'syn-busy',
+        timestamp: Date.now(),
+        loadedModels: [],
+        gpuMemoryFreeMb: 30000,
+        activeTrainingJobs: 5,
+      });
+      registry.updateHeartbeat('syn-idle', {
+        instanceId: 'syn-idle',
+        timestamp: Date.now(),
+        loadedModels: [],
+        gpuMemoryFreeMb: 30000,
+        activeTrainingJobs: 1,
+      });
+
+      const best = registry.getBestForTraining('sft');
+      expect(best!.id).toBe('syn-idle');
+    });
+
     it('should skip disconnected instances', () => {
       registry.register(
         makeInstance({

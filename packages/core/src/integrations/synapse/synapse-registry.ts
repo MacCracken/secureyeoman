@@ -10,6 +10,8 @@ import type { SynapseInstance, SynapseHeartbeat } from './types.js';
 
 export class SynapseRegistry {
   private readonly instances = new Map<string, SynapseInstance>();
+  private readonly gpuMemoryFree = new Map<string, number>();
+  private readonly activeJobCounts = new Map<string, number>();
   private readonly logger: SecureLogger;
 
   constructor(logger: SecureLogger) {
@@ -30,6 +32,8 @@ export class SynapseRegistry {
 
   unregister(instanceId: string): void {
     const removed = this.instances.delete(instanceId);
+    this.gpuMemoryFree.delete(instanceId);
+    this.activeJobCounts.delete(instanceId);
     if (removed) {
       this.logger.info({ instanceId }, 'unregistered Synapse instance');
     }
@@ -49,7 +53,8 @@ export class SynapseRegistry {
 
   /**
    * Pick the instance with the most free GPU memory that supports the requested
-   * training method. Returns null if no suitable instance is found.
+   * training method. Falls back to total GPU memory when live data is unavailable.
+   * Breaks ties by fewest active training jobs.
    */
   getBestForTraining(method: string): SynapseInstance | null {
     const candidates = this.getHealthy().filter((i) =>
@@ -58,10 +63,15 @@ export class SynapseRegistry {
 
     if (candidates.length === 0) return null;
 
-    // Sort descending by total GPU memory as a proxy — heartbeat data with
-    // live free-memory is tracked separately but capabilities.totalGpuMemoryMb
-    // gives a reasonable static ranking.
-    candidates.sort((a, b) => b.capabilities.totalGpuMemoryMb - a.capabilities.totalGpuMemoryMb);
+    candidates.sort((a, b) => {
+      const freeA = this.gpuMemoryFree.get(a.id) ?? a.capabilities.totalGpuMemoryMb;
+      const freeB = this.gpuMemoryFree.get(b.id) ?? b.capabilities.totalGpuMemoryMb;
+      if (freeB !== freeA) return freeB - freeA;
+      // Tie-break: fewer active jobs wins
+      const jobsA = this.activeJobCounts.get(a.id) ?? 0;
+      const jobsB = this.activeJobCounts.get(b.id) ?? 0;
+      return jobsA - jobsB;
+    });
     return candidates[0] ?? null;
   }
 
@@ -77,6 +87,10 @@ export class SynapseRegistry {
 
     // Update dynamic capability data from heartbeat
     (instance.capabilities as { loadedModels: string[] }).loadedModels = heartbeat.loadedModels;
+
+    // Track live resource utilization for instance selection
+    this.gpuMemoryFree.set(instanceId, heartbeat.gpuMemoryFreeMb);
+    this.activeJobCounts.set(instanceId, heartbeat.activeTrainingJobs);
 
     this.logger.debug(
       {

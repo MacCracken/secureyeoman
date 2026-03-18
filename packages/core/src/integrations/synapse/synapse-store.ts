@@ -138,16 +138,18 @@ export class SynapseStore {
     await this.pool.query(
       `INSERT INTO synapse.instances
          (id, endpoint, version, gpu_count, total_gpu_memory_mb, gpu_memory_free_mb,
-          supported_methods, loaded_models, status, last_heartbeat, registered_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+          supported_methods, loaded_models, status, last_heartbeat, registered_at, metadata)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        ON CONFLICT (id) DO UPDATE SET
          endpoint = EXCLUDED.endpoint,
          version = EXCLUDED.version,
          gpu_count = EXCLUDED.gpu_count,
          total_gpu_memory_mb = EXCLUDED.total_gpu_memory_mb,
          supported_methods = EXCLUDED.supported_methods,
+         loaded_models = EXCLUDED.loaded_models,
          status = EXCLUDED.status,
-         last_heartbeat = EXCLUDED.last_heartbeat`,
+         last_heartbeat = EXCLUDED.last_heartbeat,
+         metadata = EXCLUDED.metadata`,
       [
         instance.id,
         instance.endpoint,
@@ -160,6 +162,7 @@ export class SynapseStore {
         instance.status,
         instance.lastHeartbeat,
         Date.now(),
+        JSON.stringify({ loadedModelNames: instance.capabilities.loadedModels }),
       ]
     );
   }
@@ -171,13 +174,15 @@ export class SynapseStore {
            gpu_memory_free_mb = $2,
            active_training_jobs = $3,
            loaded_models = $4,
-           status = 'connected'
-       WHERE id = $5`,
+           status = 'connected',
+           metadata = jsonb_set(COALESCE(metadata, '{}'), '{loadedModelNames}', $5::jsonb)
+       WHERE id = $6`,
       [
         heartbeat.timestamp,
         heartbeat.gpuMemoryFreeMb,
         heartbeat.activeTrainingJobs,
         heartbeat.loadedModels.length,
+        JSON.stringify(heartbeat.loadedModels),
         instanceId,
       ]
     );
@@ -193,19 +198,23 @@ export class SynapseStore {
     const { rows } = await this.pool.query<Record<string, unknown>>(
       `SELECT * FROM synapse.instances ORDER BY registered_at DESC`
     );
-    return rows.map((r) => ({
-      id: r.id as string,
-      endpoint: r.endpoint as string,
-      version: (r.version as string) ?? '',
-      capabilities: {
-        gpuCount: Number(r.gpu_count ?? 0),
-        totalGpuMemoryMb: Number(r.total_gpu_memory_mb ?? 0),
-        supportedMethods: (r.supported_methods as string[]) ?? [],
-        loadedModels: [],
-      },
-      status: (r.status as SynapseInstance['status']) ?? 'disconnected',
-      lastHeartbeat: Number(r.last_heartbeat ?? 0),
-    }));
+    return rows.map((r) => {
+      const meta = (r.metadata as Record<string, unknown>) ?? {};
+      const loadedModelNames = (meta.loadedModelNames as string[]) ?? [];
+      return {
+        id: r.id as string,
+        endpoint: r.endpoint as string,
+        version: (r.version as string) ?? '',
+        capabilities: {
+          gpuCount: Number(r.gpu_count ?? 0),
+          totalGpuMemoryMb: Number(r.total_gpu_memory_mb ?? 0),
+          supportedMethods: (r.supported_methods as string[]) ?? [],
+          loadedModels: loadedModelNames,
+        },
+        status: (r.status as SynapseInstance['status']) ?? 'disconnected',
+        lastHeartbeat: Number(r.last_heartbeat ?? 0),
+      };
+    });
   }
 
   async deleteInstance(instanceId: string): Promise<boolean> {
