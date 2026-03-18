@@ -42,6 +42,7 @@ import {
 import { fetchSecurityPolicy, fetchAgentConfig, fetchMcpServers } from '../api/client';
 import { useSecurityPolicyMutations } from './security/hooks';
 import { ModelManagement } from './security/ModelManagement';
+import SandboxConfigPanel from './SandboxConfigPanel';
 
 // Re-export extracted components so existing consumers keep working
 export { RolesSettings, UserRoleAssignments } from './security/RbacManager';
@@ -1000,6 +1001,9 @@ export function SecuritySettings() {
           />
         </div>
       </div>
+
+      {/* Sandbox Configuration — technology selection, capabilities, health */}
+      <SandboxConfigPanel />
 
       {/* Developers */}
       <div className="card">

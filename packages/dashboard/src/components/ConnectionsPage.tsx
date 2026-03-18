@@ -10,6 +10,7 @@ import {
   Mail,
   LayoutGrid,
   GitBranch as GitBranchIcon,
+  Bot,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -54,6 +55,7 @@ import { MessagingTab } from './connections/MessagingTab';
 import { EmailTab } from './connections/EmailTab';
 import { OAuthTab } from './connections/OAuthTab';
 import { McpTab } from './connections/McpTab';
+import AgnosticPanel from './connections/AgnosticPanel';
 
 export function ConnectionsPage() {
   const queryClient = useQueryClient();
@@ -463,6 +465,7 @@ export function ConnectionsPage() {
                 ],
                 ['devops', 'DevOps', <GitBranchIcon key="devops" className="w-3.5 h-3.5" />],
                 ['oauth', 'OAuth', <ArrowRightLeft key="oauth" className="w-3.5 h-3.5" />],
+                ['agnostic', 'Agnostic', <Bot key="agnostic" className="w-3.5 h-3.5" />],
               ] as [IntegrationSubTab, string, React.ReactNode][]
             ).map(([subTab, label, icon]) => (
               <button
@@ -609,6 +612,8 @@ export function ConnectionsPage() {
               isDeleting={deleteIntegrationMut.isPending}
             />
           )}
+
+          {activeSubTab === 'agnostic' && <AgnosticPanel />}
         </div>
       )}
 

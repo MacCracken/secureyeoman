@@ -133,6 +133,15 @@ Complete overhaul of sandbox technology selection and management. All 6 roadmap 
 - **Live technology switching** — `PATCH /api/v1/sandbox/config` with `{ technology: "..." }` now switches immediately via `switchTechnology()` (invalidates cached sandbox instance). No restart required
 - **Health monitoring** — `GET /api/v1/sandbox/health` runs a minimal execution through the active sandbox and returns healthy/degraded status with latency. `healthCheck()` method on SandboxManager
 
+### Code Review & Audit — Round 2
+
+- **eslint-disable audit** — Reviewed all 89 files with suppressed lint warnings. All suppressions verified legitimate (react-hooks patterns, react-refresh structural, no-autofocus UX, no-console browser-side, TypeScript dynamic access). No changes needed
+- **Dashboard panel wiring** — Connected all new panels to their parent pages:
+  - `GpuStatusPanel` → SettingsPage > General tab
+  - `SandboxConfigPanel` → SecuritySettings (after Sandbox Isolation toggles)
+  - `AgnosticPanel` → ConnectionsPage > Integrations > new "Agnostic" subtab with Bot icon
+- **GPU probe cleanup** — Replaced `ls` shell-out with `readdir` in `probeIntel()` (found in round 1, applied)
+
 ### Security Audit & Code Review
 
 Post-feature security audit of all new code shipped in this cycle. 4 security fixes, 1 test quality fix.

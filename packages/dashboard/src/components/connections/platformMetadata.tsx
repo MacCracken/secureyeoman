@@ -971,7 +971,7 @@ export const PLATFORM_META: Record<string, PlatformMeta> = {
 };
 
 export type TabType = 'integrations' | 'mcp' | 'routing' | 'federation';
-export type IntegrationSubTab = 'messaging' | 'email' | 'productivity' | 'devops' | 'oauth';
+export type IntegrationSubTab = 'messaging' | 'email' | 'productivity' | 'devops' | 'oauth' | 'agnostic';
 
 // Platform categorization for tab filtering
 export const DEVOPS_PLATFORMS = new Set([

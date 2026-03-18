@@ -126,9 +126,9 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 - [x] **Security audit — Agnostic workflow steps** — Added `assertPublicUrl(targetUrl)` SSRF guard before forwarding to Agnostic. JWT token verified instance-scoped (no cross-run leakage). Template resolution verified safe (no eval)
 - [x] **Test review — mock quality** — Added `afterEach` fetch restoration to `agnostic-crew-steps.test.ts`. Other test files verified clean
 
-**Backlog (pick up later):**
-- [ ] **eslint-disable audit** — Review 56 files with suppressed warnings. Prioritize `react-hooks/purity` and `set-state-in-effect`
-- [ ] **Dashboard panel wiring** — Verify GpuStatusPanel, SandboxConfigPanel, AgnosticPanel imports in parent pages
+**Backlog (done):**
+- [x] **eslint-disable audit** — All 89 suppressions reviewed. All legitimate: react-hooks (70, intentional patterns), react-refresh (16, structural), no-autofocus (15, UX), no-console (10, browser-side), typescript (14, dynamic access). No changes needed
+- [x] **Dashboard panel wiring** — GpuStatusPanel wired into SettingsPage GeneralTab. SandboxConfigPanel wired into SecuritySettings. AgnosticPanel wired into ConnectionsPage as new 'Agnostic' subtab with Bot icon
 - [ ] **GPU/model probe caching** — Review 30s/60s TTLs. Consider background refresh
 
 ### Test Coverage

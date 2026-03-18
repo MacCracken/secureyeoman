@@ -47,6 +47,7 @@ import { LogRetentionSettings } from './LogRetentionSettings';
 import { SecuritySettings, RolesSettings, ServiceKeysPanel } from './SecuritySettings';
 import { ApiKeysSettings } from './ApiKeysSettings';
 import { ProviderKeysSettings } from './ProviderKeysSettings';
+import GpuStatusPanel from './GpuStatusPanel';
 import { NotificationPrefsPanel } from './NotificationPrefsPanel';
 import {
   useTheme,
@@ -1408,6 +1409,9 @@ function GeneralTab() {
       <AuditChainTab />
       <RateLimitingTab />
       <LogRetentionSettings />
+      <div className="card p-4">
+        <GpuStatusPanel />
+      </div>
     </div>
   );
 }
