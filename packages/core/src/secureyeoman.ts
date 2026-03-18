@@ -404,8 +404,8 @@ export class SecureYeoman {
                       'LemonSqueezy license loaded from cache'
                     );
                   }
-                } catch {
-                  // Corrupt cache — fall through to community tier
+                } catch (err) {
+                  this.logger.debug({ error: String(err) }, 'License cache parse failed — community tier');
                 }
               }
             } else {
@@ -421,8 +421,8 @@ export class SecureYeoman {
               );
             }
           }
-        } catch {
-          // Non-fatal: license remains at community tier
+        } catch (err) {
+          this.logger.debug({ error: String(err) }, 'License load failed — community tier');
         }
       }
 
@@ -448,8 +448,8 @@ export class SecureYeoman {
               'License grace period expired — enforcement active'
             );
           }
-        } catch {
-          // Non-fatal: grace period unavailable, enforcement follows config flag
+        } catch (err) {
+          this.logger.debug({ error: String(err) }, 'Grace period init failed — enforcement follows config');
         }
       }
 

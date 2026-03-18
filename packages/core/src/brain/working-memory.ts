@@ -60,7 +60,10 @@ export class WorkingMemoryBuffer {
   private queryTrajectory: number[][] = [];
 
   /** Cache of pre-fetched items ready for immediate retrieval. */
-  private prefetchCache = new Map<string, WorkingMemoryItem>();
+  private prefetchCache = new Map<string, { item: WorkingMemoryItem; cachedAt: number }>();
+
+  /** TTL for prefetch cache entries in milliseconds (5 minutes). */
+  private static readonly PREFETCH_TTL_MS = 5 * 60 * 1000;
 
   constructor(
     embeddingProvider: EmbeddingProvider,
@@ -90,13 +93,16 @@ export class WorkingMemoryBuffer {
       this.queryTrajectory.shift();
     }
 
+    // Evict stale prefetch entries before reading
+    this.evictStalePrefetch();
+
     // Return pre-fetched items that scored above threshold (already filtered at fetch time)
     // Drain the cache — items not consumed here expire
     // Snapshot entries before iterating to prevent concurrent Map mutation corruption
     const hits: WorkingMemoryItem[] = [];
     const entries = Array.from(this.prefetchCache.entries());
     this.prefetchCache.clear();
-    for (const [, item] of entries) {
+    for (const [, { item }] of entries) {
       if (item.score >= this.config.prefetchThreshold) {
         hits.push(item);
       }
@@ -163,11 +169,14 @@ export class WorkingMemoryBuffer {
         if (this.prefetchCache.size >= maxPrefetch) break;
 
         this.prefetchCache.set(cleanId, {
-          id: cleanId,
-          content: '',
-          score: result.score,
-          source: 'prefetch',
-          addedAt: Date.now(),
+          item: {
+            id: cleanId,
+            content: '',
+            score: result.score,
+            source: 'prefetch',
+            addedAt: Date.now(),
+          },
+          cachedAt: Date.now(),
         });
         cached++;
       }
@@ -233,6 +242,16 @@ export class WorkingMemoryBuffer {
     return weighted;
   }
 
+  /** Evict prefetch cache entries older than PREFETCH_TTL_MS. */
+  private evictStalePrefetch(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.prefetchCache) {
+      if (now - entry.cachedAt > WorkingMemoryBuffer.PREFETCH_TTL_MS) {
+        this.prefetchCache.delete(key);
+      }
+    }
+  }
+
   /** Get all items currently in working memory. */
   getItems(): WorkingMemoryItem[] {
     return [...this.buffer];
@@ -253,7 +272,7 @@ export class WorkingMemoryBuffer {
     const item = this.prefetchCache.get(id);
     if (!item) return false;
     this.prefetchCache.delete(id);
-    this.addItems([{ id: item.id, content: item.content, score: item.score }]);
+    this.addItems([{ id: item.item.id, content: item.item.content, score: item.item.score }]);
     return true;
   }
 

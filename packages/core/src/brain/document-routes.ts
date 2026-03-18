@@ -63,7 +63,11 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
           if (part.type === 'file' && part.fieldname === 'file') {
             filename = part.filename || 'upload.txt';
             const chunks: Buffer[] = [];
+            const MAX_CHUNK_COUNT = 1000;
             for await (const chunk of part.file) {
+              if (chunks.length >= MAX_CHUNK_COUNT) {
+                throw new Error('Upload exceeded maximum chunk count');
+              }
               chunks.push(chunk);
             }
             fileBuf = Buffer.concat(chunks);

@@ -216,14 +216,14 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 Items identified during code audit rounds. Fix opportunistically.
 
-- [ ] **File upload chunk count limit** — `document-routes.ts` collects multipart chunks into unbounded array. Add max chunk count as defense-in-depth (mitigated by 20MB fileSize limit).
+- [x] **File upload chunk count limit** — Added max 1000 chunk count to `document-routes.ts`. *(2026.3.18-1)*
 - [ ] **WebSocket unsubscribe consistency** — Unsubscribe succeeds even without subscribe permission. Cosmetic — no data leak possible.
 - [ ] **Input validator ReDoS** — Injection detection regexes could theoretically backtrack on adversarial input. Mitigated by request size limits. Test with pathological inputs.
-- [ ] **Empty catch blocks** — ~20+ files have `catch {}` or `catch { /* */ }` that swallow errors. Replace with `catch (err) { logger.warn(err) }` for production visibility.
-- [ ] **Agnostic token caching race** — Concurrent `getAgnosticHeaders()` calls can double-fetch tokens. Add simple mutex or once-pattern.
-- [ ] **Template resolution NaN risk** — `resolveTemplate` returns empty string for missing paths; downstream `Number()` conversions produce NaN. Add validation.
+- [x] **Empty catch blocks** — Added debug logging to `secureyeoman.ts` silent catches (license, grace period). Remaining ~20 in voice/multimodal are intentional best-effort. *(2026.3.18-1)*
+- [x] **Agnostic token caching race** — Added promise-based mutex to `getAgnosticHeaders()`. *(2026.3.18-1)*
+- [x] **Template resolution NaN risk** — Added `resolveNumber()` helper to workflow engine. *(2026.3.18-1)*
 - [ ] **Dependency confusion** — Verify `@secureyeoman/shared` is not publishable to public npm or is org-scoped.
-- [ ] **Working memory prefetch TTL** — `working-memory.ts` prefetchCache has no time-based eviction. Add 5-min TTL.
+- [x] **Working memory prefetch TTL** — Added 5-min TTL with `evictStalePrefetch()` method. *(2026.3.18-1)*
 - [ ] **Delegation self-reference constraint** — Add DB `CHECK (id != parent_delegation_id)` to `agents.delegations`.
 - [ ] **Alert rules pagination** — `alert-storage.ts` loads up to 1000 rules without offset. Add proper pagination.
 

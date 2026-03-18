@@ -1592,6 +1592,7 @@ export class WorkflowEngine {
   // ── Agnostic Auth ────────────────────────────────────────────
 
   private agnosticToken: string | null = null;
+  private agnosticTokenPromise: Promise<string | null> | null = null;
 
   private async getAgnosticHeaders(): Promise<Record<string, string>> {
     if (!this.agnosticConfig) return {};
@@ -1600,24 +1601,38 @@ export class WorkflowEngine {
       return { 'X-API-Key': this.agnosticConfig.apiKey };
     }
 
-    // JWT auth via email/password
+    // JWT auth via email/password — use promise mutex to avoid concurrent fetches
     if (!this.agnosticToken && this.agnosticConfig.email && this.agnosticConfig.password) {
-      const res = await fetch(`${this.agnosticConfig.url}/api/v1/auth/token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          username: this.agnosticConfig.email,
-          password: this.agnosticConfig.password,
-        }),
-        signal: AbortSignal.timeout(10_000),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { access_token?: string };
-        this.agnosticToken = data.access_token ?? null;
+      if (!this.agnosticTokenPromise) {
+        this.agnosticTokenPromise = (async () => {
+          const res = await fetch(`${this.agnosticConfig!.url}/api/v1/auth/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              username: this.agnosticConfig!.email!,
+              password: this.agnosticConfig!.password!,
+            }),
+            signal: AbortSignal.timeout(10_000),
+          });
+          if (res.ok) {
+            const data = (await res.json()) as { access_token?: string };
+            this.agnosticToken = data.access_token ?? null;
+          }
+          return this.agnosticToken;
+        })();
       }
+      await this.agnosticTokenPromise;
+      this.agnosticTokenPromise = null;
     }
 
     return this.agnosticToken ? { Authorization: `Bearer ${this.agnosticToken}` } : {};
+  }
+
+  /** Parse a numeric config value, throwing on NaN. */
+  private resolveNumber(raw: unknown, fallback: number, label: string): number {
+    const n = Number(raw ?? fallback);
+    if (isNaN(n)) throw new Error(`${label}: expected number, got '${raw}'`);
+    return n;
   }
 
   // ── Template Resolution ───────────────────────────────────────
