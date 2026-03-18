@@ -27,10 +27,12 @@ describe('McpServer', () => {
   });
 
   describe('getExposedTools', () => {
-    it('returns empty array when no soulManager', async () => {
+    it('returns only GPU tools when no soulManager', async () => {
       server = new McpServer({ logger: mockLogger as any });
       const tools = await server.getExposedTools();
-      expect(tools).toEqual([]);
+      // GPU tools are always registered (gpu_status, local_models_list, privacy_route_check)
+      expect(tools.length).toBe(3);
+      expect(tools.every((t) => ['gpu_status', 'local_models_list', 'privacy_route_check'].includes(t.name))).toBe(true);
     });
 
     it('maps active skills to MCP tool definitions', async () => {
@@ -47,7 +49,8 @@ describe('McpServer', () => {
       });
 
       const tools = await server.getExposedTools();
-      expect(tools).toHaveLength(2);
+      // 2 skills + 3 GPU tools = 5
+      expect(tools).toHaveLength(5);
 
       expect(tools[0].name).toBe('friday_skill_skill-1');
       expect(tools[0].description).toBe('Summarizes text');

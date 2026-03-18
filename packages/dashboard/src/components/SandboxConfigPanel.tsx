@@ -17,29 +17,6 @@ import {
 } from 'lucide-react';
 import * as api from '../api/client';
 
-interface TechnologyStatus {
-  technology: string;
-  available: boolean;
-  strength: number;
-  missingPrerequisites: string[];
-  installHint: string;
-}
-
-interface SandboxStatus {
-  enabled: boolean;
-  technology: string;
-  sandboxType: string;
-  strength: number;
-}
-
-interface HealthStatus {
-  healthy: boolean;
-  technology: string;
-  lastChecked: string;
-  checkDurationMs: number;
-  error: string | null;
-}
-
 function StrengthBar({ strength }: { strength: number }) {
   const color = strength >= 70 ? 'bg-green-500' : strength >= 40 ? 'bg-yellow-500' : 'bg-red-500';
   return (
@@ -58,30 +35,23 @@ export default function SandboxConfigPanel() {
 
   const { data: capabilities } = useQuery({
     queryKey: ['sandbox-capabilities'],
-    queryFn: () => api.request('/sandbox/capabilities') as Promise<{
-      technologies: TechnologyStatus[];
-      activeTechnology: string;
-      activeStrength: number;
-    }>,
+    queryFn: () => api.fetchSandboxCapabilities(),
     refetchInterval: 60_000,
   });
 
   const { data: status } = useQuery({
     queryKey: ['sandbox-status'],
-    queryFn: () => api.request('/sandbox/status') as Promise<SandboxStatus>,
+    queryFn: () => api.fetchSandboxStatus(),
   });
 
   const { data: health, refetch: refetchHealth } = useQuery({
     queryKey: ['sandbox-health'],
-    queryFn: () => api.request('/sandbox/health') as Promise<HealthStatus>,
+    queryFn: () => api.fetchSandboxHealth(),
     refetchInterval: 120_000,
   });
 
   const switchTechnology = async (tech: string) => {
-    await api.request('/sandbox/config', {
-      method: 'PATCH',
-      body: JSON.stringify({ technology: tech }),
-    });
+    await api.switchSandboxTechnology(tech);
     void queryClient.invalidateQueries({ queryKey: ['sandbox-status'] });
     void queryClient.invalidateQueries({ queryKey: ['sandbox-capabilities'] });
     void queryClient.invalidateQueries({ queryKey: ['sandbox-health'] });

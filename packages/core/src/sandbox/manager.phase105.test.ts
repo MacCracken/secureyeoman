@@ -17,6 +17,7 @@ vi.mock('./linux-sandbox.js', () => ({
     constructor(opts?: any) {
       this.opts = opts;
     }
+    isAvailable() { return true; }
     getCapabilities() {
       return mockLinuxGetCapabilities();
     }
@@ -26,11 +27,33 @@ vi.mock('./linux-sandbox.js', () => ({
 
 vi.mock('./darwin-sandbox.js', () => ({
   DarwinSandbox: class MockDarwinSandbox {
+    isAvailable() { return true; }
     getCapabilities() {
       return mockDarwinGetCapabilities();
     }
     readonly [Symbol.toStringTag] = 'DarwinSandbox';
   },
+}));
+
+// Mock all sandbox backends that resolveAuto() tries (return isAvailable=false)
+vi.mock('./firecracker-sandbox.js', () => ({
+  FirecrackerSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'linux' }; } },
+}));
+vi.mock('./gvisor-sandbox.js', () => ({
+  GVisorSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'linux' }; } },
+}));
+vi.mock('./sgx-sandbox.js', () => ({
+  SgxSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'linux' }; } },
+}));
+vi.mock('./sev-sandbox.js', () => ({
+  SevSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'linux' }; } },
+}));
+vi.mock('./wasm-sandbox.js', () => ({
+  WasmSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'other' }; } },
+}));
+vi.mock('./agnos-sandbox.js', () => ({
+  AgnosSandbox: class { isAvailable() { return false; } getCapabilities() { return { platform: 'linux' }; } },
+  isAgnosticOS: () => false,
 }));
 
 vi.mock('./credential-proxy.js', () => ({
@@ -186,7 +209,7 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
   });
 
   describe('createSandbox() with auto on darwin', () => {
-    it('creates DarwinSandbox', () => {
+    it('creates DarwinSandbox (WASM mocked unavailable)', () => {
       Object.defineProperty(process, 'platform', { value: 'darwin', writable: true });
       mockDarwinGetCapabilities.mockReturnValue({
         landlock: false,
@@ -199,6 +222,7 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
         logger: makeLogger() as any,
       });
       const sb = mgr.createSandbox();
+      // WASM is mocked as unavailable, so falls through to DarwinSandbox
       expect(sb.constructor.name).toBe('MockDarwinSandbox');
     });
   });

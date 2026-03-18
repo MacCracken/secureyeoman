@@ -45,6 +45,11 @@ export class DlpScanner {
     this.config = config ?? {};
   }
 
+  /** Expose the classification engine for direct classification (used by privacy router). */
+  getClassificationEngine(): ClassificationEngine {
+    return this.engine;
+  }
+
   async scan(content: string, destination: string, _contentType?: string): Promise<DlpScanResult> {
     // 1. Classify content
     const classification = this.engine.classify(content);

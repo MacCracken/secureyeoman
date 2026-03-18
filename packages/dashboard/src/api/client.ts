@@ -3418,6 +3418,42 @@ export async function cancelAgnosticCrew(crewId: string): Promise<{ status: stri
   return request(`/integrations/agnostic/crews/${crewId}/cancel`, { method: 'POST' });
 }
 
+// ─── Sandbox API ─────────────────────────────────────────────────
+
+export async function fetchSandboxCapabilities(): Promise<{
+  technologies: { technology: string; available: boolean; strength: number; missingPrerequisites: string[]; installHint: string }[];
+  activeTechnology: string;
+  activeStrength: number;
+}> {
+  return request('/sandbox/capabilities');
+}
+
+export async function fetchSandboxStatus(): Promise<{
+  enabled: boolean;
+  technology: string;
+  sandboxType: string;
+  strength: number;
+}> {
+  return request('/sandbox/status');
+}
+
+export async function fetchSandboxHealth(): Promise<{
+  healthy: boolean;
+  technology: string;
+  lastChecked: string;
+  checkDurationMs: number;
+  error: string | null;
+}> {
+  return request('/sandbox/health');
+}
+
+export async function switchSandboxTechnology(technology: string): Promise<unknown> {
+  return request('/sandbox/config', {
+    method: 'PATCH',
+    body: JSON.stringify({ technology }),
+  });
+}
+
 // ─── Extensions API (Phase 6.4a) ──────────────────────────────────
 
 export async function fetchExtensions(): Promise<{

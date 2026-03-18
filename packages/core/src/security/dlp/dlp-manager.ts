@@ -42,6 +42,11 @@ export class DlpManager {
     this.logger = deps.logger;
   }
 
+  /** Expose the classification engine for direct content classification (used by privacy router). */
+  getClassificationEngine() {
+    return this.scanner.getClassificationEngine();
+  }
+
   /**
    * Scan outbound content against DLP policies and log the egress event.
    */

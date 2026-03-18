@@ -797,7 +797,8 @@ describe('SecuritySettings', () => {
 
   it('renders Sandbox Isolation section header', async () => {
     renderComponent();
-    expect(await screen.findByText('Sandbox Isolation')).toBeInTheDocument();
+    const headers = await screen.findAllByText('Sandbox Isolation');
+    expect(headers.length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders gVisor Isolation toggle', async () => {

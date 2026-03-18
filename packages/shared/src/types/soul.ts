@@ -396,7 +396,7 @@ export const PersonalitySchema = z.object({
   brainConfig: PersonalityBrainConfigSchema.default({}),
   routingPolicy: z
     .enum(['auto', 'local-preferred', 'local-only', 'cloud-only'])
-    .default('auto'),
+    .optional(),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
 });

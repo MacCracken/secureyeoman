@@ -23,6 +23,7 @@ export function mockPolicy(overrides: Partial<SecurityPolicy> = {}): SecurityPol
     sandboxDynamicTools: true,
     allowAnomalyDetection: false,
     allowSimulation: false,
+    sandboxFirecracker: false,
     sandboxGvisor: false,
     sandboxWasm: false,
     sandboxCredentialProxy: false,
