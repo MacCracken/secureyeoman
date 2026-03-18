@@ -145,21 +145,83 @@ export const SANDBOX_STRENGTH: Record<string, number> = {
 | **Strength** | 80-88 (scales with hardening) | ~70 (process-level) |
 | **Air-gap** | Yes (self-contained image) | Partial (needs OpenClaw + GPU) |
 
+## Build Dependency: AGNOS First, SY Second
+
+The sy-agnos image IS the sandbox. SY only launches and communicates with it. Build order:
+
+```
+AGNOS repo (agnosticos)                    SY repo (secureyeoman)
+─────────────────────────                  ──────────────────────
+1. sy-agnos recipe set
+2. Hardened rootfs profile
+3. Stripped image (no shell, baked seccomp)
+4. nftables default-deny policy
+5. dm-verity integration (Phase 2)
+6. Image published to GHCR
+                                           7. SandboxManager sy-agnos driver
+                                           8. /etc/sy-agnos-release detection
+                                           9. Strength scoring integration
+                                           10. high-security profile update
+```
+
+**AGNOS provides**: The hardened OS image, built via takumi recipes from existing components (nftables, seccomp, tpm2-tools, dm-verity from agnos-sys, read-only rootfs from edge profile). ~80% of the work.
+
+**SY provides**: A new sandbox driver (same pattern as the Firecracker driver), stdin/stdout task protocol, strength detection, and profile wiring. ~20% of the work.
+
+### Existing AGNOS components reused
+
+| Component | Location | Purpose in sy-agnos |
+|---|---|---|
+| nftables | `recipes/edge/nftables.toml` | Default-deny egress, boot-baked rules |
+| seccomp (libseccomp) | `recipes/base/libseccomp.toml` | BPF filter baked into image |
+| tpm2-tools + tpm2-tss | `recipes/edge/tpm2-*.toml` | Phase 3 measured boot attestation |
+| dm-verity | `agnos-sys/src/dmverity.rs` | Phase 2 verified rootfs |
+| read_only_rootfs | edge profile config | Immutable squashfs root |
+| glibc + openssl | base recipes | Minimal runtime deps for Node.js |
+| argonaut init | `agent-runtime/src/argonaut.rs` | Minimal init (3 processes) |
+| aegis quarantine | `agent-runtime/src/aegis.rs` | Violation response |
+| Firecracker recipe | `recipes/base/firecracker.toml` | Reference for VM-level isolation patterns |
+
 ## Implementation Phases
 
 ### Phase 1 — sy-agnos Minimal (score 80)
-- Hardened AGNOS image with immutable rootfs, no shell, seccomp-baked
-- `SandboxManager` integration with `sy-agnos` technology type
-- Image build script + GHCR publishing
-- Dynamic strength detection via `/etc/sy-agnos-release`
+
+**AGNOS repo:**
+- New recipe set: `recipes/sandbox/` with sy-agnos profile
+- `recipes/sandbox/sy-agnos-rootfs.toml` — multi-stage: edge base → strip to minimal (no shell, no package manager, no SSH, no debug tools) → copy SY agent binary → bake seccomp BPF + nftables rules → squashfs
+- `recipes/sandbox/sy-agnos-init.toml` — minimal init config: 3 processes (argonaut → sy-agent → health-check), no TTY, no login
+- `recipes/sandbox/sy-agnos-nftables.toml` — default-deny egress ruleset, allowlist-driven, DNS restricted to configured resolvers
+- `scripts/build-sy-agnos.sh` — builds the hardened OCI image from recipes
+- `/etc/sy-agnos-release` marker file with version + hardening level metadata (JSON)
+- Published to GHCR: `ghcr.io/maccracken/sy-agnos:latest`
+
+**SY repo:**
+- New sandbox driver: `packages/core/src/sandbox/sy-agnos-sandbox.ts`
+- `createSandboxForTask('sy-agnos')` — launches OCI image, pipes task via stdin/stdout, destroys on teardown
+- Dynamic strength detection: reads `/etc/sy-agnos-release` from running container, reports hardening level
+- Update `high-security` profile to prefer sy-agnos when available (fallback: Firecracker → gVisor → Landlock)
+- Tests: unit + E2E for sy-agnos driver
 
 ### Phase 2 — dm-verity (score 85)
-- dm-verity verified root filesystem
-- Tamper detection on boot (hash tree verification)
-- Strength auto-upgrades when dm-verity detected
+
+**AGNOS repo:**
+- Enable dm-verity on sy-agnos rootfs (already implemented in `agnos-sys/src/dmverity.rs`)
+- Hash tree generation during image build
+- Boot-time verification: rootfs tamper → refuse to start agent
+- Update `/etc/sy-agnos-release` with `"dmverity": true`
+
+**SY repo:**
+- Strength auto-upgrades to 85 when dm-verity detected in release metadata
 
 ### Phase 3 — Measured Boot + TPM (score 88)
-- TPM 2.0 measured boot attestation
-- Boot log verification before task dispatch
-- Remote attestation endpoint for fleet management
-- Approaches Firecracker-tier isolation without KVM requirement
+
+**AGNOS repo:**
+- TPM 2.0 measured boot using tpm2-tools (already in edge recipes)
+- PCR extend at each boot stage
+- Attestation endpoint: `/v1/attestation` returns signed boot measurements
+- Update `/etc/sy-agnos-release` with `"tpm_measured": true`
+
+**SY repo:**
+- Pre-dispatch attestation check: verify boot measurements before sending task to sandbox
+- Remote attestation for fleet management (verify sandbox integrity across instances)
+- Strength auto-upgrades to 88 when TPM measured boot detected

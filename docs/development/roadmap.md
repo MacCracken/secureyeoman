@@ -49,17 +49,24 @@
 
 **Goal**: Ship a purpose-built, hardened AGNOS image (`sy-agnos`) as a medium-weight, ultra-high-security sandbox tier. The OS itself IS the sandbox — immutable rootfs, no shell, baked seccomp, OS-level network policy. Slots between Firecracker (90) and gVisor (70) in the strength ranking, with dynamic scoring that increases as AGNOS hardens.
 
+**Dependency**: AGNOS repo builds the image (~80% of work), SY repo builds the driver (~20%). Image must ship from AGNOS before SY integration begins. See [AGNOS roadmap](https://github.com/MacCracken/agnosticos/blob/main/docs/development/roadmap.md).
+
 ### Phase 1 — sy-agnos Minimal (strength 80)
 
-- [ ] **Hardened AGNOS image** — Immutable squashfs rootfs, no `/bin/sh`, no package manager, 3-process tree (init → sy-agent → health-check)
-- [ ] **Dockerfile.sy-agnos** — Multi-stage build: AGNOS base → strip to minimal → copy SY agent binary → bake seccomp BPF + nftables rules
-- [ ] **Filesystem isolation** — Read-only root, writable tmpfs at `/tmp` (256 MB cap), ephemeral `/data` for task output, destroyed on teardown
-- [ ] **Network control** — nftables default-deny egress, allowlisted hosts/ports only, restricted DNS resolvers, no listening sockets except health
-- [ ] **Process hardening** — Baked seccomp BPF, no `CAP_SYS_ADMIN`/`CAP_NET_RAW`/`CAP_PTRACE`, PID namespace isolation, `PR_SET_NO_NEW_PRIVS`
-- [ ] **SandboxManager integration** — `technology: 'sy-agnos'`, auto-detection via `/etc/sy-agnos-release`, `createSandboxForTask('sy-agnos')` launches image
-- [ ] **Dynamic strength detection** — Read capabilities from running sy-agnos instance, report strength 80 for minimal, higher for verified variants
-- [ ] **Image build + publish** — `scripts/build-sy-agnos.sh`, published to GHCR, cosign-signed
+**Blocked on: AGNOS `recipes/sandbox/` image build** — SY items can begin once image is available on GHCR.
+
+AGNOS side (agnosticos repo):
+- [ ] **`recipes/sandbox/sy-agnos-rootfs.toml`** — Strip edge base to minimal: no shell, no pkg mgr, no SSH, no debug tools → squashfs
+- [ ] **`recipes/sandbox/sy-agnos-init.toml`** — 3-process argonaut init (argonaut → sy-agent → health-check)
+- [ ] **`recipes/sandbox/sy-agnos-nftables.toml`** — Boot-baked default-deny egress, allowlist-driven
+- [ ] **`scripts/build-sy-agnos.sh`** — OCI image builder + GHCR publish + cosign
+- [ ] **`/etc/sy-agnos-release`** — JSON metadata with version, hardening level, strength score
+
+SY side (secureyeoman repo):
+- [ ] **`sy-agnos-sandbox.ts`** — New sandbox driver: launch OCI image, pipe task via stdin/stdout, destroy on teardown
+- [ ] **Strength detection** — Read `/etc/sy-agnos-release` from container, report dynamic strength
 - [ ] **Update `high-security` profile** — Prefer sy-agnos when available (fallback: Firecracker → gVisor → Landlock)
+- [ ] **Tests** — Unit + E2E for sy-agnos driver
 
 ### Phase 2 — dm-verity (strength 85)
 
