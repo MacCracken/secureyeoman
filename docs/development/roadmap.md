@@ -6,7 +6,7 @@
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
-**Priority**: P0 — Ongoing. Continuous verification of features that lack automated integration coverage. Items move to Changelog when confirmed working; new regressions are added here as discovered.
+**Priority**: P3 — Ongoing. Continuous verification of features that lack automated integration coverage. Items move to Changelog when confirmed working; new regressions are added here as discovered.
 
 ### Manual Tests — Authentication & Multi-Tenancy
 
