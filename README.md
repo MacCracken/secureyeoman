@@ -55,7 +55,7 @@ secureyeoman-edge start --parent-url http://your-server:18789
 
 Then open http://localhost:18789 and complete the onboarding wizard.
 
-See the [Getting Started Guide](docs/guides/getting-started.md) for full setup including Kubernetes Helm deployment.
+See the [Getting Started Guide](docs/guides/getting-started/getting-started.md) for full setup including Kubernetes Helm deployment.
 
 ---
 
@@ -159,22 +159,22 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 
 | | |
 |---|---|
-| **[Getting Started](docs/guides/getting-started.md)** | Installation, configuration, first steps |
-| **[CLI Reference](docs/guides/cli-reference.md)** | All 56 commands with examples |
+| **[Getting Started](docs/guides/getting-started/getting-started.md)** | Installation, configuration, first steps |
+| **[CLI Reference](docs/guides/getting-started/cli-reference.md)** | All 56 commands with examples |
 | **[Configuration Reference](docs/configuration.md)** | All YAML fields and environment variables |
 | **[Feature Reference](docs/features.md)** | Complete feature breakdown |
 | **[REST API](docs/api/rest-api.md)** | REST API reference |
 | **[WebSocket API](docs/api/websocket-api.md)** | Real-time WebSocket protocol |
 | **[OpenAPI Spec](docs/openapi.yaml)** | OpenAPI 3.1 specification |
 | **[Deployment](docs/deployment.md)** | Binary, Docker, Kubernetes |
-| **[Security Model](docs/security/security-model.md)** | Threat model and security controls |
+| **[Security Model](docs/guides/security/security-model.md)** | Threat model and security controls |
 | **[White Paper](docs/white-paper.md)** | Architectural sovereignty & agentic governance |
 | **[Architecture](docs/development/architecture.md)** | System architecture overview |
-| **[ADRs](docs/adr/)** | 37 Architecture Decision Records |
+| **[ADRs](docs/adr/)** | 39 Architecture Decision Records |
 | **[Roadmap](docs/development/roadmap.md)** | Development roadmap |
 | **[Changelog](CHANGELOG.md)** | Release history |
 
-**Guides** — See [`docs/guides/`](docs/guides/) for 68 topic guides including [CLI Reference](docs/guides/cli-reference.md), [AI Providers](docs/guides/ai-providers.md), [Integrations](docs/guides/integrations.md), [Knowledge & Memory](docs/guides/knowledge-memory.md), [Workflows](docs/guides/workflows.md), [Swarms](docs/guides/swarms.md), [SSO/SAML](docs/guides/sso-saml.md), [DLP](docs/guides/data-loss-prevention.md), [Federated Learning](docs/guides/federated-learning.md), [Chaos Engineering](docs/guides/chaos-engineering.md), [Multi-Region HA](docs/guides/multi-region-ha.md), [Observability](docs/guides/observability.md), [Security Testing](docs/guides/security-testing.md), and more.
+**Guides** — See [`docs/guides/`](docs/guides/) for 68 topic guides including [CLI Reference](docs/guides/getting-started/cli-reference.md), [AI Providers](docs/guides/ai-and-llm/ai-providers.md), [Integrations](docs/guides/integrations/integrations.md), [Knowledge & Memory](docs/guides/ai-and-llm/knowledge-memory.md), [Workflows](docs/guides/platform-features/workflows.md), [Swarms](docs/guides/platform-features/swarms.md), [SSO/SAML](docs/guides/security/sso-saml.md), [DLP](docs/guides/security/data-loss-prevention.md), [Federated Learning](docs/guides/ai-and-llm/federated-learning.md), [Chaos Engineering](docs/guides/enterprise/chaos-engineering.md), [Multi-Region HA](docs/guides/enterprise/multi-region-ha.md), [Observability](docs/guides/enterprise/observability.md), [Security Testing](docs/guides/security/security-testing.md), and more.
 
 ---
 
@@ -204,7 +204,7 @@ SecureYeoman uses a dual-license model:
 - **AGPL-3.0** — for open-source use, self-hosting, and contributors. Anyone offering the software as a hosted service to third parties must publish their modifications.
 - **Commercial license** — for enterprises that cannot accept AGPL terms, or for SaaS providers who need to keep modifications private. See [`LICENSE.commercial`](LICENSE.commercial).
 
-Enterprise features (Adaptive Learning, SSO/SAML, Multi-Tenancy, CI/CD, Advanced Observability) require a commercial license key. See [`docs/guides/licensing.md`](docs/guides/licensing.md) for details.
+Enterprise features (Adaptive Learning, SSO/SAML, Multi-Tenancy, CI/CD, Advanced Observability) require a commercial license key. See [`docs/guides/enterprise/licensing.md`](docs/guides/enterprise/licensing.md) for details.
 
 ---
 

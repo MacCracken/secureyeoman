@@ -43,7 +43,7 @@ Custom MCP tools, MCP context optimization, network tools.
 
 - [API Specification](openapi.yaml)
 - [API Documentation](api/)
-- [Security Model](security/security-model.md)
+- [Security Model](guides/security/security-model.md)
 - [Features Overview](features.md)
 - [White Paper](white-paper.md)
 - [Marketing Strategy](marketing-strategy.md)

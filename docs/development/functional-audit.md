@@ -1,16 +1,16 @@
 # Competitive Analysis
 
-> Last updated: **2026-03-17** | SecureYeoman **v2026.3.17**
+> Last updated: **2026-03-18** | SecureYeoman **v2026.3.18**
 
 ---
 
 ## Executive Summary
 
-SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that ships RBAC, SSO/SAML, multi-tenancy, cryptographic audit trails, Vault integration, OPA/CEL governance, DLP, and Kubernetes Helm in a single ~123 MB binary deployable fully air-gapped.
+SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that ships RBAC, SSO/SAML, multi-tenancy, cryptographic audit trails, Vault integration, OPA/CEL governance, DLP, Firecracker microVM sandboxing, GPU-aware privacy routing, and Kubernetes Helm in a single ~123 MB binary deployable fully air-gapped.
 
-No competitor matches this combination. The closest — Ironclaw — leads on Rust memory safety and TEE hardware attestation but requires NEAR AI Cloud infrastructure (no air-gap) and lacks RBAC, SSO, multi-agent orchestration, and a dashboard. OpenAI Frontier offers enterprise governance but is cloud-hosted with limited availability and no data sovereignty.
+No competitor matches this combination. The closest — Ironclaw — leads on Rust memory safety and TEE hardware attestation but requires NEAR AI Cloud infrastructure (no air-gap) and lacks RBAC, SSO, multi-agent orchestration, and a dashboard. NemoClaw addresses OpenClaw's security gap with NVIDIA-branded sandboxing but inherits its lack of RBAC, SSO, multi-tenancy, DAG workflows, and training pipeline — and now has 17 Fortune 500 launch partners making it the primary enterprise distribution threat. OpenAI Frontier offers enterprise governance but is cloud-hosted with limited availability and no data sovereignty.
 
-Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security audit (30+ fixes: injection prevention, IDOR protection, information disclosure, defense-in-depth hardening), Shruti DAW integration (10 MCP tools, voice bridge, HTTP client), agent parent registration with delegated auth/knowledge/audit forwarding, agent binary build & distribution (Docker, multi-arch), and full-stack `exposeEdgeTools` toggle wiring.
+Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security audit (30+ fixes), Shruti DAW integration (10 MCP tools, voice bridge, HTTP client), agent parent registration with delegated auth/knowledge/audit forwarding, agent binary build & distribution (Docker, multi-arch), full-stack `exposeEdgeTools` toggle wiring, Firecracker microVM sandbox (KVM isolation, rootfs builder, jailer, vsock, snapshots, TAP network isolation), GPU-aware inference routing (GpuProbe, LocalModelRegistry, PrivacyRouter with per-personality routing policy), and AGNOS bridge with profile-based tool exposure.
 
 ---
 
@@ -18,8 +18,8 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 
 | | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw | NemoClaw |
 |---|---|---|---|---|---|---|
-| **Version** | 2026.3.17 | 2026.3.8 | v0.9.8.2 | v0.2.0 | v0.13.1 | Preview (GTC 2026) |
-| **Stars** | — | ~250K | ~15.7K | ~21.7K | ~4K | New |
+| **Version** | 2026.3.18 | 2026.3.8 | v0.9.8.2 | v0.2.0 | v0.13.1 | Preview (GTC 2026) |
+| **Stars** | — | ~250K | ~16.2K | ~22.8K | ~4K | New |
 | **Language** | TypeScript | TypeScript | Python | Go | Rust | TypeScript (wraps OpenClaw) |
 | **Focus** | Enterprise self-hosted | Personal AI | Personal assistant | Embedded/edge | Privacy-first TEE | Agent sandbox + privacy |
 | **RAM** | ~1 GB | ~1.5 GB | 4 GB | **10-20 MB** | Unknown | ~1.5 GB+ (inherits OC) |
@@ -37,23 +37,23 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 
 ## Competitors
 
-**OpenClaw** (~250K stars) — Most popular agent by adoption. Surpassed React on GitHub in March 2026 to become the most-starred software project. Severe ongoing security crisis: 9+ CVEs including RCE (CVE-2026-25253, CVSS 8.8), ClawJacked WebSocket hijack, command injection, SSRF, authentication bypass, and path traversal. 1,184+ malicious skills in ClawHub (ClawHavoc), 135,000+ publicly exposed instances. Gartner rated it "unacceptable cybersecurity risk." Creator joined OpenAI (Feb 2026); project transitioning to foundation. v2026.3.8 adds ACP provenance, backup tool, and 12+ security patches. $300-750/month typical API cost. Unrestricted host access by default. Android native app added.
+**OpenClaw** (~250K stars) — Most popular agent by adoption. Surpassed React on GitHub in March 2026 to become the most-starred software project. Severe ongoing security crisis: 13+ CVEs (20+ GHSAs) including RCE (CVE-2026-25253, CVSS 8.8), path traversal (CVE-2026-28462, CVSS 8.7), account takeover + RCE via Direct Connections (CVE-2025-64496, CVSS 7.3), ClawJacked WebSocket hijack, command injection, SSRF, ACP auto-approval bypass, webhook forgery, log poisoning, and stored DOM XSS. 1,184+ malicious skills in ClawHub (ClawHavoc, 12% of all listings). Moltbook platform breach: 35,000 emails + 1.5M agent API tokens exposed. 42,000+ publicly exposed instances (Bitsight/Censys Jan-Feb 2026; 5,194 verified vulnerable, 93.4% auth bypass). Gartner rated it "unacceptable cybersecurity risk." Microsoft published security guidance: "Running OpenClaw safely" (Feb 19, 2026). Creator Peter Steinberger joined OpenAI (Feb 14, 2026); project transitioning to open-source foundation. v2026.3.8 adds ACP provenance, backup tool, and 12+ security patches. $300-750/month typical API cost. Unrestricted host access by default. Android native app added.
 
-**Agent Zero** (~15.7K stars) — Python framework, major v0.9.8 release with new Skills framework (replacing Instruments), WebSocket sync, MCP client + server, complete UI redesign with process groups, message queue, and Git projects. Voice interaction added: Kokoro TTS + Whisper STT. Enhanced attachment system. Four new LLM providers. Subordinate agent extensibility with dedicated prompts and tools. No enterprise features (RBAC, SSO, encryption). Docker, 4 GB minimum.
+**Agent Zero** (~16.2K stars) — Python framework, major v0.9.8 release with new Skills framework (replacing Instruments), WebSocket sync, MCP client + server, complete UI redesign with process groups, message queue, and Git projects. Voice interaction added: Kokoro TTS + Whisper STT. Enhanced attachment system. Four new LLM providers. Subordinate agent extensibility with dedicated prompts and tools. No enterprise features (RBAC, SSO, encryption). Docker, 4 GB minimum.
 
-**PicoClaw** (~21.7K stars) — Go binary, 10-20 MB, < 1 s startup on $10 hardware. MCP client in v0.2.0. Added Telegram, Discord, QQ, DingTalk, LINE, WeCom, and Slack integrations. New agent memory system, cron scheduler, ClawdChat social network, and security sandbox. Growing fast but still early development — no RBAC, persistent memory, or production security guarantees.
+**PicoClaw** (~22.8K stars) — Go binary, 10-20 MB, < 1 s startup on $10 hardware. MCP client in v0.2.0. Added Telegram, Discord, QQ, DingTalk, LINE, WeCom, and Slack integrations. New agent memory system, cron scheduler, ClawdChat social network, and security sandbox. Growing fast but still early development — no RBAC, persistent memory, or production security guarantees.
 
 **Ironclaw** (~4K stars) — Rust, NEAR AI. Launched at NEARCON 2026 alongside Confidential GPU Marketplace. TEE + WASM execution. AES-256-GCM encryption. PostgreSQL storage with comprehensive audit log. Free Starter tier (1 hosted agent) with paid tiers for scaling. Cannot self-host air-gapped (requires NEAR AI Cloud). No RBAC, SSO, K8s, multi-agent orchestration, or dashboard.
 
-**NemoClaw** (NVIDIA) — Open-source enterprise security wrapper around OpenClaw, announced at GTC 2026 (March 16). Bundles NVIDIA OpenShell runtime for process-level sandboxing (filesystem isolation, network policy, syscall blocking via YAML-based declarative security policies), Privacy Router for routing agents to cloud LLMs while enforcing data-handling policies, and local Nemotron model execution on NVIDIA GPUs (GeForce RTX, RTX PRO, DGX Spark/Station). Compute-aware routing evaluates local GPU resources to decide local vs. cloud inference. Not model-exclusive — works with OpenAI, Anthropic, and others. Installs in a single command on top of OpenClaw. **High threat** to SY because it addresses OpenClaw's biggest weakness (security) while leveraging NVIDIA's brand and GPU ecosystem. However, it inherits OpenClaw's architecture (no RBAC, SSO, multi-tenancy, DAG workflows, dashboard, or training pipeline), provides only infrastructure-level sandboxing (no content guardrails, DLP, or governance), and cannot operate air-gapped without GPU hardware. No formal compliance posture (SOC 2, HIPAA, ISO 27001).
+**NemoClaw** (NVIDIA) — Open-source enterprise security wrapper around OpenClaw, announced at GTC 2026 (March 16). 17 launch partners: Adobe, Salesforce, SAP, ServiceNow, Siemens, Cisco, CrowdStrike, Google Cloud, and more. Bundles NVIDIA OpenShell runtime for process-level sandboxing (filesystem isolation, network policy, syscall blocking via YAML-based declarative security policies with live policy updates and full audit trails), Privacy Router using differential privacy technology (acquired from Gretel) to strip PII before sending data to external services, and local Nemotron model execution on NVIDIA GPUs (GeForce RTX, RTX PRO, DGX Spark/Station). Hardware-agnostic — works regardless of GPU vendor. Not model-exclusive — works with OpenAI, Anthropic, and others. Installs in a single command on top of OpenClaw. **High threat** to SY because it addresses OpenClaw's biggest weakness (security) while leveraging NVIDIA's brand, GPU ecosystem, and 17 Fortune 500 launch partnerships. However, it inherits OpenClaw's architecture (no RBAC, SSO, multi-tenancy, DAG workflows, dashboard, or training pipeline), provides only infrastructure-level sandboxing (no content guardrails, DLP, or governance), and cannot operate air-gapped without GPU hardware. No formal compliance posture (SOC 2, HIPAA, ISO 27001). Enterprise extensions (compliance, support SLAs) planned as paid tier.
 
 **TrustClaw** — Cloud-native OpenClaw fork with 1,000+ tools, OAuth authentication, and sandboxed cloud execution. All execution in cloud — nothing runs locally. Trades one cloud dependency for two. Keys still pass through a third party — fails data residency for regulated industries. Limited infrastructure visibility problematic for compliance demonstration.
 
-**Manus AI** — Was a $100M ARR cloud agent; acquired by Meta (~$2B, Dec 2025). China regulatory probe launched (export control compliance review). Customer flight reported post-acquisition. Data now flows through Meta infrastructure. Zero-viable for GDPR/HIPAA organizations.
+**Manus AI** — Was a $100M ARR cloud agent; acquired by Meta (~$2B, Dec 2025). Now being integrated into Meta Ads Manager (Feb 2026). China regulatory probe launched into export control compliance; founders could face criminal charges; deal could be unwound. Customer flight reported post-acquisition (CNBC Jan 2026). Data now flows through Meta infrastructure. Zero-viable for GDPR/HIPAA organizations. No longer a standalone competitor — effectively a Meta internal advertising tool.
 
 **OpenAI Frontier** — Enterprise agent platform (Feb 2026). Vendor-agnostic: supports OpenAI, Google, Microsoft, and Anthropic agents. On-premises, enterprise cloud, and OpenAI-hosted runtime options. AWS distribution deal ($110B round, Amazon exclusive third-party cloud distributor). Business context integration (CRM, data warehouses, ticketing). Enterprise IAM with scoped agent identities. Early customers: HP, Oracle, State Farm, Uber, Intuit, Thermo Fisher. Currently limited availability.
 
-**Devin 2.0** — AI coding agent, price dropped from $500 to $20/mo ($2.00-2.25 per Agent Compute Unit). Acquired Windsurf IDE. Interactive Planning for codebase-aware task scoping. Devin Wiki (auto-generated architecture docs). Devin Review (intelligent PR analysis with change grouping and bug detection). 83% more tasks per ACU vs v1. Cloud-only, single-agent, code-specific.
+**Devin 2.0** — AI coding agent, price dropped from $500 to $20/mo ($2.00-2.25 per Agent Compute Unit). Acquired Windsurf IDE (July 2025, ~$250M; Cognition valued at $10.2B post-acquisition; combined ARR doubled). Google hired Windsurf CEO/co-founder in a $2.4B reverse-acquihire; Cognition acquired remaining team, IP, product, trademark, and 350+ enterprise customers. New features: Interactive Planning, Devin Wiki (auto-generated architecture docs), Devin Review (intelligent PR analysis), Devin Search (agentic codebase exploration). 83% more tasks per ACU vs v1. Windsurf brings SOC 2 Type II, SSO, RBAC, hybrid deployment, and ZDR (zero data retention) at Enterprise tier. Cloud-only, single-agent, code-specific.
 
 **OpenHands** — OSS code agent (MIT), v1.4.0 (Feb 2026). Raised $18.8M. New Planning Agent with Plan Mode / Code Mode switching. Claims 87% of bug tickets resolved same day. SDK for composable agents (local or 1000s in cloud). CLI powered by Claude/GPT/any LLM. Kubernetes-native. Strongest OSS alternative for coding workflows. Minimal enterprise features.
 
@@ -76,9 +76,9 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 | | Credential redaction (20 patterns) | Y | - | - | - | Y | - |
 | | Output injection scanner | Y | - | - | - | - | - |
 | | OPA + CEL governance | Y | - | - | - | - | - |
-| | Sandboxing (Landlock/seccomp/V8 isolate/WASM/gVisor) | Y | P | P | P | Y | Y |
-| | Process-level isolation (OpenShell) | - | - | - | - | - | Y |
-| | Privacy router (data policy enforcement) | - | - | - | - | - | Y |
+| | Sandboxing (Landlock/seccomp/V8 isolate/WASM/gVisor/Firecracker) | Y | P | P | P | Y | Y |
+| | Process-level isolation (OpenShell / Firecracker microVM) | Y | - | - | - | - | Y |
+| | Privacy router (data policy enforcement) | Y | - | - | - | - | Y |
 | | DLP (classification, egress, watermarking) | Y | - | - | - | - | - |
 | | Supply chain (SBOM, SLSA L3, cosign) | Y | - | - | - | - | - |
 | | Multi-tenancy (PostgreSQL RLS) | Y | - | - | - | - | - |
@@ -95,7 +95,7 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 | | Agent evaluation harness | Y | - | - | - | - | - |
 | | Browser automation (Playwright) | Y | Y | Y | - | - | - |
 | | Network security toolkit (38 tools) | Y | - | - | - | - | - |
-| | GPU-aware local inference routing | - | - | - | - | - | Y |
+| | GPU-aware local inference routing | Y | - | - | - | - | Y |
 | **Integrations** | Platform count | 38 | 23+ | 2 | 11+ | 4 | - |
 | | OAuth2 auto-refresh | Y | - | - | - | - | - |
 | | Per-user notification prefs | Y | - | - | - | - | - |
@@ -116,9 +116,9 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 | | Docker (GHCR, multi-arch, cosign) | Y | Y | Y | - | Y | Y |
 | | Air-gap / offline | Y | Y | Y | Y | - | P |
 | | Dual DB (PostgreSQL + SQLite) | Y | - | - | - | Y | - |
-| **Quality** | Tests | ~21,000+ | Limited | Minimal | Minimal | Unknown | Unknown |
+| **Quality** | Tests | ~22,000+ | Limited | Minimal | Minimal | Unknown | Unknown |
 | | Coverage | ~89% | - | - | - | - | - |
-| | ADRs | 37 | - | - | - | - | - |
+| | ADRs | 39 | - | - | - | - | - |
 
 ---
 
@@ -137,6 +137,9 @@ Capabilities no other framework in this competitive set offers:
 - **Voice & Speech platform** — 14 TTS providers, 10 STT providers, voice profiles, streaming, Orpheus/Piper/faster-whisper
 - **Shruti DAW integration** — 10 MCP tools for audio production, voice-to-DAW bridge with intent parsing, HTTP client (20 methods)
 - **Agent binary & fleet** — Tier 2.5 agent binary with parent registration, delegated auth/knowledge/audit, Docker-native scaling
+- **Firecracker microVM sandbox** — KVM-isolated execution (score 90), rootfs builder, jailer, vsock, snapshots, TAP network isolation — strongest sandbox in the competitive set
+- **GPU-aware privacy routing** — GpuProbe + LocalModelRegistry + PrivacyRouter with per-personality routing policy (unique — no competitor offers per-personality cloud/local routing decisions)
+- **AGNOS bridge** — Bidirectional tool bridge with profile-based exposure for edge device fleet management
 
 ## Known Gaps
 
@@ -149,7 +152,9 @@ Capabilities no other framework in this competitive set offers:
 | Ultra-low resource / edge | PicoClaw (10-20 MB, < 1 s) / ZeroClaw (3.4 MB, sub-10ms) | Lite binary 123 MB — design trade-off for enterprise features; planned slim-IoT/edge variant targets sub-10 s |
 | TEE hardware attestation | Ironclaw (NEAR AI Cloud) | Not applicable (local-first, no cloud dependency) |
 | Startup time | PicoClaw (< 1 s) / ZeroClaw (sub-10ms) | ~30 s — conditional module loading helps; further reduction not feasible without slim-IoT/edge variant |
-| Enterprise brand / distribution | OpenAI Frontier (HP, Oracle, Uber) | Self-hosted niche; no cloud sales force |
+| Enterprise brand / distribution | NemoClaw (17 Fortune 500 partners), OpenAI Frontier (HP, Oracle, Uber) | Self-hosted niche; no cloud sales force |
+| Formal security certification | Windsurf/Cursor (SOC 2 Type II) | Compliance SoA generator covers NIST/SOC 2/ISO 27001/HIPAA/EU AI Act — no formal cert |
+| Agentic code search | Devin Search, Cursor, OpenHands | Knowledge search exists; no code-specific agentic search |
 
 ### Consumer Gaps
 
@@ -197,7 +202,7 @@ SY is BYOK — users bring their own API keys and run on their own infrastructur
 |----------|-------------|--------------|-----------------|
 | **SecureYeoman Pro** | $20/yr ($10/yr) | Full self-hosted platform + BYOK | Complete — your infra |
 | **Devin 2.0** | $20/mo ($240/yr) | Cloud coding agent only, per-ACU billing | None — Cognition cloud |
-| **OpenClaw** | $300-750 (API costs) | Personal agent, no enterprise features, 9+ CVEs | Partial — keys transit host |
+| **OpenClaw** | $300-750 (API costs) | Personal agent, no enterprise features, 13+ CVEs | Partial — keys transit host |
 | **OpenAI Frontier** | Enterprise pricing (undisclosed) | Cloud/on-prem agent platform | Partial — AWS distribution |
 | **Manus AI (Meta)** | Unknown | Cloud agent, Meta infrastructure | None — Meta cloud |
 
@@ -215,8 +220,16 @@ The Pro tier at $20/yr vs Devin's $20/mo ($480 over the same period) is a 24x pr
 | **Embedded / IoT** | Challenger | PicoClaw + ZeroClaw lead on constraints; SY Lite available |
 | **Managed SaaS** | Not positioned | Self-hosted by design; Frontier + Manus/Meta own this segment |
 
+### Adjacent Competitors (Code-Specific)
+
+These are primarily coding tools, not general agent platforms, but overlap with SY's developer workflow features:
+
+- **Cursor** — AI-native IDE. Closed source. Pricing: Free / $20/mo Pro / $40/user/mo Teams / Enterprise custom. SOC 2 Type II, SCIM 2.0, audit logs, SSO, RBAC. 20,000+ developers at Salesforce alone. MCP support via extensions. Cloud-only. Not a general agent platform but demonstrates enterprise AI tooling expectations.
+- **Cline** (~59.1K stars, 5M+ VS Code installs) — Open-source VS Code AI coding agent (BYOK). MCP marketplace. 4 security vulnerabilities disclosed Aug 2025 (API key exfiltration, arbitrary code execution, data leakage); only partially mitigated as of v3.35.0. No enterprise features. Individual developer tool.
+- **Windsurf** — Now part of Cognition/Devin (acquired July 2025). See Devin 2.0 entry. Enterprise features: SOC 2 Type II, SSO, RBAC, hybrid deployment, ZDR. Pricing: Free / $15/mo Pro / $30/user/mo Teams / $60/user/mo Enterprise.
+
 **The sovereignty argument**: Every competitor claiming "enterprise-ready" while routing data through its own cloud reinforces SecureYeoman's position. OpenAI Frontier's AWS deal and Manus's Meta acquisition concentrate data in hyperscaler infrastructure — the opposite of sovereignty. The answer to "easier setup" is `curl -fsSL https://secureyeoman.ai/install | bash`. The answer to "bigger brand" is vendor lock-in and 13 providers including fully local models. The answer to "more secure" is: your key material never leaves your perimeter.
 
 ---
 
-*Updated: 2026-03-17 (added NVIDIA NemoClaw as competitor — GTC 2026 announcement; feature matrix NC column; GPU inference routing noted as competitive differentiator)*
+*Updated: 2026-03-18 (OpenClaw CVEs updated to 13+ with Moltbook breach; NemoClaw launch partners and differential privacy added; Devin 2.0 Windsurf acquisition details and Devin Search; Manus Meta Ads Manager integration and regulatory probe; SY Firecracker microVM, GPU-aware privacy routing, and AGNOS bridge now reflected in matrix; adjacent competitors section added for Cursor, Cline, Windsurf; star counts refreshed)*
