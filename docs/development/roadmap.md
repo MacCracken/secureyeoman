@@ -157,20 +157,20 @@ SY side (secureyeoman repo):
 
 ### New Step Types
 
-- [ ] **`loop`** — Repeat a step or step group N times or until a condition evaluates true. Config: `maxIterations`, `conditionExpression`, `stepIds[]`. Prevents infinite loops via hard cap (default 100). Enables retry-until-success, polling, and iterative refinement patterns.
-- [ ] **`parallel_map`** — Fan-out: run the same step template across a list of inputs, collect results as an array. Config: `inputListPath` (JSONPath to array in context), `stepTemplate`, `maxConcurrency`. Replaces hardcoded parallel agent patterns like `parallel-intelligence-gather`.
-- [ ] **`code_execution`** — Run sandboxed code (Python, Node.js, shell) inline within a workflow. Config: `runtime`, `code` or `codeTemplate`, `timeoutMs`, `sandboxProfile`. Leverages existing sandbox infrastructure. Enables data transformation, API calls, and scripting without spawning a full agent.
-- [ ] **`delay`** — Pause execution for a duration or until a wall-clock time. Config: `durationMs` or `untilTimestamp`. Enables rate-limited workflows, scheduled stages, and cool-down periods between steps.
-- [ ] **`notification`** — Send alert via configured channel. Config: `channel` (slack/email/discord/telegram/ntfy/webhook), `messageTemplate`, `recipients[]`. First-class step replaces webhook workarounds for notifications.
-- [ ] **`data_validation`** — Validate step output against a JSON Schema before passing downstream. Config: `schema` (inline or `$ref`), `onFailure` (fail/warn/skip). Makes implicit `outputSchemaMode` explicit and composable.
-- [ ] **`cache_lookup`** — Check cache before expensive operations. Config: `cacheKey` (Mustache template), `ttlMs`, `onHit` (skip-to-step or use cached output), `onMiss` (continue). Enables idempotent re-runs and expensive API call dedup.
-- [ ] **`a2a_delegate`** — Delegate a task to a remote SecureYeoman instance via A2A protocol. Config: `peerId`, `taskTemplate`, `contextTemplate`, `timeoutMs`, `trustLevel`. Bridges DAG workflows with the existing A2A infrastructure for cross-instance orchestration.
+- [x] **`loop`** — Repeat a step or step group N times or until a condition evaluates true. Config: `maxIterations`, `conditionExpression`, `stepIds[]`. Prevents infinite loops via hard cap (default 100). *(2026.3.18-1)*
+- [x] **`parallel_map`** — Fan-out: run the same step template across a list of inputs, collect results as an array. Config: `inputListPath`, `taskTemplate`, `maxConcurrency` (default 5). *(2026.3.18-1)*
+- [x] **`code_execution`** — Run sandboxed code (Node.js, Python, Bash) inline within a workflow. Config: `runtime`, `code`/`codeTemplate`, `timeoutMs`. *(2026.3.18-1)*
+- [x] **`delay`** — Pause execution for a duration or until a wall-clock time. Config: `durationMs` or `untilTimestamp`. Capped at 1 hour. *(2026.3.18-1)*
+- [x] **`notification`** — Send alert via webhook channel + logged intent for other channels. Config: `channel`, `messageTemplate`, `recipients[]`, `url`. *(2026.3.18-1)*
+- [x] **`data_validation`** — Validate data against JSON Schema via OutputSchemaValidator. Config: `schema`, `dataPath`, `onFailure` (fail/warn/skip). *(2026.3.18-1)*
+- [x] **`cache_lookup`** — Check context-based cache for dedup patterns. Config: `cacheKey` (Mustache template). *(2026.3.18-1)*
+- [x] **`a2a_delegate`** — Delegate a task to a remote SecureYeoman instance via A2A HTTP. Config: `peerId`, `taskTemplate`, `contextTemplate`, `timeoutMs`. *(2026.3.18-1)*
 
 ### Integration Work
 
-- [ ] **WorkflowEngine** — Add step handlers for all 8 types in `workflow-engine.ts`
-- [ ] **Shared types** — Add step type definitions to `packages/shared/src/types/workflow.ts`
-- [ ] **ReactFlow palette** — Add 8 new step nodes to the visual DAG builder
+- [x] **WorkflowEngine** — All 8 step handlers added to `dispatchStep()` in `workflow-engine.ts` *(2026.3.18-1)*
+- [x] **Shared types** — All 8 step types added to `WorkflowStepTypeSchema` in `workflow.ts` *(2026.3.18-1)*
+- [x] **ReactFlow palette** — All 8 new step nodes with icons and colors in `WorkflowBuilder.tsx` *(2026.3.18-1)*
 - [ ] **Template updates** — Create 3-4 new built-in templates showcasing new step types (e.g., `iterative-research` using loop, `fan-out-analysis` using parallel_map, `scheduled-report` using delay + notification)
 - [ ] **Tests** — Unit tests for each step handler + E2E test for a workflow using loop + parallel_map
 - [ ] **Docs** — Update workflows guide with new step types, examples, and configuration reference
@@ -196,8 +196,8 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 { "error": "error_code", "message": "Human-readable explanation", "statusCode": 409 }
 ```
 
-- [ ] **Audit `sendError()` usage** — Catalog all call sites in `packages/core/src/`. Identify routes returning bare strings, missing messages, or inconsistent field names. Ensure every `sendError()` call includes a meaningful message, not just an HTTP status code.
-- [ ] **Standardize error envelope** — Update `sendError()` in `utils/errors.ts` to always return `{ error: <code>, message: <human>, statusCode: <number> }`. Add typed `ApiError` interface to `@secureyeoman/shared`.
+- [x] **Audit `sendError()` usage** — Audited: 2,057 calls across 132 files already use consistent `{ error, message, statusCode }` envelope. Only SCIM routes bypassed — now fixed. *(2026.3.18-1)*
+- [x] **Standardize error envelope** — `sendError()` now typed with `ApiErrorResponse` from `@secureyeoman/shared`. Return type annotated. *(2026.3.18-1)*
 - [ ] **Conflict errors** — Ensure 409 responses from optimistic locking include `{ error: 'version_conflict', message: 'Someone else edited this — reload?' }` not just the HTTP status text.
 - [ ] **MCP tool call errors** — Return descriptive messages for disabled servers, missing tools, unreachable endpoints. Currently returns generic `"Bad Request"`.
 - [ ] **Dashboard error toasts** — Update dashboard API client to parse the new envelope and show `message` in toast notifications instead of raw status text.
