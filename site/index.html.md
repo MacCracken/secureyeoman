@@ -4,7 +4,7 @@ Most AI assistants serve their platform. SecureYeoman serves you — self-hosted
 
 Keep it local. Go hybrid. Connect any provider. Your data only moves when you say so.
 
-**v2026.3.15** | AGPL-3.0 | 462 MCP Tools | 56 CLI Commands | ~22,000 Tests
+**v2026.3.18** | AGPL-3.0 | 485 MCP Tools | 56 CLI Commands | ~22,000 Tests
 
 **Testers Wanted!** We need your feedback to shape SecureYeoman's future. [Leave Feedback](https://github.com/MacCracken/secureyeoman/discussions)
 
@@ -49,12 +49,12 @@ HMAC-SHA256 cryptographic audit chain. Prometheus metrics with Grafana dashboard
 - NVD / CVE vulnerability lookups
 - Kali toolkit (nmap, nuclei, sqlmap)
 
-### 462 MCP Tools & 38 Integrations
-Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Gmail, Google Calendar, Jira, Notion, AWS, Azure DevOps, and more. 5 code forge adapters: Delta, GitHub, GitLab, Bitbucket, Gitea. Artifact registries: GHCR, GitLab, JFrog Artifactory. 462 tools, 9 resources, 4 prompts. SSRF protection + encrypted credentials.
+### 485 MCP Tools & 38 Integrations
+Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Gmail, Google Calendar, Jira, Notion, AWS, Azure DevOps, and more. 5 code forge adapters: Delta, GitHub, GitLab, Bitbucket, Gitea. Artifact registries: GHCR, GitLab, JFrog Artifactory. 485 tools, 9 resources, 4 prompts. SSRF protection + encrypted credentials.
 
 - 38 platform integrations
 - 5 code forge adapters + artifact registries
-- 462 tools · 9 resources · 4 prompts
+- 485 tools · 9 resources · 4 prompts
 - SSRF protection + encrypted creds
 
 ### Multi-Agent & Workflows
@@ -168,7 +168,7 @@ The OpenClaw security crisis (2026): 10+ CVEs including CVSS 8.8 RCE, 824–1,18
 | Multi-tenancy | Yes | No | No | No | No |
 | Secrets / Vault | Yes | No | No | No | Partial |
 | Cryptographic Audit | Yes | No | No | No | No |
-| MCP Tools | 462 | ~100 | ~50 | ~30 | ~200 |
+| MCP Tools | 485 | ~100 | ~50 | ~30 | ~200 |
 | CVEs (2026) | 0 | 10+ | — | — | — |
 | Network Security Tools | 37 | 0 | 0 | 0 | 0 |
 | Workflow Orchestration | DAG (19 types) | Basic | No | No | Basic |
@@ -201,7 +201,7 @@ RBAC with four roles, SSO/OIDC, SAML 2.0, WebAuthn/FIDO2, SCIM 2.0, PostgreSQL R
 ### CTO — Operational Efficiency
 - 38 network security tools
 - 38 platform integrations
-- 462 MCP tools
+- 485 MCP tools
 - Single ~123 MB binary or Helm chart
 - Replaces 6+ point tools
 

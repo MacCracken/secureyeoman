@@ -36,4 +36,18 @@ done
 # 3. version.ts reads from VERSION file and package.json at runtime/compile-time,
 #    no hardcoded constant to update.
 
+# 4. Markdown files with version references
+OLD_VERSION="$(git show HEAD:VERSION 2>/dev/null | tr -d '\n' || true)"
+if [ -n "$OLD_VERSION" ] && [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
+  for md in \
+    "$ROOT/README.md" \
+    "$ROOT/site/index.html.md"
+  do
+    if [ -f "$md" ] && grep -qF "$OLD_VERSION" "$md"; then
+      sed -i "s|$OLD_VERSION|$NEW_VERSION|g" "$md"
+      echo "  updated $(realpath --relative-to="$ROOT" "$md")"
+    fi
+  done
+fi
+
 echo "All packages set to $NEW_VERSION"

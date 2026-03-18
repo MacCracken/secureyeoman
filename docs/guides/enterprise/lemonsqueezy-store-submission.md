@@ -18,7 +18,7 @@ SecureYeoman gives individuals and organizations full ownership of their AI stac
 
 - **Multi-Model Intelligence** — Connect 13 AI providers (Claude, GPT, Gemini, Ollama, DeepSeek, Mistral, and more) with automatic failover routing. Use the best model for each task without vendor lock-in.
 
-- **462 Built-In Tools** — Web scraping, code search, security auditing, device control, voice synthesis, QuickBooks accounting, and more — all accessible to your AI agents out of the box.
+- **485 Built-In Tools** — Web scraping, code search, security auditing, device control, voice synthesis, QuickBooks accounting, and more — all accessible to your AI agents out of the box.
 
 - **Enterprise Security** — Role-based access control (RBAC), SAML/OIDC single sign-on, AES-256-GCM encryption, sandboxed code execution, data loss prevention (DLP), and cryptographic audit trails.
 

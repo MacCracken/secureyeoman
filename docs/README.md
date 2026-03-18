@@ -9,9 +9,9 @@
 
 ## Architecture & Decisions
 
-- [ADR Index](adr/) — 40 architecture decision records
+- [ADR Index](adr/) — 39 architecture decision records (001–043)
   - [001–012](adr/) — Foundation (system, security, AI, agents, brain, training, dashboard, MCP, integrations, soul, marketplace, operations)
-  - [013–040](adr/) — Feature-specific (DLP, HA, supply chain, chaos, federated learning, simulation, edge, agent binary, Shruti, etc.)
+  - [013–043](adr/) — Feature-specific (DLP, HA, supply chain, chaos, federated learning, simulation, edge, agent binary, GPU routing, sandbox hardening, etc.)
 
 ## Guides
 

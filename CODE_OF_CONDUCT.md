@@ -32,7 +32,7 @@ In the interest of fostering an open and welcoming environment, we as contributo
 
 If you experience or witness unacceptable behavior, please report it to us:
 
-- Email: conduct@friday.dev
+- Email: conduct@secureyeoman.ai
 - Private GitHub issue: [Create private issue](https://github.com/MacCracken/secureyeoman/issues/new?template=conduct_report.md)
 - DM a project maintainer on Discord/GitHub
 
@@ -89,7 +89,7 @@ Project maintainers follow these moderation guidelines:
 If you believe a moderation decision was made in error, you may:
 
 1. Contact a different maintainer
-2. Submit an appeal to conduct@friday.dev
+2. Submit an appeal to conduct@secureyeoman.ai
 3. Request a review by multiple maintainers
 
 ### Evolution
@@ -100,6 +100,6 @@ This Code of Conduct may evolve over time. Changes will be announced through:
 - Project documentation updates
 - Community notifications
 
-Questions about this Code of Conduct can be directed to conduct@friday.dev.
+Questions about this Code of Conduct can be directed to conduct@secureyeoman.ai.
 
 Thank you for helping us create a welcoming and inclusive community!

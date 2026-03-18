@@ -4,6 +4,7 @@
 
 | Version    | Supported          | Security Updates |
 |------------|--------------------|------------------|
+| 2026.3.x   | :white_check_mark: | Yes              |
 | 2026.2.x   | :white_check_mark: | Yes              |
 
 ## Reporting a Vulnerability
@@ -16,7 +17,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 **Do NOT open a public issue!** Instead, report vulnerabilities through one of these channels:
 
-- **Email**: security@friday.dev
+- **Email**: security@secureyeoman.ai
 - **GitHub Private Report**: [Submit private vulnerability report](https://github.com/MacCracken/secureyeoman/security/advisories/new)
 - **PGP Key**: Available for encrypted communication on request
 
@@ -67,7 +68,7 @@ SecureYeoman includes several security features:
 For detailed information about our security architecture, see:
 
 - [Security Model](docs/security/security-model.md)
-- [Security Testing Guide](docs/guides/security-testing.md)
+- [Security Testing Guide](docs/guides/security/security-testing.md)
 - [Architecture Overview](docs/development/architecture.md)
 
 ## Security Best Practices
@@ -170,8 +171,8 @@ SecureYeoman is provided "as is" without warranties. See our [LICENSE](LICENSE) 
 
 For security-related questions:
 
-- **Security Issues**: security@friday.dev
-- **General Security Questions**: security@friday.dev
+- **Security Issues**: security@secureyeoman.ai
+- **General Security Questions**: security@secureyeoman.ai
 - **PGP Key**: Available upon request
 
 For non-security issues, please use our regular [support channels](https://github.com/MacCracken/secureyeoman/issues).
