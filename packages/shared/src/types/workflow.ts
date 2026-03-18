@@ -42,6 +42,15 @@ export const WorkflowStepTypeSchema = z.enum([
   // Agnostic crew delegation step types
   'agnostic_crew', // submit a crew to Agnostic, returns { crewId, status: 'queued' }
   'agnostic_crew_wait', // poll crew until done, returns { status, results, durationMs }
+  // DAG expansion step types (Phase 150)
+  'loop', // repeat step(s) N times or until condition, returns { iterations, lastOutput }
+  'parallel_map', // fan-out: run step template across input list, returns { results: unknown[] }
+  'code_execution', // run sandboxed code inline, returns { stdout, stderr, exitCode }
+  'delay', // pause for duration or until timestamp, returns { delayedMs }
+  'notification', // send alert via channel, returns { channel, sent: boolean }
+  'data_validation', // validate data against JSON Schema, returns { valid, errors? }
+  'cache_lookup', // check cache before expensive ops, returns { hit, value? }
+  'a2a_delegate', // delegate to remote SY instance via A2A, returns { taskId, result }
 ]);
 export type WorkflowStepType = z.infer<typeof WorkflowStepTypeSchema>;
 

@@ -1265,6 +1265,267 @@ export class WorkflowEngine {
         };
       }
 
+      // ── DAG expansion step types (Phase 150) ──────────────────────────
+
+      case 'loop': {
+        const maxIterations = Number(cfg.maxIterations ?? 100);
+        const conditionExpr = cfg.conditionExpression
+          ? String(cfg.conditionExpression)
+          : undefined;
+        const bodyStepIds = Array.isArray(cfg.stepIds)
+          ? (cfg.stepIds as string[])
+          : [];
+
+        let lastOutput: unknown = null;
+        let iterations = 0;
+
+        for (let i = 0; i < maxIterations; i++) {
+          // Check break condition before each iteration (if provided)
+          if (conditionExpr && i > 0) {
+            const shouldStop = this.evaluateCondition(conditionExpr, ctx);
+            if (shouldStop) break;
+          }
+
+          // Execute each body step in order
+          for (const bodyId of bodyStepIds) {
+            const bodyStep = step.config as Record<string, unknown>;
+            // Provide loop metadata in context
+            ctx.steps[`${step.id}_iteration`] = { output: { index: i, iteration: i + 1 }, status: 'completed' };
+            // Re-execute referenced steps by dispatching them
+            const refStep = { id: `${bodyId}_loop_${i}`, type: 'transform' as const, name: `${bodyId} (iter ${i + 1})`, config: (bodyStep[bodyId] ?? Object.create(null)) as Record<string, unknown>, dependsOn: [] as string[], triggerMode: 'all' as const, onError: 'fail' as const };
+            lastOutput = await this.dispatchStep(refStep, ctx, runId, workflowId);
+            ctx.steps[`${bodyId}_loop_${i}`] = { output: lastOutput, status: 'completed' };
+          }
+
+          // If no body steps, just run a transform on the iteration template
+          if (bodyStepIds.length === 0 && cfg.bodyTemplate) {
+            lastOutput = this.resolveTemplate(String(cfg.bodyTemplate), ctx);
+          }
+
+          iterations++;
+        }
+
+        return { iterations, lastOutput };
+      }
+
+      case 'parallel_map': {
+        const inputListPath = String(cfg.inputListPath ?? 'input.items');
+        const maxConcurrency = Number(cfg.maxConcurrency ?? 5);
+
+        // Resolve the input list from context
+        const parts = inputListPath.trim().split('.');
+        let listValue: unknown = { steps: ctx.steps, input: ctx.input };
+        for (const part of parts) {
+          if (listValue === null || listValue === undefined) break;
+          listValue = (listValue as Record<string, unknown>)[part];
+        }
+
+        if (!Array.isArray(listValue)) {
+          throw new Error(`parallel_map: inputListPath '${inputListPath}' did not resolve to an array`);
+        }
+
+        const taskTemplate = String(cfg.taskTemplate ?? '{{item}}');
+        const items = listValue as unknown[];
+
+        // Process in batches of maxConcurrency
+        const results: unknown[] = [];
+        for (let i = 0; i < items.length; i += maxConcurrency) {
+          const batch = items.slice(i, i + maxConcurrency);
+          const batchResults = await Promise.all(
+            batch.map(async (item, batchIdx) => {
+              const idx = i + batchIdx;
+              // Create a temporary context with the current item
+              const itemCtx: WorkflowEngineContext = {
+                steps: { ...ctx.steps, [`${step.id}_item`]: { output: item, status: 'completed' } },
+                input: { ...ctx.input, item, index: idx },
+              };
+              return this.resolveTemplate(taskTemplate, itemCtx);
+            })
+          );
+          results.push(...batchResults);
+        }
+
+        return { results, count: results.length };
+      }
+
+      case 'code_execution': {
+        const runtime = String(cfg.runtime ?? 'node');
+        const code = cfg.codeTemplate
+          ? this.resolveTemplate(String(cfg.codeTemplate), ctx)
+          : String(cfg.code ?? '');
+        const timeoutMs = Number(cfg.timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS);
+
+        const RUNTIME_MAP: Record<string, string> = {
+          node: 'node',
+          python: 'python3',
+          python3: 'python3',
+          shell: 'bash',
+          bash: 'bash',
+        };
+
+        const cmd = RUNTIME_MAP[runtime];
+        if (!cmd) {
+          throw new Error(`code_execution: unsupported runtime '${runtime}'. Supported: node, python3, bash`);
+        }
+
+        try {
+          const stdout = execFileSync(cmd, ['-e', code], {
+            timeout: timeoutMs,
+            encoding: 'utf-8',
+            maxBuffer: MAX_EXEC_BUFFER_BYTES,
+          });
+          return { stdout: stdout.trim(), stderr: '', exitCode: 0 };
+        } catch (err: unknown) {
+          const execErr = err as { stdout?: string; stderr?: string; status?: number };
+          return {
+            stdout: execErr.stdout ?? '',
+            stderr: execErr.stderr ?? errorToString(err),
+            exitCode: execErr.status ?? 1,
+          };
+        }
+      }
+
+      case 'delay': {
+        const durationMs = cfg.durationMs ? Number(cfg.durationMs) : undefined;
+        const untilTimestamp = cfg.untilTimestamp ? Number(cfg.untilTimestamp) : undefined;
+
+        let delayedMs: number;
+        if (untilTimestamp) {
+          delayedMs = Math.max(0, untilTimestamp - Date.now());
+        } else {
+          delayedMs = Math.max(0, durationMs ?? 0);
+        }
+
+        // Cap delay at 1 hour to prevent runaway workflows
+        const MAX_DELAY_MS = 3_600_000;
+        delayedMs = Math.min(delayedMs, MAX_DELAY_MS);
+
+        if (delayedMs > 0) {
+          await new Promise((r) => setTimeout(r, delayedMs));
+        }
+
+        return { delayedMs };
+      }
+
+      case 'notification': {
+        const channel = String(cfg.channel ?? 'webhook');
+        const messageTemplate = String(cfg.messageTemplate ?? '');
+        const message = this.resolveTemplate(messageTemplate, ctx);
+        const recipients = Array.isArray(cfg.recipients) ? (cfg.recipients as string[]) : [];
+
+        if (channel === 'webhook') {
+          // Send via webhook — reuse webhook step logic
+          const url = this.resolveTemplate(String(cfg.url ?? ''), ctx);
+          if (!url) throw new Error('notification: url is required for webhook channel');
+          assertPublicUrl(url, 'Notification webhook URL');
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, recipients, source: 'secureyeoman-workflow' }),
+            signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+          });
+          return { channel, sent: res.ok, status: res.status };
+        }
+
+        // For other channels (slack, email, discord, telegram, ntfy) — log intent.
+        // Full integration requires NotificationManager wiring (future).
+        this.logger.info(
+          { channel, recipients, messageLength: message.length, stepId: step.id },
+          'Notification step: channel delivery logged (full dispatch requires NotificationManager)'
+        );
+        return { channel, sent: false, pending: true, message };
+      }
+
+      case 'data_validation': {
+        const dataPath = String(cfg.dataPath ?? '');
+        const onFailure = String(cfg.onFailure ?? 'fail');
+
+        // Resolve the data to validate from context
+        let data: unknown;
+        if (dataPath) {
+          const pathParts = dataPath.trim().split('.');
+          let val: unknown = { steps: ctx.steps, input: ctx.input };
+          for (const p of pathParts) {
+            if (val === null || val === undefined) break;
+            val = (val as Record<string, unknown>)[p];
+          }
+          data = val;
+        } else {
+          // Default: validate the previous step's output
+          const depIds = step.dependsOn;
+          data = depIds.length > 0 ? ctx.steps[depIds[depIds.length - 1]!]?.output : null;
+        }
+
+        const schema = cfg.schema as Record<string, unknown> | undefined;
+        if (!schema) {
+          throw new Error('data_validation: schema is required');
+        }
+
+        // Use the existing OutputSchemaValidator
+        const validation = _outputSchemaValidator.validate(data, schema);
+
+        if (!validation.valid) {
+          if (onFailure === 'fail') {
+            throw new Error(`data_validation failed: ${validation.errors?.join('; ')}`);
+          }
+          // 'warn' or 'skip' — continue with validation result
+          this.logger.warn(
+            { stepId: step.id, errors: validation.errors },
+            'data_validation: validation failed (non-fatal)'
+          );
+        }
+
+        return { valid: validation.valid, errors: validation.errors ?? [] };
+      }
+
+      case 'cache_lookup': {
+        const cacheKeyTemplate = String(cfg.cacheKey ?? '');
+        const cacheKey = this.resolveTemplate(cacheKeyTemplate, ctx);
+
+        // Check if a previous step with the same cache key produced output.
+        // The convention is: steps that want to be cacheable store output at
+        // ctx.steps[`cache_${key}`]. This step checks for that entry.
+        const cacheStepKey = `cache_${cacheKey}`;
+        const cached = ctx.steps[cacheStepKey];
+        if (cached && cached.status === 'completed' && cached.output !== null) {
+          return { hit: true, value: cached.output, cacheKey };
+        }
+
+        return { hit: false, value: null, cacheKey };
+      }
+
+      case 'a2a_delegate': {
+        const peerId = this.resolveTemplate(String(cfg.peerId ?? ''), ctx);
+        const taskTemplate = String(cfg.taskTemplate ?? '');
+        const task = this.resolveTemplate(taskTemplate, ctx);
+        const contextTemplate = cfg.contextTemplate
+          ? this.resolveTemplate(String(cfg.contextTemplate), ctx)
+          : undefined;
+        const timeoutMs = Number(cfg.timeoutMs ?? 120_000);
+
+        if (!peerId) throw new Error('a2a_delegate: peerId is required');
+        if (!task) throw new Error('a2a_delegate: taskTemplate is required');
+
+        // A2A delegation via HTTP to peer SY instance
+        assertPublicUrl(peerId, 'A2A peer URL');
+        const a2aUrl = `${peerId.replace(/\/+$/, '')}/api/v1/a2a/tasks`;
+
+        const res = await fetch(a2aUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task, context: contextTemplate }),
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => '');
+          throw new Error(`a2a_delegate: peer returned ${res.status}: ${errBody.slice(0, 500)}`);
+        }
+
+        const result = (await res.json()) as Record<string, unknown>;
+        return { taskId: result.taskId ?? result.id, result: result.result ?? result };
+      }
+
       default:
         throw new Error(`Unknown step type: ${step.type}`);
     }

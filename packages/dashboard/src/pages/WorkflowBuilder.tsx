@@ -36,6 +36,14 @@ import {
   Cpu,
   X,
   History,
+  Repeat,
+  LayoutList,
+  Code,
+  Timer,
+  Bell,
+  ShieldCheck,
+  HardDrive,
+  Send,
 } from 'lucide-react';
 import {
   fetchWorkflow,
@@ -71,6 +79,14 @@ const STEP_TYPES = [
     color: 'bg-teal-100 text-teal-800',
   },
   { type: 'swarm', label: 'Swarm', icon: Users, color: 'bg-red-100 text-red-800' },
+  { type: 'loop', label: 'Loop', icon: Repeat, color: 'bg-amber-100 text-amber-800' },
+  { type: 'parallel_map', label: 'Parallel Map', icon: LayoutList, color: 'bg-cyan-100 text-cyan-800' },
+  { type: 'code_execution', label: 'Code', icon: Code, color: 'bg-emerald-100 text-emerald-800' },
+  { type: 'delay', label: 'Delay', icon: Timer, color: 'bg-slate-100 text-slate-800' },
+  { type: 'notification', label: 'Notification', icon: Bell, color: 'bg-rose-100 text-rose-800' },
+  { type: 'data_validation', label: 'Validate', icon: ShieldCheck, color: 'bg-lime-100 text-lime-800' },
+  { type: 'cache_lookup', label: 'Cache', icon: HardDrive, color: 'bg-violet-100 text-violet-800' },
+  { type: 'a2a_delegate', label: 'A2A Delegate', icon: Send, color: 'bg-fuchsia-100 text-fuchsia-800' },
 ] as const;
 
 function stepTypeColor(type: string): string {
