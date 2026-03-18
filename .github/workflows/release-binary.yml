@@ -203,62 +203,125 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           DT="${{ steps.version.outputs.date_tag }}"
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          REPO_URL="${{ github.server_url }}/${{ github.repository }}"
+
+          # ── Helper: compute human-readable file size ──
+          file_size() {
+            if [ -f "$1" ]; then
+              local bytes
+              bytes=$(stat --printf='%s' "$1" 2>/dev/null || stat -f '%z' "$1" 2>/dev/null || echo 0)
+              if [ "$bytes" -ge 1073741824 ]; then
+                printf '%.1f GB' "$(echo "scale=1; $bytes / 1073741824" | bc)"
+              elif [ "$bytes" -ge 1048576 ]; then
+                printf '%.1f MB' "$(echo "scale=1; $bytes / 1048576" | bc)"
+              elif [ "$bytes" -ge 1024 ]; then
+                printf '%.0f KB' "$(echo "scale=0; $bytes / 1024" | bc)"
+              else
+                printf '%d B' "$bytes"
+              fi
+            else
+              echo "—"
+            fi
+          }
+
+          # ── Extract structured changelog section from CHANGELOG.md ──
+          CHANGELOG_SECTION=""
+          if [ -f CHANGELOG.md ]; then
+            # Grab everything between ## [VERSION] and the next ## [
+            CHANGELOG_SECTION=$(sed -n "/^## \\[${VERSION}\\]/,/^## \\[/{/^## \\[${VERSION}\\]/d;/^## \\[/d;p;}" CHANGELOG.md | head -80)
+          fi
+
           {
             echo "notes<<EOF"
-            echo "## SecureYeoman ${VERSION}"
+
+            # ── Quick start ──
+            echo "### Quick start"
             echo ""
-            if [ -n "$PREV_TAG" ]; then
-              echo "### Changes since ${PREV_TAG}"
-              echo ""
+            echo "**Linux x86_64 (full):**"
+            echo "\`\`\`bash"
+            echo "curl -fsSL ${REPO_URL}/releases/download/${VERSION}/secureyeoman-${DT}-linux-x64 -o secureyeoman"
+            echo "chmod +x secureyeoman"
+            echo "./secureyeoman --version"
+            echo "\`\`\`"
+            echo ""
+            echo "**Docker:**"
+            echo "\`\`\`bash"
+            echo "docker pull ghcr.io/maccracken/secureyeoman:${VERSION}"
+            echo "\`\`\`"
+            echo ""
+
+            # ── Which binary do I need? ──
+            echo "### Which binary do I need?"
+            echo ""
+            echo "| If you want to... | Download | Database |"
+            echo "|---|---|---|"
+            echo "| Run the full platform (server, dashboard, all subsystems) | \`secureyeoman-${DT}-<platform>\` | PostgreSQL |"
+            echo "| Try it out quickly, no external dependencies | \`secureyeoman-${DT}-lite-<platform>\` | SQLite (embedded) |"
+            echo "| Run just the AI agent runtime (soul + A2A) | \`secureyeoman-${DT}-agent-<platform>\` | SQLite (embedded) |"
+            echo "| Deploy a minimal agent on edge/IoT hardware | \`secureyeoman-${DT}-edge-<platform>\` | None (stateless) |"
+            echo ""
+
+            # ── Changelog ──
+            echo "### What's changed"
+            echo ""
+            if [ -n "$CHANGELOG_SECTION" ]; then
+              echo "$CHANGELOG_SECTION"
+            elif [ -n "$PREV_TAG" ]; then
               git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" | head -50
             else
-              echo "### Recent Changes"
-              echo ""
               git log --pretty=format:"- %s" -20
             fi
             echo ""
+            if [ -n "$PREV_TAG" ]; then
+              echo ""
+              echo "**Full diff**: [\`${PREV_TAG}...${VERSION}\`](${REPO_URL}/compare/${PREV_TAG}...${VERSION}) | **Previous release**: [\`${PREV_TAG}\`](${REPO_URL}/releases/tag/${PREV_TAG})"
+            fi
             echo ""
-            echo "**Full Changelog**: See [CHANGELOG.md](CHANGELOG.md)"
-            echo ""
-            echo "### Binaries"
-            echo ""
-            echo "Binary naming: \`secureyeoman-<YYYYMMDD>-<type>-<platform>\`"
+
+            # ── Binaries ──
+            echo "<details>"
+            echo "<summary><strong>All binaries</strong> (naming: <code>secureyeoman-YYYYMMDD-type-platform</code>)</summary>"
             echo ""
             echo "#### Tier 1 — Full (PostgreSQL)"
             echo ""
-            echo "| Binary | Platform |"
-            echo "|--------|----------|"
-            echo "| \`secureyeoman-${DT}-linux-x64\` | Linux x86_64 |"
-            echo "| \`secureyeoman-${DT}-linux-arm64\` | Linux ARM64 |"
-            echo "| \`secureyeoman-${DT}-darwin-arm64\` | macOS ARM64 |"
-            echo "| \`secureyeoman-${DT}-windows-x64.exe\` | Windows x64 |"
+            echo "| Binary | Platform | Size |"
+            echo "|--------|----------|------|"
+            echo "| \`secureyeoman-${DT}-linux-x64\` | Linux x86_64 | $(file_size dist/secureyeoman-${DT}-linux-x64) |"
+            echo "| \`secureyeoman-${DT}-linux-arm64\` | Linux ARM64 | $(file_size dist/secureyeoman-${DT}-linux-arm64) |"
+            echo "| \`secureyeoman-${DT}-darwin-arm64\` | macOS ARM64 | $(file_size dist/secureyeoman-${DT}-darwin-arm64) |"
+            echo "| \`secureyeoman-${DT}-windows-x64.exe\` | Windows x64 | $(file_size dist/secureyeoman-${DT}-windows-x64.exe) |"
             echo ""
             echo "#### Tier 2 — Lite (SQLite, no PostgreSQL required)"
             echo ""
-            echo "| Binary | Platform |"
-            echo "|--------|----------|"
-            echo "| \`secureyeoman-${DT}-lite-linux-x64\` | Linux x86_64 |"
-            echo "| \`secureyeoman-${DT}-lite-linux-arm64\` | Linux ARM64 |"
-            echo "| \`secureyeoman-${DT}-lite-windows-x64.exe\` | Windows x64 |"
+            echo "| Binary | Platform | Size |"
+            echo "|--------|----------|------|"
+            echo "| \`secureyeoman-${DT}-lite-linux-x64\` | Linux x86_64 | $(file_size dist/secureyeoman-${DT}-lite-linux-x64) |"
+            echo "| \`secureyeoman-${DT}-lite-linux-arm64\` | Linux ARM64 | $(file_size dist/secureyeoman-${DT}-lite-linux-arm64) |"
+            echo "| \`secureyeoman-${DT}-lite-windows-x64.exe\` | Windows x64 | $(file_size dist/secureyeoman-${DT}-lite-windows-x64.exe) |"
             echo ""
             echo "#### Tier 2.5 — Agent (soul + AI runtime, SQLite)"
             echo ""
-            echo "| Binary | Platform |"
-            echo "|--------|----------|"
-            echo "| \`secureyeoman-${DT}-agent-linux-x64\` | Linux x86_64 |"
-            echo "| \`secureyeoman-${DT}-agent-linux-arm64\` | Linux ARM64 |"
-            echo "| \`secureyeoman-${DT}-agent-darwin-arm64\` | macOS ARM64 |"
+            echo "| Binary | Platform | Size |"
+            echo "|--------|----------|------|"
+            echo "| \`secureyeoman-${DT}-agent-linux-x64\` | Linux x86_64 | $(file_size dist/secureyeoman-${DT}-agent-linux-x64) |"
+            echo "| \`secureyeoman-${DT}-agent-linux-arm64\` | Linux ARM64 | $(file_size dist/secureyeoman-${DT}-agent-linux-arm64) |"
+            echo "| \`secureyeoman-${DT}-agent-darwin-arm64\` | macOS ARM64 | $(file_size dist/secureyeoman-${DT}-agent-darwin-arm64) |"
             echo ""
             echo "#### Tier 3 — Edge/IoT (minimal A2A, static Go binary)"
             echo ""
-            echo "| Binary | Platform |"
-            echo "|--------|----------|"
-            echo "| \`secureyeoman-${DT}-edge-linux-x64\` | Linux x86_64 |"
-            echo "| \`secureyeoman-${DT}-edge-linux-arm64\` | Linux ARM64 (RPi 4, etc.) |"
-            echo "| \`secureyeoman-${DT}-edge-linux-armv7\` | Linux ARMv7 (older ARM) |"
-            echo "| \`secureyeoman-${DT}-edge-linux-riscv64\` | Linux RISC-V 64 |"
+            echo "| Binary | Platform | Size |"
+            echo "|--------|----------|------|"
+            echo "| \`secureyeoman-${DT}-edge-linux-x64\` | Linux x86_64 | $(file_size dist/secureyeoman-${DT}-edge-linux-x64) |"
+            echo "| \`secureyeoman-${DT}-edge-linux-arm64\` | Linux ARM64 (RPi 4, etc.) | $(file_size dist/secureyeoman-${DT}-edge-linux-arm64) |"
+            echo "| \`secureyeoman-${DT}-edge-linux-armv7\` | Linux ARMv7 (older ARM) | $(file_size dist/secureyeoman-${DT}-edge-linux-armv7) |"
+            echo "| \`secureyeoman-${DT}-edge-linux-riscv64\` | Linux RISC-V 64 | $(file_size dist/secureyeoman-${DT}-edge-linux-riscv64) |"
             echo ""
-            echo "### Docker"
+            echo "</details>"
+            echo ""
+
+            # ── Docker ──
+            echo "<details>"
+            echo "<summary><strong>Docker</strong></summary>"
             echo ""
             echo "\`\`\`bash"
             echo "docker pull ghcr.io/maccracken/secureyeoman:${VERSION}"
@@ -266,19 +329,32 @@ jobs:
             echo ""
             echo "Multi-arch image (linux/amd64, linux/arm64) pushed to \`ghcr.io/maccracken/secureyeoman\`."
             echo ""
-            echo "### Verification"
+            echo "</details>"
             echo ""
-            echo "Each binary and container image is signed with Sigstore cosign (keyless) and includes SLSA provenance attestations."
+
+            # ── Supply chain ──
+            echo "<details>"
+            echo "<summary><strong>Verification & supply chain</strong></summary>"
+            echo ""
+            echo "Every binary and container image is signed with [Sigstore cosign](https://www.sigstore.dev/) (keyless OIDC) and includes [SLSA](https://slsa.dev/) provenance attestations. A CycloneDX SBOM (\`secureyeoman-sbom.cdx.json\`) is attached to each release."
+            echo ""
             echo "\`\`\`bash"
             echo "# Verify binary signature"
-            echo "cosign verify-blob --certificate secureyeoman-${DT}-linux-x64.cert --signature secureyeoman-${DT}-linux-x64.sig secureyeoman-${DT}-linux-x64"
+            echo "cosign verify-blob \\"
+            echo "  --certificate secureyeoman-${DT}-linux-x64.cert \\"
+            echo "  --signature secureyeoman-${DT}-linux-x64.sig \\"
+            echo "  secureyeoman-${DT}-linux-x64"
             echo ""
             echo "# Verify container image"
-            echo "cosign verify ghcr.io/maccracken/secureyeoman:${VERSION} --certificate-identity-regexp='github.com/MacCracken/secureyeoman' --certificate-oidc-issuer='https://token.actions.githubusercontent.com'"
+            echo "cosign verify ghcr.io/maccracken/secureyeoman:${VERSION} \\"
+            echo "  --certificate-identity-regexp='github.com/MacCracken/secureyeoman' \\"
+            echo "  --certificate-oidc-issuer='https://token.actions.githubusercontent.com'"
             echo ""
-            echo "# Verify checksum"
+            echo "# Verify checksums"
             echo "sha256sum -c SHA256SUMS"
             echo "\`\`\`"
+            echo ""
+            echo "</details>"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
