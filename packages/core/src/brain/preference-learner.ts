@@ -117,7 +117,7 @@ export class PreferenceLearner {
     const context = userId ? { userId } : undefined;
     const memories = await this.brainManager.recall({
       type: 'preference',
-      limit: 50,
+      limit: 10,
       context,
     });
 

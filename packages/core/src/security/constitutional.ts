@@ -125,7 +125,7 @@ export class ConstitutionalEngine {
           { role: 'user', content: userMessage },
         ],
         {
-          model: this.config.model ?? undefined,
+          model: this.config.model ?? 'claude-haiku-3-5-20241022',
           temperature: this.config.critiqueTemperature,
         }
       );
@@ -226,7 +226,7 @@ export class ConstitutionalEngine {
         { role: 'user', content: userMessage },
       ],
       {
-        model: this.config.model ?? undefined,
+        model: this.config.model ?? 'claude-haiku-3-5-20241022',
         temperature: this.config.critiqueTemperature,
       }
     );

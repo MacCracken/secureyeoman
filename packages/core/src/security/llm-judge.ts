@@ -98,7 +98,7 @@ export class LLMJudge {
             },
             { role: 'user', content: prompt },
           ],
-          ...(this.config.model ? { model: this.config.model } : {}),
+          model: this.config.model ?? 'claude-haiku-3-5-20241022',
           maxTokens: 256,
           temperature: 0,
           stream: false,

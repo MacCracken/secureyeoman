@@ -88,6 +88,16 @@ const TOOL_DESCRIPTION_MAX_CHARS = 200;
  */
 const TOOL_RESULT_MAX_CHARS = 16_000;
 
+/**
+ * Max character length for old assistant messages in conversation history.
+ * Newer messages (last 4) are kept in full; older ones are trimmed to save
+ * tokens on every turn of long conversations.
+ */
+const HISTORY_MSG_MAX_CHARS = 2_000;
+
+/** Number of recent history entries to keep untrimmed. */
+const HISTORY_RECENT_FULL = 4;
+
 /** Truncate a tool result string, appending an indicator if trimmed. */
 function truncateToolResult(content: string): string {
   if (content.length <= TOOL_RESULT_MAX_CHARS) return content;
@@ -1137,12 +1147,24 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         messages.push({ role: 'system', content: systemPrompt });
       }
 
-      // Append conversation history
+      // Append conversation history — trim old assistant messages to save tokens.
+      // The most recent HISTORY_RECENT_FULL messages are kept in full; older
+      // assistant messages are truncated to HISTORY_MSG_MAX_CHARS.
       if (history && Array.isArray(history)) {
-        for (const msg of history) {
+        const recentStart = Math.max(0, history.length - HISTORY_RECENT_FULL);
+        for (let i = 0; i < history.length; i++) {
+          const msg = history[i]!;
           const role = msg.role === 'assistant' ? 'assistant' : 'user';
           if (msg.content && typeof msg.content === 'string') {
-            messages.push({ role, content: msg.content });
+            let content = msg.content;
+            if (
+              i < recentStart &&
+              role === 'assistant' &&
+              content.length > HISTORY_MSG_MAX_CHARS
+            ) {
+              content = content.slice(0, HISTORY_MSG_MAX_CHARS) + '\n…[earlier response trimmed]';
+            }
+            messages.push({ role, content });
           }
         }
       }
@@ -2202,10 +2224,21 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
 
         if (history && Array.isArray(history)) {
-          for (const msg of history) {
+          const recentStartS = Math.max(0, history.length - HISTORY_RECENT_FULL);
+          for (let i = 0; i < history.length; i++) {
+            const msg = history[i]!;
             const role = msg.role === 'assistant' ? 'assistant' : 'user';
             if (msg.content && typeof msg.content === 'string') {
-              messages.push({ role, content: msg.content });
+              let content = msg.content;
+              if (
+                i < recentStartS &&
+                role === 'assistant' &&
+                content.length > HISTORY_MSG_MAX_CHARS
+              ) {
+                content =
+                  content.slice(0, HISTORY_MSG_MAX_CHARS) + '\n…[earlier response trimmed]';
+              }
+              messages.push({ role, content });
             }
           }
         }

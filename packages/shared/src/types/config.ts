@@ -999,12 +999,12 @@ export type FallbackModelConfig = z.infer<typeof FallbackModelConfigSchema>;
 // Response cache configuration (ADR 101)
 export const ResponseCacheConfigSchema = z
   .object({
-    /** Enable in-memory LLM response caching. Off by default. */
-    enabled: z.boolean().default(false),
+    /** Enable in-memory LLM response caching. On by default — saves tokens on repeated/heartbeat queries. */
+    enabled: z.boolean().default(true),
     /** Time-to-live for cached responses in milliseconds. Default: 5 minutes. */
     ttlMs: z.number().int().positive().max(86_400_000).default(300_000),
     /** Maximum number of cached entries before oldest is evicted. */
-    maxEntries: z.number().int().positive().max(10_000).default(500),
+    maxEntries: z.number().int().positive().max(10_000).default(1000),
   })
   .default({});
 
