@@ -161,6 +161,10 @@ export class WorkflowEngine {
     this.alertManager = deps.alertManager ?? null;
     this.councilManager = deps.councilManager ?? null;
     this.agnosticConfig = deps.agnosticConfig ?? null;
+    // Validate external URLs at construction time to prevent SSRF
+    if (this.agnosticConfig?.url) {
+      assertPublicUrl(this.agnosticConfig.url, 'Agnostic platform URL');
+    }
   }
 
   // ── Public API ────────────────────────────────────────────────
@@ -682,10 +686,16 @@ export class WorkflowEngine {
         if (!this.dataCurationManager) {
           throw new Error('DataCurationManager not available for data_curation step');
         }
-        const outputDir = this.resolveTemplate(
+        const rawOutputDir = this.resolveTemplate(
           String(cfg.outputDir ?? '/tmp/secureyeoman-datasets'),
           ctx
         );
+        const { resolve, normalize } = await import('node:path');
+        const safeBase = resolve('/tmp/secureyeoman-datasets');
+        const outputDir = resolve(safeBase, normalize(rawOutputDir));
+        if (!outputDir.startsWith(safeBase)) {
+          throw new Error('data_curation: outputDir path traversal detected');
+        }
         const personalityIdsRaw = cfg.personalityIds;
         const personalityIds = Array.isArray(personalityIdsRaw)
           ? (personalityIdsRaw as string[])
@@ -859,9 +869,11 @@ export class WorkflowEngine {
           ? this.resolveTemplate(String(cfg.personalityId), ctx)
           : '';
         const jobId = cfg.jobId ? this.resolveTemplate(String(cfg.jobId), ctx) : '';
-        const ollamaUrl = cfg.ollamaUrl
-          ? this.resolveTemplate(String(cfg.ollamaUrl), ctx)
-          : 'http://ollama:11434';
+        let ollamaUrl = 'http://ollama:11434';
+        if (cfg.ollamaUrl) {
+          ollamaUrl = this.resolveTemplate(String(cfg.ollamaUrl), ctx);
+          assertPublicUrl(ollamaUrl, 'Ollama URL');
+        }
 
         const passes = !isNaN(metricValue) && metricValue >= threshold;
         this.logger.info(
@@ -948,7 +960,12 @@ export class WorkflowEngine {
         const ref = this.resolveTemplate(String(cfg.ref ?? 'main'), ctx);
         const workflowId = this.resolveTemplate(String(cfg.workflowId ?? ''), ctx);
         const inputsRaw = cfg.inputs ? this.resolveTemplate(JSON.stringify(cfg.inputs), ctx) : '{}';
-        const inputs = JSON.parse(inputsRaw) as Record<string, string>;
+        let inputs: Record<string, string> = {};
+        try {
+          inputs = JSON.parse(inputsRaw) as Record<string, string>;
+        } catch {
+          this.logger.warn({ inputsRaw, stepId: step.id }, 'ci_trigger: inputs JSON parse failed, using empty');
+        }
 
         this.logger.info(
           {
@@ -1286,13 +1303,24 @@ export class WorkflowEngine {
             if (shouldStop) break;
           }
 
-          // Execute each body step in order
+          // Provide loop metadata in context
+          ctx.steps[`${step.id}_iteration`] = { output: { index: i, iteration: i + 1 }, status: 'completed' };
+
+          // Execute each body step in order.
+          // Body step configs are stored in cfg.stepConfigs keyed by step ID.
+          const stepConfigs = (cfg.stepConfigs ?? Object.create(null)) as Record<string, Record<string, unknown>>;
           for (const bodyId of bodyStepIds) {
-            const bodyStep = step.config as Record<string, unknown>;
-            // Provide loop metadata in context
-            ctx.steps[`${step.id}_iteration`] = { output: { index: i, iteration: i + 1 }, status: 'completed' };
-            // Re-execute referenced steps by dispatching them
-            const refStep = { id: `${bodyId}_loop_${i}`, type: 'transform' as const, name: `${bodyId} (iter ${i + 1})`, config: (bodyStep[bodyId] ?? Object.create(null)) as Record<string, unknown>, dependsOn: [] as string[], triggerMode: 'all' as const, onError: 'fail' as const };
+            const bodyConfig = stepConfigs[bodyId] ?? (Object.create(null) as Record<string, unknown>);
+            const bodyType = (bodyConfig.type as string) ?? 'transform';
+            const refStep = {
+              id: `${bodyId}_loop_${i}`,
+              type: bodyType as WorkflowStep['type'],
+              name: `${bodyId} (iter ${i + 1})`,
+              config: bodyConfig,
+              dependsOn: [] as string[],
+              triggerMode: 'all' as const,
+              onError: 'fail' as const,
+            };
             lastOutput = await this.dispatchStep(refStep, ctx, runId, workflowId);
             ctx.steps[`${bodyId}_loop_${i}`] = { output: lastOutput, status: 'completed' };
           }
@@ -1354,6 +1382,15 @@ export class WorkflowEngine {
           ? this.resolveTemplate(String(cfg.codeTemplate), ctx)
           : String(cfg.code ?? '');
         const timeoutMs = Number(cfg.timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS);
+
+        if (!code.trim()) {
+          throw new Error('code_execution: code is empty');
+        }
+        // Cap code size to prevent resource exhaustion (100KB)
+        const MAX_CODE_SIZE = 100_000;
+        if (code.length > MAX_CODE_SIZE) {
+          throw new Error(`code_execution: code exceeds ${MAX_CODE_SIZE} character limit`);
+        }
 
         const RUNTIME_MAP: Record<string, string> = {
           node: 'node',

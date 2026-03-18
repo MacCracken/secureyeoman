@@ -37,6 +37,8 @@ export interface AuditEvent {
 const DEFAULT_BATCH_SIZE = 50;
 const DEFAULT_FLUSH_INTERVAL_MS = 5_000;
 const DEFAULT_TIMEOUT_MS = 10_000;
+/** Max buffer size including re-queued events to prevent unbounded growth. */
+const MAX_BUFFER_SIZE = 500;
 
 export class AuditForwarder {
   private readonly parentUrl: string;
@@ -70,7 +72,7 @@ export class AuditForwarder {
     this.stopped = false;
 
     this.timer = setInterval(() => {
-      this.flush().catch(() => {});
+      this.flush().catch((err) => this.logger?.warn({ error: String(err) }, 'Audit flush failed'));
     }, this.flushIntervalMs);
 
     // Unref so the timer doesn't prevent process exit
@@ -90,7 +92,7 @@ export class AuditForwarder {
 
     // Flush immediately when buffer is full
     if (this.buffer.length >= this.batchSize) {
-      this.flush().catch(() => {});
+      this.flush().catch((err) => this.logger?.warn({ error: String(err) }, 'Audit flush failed'));
     }
   }
 
@@ -125,18 +127,30 @@ export class AuditForwarder {
           'Audit events forwarded'
         );
       } else {
-        this.dropped += batch.length;
-        this.logger?.debug(
+        // Re-queue events on rejection (cap buffer to prevent unbounded growth)
+        this.requeue(batch);
+        this.logger?.warn(
           { status: response.status, count: batch.length },
-          'Audit forward rejected by parent'
+          'Audit forward rejected by parent — events re-queued'
         );
       }
     } catch (err) {
-      this.dropped += batch.length;
-      this.logger?.debug(
+      // Re-queue events on network failure
+      this.requeue(batch);
+      this.logger?.warn(
         { error: err instanceof Error ? err.message : String(err), count: batch.length },
-        'Audit forward failed'
+        'Audit forward failed — events re-queued'
       );
+    }
+  }
+
+  /** Re-queue events that failed to send. Drops oldest if buffer exceeds cap. */
+  private requeue(events: AuditEvent[]): void {
+    this.buffer.unshift(...events);
+    if (this.buffer.length > MAX_BUFFER_SIZE) {
+      const overflow = this.buffer.length - MAX_BUFFER_SIZE;
+      this.buffer.splice(0, overflow);
+      this.dropped += overflow;
     }
   }
 

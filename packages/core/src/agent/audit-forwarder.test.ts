@@ -101,7 +101,7 @@ describe('AuditForwarder', () => {
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it('tracks dropped events on non-ok response', async () => {
+    it('re-queues events on non-ok response', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
 
       forwarder.start();
@@ -109,11 +109,13 @@ describe('AuditForwarder', () => {
 
       await forwarder.flush();
 
-      expect(forwarder.totalDropped).toBe(1);
+      // Events are re-queued, not dropped
+      expect(forwarder.totalDropped).toBe(0);
       expect(forwarder.totalForwarded).toBe(0);
+      expect(forwarder.bufferSize).toBe(1);
     });
 
-    it('tracks dropped events on fetch error', async () => {
+    it('re-queues events on fetch error', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
 
       forwarder.start();
@@ -121,7 +123,8 @@ describe('AuditForwarder', () => {
 
       await forwarder.flush();
 
-      expect(forwarder.totalDropped).toBe(1);
+      expect(forwarder.totalDropped).toBe(0);
+      expect(forwarder.bufferSize).toBe(1);
     });
   });
 

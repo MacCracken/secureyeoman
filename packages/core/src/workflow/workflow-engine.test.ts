@@ -856,7 +856,7 @@ describe('WorkflowEngine.execute — step dispatch: data_curation', () => {
 
     const storage = makeStorage();
     const engine = makeEngine({ storage, dataCurationManager, lineageStorage });
-    const run = makeRun({ input: { outputDir: '/tmp' } });
+    const run = makeRun({ input: { outputDir: '/tmp/secureyeoman-datasets/run1' } });
     const step = makeStep({
       id: 'curate',
       type: 'data_curation',
@@ -866,7 +866,7 @@ describe('WorkflowEngine.execute — step dispatch: data_curation', () => {
     await engine.execute(run, makeDefinition([step]));
 
     expect(dataCurationManager.curateDataset).toHaveBeenCalledWith(
-      expect.objectContaining({ outputDir: '/tmp', minTurns: 2 })
+      expect.objectContaining({ outputDir: '/tmp/secureyeoman-datasets/run1', minTurns: 2 })
     );
     expect(lineageStorage.recordDataset).toHaveBeenCalledWith(
       'run-1',
