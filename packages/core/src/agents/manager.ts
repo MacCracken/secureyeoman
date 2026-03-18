@@ -1103,12 +1103,37 @@ export class SubAgentManager {
     };
   }
 
-  private async buildResultFromRecord(record: DelegationRecord): Promise<DelegationResult> {
+  private static readonly MAX_RESULT_TREE_DEPTH = 20;
+
+  private async buildResultFromRecord(
+    record: DelegationRecord,
+    depth = 0
+  ): Promise<DelegationResult> {
+    if (depth >= SubAgentManager.MAX_RESULT_TREE_DEPTH) {
+      // Prevent unbounded recursion — return leaf node without children
+      const profile = await this.storage.getProfile(record.profileId);
+      return {
+        delegationId: record.id,
+        profile: profile?.name ?? record.profileId,
+        status: record.status,
+        result: record.result,
+        error: record.error,
+        tokenUsage: {
+          prompt: record.tokensUsedPrompt,
+          completion: record.tokensUsedCompletion,
+          total: record.tokensUsedPrompt + record.tokensUsedCompletion,
+        },
+        durationMs:
+          record.completedAt && record.startedAt ? record.completedAt - record.startedAt : 0,
+        subDelegations: [],
+      };
+    }
+
     const children = await this.storage.getDelegationTree(record.id);
     const childResults: DelegationResult[] = [];
     for (const child of children) {
       if (child.id !== record.id && child.parentDelegationId === record.id) {
-        childResults.push(await this.buildResultFromRecord(child));
+        childResults.push(await this.buildResultFromRecord(child, depth + 1));
       }
     }
 

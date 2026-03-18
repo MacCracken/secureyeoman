@@ -223,6 +223,9 @@ Items identified during code audit rounds. Fix opportunistically.
 - [ ] **Agnostic token caching race** — Concurrent `getAgnosticHeaders()` calls can double-fetch tokens. Add simple mutex or once-pattern.
 - [ ] **Template resolution NaN risk** — `resolveTemplate` returns empty string for missing paths; downstream `Number()` conversions produce NaN. Add validation.
 - [ ] **Dependency confusion** — Verify `@secureyeoman/shared` is not publishable to public npm or is org-scoped.
+- [ ] **Working memory prefetch TTL** — `working-memory.ts` prefetchCache has no time-based eviction. Add 5-min TTL.
+- [ ] **Delegation self-reference constraint** — Add DB `CHECK (id != parent_delegation_id)` to `agents.delegations`.
+- [ ] **Alert rules pagination** — `alert-storage.ts` loads up to 1000 rules without offset. Add proper pagination.
 
 ---
 

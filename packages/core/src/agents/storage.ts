@@ -481,14 +481,17 @@ export class SubAgentStorage extends PgBaseStorage {
   }
 
   async getDelegationTree(rootId: string): Promise<DelegationRecord[]> {
+    // Limit recursive depth to prevent infinite loops from circular references
+    // and cap total rows to prevent memory exhaustion.
     const rows = await this.queryMany<DelegationRow>(
       `WITH RECURSIVE tree AS (
-         SELECT * FROM agents.delegations WHERE id = $1
+         SELECT *, 0 AS tree_depth FROM agents.delegations WHERE id = $1
          UNION ALL
-         SELECT d.* FROM agents.delegations d
+         SELECT d.*, t.tree_depth + 1 FROM agents.delegations d
          INNER JOIN tree t ON d.parent_delegation_id = t.id
+         WHERE t.tree_depth < 50
        )
-       SELECT * FROM tree ORDER BY depth ASC, created_at ASC`,
+       SELECT * FROM tree ORDER BY depth ASC, created_at ASC LIMIT 1000`,
       [rootId]
     );
     return rows.map(delegationFromRow);
@@ -524,7 +527,7 @@ export class SubAgentStorage extends PgBaseStorage {
 
   async getDelegationMessages(delegationId: string): Promise<DelegationMessageRecord[]> {
     const rows = await this.queryMany<DelegationMessageRow>(
-      `SELECT * FROM agents.delegation_messages WHERE delegation_id = $1 ORDER BY created_at ASC`,
+      `SELECT * FROM agents.delegation_messages WHERE delegation_id = $1 ORDER BY created_at ASC LIMIT 10000`,
       [delegationId]
     );
     return rows.map(messageFromRow);

@@ -156,7 +156,7 @@ export class DatasetCuratorManager {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const limit = rules.maxSamples ?? 10000;
+    const limit = Math.min(rules.maxSamples ?? 1000, 5000);
 
     // Estimate tokens as char count / 4
     // Use separate constant SQL strings to avoid template literal SQL construction
