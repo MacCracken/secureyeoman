@@ -62,6 +62,7 @@ jobs:
 
     outputs:
       version: ${{ steps.version.outputs.version }}
+      date_tag: ${{ steps.version.outputs.date_tag }}
 
     steps:
       - name: Checkout
@@ -73,10 +74,23 @@ jobs:
         id: version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+            VER="${{ github.event.inputs.version }}"
           else
-            echo "version=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            VER="${{ github.ref_name }}"
           fi
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+
+          # CalVer → compact date tag: YYYY.M.D → YYYYMMDD, YYYY.M.D-N → YYYYMMDDN
+          BASE="${VER%%-*}"
+          PATCH=""
+          [[ "$VER" == *-* ]] && PATCH="${VER##*-}"
+          YEAR="${BASE%%.*}"
+          REST="${BASE#*.}"
+          MONTH="${REST%%.*}"
+          DAY="${REST#*.}"
+          DATE_TAG=$(printf '%s%02d%02d%s' "$YEAR" "$MONTH" "$DAY" "$PATCH")
+          echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "==> Version: ${VER} → date tag: ${DATE_TAG}"
 
       - name: Create tag (workflow_dispatch only)
         if: github.event_name == 'workflow_dispatch'
@@ -132,7 +146,22 @@ jobs:
 
       - name: Sign binaries with cosign (keyless)
         run: |
-          for binary in dist/secureyeoman-linux-x64 dist/secureyeoman-linux-arm64 dist/secureyeoman-darwin-arm64 dist/secureyeoman-windows-x64.exe dist/secureyeoman-lite-linux-x64 dist/secureyeoman-lite-linux-arm64 dist/secureyeoman-lite-windows-x64.exe dist/secureyeoman-edge-linux-x64 dist/secureyeoman-edge-linux-arm64 dist/secureyeoman-edge-linux-armv7; do
+          DT="${{ steps.version.outputs.date_tag }}"
+          for binary in \
+            dist/secureyeoman-${DT}-linux-x64 \
+            dist/secureyeoman-${DT}-linux-arm64 \
+            dist/secureyeoman-${DT}-darwin-arm64 \
+            dist/secureyeoman-${DT}-windows-x64.exe \
+            dist/secureyeoman-${DT}-lite-linux-x64 \
+            dist/secureyeoman-${DT}-lite-linux-arm64 \
+            dist/secureyeoman-${DT}-lite-windows-x64.exe \
+            dist/secureyeoman-${DT}-agent-linux-x64 \
+            dist/secureyeoman-${DT}-agent-linux-arm64 \
+            dist/secureyeoman-${DT}-agent-darwin-arm64 \
+            dist/secureyeoman-${DT}-edge-linux-x64 \
+            dist/secureyeoman-${DT}-edge-linux-arm64 \
+            dist/secureyeoman-${DT}-edge-linux-armv7 \
+            dist/secureyeoman-${DT}-edge-linux-riscv64; do
             if [ -f "$binary" ]; then
               cosign sign-blob --yes "$binary" --output-signature "${binary}.sig" --output-certificate "${binary}.cert"
               echo "==> Signed: $binary"
@@ -143,24 +172,28 @@ jobs:
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
-            dist/secureyeoman-linux-x64
-            dist/secureyeoman-linux-arm64
-            dist/secureyeoman-darwin-arm64
-            dist/secureyeoman-windows-x64.exe
-            dist/secureyeoman-lite-linux-x64
-            dist/secureyeoman-lite-linux-arm64
-            dist/secureyeoman-lite-windows-x64.exe
-            dist/secureyeoman-edge-linux-x64
-            dist/secureyeoman-edge-linux-arm64
-            dist/secureyeoman-edge-linux-armv7
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-darwin-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-windows-x64.exe
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-windows-x64.exe
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-darwin-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-edge-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-edge-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-edge-linux-armv7
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-edge-linux-riscv64
 
       - name: Upload Linux binaries + migrations (for container job)
         uses: actions/upload-artifact@v4
         with:
           name: linux-binaries
           path: |
-            dist/secureyeoman-linux-x64
-            dist/secureyeoman-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-linux-arm64
             dist/migrations/
           retention-days: 1
 
@@ -168,6 +201,7 @@ jobs:
         id: notes
         run: |
           VERSION="${{ steps.version.outputs.version }}"
+          DT="${{ steps.version.outputs.date_tag }}"
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
           {
             echo "notes<<EOF"
@@ -188,16 +222,41 @@ jobs:
             echo ""
             echo "### Binaries"
             echo ""
-            echo "| Binary | Platform | Description |"
-            echo "|--------|----------|-------------|"
-            echo "| \`secureyeoman-linux-x64\` | Linux x86_64 | Full binary (PostgreSQL) |"
-            echo "| \`secureyeoman-linux-arm64\` | Linux ARM64 | Full binary (PostgreSQL) |"
-            echo "| \`secureyeoman-darwin-arm64\` | macOS ARM64 | Full binary (PostgreSQL) |"
-            echo "| \`secureyeoman-windows-x64.exe\` | Windows x64 | Full binary (PostgreSQL) |"
-            echo "| \`secureyeoman-lite-*\` | Various | SQLite fallback (no PostgreSQL required) |"
-            echo "| \`secureyeoman-edge-linux-x64\` | Linux x86_64 | Edge/IoT A2A agent (7 MB static Go binary) |"
-            echo "| \`secureyeoman-edge-linux-arm64\` | Linux ARM64 | Edge/IoT A2A agent (Raspberry Pi, etc.) |"
-            echo "| \`secureyeoman-edge-linux-armv7\` | Linux ARMv7 | Edge/IoT A2A agent (older ARM devices) |"
+            echo "Binary naming: \`secureyeoman-<YYYYMMDD>-<type>-<platform>\`"
+            echo ""
+            echo "#### Tier 1 — Full (PostgreSQL)"
+            echo ""
+            echo "| Binary | Platform |"
+            echo "|--------|----------|"
+            echo "| \`secureyeoman-${DT}-linux-x64\` | Linux x86_64 |"
+            echo "| \`secureyeoman-${DT}-linux-arm64\` | Linux ARM64 |"
+            echo "| \`secureyeoman-${DT}-darwin-arm64\` | macOS ARM64 |"
+            echo "| \`secureyeoman-${DT}-windows-x64.exe\` | Windows x64 |"
+            echo ""
+            echo "#### Tier 2 — Lite (SQLite, no PostgreSQL required)"
+            echo ""
+            echo "| Binary | Platform |"
+            echo "|--------|----------|"
+            echo "| \`secureyeoman-${DT}-lite-linux-x64\` | Linux x86_64 |"
+            echo "| \`secureyeoman-${DT}-lite-linux-arm64\` | Linux ARM64 |"
+            echo "| \`secureyeoman-${DT}-lite-windows-x64.exe\` | Windows x64 |"
+            echo ""
+            echo "#### Tier 2.5 — Agent (soul + AI runtime, SQLite)"
+            echo ""
+            echo "| Binary | Platform |"
+            echo "|--------|----------|"
+            echo "| \`secureyeoman-${DT}-agent-linux-x64\` | Linux x86_64 |"
+            echo "| \`secureyeoman-${DT}-agent-linux-arm64\` | Linux ARM64 |"
+            echo "| \`secureyeoman-${DT}-agent-darwin-arm64\` | macOS ARM64 |"
+            echo ""
+            echo "#### Tier 3 — Edge/IoT (minimal A2A, static Go binary)"
+            echo ""
+            echo "| Binary | Platform |"
+            echo "|--------|----------|"
+            echo "| \`secureyeoman-${DT}-edge-linux-x64\` | Linux x86_64 |"
+            echo "| \`secureyeoman-${DT}-edge-linux-arm64\` | Linux ARM64 (RPi 4, etc.) |"
+            echo "| \`secureyeoman-${DT}-edge-linux-armv7\` | Linux ARMv7 (older ARM) |"
+            echo "| \`secureyeoman-${DT}-edge-linux-riscv64\` | Linux RISC-V 64 |"
             echo ""
             echo "### Docker"
             echo ""
@@ -212,7 +271,7 @@ jobs:
             echo "Each binary and container image is signed with Sigstore cosign (keyless) and includes SLSA provenance attestations."
             echo "\`\`\`bash"
             echo "# Verify binary signature"
-            echo "cosign verify-blob --certificate secureyeoman-linux-x64.cert --signature secureyeoman-linux-x64.sig secureyeoman-linux-x64"
+            echo "cosign verify-blob --certificate secureyeoman-${DT}-linux-x64.cert --signature secureyeoman-${DT}-linux-x64.sig secureyeoman-${DT}-linux-x64"
             echo ""
             echo "# Verify container image"
             echo "cosign verify ghcr.io/maccracken/secureyeoman:${VERSION} --certificate-identity-regexp='github.com/MacCracken/secureyeoman' --certificate-oidc-issuer='https://token.actions.githubusercontent.com'"
@@ -231,16 +290,20 @@ jobs:
           body: ${{ steps.notes.outputs.notes }}
           prerelease: ${{ github.event.inputs.prerelease || false }}
           files: |
-            dist/secureyeoman-linux-x64
-            dist/secureyeoman-linux-arm64
-            dist/secureyeoman-darwin-arm64
-            dist/secureyeoman-windows-x64.exe
-            dist/secureyeoman-lite-linux-x64
-            dist/secureyeoman-lite-linux-arm64
-            dist/secureyeoman-lite-windows-x64.exe
-            dist/secureyeoman-edge-linux-x64
-            dist/secureyeoman-edge-linux-arm64
-            dist/secureyeoman-edge-linux-armv7
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-darwin-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-windows-x64.exe
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-windows-x64.exe
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-darwin-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-edge-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-edge-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-edge-linux-armv7
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-edge-linux-riscv64
             dist/SHA256SUMS
             dist/secureyeoman-sbom.cdx.json
             dist/*.sig
@@ -258,9 +321,9 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            binary: secureyeoman-linux-x64
+            platform: linux-x64
           - arch: arm64
-            binary: secureyeoman-linux-arm64
+            platform: linux-arm64
 
     steps:
       - name: Checkout
@@ -275,7 +338,7 @@ jobs:
       - name: Prepare build context
         run: |
           mkdir -p binaries/migrations
-          cp "artifact/${{ matrix.binary }}" binaries/secureyeoman
+          cp "artifact/secureyeoman-${{ needs.build.outputs.date_tag }}-${{ matrix.platform }}" binaries/secureyeoman
           cp -r artifact/migrations/* binaries/migrations/
           chmod +x binaries/secureyeoman
           ls -lh binaries/

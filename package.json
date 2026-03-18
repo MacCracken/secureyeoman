@@ -1,6 +1,6 @@
 {
   "name": "secureyeoman",
-  "version": "2026.3.17",
+  "version": "2026.3.18",
   "description": "SecureYeoman — Secure, local-first AI assistant",
   "private": true,
   "type": "module",

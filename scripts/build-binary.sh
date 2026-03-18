@@ -2,16 +2,20 @@
 # build-binary.sh — Bun compile pipeline for SecureYeoman single-binary distribution
 #
 # Usage:
-#   bash scripts/build-binary.sh           # full production build (all platforms)
-#   bash scripts/build-binary.sh --dev     # dev build: current platform only, skip Tier 2/3 + checksums
-#   bash scripts/build-binary.sh --edge    # edge build only: minimal A2A runtime
-#   bash scripts/build-binary.sh --agent   # agent build only: soul + AI agent runtime
+#   VERSION=2026.3.18 bash scripts/build-binary.sh           # full production build (all platforms)
+#   VERSION=2026.3.18 bash scripts/build-binary.sh --dev     # dev build: current platform only, skip Tier 2/3 + checksums
+#   VERSION=2026.3.18 bash scripts/build-binary.sh --edge    # edge build only: minimal A2A runtime
+#   VERSION=2026.3.18 bash scripts/build-binary.sh --agent   # agent build only: soul + AI agent runtime
+#
+# Binary naming: secureyeoman-$DATE-$TYPE-$PLATFORM (CalVer YYYYMMDD or YYYYMMDDN for patches)
+#   e.g. VERSION=2026.3.18   → secureyeoman-20260318-linux-x64
+#        VERSION=2026.3.18-1 → secureyeoman-202603181-linux-x64
 #
 # Produces:
-#   Tier 1 (needs PostgreSQL): secureyeoman-linux-x64, secureyeoman-linux-arm64, secureyeoman-darwin-arm64, secureyeoman-windows-x64.exe
-#   Tier 2 (SQLite-only, no external deps): secureyeoman-lite-linux-x64, secureyeoman-lite-linux-arm64, secureyeoman-lite-windows-x64.exe
-#   Tier 2.5 (Agent, soul+AI, SQLite): secureyeoman-agent-linux-x64, secureyeoman-agent-linux-arm64, secureyeoman-agent-darwin-arm64
-#   Tier 3 (Edge/IoT, minimal): secureyeoman-edge-linux-x64, secureyeoman-edge-linux-arm64
+#   Tier 1 (needs PostgreSQL): secureyeoman-$DATE-linux-x64, -linux-arm64, -darwin-arm64, -windows-x64.exe
+#   Tier 2 (SQLite-only):      secureyeoman-$DATE-lite-linux-x64, -lite-linux-arm64, -lite-windows-x64.exe
+#   Tier 2.5 (Agent, soul+AI): secureyeoman-$DATE-agent-linux-x64, -agent-linux-arm64, -agent-darwin-arm64
+#   Tier 3 (Edge/IoT):         secureyeoman-$DATE-edge-linux-x64, -edge-linux-arm64, -edge-linux-armv7
 #
 # Prerequisites: bun >= 1.1, npm (for TypeScript build step)
 #
@@ -59,6 +63,36 @@ for arg in "$@"; do
     *) echo "Unknown argument: $arg" >&2; exit 1 ;;
   esac
 done
+
+# ── CalVer → compact date tag ─────────────────────────────────────────────────
+# Transforms YYYY.M.D → YYYYMMDD, YYYY.M.D-N → YYYYMMDDN (zero-padded month/day).
+# Used for binary filenames: secureyeoman-$DATE_TAG-$TYPE-$PLATFORM
+calver_to_compact() {
+  local ver="$1"
+  local base="${ver%%-*}"           # strip patch suffix if present
+  local patch=""
+  [[ "$ver" == *-* ]] && patch="${ver##*-}"
+
+  local year="${base%%.*}"
+  local rest="${base#*.}"
+  local month="${rest%%.*}"
+  local day="${rest#*.}"
+
+  printf '%s%02d%02d%s' "$year" "$month" "$day" "$patch"
+}
+
+# VERSION env var is required for release builds, falls back to VERSION file for dev.
+if [[ -z "${VERSION:-}" ]]; then
+  VERSION_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/VERSION"
+  if [[ -f "${VERSION_FILE}" ]]; then
+    VERSION="$(cat "${VERSION_FILE}" | tr -d '[:space:]')"
+  else
+    echo "error: VERSION env var not set and VERSION file not found." >&2
+    exit 1
+  fi
+fi
+DATE_TAG="$(calver_to_compact "${VERSION}")"
+echo "==> Version: ${VERSION} → binary date tag: ${DATE_TAG}"
 
 # ── Detect current platform for --dev mode ───────────────────────────────────
 if [[ "$DEV_MODE" == true ]]; then
@@ -174,7 +208,7 @@ compile_agent_binary() {
 
 # ── Go edge binary cross-compile ──────────────────────────────────────────────
 GO_EDGE_DIR="${REPO_ROOT}/cmd/secureyeoman-edge"
-GO_EDGE_VERSION="${VERSION:-2026.3.12}"
+GO_EDGE_VERSION="${VERSION}"
 
 compile_go_edge() {
   local GOOS="$1"
@@ -193,22 +227,22 @@ if [[ "$EDGE_ONLY" == true ]]; then
 
   if [[ "$DEV_MODE" == true ]]; then
     case "$(uname -s)-$(uname -m)" in
-      Linux-x86_64)   compile_go_edge linux amd64 "${DIST_DIR}/secureyeoman-edge-linux-x64" ;;
-      Linux-aarch64)  compile_go_edge linux arm64 "${DIST_DIR}/secureyeoman-edge-linux-arm64" ;;
-      Darwin-arm64)   compile_go_edge darwin arm64 "${DIST_DIR}/secureyeoman-edge-darwin-arm64" ;;
-      Darwin-x86_64)  compile_go_edge darwin amd64 "${DIST_DIR}/secureyeoman-edge-darwin-x64" ;;
+      Linux-x86_64)   compile_go_edge linux amd64 "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-x64" ;;
+      Linux-aarch64)  compile_go_edge linux arm64 "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-arm64" ;;
+      Darwin-arm64)   compile_go_edge darwin arm64 "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-darwin-arm64" ;;
+      Darwin-x86_64)  compile_go_edge darwin amd64 "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-darwin-x64" ;;
       *) echo "error: unsupported platform" >&2; exit 1 ;;
     esac
   else
-    compile_go_edge linux amd64   "${DIST_DIR}/secureyeoman-edge-linux-x64"
-    compile_go_edge linux arm64   "${DIST_DIR}/secureyeoman-edge-linux-arm64"
-    compile_go_edge linux arm     "${DIST_DIR}/secureyeoman-edge-linux-armv7"
-    compile_go_edge linux riscv64 "${DIST_DIR}/secureyeoman-edge-linux-riscv64"
+    compile_go_edge linux amd64   "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-x64"
+    compile_go_edge linux arm64   "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-arm64"
+    compile_go_edge linux arm     "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-armv7"
+    compile_go_edge linux riscv64 "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-riscv64"
   fi
 
   echo ""
   echo "==> Edge build complete. Binaries:"
-  ls -lh "${DIST_DIR}"/secureyeoman-edge-*
+  ls -lh "${DIST_DIR}"/secureyeoman-*-edge-*
   exit 0
 fi
 
@@ -217,19 +251,19 @@ if [[ "$AGENT_ONLY" == true ]]; then
   echo "==> Agent-only mode: building Tier 2.5 agent binaries..."
 
   if [[ "$DEV_MODE" == true ]]; then
-    echo "    → agent-${DEV_TARGET#bun-}"
-    compile_agent_binary "${DEV_TARGET}" "${DIST_DIR}/secureyeoman-agent-${DEV_TARGET#bun-}"
+    echo "    → ${DATE_TAG}-agent-${DEV_TARGET#bun-}"
+    compile_agent_binary "${DEV_TARGET}" "${DIST_DIR}/secureyeoman-${DATE_TAG}-agent-${DEV_TARGET#bun-}"
   else
     for TARGET in bun-linux-x64 bun-linux-arm64 bun-darwin-arm64; do
       PLATFORM="${TARGET#bun-}"
-      echo "    → agent-${PLATFORM}"
-      compile_agent_binary "${TARGET}" "${DIST_DIR}/secureyeoman-agent-${PLATFORM}"
+      echo "    → ${DATE_TAG}-agent-${PLATFORM}"
+      compile_agent_binary "${TARGET}" "${DIST_DIR}/secureyeoman-${DATE_TAG}-agent-${PLATFORM}"
     done
   fi
 
   echo ""
   echo "==> Agent build complete. Binaries:"
-  ls -lh "${DIST_DIR}"/secureyeoman-agent-*
+  ls -lh "${DIST_DIR}"/secureyeoman-*-agent-*
   exit 0
 fi
 
@@ -245,8 +279,8 @@ for TARGET in "${TIER1_TARGETS[@]}"; do
   PLATFORM="${TARGET#bun-}"
   EXT=""
   [[ "$PLATFORM" == windows-* ]] && EXT=".exe"
-  echo "    → ${PLATFORM}"
-  compile_binary "${TARGET}" "${DIST_DIR}/secureyeoman-${PLATFORM}${EXT}"
+  echo "    → ${DATE_TAG}-${PLATFORM}"
+  compile_binary "${TARGET}" "${DIST_DIR}/secureyeoman-${DATE_TAG}-${PLATFORM}${EXT}"
 done
 
 # ── Tier 2: Lite (SQLite, no native addons) ───────────────────────────────────
@@ -256,8 +290,8 @@ if [[ "$DEV_MODE" == false ]]; then
     PLATFORM="${TARGET#bun-}"
     EXT=""
     [[ "$PLATFORM" == windows-* ]] && EXT=".exe"
-    echo "    → lite-${PLATFORM}"
-    SECUREYEOMAN_BUILD_TIER=lite compile_binary "${TARGET}" "${DIST_DIR}/secureyeoman-lite-${PLATFORM}${EXT}"
+    echo "    → ${DATE_TAG}-lite-${PLATFORM}"
+    SECUREYEOMAN_BUILD_TIER=lite compile_binary "${TARGET}" "${DIST_DIR}/secureyeoman-${DATE_TAG}-lite-${PLATFORM}${EXT}"
   done
 fi
 
@@ -266,22 +300,22 @@ if [[ "$DEV_MODE" == false ]]; then
   echo "==> Compiling Tier 2.5 agent binaries (soul + AI agent runtime)..."
   for TARGET in bun-linux-x64 bun-linux-arm64 bun-darwin-arm64; do
     PLATFORM="${TARGET#bun-}"
-    echo "    → agent-${PLATFORM}"
-    compile_agent_binary "${TARGET}" "${DIST_DIR}/secureyeoman-agent-${PLATFORM}"
+    echo "    → ${DATE_TAG}-agent-${PLATFORM}"
+    compile_agent_binary "${TARGET}" "${DIST_DIR}/secureyeoman-${DATE_TAG}-agent-${PLATFORM}"
   done
 else
   echo "==> Compiling Tier 2.5 agent binary (dev, current platform)..."
-  echo "    → agent-${DEV_TARGET#bun-}"
-  compile_agent_binary "${DEV_TARGET}" "${DIST_DIR}/secureyeoman-agent-${DEV_TARGET#bun-}"
+  echo "    → ${DATE_TAG}-agent-${DEV_TARGET#bun-}"
+  compile_agent_binary "${DEV_TARGET}" "${DIST_DIR}/secureyeoman-${DATE_TAG}-agent-${DEV_TARGET#bun-}"
 fi
 
 # ── Tier 3: Edge (Go binary, static, Linux + ARM) ────────────────────────────
 if [[ "$DEV_MODE" == false ]]; then
   echo "==> Compiling Tier 3 Go edge binaries (minimal A2A runtime)..."
-  compile_go_edge linux amd64   "${DIST_DIR}/secureyeoman-edge-linux-x64"
-  compile_go_edge linux arm64   "${DIST_DIR}/secureyeoman-edge-linux-arm64"
-  compile_go_edge linux arm     "${DIST_DIR}/secureyeoman-edge-linux-armv7"
-  compile_go_edge linux riscv64 "${DIST_DIR}/secureyeoman-edge-linux-riscv64"
+  compile_go_edge linux amd64   "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-x64"
+  compile_go_edge linux arm64   "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-arm64"
+  compile_go_edge linux arm     "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-armv7"
+  compile_go_edge linux riscv64 "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-riscv64"
 fi
 
 # ── Checksums ─────────────────────────────────────────────────────────────────

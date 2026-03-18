@@ -367,17 +367,55 @@ smoke_test() {
 }
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# CalVer → compact date tag (same logic as build-binary.sh)
+# ---------------------------------------------------------------------------
+calver_to_compact() {
+  local ver="$1"
+  local base="${ver%%-*}"
+  local patch=""
+  [[ "$ver" == *-* ]] && patch="${ver##*-}"
+  local year="${base%%.*}"
+  local rest="${base#*.}"
+  local month="${rest%%.*}"
+  local day="${rest#*.}"
+  printf '%s%02d%02d%s' "$year" "$month" "$day" "$patch"
+}
+
+# Resolve DATE_TAG from VERSION env or VERSION file
+if [ -z "${VERSION:-}" ]; then
+  VERSION_FILE="${REPO_ROOT}/VERSION"
+  if [ -f "${VERSION_FILE}" ]; then
+    VERSION="$(tr -d '[:space:]' < "${VERSION_FILE}")"
+  fi
+fi
+if [ -n "${VERSION:-}" ]; then
+  DATE_TAG="$(calver_to_compact "${VERSION}")"
+else
+  # Fallback: detect from existing binaries in dist/
+  DATE_TAG="$(ls "${DIST_DIR}"/secureyeoman-*-linux-x64 2>/dev/null \
+    | head -1 | sed 's|.*/secureyeoman-\([0-9]*\)-.*|\1|')" || true
+fi
+
+if [ -z "${DATE_TAG:-}" ]; then
+  echo -e "${RED}ERROR: Cannot determine date tag. Set VERSION env or ensure VERSION file exists.${RESET}" >&2
+  exit 1
+fi
+echo -e "${DIM}Date tag: ${DATE_TAG}${RESET}"
+
 # Main
 # ---------------------------------------------------------------------------
 if [ "${BUILD}" = "true" ]; then
-  echo -e "\n${BOLD}==> Building all Tier 1 + Tier 2 binaries...${RESET}"
+  echo -e "\n${BOLD}==> Building all binaries...${RESET}"
   bash "${REPO_ROOT}/scripts/build-binary.sh"
 fi
 
 echo ""
 echo -e "${BOLD}SecureYeoman Binary Smoke Test${RESET}"
-echo -e "${DIM}Tier 1 (PostgreSQL-backed): linux-x64  linux-arm64  darwin-arm64  windows-x64${RESET}"
-echo -e "${DIM}Tier 2 (SQLite fallback):   lite-linux-x64  lite-linux-arm64  lite-windows-x64${RESET}"
+echo -e "${DIM}Tier 1 (PostgreSQL-backed): ${DATE_TAG}-linux-x64  -linux-arm64  -darwin-arm64  -windows-x64${RESET}"
+echo -e "${DIM}Tier 2 (SQLite fallback):   ${DATE_TAG}-lite-linux-x64  -lite-linux-arm64  -lite-windows-x64${RESET}"
+echo -e "${DIM}Tier 2.5 (Agent):           ${DATE_TAG}-agent-linux-x64  -agent-linux-arm64  -agent-darwin-arm64${RESET}"
+echo -e "${DIM}Tier 3 (Edge/IoT):          ${DATE_TAG}-edge-linux-x64  -edge-linux-arm64  -edge-linux-armv7  -edge-linux-riscv64${RESET}"
 if [ "${PG_AVAILABLE}" = "true" ]; then
   echo -e "${DIM}PostgreSQL: ${PG_HOST}:${PG_PORT} (user=${PG_USER})${RESET}"
 else
@@ -386,19 +424,38 @@ fi
 
 echo -e "\n${BOLD}── Tier 1 ──${RESET}"
 for b in \
-  "${DIST_DIR}/secureyeoman-linux-x64" \
-  "${DIST_DIR}/secureyeoman-linux-arm64" \
-  "${DIST_DIR}/secureyeoman-darwin-arm64" \
-  "${DIST_DIR}/secureyeoman-windows-x64.exe"
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-linux-x64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-linux-arm64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-darwin-arm64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-windows-x64.exe"
 do
   smoke_test "${b}"
 done
 
 echo -e "\n${BOLD}── Tier 2 ──${RESET}"
 for b in \
-  "${DIST_DIR}/secureyeoman-lite-linux-x64" \
-  "${DIST_DIR}/secureyeoman-lite-linux-arm64" \
-  "${DIST_DIR}/secureyeoman-lite-windows-x64.exe"
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-lite-linux-x64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-lite-linux-arm64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-lite-windows-x64.exe"
+do
+  smoke_test "${b}"
+done
+
+echo -e "\n${BOLD}── Tier 2.5 ──${RESET}"
+for b in \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-agent-linux-x64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-agent-linux-arm64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-agent-darwin-arm64"
+do
+  smoke_test "${b}"
+done
+
+echo -e "\n${BOLD}── Tier 3 ──${RESET}"
+for b in \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-x64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-arm64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-armv7" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-edge-linux-riscv64"
 do
   smoke_test "${b}"
 done
