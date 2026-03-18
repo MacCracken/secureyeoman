@@ -6,14 +6,14 @@
 
 ## 1. Business & Legal
 
-- [ ] **S-Corp / business entity confirmed** — LightOcean Studios S-Corp details provided by CEO for LemonSqueezy merchant of record setup
-- [ ] **LemonSqueezy account created** — Store configured with business legal name, tax ID, bank account for payouts
-- [ ] **Products created in LemonSqueezy** — 3 products with variants:
+- [ ] **S-Corp / business entity confirmed** — LightOcean Studios S-Corp details provided for payment provider merchant of record setup
+- [ ] **Payment provider account created** — Store configured with business legal name, tax ID, bank account for payouts. ~~LemonSqueezy rejected (2026-03-18).~~ Evaluating: Polar, Paddle, Stripe.
+- [ ] **Products created in payment provider** — 3 products with variants:
   - Pro ($20/yr, annual subscription)
   - Solopreneur ($100/yr, annual subscription)
   - Enterprise ($1,000/yr, annual subscription)
-- [ ] **Webhook configured** — LemonSqueezy webhook pointing to licensing service URL with signing secret
-- [ ] **Test mode purchase verified** — End-to-end: checkout overlay → webhook → key minted → dashboard retrieval → auto-apply → enforcement check
+- [ ] **Webhook configured** — Payment provider webhook pointing to licensing service URL with signing secret
+- [ ] **Test mode purchase verified** — End-to-end: checkout → webhook → key minted → dashboard retrieval → auto-apply → enforcement check
 - [ ] **AGPL-3.0 license file** — Verify `LICENSE` file is present and correct in repo root
 - [ ] **Privacy policy** — Published at secureyeoman.ai (minimal: what data is collected, how it's stored, no phone-home)
 - [ ] **Terms of service** — Published at secureyeoman.ai (license tiers, acceptable use, support terms)
@@ -23,18 +23,16 @@
 - [ ] **`secureyeoman-licensing` deployed** — Hosting decided (Cloudflare Worker, Railway, VPS, etc.)
 - [ ] **Ed25519 keypair generated** — Private key in licensing service env, public key embedded in SY core `license-manager.ts`
 - [ ] **Database provisioned** — SQLite file on persistent volume (or migrate to Postgres if scaling concerns)
-- [ ] **Webhook endpoint accessible** — LemonSqueezy can reach `POST /webhook/lemonsqueezy` from the internet
+- [ ] **Webhook endpoint accessible** — Payment provider can reach webhook endpoint from the internet
 - [ ] **Key retrieval routes accessible** — Dashboard can reach `GET /api/v1/licenses/by-order/:id`
 - [ ] **Rate limiting / auth on retrieval routes** — Production hardening (API key, IP allowlist, or rate limit)
 - [ ] **Manual key issuance tested** — `npx tsx src/cli/mint.ts --org "Test" --tier enterprise --expires 365` produces valid key
 
 ## 3. Dashboard Build
 
-- [ ] **`VITE_LEMONSQUEEZY_PRO_URL`** — Set to LemonSqueezy checkout URL for Pro variant
-- [ ] **`VITE_LEMONSQUEEZY_SOLOPRENEUR_URL`** — Set to LemonSqueezy checkout URL for Solopreneur variant
-- [ ] **`VITE_LEMONSQUEEZY_ENTERPRISE_URL`** — Set to LemonSqueezy checkout URL for Enterprise variant
+- [ ] **Checkout URL env vars** — Set provider checkout URLs for Pro, Solopreneur, and Enterprise variants
 - [ ] **`VITE_LICENSING_API_URL`** — Set to licensing service base URL for key retrieval polling
-- [ ] **Checkout overlay tested** — Opens LemonSqueezy overlay, completes test purchase, key auto-applied
+- [ ] **Checkout tested** — Opens provider checkout, completes test purchase, key auto-applied
 
 ## 4. License Enforcement
 
@@ -85,7 +83,7 @@
 ## 9. Post-Launch (Day 1)
 
 - [ ] **Announcement post** — Per marketing strategy launch sequence
-- [ ] **Monitor webhook delivery** — Check LemonSqueezy webhook logs for failed deliveries
+- [ ] **Monitor webhook delivery** — Check payment provider webhook logs for failed deliveries
 - [ ] **Monitor licensing service** — Check SQLite for first real purchases
 - [ ] **Monitor GitHub** — Respond to first issues/stars/forks within 24h
 

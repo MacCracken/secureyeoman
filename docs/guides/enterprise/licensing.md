@@ -101,12 +101,12 @@ The grace period duration is configurable via `licensing.gracePeriodDays` in you
 
 ## Purchasing a Commercial License
 
-Purchase a license through the in-app checkout (Settings → License → Upgrade) or via the LemonSqueezy store page. After purchase:
+Purchase a license through the in-app checkout (Settings → License → Upgrade) or via the online store. After purchase:
 
 - **In-app checkout**: License key is applied automatically
 - **External purchase**: You'll receive your license key via email — paste it into Settings → License or set it via the CLI/API
 
-Keys are validated via the LemonSqueezy API on first use, then cached locally for offline resilience (24-hour refresh cycle, 7-day offline grace). Ed25519 self-signed keys (issued via CLI) are validated entirely offline.
+Keys are validated via the payment provider's API on first use, then cached locally for offline resilience (24-hour refresh cycle, 7-day offline grace). Ed25519 self-signed keys (issued via CLI) are validated entirely offline.
 
 ---
 

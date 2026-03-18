@@ -105,7 +105,7 @@ SY side (secureyeoman repo):
 - [ ] **Solopreneur tier definition** — Define Solopreneur as enterprise-feature-equivalent with single-tenant / single-seat constraints. Decide on `LicenseTier` implementation approach (see note above).
 - [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
 - [ ] **Pricing page** — Public-facing pricing comparison page for secureyeoman.ai. Feature breakdown per tier, FAQ, upgrade flow.
-- [ ] **LemonSqueezy product setup** — Create store, products, and variants in LemonSqueezy dashboard. Configure webhook URL pointing to licensing service. Set `VITE_LEMONSQUEEZY_*_URL` env vars in dashboard build.
+- [ ] **Payment provider setup** — Select replacement provider (Polar, Paddle, or Stripe direct), create store, products, and variants. Configure webhook URL pointing to licensing service. Set checkout URL env vars in dashboard build.
 
 ### Repository & Public Identity
 
@@ -114,9 +114,9 @@ SY side (secureyeoman repo):
 
 ### Payment & Monetization
 
-**Architecture**: Separate `secureyeoman-licensing` repo (`../secureyeoman-licensing/`). Lightweight Fastify + SQLite service that receives LemonSqueezy webhooks, mints Ed25519-signed keys, and serves key retrieval API. SY dashboard opens LemonSqueezy checkout overlay in-app, polls licensing service for key after purchase, auto-applies via `POST /api/v1/license/key`.
+**Architecture**: Separate `secureyeoman-licensing` repo (`../secureyeoman-licensing/`). Lightweight Fastify + SQLite service that receives payment provider webhooks, mints Ed25519-signed keys, and serves key retrieval API. SY dashboard opens provider checkout in-app, polls licensing service for key after purchase, auto-applies via `POST /api/v1/license/key`.
 
-- [ ] **LemonSqueezy account setup** — Create store, 3 products (Pro/Solopreneur/Enterprise), configure webhook URL, obtain API key + signing secret. Test mode available for end-to-end purchase testing without real charges.
+- [ ] **Payment provider account setup** — Select provider (Polar, Paddle, or Stripe), create store, 3 products (Pro/Solopreneur/Enterprise), configure webhook URL, obtain API key + signing secret. ~~LemonSqueezy rejected (2026-03-18, chargeback risk).~~
 - [ ] **End-to-end test** — Test mode purchase → webhook → key mint → dashboard retrieval → auto-apply → enforcement check. Confirm round-trip.
 - [ ] **Renewal & lifecycle** — Auto-renewal reminders (30/14/7 days before expiry). Handle `subscription_expired` / `subscription_payment_failed` webhooks. Upgrade path: pro-rate remaining time when moving up tiers.
 - [ ] **Refund handling** — `order_refunded` webhook → revoke license key in records DB. Key continues to validate offline (Ed25519 is self-contained) but records DB tracks revocation for audit.
