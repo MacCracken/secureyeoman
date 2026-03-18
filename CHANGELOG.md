@@ -157,6 +157,17 @@ Complete overhaul of sandbox technology selection and management. All 6 roadmap 
 - **16 new tests** for sandbox selection improvements (per-task override, capability probe, health check, live switching, strength ranking)
 - **13 new tests** for Firecracker hardening (vsock options, cgroup v2, seccomp filter, snapshot/restore, TAP isolation, fallback execution)
 
+### Core Unit Test Coverage Expansion
+
+New tests for previously untested CLI commands, sandbox seccomp, and quarantine storage.
+
+- **10 new tests** for `agent` CLI command (help, status, register, unknown subcommand, flag parsing)
+- **9 new tests** for `edge` CLI command (help, status, register, unknown subcommand, flag parsing)
+- **8 new tests** for `break-glass` CLI command (help, API success/failure, network error, custom URL, token display, recovery key warning)
+- **15 new tests** for `config-settings` CLI command (get/set, JSON output, unknown keys, empty values, API errors, auth token, multi-word values)
+- **8 new tests** for seccomp (networking syscalls, process syscalls, kernel module blocks, swap blocks, filesystem mount blocks, array copy safety)
+- **14 new tests** for quarantine-storage (quarantine string/Buffer, list/get/approve/release/delete lifecycle, persistence, unique IDs, error handling)
+
 ---
 
 ## [2026.3.15]

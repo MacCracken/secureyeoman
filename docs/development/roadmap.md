@@ -132,7 +132,7 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 | Suite | Area | Notes |
 |-------|------|-------|
-| Core Unit | `sandbox/`, `config/`, `cli/commands/` | Branch coverage gaps in exec paths and flag parsing |
+| ~~Core Unit~~ | ~~`sandbox/`, `config/`, `cli/commands/`~~ | **Done** — agent, edge, break-glass, config-settings, seccomp, quarantine-storage tests added (64 new tests) |
 | Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
 | MCP | `web-tools.ts`, `security-tools.ts`, `network-tools.ts` | Handler-level tests would push toward 75% |
 | Core E2E | Expand coverage | Currently 8 files / 67 tests (incl. binary smoke); add training, delegation, analytics flows |
