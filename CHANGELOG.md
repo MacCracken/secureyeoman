@@ -133,6 +133,12 @@ Complete overhaul of sandbox technology selection and management. All 6 roadmap 
 - **Live technology switching** — `PATCH /api/v1/sandbox/config` with `{ technology: "..." }` now switches immediately via `switchTechnology()` (invalidates cached sandbox instance). No restart required
 - **Health monitoring** — `GET /api/v1/sandbox/health` runs a minimal execution through the active sandbox and returns healthy/degraded status with latency. `healthCheck()` method on SandboxManager
 
+### Roadmap Cleanup
+
+- Removed completed sections: GPU-Aware Inference Routing, Firecracker Sandbox Runtime, Sandbox Selection & Configuration, ESLint Warnings, Agnostic Integration
+- Cleaned up test coverage table (removed done items, kept Dashboard and E2E as remaining)
+- Added Code Review & Audit section to Engineering Backlog with 8 review items (security audit for GPU probe, privacy router, Firecracker hardening, Agnostic steps; code quality for eslint-disable audit, dashboard panel wiring; performance for probe caching; test mock quality review)
+
 ### Competitive Analysis Update
 
 - **NVIDIA NemoClaw** added to `docs/development/functional-audit.md` as a high-threat competitor (GTC 2026 announcement). Feature matrix column (NC) added covering process-level isolation, privacy router, and GPU-aware routing. SecureYeoman advantages: RBAC, SSO, DLP, governance, dashboard, training pipeline, air-gap — none present in NemoClaw

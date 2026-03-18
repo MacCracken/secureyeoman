@@ -115,27 +115,27 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### Test Coverage — Current Status (2026-03-12)
+### Code Review & Audit (2026-03-17)
 
-**All suites above target.** Core unit: 89.31% stmt / 79.10% branches (target 88% / 77%). Dashboard: 71.12% stmt / 67.71% branches (target 70% — met). MCP: 70.20% stmt (target 70% — met).
+*Post-feature audit. Large amount of new code shipped in this cycle — GPU routing, Firecracker hardening, sandbox selection, Agnostic integration, 200+ new tests, 269 lint fixes. Review before next feature cycle.*
 
-| Suite | Files | Tests | Stmts % | Branch % | Status |
-|-------|-------|-------|---------|----------|--------|
-| Core Unit | 698 | 16,648 | 89.31 | 79.10 | All passing |
-| Dashboard | 180 | 4,123 | 71.12 | 67.71 | All passing — target met |
-| MCP | 76 | 1,124 | 70.20 | 51.50 | All passing |
-| Core E2E | 8 | 67 | — | — | All passing (incl. binary smoke) |
-| Core DB (integration) | 41 | 890 | — | — | All passing (clean DB verified) |
-| Go Edge | 16 | 83 | — | — | All passing (19.4s) |
+- [ ] **Security audit — GPU probe** — Review `gpu-probe.ts` for command injection vectors in `execFile` calls. Verify `nvidia-smi`/`rocm-smi` args are not user-controllable. Check `probeIntel()` `lspci` usage.
+- [ ] **Security audit — privacy router** — Review `privacy-router.ts` DLP integration. Verify that `target: 'local'` decisions are enforced (not just advisory). Check fallback-to-cloud path for sensitive content leakage.
+- [ ] **Security audit — Firecracker hardening** — Review `setupTapNetwork()` iptables chain creation for injection risk. Verify `buildJailerArgs()` cgroup resource values can't be manipulated. Check `saveSnapshot()` curl calls for SSRF.
+- [ ] **Security audit — Agnostic workflow steps** — Review `agnostic_crew` step for SSRF (user-controllable `targetUrl`). Verify JWT token caching doesn't leak across workflow runs. Check template resolution for injection.
+- [ ] **Code quality — eslint-disable audit** — Review all 56 files with `eslint-disable` comments added during lint cleanup. Assess which can be resolved properly vs. which are genuinely suppressed. Prioritize `react-hooks/purity` and `react-hooks/set-state-in-effect` suppressions.
+- [ ] **Code quality — dashboard panel integration** — Verify `GpuStatusPanel`, `SandboxConfigPanel`, and `AgnosticPanel` are properly wired into their parent pages (Settings, Security, Connections). Currently components exist but may need page-level imports.
+- [ ] **Performance — GPU/model probe caching** — Review 30s GPU cache and 60s model cache TTLs. Ensure probes don't block request handling. Consider moving to background refresh instead of on-demand.
+- [ ] **Test review — mock quality** — Review new test mocks for accuracy. Ensure `global.fetch` mocks are restored after each test (some tests may leak). Check `vi.restoreAllMocks()` coverage.
+
+### Test Coverage
 
 **Remaining improvement areas:**
 
 | Suite | Area | Notes |
 |-------|------|-------|
-| ~~Core Unit~~ | ~~`sandbox/`, `config/`, `cli/commands/`~~ | **Done** — agent, edge, break-glass, config-settings, seccomp, quarantine-storage tests added (64 new tests) |
 | Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
-| ~~MCP~~ | ~~`web-tools.ts`, `security-tools.ts`, `network-tools.ts`~~ | **Done** — 80 new tests across network (65→), security (73→), web (85→), agnostic (43→) tool handlers |
-| Core E2E | Expand coverage | Currently 8 files / 67 tests (incl. binary smoke); add training, delegation, analytics flows |
+| Core E2E | Expand coverage | Add training, delegation, analytics flows (needs Docker) |
 
 ---
 
@@ -328,10 +328,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 - [ ] **Plugin / extension system** — Third-party editor extensions.
 
 ---
-
-### ~~Agnostic Integration~~ (Complete)
-
-*All items shipped. See [Changelog](../../CHANGELOG.md).*
 
 ### Cross-Project — Full Triangle Convergence
 
