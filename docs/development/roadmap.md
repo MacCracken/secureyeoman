@@ -119,6 +119,24 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 *All 8 audit items completed. See [Changelog](../../CHANGELOG.md). Fixes: `readdir` over `ls`, privacy fallback audit log, iptables host validation, SSRF guard on Agnostic targetUrl, fetch mock restoration. Reviews: eslint-disable (89 files, all legitimate), dashboard panel wiring (3 panels connected), probe caching (TTLs appropriate).*
 
+### Error Messaging Consistency
+
+**Priority**: P2 — Quality. Discovered via E2E test assertions that server error responses are inconsistent across routes.
+
+**Problem**: Error responses vary between generic HTTP status text (`"Bad Request"`, `"Conflict"`), structured objects (`{ error, message }`), and descriptive strings. Consumers (dashboard, CLI, tests) can't reliably extract actionable messages.
+
+**Goal**: Unified error envelope across all API routes. Every non-2xx response should return:
+```json
+{ "error": "error_code", "message": "Human-readable explanation", "statusCode": 409 }
+```
+
+- [ ] **Audit `sendError()` usage** — Catalog all call sites in `packages/core/src/`. Identify routes returning bare strings, missing messages, or inconsistent field names. Ensure every `sendError()` call includes a meaningful message, not just an HTTP status code.
+- [ ] **Standardize error envelope** — Update `sendError()` in `utils/errors.ts` to always return `{ error: <code>, message: <human>, statusCode: <number> }`. Add typed `ApiError` interface to `@secureyeoman/shared`.
+- [ ] **Conflict errors** — Ensure 409 responses from optimistic locking include `{ error: 'version_conflict', message: 'Someone else edited this — reload?' }` not just the HTTP status text.
+- [ ] **MCP tool call errors** — Return descriptive messages for disabled servers, missing tools, unreachable endpoints. Currently returns generic `"Bad Request"`.
+- [ ] **Dashboard error toasts** — Update dashboard API client to parse the new envelope and show `message` in toast notifications instead of raw status text.
+- [ ] **E2E test assertions** — Once the envelope is standardized, tighten E2E assertions back to check specific error codes and messages (relaxed in 2026.3.18 due to inconsistency).
+
 ### Test Coverage
 
 **Remaining improvement areas:**
