@@ -214,11 +214,14 @@ smoke_test() {
 
   # Skip binaries that cannot run on the current platform
   case "${name}" in
-    *darwin*)  [ "${host_os}" = "Darwin" ] || { info "skip (Darwin binary on ${host_os})"; return; } ;;
-    *windows*) [ "${host_os}" = "Windows_NT" ] || { info "skip (Windows binary on ${host_os})"; return; } ;;
-    *arm64*)   ( [ "${host_arch}" = "aarch64" ] || [ "${host_arch}" = "arm64" ] ) \
-                 || { info "skip (arm64 binary on ${host_arch})"; return; } ;;
-    *x64*)     [ "${host_arch}" = "x86_64" ] || { info "skip (x64 binary on ${host_arch})"; return; } ;;
+    *darwin*)   [ "${host_os}" = "Darwin" ] || { info "skip (Darwin binary on ${host_os})"; return; } ;;
+    *windows*)  [ "${host_os}" = "Windows_NT" ] || { info "skip (Windows binary on ${host_os})"; return; } ;;
+    *armv7*)    ( [ "${host_arch}" = "armv7l" ] || [ "${host_arch}" = "armhf" ] ) \
+                  || { info "skip (ARMv7 binary on ${host_arch})"; return; } ;;
+    *riscv64*)  [ "${host_arch}" = "riscv64" ] || { info "skip (RISC-V 64 binary on ${host_arch})"; return; } ;;
+    *arm64*)    ( [ "${host_arch}" = "aarch64" ] || [ "${host_arch}" = "arm64" ] ) \
+                  || { info "skip (arm64 binary on ${host_arch})"; return; } ;;
+    *x64*)      [ "${host_arch}" = "x86_64" ] || { info "skip (x64 binary on ${host_arch})"; return; } ;;
   esac
 
   if [ ! -f "${binary}" ]; then
@@ -243,6 +246,16 @@ smoke_test() {
   else
     fail "--version        exit=${ver_rc}  output: ${ver_out}"
   fi
+
+  # ── Tier-specific dispatch ─────────────────────────────────────────────────
+  # Agent and Edge binaries have different CLIs — only test --version + help.
+  # Tier 1/2 binaries get the full suite (config validate, migrate, health).
+  case "${name}" in
+    *-agent-*) smoke_test_agent "${binary}" "${name}" "${tmpdir}"; return ;;
+    *-edge-*)  smoke_test_edge  "${binary}" "${name}" "${tmpdir}"; return ;;
+  esac
+
+  # ── Tier 1/2: full smoke suite ──────────────────────────────────────────
 
   # ── 2. config validate --json ─────────────────────────────────────────────
   write_validate_config "${tmpdir}"
@@ -367,6 +380,67 @@ smoke_test() {
 }
 
 # ---------------------------------------------------------------------------
+# Tier 2.5 (Agent) smoke test — different CLI than Tier 1/2.
+# Agent binary uses: secureyeoman agent <subcommand>
+# Available: --version, agent start, agent register, agent status
+# Does NOT support: config validate, migrate, start --config
+# ---------------------------------------------------------------------------
+smoke_test_agent() {
+  local binary="$1" name="$2" tmpdir="$3"
+
+  # ── 1. --version (already tested in caller) ─────────────────────────────
+
+  # ── 2. --help prints usage ──────────────────────────────────────────────
+  local help_out help_rc=0
+  help_out="$(env "${SMOKE_SECRETS[@]}" "${binary}" --help 2>&1)" || help_rc=$?
+  if [ "${help_rc}" -eq 0 ] && printf '%s' "${help_out}" | grep -qi 'agent'; then
+    pass "--help           →  prints agent usage"
+  else
+    fail "--help           →  exit=${help_rc}  output: ${help_out:0:200}"
+  fi
+
+  # ── 3. status (should exit cleanly even when not connected) ─────────────
+  local status_out status_rc=0
+  status_out="$(env "${SMOKE_SECRETS[@]}" "${binary}" status 2>&1)" || status_rc=$?
+  # status may exit non-zero if not registered, but should not crash
+  if [ "${status_rc}" -le 1 ]; then
+    pass "status           →  exit=${status_rc} (expected when not registered)"
+  else
+    fail "status           →  exit=${status_rc}  output: ${status_out:0:200}"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Tier 3 (Edge) smoke test — minimal Go binary, different CLI.
+# Edge binary uses: secureyeoman-edge <command>
+# Available: --version, start, register, status
+# Does NOT support: config validate, migrate, --config flag
+# ---------------------------------------------------------------------------
+smoke_test_edge() {
+  local binary="$1" name="$2" tmpdir="$3"
+
+  # ── 1. --version (already tested in caller) ─────────────────────────────
+
+  # ── 2. --help prints usage ──────────────────────────────────────────────
+  local help_out help_rc=0
+  help_out="$("${binary}" --help 2>&1)" || help_rc=$?
+  if printf '%s' "${help_out}" | grep -qi 'edge\|usage'; then
+    pass "--help           →  prints edge usage"
+  else
+    fail "--help           →  exit=${help_rc}  output: ${help_out:0:200}"
+  fi
+
+  # ── 3. status (should exit cleanly even when not connected) ─────────────
+  local status_out status_rc=0
+  status_out="$("${binary}" status 2>&1)" || status_rc=$?
+  if [ "${status_rc}" -le 1 ]; then
+    pass "status           →  exit=${status_rc} (expected when not registered)"
+  else
+    fail "status           →  exit=${status_rc}  output: ${status_out:0:200}"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # CalVer → compact date tag (same logic as build-binary.sh)
 # ---------------------------------------------------------------------------
@@ -413,7 +487,7 @@ fi
 echo ""
 echo -e "${BOLD}SecureYeoman Binary Smoke Test${RESET}"
 echo -e "${DIM}Tier 1 (PostgreSQL-backed): ${DATE_TAG}-linux-x64  -linux-arm64  -darwin-arm64  -windows-x64${RESET}"
-echo -e "${DIM}Tier 2 (SQLite fallback):   ${DATE_TAG}-lite-linux-x64  -lite-linux-arm64  -lite-windows-x64${RESET}"
+echo -e "${DIM}Tier 2 (SQLite, full platform):   ${DATE_TAG}-sqlite-linux-x64  -sqlite-linux-arm64  -sqlite-windows-x64${RESET}"
 echo -e "${DIM}Tier 2.5 (Agent):           ${DATE_TAG}-agent-linux-x64  -agent-linux-arm64  -agent-darwin-arm64${RESET}"
 echo -e "${DIM}Tier 3 (Edge/IoT):          ${DATE_TAG}-edge-linux-x64  -edge-linux-arm64  -edge-linux-armv7  -edge-linux-riscv64${RESET}"
 if [ "${PG_AVAILABLE}" = "true" ]; then
@@ -434,9 +508,9 @@ done
 
 echo -e "\n${BOLD}── Tier 2 ──${RESET}"
 for b in \
-  "${DIST_DIR}/secureyeoman-${DATE_TAG}-lite-linux-x64" \
-  "${DIST_DIR}/secureyeoman-${DATE_TAG}-lite-linux-arm64" \
-  "${DIST_DIR}/secureyeoman-${DATE_TAG}-lite-windows-x64.exe"
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-sqlite-linux-x64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-sqlite-linux-arm64" \
+  "${DIST_DIR}/secureyeoman-${DATE_TAG}-sqlite-windows-x64.exe"
 do
   smoke_test "${b}"
 done

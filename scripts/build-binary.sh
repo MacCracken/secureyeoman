@@ -13,7 +13,7 @@
 #
 # Produces:
 #   Tier 1 (needs PostgreSQL): secureyeoman-$DATE-linux-x64, -linux-arm64, -darwin-arm64, -windows-x64.exe
-#   Tier 2 (SQLite-only):      secureyeoman-$DATE-lite-linux-x64, -lite-linux-arm64, -lite-windows-x64.exe
+#   Tier 2 (SQLite-only):      secureyeoman-$DATE-sqlite-linux-x64, -sqlite-linux-arm64, -sqlite-windows-x64.exe
 #   Tier 2.5 (Agent, soul+AI): secureyeoman-$DATE-agent-linux-x64, -agent-linux-arm64, -agent-darwin-arm64
 #   Tier 3 (Edge/IoT):         secureyeoman-$DATE-edge-linux-x64, -edge-linux-arm64, -edge-linux-armv7
 #
@@ -283,15 +283,15 @@ for TARGET in "${TIER1_TARGETS[@]}"; do
   compile_binary "${TARGET}" "${DIST_DIR}/secureyeoman-${DATE_TAG}-${PLATFORM}${EXT}"
 done
 
-# ── Tier 2: Lite (SQLite, no native addons) ───────────────────────────────────
+# ── Tier 2: SQLite (full platform, no PostgreSQL) ─────────────────────────────
 if [[ "$DEV_MODE" == false ]]; then
-  echo "==> Compiling Tier 2 lite binaries (SQLite, no native addons)..."
+  echo "==> Compiling Tier 2 SQLite binaries (SQLite, no native addons)..."
   for TARGET in bun-linux-x64 bun-linux-arm64 bun-windows-x64; do
     PLATFORM="${TARGET#bun-}"
     EXT=""
     [[ "$PLATFORM" == windows-* ]] && EXT=".exe"
-    echo "    → ${DATE_TAG}-lite-${PLATFORM}"
-    SECUREYEOMAN_BUILD_TIER=lite compile_binary "${TARGET}" "${DIST_DIR}/secureyeoman-${DATE_TAG}-lite-${PLATFORM}${EXT}"
+    echo "    → ${DATE_TAG}-sqlite-${PLATFORM}"
+    SECUREYEOMAN_BUILD_TIER=lite compile_binary "${TARGET}" "${DIST_DIR}/secureyeoman-${DATE_TAG}-sqlite-${PLATFORM}${EXT}"
   done
 fi
 

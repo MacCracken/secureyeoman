@@ -152,9 +152,9 @@ jobs:
             dist/secureyeoman-${DT}-linux-arm64 \
             dist/secureyeoman-${DT}-darwin-arm64 \
             dist/secureyeoman-${DT}-windows-x64.exe \
-            dist/secureyeoman-${DT}-lite-linux-x64 \
-            dist/secureyeoman-${DT}-lite-linux-arm64 \
-            dist/secureyeoman-${DT}-lite-windows-x64.exe \
+            dist/secureyeoman-${DT}-sqlite-linux-x64 \
+            dist/secureyeoman-${DT}-sqlite-linux-arm64 \
+            dist/secureyeoman-${DT}-sqlite-windows-x64.exe \
             dist/secureyeoman-${DT}-agent-linux-x64 \
             dist/secureyeoman-${DT}-agent-linux-arm64 \
             dist/secureyeoman-${DT}-agent-darwin-arm64 \
@@ -176,9 +176,9 @@ jobs:
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-linux-arm64
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-darwin-arm64
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-windows-x64.exe
-            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-linux-x64
-            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-linux-arm64
-            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-windows-x64.exe
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-sqlite-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-sqlite-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-sqlite-windows-x64.exe
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-linux-x64
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-linux-arm64
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-darwin-arm64
@@ -260,7 +260,7 @@ jobs:
             echo "| If you want to... | Download | Database |"
             echo "|---|---|---|"
             echo "| Run the full platform (server, dashboard, all subsystems) | \`secureyeoman-${DT}-<platform>\` | PostgreSQL |"
-            echo "| Try it out quickly, no external dependencies | \`secureyeoman-${DT}-lite-<platform>\` | SQLite (embedded) |"
+            echo "| Try it out quickly, no external dependencies | \`secureyeoman-${DT}-sqlite-<platform>\` | SQLite (embedded) |"
             echo "| Run just the AI agent runtime (soul + A2A) | \`secureyeoman-${DT}-agent-<platform>\` | SQLite (embedded) |"
             echo "| Deploy a minimal agent on edge/IoT hardware | \`secureyeoman-${DT}-edge-<platform>\` | None (stateless) |"
             echo ""
@@ -295,13 +295,13 @@ jobs:
             echo "| \`secureyeoman-${DT}-darwin-arm64\` | macOS ARM64 | $(file_size dist/secureyeoman-${DT}-darwin-arm64) |"
             echo "| \`secureyeoman-${DT}-windows-x64.exe\` | Windows x64 | $(file_size dist/secureyeoman-${DT}-windows-x64.exe) |"
             echo ""
-            echo "#### Tier 2 — Lite (SQLite, no PostgreSQL required)"
+            echo "#### Tier 2 — SQLite (full platform, no PostgreSQL required)"
             echo ""
             echo "| Binary | Platform | Size |"
             echo "|--------|----------|------|"
-            echo "| \`secureyeoman-${DT}-lite-linux-x64\` | Linux x86_64 | $(file_size dist/secureyeoman-${DT}-lite-linux-x64) |"
-            echo "| \`secureyeoman-${DT}-lite-linux-arm64\` | Linux ARM64 | $(file_size dist/secureyeoman-${DT}-lite-linux-arm64) |"
-            echo "| \`secureyeoman-${DT}-lite-windows-x64.exe\` | Windows x64 | $(file_size dist/secureyeoman-${DT}-lite-windows-x64.exe) |"
+            echo "| \`secureyeoman-${DT}-sqlite-linux-x64\` | Linux x86_64 | $(file_size dist/secureyeoman-${DT}-sqlite-linux-x64) |"
+            echo "| \`secureyeoman-${DT}-sqlite-linux-arm64\` | Linux ARM64 | $(file_size dist/secureyeoman-${DT}-sqlite-linux-arm64) |"
+            echo "| \`secureyeoman-${DT}-sqlite-windows-x64.exe\` | Windows x64 | $(file_size dist/secureyeoman-${DT}-sqlite-windows-x64.exe) |"
             echo ""
             echo "#### Tier 2.5 — Agent (soul + AI runtime, SQLite)"
             echo ""
@@ -374,9 +374,9 @@ jobs:
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-linux-arm64
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-darwin-arm64
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-windows-x64.exe
-            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-linux-x64
-            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-linux-arm64
-            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-lite-windows-x64.exe
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-sqlite-linux-x64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-sqlite-linux-arm64
+            dist/secureyeoman-${{ steps.version.outputs.date_tag }}-sqlite-windows-x64.exe
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-linux-x64
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-linux-arm64
             dist/secureyeoman-${{ steps.version.outputs.date_tag }}-agent-darwin-arm64
