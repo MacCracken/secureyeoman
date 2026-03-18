@@ -249,6 +249,10 @@ jobs:
             echo "docker pull ghcr.io/maccracken/secureyeoman:${VERSION}"
             echo "\`\`\`"
             echo ""
+            echo "**One-click deploy:**"
+            echo ""
+            echo "[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/secureyeoman?referralCode=secureyeoman) | [Deploy to Render](https://render.com/deploy?repo=https://github.com/MacCracken/secureyeoman) | [Deploy to DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/MacCracken/secureyeoman)"
+            echo ""
 
             # ── Which binary do I need? ──
             echo "### Which binary do I need?"

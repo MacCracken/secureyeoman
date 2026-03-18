@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   MessageSquare,
@@ -10,12 +10,21 @@ import {
   ChevronLeft,
   ChevronRight,
   GitBranch,
+  Download,
+  Share2,
+  Link,
+  FileText,
+  FileJson,
+  FileType,
 } from 'lucide-react';
 import {
   fetchConversations,
   deleteConversation,
   renameConversation,
+  exportConversation,
+  createShareLink,
   type Conversation,
+  type ConversationExportFormat,
 } from '../api/client';
 
 interface ConversationListProps {
@@ -62,6 +71,54 @@ export function ConversationList({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['conversations'] });
       setEditingId(null);
+    },
+  });
+
+  const [exportMenuId, setExportMenuId] = useState<string | null>(null);
+  const [shareToast, setShareToast] = useState<string | null>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close export menu on outside click
+  useEffect(() => {
+    if (!exportMenuId) return;
+    const handler = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+    };
+  }, [exportMenuId]);
+
+  // Auto-dismiss share toast
+  useEffect(() => {
+    if (!shareToast) return;
+    const timer = setTimeout(() => {
+      setShareToast(null);
+    }, 3000);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [shareToast]);
+
+  const handleExport = useCallback(async (id: string, format: ConversationExportFormat) => {
+    setExportMenuId(null);
+    try {
+      await exportConversation(id, format);
+    } catch {
+      // Export failed — silently ignore as the download simply won't appear
+    }
+  }, []);
+
+  const shareMutation = useMutation({
+    mutationFn: (id: string) => createShareLink(id),
+    onSuccess: (data) => {
+      const fullUrl = `${window.location.origin}${data.url}`;
+      void navigator.clipboard.writeText(fullUrl).then(() => {
+        setShareToast('Share link copied to clipboard!');
+      });
     },
   });
 
@@ -210,6 +267,65 @@ export function ConversationList({
                   <p className="text-[10px] text-muted-foreground">{conv.messageCount} msgs</p>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 md:transition-opacity">
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExportMenuId(exportMenuId === conv.id ? null : conv.id);
+                      }}
+                      className="p-1 hover:text-primary"
+                      aria-label="Export"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                    {exportMenuId === conv.id && (
+                      <div
+                        ref={exportMenuRef}
+                        className="absolute right-0 top-full z-50 mt-1 w-36 rounded-md border bg-popover shadow-md"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        <button
+                          onClick={() => {
+                            void handleExport(conv.id, 'markdown');
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted"
+                        >
+                          <FileText className="w-3 h-3" />
+                          Markdown
+                        </button>
+                        <button
+                          onClick={() => {
+                            void handleExport(conv.id, 'json');
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted"
+                        >
+                          <FileJson className="w-3 h-3" />
+                          JSON
+                        </button>
+                        <button
+                          onClick={() => {
+                            void handleExport(conv.id, 'text');
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted"
+                        >
+                          <FileType className="w-3 h-3" />
+                          Plain Text
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      shareMutation.mutate(conv.id);
+                    }}
+                    className="p-1 hover:text-primary"
+                    aria-label="Share"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -236,6 +352,14 @@ export function ConversationList({
           </div>
         ))}
       </div>
+
+      {/* Share toast */}
+      {shareToast && (
+        <div className="absolute bottom-2 left-2 right-2 z-50 rounded-md bg-primary px-3 py-2 text-xs text-primary-foreground shadow-md flex items-center gap-2">
+          <Link className="w-3.5 h-3.5 flex-shrink-0" />
+          {shareToast}
+        </div>
+      )}
     </>
   );
 

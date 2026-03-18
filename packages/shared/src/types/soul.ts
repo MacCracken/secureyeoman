@@ -395,6 +395,8 @@ export const PersonalitySchema = z.object({
   body: BodyConfigSchema.default({}),
   brainConfig: PersonalityBrainConfigSchema.default({}),
   routingPolicy: z.enum(['auto', 'local-preferred', 'local-only', 'cloud-only']).optional(),
+  /** Optimistic-locking version; incremented on every successful UPDATE. */
+  version: z.number().int().positive().default(1),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
 });
@@ -408,6 +410,7 @@ export const PersonalityCreateSchema = PersonalitySchema.omit({
   isActive: true,
   isDefault: true,
   isWithinActiveHours: true,
+  version: true,
 }).extend({
   brainConfig: PersonalityBrainConfigSchema.optional(),
 });
@@ -625,6 +628,8 @@ export const SkillSchema = BaseSkillSchema.extend({
   lastUsedAt: z.number().int().nonnegative().nullable().default(null),
   personalityId: z.string().nullable().optional(),
   personalityName: z.string().nullable().optional(),
+  /** Optimistic-locking version; incremented on every successful UPDATE. */
+  version: z.number().int().positive().default(1),
   createdAt: z.number().int().nonnegative(),
 });
 
@@ -638,6 +643,7 @@ export const SkillCreateSchema = SkillSchema.omit({
   invokedCount: true,
   lastUsedAt: true,
   personalityName: true,
+  version: true,
 });
 
 export type SkillCreate = z.infer<typeof SkillCreateSchema>;

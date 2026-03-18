@@ -40,6 +40,7 @@ interface PersonalityRow {
   is_default: boolean;
   body: Personality['body'];
   brain_config: Personality['brainConfig'];
+  version: number;
   created_at: number;
   updated_at: number;
 }
@@ -66,6 +67,7 @@ interface SkillRow {
   invoked_count: number;
   last_used_at: number | null;
   personality_id: string | null;
+  version: number;
   created_at: number;
   updated_at: number;
 }
@@ -143,6 +145,7 @@ function rowToPersonality(row: PersonalityRow): Personality {
         learning: { enabled: true, minConfidence: 0.7 },
       },
     },
+    version: row.version ?? 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -196,9 +199,22 @@ function rowToSkill(row: SkillRow): Skill {
     invokedCount: row.invoked_count ?? 0,
     lastUsedAt: row.last_used_at,
     personalityId: row.personality_id,
+    version: row.version ?? 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+/**
+ * Error thrown when an optimistic-locking version check fails.
+ * The route layer maps this to HTTP 409 Conflict.
+ */
+export class VersionConflictError extends Error {
+  constructor(entity: string, id: string) {
+    super(`${entity} was modified by another request — reload and retry`);
+    this.name = 'VersionConflictError';
+    Object.defineProperty(this, 'entityId', { value: id, enumerable: true });
+  }
 }
 
 /** Returns the directory where personality avatar files are stored. */
@@ -352,65 +368,137 @@ export class SoulStorage extends PgBaseStorage {
       throw new Error(`Personality not found: ${id}`);
     }
 
+    // Optimistic locking: when the caller supplies a version we enforce it;
+    // when omitted we skip the check (backwards-compatible for internal callers).
+    const expectedVersion = (data as Record<string, unknown>).version as number | undefined;
+
     const now = Date.now();
-    await this.execute(
-      `UPDATE soul.personalities SET
-         name = $1,
-         description = $2,
-         system_prompt = $3,
-         traits = $4::jsonb,
-         sex = $5,
-         voice = $6,
-         preferred_language = $7,
-         default_model = $8::jsonb,
-         model_fallbacks = $9::jsonb,
-         include_archetypes = $10,
-         inject_date_time = $11,
-         empathy_resonance = $12,
-         body = $13::jsonb,
-         brain_config = $14::jsonb,
-         updated_at = $15
-       WHERE id = $16`,
-      [
-        data.name ?? existing.name,
-        data.description ?? existing.description,
-        data.systemPrompt ?? existing.systemPrompt,
-        JSON.stringify(data.traits ?? existing.traits),
-        data.sex ?? existing.sex,
-        data.voice ?? existing.voice,
-        data.preferredLanguage ?? existing.preferredLanguage,
-        data.defaultModel !== undefined
-          ? data.defaultModel
-            ? JSON.stringify(data.defaultModel)
-            : null
-          : existing.defaultModel
-            ? JSON.stringify(existing.defaultModel)
-            : null,
-        JSON.stringify(
-          data.modelFallbacks !== undefined ? data.modelFallbacks : existing.modelFallbacks
-        ),
-        data.includeArchetypes !== undefined ? data.includeArchetypes : existing.includeArchetypes,
-        data.injectDateTime !== undefined ? data.injectDateTime : existing.injectDateTime,
-        data.empathyResonance !== undefined ? data.empathyResonance : existing.empathyResonance,
-        JSON.stringify(
-          data.body ??
-            existing.body ?? {
-              enabled: false,
-              capabilities: [],
-              heartEnabled: true,
-              creationConfig: {
-                skills: false,
-                tasks: false,
-                personalities: false,
-                experiments: false,
-              },
-            }
-        ),
-        JSON.stringify(data.brainConfig ?? existing.brainConfig ?? {}),
-        now,
-        id,
-      ]
-    );
+
+    if (expectedVersion !== undefined) {
+      const count = await this.execute(
+        `UPDATE soul.personalities SET
+           name = $1,
+           description = $2,
+           system_prompt = $3,
+           traits = $4::jsonb,
+           sex = $5,
+           voice = $6,
+           preferred_language = $7,
+           default_model = $8::jsonb,
+           model_fallbacks = $9::jsonb,
+           include_archetypes = $10,
+           inject_date_time = $11,
+           empathy_resonance = $12,
+           body = $13::jsonb,
+           brain_config = $14::jsonb,
+           updated_at = $15,
+           version = version + 1
+         WHERE id = $16 AND version = $17`,
+        [
+          data.name ?? existing.name,
+          data.description ?? existing.description,
+          data.systemPrompt ?? existing.systemPrompt,
+          JSON.stringify(data.traits ?? existing.traits),
+          data.sex ?? existing.sex,
+          data.voice ?? existing.voice,
+          data.preferredLanguage ?? existing.preferredLanguage,
+          data.defaultModel !== undefined
+            ? data.defaultModel
+              ? JSON.stringify(data.defaultModel)
+              : null
+            : existing.defaultModel
+              ? JSON.stringify(existing.defaultModel)
+              : null,
+          JSON.stringify(
+            data.modelFallbacks !== undefined ? data.modelFallbacks : existing.modelFallbacks
+          ),
+          data.includeArchetypes !== undefined ? data.includeArchetypes : existing.includeArchetypes,
+          data.injectDateTime !== undefined ? data.injectDateTime : existing.injectDateTime,
+          data.empathyResonance !== undefined ? data.empathyResonance : existing.empathyResonance,
+          JSON.stringify(
+            data.body ??
+              existing.body ?? {
+                enabled: false,
+                capabilities: [],
+                heartEnabled: true,
+                creationConfig: {
+                  skills: false,
+                  tasks: false,
+                  personalities: false,
+                  experiments: false,
+                },
+              }
+          ),
+          JSON.stringify(data.brainConfig ?? existing.brainConfig ?? {}),
+          now,
+          id,
+          expectedVersion,
+        ]
+      );
+      if (count === 0) {
+        throw new VersionConflictError('Personality', id);
+      }
+    } else {
+      await this.execute(
+        `UPDATE soul.personalities SET
+           name = $1,
+           description = $2,
+           system_prompt = $3,
+           traits = $4::jsonb,
+           sex = $5,
+           voice = $6,
+           preferred_language = $7,
+           default_model = $8::jsonb,
+           model_fallbacks = $9::jsonb,
+           include_archetypes = $10,
+           inject_date_time = $11,
+           empathy_resonance = $12,
+           body = $13::jsonb,
+           brain_config = $14::jsonb,
+           updated_at = $15,
+           version = version + 1
+         WHERE id = $16`,
+        [
+          data.name ?? existing.name,
+          data.description ?? existing.description,
+          data.systemPrompt ?? existing.systemPrompt,
+          JSON.stringify(data.traits ?? existing.traits),
+          data.sex ?? existing.sex,
+          data.voice ?? existing.voice,
+          data.preferredLanguage ?? existing.preferredLanguage,
+          data.defaultModel !== undefined
+            ? data.defaultModel
+              ? JSON.stringify(data.defaultModel)
+              : null
+            : existing.defaultModel
+              ? JSON.stringify(existing.defaultModel)
+              : null,
+          JSON.stringify(
+            data.modelFallbacks !== undefined ? data.modelFallbacks : existing.modelFallbacks
+          ),
+          data.includeArchetypes !== undefined ? data.includeArchetypes : existing.includeArchetypes,
+          data.injectDateTime !== undefined ? data.injectDateTime : existing.injectDateTime,
+          data.empathyResonance !== undefined ? data.empathyResonance : existing.empathyResonance,
+          JSON.stringify(
+            data.body ??
+              existing.body ?? {
+                enabled: false,
+                capabilities: [],
+                heartEnabled: true,
+                creationConfig: {
+                  skills: false,
+                  tasks: false,
+                  personalities: false,
+                  experiments: false,
+                },
+              }
+          ),
+          JSON.stringify(data.brainConfig ?? existing.brainConfig ?? {}),
+          now,
+          id,
+        ]
+      );
+    }
 
     const result = await this.getPersonality(id);
     if (!result) throw new Error(`Failed to retrieve personality after update: ${id}`);
@@ -500,9 +588,10 @@ export class SoulStorage extends PgBaseStorage {
       throw new Error(`Skill not found: ${id}`);
     }
 
+    const expectedVersion = (data as Record<string, unknown>).version as number | undefined;
     const now = Date.now();
-    await this.execute(
-      `UPDATE soul.skills SET
+
+    const fields = `
          name = $1,
          description = $2,
          instructions = $3,
@@ -519,33 +608,49 @@ export class SoulStorage extends PgBaseStorage {
          enabled = $14,
          source = $15,
          status = $16,
-         updated_at = $17
-       WHERE id = $18`,
-      [
-        data.name ?? existing.name,
-        data.description ?? existing.description,
-        data.instructions ?? existing.instructions,
-        JSON.stringify(data.tools ?? existing.tools),
-        JSON.stringify(data.triggerPatterns ?? existing.triggerPatterns),
-        data.useWhen !== undefined ? data.useWhen : existing.useWhen,
-        data.doNotUseWhen !== undefined ? data.doNotUseWhen : existing.doNotUseWhen,
-        data.successCriteria !== undefined ? data.successCriteria : existing.successCriteria,
-        JSON.stringify(
-          data.mcpToolsAllowed !== undefined ? data.mcpToolsAllowed : existing.mcpToolsAllowed
-        ),
-        data.routing ?? existing.routing,
-        data.linkedWorkflowId !== undefined ? data.linkedWorkflowId : existing.linkedWorkflowId,
-        data.autonomyLevel !== undefined ? data.autonomyLevel : (existing.autonomyLevel ?? 'L1'),
-        data.emergencyStopProcedure !== undefined
-          ? (data.emergencyStopProcedure ?? null)
-          : (existing.emergencyStopProcedure ?? null),
-        data.enabled !== undefined ? data.enabled : existing.enabled,
-        data.source ?? existing.source,
-        data.status ?? existing.status,
-        now,
-        id,
-      ]
-    );
+         updated_at = $17,
+         version = version + 1`;
+
+    const values = [
+      data.name ?? existing.name,
+      data.description ?? existing.description,
+      data.instructions ?? existing.instructions,
+      JSON.stringify(data.tools ?? existing.tools),
+      JSON.stringify(data.triggerPatterns ?? existing.triggerPatterns),
+      data.useWhen !== undefined ? data.useWhen : existing.useWhen,
+      data.doNotUseWhen !== undefined ? data.doNotUseWhen : existing.doNotUseWhen,
+      data.successCriteria !== undefined ? data.successCriteria : existing.successCriteria,
+      JSON.stringify(
+        data.mcpToolsAllowed !== undefined ? data.mcpToolsAllowed : existing.mcpToolsAllowed
+      ),
+      data.routing ?? existing.routing,
+      data.linkedWorkflowId !== undefined ? data.linkedWorkflowId : existing.linkedWorkflowId,
+      data.autonomyLevel !== undefined ? data.autonomyLevel : (existing.autonomyLevel ?? 'L1'),
+      data.emergencyStopProcedure !== undefined
+        ? (data.emergencyStopProcedure ?? null)
+        : (existing.emergencyStopProcedure ?? null),
+      data.enabled !== undefined ? data.enabled : existing.enabled,
+      data.source ?? existing.source,
+      data.status ?? existing.status,
+      now,
+      id,
+    ];
+
+    if (expectedVersion !== undefined) {
+      values.push(expectedVersion);
+      const count = await this.execute(
+        `UPDATE soul.skills SET ${fields} WHERE id = $18 AND version = $19`,
+        values
+      );
+      if (count === 0) {
+        throw new VersionConflictError('Skill', id);
+      }
+    } else {
+      await this.execute(
+        `UPDATE soul.skills SET ${fields} WHERE id = $18`,
+        values
+      );
+    }
 
     const result = await this.getSkill(id);
     if (!result) throw new Error(`Failed to retrieve skill after update: ${id}`);

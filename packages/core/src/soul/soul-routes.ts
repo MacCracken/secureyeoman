@@ -21,7 +21,7 @@ import type {
   UserProfileCreate,
   UserProfileUpdate,
 } from './types.js';
-import { getAvatarDir } from './storage.js';
+import { getAvatarDir, VersionConflictError } from './storage.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
@@ -191,6 +191,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         }
         return { personality };
       } catch (e) {
+        if (e instanceof VersionConflictError) {
+          return sendError(reply, 409, 'Someone else edited this — reload?');
+        }
         return sendError(reply, 404, toErrorMessage(e));
       }
     }
@@ -637,6 +640,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         if (warnings.length > 0) response.warnings = warnings;
         return response;
       } catch (e) {
+        if (e instanceof VersionConflictError) {
+          return sendError(reply, 409, 'Someone else edited this — reload?');
+        }
         return sendError(reply, 404, toErrorMessage(e));
       }
     }

@@ -98,7 +98,7 @@
 
 ## E2E Test Expansion
 
-**Priority**: P1 — Quality. Currently 8 files / 67 tests. Target: cover all major user flows.
+**Priority**: P1 — Quality. Currently 9 files / 82 tests. Target: cover all major user flows.
 
 **Goal**: Expand backend E2E test suite (`src/__e2e__/`) to cover flows that unit tests can't adequately verify — multi-step API sequences, cross-module interactions, auth flows.
 
@@ -107,7 +107,7 @@
 - [ ] **Analytics & reporting flows** — Metrics aggregation, cost tracking, CSV/JSON export
 - [ ] **Brain & RAG flows** — Knowledge ingestion, recall, memory scoping across personalities
 - [ ] **Marketplace flows** — Skill install/uninstall, workflow import, community sync
-- [ ] **MCP tool execution flows** — Tool discovery, execution via streamable HTTP, config toggling
+- [x] **MCP tool execution flows** — Tool discovery, execution via streamable HTTP, config toggling *(2026.3.18 — 15 E2E tests: server CRUD, tool discovery, config toggling, auth enforcement)*
 
 ---
 
@@ -287,8 +287,8 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 *Lower barrier to entry and improve daily-use experience for individual users and small teams.*
 
-- [ ] **One-click cloud deploy templates** — Railway (`railway.json`), Render (`render.yaml`), and DigitalOcean (`app.json`) deploy templates with pre-configured environment variables. Enables zero-DevOps setup for non-technical users. Include "Deploy to X" buttons in README.
-- [ ] **Conversation share & export UX** — Dashboard UI for sharing and downloading conversations. Share: generate a unique link (optionally time-limited or password-protected). Export: download as Markdown, JSON, or PDF from conversation header menu. Backend: conversation export exists via `POST /api/v1/training/export`; this adds a user-facing wrapper with dedicated routes and dashboard components.
+- [x] **One-click cloud deploy templates** — Railway (`railway.json`), Render (`render.yaml`), and DigitalOcean (`digitalocean-app.json`) with pre-configured env vars. Deploy buttons in release notes. *(2026.3.18 — 3 templates + 19 validation tests)*
+- [x] **Conversation share & export UX** — Per-conversation export (Markdown/JSON/text), JWT-based share links with expiry and revocation. Backend routes + dashboard API client. *(2026.3.18 — 17 unit tests)*
 
 ---
 
@@ -304,7 +304,7 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 *Demand-Gated — implement once operational scale or compliance requirements justify the investment.*
 
-- [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
+- [x] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves *(2026.3.18 — migration 004, CAS on storage layer, 409 route handling, 9 E2E tests)*
 - [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based graph layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
 - [ ] **Agent World — Configurable FPS** — fps slider in card settings popover (1–16 fps), persisted in layout config. Only worthwhile if users report animation overhead on low-power devices.
 - [ ] **Photisnadi in SY container** — Photisnadi baked into agnosticos base image or run as separate container. User choice via `PHOTISNADI_ENABLED` flag. When embedded, supervisord manages Photisnadi process; when external, SY proxies via SUPABASE_URL.
@@ -405,4 +405,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-17. See [Changelog](../../CHANGELOG.md) for full history of completed work.*
+*Last updated: 2026-03-18. See [Changelog](../../CHANGELOG.md) for full history of completed work.*

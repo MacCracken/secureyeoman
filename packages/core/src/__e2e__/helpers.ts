@@ -16,6 +16,10 @@ import { registerAuthRoutes } from '../gateway/auth-routes.js';
 import { registerSoulRoutes } from '../soul/soul-routes.js';
 import { registerBrainRoutes } from '../brain/brain-routes.js';
 import { registerWorkflowRoutes } from '../workflow/workflow-routes.js';
+import { registerMcpRoutes } from '../mcp/mcp-routes.js';
+import { McpStorage } from '../mcp/storage.js';
+import { McpClientManager } from '../mcp/client.js';
+import { McpServer } from '../mcp/server.js';
 import { SoulManager } from '../soul/manager.js';
 import { SoulStorage } from '../soul/storage.js';
 import { BrainManager } from '../brain/manager.js';
@@ -126,6 +130,13 @@ export async function startE2EServer(): Promise<E2EServer> {
     logger,
   });
 
+  const mcpStorage = new McpStorage();
+  const mcpClient = new McpClientManager(mcpStorage, {
+    logger,
+    tokenSecret: TEST_TOKEN_SECRET,
+  });
+  const mcpServer = new McpServer({ logger, brainManager, soulManager });
+
   // ── Fastify app ────────────────────────────────────────────────
 
   const app = Fastify({ logger: false });
@@ -145,6 +156,9 @@ export async function startE2EServer(): Promise<E2EServer> {
 
   // Workflow routes (definition CRUD)
   registerWorkflowRoutes(app, { workflowManager });
+
+  // MCP routes (server CRUD, tool discovery, config, tool calls)
+  registerMcpRoutes(app, { mcpStorage, mcpClient, mcpServer });
 
   // Health
   app.get('/health', async () => ({

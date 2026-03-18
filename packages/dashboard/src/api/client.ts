@@ -2704,6 +2704,72 @@ export async function renameConversation(id: string, title: string): Promise<Con
   });
 }
 
+// ─── Conversation Export & Share API ──────────────────────────────
+
+export type ConversationExportFormat = 'markdown' | 'json' | 'text';
+
+/**
+ * Export a conversation as a downloadable file.
+ * Triggers a browser download via a hidden <a> element.
+ */
+export async function exportConversation(
+  id: string,
+  format: ConversationExportFormat = 'markdown'
+): Promise<void> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_BASE}/conversations/${id}/export?format=${format}`, {
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Export failed: ${response.statusText}`);
+  }
+
+  const blob = await response.blob();
+
+  // Extract filename from Content-Disposition header, or generate a default
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const filenameMatch = /filename="([^"]+)"/.exec(disposition);
+  const ext = format === 'markdown' ? 'md' : format === 'json' ? 'json' : 'txt';
+  const filename = filenameMatch?.[1] ?? `conversation-${id}.${ext}`;
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export interface ShareLinkResponse {
+  shareId: string;
+  expiresAt: number;
+  url: string;
+}
+
+export async function createShareLink(id: string): Promise<ShareLinkResponse> {
+  return request(`/conversations/${id}/share`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
+export async function revokeShareLink(id: string, shareId: string): Promise<void> {
+  await request(`/conversations/${id}/share`, {
+    method: 'DELETE',
+    body: JSON.stringify({ shareId }),
+  });
+}
+
+export async function fetchSharedConversation(token: string): Promise<ConversationDetail> {
+  return request(`/conversations/shared/${token}`, {}, true);
+}
+
 // ─── Semantic Search API ──────────────────────────────────────────
 
 export async function searchSimilar(params: {

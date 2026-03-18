@@ -215,6 +215,8 @@ function rowToSkill(row: SkillRow): Skill {
     autonomyLevel: (row.autonomy_level ?? 'L1') as Skill['autonomyLevel'],
     // Structured output schema (Phase 54)
     outputSchema: row.output_schema ?? null,
+    // Optimistic locking (brain.skills doesn't track version — default to 1)
+    version: (row as unknown as { version?: number }).version ?? 1,
   };
 }
 

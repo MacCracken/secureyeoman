@@ -1136,6 +1136,9 @@ export class GatewayServer {
       if (conversationStorage) {
         const { registerConversationRoutes } = await import('../chat/conversation-routes.js');
         registerConversationRoutes(this.app, { conversationStorage });
+        const { registerConversationExportRoutes } =
+          await import('../chat/conversation-export-routes.js');
+        registerConversationExportRoutes(this.app, { conversationStorage });
       }
     });
 
