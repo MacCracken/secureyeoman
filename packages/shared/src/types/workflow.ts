@@ -39,6 +39,9 @@ export const WorkflowStepTypeSchema = z.enum([
   'diagram_generation', // generate Excalidraw diagram from description, returns { scene, validationIssues, renderedSvg? }
   // Document analysis step types (Phase 122-B)
   'document_analysis', // analyze documents with configurable analysis type, returns { analysisType, document, outputFormat, toolChain }
+  // Agnostic crew delegation step types
+  'agnostic_crew', // submit a crew to Agnostic, returns { crewId, status: 'queued' }
+  'agnostic_crew_wait', // poll crew until done, returns { status, results, durationMs }
 ]);
 export type WorkflowStepType = z.infer<typeof WorkflowStepTypeSchema>;
 

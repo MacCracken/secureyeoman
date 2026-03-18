@@ -329,13 +329,9 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### Agnostic Integration
+### ~~Agnostic Integration~~ (Complete)
 
-*Integration work for SecureYeoman ↔ Agnostic Agent Platform. MCP tools, A2A protocol, webhook bridge, and DLP/audit already wired. These items add workflow-level and dashboard-level integration.*
-
-- [ ] **Crew delegation from SY workflows** — SY DAG workflow step type `agnostic_crew` that creates and monitors an Agnostic crew. Submit via `POST /api/v1/crews`, poll `GET /crews/{id}` until completion, feed results into next DAG step. Configurable preset/domain/size per step.
-- [ ] **Preset management from SY dashboard** — Connections > Agnostic panel: browse presets (`GET /api/v1/presets`), view agent details, create crews with preset selection, view crew history and GPU placement. Uses existing `agnostic_list_presets`, `agnostic_preset_detail`, `agnostic_run_crew`, `agnostic_crew_status` MCP tools.
-- [ ] **Preset selector UI** — Preset picker component for the Connections > Agnostic panel. Filterable by domain/size, shows agent count and roles per preset. Feeds into crew submission.
+*All items shipped. See [Changelog](../../CHANGELOG.md).*
 
 ### Cross-Project — Full Triangle Convergence
 

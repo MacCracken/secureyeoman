@@ -177,6 +177,28 @@ Tests for MCP tool handlers — network-tools, security-tools, web-tools, and ne
 - **20 new tests** for web-tools (SSRF vectors, URL validation, HTML stripping, token estimation, front matter, result aggregation, provider detection)
 - **11 new tests** for agnostic-tools (gpu_status, gpu_memory, gpu_slots, local_inference, crew_cancel, list_crews, import_package — covers all 7 new GPU/crew tools)
 
+### Agnostic Integration — Workflow & Dashboard
+
+Full workflow-level and dashboard-level integration with the Agnostic Agent Platform.
+
+#### Crew Delegation from SY Workflows
+
+Two new DAG workflow step types for Agnostic crew orchestration:
+
+- **`agnostic_crew`** step type — Submits a crew to Agnostic via `POST /api/v1/crews`. Config: `preset`, `title`, `description`, `priority`, `process`, `targetUrl` (all template-resolvable). Returns `{ crewId, status: 'queued' }` for downstream steps
+- **`agnostic_crew_wait`** step type — Polls `GET /api/v1/crews/{crewId}` until completion/failure/cancellation. Configurable `pollIntervalMs` (default 10s) and `timeoutMs` (default 30m). Returns `{ crewId, status, results, durationMs }`. Uses existing `pollUntilDone()` helper
+- **`AgnosticEngineConfig`** — New workflow engine config: `url`, `apiKey`, `email`, `password`, `pollIntervalMs`, `timeoutMs`. JWT token cached per engine instance
+- **Auth support** — API key (`X-API-Key`) or JWT via email/password with token caching
+
+#### Preset Management Dashboard
+
+- **`AgnosticPanel`** component (`connections/AgnosticPanel.tsx`) — Full Agnostic integration panel for Connections page. Preset browser with domain filtering, expandable agent detail cards, crew submission dialog (title + description + preset), crew history with status badges and cancel button
+- **Dashboard API client** — `fetchAgnosticWidget()`, `fetchAgnosticPresets()`, `fetchAgnosticPresetDetail()`, `fetchAgnosticCrews()`, `submitAgnosticCrew()`, `cancelAgnosticCrew()` with TypeScript types for `AgnosticPreset`, `AgnosticCrew`, `AgnosticWidgetData`
+
+#### Test Coverage
+
+- **9 new tests** for agnostic workflow steps (crew submission, API key auth, template resolution, error handling, polling, status updates)
+
 ---
 
 ## [2026.3.15]

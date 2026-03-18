@@ -62,6 +62,22 @@ export interface WorkflowEngineContext {
   input: Record<string, unknown>;
 }
 
+/** Agnostic platform config for crew delegation step types. */
+export interface AgnosticEngineConfig {
+  /** Agnostic platform base URL. */
+  url: string;
+  /** API key for auth (preferred over email/password). */
+  apiKey?: string;
+  /** Email for JWT auth (fallback). */
+  email?: string;
+  /** Password for JWT auth (fallback). */
+  password?: string;
+  /** Default poll interval for crew_wait steps. */
+  pollIntervalMs?: number;
+  /** Default timeout for crew_wait steps. */
+  timeoutMs?: number;
+}
+
 /** Credential bundle for CI/CD step types (ci_trigger, ci_wait). Phase 90. */
 export interface CicdEngineConfig {
   /** GitHub token for GitHub Actions steps. */
@@ -99,6 +115,8 @@ export interface WorkflowEngineDeps {
   alertManager?: AlertManager | null;
   // Council of AIs
   councilManager?: CouncilManager | null;
+  // Agnostic crew delegation
+  agnosticConfig?: AgnosticEngineConfig | null;
 }
 
 export class WorkflowEngine {
@@ -121,6 +139,8 @@ export class WorkflowEngine {
   private readonly alertManager: AlertManager | null;
   // Council of AIs
   private readonly councilManager: CouncilManager | null;
+  // Agnostic crew delegation
+  private readonly agnosticConfig: AgnosticEngineConfig | null;
   /** Tracks subworkflow nesting depth to prevent infinite recursion. */
   private subworkflowDepth = 0;
   private static readonly MAX_SUBWORKFLOW_DEPTH = 10;
@@ -140,6 +160,7 @@ export class WorkflowEngine {
     this.cicdConfig = deps.cicdConfig ?? null;
     this.alertManager = deps.alertManager ?? null;
     this.councilManager = deps.councilManager ?? null;
+    this.agnosticConfig = deps.agnosticConfig ?? null;
   }
 
   // ── Public API ────────────────────────────────────────────────
@@ -1135,6 +1156,108 @@ export class WorkflowEngine {
         };
       }
 
+      // ── Agnostic Crew Delegation ──────────────────────────────────────
+      case 'agnostic_crew': {
+        if (!this.agnosticConfig) {
+          throw new Error('agnostic_crew: Agnostic platform not configured');
+        }
+        const preset = this.resolveTemplate(String(cfg.preset ?? ''), ctx);
+        const title = this.resolveTemplate(String(cfg.title ?? step.name), ctx);
+        const description = this.resolveTemplate(String(cfg.description ?? ''), ctx);
+        const priority = String(cfg.priority ?? 'medium');
+        const process = String(cfg.process ?? 'sequential');
+        const targetUrl = cfg.targetUrl
+          ? this.resolveTemplate(String(cfg.targetUrl), ctx)
+          : undefined;
+
+        this.logger.info(
+          { preset, title, priority },
+          'agnostic_crew: submitting crew to Agnostic platform'
+        );
+
+        const headers = await this.getAgnosticHeaders();
+        const body: Record<string, unknown> = {
+          title,
+          description,
+          priority,
+          process,
+          ...(preset ? { preset } : {}),
+          ...(targetUrl ? { target_url: targetUrl } : {}),
+        };
+
+        const res = await fetch(`${this.agnosticConfig.url}/api/v1/crews`, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(CI_FETCH_TIMEOUT_MS),
+        });
+
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => '');
+          throw new Error(
+            `agnostic_crew: Agnostic API returned ${res.status}: ${errBody.slice(0, CI_ERROR_BODY_LIMIT)}`
+          );
+        }
+
+        const data = (await res.json()) as { crew_id?: string; id?: string; status?: string };
+        const crewId = data.crew_id ?? data.id ?? '';
+
+        return { crewId, status: data.status ?? 'queued', preset, title };
+      }
+
+      case 'agnostic_crew_wait': {
+        if (!this.agnosticConfig) {
+          throw new Error('agnostic_crew_wait: Agnostic platform not configured');
+        }
+        const crewIdTemplate = String(cfg.crewId ?? '');
+        const crewId = this.resolveTemplate(crewIdTemplate, ctx);
+        if (!crewId) {
+          throw new Error('agnostic_crew_wait: crewId is required');
+        }
+
+        const pollIntervalMs = Number(cfg.pollIntervalMs ?? this.agnosticConfig.pollIntervalMs ?? 10_000);
+        const timeoutMs = Number(cfg.timeoutMs ?? this.agnosticConfig.timeoutMs ?? 1_800_000);
+
+        this.logger.info(
+          { crewId, pollIntervalMs, timeoutMs },
+          'agnostic_crew_wait: polling Agnostic crew until completion'
+        );
+
+        const headers = await this.getAgnosticHeaders();
+        const startTime = Date.now();
+
+        const finalStatus = await this.pollUntilDone(
+          async () => {
+            const res = await fetch(`${this.agnosticConfig!.url}/api/v1/crews/${crewId}`, {
+              headers,
+              signal: AbortSignal.timeout(CI_FETCH_TIMEOUT_MS),
+            });
+            if (!res.ok) return 'error';
+            const data = (await res.json()) as { status?: string };
+            return data.status ?? 'unknown';
+          },
+          ['completed', 'failed', 'cancelled'],
+          timeoutMs,
+          pollIntervalMs
+        );
+
+        // Fetch final results
+        const finalRes = await fetch(`${this.agnosticConfig.url}/api/v1/crews/${crewId}`, {
+          headers,
+          signal: AbortSignal.timeout(CI_FETCH_TIMEOUT_MS),
+        });
+        const finalData = finalRes.ok
+          ? ((await finalRes.json()) as Record<string, unknown>)
+          : { status: finalStatus };
+
+        return {
+          crewId,
+          status: finalStatus,
+          results: finalData,
+          durationMs: Date.now() - startTime,
+        };
+      }
+
       default:
         throw new Error(`Unknown step type: ${step.type}`);
     }
@@ -1159,6 +1282,37 @@ export class WorkflowEngine {
       await new Promise((r) => setTimeout(r, pollIntervalMs));
     }
     throw new Error(`Job did not complete within ${timeoutMs}ms timeout`);
+  }
+
+  // ── Agnostic Auth ────────────────────────────────────────────
+
+  private agnosticToken: string | null = null;
+
+  private async getAgnosticHeaders(): Promise<Record<string, string>> {
+    if (!this.agnosticConfig) return {};
+
+    if (this.agnosticConfig.apiKey) {
+      return { 'X-API-Key': this.agnosticConfig.apiKey };
+    }
+
+    // JWT auth via email/password
+    if (!this.agnosticToken && this.agnosticConfig.email && this.agnosticConfig.password) {
+      const res = await fetch(`${this.agnosticConfig.url}/api/v1/auth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          username: this.agnosticConfig.email,
+          password: this.agnosticConfig.password,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { access_token?: string };
+        this.agnosticToken = data.access_token ?? null;
+      }
+    }
+
+    return this.agnosticToken ? { Authorization: `Bearer ${this.agnosticToken}` } : {};
   }
 
   // ── Template Resolution ───────────────────────────────────────

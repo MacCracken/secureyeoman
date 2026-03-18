@@ -3339,6 +3339,85 @@ export async function checkPrivacyRoute(
   });
 }
 
+// ─── Agnostic Platform API ────────────────────────────────────────
+
+export interface AgnosticPreset {
+  name: string;
+  domain: string;
+  size: string;
+  description: string;
+  agent_count: number;
+  agents: { key: string; role: string; goal: string }[];
+}
+
+export interface AgnosticCrew {
+  id: string;
+  title: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  preset?: string;
+  domain?: string;
+  created_at: string;
+  completed_at?: string;
+  agent_results?: unknown[];
+}
+
+export interface AgnosticWidgetData {
+  status: 'healthy' | 'degraded' | 'offline';
+  tasks: { pending: number; running: number; completed: number; failed: number };
+  agents: { total: number; active: number };
+  presets?: { name: string; domain: string; agent_count: number }[];
+  recentTasks: { id: string; title: string; status: string; domain: string; createdAt: string }[];
+}
+
+export async function fetchAgnosticWidget(): Promise<AgnosticWidgetData> {
+  return request('/integrations/agnostic/widget');
+}
+
+export async function fetchAgnosticPresets(params?: {
+  domain?: string;
+  size?: string;
+}): Promise<{ presets: AgnosticPreset[] }> {
+  const query = new URLSearchParams();
+  if (params?.domain) query.set('domain', params.domain);
+  if (params?.size) query.set('size', params.size);
+  const qs = query.toString();
+  return request(`/integrations/agnostic/presets${qs ? `?${qs}` : ''}`);
+}
+
+export async function fetchAgnosticPresetDetail(name: string): Promise<AgnosticPreset> {
+  return request(`/integrations/agnostic/presets/${encodeURIComponent(name)}`);
+}
+
+export async function fetchAgnosticCrews(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ crews: AgnosticCrew[]; total: number }> {
+  const query = new URLSearchParams();
+  if (params?.status) query.set('status', params.status);
+  if (params?.limit) query.set('limit', String(params.limit));
+  if (params?.offset) query.set('offset', String(params.offset));
+  const qs = query.toString();
+  return request(`/integrations/agnostic/crews${qs ? `?${qs}` : ''}`);
+}
+
+export async function submitAgnosticCrew(data: {
+  title: string;
+  description: string;
+  preset?: string;
+  priority?: string;
+  target_url?: string;
+}): Promise<{ crew_id: string; status: string }> {
+  return request('/integrations/agnostic/crews', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function cancelAgnosticCrew(crewId: string): Promise<{ status: string }> {
+  return request(`/integrations/agnostic/crews/${crewId}/cancel`, { method: 'POST' });
+}
+
 // ─── Extensions API (Phase 6.4a) ──────────────────────────────────
 
 export async function fetchExtensions(): Promise<{
