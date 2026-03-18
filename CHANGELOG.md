@@ -168,6 +168,15 @@ New tests for previously untested CLI commands, sandbox seccomp, and quarantine 
 - **8 new tests** for seccomp (networking syscalls, process syscalls, kernel module blocks, swap blocks, filesystem mount blocks, array copy safety)
 - **14 new tests** for quarantine-storage (quarantine string/Buffer, list/get/approve/release/delete lifecycle, persistence, unique IDs, error handling)
 
+### MCP Tool Test Coverage Expansion
+
+Tests for MCP tool handlers — network-tools, security-tools, web-tools, and new Agnostic GPU/crew tools.
+
+- **25 new tests** for network-tools (CIDR edge cases, subnet /16//28//0, VLSM allocations, wildcard masks, NVD registration, disabled stubs, scope matching)
+- **24 new tests** for security-tools (CIDR edge cases, scope matching, nmap multi-host, sqlmap empty, nuclei multi-finding, gobuster dir/dns, hydra multi-credential, tool registration)
+- **20 new tests** for web-tools (SSRF vectors, URL validation, HTML stripping, token estimation, front matter, result aggregation, provider detection)
+- **11 new tests** for agnostic-tools (gpu_status, gpu_memory, gpu_slots, local_inference, crew_cancel, list_crews, import_package — covers all 7 new GPU/crew tools)
+
 ---
 
 ## [2026.3.15]

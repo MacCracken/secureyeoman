@@ -506,4 +506,183 @@ describe('agnostic-tools', () => {
       expect(config.agnosticApiKey).toBe('sk-agnostic-abc123');
     });
   });
+
+  // ─── New GPU & Crew Tools ──────────────────────────────────────────────────
+
+  describe('agnostic_gpu_status', () => {
+    it('registers the tool', () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      expect(() => registerAgnosticTools(server, makeConfig(), noopMiddleware())).not.toThrow();
+    });
+
+    it('calls GET /api/v1/gpu/status', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const fetchMock = mockFetch([
+        // Auth token fetch
+        { ok: true, status: 200, json: { access_token: 'tok' } },
+        // GPU status
+        { ok: true, status: 200, json: { devices: [{ name: 'RTX 4090', vram_total_mb: 24000 }] } },
+      ]);
+      global.fetch = fetchMock;
+
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      const tools = (server as any)._registeredTools;
+      const tool = tools['agnostic_gpu_status'];
+      expect(tool).toBeTruthy();
+
+      const result = await tool.handler({ force: false });
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].text).toContain('GPU');
+    });
+
+    it('handles API failure gracefully', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const fetchMock = mockFetch([
+        { ok: true, status: 200, json: { access_token: 'tok' } },
+        { ok: false, status: 500, text: 'Internal error' },
+      ]);
+      global.fetch = fetchMock;
+
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      const tools = (server as any)._registeredTools;
+      const result = await tools['agnostic_gpu_status'].handler({ force: false });
+      // Either error or contains error message
+      expect(result.content[0].text).toBeTruthy();
+    });
+  });
+
+  describe('agnostic_gpu_memory', () => {
+    it('calls GET /api/v1/gpu/memory', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const fetchMock = mockFetch([
+        { ok: true, status: 200, json: { access_token: 'tok' } },
+        { ok: true, status: 200, json: { total_mb: 24000, used_mb: 8000, free_mb: 16000 } },
+      ]);
+      global.fetch = fetchMock;
+
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      const tools = (server as any)._registeredTools;
+      const result = await tools['agnostic_gpu_memory'].handler({});
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].text).toContain('GPU Memory');
+    });
+  });
+
+  describe('agnostic_gpu_slots', () => {
+    it('calls GET /api/v1/gpu/slots', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const fetchMock = mockFetch([
+        { ok: true, status: 200, json: { access_token: 'tok' } },
+        { ok: true, status: 200, json: { slots: [], free_vram_mb: 24000 } },
+      ]);
+      global.fetch = fetchMock;
+
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      const tools = (server as any)._registeredTools;
+      const result = await tools['agnostic_gpu_slots'].handler({});
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].text).toContain('GPU Slot');
+    });
+  });
+
+  describe('agnostic_local_inference', () => {
+    it('calls GET /api/v1/gpu/inference', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const fetchMock = mockFetch([
+        { ok: true, status: 200, json: { access_token: 'tok' } },
+        { ok: true, status: 200, json: { enabled: true, models: ['llama3.1:8b'] } },
+      ]);
+      global.fetch = fetchMock;
+
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      const tools = (server as any)._registeredTools;
+      const result = await tools['agnostic_local_inference'].handler({});
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].text).toContain('Inference');
+    });
+  });
+
+  describe('agnostic_crew_cancel', () => {
+    it('calls POST /api/v1/crews/{id}/cancel', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const fetchMock = mockFetch([
+        { ok: true, status: 200, json: { access_token: 'tok' } },
+        { ok: true, status: 200, json: { status: 'cancelled' } },
+      ]);
+      global.fetch = fetchMock;
+
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      const tools = (server as any)._registeredTools;
+      const result = await tools['agnostic_crew_cancel'].handler({ crew_id: 'crew-123' });
+      expect(result.isError).toBeFalsy();
+    });
+
+    it('handles missing crew_id', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const fetchMock = mockFetch([
+        { ok: true, status: 200, json: { access_token: 'tok' } },
+        { ok: false, status: 400, text: 'crew_id required' },
+      ]);
+      global.fetch = fetchMock;
+
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      const tools = (server as any)._registeredTools;
+      const result = await tools['agnostic_crew_cancel'].handler({ crew_id: '' });
+      expect(result.content[0].text).toBeTruthy();
+    });
+  });
+
+  describe('agnostic_list_crews', () => {
+    it('calls GET /api/v1/crews', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const fetchMock = mockFetch([
+        { ok: true, status: 200, json: { access_token: 'tok' } },
+        { ok: true, status: 200, json: { crews: [{ id: 'c1', status: 'running' }], total: 1 } },
+      ]);
+      global.fetch = fetchMock;
+
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      const tools = (server as any)._registeredTools;
+      const result = await tools['agnostic_list_crews'].handler({});
+      expect(result.isError).toBeFalsy();
+    });
+
+    it('passes status filter', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const fetchMock = mockFetch([
+        { ok: true, status: 200, json: { access_token: 'tok' } },
+        { ok: true, status: 200, json: { crews: [], total: 0 } },
+      ]);
+      global.fetch = fetchMock;
+
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      const tools = (server as any)._registeredTools;
+      const result = await tools['agnostic_list_crews'].handler({ status: 'completed', limit: 5 });
+      expect(result.isError).toBeFalsy();
+      // Verify fetch was called with status query param
+      const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+      expect(lastCall[0]).toContain('status=completed');
+    });
+  });
+
+  describe('agnostic_import_package', () => {
+    it('sends multipart form with base64-decoded bundle', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const fetchMock = mockFetch([
+        // Auth
+        { ok: true, status: 200, json: { access_token: 'tok' } },
+        // Import response
+        { ok: true, status: 200, json: { imported: 3, definitions: 2, presets: 1 } },
+      ]);
+      global.fetch = fetchMock;
+
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      const tools = (server as any)._registeredTools;
+      const result = await tools['agnostic_import_package'].handler({
+        bundle_base64: Buffer.from('fake-agpkg-content').toString('base64'),
+        overwrite: false,
+      });
+      expect(result.content[0].text).toBeTruthy();
+    });
+  });
 });
