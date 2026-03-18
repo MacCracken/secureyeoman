@@ -4,6 +4,17 @@
  * Re-exports all shared types for convenient importing
  */
 
+import { z } from 'zod';
+
+// ── API Error Response ──────────────────────────────────────────────
+
+export const ApiErrorResponseSchema = z.object({
+  error: z.string(),
+  message: z.string(),
+  statusCode: z.number().int(),
+});
+export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
+
 // Task types
 export {
   TaskStatus,

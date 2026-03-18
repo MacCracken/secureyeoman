@@ -315,7 +315,13 @@ export function registerScimRoutes(app: FastifyInstance, opts: ScimRoutesOptions
 
 function handleScimError(reply: FastifyReply, err: unknown) {
   if (err instanceof ScimError) {
-    return reply.code(err.statusCode).send(ScimManager.scimError(err.message, err.statusCode));
+    return sendError(reply, err.statusCode, err.message, {
+      extra: {
+        schemas: [SCIM_SCHEMAS.Error],
+        detail: err.message,
+        status: err.statusCode,
+      },
+    });
   }
   return sendError(reply, 500, err instanceof Error ? err.message : 'Internal server error');
 }

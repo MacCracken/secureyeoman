@@ -16,6 +16,7 @@ export function errorToString(err: unknown): string {
 }
 
 import type { FastifyReply } from 'fastify';
+import type { ApiErrorResponse } from '@secureyeoman/shared';
 
 const HTTP_STATUS_NAMES: Record<number, string> = {
   400: 'Bad Request',
@@ -40,7 +41,7 @@ export function sendError(
   statusCode: number,
   message: string,
   opts?: { headers?: Record<string, string>; extra?: Record<string, unknown> }
-) {
+): FastifyReply {
   // For 500 Internal Server Error, sanitize the message to avoid leaking internals.
   // Other 5xx codes (502, 503) use intentional status descriptions and are safe to surface.
   const safeMessage = statusCode === 500 ? 'An internal error occurred' : message;
@@ -49,10 +50,11 @@ export function sendError(
       reply.header(k, v);
     }
   }
-  return reply.code(statusCode).send({
+  const body: ApiErrorResponse & Record<string, unknown> = {
     error: httpStatusName(statusCode),
     message: safeMessage,
     statusCode,
     ...opts?.extra,
-  });
+  };
+  return reply.code(statusCode).send(body);
 }
