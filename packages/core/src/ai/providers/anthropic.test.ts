@@ -102,7 +102,9 @@ describe('AnthropicProvider', () => {
       await provider.chat(request);
 
       const callArgs = mockClient.messages.create.mock.calls[0][0];
-      expect(callArgs.system).toBe('You are helpful.');
+      expect(callArgs.system).toEqual([
+        { type: 'text', text: 'You are helpful.', cache_control: { type: 'ephemeral' } },
+      ]);
       expect(callArgs.messages).toHaveLength(1);
       expect(callArgs.messages[0].role).toBe('user');
     });

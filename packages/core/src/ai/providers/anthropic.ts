@@ -81,14 +81,15 @@ export class AnthropicProvider extends BaseProvider {
     try {
       const { system, messages } = this.mapMessages(request.messages);
       const model = this.resolveModel(request);
+      const cachedSystem = this.buildCachedSystem(system);
 
       const params: Anthropic.MessageCreateParams = {
         model,
         max_tokens: this.resolveMaxTokens(request),
         temperature: this.resolveTemperature(request),
         messages,
-        ...(system ? { system } : {}),
-        ...(request.tools?.length ? { tools: this.mapTools(request.tools) } : {}),
+        ...(cachedSystem ? { system: cachedSystem } : {}),
+        ...(request.tools?.length ? { tools: this.mapToolsCached(request.tools) } : {}),
         ...(request.stopSequences?.length ? { stop_sequences: request.stopSequences } : {}),
         ...(request.thinkingBudgetTokens
           ? { thinking: { type: 'enabled' as const, budget_tokens: request.thinkingBudgetTokens } }
@@ -106,6 +107,7 @@ export class AnthropicProvider extends BaseProvider {
   async *chatStream(request: AIRequest): AsyncGenerator<AIStreamChunk, void, unknown> {
     const { system, messages } = this.mapMessages(request.messages);
     const model = this.resolveModel(request);
+    const cachedSystem = this.buildCachedSystem(system);
 
     const params: Anthropic.MessageCreateParams = {
       model,
@@ -113,8 +115,8 @@ export class AnthropicProvider extends BaseProvider {
       temperature: this.resolveTemperature(request),
       messages,
       stream: true,
-      ...(system ? { system } : {}),
-      ...(request.tools?.length ? { tools: this.mapTools(request.tools) } : {}),
+      ...(cachedSystem ? { system: cachedSystem } : {}),
+      ...(request.tools?.length ? { tools: this.mapToolsCached(request.tools) } : {}),
       ...(request.stopSequences?.length ? { stop_sequences: request.stopSequences } : {}),
       ...(request.thinkingBudgetTokens
         ? { thinking: { type: 'enabled' as const, budget_tokens: request.thinkingBudgetTokens } }
@@ -202,6 +204,24 @@ export class AnthropicProvider extends BaseProvider {
 
   // ─── Mapping Helpers ─────────────────────────────────────────
 
+  /**
+   * Build a cache-enabled system parameter for Anthropic prompt caching.
+   * Splits the system prompt into a cacheable block with cache_control: ephemeral,
+   * so repeated calls with the same system prompt pay 90% less for cached input tokens.
+   */
+  private buildCachedSystem(
+    system: string | undefined
+  ): Anthropic.MessageCreateParams['system'] | undefined {
+    if (!system) return undefined;
+    return [
+      {
+        type: 'text' as const,
+        text: system,
+        cache_control: { type: 'ephemeral' as const },
+      },
+    ] as unknown as Anthropic.MessageCreateParams['system'];
+  }
+
   private mapMessages(messages: AIMessage[]): {
     system: string | undefined;
     messages: Anthropic.MessageParam[];
@@ -271,6 +291,23 @@ export class AnthropicProvider extends BaseProvider {
       description: t.description ?? '',
       input_schema: t.parameters as Anthropic.Tool['input_schema'],
     }));
+  }
+
+  /**
+   * Map tools with cache_control on the last tool definition.
+   * Anthropic caches everything up to and including the block marked ephemeral,
+   * so marking the last tool caches the entire tool array + system prompt.
+   */
+  private mapToolsCached(tools: Tool[]): Anthropic.Tool[] {
+    const mapped = this.mapTools(tools);
+    if (mapped.length > 0) {
+      const last = mapped[mapped.length - 1];
+      mapped[mapped.length - 1] = {
+        ...last,
+        cache_control: { type: 'ephemeral' as const },
+      } as Anthropic.Tool;
+    }
+    return mapped;
   }
 
   private mapResponse(response: Anthropic.Message, model: string): AIResponse {

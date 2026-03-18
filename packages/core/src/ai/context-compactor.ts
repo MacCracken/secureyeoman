@@ -16,20 +16,16 @@
  */
 
 import type { AIRequest } from '@secureyeoman/shared';
+import { countTokens } from '../chat/compression/token-counter.js';
 
 // ── Token estimation ──────────────────────────────────────────────────────────
-
-/** ~4 chars/token — consistent with model-router and chunker heuristics. */
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
 
 function estimateMessageTokens(messages: AIRequest['messages']): number {
   let total = 0;
   for (const msg of messages) {
     const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
     // Add ~4 overhead per message for role + framing tokens
-    total += estimateTokens(content) + 4;
+    total += countTokens(content) + 4;
   }
   return total;
 }

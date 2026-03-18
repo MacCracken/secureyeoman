@@ -72,6 +72,15 @@ export interface ChatRoutesOptions {
 
 // ─── Module-level constants shared by both chat handlers ────────────────────
 
+/**
+ * Cheap fast-tier model used for context compaction summarisation.
+ * Avoids paying premium-model prices for a simple summarisation side-call.
+ */
+const COMPACTION_MODEL = 'claude-haiku-3-5-20241022';
+
+/** Max character length for tool descriptions sent in schemas. */
+const TOOL_DESCRIPTION_MAX_CHARS = 200;
+
 const CREATION_TOOL_LABELS: Record<string, string> = {
   create_skill: 'Skill',
   update_skill: 'Skill',
@@ -435,7 +444,12 @@ export function filterMcpTools(
     const parameters: Tool['parameters'] = raw.type
       ? (raw as Tool['parameters'])
       : { type: 'object', properties: {}, ...(raw as object) };
-    tools.push({ name: tool.name, description: tool.description || undefined, parameters });
+    // Truncate verbose tool descriptions to save tokens per request
+    let desc = tool.description || undefined;
+    if (desc && desc.length > TOOL_DESCRIPTION_MAX_CHARS) {
+      desc = desc.slice(0, TOOL_DESCRIPTION_MAX_CHARS - 1) + '…';
+    }
+    tools.push({ name: tool.name, description: desc, parameters });
   }
 
   return tools;
@@ -1256,7 +1270,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           messages.length = 0;
           messages.push(...system, ...nonSystem);
         } else {
-          // 'summarise' — default
+          // 'summarise' — default; use a cheap fast-tier model to avoid
+          // paying premium-model prices for a summarisation side-call.
           try {
             const compactionResult = await compactor.compact(
               messages,
@@ -1265,6 +1280,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 const summaryReq: AIRequest = {
                   messages: [{ role: 'user', content: prompt }],
                   stream: false,
+                  model: COMPACTION_MODEL,
+                  maxTokens: 1024,
                 };
                 const summaryResp = await aiClient.chat(summaryReq, {
                   source: 'context_compaction',
@@ -2324,7 +2341,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 currentModel,
                 async (prompt) => {
                   const summaryResp = await aiClient.chat(
-                    { messages: [{ role: 'user', content: prompt }], stream: false },
+                    {
+                      messages: [{ role: 'user', content: prompt }],
+                      stream: false,
+                      model: COMPACTION_MODEL,
+                      maxTokens: 1024,
+                    },
                     { source: 'context_compaction' }
                   );
                   return summaryResp.content;
