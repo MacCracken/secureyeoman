@@ -590,3 +590,177 @@ describe('pcap tools — tshark unavailable', () => {
     expect(result.content[0]!.text).toContain('tshark');
   });
 });
+
+// ─── Additional Coverage ──────────────────────────────────────────────────────
+
+describe('isIpInCidrNet — edge cases', () => {
+  it('handles /16 correctly', () => {
+    expect(isIpInCidrNet('172.16.5.10', '172.16.0.0/16')).toBe(true);
+    expect(isIpInCidrNet('172.17.0.1', '172.16.0.0/16')).toBe(false);
+  });
+
+  it('handles /8 correctly', () => {
+    expect(isIpInCidrNet('10.255.255.255', '10.0.0.0/8')).toBe(true);
+    expect(isIpInCidrNet('11.0.0.1', '10.0.0.0/8')).toBe(false);
+  });
+
+  it('handles /1 correctly', () => {
+    expect(isIpInCidrNet('127.255.255.255', '0.0.0.0/1')).toBe(true);
+    expect(isIpInCidrNet('128.0.0.1', '0.0.0.0/1')).toBe(false);
+  });
+
+  it('returns false for negative prefix', () => {
+    expect(isIpInCidrNet('10.0.0.1', '10.0.0.0/-1')).toBe(false);
+  });
+
+  it('returns false for prefix > 32', () => {
+    expect(isIpInCidrNet('10.0.0.1', '10.0.0.0/33')).toBe(false);
+  });
+
+  it('returns false for empty string IP', () => {
+    expect(isIpInCidrNet('', '10.0.0.0/24')).toBe(false);
+  });
+
+  it('returns false for empty string CIDR', () => {
+    expect(isIpInCidrNet('10.0.0.1', '')).toBe(false);
+  });
+
+  it('returns false for IPv6-like addresses', () => {
+    expect(isIpInCidrNet('::1', '::0/128')).toBe(false);
+  });
+});
+
+describe('matchesScopeNet — additional cases', () => {
+  it('matches apex domain for suffix entry', () => {
+    expect(matchesScopeNet('example.com', '.example.com')).toBe(true);
+  });
+
+  it('matches deep subdomain', () => {
+    expect(matchesScopeNet('a.b.c.example.com', 'example.com')).toBe(true);
+  });
+
+  it('rejects partial hostname match', () => {
+    expect(matchesScopeNet('notexample.com', 'example.com')).toBe(false);
+  });
+
+  it('rejects suffix match without leading dot', () => {
+    expect(matchesScopeNet('malexample.com', 'example.com')).toBe(false);
+  });
+});
+
+describe('calculateSubnet — additional cases', () => {
+  it('/16 — class B', () => {
+    const result = calculateSubnet('192.168.0.0/16');
+    expect(result.subnetMask).toBe('255.255.0.0');
+    expect(result.hostCount).toBe(65534);
+    expect(result.prefixLength).toBe(16);
+  });
+
+  it('/28 — small subnet', () => {
+    const result = calculateSubnet('10.0.0.0/28');
+    expect(result.subnetMask).toBe('255.255.255.240');
+    expect(result.hostCount).toBe(14);
+  });
+
+  it('/0 — entire address space', () => {
+    const result = calculateSubnet('0.0.0.0/0');
+    expect(result.subnetMask).toBe('0.0.0.0');
+    expect(result.prefixLength).toBe(0);
+  });
+
+  it('correctly computes broadcast address', () => {
+    const result = calculateSubnet('10.0.0.0/30');
+    expect(result.broadcast).toBe('10.0.0.3');
+    expect(result.network).toBe('10.0.0.0');
+    expect(result.firstHost).toBe('10.0.0.1');
+    expect(result.lastHost).toBe('10.0.0.2');
+  });
+});
+
+describe('calculateVlsm — additional cases', () => {
+  it('allocates single subnet', () => {
+    const allocs = calculateVlsm('10.0.0.0/24', [50]);
+    expect(allocs).toHaveLength(1);
+    expect(allocs[0]!.allocatedHosts).toBeGreaterThanOrEqual(50);
+  });
+
+  it('allocates many small subnets', () => {
+    const allocs = calculateVlsm('10.0.0.0/24', [2, 2, 2, 2, 2, 2]);
+    expect(allocs).toHaveLength(6);
+    allocs.forEach(a => { expect(a.allocatedHosts).toBeGreaterThanOrEqual(2); });
+  });
+});
+
+describe('subnetMaskToWildcard — additional cases', () => {
+  it('accepts dotted-decimal 255.255.0.0', () => {
+    const result = subnetMaskToWildcard('255.255.0.0');
+    expect(result).toBe('0.0.255.255');
+  });
+
+  it('accepts dotted-decimal 255.0.0.0', () => {
+    const result = subnetMaskToWildcard('255.0.0.0');
+    expect(result).toBe('0.255.255.255');
+  });
+
+  it('accepts dotted-decimal 255.255.255.128', () => {
+    const result = subnetMaskToWildcard('255.255.255.128');
+    expect(result).toBe('0.0.0.127');
+  });
+});
+
+describe('NVD tool registration', () => {
+  it('registers nvd_cve_search when exposeNvd is true', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    await registerNetworkTools(server, makeConfig(), noopMiddleware());
+    const tools = getRegistered(server);
+    expect(tools['nvd_cve_search']).toBeTruthy();
+    expect(tools['nvd_cve_by_software']).toBeTruthy();
+    expect(tools['nvd_cve_get']).toBeTruthy();
+  });
+});
+
+describe('disabled tool stubs — network categories', () => {
+  it('registers stubs for discovery tools when exposeNetworkDiscovery is false', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    const config = makeConfig({ exposeNetworkDiscovery: false });
+    await registerNetworkTools(server, config, noopMiddleware());
+    const tools = getRegistered(server);
+    // Discovery tools should be stubs
+    const discoveryTools = ['network_discovery_cdp', 'network_discovery_lldp', 'network_topology_map'];
+    for (const name of discoveryTools) {
+      if (tools[name]) {
+        const result = await tools[name]!.handler({});
+        expect(result.isError).toBe(true);
+      }
+    }
+  });
+
+  it('registers stubs for audit tools when exposeNetworkAudit is false', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    const config = makeConfig({ exposeNetworkAudit: false });
+    await registerNetworkTools(server, config, noopMiddleware());
+    const tools = getRegistered(server);
+    const auditTools = ['network_audit_acl', 'network_audit_aaa', 'network_audit_port_security'];
+    for (const name of auditTools) {
+      if (tools[name]) {
+        const result = await tools[name]!.handler({});
+        expect(result.isError).toBe(true);
+      }
+    }
+  });
+});
+
+describe('vlsm_calculator tool handler', () => {
+  it('returns VLSM allocations', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    await registerNetworkTools(server, makeConfig(), noopMiddleware());
+    const tools = getRegistered(server);
+    const vlsmTool = tools['vlsm_calculator'];
+    if (vlsmTool) {
+      const result = await vlsmTool.handler({ parent_cidr: '10.0.0.0/24', host_counts: [50, 20, 10] });
+      expect(result.isError).toBeFalsy();
+      const parsed = JSON.parse(result.content[0]!.text);
+      expect(parsed.allocations).toHaveLength(3);
+    }
+  });
+});

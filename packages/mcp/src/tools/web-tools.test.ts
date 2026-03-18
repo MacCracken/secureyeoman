@@ -724,3 +724,141 @@ describe('web_search_multi registration', () => {
     expect(() => registerWebTools(server, config, middleware)).not.toThrow();
   });
 });
+
+// ─── Additional Coverage ──────────────────────────────────────────────────────
+
+describe('validateUrl — additional SSRF vectors', () => {
+  const config = makeConfig();
+
+  it('blocks 0.0.0.0', () => {
+    expect(() => { validateUrl('http://0.0.0.0/path', config); }).toThrow();
+  });
+
+  it('allows standard external HTTPS URLs', () => {
+    const url = validateUrl('https://api.example.com/v1/data', config);
+    expect(url.hostname).toBe('api.example.com');
+  });
+
+  it('allows URLs with ports', () => {
+    const url = validateUrl('https://example.com:8443/api', config);
+    expect(url.port).toBe('8443');
+  });
+
+  it('blocks data: URLs', () => {
+    expect(() => { validateUrl('data:text/html,<h1>test</h1>', config); }).toThrow();
+  });
+
+  it('blocks javascript: URLs', () => {
+    expect(() => { validateUrl('javascript:alert(1)', config); }).toThrow();
+  });
+});
+
+// WebRateLimiter additional tests covered by existing suite
+
+describe('truncateOutput — edge cases', () => {
+  it('handles empty string', () => {
+    expect(truncateOutput('')).toBe('');
+  });
+
+  it('handles string at exactly the limit', () => {
+    const str = 'x'.repeat(512 * 1024);
+    const result = truncateOutput(str);
+    expect(result.length).toBeLessThanOrEqual(512 * 1024 + 100); // some slack for truncation message
+  });
+});
+
+describe('stripHtmlTags — additional cases', () => {
+  it('preserves text content', () => {
+    expect(stripHtmlTags('<p>Hello <b>world</b></p>')).toContain('Hello');
+    expect(stripHtmlTags('<p>Hello <b>world</b></p>')).toContain('world');
+  });
+
+  it('handles nested tags', () => {
+    expect(stripHtmlTags('<div><span>text</span></div>')).toContain('text');
+  });
+
+  it('handles self-closing tags', () => {
+    expect(stripHtmlTags('line1<br/>line2')).toContain('line1');
+    expect(stripHtmlTags('line1<br/>line2')).toContain('line2');
+  });
+});
+
+describe('estimateTokens — additional cases', () => {
+  it('returns 0 for empty string', () => {
+    expect(estimateTokens('')).toBe(0);
+  });
+
+  it('returns 1 for very short strings', () => {
+    expect(estimateTokens('hi')).toBe(1);
+  });
+
+  it('estimates roughly 4 chars per token', () => {
+    const text = 'a'.repeat(400);
+    expect(estimateTokens(text)).toBe(100);
+  });
+});
+
+describe('buildFrontMatter — additional cases', () => {
+  it('handles values with special characters', () => {
+    const result = buildFrontMatter({ title: 'Test: Value' });
+    expect(result).toContain('"Test: Value"');
+  });
+
+  it('handles empty metadata object', () => {
+    const result = buildFrontMatter({});
+    expect(result).toContain('---');
+  });
+});
+
+describe('aggregateResults — additional cases', () => {
+  it('preserves order for non-overlapping results', () => {
+    const results = aggregateResults([
+      { provider: 'brave', results: [{ title: 'A', url: 'https://a.com', snippet: 'a' }] },
+      { provider: 'bing', results: [{ title: 'B', url: 'https://b.com', snippet: 'b' }] },
+    ]);
+    expect(results).toHaveLength(2);
+  });
+
+  it('merges sources for duplicate URLs', () => {
+    const results = aggregateResults([
+      { provider: 'brave', results: [{ title: 'Same', url: 'https://same.com', snippet: 'x' }] },
+      { provider: 'bing', results: [{ title: 'Same', url: 'https://same.com', snippet: 'y' }] },
+    ]);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.sources.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('ranks cross-referenced results first', () => {
+    const results = aggregateResults([
+      { provider: 'brave', results: [
+        { title: 'Unique', url: 'https://unique.com', snippet: 'u' },
+        { title: 'Shared', url: 'https://shared.com', snippet: 's1' },
+      ]},
+      { provider: 'bing', results: [
+        { title: 'Shared', url: 'https://shared.com', snippet: 's2' },
+      ]},
+    ]);
+    expect(results[0]!.url).toBe('https://shared.com');
+  });
+});
+
+describe('getAvailableProviders — additional cases', () => {
+  it('returns only duckduckgo when no API keys set', () => {
+    const providers = getAvailableProviders(makeConfig());
+    expect(providers).toContain('duckduckgo');
+    expect(providers).not.toContain('brave');
+    expect(providers).not.toContain('bing');
+  });
+
+  it('includes multiple providers when keys set', () => {
+    const providers = getAvailableProviders(makeConfig({
+      braveSearchApiKey: 'key',
+      bingSearchApiKey: 'key',
+      exaApiKey: 'key',
+    }));
+    expect(providers).toContain('duckduckgo');
+    expect(providers).toContain('brave');
+    expect(providers).toContain('bing');
+    expect(providers).toContain('exa');
+  });
+});

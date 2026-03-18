@@ -424,4 +424,171 @@ describe('security-tools', () => {
       await expect(registerSecurityTools(server, config, noopMiddleware())).resolves.not.toThrow();
     });
   });
+
+  describe('isIpInCidr — additional edge cases', () => {
+    it('handles /16 range correctly', () => {
+      expect(isIpInCidr('172.16.5.10', '172.16.0.0/16')).toBe(true);
+      expect(isIpInCidr('172.17.0.1', '172.16.0.0/16')).toBe(false);
+    });
+
+    it('handles /8 range correctly', () => {
+      expect(isIpInCidr('10.255.255.255', '10.0.0.0/8')).toBe(true);
+      expect(isIpInCidr('11.0.0.1', '10.0.0.0/8')).toBe(false);
+    });
+
+    it('returns false for non-numeric prefix', () => {
+      expect(isIpInCidr('10.0.0.1', '10.0.0.0/abc')).toBe(false);
+    });
+
+    it('returns false for prefix > 32', () => {
+      expect(isIpInCidr('10.0.0.1', '10.0.0.0/33')).toBe(false);
+    });
+
+    it('returns false for negative prefix', () => {
+      expect(isIpInCidr('10.0.0.1', '10.0.0.0/-1')).toBe(false);
+    });
+
+    it('returns false for empty IP', () => {
+      expect(isIpInCidr('', '10.0.0.0/24')).toBe(false);
+    });
+
+    it('returns false for empty CIDR', () => {
+      expect(isIpInCidr('10.0.0.1', '')).toBe(false);
+    });
+
+    it('returns false for CIDR without slash', () => {
+      expect(isIpInCidr('10.0.0.1', '10.0.0.0')).toBe(false);
+    });
+  });
+
+  describe('matchesScope — additional edge cases', () => {
+    it('matches deep subdomain of allowed hostname', () => {
+      expect(matchesScope('a.b.c.target.com', 'target.com')).toBe(true);
+    });
+
+    it('rejects partial hostname match (prefix)', () => {
+      expect(matchesScope('nottarget.com', 'target.com')).toBe(false);
+    });
+
+    it('rejects completely unrelated domain with suffix entry', () => {
+      expect(matchesScope('evil.com', '.target.com')).toBe(false);
+    });
+
+    it('matches apex with suffix entry (leading dot)', () => {
+      expect(matchesScope('target.com', '.target.com')).toBe(true);
+    });
+  });
+
+  describe('parseNmapXml — additional cases', () => {
+    it('parses host with multiple ports and service info', () => {
+      const xml = `<?xml version="1.0"?>
+<nmaprun>
+  <host><address addr="10.0.0.1"/>
+    <ports>
+      <port protocol="tcp" portid="22"><state state="open"/><service name="ssh" product="OpenSSH" version="8.9"/></port>
+      <port protocol="tcp" portid="80"><state state="open"/><service name="http" product="nginx"/></port>
+      <port protocol="tcp" portid="443"><state state="closed"/><service name="https"/></port>
+    </ports>
+  </host>
+</nmaprun>`;
+      const result = parseNmapXml(xml);
+      expect(result.hosts).toHaveLength(1);
+      expect(result.hosts[0]!.ports).toHaveLength(3);
+    });
+
+    it('parses multiple hosts', () => {
+      const xml = `<?xml version="1.0"?>
+<nmaprun>
+  <host><address addr="10.0.0.1"/><ports><port protocol="tcp" portid="22"><state state="open"/></port></ports></host>
+  <host><address addr="10.0.0.2"/><ports><port protocol="tcp" portid="80"><state state="open"/></port></ports></host>
+</nmaprun>`;
+      const result = parseNmapXml(xml);
+      expect(result.hosts).toHaveLength(2);
+    });
+  });
+
+  describe('parseSqlmapOutput — additional cases', () => {
+    it('detects multiple injectable parameters', () => {
+      const text = `[INFO] the back-end DBMS is MySQL
+[INFO] parameter 'id' is vulnerable
+[INFO] parameter 'name' is vulnerable
+back-end DBMS: MySQL >= 5.0`;
+      const result = parseSqlmapOutput(text);
+      expect(result.dbms).toContain('MySQL');
+    });
+
+    it('handles no-injection output', () => {
+      const result = parseSqlmapOutput('all tested parameters do not appear to be injectable');
+      expect(result.injectable).toEqual([]);
+      expect(result.dbms).toBeNull();
+    });
+  });
+
+  describe('parseNucleiJsonl — additional cases', () => {
+    it('parses multiple findings with severity', () => {
+      const jsonl = [
+        JSON.stringify({ 'template-id': 'cve-2021-1234', host: 'target.com', severity: 'critical', matched: '/login' }),
+        JSON.stringify({ 'template-id': 'xss-reflected', host: 'target.com', severity: 'high', matched: '/search' }),
+      ].join('\n');
+      const result = parseNucleiJsonl(jsonl);
+      expect(result.findings).toHaveLength(2);
+    });
+
+    it('handles mixed valid and invalid JSON lines', () => {
+      const jsonl = `${JSON.stringify({ 'template-id': 'valid', host: 'x.com', severity: 'low', matched: '/' })}\nnot-json\n`;
+      const result = parseNucleiJsonl(jsonl);
+      expect(result.findings.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('parseGobusterOutput — additional cases', () => {
+    it('parses paths from dir mode output', () => {
+      const output = `/admin                (Status: 301) [Size: 178]
+/login                (Status: 200) [Size: 1234]
+/api                  (Status: 403) [Size: 0]`;
+      const result = parseGobusterOutput(output, 'dir');
+      expect(result.found.length).toBeGreaterThanOrEqual(3);
+      expect(result.mode).toBe('dir');
+    });
+
+    it('handles empty output', () => {
+      const result = parseGobusterOutput('', 'dir');
+      expect(result.found).toEqual([]);
+    });
+
+    it('handles dns mode output', () => {
+      const output = `Found: admin.example.com
+Found: mail.example.com`;
+      const result = parseGobusterOutput(output, 'dns');
+      expect(result.mode).toBe('dns');
+    });
+  });
+
+  describe('parseHydraOutput — additional cases', () => {
+    it('parses multiple credentials', () => {
+      const output = `[22][ssh] host: 10.0.0.1   login: admin   password: pass123
+[22][ssh] host: 10.0.0.1   login: root   password: toor`;
+      const result = parseHydraOutput(output);
+      expect(result.credentials.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('handles no credentials found', () => {
+      const output = `0 valid password found\n`;
+      const result = parseHydraOutput(output);
+      expect(result.credentials).toHaveLength(0);
+    });
+  });
+
+  describe('tool registration completeness', () => {
+    it('registers without error with all options enabled', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const config = makeConfig({
+        exposeSecurityTools: true,
+        allowedTargets: ['*'],
+        shodanApiKey: 'test-key',
+        allowBruteForce: true,
+      });
+      await expect(registerSecurityTools(server, config, noopMiddleware())).resolves.not.toThrow();
+    });
+  });
 });

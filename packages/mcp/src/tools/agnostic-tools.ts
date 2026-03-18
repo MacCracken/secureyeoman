@@ -1148,6 +1148,176 @@ export function registerAgnosticTools(
     })
   );
 
+  // ── agnostic_gpu_status ──────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_gpu_status',
+    {
+      description:
+        'Get GPU status for the Agnostic host — available devices, VRAM, utilization, ' +
+        'and temperature. Shows whether GPU-accelerated crew scheduling is available.',
+      inputSchema: {
+        force: z
+          .boolean()
+          .default(false)
+          .describe('Force a fresh hardware probe (bypasses cache)'),
+      },
+    },
+    wrapToolHandler('agnostic_gpu_status', middleware, async (args) => {
+      const query = args.force ? '?force=true' : '';
+      const result = await agnosticRequest(config, 'get', `/api/v1/gpu/status${query}`);
+      return (
+        checkHttpOk(result, 'GPU status failed') ??
+        labelledResponse('GPU Status', result.body)
+      );
+    })
+  );
+
+  // ── agnostic_gpu_memory ──────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_gpu_memory',
+    {
+      description:
+        'Get aggregated GPU memory usage across all devices — total, used, free per device. ' +
+        'Use to check VRAM availability before submitting GPU-intensive crews.',
+      inputSchema: {},
+    },
+    wrapToolHandler('agnostic_gpu_memory', middleware, async () => {
+      const result = await agnosticRequest(config, 'get', '/api/v1/gpu/memory');
+      return (
+        checkHttpOk(result, 'GPU memory failed') ??
+        labelledResponse('GPU Memory', result.body)
+      );
+    })
+  );
+
+  // ── agnostic_gpu_slots ──────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_gpu_slots',
+    {
+      description:
+        'Show active GPU reservations across running crews. Shows which crews hold GPU memory ' +
+        'and how much free VRAM remains after accounting for all reservations.',
+      inputSchema: {},
+    },
+    wrapToolHandler('agnostic_gpu_slots', middleware, async () => {
+      const result = await agnosticRequest(config, 'get', '/api/v1/gpu/slots');
+      return (
+        checkHttpOk(result, 'GPU slots failed') ??
+        labelledResponse('GPU Slot Reservations', result.body)
+      );
+    })
+  );
+
+  // ── agnostic_local_inference ────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_local_inference',
+    {
+      description:
+        'Check local LLM inference offload status — whether local GPU inference is enabled, ' +
+        'which models are available locally (Ollama/vLLM), and their estimated sizes.',
+      inputSchema: {},
+    },
+    wrapToolHandler('agnostic_local_inference', middleware, async () => {
+      const result = await agnosticRequest(config, 'get', '/api/v1/gpu/inference');
+      return (
+        checkHttpOk(result, 'Local inference status failed') ??
+        labelledResponse('Local Inference', result.body)
+      );
+    })
+  );
+
+  // ── agnostic_import_package ─────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_import_package',
+    {
+      description:
+        'Import a .agpkg bundle (agent definitions + presets) into Agnostic. ' +
+        'The bundle must be base64-encoded. Use agnostic_list_definitions to see results.',
+      inputSchema: {
+        bundle_base64: z.string().describe('Base64-encoded .agpkg ZIP file'),
+        overwrite: z
+          .boolean()
+          .default(false)
+          .describe('Overwrite existing definitions/presets with same keys'),
+      },
+    },
+    wrapToolHandler('agnostic_import_package', middleware, async (args) => {
+      // Decode base64 to binary and send as multipart
+      const binary = Buffer.from(args.bundle_base64, 'base64');
+      const formData = new FormData();
+      formData.append('file', new Blob([binary], { type: 'application/zip' }), 'package.agpkg');
+      formData.append('overwrite', String(args.overwrite));
+
+      const authHeaders = await getAuthHeaders(config);
+      const res = await fetch(`${config.agnosticUrl}/api/v1/packages/import`, {
+        method: 'POST',
+        headers: { ...authHeaders },
+        body: formData,
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        return errorResponse(`Import failed (${res.status}): ${body.slice(0, 500)}`);
+      }
+      const body = await res.json();
+      return labelledResponse('Package Import Result', body);
+    })
+  );
+
+  // ── agnostic_crew_cancel ────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_crew_cancel',
+    {
+      description: 'Cancel a running or pending crew by crew_id.',
+      inputSchema: {
+        crew_id: z.string().describe('Crew ID to cancel'),
+      },
+    },
+    wrapToolHandler('agnostic_crew_cancel', middleware, async (args) => {
+      const result = await agnosticRequest(
+        config,
+        'post',
+        `/api/v1/crews/${encodeURIComponent(args.crew_id)}/cancel`
+      );
+      return (
+        checkHttpOk(result, 'Crew cancel failed') ??
+        labelledResponse('Crew Cancelled', result.body)
+      );
+    })
+  );
+
+  // ── agnostic_list_crews ──────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_list_crews',
+    {
+      description: 'List crews with optional status filter and pagination.',
+      inputSchema: {
+        status: z
+          .string()
+          .optional()
+          .describe('Filter by status (pending, running, completed, failed, cancelled)'),
+        limit: z.number().default(20).describe('Max results'),
+      },
+    },
+    wrapToolHandler('agnostic_list_crews', middleware, async (args) => {
+      const params = new URLSearchParams();
+      if (args.status) params.set('status', args.status);
+      params.set('limit', String(args.limit));
+      const result = await agnosticRequest(config, 'get', `/api/v1/crews?${params.toString()}`);
+      return (
+        checkHttpOk(result, 'List crews failed') ??
+        labelledResponse('Crews', result.body)
+      );
+    })
+  );
+
   // ── agnostic_council_review ───────────────────────────────────────────────
 
   server.registerTool(
