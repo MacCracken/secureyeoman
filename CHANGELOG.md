@@ -133,6 +133,16 @@ Complete overhaul of sandbox technology selection and management. All 6 roadmap 
 - **Live technology switching** — `PATCH /api/v1/sandbox/config` with `{ technology: "..." }` now switches immediately via `switchTechnology()` (invalidates cached sandbox instance). No restart required
 - **Health monitoring** — `GET /api/v1/sandbox/health` runs a minimal execution through the active sandbox and returns healthy/degraded status with latency. `healthCheck()` method on SandboxManager
 
+### Security Audit & Code Review
+
+Post-feature security audit of all new code shipped in this cycle. 4 security fixes, 1 test quality fix.
+
+- **GPU probe** — Replaced `execFileSync('ls', ...)` shell-out with `readdir('/dev/dri/')` in `probeIntel()` to eliminate unnecessary child process. All `execFile` calls verified safe (hardcoded binaries, hardcoded args, no user input flows into commands)
+- **Privacy router** — Added audit trail event `ai_privacy_cloud_fallback_sensitive` in `AIClient.chat()` when sensitive content (PII/confidential) is routed to cloud because no local GPU is available. Previously this was silent
+- **Firecracker TAP networking** — Added host format validation (`/^[\da-fA-F.:/]+$/`) in `setupTapNetwork()` before passing `allowedHosts` values to `iptables -d`. Prevents potential iptables argument manipulation via malformed host strings
+- **Agnostic workflow steps** — Added `assertPublicUrl(targetUrl)` SSRF guard in `agnostic_crew` dispatcher before forwarding user-supplied `targetUrl` to Agnostic platform. Prevents internal network scanning via workflow config
+- **Test mock quality** — Added `afterEach` fetch restoration to `agnostic-crew-steps.test.ts` to prevent mock leakage between test suites
+
 ### Roadmap Cleanup
 
 - Removed completed sections: GPU-Aware Inference Routing, Firecracker Sandbox Runtime, Sandbox Selection & Configuration, ESLint Warnings, Agnostic Integration

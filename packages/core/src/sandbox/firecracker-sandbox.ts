@@ -518,7 +518,13 @@ const fn = ${fn.toString()};
       execFileSync('iptables', ['-N', chain], { stdio: 'pipe' });
       execFileSync('iptables', ['-A', chain, '-m', 'state', '--state', 'ESTABLISHED,RELATED', '-j', 'ACCEPT'], { stdio: 'pipe' });
 
+      // Validate host format before passing to iptables (prevent argument injection)
+      const validHostRe = /^[\da-fA-F.:/]+$/; // IPv4, IPv6, CIDR only
       for (const host of allowedHosts) {
+        if (!validHostRe.test(host)) {
+          this.getLogger().warn({ host }, 'Invalid host format in allowedHosts, skipping');
+          continue;
+        }
         execFileSync('iptables', ['-A', chain, '-d', host, '-j', 'ACCEPT'], { stdio: 'pipe' });
       }
 

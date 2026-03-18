@@ -284,6 +284,28 @@ export class AIClient {
       ? await this.evaluatePrivacyRouting(messageContent)
       : null;
 
+    // Warn when sensitive content must go to cloud (no local GPU available)
+    if (
+      privacyDecision?.target === 'cloud' &&
+      privacyDecision.containsPii &&
+      privacyDecision.reason === 'local-insufficient'
+    ) {
+      this.logger?.warn(
+        {
+          classification: privacyDecision.classificationLevel,
+          containsPii: true,
+          reason: privacyDecision.reason,
+          confidence: privacyDecision.confidence,
+        },
+        'Sensitive content routed to cloud — no local GPU/model available for privacy-enforced routing'
+      );
+      void this.auditRecord('ai_privacy_cloud_fallback_sensitive', {
+        classification: privacyDecision.classificationLevel,
+        containsPii: true,
+        reason: privacyDecision.reason,
+      });
+    }
+
     if (privacyDecision?.target === 'local' && privacyDecision.localModel) {
       const localModel = privacyDecision.localModel;
       try {

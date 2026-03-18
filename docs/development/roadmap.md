@@ -117,16 +117,19 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ### Code Review & Audit (2026-03-17)
 
-*Post-feature audit. Large amount of new code shipped in this cycle — GPU routing, Firecracker hardening, sandbox selection, Agnostic integration, 200+ new tests, 269 lint fixes. Review before next feature cycle.*
+*Post-feature audit — security, then code quality.*
 
-- [ ] **Security audit — GPU probe** — Review `gpu-probe.ts` for command injection vectors in `execFile` calls. Verify `nvidia-smi`/`rocm-smi` args are not user-controllable. Check `probeIntel()` `lspci` usage.
-- [ ] **Security audit — privacy router** — Review `privacy-router.ts` DLP integration. Verify that `target: 'local'` decisions are enforced (not just advisory). Check fallback-to-cloud path for sensitive content leakage.
-- [ ] **Security audit — Firecracker hardening** — Review `setupTapNetwork()` iptables chain creation for injection risk. Verify `buildJailerArgs()` cgroup resource values can't be manipulated. Check `saveSnapshot()` curl calls for SSRF.
-- [ ] **Security audit — Agnostic workflow steps** — Review `agnostic_crew` step for SSRF (user-controllable `targetUrl`). Verify JWT token caching doesn't leak across workflow runs. Check template resolution for injection.
-- [ ] **Code quality — eslint-disable audit** — Review all 56 files with `eslint-disable` comments added during lint cleanup. Assess which can be resolved properly vs. which are genuinely suppressed. Prioritize `react-hooks/purity` and `react-hooks/set-state-in-effect` suppressions.
-- [ ] **Code quality — dashboard panel integration** — Verify `GpuStatusPanel`, `SandboxConfigPanel`, and `AgnosticPanel` are properly wired into their parent pages (Settings, Security, Connections). Currently components exist but may need page-level imports.
-- [ ] **Performance — GPU/model probe caching** — Review 30s GPU cache and 60s model cache TTLs. Ensure probes don't block request handling. Consider moving to background refresh instead of on-demand.
-- [ ] **Test review — mock quality** — Review new test mocks for accuracy. Ensure `global.fetch` mocks are restored after each test (some tests may leak). Check `vi.restoreAllMocks()` coverage.
+**Done:**
+- [x] **Security audit — GPU probe** — Replaced `ls` shell-out with `readdir` in `probeIntel()`. `execFile` calls verified safe (hardcoded binary + args, no user input)
+- [x] **Security audit — privacy router** — Added audit log (`ai_privacy_cloud_fallback_sensitive`) when sensitive content falls back to cloud due to no local GPU. Pure function, no injection vectors
+- [x] **Security audit — Firecracker hardening** — Added host format validation (`/^[\da-fA-F.:/]+$/`) before iptables `-d` argument. Chain names verified safe (sanitized vmId). Snapshot curl calls verified safe (Unix socket, no user URLs)
+- [x] **Security audit — Agnostic workflow steps** — Added `assertPublicUrl(targetUrl)` SSRF guard before forwarding to Agnostic. JWT token verified instance-scoped (no cross-run leakage). Template resolution verified safe (no eval)
+- [x] **Test review — mock quality** — Added `afterEach` fetch restoration to `agnostic-crew-steps.test.ts`. Other test files verified clean
+
+**Backlog (pick up later):**
+- [ ] **eslint-disable audit** — Review 56 files with suppressed warnings. Prioritize `react-hooks/purity` and `set-state-in-effect`
+- [ ] **Dashboard panel wiring** — Verify GpuStatusPanel, SandboxConfigPanel, AgnosticPanel imports in parent pages
+- [ ] **GPU/model probe caching** — Review 30s/60s TTLs. Consider background refresh
 
 ### Test Coverage
 

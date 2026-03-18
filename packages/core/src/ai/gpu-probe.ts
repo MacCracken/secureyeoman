@@ -115,11 +115,17 @@ async function probeAmd(): Promise<GpuDevice[]> {
 
 async function probeIntel(): Promise<GpuDevice[]> {
   try {
-    // Check for Intel GPU via sysfs
-    const { stdout } = await execFileAsync('ls', ['/dev/dri/'], { timeout: 2000 });
-    if (!stdout.includes('render')) return [];
+    // Check for Intel GPU via sysfs (use readdir instead of shelling out to ls)
+    const { readdir } = await import('node:fs/promises');
+    let driEntries: string[];
+    try {
+      driEntries = await readdir('/dev/dri/');
+    } catch {
+      return [];
+    }
+    if (!driEntries.some((e) => e.startsWith('render'))) return [];
 
-    // Check if it's Intel via lspci
+    // Check if it's Intel via lspci (hardcoded binary + args, no user input)
     const { stdout: lspci } = await execFileAsync('lspci', ['-nn'], { timeout: 5000 });
     const intelGpus = lspci.split('\n').filter(
       (line) => line.includes('VGA') && line.toLowerCase().includes('intel')

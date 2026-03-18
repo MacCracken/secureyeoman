@@ -48,9 +48,15 @@ function makeRun(input: Record<string, unknown> = {}): WorkflowRun {
   } as WorkflowRun;
 }
 
+const originalFetch = global.fetch;
+
 describe('agnostic_crew workflow step', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
   });
 
   it('fails step when agnostic is not configured', async () => {
@@ -176,6 +182,10 @@ describe('agnostic_crew workflow step', () => {
 describe('agnostic_crew_wait workflow step', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
   });
 
   it('fails step when agnostic is not configured', async () => {

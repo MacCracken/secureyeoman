@@ -1170,6 +1170,11 @@ export class WorkflowEngine {
           ? this.resolveTemplate(String(cfg.targetUrl), ctx)
           : undefined;
 
+        // SSRF guard: validate targetUrl is a public URL before forwarding to Agnostic
+        if (targetUrl) {
+          assertPublicUrl(targetUrl);
+        }
+
         this.logger.info(
           { preset, title, priority },
           'agnostic_crew: submitting crew to Agnostic platform'
