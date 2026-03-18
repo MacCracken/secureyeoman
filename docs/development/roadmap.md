@@ -83,7 +83,7 @@ SY side (secureyeoman repo):
 
 ## License Up: Tier Audit & Enforcement Activation
 
-**Priority**: P1 — Commercial. Must complete before public release.
+**Priority**: P4 — Post-launch. Turn on the switch after the product is public and solid.
 
 **Prerequisites**: Phase 106 (license gating infrastructure — ✅).
 
@@ -107,12 +107,12 @@ SY side (secureyeoman repo):
 - [ ] **Pricing page** — Public-facing pricing comparison page for secureyeoman.ai. Feature breakdown per tier, FAQ, upgrade flow.
 - [ ] **Payment provider setup** — Select replacement provider (Polar, Paddle, or Stripe direct), create store, products, and variants. Configure webhook URL pointing to licensing service. Set checkout URL env vars in dashboard build.
 
-### Repository & Public Identity
+### Repository & Public Identity (P4 — do at launch time)
 
 - [ ] **Transfer repositories to `yeoman.maccracken`** — Transfer `secureyeoman` and `secureyeoman-community-repo` to the `yeoman.maccracken` GitHub account. This will be the public-facing org. Update all references: README badges, install scripts (`curl -fsSL https://secureyeoman.ai/install`), Docker image paths (GHCR), Helm chart repo URLs, community sync default URL, and CI/CD workflow `GITHUB_REPOSITORY` refs.
 - [ ] **Post-transfer fixups** — Update `package.json` repository fields, CHANGELOG links, ADR cross-references, dashboard "Report Issue" URLs, and any hardcoded GitHub URLs in docs or code. Verify GitHub redirect from old org works for existing clones.
 
-### Payment & Monetization
+### Payment & Monetization (P4 — post-launch)
 
 **Architecture**: Separate `secureyeoman-licensing` repo (`../secureyeoman-licensing/`). Lightweight Fastify + SQLite service that receives payment provider webhooks, mints Ed25519-signed keys, and serves key retrieval API. SY dashboard opens provider checkout in-app, polls licensing service for key after purchase, auto-applies via `POST /api/v1/license/key`.
 
@@ -136,7 +136,7 @@ SY side (secureyeoman repo):
 
 ## E2E Test Expansion
 
-**Priority**: P1 — Quality. Currently 9 files / 82 tests. Target: cover all major user flows.
+**Priority**: P1 — Quality. Currently 9 files / 82 tests. Target: cover all major user flows. Keep expanding alongside feature work.
 
 **Goal**: Expand backend E2E test suite (`src/__e2e__/`) to cover flows that unit tests can't adequately verify — multi-step API sequences, cross-module interactions, auth flows.
 
