@@ -212,6 +212,18 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
 | Core E2E | Expand coverage | Add training, delegation, analytics flows (needs Docker) |
 
+### Code Audit Backlog (Low Priority)
+
+Items identified during code audit rounds. Fix opportunistically.
+
+- [ ] **File upload chunk count limit** — `document-routes.ts` collects multipart chunks into unbounded array. Add max chunk count as defense-in-depth (mitigated by 20MB fileSize limit).
+- [ ] **WebSocket unsubscribe consistency** — Unsubscribe succeeds even without subscribe permission. Cosmetic — no data leak possible.
+- [ ] **Input validator ReDoS** — Injection detection regexes could theoretically backtrack on adversarial input. Mitigated by request size limits. Test with pathological inputs.
+- [ ] **Empty catch blocks** — ~20+ files have `catch {}` or `catch { /* */ }` that swallow errors. Replace with `catch (err) { logger.warn(err) }` for production visibility.
+- [ ] **Agnostic token caching race** — Concurrent `getAgnosticHeaders()` calls can double-fetch tokens. Add simple mutex or once-pattern.
+- [ ] **Template resolution NaN risk** — `resolveTemplate` returns empty string for missing paths; downstream `Number()` conversions produce NaN. Add validation.
+- [ ] **Dependency confusion** — Verify `@secureyeoman/shared` is not publishable to public npm or is org-scoped.
+
 ---
 
 ## Future Features — Demand-Gated

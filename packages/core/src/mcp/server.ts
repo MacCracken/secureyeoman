@@ -83,6 +83,21 @@ export class McpServer {
       });
     }
 
-    return { status: 'ok', toolName, args };
+    // Skill tools — return skill metadata. Skills are executed by the chat
+    // route via the LLM tool-call loop, not directly via MCP tool dispatch.
+    if (toolName.startsWith('friday_skill_') && this.soulManager) {
+      const skillId = toolName.replace('friday_skill_', '');
+      try {
+        const skill = await this.soulManager.getSkill(skillId);
+        if (!skill) return { error: `Skill not found: ${skillId}` };
+        return { skillId: skill.id, name: skill.name, description: skill.description, args };
+      } catch (err) {
+        this.logger.warn({ toolName, skillId, error: String(err) }, 'Skill lookup failed');
+        return { error: `Skill lookup failed: ${err instanceof Error ? err.message : String(err)}` };
+      }
+    }
+
+    this.logger.warn({ toolName }, 'Unknown MCP tool call — no handler');
+    return { error: `Unknown tool: ${toolName}` };
   }
 }
