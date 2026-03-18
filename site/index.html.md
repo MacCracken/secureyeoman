@@ -47,7 +47,7 @@ Anthropic, OpenAI, Gemini, Ollama, DeepSeek, OpenCode, Mistral, LM Studio, Local
 ### Multi-Agent & Workflows
 - A2A protocol (E2E encrypted)
 - Swarms + Teams + Council of AIs
-- DAG workflows — 19 step types
+- DAG workflows — 23 step types
 - ReactFlow visual builder + L3 approval gates
 
 ### Cognitive Memory & Knowledge
@@ -107,7 +107,7 @@ The OpenClaw security crisis (2026): 13+ CVEs (20+ GHSAs) including CVSS 8.8 RCE
 | Secrets / Vault | SecretsManager | No | No | TEE vault | No |
 | MCP Tools | 485 | Limited | Inherits OC | Via path | No |
 | CVEs (2026) | 0 | 13+ | Inherits OC | 0 | Pre-prod |
-| DAG Workflows | 19 step types | No | No | No | No |
+| DAG Workflows | 23 step types | No | No | No | No |
 | Integrations | 38 | 23+ | No | ~2 | 11+ |
 | Training Pipeline | Full | No | No | No | No |
 | Air-Gap / Offline | Full | Yes | Needs GPU | Cloud req | Yes |

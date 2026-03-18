@@ -77,7 +77,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 | **Security** | JWT/OIDC/SAML auth, RBAC, AES-256-GCM encryption, mTLS, sandboxing (Landlock/seccomp/V8 isolate/gVisor/WASM, 5 built-in profiles), prompt security, content guardrails, DLP (PII detection, classification, watermarking), secrets management (Vault/OpenBao), WebAuthn/FIDO2, break-glass emergency access, chaos engineering |
 | **AI Models** | 13 providers (Anthropic, OpenAI, Gemini, Ollama, DeepSeek, Mistral, Grok + more), multi-account cost tracking, automatic fallback, local-first routing |
 | **Agents** | Sub-agent delegation, swarms (3 strategies, 5 templates), teams, Council of AIs, A2A protocol, cross-instance federation, Agent Replay & Debugging |
-| **Workflows** | DAG orchestration (19 step types), visual ReactFlow builder, human approval gates, 10 built-in templates |
+| **Workflows** | DAG orchestration (23 step types), visual ReactFlow builder, human approval gates, 22 built-in templates |
 | **Training** | Dataset export, distillation, LoRA fine-tuning, pre-training from scratch, LLM-as-Judge eval, DPO/RLHF, federated learning, conversation analytics, A/B experiments, autoresearch (HP tuning, chaos escalation, circuit breaker autotuning) |
 | **Dashboard** | React + Vite + Tailwind (45 themes), mission control, real-time CRDT editing, conversation branching, canvas workspace, inline AI completion, fleet panel |
 | **Integrations** | 38 platforms (Slack, Discord, GitHub, Gmail, Teams, WhatsApp + more), 5 code forge adapters (Delta, GitHub, GitLab, Bitbucket, Gitea), artifact registries (GHCR, GitLab, JFrog Artifactory), 22 CI/CD tools, security toolkits (Kali, network, Docker) |

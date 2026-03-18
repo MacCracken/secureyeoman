@@ -43,6 +43,37 @@
 
 ---
 
+## Next Release: sy-agnos OS-Level Sandbox
+
+**Priority**: P0 — Primary focus for next release. See [ADR 044](../adr/044-sy-agnos-sandbox.md).
+
+**Goal**: Ship a purpose-built, hardened AGNOS image (`sy-agnos`) as a medium-weight, ultra-high-security sandbox tier. The OS itself IS the sandbox — immutable rootfs, no shell, baked seccomp, OS-level network policy. Slots between Firecracker (90) and gVisor (70) in the strength ranking, with dynamic scoring that increases as AGNOS hardens.
+
+### Phase 1 — sy-agnos Minimal (strength 80)
+
+- [ ] **Hardened AGNOS image** — Immutable squashfs rootfs, no `/bin/sh`, no package manager, 3-process tree (init → sy-agent → health-check)
+- [ ] **Dockerfile.sy-agnos** — Multi-stage build: AGNOS base → strip to minimal → copy SY agent binary → bake seccomp BPF + nftables rules
+- [ ] **Filesystem isolation** — Read-only root, writable tmpfs at `/tmp` (256 MB cap), ephemeral `/data` for task output, destroyed on teardown
+- [ ] **Network control** — nftables default-deny egress, allowlisted hosts/ports only, restricted DNS resolvers, no listening sockets except health
+- [ ] **Process hardening** — Baked seccomp BPF, no `CAP_SYS_ADMIN`/`CAP_NET_RAW`/`CAP_PTRACE`, PID namespace isolation, `PR_SET_NO_NEW_PRIVS`
+- [ ] **SandboxManager integration** — `technology: 'sy-agnos'`, auto-detection via `/etc/sy-agnos-release`, `createSandboxForTask('sy-agnos')` launches image
+- [ ] **Dynamic strength detection** — Read capabilities from running sy-agnos instance, report strength 80 for minimal, higher for verified variants
+- [ ] **Image build + publish** — `scripts/build-sy-agnos.sh`, published to GHCR, cosign-signed
+- [ ] **Update `high-security` profile** — Prefer sy-agnos when available (fallback: Firecracker → gVisor → Landlock)
+
+### Phase 2 — dm-verity (strength 85)
+
+- [ ] **dm-verity verified rootfs** — Hash-tree verification at boot, tamper-evident
+- [ ] **Strength auto-upgrade** — Manager detects dm-verity, reports strength 85
+
+### Phase 3 — Measured Boot + TPM (strength 88)
+
+- [ ] **TPM 2.0 measured boot** — Boot log attestation before task dispatch
+- [ ] **Remote attestation endpoint** — Fleet management can verify sandbox integrity
+- [ ] **Strength auto-upgrade** — Approaches Firecracker (90) without KVM
+
+---
+
 ## License Up: Tier Audit & Enforcement Activation
 
 **Priority**: P1 — Commercial. Must complete before public release.
@@ -108,6 +139,34 @@
 - [ ] **Brain & RAG flows** — Knowledge ingestion, recall, memory scoping across personalities
 - [ ] **Marketplace flows** — Skill install/uninstall, workflow import, community sync
 - [x] **MCP tool execution flows** — Tool discovery, execution via streamable HTTP, config toggling *(2026.3.18 — 15 E2E tests: server CRUD, tool discovery, config toggling, auth enforcement)*
+
+---
+
+## DAG Workflow Step Type Expansion
+
+**Priority**: P1 — Feature. Expand the 23 existing step types with 8 new types that unlock iteration, fan-out, inline execution, and cross-instance delegation patterns.
+
+**Goal**: Close workflow pattern gaps that currently require workarounds (manual subworkflow nesting for loops, hardcoded parallel agents instead of generic fan-out, webhook abuse for notifications).
+
+### New Step Types
+
+- [ ] **`loop`** — Repeat a step or step group N times or until a condition evaluates true. Config: `maxIterations`, `conditionExpression`, `stepIds[]`. Prevents infinite loops via hard cap (default 100). Enables retry-until-success, polling, and iterative refinement patterns.
+- [ ] **`parallel_map`** — Fan-out: run the same step template across a list of inputs, collect results as an array. Config: `inputListPath` (JSONPath to array in context), `stepTemplate`, `maxConcurrency`. Replaces hardcoded parallel agent patterns like `parallel-intelligence-gather`.
+- [ ] **`code_execution`** — Run sandboxed code (Python, Node.js, shell) inline within a workflow. Config: `runtime`, `code` or `codeTemplate`, `timeoutMs`, `sandboxProfile`. Leverages existing sandbox infrastructure. Enables data transformation, API calls, and scripting without spawning a full agent.
+- [ ] **`delay`** — Pause execution for a duration or until a wall-clock time. Config: `durationMs` or `untilTimestamp`. Enables rate-limited workflows, scheduled stages, and cool-down periods between steps.
+- [ ] **`notification`** — Send alert via configured channel. Config: `channel` (slack/email/discord/telegram/ntfy/webhook), `messageTemplate`, `recipients[]`. First-class step replaces webhook workarounds for notifications.
+- [ ] **`data_validation`** — Validate step output against a JSON Schema before passing downstream. Config: `schema` (inline or `$ref`), `onFailure` (fail/warn/skip). Makes implicit `outputSchemaMode` explicit and composable.
+- [ ] **`cache_lookup`** — Check cache before expensive operations. Config: `cacheKey` (Mustache template), `ttlMs`, `onHit` (skip-to-step or use cached output), `onMiss` (continue). Enables idempotent re-runs and expensive API call dedup.
+- [ ] **`a2a_delegate`** — Delegate a task to a remote SecureYeoman instance via A2A protocol. Config: `peerId`, `taskTemplate`, `contextTemplate`, `timeoutMs`, `trustLevel`. Bridges DAG workflows with the existing A2A infrastructure for cross-instance orchestration.
+
+### Integration Work
+
+- [ ] **WorkflowEngine** — Add step handlers for all 8 types in `workflow-engine.ts`
+- [ ] **Shared types** — Add step type definitions to `packages/shared/src/types/workflow.ts`
+- [ ] **ReactFlow palette** — Add 8 new step nodes to the visual DAG builder
+- [ ] **Template updates** — Create 3-4 new built-in templates showcasing new step types (e.g., `iterative-research` using loop, `fan-out-analysis` using parallel_map, `scheduled-report` using delay + notification)
+- [ ] **Tests** — Unit tests for each step handler + E2E test for a workflow using loop + parallel_map
+- [ ] **Docs** — Update workflows guide with new step types, examples, and configuration reference
 
 ---
 

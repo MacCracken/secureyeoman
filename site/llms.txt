@@ -40,7 +40,7 @@
 - [Federated Learning](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/ai-and-llm/federated-learning.md): Privacy-preserving distributed training
 
 ### Platform
-- [Workflows](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/platform-features/workflows.md): DAG orchestration, 19 step types, visual builder
+- [Workflows](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/platform-features/workflows.md): DAG orchestration, 23 step types, 22 templates, visual builder
 - [Swarms](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/platform-features/swarms.md): Sequential, parallel, dynamic strategies
 - [Integrations](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/integrations/integrations.md): 38 platform integrations
 - [Notifications](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/platform-features/notifications.md): Alert rules, job notifications

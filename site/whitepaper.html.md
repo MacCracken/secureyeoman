@@ -82,7 +82,7 @@ As deployments grow from a single agent to autonomous fleets, governance surface
 - **Swarms** — Sequential, parallel, and dynamic topologies; each run audited as a named delegation chain.
 - **Council of AIs** — Multi-round group deliberation with facilitator-driven consensus, until_consensus and majority voting strategies.
 - **Teams** — A coordinator LLM reads member descriptions and dynamically assigns tasks per run. Coordinator reasoning stored on the run record for post-hoc review.
-- **DAG Workflows** — 19 step types, OR-trigger dependencies (`triggerMode: 'any'`), strict schema enforcement, and human approval gates. Autonomy levels (L2 human-on-the-loop / L3 human-in-the-loop) declared per workflow.
+- **DAG Workflows** — 23 step types, OR-trigger dependencies (`triggerMode: 'any'`), strict schema enforcement, and human approval gates. Autonomy levels (L2 human-on-the-loop / L3 human-in-the-loop) declared per workflow.
 - **A2A Protocol** — Agent-to-agent delegation with E2E encryption and mDNS peer discovery. Gated via `allowA2A` security policy toggle.
 - **Sub-Agent Controls** — Maximum delegation depth and token budget enforced at the engine level, not by prompt.
 

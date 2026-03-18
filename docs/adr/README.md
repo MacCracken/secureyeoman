@@ -52,5 +52,6 @@ Consolidated architecture documents covering the core system design.
 | 041 | [Personality Traits & Mood Engine](041-personality-traits-mood-engine.md) | Accepted |
 | 042 | [GPU-Aware Inference Routing](042-gpu-aware-inference-routing.md) | Accepted |
 | 043 | [Sandbox Hardening & Selection](043-sandbox-hardening-and-selection.md) | Accepted |
+| 044 | [sy-agnos: OS-Level Sandbox](044-sy-agnos-sandbox.md) | Proposed |
 
 Numbers 024, 035, 036, 037 were consolidated into 023, 033, and 034.

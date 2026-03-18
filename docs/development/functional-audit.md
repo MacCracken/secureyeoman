@@ -88,7 +88,7 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 | | Per-personality memory scoping | Y | - | - | - | - | - |
 | | Proactive context compaction | Y | Y | - | Y | - | - |
 | **Orchestration** | MCP tools | 485 | P | P | P | P | P |
-| | DAG workflow engine (19 step types) | Y | - | - | - | - | - |
+| | DAG workflow engine (23 step types) | Y | - | - | - | - | - |
 | | Visual workflow builder (ReactFlow) | Y | - | - | - | - | - |
 | | Agent swarms (3 strategies) | Y | - | - | - | - | Y |
 | | A2A protocol | Y | - | - | - | - | Y |
@@ -128,7 +128,7 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 Capabilities no other framework in this competitive set offers:
 
 - **Governance stack** — RBAC + SSO/OIDC/SAML + WebAuthn/FIDO2 + SCIM 2.0 + multi-tenancy + OPA/CEL + DLP + cryptographic audit + break-glass emergency access + access review campaigns + compliance SoA generator
-- **DAG workflow orchestration** — 19 step types with visual ReactFlow builder and human approval gates
+- **DAG workflow orchestration** — 23 step types, 22 built-in templates, visual ReactFlow builder and human approval gates
 - **Agent evaluation harness** — structured scenarios with expected/forbidden tool calls and multi-metric scoring
 - **Network security toolkit** — 38 tools (device discovery, port scan, SSH, NetBox, NVD/CVE, PCAP) + Kali toolkit
 - **Twingate zero-trust MCP proxy** — 13 tools for private network access without VPN

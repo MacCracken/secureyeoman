@@ -80,7 +80,7 @@ As systems grow from a single agent to autonomous fleets, governance surface are
 
 - **Swarms** — Sequential, parallel, and dynamic topologies with built-in templates. Each swarm run is audited as a named delegation chain.
 - **Teams** — A coordinator LLM reads member descriptions and dynamically assigns tasks per run; no pre-wired graphs required. The coordinator's reasoning is stored on the run record for post-hoc review.
-- **DAG Workflow Orchestration** — 14 step types, `triggerMode: 'any'` OR-trigger, `outputSchemaMode: 'strict'` enforcement, and a visual ReactFlow builder. Autonomy levels (`L2` human-on-the-loop / `L3` human-in-the-loop with mandatory approval gate) are declared per workflow definition.
+- **DAG Workflow Orchestration** — 23 step types (agent, swarm, council, CI/CD, ML pipeline, document analysis, diagram generation, human approval, and more), `triggerMode: 'any'` OR-trigger, `outputSchemaMode: 'strict'` enforcement, 22 built-in templates, and a visual ReactFlow builder. Autonomy levels (`L2` human-on-the-loop / `L3` human-in-the-loop with mandatory approval gate) are declared per workflow definition.
 - **A2A Protocol** — Agent-to-Agent delegation with E2E encryption and mDNS/DNS-SD peer discovery. Enforced via `allowA2A` security policy toggle.
 - **Sub-Agent Depth & Budget Controls** — Maximum delegation depth and token budget are enforced at the engine level, not by prompt.
 - **Multi-Instance Federation** — Encrypted peer sync and federated knowledge search across deployment nodes, with personality bundle export/import.
