@@ -10,6 +10,10 @@ description = "SecureYeoman edge runtime binary for IoT/RPi devices"
 name = "sy-edge"
 path = "src/main.rs"
 
+[dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.5", features = ["util"] }
+
 [dependencies]
 sy-crypto = { path = "../sy-crypto" }
 sy-hwprobe = { path = "../sy-hwprobe" }

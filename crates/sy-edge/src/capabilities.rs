@@ -208,11 +208,11 @@ mod tests {
 
     #[test]
     fn custom_tags_from_env() {
-        std::env::set_var("SECUREYEOMAN_EDGE_TAGS", "custom-tag,another-tag");
+        unsafe { std::env::set_var("SECUREYEOMAN_EDGE_TAGS", "custom-tag,another-tag") };
         let caps = detect();
         assert!(caps.tags.contains(&"custom-tag".to_string()));
         assert!(caps.tags.contains(&"another-tag".to_string()));
-        std::env::remove_var("SECUREYEOMAN_EDGE_TAGS");
+        unsafe { std::env::remove_var("SECUREYEOMAN_EDGE_TAGS") };
     }
 
     #[test]

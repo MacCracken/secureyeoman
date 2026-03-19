@@ -67,7 +67,12 @@ fn probe_rocm_smi() -> Vec<AcceleratorDevice> {
     };
 
     let id_str = String::from_utf8_lossy(&id_output.stdout);
-    let gpu_count = id_str.matches("GPU[").count().max(1);
+    parse_rocm_smi_showid(&id_str)
+}
+
+/// Parse `rocm-smi --showid` output. Count GPU[ occurrences.
+pub fn parse_rocm_smi_showid(output: &str) -> Vec<AcceleratorDevice> {
+    let gpu_count = output.matches("GPU[").count().max(1);
 
     (0..gpu_count)
         .map(|i| {
@@ -77,4 +82,65 @@ fn probe_rocm_smi() -> Vec<AcceleratorDevice> {
             dev
         })
         .collect()
+}
+
+/// Parse VRAM bytes string from sysfs `mem_info_vram_total` content.
+pub fn parse_vram_bytes(content: &str) -> u64 {
+    content
+        .trim()
+        .parse::<u64>()
+        .ok()
+        .map(|b| b / (1024 * 1024))
+        .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_rocm_smi_single_gpu() {
+        let output = "======================= ROCm System Management Interface =======================\n\
+                      GPU[0]\t\t: GPU-abc123\n\
+                      ==================================================================================\n";
+        let devs = parse_rocm_smi_showid(output);
+        assert_eq!(devs.len(), 1);
+        assert_eq!(devs[0].name, "AMD GPU 0");
+        assert!(devs[0].rocm_available);
+    }
+
+    #[test]
+    fn parse_rocm_smi_multi_gpu() {
+        let output = "GPU[0]: abc\nGPU[1]: def\nGPU[2]: ghi\n";
+        let devs = parse_rocm_smi_showid(output);
+        assert_eq!(devs.len(), 3);
+    }
+
+    #[test]
+    fn parse_rocm_smi_no_gpus() {
+        // Even with no GPU[ matches, returns at least 1 (max(0,1))
+        let devs = parse_rocm_smi_showid("No GPU found");
+        assert_eq!(devs.len(), 1);
+    }
+
+    #[test]
+    fn parse_vram_8gb() {
+        assert_eq!(parse_vram_bytes("8589934592\n"), 8192); // 8 GB
+    }
+
+    #[test]
+    fn parse_vram_16gb() {
+        assert_eq!(parse_vram_bytes("17179869184"), 16384); // 16 GB
+    }
+
+    #[test]
+    fn parse_vram_invalid() {
+        assert_eq!(parse_vram_bytes(""), 0);
+        assert_eq!(parse_vram_bytes("not_a_number"), 0);
+    }
+
+    #[test]
+    fn probe_returns_vec() {
+        let _ = probe(); // should not panic
+    }
 }

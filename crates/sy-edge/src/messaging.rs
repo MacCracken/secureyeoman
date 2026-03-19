@@ -151,17 +151,17 @@ mod tests {
 
     #[test]
     fn from_env_with_slack() {
-        std::env::set_var("SLACK_WEBHOOK_URL", "https://hooks.slack.com/test");
+        unsafe { std::env::set_var("SLACK_WEBHOOK_URL", "https://hooks.slack.com/test") };
         let m = Messenger::from_env();
         assert!(m.target_count() >= 1);
         let targets = m.list_targets();
         assert!(targets.iter().any(|t| t.platform == "slack"));
-        std::env::remove_var("SLACK_WEBHOOK_URL");
+        unsafe { std::env::remove_var("SLACK_WEBHOOK_URL") };
     }
 
     #[test]
     fn target_info_redacted() {
-        std::env::set_var("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/secret");
+        unsafe { std::env::set_var("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/secret") };
         let m = Messenger::from_env();
         let targets = m.list_targets();
         // URL is not in the public struct
@@ -170,7 +170,7 @@ mod tests {
             assert!(!t.name.is_empty());
             assert!(!t.platform.is_empty());
         }
-        std::env::remove_var("DISCORD_WEBHOOK_URL");
+        unsafe { std::env::remove_var("DISCORD_WEBHOOK_URL") };
     }
 
     #[test]

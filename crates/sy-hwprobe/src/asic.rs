@@ -30,15 +30,15 @@ pub fn probe_gaudi() -> Vec<AcceleratorDevice> {
             let name_str = parts.get(1).unwrap_or(&"Gaudi");
             let lower = name_str.to_lowercase();
             let is_gaudi3 = lower.contains("gaudi3") || lower.contains("hl-325");
-            let gen = if is_gaudi3 { "Gaudi3" } else { "Gaudi2" };
+            let generation = if is_gaudi3 { "Gaudi3" } else { "Gaudi2" };
 
-            let mut dev = AcceleratorDevice::new(&format!("Intel {gen}"), "habana", "ai_asic");
+            let mut dev = AcceleratorDevice::new(&format!("Intel {generation}"), "habana", "ai_asic");
             dev.index = parts.first().and_then(|s| s.parse().ok()).unwrap_or(0);
             dev.vram_total_mb = mem_total;
             dev.vram_used_mb = mem_total.saturating_sub(mem_free);
             dev.vram_free_mb = mem_free;
             dev.driver_version = "habana".into();
-            dev.compute_capability = Some(gen.to_string());
+            dev.compute_capability = Some(generation.to_string());
             dev
         })
         .collect()
@@ -161,15 +161,15 @@ pub fn parse_hl_smi_output(stdout: &str) -> Vec<AcceleratorDevice> {
             let name_str = parts.get(1).unwrap_or(&"Gaudi");
             let lower = name_str.to_lowercase();
             let is_gaudi3 = lower.contains("gaudi3") || lower.contains("hl-325");
-            let gen = if is_gaudi3 { "Gaudi3" } else { "Gaudi2" };
+            let generation = if is_gaudi3 { "Gaudi3" } else { "Gaudi2" };
 
-            let mut dev = AcceleratorDevice::new(&format!("Intel {gen}"), "habana", "ai_asic");
+            let mut dev = AcceleratorDevice::new(&format!("Intel {generation}"), "habana", "ai_asic");
             dev.index = parts.first().and_then(|s| s.parse().ok()).unwrap_or(0);
             dev.vram_total_mb = mem_total;
             dev.vram_used_mb = mem_total.saturating_sub(mem_free);
             dev.vram_free_mb = mem_free;
             dev.driver_version = "habana".into();
-            dev.compute_capability = Some(gen.to_string());
+            dev.compute_capability = Some(generation.to_string());
             dev
         })
         .collect()

@@ -11,11 +11,11 @@
 | sy-crypto | 42 | 98.0% | 95% | **Met** |
 | sy-privacy | 25 | 97.7% | 95% | **Met** |
 | sy-audit | 15 | 100.0% | 95% | **Met** |
+| sy-sandbox | 23 | 90.8% | 80% | **Met** |
 | sy-tee | 19 | 88.3% | 80% | **Met** |
-| sy-sandbox | 14 | 76.2% | 80% | Close — kernel-gated paths |
-| sy-hwprobe | 32 | 56.0% | 60% | Close — hardware-gated paths |
-| sy-edge | 62 | 37.1% | 50% | Server/network modules need async harness |
-| **Total** | **209** | | | |
+| sy-hwprobe | 39 | 57.7% | 60% | Close — remaining gaps are sysfs paths requiring hardware |
+| sy-edge | 84 | 55.6% | 50% | **Met** |
+| **Total** | **259** | | | |
 
 > Coverage measured with `cargo tarpaulin` per-crate, excluding dependency source lines.
 
@@ -216,8 +216,4 @@ kill %1
 
 ## Coverage Improvement Plan
 
-| Crate | Current | Target | What to add |
-|-------|---------|--------|-------------|
-| sy-sandbox | 76.2% | 80% | cgroup memory parsing with mock `/proc` content; Landlock proc file parsing |
-| sy-hwprobe | 56.0% | 60% | Extract AMD sysfs parsing into testable functions; add `rocm-smi` output mocking |
-| sy-edge | 37.1% | 50% | `#[tokio::test]` async handler tests with in-memory `AppState`; mock HTTP for LLM/messaging |
+All targets met except sy-hwprobe (57.7% vs 60% target). Remaining gap is sysfs directory walking code (`probe_sysfs()` in `amd.rs`, TPU/NPU sysfs entry iteration) that requires actual hardware to exercise. Consider mock filesystem via `tempdir` if coverage becomes a CI gate.

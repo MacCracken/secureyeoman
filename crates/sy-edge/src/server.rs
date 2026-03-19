@@ -386,3 +386,288 @@ async fn update_check(State(_state): State<SharedState>) -> Json<serde_json::Val
         "update_available": false,
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode as SC};
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    fn test_state() -> AppState {
+        AppState {
+            capabilities: crate::capabilities::detect(),
+            metrics: crate::metrics::MetricsCollector::new(),
+            memory: crate::memory::MemoryStore::new(),
+            sandbox: crate::sandbox::SandboxManager::new(),
+            llm: crate::llm::LlmClient::from_env(),
+            messenger: crate::messaging::Messenger::from_env(),
+            scheduler: crate::scheduler::Scheduler::new(),
+            a2a: crate::a2a::A2AManager::new(crate::capabilities::detect()),
+            rate_limiter: crate::ratelimit::RateLimiter::new(100.0, 200),
+        }
+    }
+
+    async fn body_string(body: Body) -> String {
+        let bytes = body.collect().await.unwrap().to_bytes();
+        String::from_utf8(bytes.to_vec()).unwrap()
+    }
+
+    #[tokio::test]
+    async fn health_endpoint() {
+        let app = build_router(test_state());
+        let req = Request::get("/health").body(Body::empty()).unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(json["status"], "ok");
+        assert_eq!(json["mode"], "edge");
+    }
+
+    #[tokio::test]
+    async fn a2a_capabilities_endpoint() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/a2a/capabilities")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert!(json["capabilities"]["nodeId"].is_string());
+    }
+
+    #[tokio::test]
+    async fn a2a_peers_empty() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/a2a/peers")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert!(json["peers"].as_array().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn a2a_receive_heartbeat() {
+        let app = build_router(test_state());
+        let body = serde_json::json!({"type": "heartbeat", "fromPeerId": "test-peer"});
+        let req = Request::post("/api/v1/a2a/receive")
+            .header("content-type", "application/json")
+            .body(Body::from(serde_json::to_string(&body).unwrap()))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+    }
+
+    #[tokio::test]
+    async fn metrics_current() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/metrics")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert!(json["memory_total_mb"].as_u64().unwrap() > 0);
+    }
+
+    #[tokio::test]
+    async fn metrics_prometheus_text() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/metrics/prometheus")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        assert!(body.contains("sy_edge_cpu_percent"));
+        assert!(body.contains("sy_edge_memory_used_mb"));
+    }
+
+    #[tokio::test]
+    async fn exec_allowed_list() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/exec/allowed")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert!(json["allowed"].as_array().unwrap().len() > 10);
+    }
+
+    #[tokio::test]
+    async fn exec_uname() {
+        let app = build_router(test_state());
+        let body = serde_json::json!({"command": "uname", "args": ["-s"]});
+        let req = Request::post("/api/v1/exec")
+            .header("content-type", "application/json")
+            .body(Body::from(serde_json::to_string(&body).unwrap()))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(json["exit_code"], 0);
+        assert!(json["stdout"].as_str().unwrap().contains("Linux"));
+    }
+
+    #[tokio::test]
+    async fn exec_blocked_command() {
+        let app = build_router(test_state());
+        let body = serde_json::json!({"command": "rm", "args": ["-rf", "/"]});
+        let req = Request::post("/api/v1/exec")
+            .header("content-type", "application/json")
+            .body(Body::from(serde_json::to_string(&body).unwrap()))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn memory_crud() {
+        let state = test_state();
+        let app = build_router(state);
+
+        // PUT
+        let body = serde_json::json!({"value": "test_value", "ttl_seconds": 60});
+        let req = Request::put("/api/v1/memory/ns/k")
+            .header("content-type", "application/json")
+            .body(Body::from(serde_json::to_string(&body).unwrap()))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+    }
+
+    #[tokio::test]
+    async fn memory_get_not_found() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/memory/ns/missing_key")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn scheduler_crud() {
+        let app = build_router(test_state());
+
+        // List empty
+        let req = Request::get("/api/v1/scheduler/tasks")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert!(json["tasks"].as_array().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn scheduler_add_task() {
+        let app = build_router(test_state());
+        let body = serde_json::json!({"type": "command", "interval_seconds": 60});
+        let req = Request::post("/api/v1/scheduler/tasks")
+            .header("content-type", "application/json")
+            .body(Body::from(serde_json::to_string(&body).unwrap()))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert!(json["id"].as_str().unwrap().starts_with("task-"));
+    }
+
+    #[tokio::test]
+    async fn scheduler_add_invalid() {
+        let app = build_router(test_state());
+        let body = serde_json::json!({"interval_seconds": 60}); // missing type
+        let req = Request::post("/api/v1/scheduler/tasks")
+            .header("content-type", "application/json")
+            .body(Body::from(serde_json::to_string(&body).unwrap()))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn llm_providers_list() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/llm/providers")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert!(json["providers"].is_array());
+    }
+
+    #[tokio::test]
+    async fn messaging_targets_list() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/messaging/targets")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert!(json["targets"].is_array());
+    }
+
+    #[tokio::test]
+    async fn update_check_endpoint() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/update/check")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(json["update_available"], false);
+    }
+
+    #[tokio::test]
+    async fn not_found_route() {
+        let app = build_router(test_state());
+        let req = Request::get("/nonexistent")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        // Axum returns 404 for unmatched routes
+        assert_eq!(resp.status(), SC::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn metrics_history() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/metrics/history?minutes=5")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+    }
+
+    #[tokio::test]
+    async fn memory_namespaces() {
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/memory")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert!(json["namespaces"].is_array());
+    }
+}

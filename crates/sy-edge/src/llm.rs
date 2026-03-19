@@ -237,21 +237,21 @@ mod tests {
 
     #[test]
     fn from_env_with_openai() {
-        std::env::set_var("OPENAI_API_KEY", "sk-test-key");
+        unsafe { std::env::set_var("OPENAI_API_KEY", "sk-test-key") };
         let client = LlmClient::from_env();
         assert!(client.provider_count() >= 1);
         let providers = client.list_providers();
         assert!(providers.iter().any(|p| p.name == "openai"));
-        std::env::remove_var("OPENAI_API_KEY");
+        unsafe { std::env::remove_var("OPENAI_API_KEY") };
     }
 
     #[test]
     fn from_env_with_ollama() {
-        std::env::set_var("OLLAMA_URL", "http://localhost:11434");
+        unsafe { std::env::set_var("OLLAMA_URL", "http://localhost:11434") };
         let client = LlmClient::from_env();
         let providers = client.list_providers();
         assert!(providers.iter().any(|p| p.name == "ollama"));
-        std::env::remove_var("OLLAMA_URL");
+        unsafe { std::env::remove_var("OLLAMA_URL") };
     }
 
     #[test]
@@ -267,13 +267,13 @@ mod tests {
 
     #[test]
     fn custom_model_via_env() {
-        std::env::set_var("OPENAI_API_KEY", "sk-test");
-        std::env::set_var("OPENAI_MODEL", "gpt-4o");
+        unsafe { std::env::set_var("OPENAI_API_KEY", "sk-test") };
+        unsafe { std::env::set_var("OPENAI_MODEL", "gpt-4o") };
         let client = LlmClient::from_env();
         let providers = client.list_providers();
         let openai = providers.iter().find(|p| p.name == "openai").unwrap();
         assert_eq!(openai.model, "gpt-4o");
-        std::env::remove_var("OPENAI_API_KEY");
-        std::env::remove_var("OPENAI_MODEL");
+        unsafe { std::env::remove_var("OPENAI_API_KEY") };
+        unsafe { std::env::remove_var("OPENAI_MODEL") };
     }
 }
