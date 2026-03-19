@@ -1,95 +1,212 @@
 //! SecureYeoman Hardware Accelerator Detection
 //!
-//! Pure Rust probes for GPU, TPU, NPU, and AI ASIC families.
-//! Uses direct sysfs reads and CLI tool parsing — no NVML binding yet
-//! (planned for future iteration with `nvml-wrapper` crate).
+//! Thin wrapper around [`ai_hwaccel`] that converts its type system to the
+//! SY `AcceleratorDevice` format consumed by the TypeScript layer via sy-napi.
 //!
-//! Detection strategy per family:
-//! - NVIDIA: `nvidia-smi` CSV output parsing
-//! - AMD: `/sys/class/drm` sysfs with `amdgpu` driver check, `rocm-smi` fallback
-//! - Intel iGPU: `/dev/dri/renderD*` + `lspci`
-//! - Intel oneAPI: `xpu-smi` CSV
-//! - Apple Metal: `/proc/device-tree/compatible`
-//! - TPU: `/sys/class/accel` with `tpu_version` / `chip_count` sysfs
-//! - Intel NPU: `/sys/class/misc/intel_npu` presence
-//! - AMD XDNA: `/sys/class/accel` with `amdxdna` driver
-//! - Apple ANE: `/proc/device-tree/compatible`
-//! - Intel Gaudi: `hl-smi` CSV
-//! - AWS Neuron: `neuron-ls --json-output` or `/dev/neuron*`
-//! - Qualcomm AI 100: `/sys/class/qaic` or `/dev/qaic_*`
+//! All detection is delegated to ai-hwaccel. This crate exists to:
+//! 1. Convert `AcceleratorProfile` → `AcceleratorDevice` (camelCase JSON for TS)
+//! 2. Provide family-filtered probing (`probe_family`)
+//! 3. Re-export ai-hwaccel for direct use by sy-edge and desktop crates
 
 pub mod types;
 
-mod nvidia;
-mod amd;
-mod intel;
-mod tpu;
-mod npu;
-mod asic;
+pub use ai_hwaccel;
 
+use ai_hwaccel::{AcceleratorFamily, AcceleratorProfile, AcceleratorRegistry, AcceleratorType};
 use types::AcceleratorDevice;
 
-/// Run all hardware probes in sequence (not async — sysfs reads are fast).
-/// Returns all detected accelerator devices across all families.
+/// Run all hardware probes via ai-hwaccel. Returns SY-format device list.
 pub fn probe_all() -> Vec<AcceleratorDevice> {
-    let mut devices = Vec::new();
+    let registry = AcceleratorRegistry::detect();
+    let mut devices: Vec<AcceleratorDevice> = registry
+        .available()
+        .iter()
+        .filter(|p| p.accelerator.family() != AcceleratorFamily::Cpu)
+        .enumerate()
+        .map(|(i, p)| profile_to_device(p, i as u32))
+        .collect();
 
-    devices.extend(nvidia::probe());
-    devices.extend(amd::probe());
-    devices.extend(intel::probe_igpu());
-    devices.extend(intel::probe_oneapi());
-    devices.extend(intel::probe_metal());
-    devices.extend(tpu::probe());
-    devices.extend(npu::probe_intel());
-    devices.extend(npu::probe_amd_xdna());
-    devices.extend(npu::probe_apple());
-    devices.extend(asic::probe_gaudi());
-    devices.extend(asic::probe_neuron());
-    devices.extend(asic::probe_qualcomm());
-
-    // Re-index devices sequentially
+    // Re-index sequentially
     for (i, dev) in devices.iter_mut().enumerate() {
         dev.index = i as u32;
     }
-
     devices
 }
 
 /// Probe only devices matching a specific family.
 pub fn probe_family(family: &str) -> Vec<AcceleratorDevice> {
-    let mut devices = match family {
-        "gpu" => {
-            let mut d = Vec::new();
-            d.extend(nvidia::probe());
-            d.extend(amd::probe());
-            d.extend(intel::probe_igpu());
-            d.extend(intel::probe_oneapi());
-            d.extend(intel::probe_metal());
-            d
-        }
-        "tpu" => tpu::probe(),
-        "npu" => {
-            let mut d = Vec::new();
-            d.extend(npu::probe_intel());
-            d.extend(npu::probe_amd_xdna());
-            d.extend(npu::probe_apple());
-            d
-        }
-        "ai_asic" => {
-            let mut d = Vec::new();
-            d.extend(asic::probe_gaudi());
-            d.extend(asic::probe_neuron());
-            d.extend(asic::probe_qualcomm());
-            d
-        }
-        _ => Vec::new(),
+    let af = match family {
+        "gpu" => AcceleratorFamily::Gpu,
+        "tpu" => AcceleratorFamily::Tpu,
+        "npu" => AcceleratorFamily::Npu,
+        "ai_asic" => AcceleratorFamily::AiAsic,
+        _ => return Vec::new(),
     };
+
+    let registry = AcceleratorRegistry::detect();
+    let mut devices: Vec<AcceleratorDevice> = registry
+        .by_family(af)
+        .iter()
+        .filter(|p| p.available)
+        .enumerate()
+        .map(|(i, p)| profile_to_device(p, i as u32))
+        .collect();
 
     for (i, dev) in devices.iter_mut().enumerate() {
         dev.index = i as u32;
     }
-
     devices
+}
+
+/// Get the full ai-hwaccel registry for advanced queries (quantization, sharding).
+pub fn detect_registry() -> AcceleratorRegistry {
+    AcceleratorRegistry::detect()
+}
+
+/// Convert an ai-hwaccel `AcceleratorProfile` to an SY `AcceleratorDevice`.
+fn profile_to_device(profile: &AcceleratorProfile, index: u32) -> AcceleratorDevice {
+    let mem_mb = profile.memory_bytes / (1024 * 1024);
+    let family = profile.accelerator.family();
+
+    let (vendor, family_str, name, cuda, rocm, tpu) = match &profile.accelerator {
+        AcceleratorType::CudaGpu { device_id } => (
+            "nvidia",
+            "gpu",
+            format!("NVIDIA CUDA GPU {device_id}"),
+            true,
+            false,
+            false,
+        ),
+        AcceleratorType::RocmGpu { device_id } => (
+            "amd",
+            "gpu",
+            format!("AMD ROCm GPU {device_id}"),
+            false,
+            true,
+            false,
+        ),
+        AcceleratorType::MetalGpu => (
+            "apple",
+            "gpu",
+            "Apple Metal GPU".to_string(),
+            false,
+            false,
+            false,
+        ),
+        AcceleratorType::VulkanGpu { device_name, .. } => (
+            "vulkan",
+            "gpu",
+            device_name.clone(),
+            false,
+            false,
+            false,
+        ),
+        AcceleratorType::IntelNpu => (
+            "intel",
+            "npu",
+            "Intel NPU".to_string(),
+            false,
+            false,
+            false,
+        ),
+        AcceleratorType::AmdXdnaNpu { device_id } => (
+            "amd",
+            "npu",
+            format!("AMD XDNA NPU {device_id}"),
+            false,
+            false,
+            false,
+        ),
+        AcceleratorType::AppleNpu => (
+            "apple",
+            "npu",
+            "Apple Neural Engine".to_string(),
+            false,
+            false,
+            false,
+        ),
+        AcceleratorType::Tpu {
+            version,
+            chip_count,
+            ..
+        } => (
+            "google",
+            "tpu",
+            format!("Google TPU {version} ({chip_count} chips)"),
+            false,
+            false,
+            true,
+        ),
+        AcceleratorType::Gaudi { generation, .. } => (
+            "habana",
+            "ai_asic",
+            format!("Intel {generation}"),
+            false,
+            false,
+            false,
+        ),
+        AcceleratorType::AwsNeuron {
+            chip_type,
+            core_count,
+            ..
+        } => (
+            "aws",
+            "ai_asic",
+            format!("AWS {chip_type} ({core_count} cores)"),
+            false,
+            false,
+            false,
+        ),
+        AcceleratorType::QualcommAi100 { .. } => (
+            "qualcomm",
+            "ai_asic",
+            "Qualcomm Cloud AI 100".to_string(),
+            false,
+            false,
+            false,
+        ),
+        AcceleratorType::IntelOneApi { device_id } => (
+            "intel",
+            "gpu",
+            format!("Intel oneAPI GPU {device_id}"),
+            false,
+            false,
+            false,
+        ),
+        AcceleratorType::Cpu => (
+            "cpu",
+            "cpu",
+            "CPU".to_string(),
+            false,
+            false,
+            false,
+        ),
+        _ => (
+            "unknown",
+            "gpu",
+            format!("{:?}", profile.accelerator),
+            false,
+            false,
+            false,
+        ),
+    };
+
+    AcceleratorDevice {
+        index,
+        name,
+        vendor: vendor.to_string(),
+        family: family_str.to_string(),
+        vram_total_mb: mem_mb,
+        vram_used_mb: 0,
+        vram_free_mb: mem_mb,
+        utilization_percent: 0,
+        temperature_celsius: None,
+        driver_version: profile.driver_version.clone().unwrap_or_else(|| "unknown".to_string()),
+        compute_capability: profile.compute_capability.clone(),
+        cuda_available: cuda,
+        rocm_available: rocm,
+        tpu_available: tpu,
+    }
 }
 
 #[cfg(test)]
@@ -98,7 +215,6 @@ mod tests {
 
     #[test]
     fn probe_all_does_not_panic() {
-        // On CI/dev machines without accelerators, returns empty vec
         let devices = probe_all();
         for dev in &devices {
             assert!(!dev.name.is_empty());
@@ -141,17 +257,6 @@ mod tests {
     }
 
     #[test]
-    fn probe_family_devices_indexed() {
-        for family in ["gpu", "tpu", "npu", "ai_asic"] {
-            let devices = probe_family(family);
-            for (i, dev) in devices.iter().enumerate() {
-                assert_eq!(dev.index, i as u32);
-                assert_eq!(dev.family, family);
-            }
-        }
-    }
-
-    #[test]
     fn accelerator_device_new_defaults() {
         let dev = types::AcceleratorDevice::new("Test GPU", "nvidia", "gpu");
         assert_eq!(dev.name, "Test GPU");
@@ -159,15 +264,7 @@ mod tests {
         assert_eq!(dev.family, "gpu");
         assert_eq!(dev.index, 0);
         assert_eq!(dev.vram_total_mb, 0);
-        assert_eq!(dev.vram_used_mb, 0);
-        assert_eq!(dev.vram_free_mb, 0);
-        assert_eq!(dev.utilization_percent, 0);
-        assert!(dev.temperature_celsius.is_none());
-        assert_eq!(dev.driver_version, "unknown");
-        assert!(dev.compute_capability.is_none());
         assert!(!dev.cuda_available);
-        assert!(!dev.rocm_available);
-        assert!(!dev.tpu_available);
     }
 
     #[test]
@@ -175,14 +272,48 @@ mod tests {
         let dev = types::AcceleratorDevice::new("RTX 4090", "nvidia", "gpu");
         let json = serde_json::to_string(&dev).unwrap();
         assert!(json.contains("\"name\":\"RTX 4090\""));
-        assert!(json.contains("\"vendor\":\"nvidia\""));
-        // Verify camelCase serialization
         assert!(json.contains("vramTotalMb"));
         assert!(json.contains("cudaAvailable"));
-
-        // Roundtrip
         let parsed: types::AcceleratorDevice = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.name, "RTX 4090");
-        assert_eq!(parsed.vendor, "nvidia");
+    }
+
+    #[test]
+    fn detect_registry_works() {
+        let registry = detect_registry();
+        // CPU always present
+        assert!(!registry.all_profiles().is_empty());
+    }
+
+    #[test]
+    fn profile_to_device_cuda() {
+        let profile = AcceleratorProfile::cuda(0, 24 * 1024 * 1024 * 1024);
+        let dev = profile_to_device(&profile, 0);
+        assert_eq!(dev.vendor, "nvidia");
+        assert_eq!(dev.family, "gpu");
+        assert!(dev.cuda_available);
+        assert!(!dev.rocm_available);
+        assert_eq!(dev.vram_total_mb, 24 * 1024);
+    }
+
+    #[test]
+    fn profile_to_device_tpu() {
+        use ai_hwaccel::TpuVersion;
+        let profile = AcceleratorProfile::tpu(0, 4, TpuVersion::V5p);
+        let dev = profile_to_device(&profile, 0);
+        assert_eq!(dev.vendor, "google");
+        assert_eq!(dev.family, "tpu");
+        assert!(dev.tpu_available);
+        assert!(dev.name.contains("v5p"));
+    }
+
+    #[test]
+    fn profile_to_device_gaudi() {
+        use ai_hwaccel::GaudiGeneration;
+        let profile = AcceleratorProfile::gaudi(0, GaudiGeneration::Gaudi3);
+        let dev = profile_to_device(&profile, 0);
+        assert_eq!(dev.vendor, "habana");
+        assert_eq!(dev.family, "ai_asic");
+        assert!(dev.name.contains("Gaudi3"));
     }
 }

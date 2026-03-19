@@ -6,18 +6,32 @@
 
 ## Hybrid TypeScript/Rust Architecture
 
-**Status**: Phase 1-4 complete. 8 Rust crates in `crates/` Cargo workspace, 259 tests.
+**Status**: Phase 1-4 complete. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89.
 
 See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hardware test plan, and per-platform verification checklist.
 
 - `sy-crypto` — AES-256-GCM, X25519, Ed25519, HMAC-SHA256, HKDF (98% coverage)
-- `sy-hwprobe` — GPU/TPU/NPU/ASIC detection via sysfs + CLI parsing (58% coverage)
+- `sy-hwprobe` — thin wrapper around `ai-hwaccel` (crates.io), converts to SY types for TS layer
 - `sy-tee` — Model weight sealing with TPM2/keyring keys (88% coverage)
 - `sy-privacy` — DLP PII regex scanning, compiled Rust DFA (98% coverage)
 - `sy-audit` — HMAC-SHA256 linked tamper-evident audit chain (100% coverage)
 - `sy-sandbox` — seccomp-bpf, Landlock, cgroup v2 detection (91% coverage)
 - `sy-edge` — Standalone edge binary, 6.9 MB, 22 API endpoints (56% coverage)
 - `sy-napi` — napi-rs bridge exposing all crates to Node.js
+
+### Shared Ecosystem Crates — Future
+
+As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Synapse, Shruti, Tazama, Rasa, Mneme), domain-specific logic should be extracted into standalone published crates — same pattern as `ai-hwaccel` for hardware detection and `tarang` for audio/video processing.
+
+**Candidates** (publish when domain logic outgrows SY-only use):
+
+| Candidate | Current Location | Trigger to Extract | Consumers |
+|-----------|-----------------|-------------------|-----------|
+| `sy-cryptokit` | `crates/sy-crypto` + `sy-tee` + `sy-audit` | TEE wire format, audit chain HMAC scheme, or A2A envelope encryption becomes reusable outside SY | SY, AGNOS, Agnostic, Synapse |
+| `sy-privacy-core` | `crates/sy-privacy` | DLP classification engine needed by Agnostic agents or Synapse routing | SY, Agnostic, Synapse |
+| `sy-sandbox-core` | `crates/sy-sandbox` | Landlock/seccomp policy engine shared with AGNOS runtime | SY, AGNOS, Agnosticos |
+
+**Not candidates** (too SY-specific): `sy-edge` (SY binary), `sy-napi` (SY Node bridge), `sy-hwprobe` (already delegates to `ai-hwaccel`).
 
 ---
 

@@ -1,10 +1,10 @@
-//! Benchmarks for hardware detection.
+//! Benchmarks for hardware detection via ai-hwaccel.
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use sy_hwprobe::*;
 
 fn bench_probe_all(c: &mut Criterion) {
-    c.bench_function("probe_all", |b| b.iter(probe_all));
+    c.bench_function("probe_all (ai-hwaccel)", |b| b.iter(probe_all));
 }
 
 fn bench_probe_family_gpu(c: &mut Criterion) {
@@ -15,14 +15,8 @@ fn bench_probe_family_tpu(c: &mut Criterion) {
     c.bench_function("probe_family(tpu)", |b| b.iter(|| probe_family("tpu")));
 }
 
-fn bench_probe_family_npu(c: &mut Criterion) {
-    c.bench_function("probe_family(npu)", |b| b.iter(|| probe_family("npu")));
-}
-
-fn bench_device_new(c: &mut Criterion) {
-    c.bench_function("AcceleratorDevice::new", |b| {
-        b.iter(|| types::AcceleratorDevice::new("NVIDIA RTX 4090", "nvidia", "gpu"))
-    });
+fn bench_detect_registry(c: &mut Criterion) {
+    c.bench_function("detect_registry (full)", |b| b.iter(detect_registry));
 }
 
 fn bench_device_serialize(c: &mut Criterion) {
@@ -32,11 +26,21 @@ fn bench_device_serialize(c: &mut Criterion) {
     });
 }
 
-fn bench_probe_all_serialize(c: &mut Criterion) {
-    c.bench_function("probe_all + serialize", |b| {
+fn bench_quantization_suggest(c: &mut Criterion) {
+    let registry = detect_registry();
+    c.bench_function("suggest_quantization 7B", |b| {
+        b.iter(|| registry.suggest_quantization(7_000_000_000))
+    });
+}
+
+fn bench_sharding_plan(c: &mut Criterion) {
+    let registry = detect_registry();
+    c.bench_function("plan_sharding 70B BF16", |b| {
         b.iter(|| {
-            let devices = probe_all();
-            serde_json::to_string(&devices)
+            registry.plan_sharding(
+                70_000_000_000,
+                &ai_hwaccel::QuantizationLevel::BFloat16,
+            )
         })
     });
 }
@@ -46,9 +50,9 @@ criterion_group!(
     bench_probe_all,
     bench_probe_family_gpu,
     bench_probe_family_tpu,
-    bench_probe_family_npu,
-    bench_device_new,
+    bench_detect_registry,
     bench_device_serialize,
-    bench_probe_all_serialize,
+    bench_quantization_suggest,
+    bench_sharding_plan,
 );
 criterion_main!(benches);
