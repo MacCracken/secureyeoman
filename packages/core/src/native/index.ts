@@ -45,6 +45,10 @@ export interface NativeModule {
   // Hardware probing
   probeAccelerators(): string;
   probeAcceleratorsByFamily(family: string): string;
+
+  // DLP classification
+  classifyText(text: string): string;
+  classifyTextBatch(texts: string[]): string;
 }
 
 let _native: NativeModule | null = null;

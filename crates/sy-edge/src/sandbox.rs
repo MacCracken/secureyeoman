@@ -1,0 +1,98 @@
+//! Sandbox — allowlist-based command execution with workspace scoping.
+
+use std::process::Command;
+
+pub struct ExecOutput {
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: i32,
+}
+
+const DEFAULT_ALLOWED: &[&str] = &[
+    "ls", "cat", "head", "tail", "wc", "grep", "find", "df", "du", "uname", "hostname", "ping",
+    "curl", "wget", "ip", "ss", "ps", "top", "free", "lsblk", "lscpu", "sensors", "journalctl",
+];
+
+const BLOCKED: &[&str] = &[
+    "rm", "dd", "mkfs", "shutdown", "reboot", "poweroff", "halt", "init", "kill", "pkill",
+    "mount", "fdisk", "iptables", "nft",
+];
+
+const MAX_OUTPUT: usize = 1_048_576; // 1 MB
+
+pub struct SandboxManager {
+    allowed: Vec<String>,
+}
+
+impl SandboxManager {
+    pub fn new() -> Self {
+        Self {
+            allowed: DEFAULT_ALLOWED.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+
+    pub fn execute(
+        &self,
+        command: &str,
+        args: &[String],
+        workspace: Option<&str>,
+        timeout_secs: u64,
+    ) -> Result<ExecOutput, String> {
+        // Check against blocklist
+        let cmd_base = command.split('/').last().unwrap_or(command);
+        if BLOCKED.contains(&cmd_base) {
+            return Err(format!("Command blocked: {cmd_base}"));
+        }
+
+        // Check allowlist
+        if !self.allowed.iter().any(|a| a == cmd_base) {
+            return Err(format!("Command not allowed: {cmd_base}"));
+        }
+
+        // Validate workspace path (prevent traversal)
+        if let Some(ws) = workspace {
+            let canonical = std::fs::canonicalize(ws)
+                .map_err(|e| format!("Invalid workspace: {e}"))?;
+            if !canonical.starts_with("/tmp") && !canonical.starts_with("/home") {
+                return Err("Workspace must be under /tmp or /home".into());
+            }
+        }
+
+        // Validate args don't contain path traversal
+        for arg in args {
+            if arg.contains("..") {
+                return Err("Path traversal detected in arguments".into());
+            }
+        }
+
+        let mut cmd = Command::new(command);
+        cmd.args(args);
+        if let Some(ws) = workspace {
+            cmd.current_dir(ws);
+        }
+
+        let output = cmd
+            .output()
+            .map_err(|e| format!("Execution failed: {e}"))?;
+
+        // Wait with timeout (basic — Command::output blocks)
+        let _ = timeout_secs; // TODO: implement proper timeout with tokio
+
+        let mut stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        let mut stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+        // Truncate to max output
+        stdout.truncate(MAX_OUTPUT);
+        stderr.truncate(MAX_OUTPUT);
+
+        Ok(ExecOutput {
+            stdout,
+            stderr,
+            exit_code: output.status.code().unwrap_or(-1),
+        })
+    }
+
+    pub fn allowed_commands(&self) -> Vec<String> {
+        self.allowed.clone()
+    }
+}

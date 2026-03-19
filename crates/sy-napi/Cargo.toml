@@ -12,6 +12,8 @@ crate-type = ["cdylib"]
 [dependencies]
 sy-crypto = { path = "../sy-crypto" }
 sy-hwprobe = { path = "../sy-hwprobe" }
+sy-privacy = { path = "../sy-privacy" }
+sy-audit = { path = "../sy-audit" }
 serde_json = "1"
 napi = { version = "2", default-features = false, features = ["napi9", "serde-json"] }
 napi-derive = "2"

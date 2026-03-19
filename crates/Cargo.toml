@@ -3,6 +3,11 @@ resolver = "2"
 members = [
   "sy-crypto",
   "sy-hwprobe",
+  "sy-tee",
+  "sy-privacy",
+  "sy-audit",
+  "sy-sandbox",
+  "sy-edge",
   "sy-napi",
 ]
 

@@ -139,3 +139,22 @@ pub fn probe_accelerators_by_family(family: String) -> String {
     let devices = sy_hwprobe::probe_family(&family);
     serde_json::to_string(&devices).unwrap_or_else(|_| "[]".to_string())
 }
+
+// ── DLP Classification ─────────────────────────────────────────────────────
+
+/// Classify text for PII and sensitivity. Returns JSON ClassificationResult.
+#[napi]
+pub fn classify_text(text: String) -> String {
+    let engine = sy_privacy::ClassificationEngine::new();
+    let result = engine.classify(&text);
+    serde_json::to_string(&result).unwrap_or_else(|_| "{}".to_string())
+}
+
+/// Batch classify multiple texts. Returns JSON array of ClassificationResults.
+#[napi]
+pub fn classify_text_batch(texts: Vec<String>) -> String {
+    let engine = sy_privacy::ClassificationEngine::new();
+    let refs: Vec<&str> = texts.iter().map(|s| s.as_str()).collect();
+    let results = engine.classify_batch(&refs);
+    serde_json::to_string(&results).unwrap_or_else(|_| "[]".to_string())
+}
