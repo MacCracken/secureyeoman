@@ -43,24 +43,6 @@
 
 ---
 
-## AGNOS Deep Integration — Remaining
-
-**Priority**: P1. Core API integration complete (2026.3.19). Remaining items are dashboard/UI work and advanced features.
-
-### Token Budgeting — Remaining
-
-- [ ] **Cost dashboard** — Wire hoosh `/v1/tokens/pools` into SY cost tracking dashboard. Show per-pool usage, remaining budget, cost-per-agent
-
-### RAG / Knowledge Sync — Remaining
-
-- [ ] **`AgnosClient.vectorSearch()`** — Use AGNOS vector store for SY embeddings. Reduces SY's PostgreSQL pgvector dependency for small deployments
-
-### Bidirectional Tool Registration — Remaining
-
-- [ ] **Tool catalog endpoint** — Ensure SY's MCP tool list endpoint (`/api/v1/mcp/tools/list`) returns full tool definitions (params, returns) so AGNOS can register them
-
----
-
 ## License Up: Tier Audit & Enforcement Activation
 
 **Priority**: P4 — Post-launch. Turn on the switch after the product is public and solid.
@@ -132,10 +114,6 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### DAG Workflow Docs
-
-- [ ] **Docs** — Update workflows guide with the 8 new step types (2026.3.18-1), examples, and configuration reference
-
 ### Test Coverage
 
 **Remaining improvement areas:**
@@ -145,22 +123,58 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
 | Core E2E | Expand coverage | Add training, delegation, analytics flows (needs Docker) |
 
-### Cross-Project Integration Tests
-
-**Priority**: P3 — Requires full system stack (SY + Synapse + PG + Docker).
-
-End-to-end tests that exercise the SY↔Synapse delegation pipeline with a live Synapse instance. Write when standing up the full system for integration testing.
-
-- [ ] **Synapse REST round-trip** — Boot SY + Synapse via Docker Compose (`--profile synapse`). Verify `GET /api/v1/synapse/status` returns transformed hardware data. Verify `POST /api/v1/synapse/inference` sends snake_case and returns camelCase.
-- [ ] **Training delegation lifecycle** — Submit training job via SY API, verify Synapse receives snake_case request with nested `dataset`/`hyperparams`, poll status until completion, verify SY's delegated job record updates through `pending→running→completed`.
-- [ ] **gRPC bridge connectivity** — Verify `YeomanBridge` server receives `ReportProgress` stream and updates delegated job status. Verify `RegisterCompletedModel` creates a model record in SY's DB.
-- [ ] **SSE streaming relay** — Verify `GET /api/v1/synapse/training/jobs/:id/stream` relays SSE events from Synapse's `/training/jobs/:id/stream` endpoint in real time.
-- [ ] **Model pull lifecycle** — `POST /api/v1/synapse/models/pull` with a real marketplace peer, verify SSE progress events flow through.
-- [ ] **Health/reconnection** — Kill Synapse, verify SY marks instance disconnected. Restart Synapse, verify SY heartbeat poll reconnects and re-registers.
-
 ### SQL Migration Consolidation
 
 - [ ] **Consolidate incremental migrations** — 5 migration files (001–005) with growing number of small incremental patches. Consolidate into 3 baseline files (community/pro/enterprise) with all constraints and indexes inline. Reduces startup migration time and simplifies fresh deployments. Preserve `schema_migrations` compatibility so existing installs skip re-applied baselines.
+
+---
+
+## Ecosystem Projects — Cross-Project Integration
+
+*SY integrations with sibling projects in the SecureYeoman ecosystem. Each project has its own repo but SY provides MCP tools, dashboard widgets, and service discovery.*
+
+### Rasa Image Editor
+
+- [ ] **Ecosystem service registration** — Rasa added to service discovery, docker-compose, and contributing docs. Docker image pending first GHCR release.
+- [ ] **MCP tools (native)** — `rasa_get_document`, `rasa_create_layer`, `rasa_apply_filter`, `rasa_generate_image`, `rasa_export`. Gated by `exposeRasaTools`.
+- [ ] **Image generation workflow** — Workflow templates: text-to-image, batch processing, thumbnail generation, screenshot annotation.
+- [ ] **Dashboard image viewer** — Inline image preview in chat. Gallery view for document history.
+- [ ] **Vision pipeline integration** — Connect Rasa's AI engine to SY's multimodal pipeline for image understanding, OCR, and visual QA.
+
+### Mneme Knowledge Base
+
+- [ ] **Ecosystem service registration** — Mneme added to service discovery, docker-compose, and contributing docs. Docker image being built.
+- [ ] **MCP tools (native)** — `mneme_search`, `mneme_create_note`, `mneme_get_note`, `mneme_link_notes`, `mneme_graph`. Gated by `exposeMnemeTools`.
+- [ ] **Brain integration** — Bridge Mneme's knowledge graph into SY's brain/RAG pipeline as a knowledge source.
+- [ ] **Dashboard knowledge explorer** — Inline note viewer, graph visualization widget.
+
+### Tazama Video Editor
+
+- [ ] **Docker image setup** — Dockerfile and docker-compose entries. Port TBD.
+- [ ] **Ecosystem service registration** — Service discovery, docker-compose, contributing docs.
+- [ ] **MCP tools (native)** — `tazama_*` tool set for programmatic video editing from chat and workflows.
+- [ ] **Vision pipeline bridge** — Connect video analysis to SY's multimodal pipeline and DeepLens edge camera feed.
+
+### Synapse LLM Controller — Integration Tests
+
+*Requires full system stack (SY + Synapse + PG + Docker).*
+
+- [ ] **Synapse REST round-trip** — Boot SY + Synapse via Docker Compose. Verify status transform, snake_case ↔ camelCase.
+- [ ] **Training delegation lifecycle** — Submit job, poll status through `pending→running→completed`.
+- [ ] **gRPC bridge connectivity** — Verify `ReportProgress` stream and `RegisterCompletedModel`.
+- [ ] **SSE streaming relay** — Verify job log streaming end-to-end.
+- [ ] **Model pull lifecycle** — SSE progress events for marketplace pull.
+- [ ] **Health/reconnection** — Kill/restart Synapse, verify heartbeat recovery.
+
+### Full Triangle Convergence (SY + Agnostic + AGNOS)
+
+*Ambitious unification. Depends on all three projects being stable.*
+
+- [ ] **Unified dev environment** — Shared `docker-compose.unified.yml` with networking across all three projects.
+- [ ] **Unified SSO** — OAuth2/OIDC federation: single identity provider, shared sessions.
+- [ ] **Cross-project agent delegation** — SY brain → A2A → Agnostic agent worker → AGNOS sandbox → results → brain. Bidirectional.
+- [ ] **Unified agent marketplace** — Single marketplace spanning SY skills, Agnostic agent capabilities, and AGNOS native agents.
+- [ ] **AgnosAI integration** — Wire-compatible A2A when Agnostic migrates from CrewAI to AgnosAI (Rust-native orchestration).
 
 ---
 
@@ -271,40 +285,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### Rasa Image Editor Integration
-
-*AI-native image editor for the SecureYeoman ecosystem. GPU-accelerated rendering, generative AI, and MCP tool integration for programmatic image manipulation from chat, workflows, and agents.*
-
-- [ ] **Ecosystem service registration** — Rasa added to service discovery (`service-discovery.ts`), docker-compose, and contributing docs. Dashboard card renders automatically. Docker image pending first GHCR release.
-- [ ] **MCP tools (native)** — Built-in `rasa_*` MCP tool set: `rasa_get_document`, `rasa_create_layer`, `rasa_apply_filter`, `rasa_generate_image`, `rasa_export`. Registered in `manifest.ts`, gated by `exposeRasaTools` flag.
-- [ ] **Image generation workflow** — Workflow templates: text-to-image via local models, batch image processing, thumbnail generation, screenshot annotation.
-- [ ] **Dashboard image viewer** — Inline image preview in chat messages when Rasa generates or edits images. Gallery view for document history.
-- [ ] **Vision pipeline integration** — Connect Rasa's AI engine to SY's multimodal pipeline for image understanding, OCR, and visual QA.
-
----
-
-### Mneme Knowledge Base Integration
-
-*AI-native personal knowledge base for the SecureYeoman ecosystem. Semantic search, auto-linking, graph visualization, and RAG over personal documents.*
-
-- [ ] **Ecosystem service registration** — Mneme added to service discovery, docker-compose, and contributing docs. Dashboard card renders automatically. Docker image being built.
-- [ ] **MCP tools (native)** — Built-in `mneme_*` MCP tool set: `mneme_search`, `mneme_create_note`, `mneme_get_note`, `mneme_link_notes`, `mneme_graph`. Registered in `manifest.ts`, gated by `exposeMnemeTools` flag.
-- [ ] **Brain integration** — Bridge Mneme's knowledge graph into SY's brain/RAG pipeline. Mneme notes as a knowledge source alongside existing document ingestion.
-- [ ] **Dashboard knowledge explorer** — Inline note viewer in chat, graph visualization widget showing note relationships.
-
----
-
-### Tazama Video Editor Integration
-
-*AI-native non-linear video editor for the SecureYeoman ecosystem. Vulkan-accelerated rendering, GStreamer pipeline, and MCP tool integration.*
-
-- [ ] **Docker image setup** — Create Dockerfile and docker-compose entries for Tazama. Port TBD.
-- [ ] **Ecosystem service registration** — Add to service discovery, docker-compose, contributing docs once Docker is ready.
-- [ ] **MCP tools (native)** — Built-in `tazama_*` MCP tool set for programmatic video editing from chat and workflows.
-- [ ] **Vision pipeline bridge** — Connect Tazama's video analysis to SY's multimodal pipeline and DeepLens edge camera feed.
-
----
-
 ### Shipping & Logistics Intelligence
 
 *Unified shipping operations via MCP integrations and native tools. Manage multi-carrier shipping, track packages, optimize fulfillment, and automate logistics workflows from within SecureYeoman.*
@@ -341,18 +321,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 *Lower-priority IDE features. Implement when the core IDE experience is stable and user demand warrants.*
 
 - [ ] **Plugin / extension system** — Third-party editor extensions.
-
----
-
-### Cross-Project — Full Triangle Convergence
-
-*Ambitious unification of SecureYeoman, AGNOSTIC, and AGNOS. Depends on Phases B–C being stable.*
-
-- [ ] **Unified dev environment** — Shared `docker-compose.unified.yml` with networking across all three projects. Single `.env.unified` for common secrets.
-- [ ] **Unified SSO across all three projects** — OAuth2/OIDC federation: single identity provider, shared sessions. SecureYeoman as IdP or external OIDC provider.
-- [ ] **Cross-project agent delegation** — SecureYeoman brain delegates to AGNOSTIC agentic workers running on AGNOS. AGNOSTIC is a full multi-agent orchestration platform (not just QA) — supports autonomous task execution, code generation, research, security auditing, and custom agent workflows. Full chain: task → brain → A2A → AGNOSTIC agent worker → AGNOS sandbox → results → brain. Bi-directional: AGNOSTIC agents can also invoke SY skills and knowledge via A2A.
-- [ ] **Unified agent marketplace** — Single marketplace spanning SecureYeoman skills, AGNOSTIC agent capabilities, and AGNOS native agents. Cross-project discovery and installation.
-- [ ] **AgnosAI integration** — When AGNOSTIC migrates from CrewAI to AgnosAI (Rust-native orchestration), SY's A2A protocol remains wire-compatible — same `POST /crews`, MCP tools, and webhook callbacks. SY benefits from 10-100x faster crew execution, <2s boot (vs 15-30s), and <50 MB footprint (vs 1.5 GB). See `agnostic/docs/development/roadmap-v2.md`.
 
 ---
 

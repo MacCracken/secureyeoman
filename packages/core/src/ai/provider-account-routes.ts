@@ -8,6 +8,8 @@ import type { ProviderAccountManager } from './provider-account-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import { licenseGuard } from '../licensing/license-guard.js';
 import type { SecureYeoman } from '../secureyeoman.js';
+import { AgnosClient } from '../integrations/agnos/agnos-client.js';
+import { createNoopLogger } from '../logging/logger.js';
 
 export interface ProviderAccountRoutesOptions {
   providerAccountManager: ProviderAccountManager;
@@ -199,6 +201,48 @@ export function registerProviderAccountRoutes(
           accountId: q.accountId,
         });
         return summary;
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
+    }
+  );
+
+  // ── AGNOS token pools (hoosh gateway) ─────────────────────
+
+  const gatewayUrl = process.env.AGNOS_GATEWAY_URL;
+  const gatewayApiKey = process.env.AGNOS_GATEWAY_API_KEY;
+  const agnosTokenClient = gatewayUrl
+    ? new AgnosClient(
+        {
+          runtimeUrl: process.env.AGNOS_RUNTIME_URL ?? 'http://127.0.0.1:8090',
+          gatewayUrl,
+          gatewayApiKey,
+        },
+        createNoopLogger()
+      )
+    : null;
+
+  app.get('/api/v1/provider-accounts/token-pools', async (_request, reply: FastifyReply) => {
+    if (!agnosTokenClient) {
+      return reply.send({ pools: [], available: false });
+    }
+    try {
+      const pools = await agnosTokenClient.tokenPools();
+      return reply.send({ pools, available: true });
+    } catch (err) {
+      return reply.send({ pools: [], available: false, error: toErrorMessage(err) });
+    }
+  });
+
+  app.get(
+    '/api/v1/provider-accounts/token-pools/:name',
+    async (request: FastifyRequest<{ Params: { name: string } }>, reply: FastifyReply) => {
+      if (!agnosTokenClient) {
+        return sendError(reply, 503, 'AGNOS gateway not configured');
+      }
+      try {
+        const pool = await agnosTokenClient.tokenPoolDetail(request.params.name);
+        return reply.send(pool);
       } catch (err) {
         return sendError(reply, 500, toErrorMessage(err));
       }

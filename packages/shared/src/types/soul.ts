@@ -708,6 +708,16 @@ export const VectorConfigSchema = z
         collection: z.string().default('secureyeoman_memories'),
       })
       .default({}),
+    agnos: z
+      .object({
+        /** AGNOS runtime URL (daimon). Default: http://127.0.0.1:8090. */
+        runtimeUrl: z.string().default('http://127.0.0.1:8090'),
+        /** AGNOS runtime API key. */
+        apiKey: z.string().optional(),
+        /** Use RAG pipeline (chunked text) in addition to raw vector ops. */
+        enableRag: z.boolean().default(true),
+      })
+      .default({}),
   })
   .default({});
 

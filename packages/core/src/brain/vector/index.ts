@@ -11,7 +11,8 @@ export { VectorMemoryManager } from './manager.js';
 
 import type { VectorStore } from './types.js';
 import type { VectorConfig } from '@secureyeoman/shared';
-import type { AgnosClient } from '../../integrations/agnos/agnos-client.js';
+import { AgnosClient, type AgnosClientConfig } from '../../integrations/agnos/agnos-client.js';
+import { createNoopLogger } from '../../logging/logger.js';
 import { FaissVectorStore } from './faiss-store.js';
 import { QdrantVectorStore } from './qdrant-store.js';
 import { ChromaVectorStore } from './chroma-store.js';
@@ -39,10 +40,15 @@ export function createVectorStore(
   const agnosClient = isOpts ? configOrOpts.agnosClient : undefined;
 
   if (config.backend === 'agnos') {
-    if (!agnosClient) {
-      throw new Error('AgnosClient is required when backend is "agnos"');
+    if (agnosClient) {
+      return new AgnosVectorStore(agnosClient);
     }
-    return new AgnosVectorStore(agnosClient);
+    // Create AgnosClient from config when not explicitly injected
+    const agnosConfig: AgnosClientConfig = {
+      runtimeUrl: config.agnos?.runtimeUrl ?? 'http://127.0.0.1:8090',
+      apiKey: config.agnos?.apiKey,
+    };
+    return new AgnosVectorStore(new AgnosClient(agnosConfig, createNoopLogger()));
   }
 
   if (config.backend === 'qdrant') {

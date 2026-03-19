@@ -58,6 +58,16 @@ Full driver-side integration with AGNOS 2026.3.18 APIs: token budgeting, RAG, ph
 
 - **`agnos-hooks.ts`** — New hook on `swarm:after-execute` / `task:after-execute` that creates audit run records via `agnosClient.forwardAuditRun()` with run_id, playbook, success, and task list. Priority 290, best-effort
 
+### AGNOS Deep Integration — Final 3 Items
+
+- **Token pool cost dashboard** — New API endpoints `GET /api/v1/provider-accounts/token-pools` and `GET /api/v1/provider-accounts/token-pools/:name` proxy AGNOS hoosh gateway token pool data. CostDashboard component shows AGNOS Token Pools table with pool name, used/remaining/total counts, and color-coded usage bar (green <70%, amber <90%, red 90%+). Gracefully hidden when AGNOS gateway is not configured
+- **Vector store AGNOS backend config** — `VectorConfigSchema` now includes `agnos` sub-config (`runtimeUrl`, `apiKey`, `enableRag`). Vector store factory auto-creates `AgnosClient` from config when not explicitly injected, removing the hard dependency on startup wiring. Deployments can now set `brain.vector.backend: 'agnos'` in config to offload pgvector to AGNOS
+- **MCP tool catalog endpoint** — New `GET /api/v1/mcp/tools/list` endpoint returns full tool definitions including `inputSchema` and `outputSchema` for all registered tools. `McpToolDef` and `McpToolManifest` schemas extended with optional `outputSchema` field. Enables AGNOS reverse registration with complete parameter metadata
+
+### DAG Workflow Documentation
+
+- **Workflows guide updated** — Added all 8 new step types to the step type table (`loop`, `parallel_map`, `code_execution`, `delay`, `notification`, `data_validation`, `cache_lookup`, `a2a_delegate`). Added full reference section with config examples for each. Documented 8 new built-in templates (pr-ci-triage, build-failure-triage, daily-pr-digest, dev-env-provision, iterative-research, fan-out-analysis, scheduled-data-pipeline, distributed-task). Template count updated from 5 to 14
+
 ### Code Audit Backlog — All 5 Items Resolved
 
 - **WebSocket unsubscribe permission check** — Unsubscribe handler now validates RBAC permissions and channel membership before removing subscriptions, matching the subscribe handler's security posture

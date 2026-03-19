@@ -17,6 +17,8 @@ export const McpToolDefSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(2000).default(''),
   inputSchema: z.record(z.string(), z.unknown()).default({}),
+  /** JSON Schema describing the tool's return value. Used by AGNOS for reverse registration. */
+  outputSchema: z.record(z.string(), z.unknown()).optional(),
   serverId: z.string().min(1),
   serverName: z.string().min(1),
 });
@@ -42,6 +44,8 @@ export const McpToolManifestSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(2000).default(''),
   inputSchema: z.record(z.string(), z.unknown()).default({}),
+  /** JSON Schema describing the tool's return value. Optional — used for catalog registration. */
+  outputSchema: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type McpToolManifest = z.infer<typeof McpToolManifestSchema>;

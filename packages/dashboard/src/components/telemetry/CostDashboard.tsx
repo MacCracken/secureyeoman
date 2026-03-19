@@ -11,8 +11,10 @@ import {
   fetchAccountCosts,
   fetchAccountCostTrend,
   exportAccountCostsCsv,
+  fetchTokenPools,
   type AccountCostSummaryResponse,
   type CostTrendPointResponse,
+  type TokenPoolResponse,
 } from '../../api/client';
 
 type Period = '7d' | '30d' | '90d';
@@ -44,6 +46,12 @@ export function CostDashboard() {
   const { data: trend } = useQuery({
     queryKey: ['provider-account-costs-trend', period],
     queryFn: () => fetchAccountCostTrend({ days: periodToDays(period) }),
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: tokenPools } = useQuery({
+    queryKey: ['agnos-token-pools'],
+    queryFn: () => fetchTokenPools(),
     refetchOnWindowFocus: false,
   });
 
@@ -138,6 +146,11 @@ export function CostDashboard() {
 
       {/* Simple trend visualization */}
       {trend && trend.length > 0 && <TrendBars trend={trend} />}
+
+      {/* AGNOS Token Pools */}
+      {tokenPools?.available && tokenPools.pools.length > 0 && (
+        <TokenPoolsSection pools={tokenPools.pools} />
+      )}
     </div>
   );
 }
@@ -214,6 +227,62 @@ function TrendBars({ trend }: { trend: CostTrendPointResponse[] }) {
             />
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function TokenPoolsSection({ pools }: { pools: TokenPoolResponse[] }) {
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+        <BarChart3 className="w-4 h-4 text-cyan-500" />
+        AGNOS Token Pools
+      </h4>
+      <div className="border rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-muted/50 border-b">
+              <th className="text-left px-4 py-2 font-medium">Pool</th>
+              <th className="text-right px-4 py-2 font-medium">Used</th>
+              <th className="text-right px-4 py-2 font-medium">Remaining</th>
+              <th className="text-right px-4 py-2 font-medium">Total</th>
+              <th className="text-right px-4 py-2 font-medium hidden sm:table-cell">Usage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pools.map((p) => {
+              const usagePct = p.total > 0 ? (p.used / p.total) * 100 : 0;
+              return (
+                <tr key={p.name} className="border-b last:border-0 hover:bg-muted/30">
+                  <td className="px-4 py-2 font-medium">{p.name}</td>
+                  <td className="px-4 py-2 text-right font-mono">{p.used.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right font-mono">{p.remaining.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right font-mono">{p.total.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right hidden sm:table-cell">
+                    <div className="flex items-center gap-2 justify-end">
+                      <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            usagePct > 90
+                              ? 'bg-red-500'
+                              : usagePct > 70
+                                ? 'bg-amber-500'
+                                : 'bg-cyan-500'
+                          }`}
+                          style={{ width: `${Math.min(usagePct, 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground w-10 text-right">
+                        {usagePct.toFixed(0)}%
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );

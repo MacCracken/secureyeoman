@@ -6834,6 +6834,30 @@ export async function exportAccountCostsCsv(opts?: {
   return res.text();
 }
 
+// ── AGNOS Token Pools ────────────────────────────────────────────────────────
+
+export interface TokenPoolResponse {
+  name: string;
+  total: number;
+  used: number;
+  remaining: number;
+  period_seconds?: number;
+}
+
+export interface TokenPoolsResponse {
+  pools: TokenPoolResponse[];
+  available: boolean;
+  error?: string;
+}
+
+export async function fetchTokenPools(): Promise<TokenPoolsResponse> {
+  return request<TokenPoolsResponse>('/provider-accounts/token-pools');
+}
+
+export async function fetchTokenPoolDetail(name: string): Promise<TokenPoolResponse> {
+  return request<TokenPoolResponse>(`/provider-accounts/token-pools/${encodeURIComponent(name)}`);
+}
+
 // ── Sandbox Scanning (Phase 116) ─────────────────────────────────────────────
 
 export async function fetchScanHistory(params?: {

@@ -309,6 +309,23 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     }
   );
 
+  // Full tool catalog for AGNOS reverse registration — returns complete definitions
+  // including inputSchema and outputSchema for all enabled tools.
+  app.get('/api/v1/mcp/tools/list', async () => {
+    const allTools = mcpClient.getAllTools();
+    return {
+      tools: allTools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        inputSchema: t.inputSchema,
+        outputSchema: (t as Record<string, unknown>).outputSchema ?? undefined,
+        serverId: t.serverId,
+        serverName: t.serverName,
+      })),
+      total: allTools.length,
+    };
+  });
+
   // Call a tool on an MCP server
   app.post(
     '/api/v1/mcp/tools/call',

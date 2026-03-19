@@ -28,17 +28,25 @@ Workflows let you wire together agent tasks, swarms, webhooks, transforms, and M
 | `webhook` | Sends an HTTP request to an external URL |
 | `subworkflow` | Executes another workflow definition inline |
 | `tool` / `mcp` | (Reserved) Calls an MCP tool |
-| `data_curation` | Snapshots conversation data for ML training (Phase 73) |
-| `training_job` | Awaits a distillation or fine-tune job to complete (Phase 73) |
-| `evaluation` | Runs an eval suite against a model endpoint (Phase 73) |
-| `conditional_deploy` | Deploys a model if a metric threshold is met (Phase 73) |
-| `human_approval` | Pauses the workflow until a human approves or rejects (Phase 73) |
+| `data_curation` | Snapshots conversation data for ML training |
+| `training_job` | Awaits a distillation or fine-tune job to complete |
+| `evaluation` | Runs an eval suite against a model endpoint |
+| `conditional_deploy` | Deploys a model if a metric threshold is met |
+| `human_approval` | Pauses the workflow until a human approves or rejects |
+| `loop` | Repeat a step or step group N times or until a condition is true |
+| `parallel_map` | Fan-out: run the same step template across a list of inputs |
+| `code_execution` | Run sandboxed code (Node.js, Python, Bash) inline |
+| `delay` | Pause execution for a duration or until a wall-clock time |
+| `notification` | Send an alert via webhook channel |
+| `data_validation` | Validate data against JSON Schema |
+| `cache_lookup` | Check context-based cache for dedup patterns |
+| `a2a_delegate` | Delegate a task to a remote SecureYeoman instance via A2A |
 
 ---
 
 ## Built-in Templates
 
-SecureYeoman ships 5 workflow definitions pre-seeded at startup.
+SecureYeoman ships 14 workflow definitions pre-seeded at startup.
 
 ### `research-report-pipeline`
 
@@ -75,6 +83,210 @@ Curate → LoRA fine-tune → evaluate → human approval gate → conditional d
 Curate preference data → DPO distillation → evaluate win-rate → promote if > 55%.
 
 **Required input**: `{ outputDir, personalityIds, dpoJobId, modelEndpoint, ollamaUrl, personalityId, adapterName, webhookUrl }`
+
+### `pr-ci-triage`
+
+Webhook trigger on PR → code-review swarm → condition check → notification.
+
+### `build-failure-triage`
+
+Webhook trigger on CI failure → agent analysis → notification.
+
+### `daily-pr-digest`
+
+Manual/cron trigger → agent gathers open PRs → transform → notification.
+
+### `dev-env-provision`
+
+Agent provisions dev environment → code_execution validates → notification on completion.
+
+### `iterative-research`
+
+Loop (max 5 iterations) → agent researches → data_validation checks quality → breaks when valid.
+
+**Required input**: `{ topic: string }`
+
+### `fan-out-analysis`
+
+parallel_map across input list → transform aggregates → notification with results.
+
+**Required input**: `{ items: string[], webhookUrl: string }`
+
+### `scheduled-data-pipeline`
+
+cache_lookup (dedup) → code_execution (transform data) → data_validation → delay (rate limit).
+
+**Required input**: `{ pipelineId: string, data: object }`
+
+### `distributed-task`
+
+parallel_map across subtasks → a2a_delegate to remote SY instances → notification on completion.
+
+**Required input**: `{ tasks: { peerId: string, task: string }[], webhookUrl: string }`
+
+---
+
+## New Step Type Reference
+
+### `loop`
+
+Repeat a step or step group N times or until a condition evaluates true.
+
+```json
+{
+  "type": "loop",
+  "config": {
+    "maxIterations": 10,
+    "conditionExpression": "steps.check.output.valid === true",
+    "stepIds": ["research", "check"]
+  }
+}
+```
+
+- `maxIterations` — Hard cap to prevent infinite loops (default: 100, max: 100).
+- `conditionExpression` — JavaScript expression evaluated after each iteration. Loop exits when true.
+- `stepIds` — Steps to execute each iteration. Must be defined in the same workflow.
+
+### `parallel_map`
+
+Fan-out: run the same step template across a list of inputs, collect results as an array.
+
+```json
+{
+  "type": "parallel_map",
+  "config": {
+    "inputListPath": "input.urls",
+    "taskTemplate": "Analyze the content at: {{item}}",
+    "maxConcurrency": 5
+  }
+}
+```
+
+- `inputListPath` — Dot-path to an array in the workflow context (e.g. `input.urls`, `steps.gather.output.items`).
+- `taskTemplate` — Mustache template applied to each item. `{{item}}` is the current element, `{{index}}` is the position.
+- `maxConcurrency` — Max parallel executions (default: 5).
+- Output is an array of results in input order.
+
+### `code_execution`
+
+Run sandboxed code inline within a workflow. Supports Node.js, Python, and Bash.
+
+```json
+{
+  "type": "code_execution",
+  "config": {
+    "runtime": "node",
+    "code": "return input.numbers.reduce((a, b) => a + b, 0);",
+    "timeoutMs": 10000
+  }
+}
+```
+
+- `runtime` — `node`, `python`, or `bash`.
+- `code` or `codeTemplate` — Inline code string, or Mustache template that renders to code.
+- `timeoutMs` — Execution timeout (default: 30000, max: 60000).
+- Code runs in the active sandbox (sy-agnos, Firecracker, etc.) when available.
+
+### `delay`
+
+Pause execution for a duration or until a wall-clock time.
+
+```json
+{
+  "type": "delay",
+  "config": {
+    "durationMs": 60000
+  }
+}
+```
+
+- `durationMs` — Pause duration in milliseconds. Capped at 1 hour (3600000).
+- `untilTimestamp` — Alternative: ISO 8601 timestamp to wait until. Whichever comes first.
+
+### `notification`
+
+Send an alert via webhook channel with a templated message.
+
+```json
+{
+  "type": "notification",
+  "config": {
+    "channel": "webhook",
+    "url": "{{input.webhookUrl}}",
+    "messageTemplate": "Workflow {{workflowName}} completed: {{steps.analyze.output.summary}}",
+    "recipients": ["ops-team"]
+  }
+}
+```
+
+- `channel` — `webhook` (HTTP POST). Other channels (Slack, email) logged as intent for future routing.
+- `url` — Webhook URL (supports Mustache templates).
+- `messageTemplate` — Message body template.
+- `recipients` — Optional recipient list for audit logging.
+
+### `data_validation`
+
+Validate data against a JSON Schema using the built-in OutputSchemaValidator.
+
+```json
+{
+  "type": "data_validation",
+  "config": {
+    "schema": {
+      "type": "object",
+      "required": ["name", "score"],
+      "properties": {
+        "name": { "type": "string" },
+        "score": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "dataPath": "steps.extract.output",
+    "onFailure": "fail"
+  }
+}
+```
+
+- `schema` — JSON Schema to validate against.
+- `dataPath` — Dot-path to the data to validate (e.g. `steps.extract.output`, `input.payload`).
+- `onFailure` — `fail` (abort workflow), `warn` (log + continue), or `skip` (skip downstream steps).
+
+### `cache_lookup`
+
+Check a context-based cache for deduplication. Useful for preventing re-processing of identical inputs.
+
+```json
+{
+  "type": "cache_lookup",
+  "config": {
+    "cacheKey": "pipeline:{{input.documentId}}:{{input.version}}"
+  }
+}
+```
+
+- `cacheKey` — Mustache template that renders to a cache key string.
+- Output: `{ hit: boolean, cachedValue?: unknown }`.
+- On cache hit, downstream steps can use `steps.cache.output.cachedValue` to skip recomputation.
+
+### `a2a_delegate`
+
+Delegate a task to a remote SecureYeoman instance via the A2A HTTP protocol.
+
+```json
+{
+  "type": "a2a_delegate",
+  "config": {
+    "peerId": "remote-sy-instance-id",
+    "taskTemplate": "Run security audit on: {{input.target}}",
+    "contextTemplate": "Source: {{input.source}}, priority: {{input.priority}}",
+    "timeoutMs": 120000
+  }
+}
+```
+
+- `peerId` — The A2A peer identifier of the remote SY instance (must be configured in A2A federation).
+- `taskTemplate` — Mustache template for the delegated task description.
+- `contextTemplate` — Optional context passed to the remote instance.
+- `timeoutMs` — Max time to wait for the remote result (default: 60000).
 
 ---
 
