@@ -118,6 +118,10 @@ impl Messenger {
         }
     }
 
+    pub fn target_count(&self) -> usize {
+        self.targets.len()
+    }
+
     pub fn list_targets(&self) -> Vec<MessageTarget> {
         self.targets
             .iter()
@@ -127,5 +131,57 @@ impl Messenger {
                 configured: true,
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn list_targets_returns_vec() {
+        // Just verify from_env doesn't panic and returns valid targets
+        let m = Messenger::from_env();
+        let targets = m.list_targets();
+        for t in &targets {
+            assert!(!t.name.is_empty());
+            assert!(t.configured);
+        }
+    }
+
+    #[test]
+    fn from_env_with_slack() {
+        std::env::set_var("SLACK_WEBHOOK_URL", "https://hooks.slack.com/test");
+        let m = Messenger::from_env();
+        assert!(m.target_count() >= 1);
+        let targets = m.list_targets();
+        assert!(targets.iter().any(|t| t.platform == "slack"));
+        std::env::remove_var("SLACK_WEBHOOK_URL");
+    }
+
+    #[test]
+    fn target_info_redacted() {
+        std::env::set_var("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/secret");
+        let m = Messenger::from_env();
+        let targets = m.list_targets();
+        // URL is not in the public struct
+        for t in &targets {
+            assert!(t.configured);
+            assert!(!t.name.is_empty());
+            assert!(!t.platform.is_empty());
+        }
+        std::env::remove_var("DISCORD_WEBHOOK_URL");
+    }
+
+    #[test]
+    fn message_target_serialization() {
+        let t = MessageTarget {
+            name: "slack".into(),
+            platform: "slack".into(),
+            configured: true,
+        };
+        let json = serde_json::to_string(&t).unwrap();
+        assert!(json.contains("\"name\":\"slack\""));
+        assert!(json.contains("\"configured\":true"));
     }
 }

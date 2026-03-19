@@ -135,3 +135,141 @@ impl MemoryStore {
         data.keys().cloned().collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_store() -> MemoryStore {
+        // Use a temp path to avoid polluting real data
+        let dir = format!("/tmp/sy-edge-test-{}", std::process::id());
+        let _ = fs::create_dir_all(&dir);
+        MemoryStore {
+            data: RwLock::new(HashMap::new()),
+            store_path: format!("{dir}/memory.json"),
+        }
+    }
+
+    #[test]
+    fn put_and_get() {
+        let store = test_store();
+        store.put("ns", "key1", serde_json::json!("hello"), None).unwrap();
+        let val = store.get("ns", "key1");
+        assert_eq!(val, Some(serde_json::json!("hello")));
+    }
+
+    #[test]
+    fn get_nonexistent_key() {
+        let store = test_store();
+        assert!(store.get("ns", "missing").is_none());
+    }
+
+    #[test]
+    fn get_nonexistent_namespace() {
+        let store = test_store();
+        assert!(store.get("missing_ns", "key").is_none());
+    }
+
+    #[test]
+    fn delete_key() {
+        let store = test_store();
+        store.put("ns", "k", serde_json::json!(1), None).unwrap();
+        assert!(store.get("ns", "k").is_some());
+        store.delete("ns", "k");
+        assert!(store.get("ns", "k").is_none());
+    }
+
+    #[test]
+    fn delete_last_key_removes_namespace() {
+        let store = test_store();
+        store.put("ns", "only", serde_json::json!(1), None).unwrap();
+        assert!(store.list_namespaces().contains(&"ns".to_string()));
+        store.delete("ns", "only");
+        assert!(!store.list_namespaces().contains(&"ns".to_string()));
+    }
+
+    #[test]
+    fn list_keys() {
+        let store = test_store();
+        store.put("ns", "a", serde_json::json!(1), None).unwrap();
+        store.put("ns", "b", serde_json::json!(2), None).unwrap();
+        let keys = store.list("ns");
+        assert_eq!(keys.len(), 2);
+        assert!(keys.contains(&"a".to_string()));
+        assert!(keys.contains(&"b".to_string()));
+    }
+
+    #[test]
+    fn list_namespaces() {
+        let store = test_store();
+        store.put("ns1", "k", serde_json::json!(1), None).unwrap();
+        store.put("ns2", "k", serde_json::json!(2), None).unwrap();
+        let ns = store.list_namespaces();
+        assert!(ns.contains(&"ns1".to_string()));
+        assert!(ns.contains(&"ns2".to_string()));
+    }
+
+    #[test]
+    fn ttl_expired_returns_none() {
+        let store = test_store();
+        // Set TTL to 0 seconds (already expired)
+        store.put("ns", "k", serde_json::json!("temp"), Some(0)).unwrap();
+        // Wait a moment for epoch to advance
+        std::thread::sleep(std::time::Duration::from_millis(1100));
+        assert!(store.get("ns", "k").is_none());
+    }
+
+    #[test]
+    fn ttl_not_expired_returns_value() {
+        let store = test_store();
+        store.put("ns", "k", serde_json::json!("temp"), Some(3600)).unwrap();
+        assert_eq!(store.get("ns", "k"), Some(serde_json::json!("temp")));
+    }
+
+    #[test]
+    fn value_too_large_rejected() {
+        let store = test_store();
+        let big_value = serde_json::json!("x".repeat(MAX_VALUE_BYTES + 1));
+        let result = store.put("ns", "k", big_value, None);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("too large"));
+    }
+
+    #[test]
+    fn overwrite_existing_key() {
+        let store = test_store();
+        store.put("ns", "k", serde_json::json!(1), None).unwrap();
+        store.put("ns", "k", serde_json::json!(2), None).unwrap();
+        assert_eq!(store.get("ns", "k"), Some(serde_json::json!(2)));
+    }
+
+    #[test]
+    fn json_value_types() {
+        let store = test_store();
+        store.put("ns", "str", serde_json::json!("hello"), None).unwrap();
+        store.put("ns", "num", serde_json::json!(42), None).unwrap();
+        store.put("ns", "bool", serde_json::json!(true), None).unwrap();
+        store.put("ns", "null", serde_json::json!(null), None).unwrap();
+        store.put("ns", "arr", serde_json::json!([1, 2, 3]), None).unwrap();
+        store.put("ns", "obj", serde_json::json!({"a": 1}), None).unwrap();
+
+        assert_eq!(store.get("ns", "str"), Some(serde_json::json!("hello")));
+        assert_eq!(store.get("ns", "num"), Some(serde_json::json!(42)));
+        assert_eq!(store.get("ns", "bool"), Some(serde_json::json!(true)));
+        assert_eq!(store.get("ns", "null"), Some(serde_json::json!(null)));
+        assert_eq!(store.get("ns", "arr"), Some(serde_json::json!([1, 2, 3])));
+        assert_eq!(store.get("ns", "obj"), Some(serde_json::json!({"a": 1})));
+    }
+
+    #[test]
+    fn empty_list_for_missing_namespace() {
+        let store = test_store();
+        assert!(store.list("nonexistent").is_empty());
+    }
+
+    #[test]
+    fn delete_nonexistent_is_noop() {
+        let store = test_store();
+        store.delete("ns", "missing"); // should not panic
+    }
+}

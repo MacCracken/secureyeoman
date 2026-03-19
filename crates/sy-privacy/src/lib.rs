@@ -230,4 +230,150 @@ mod tests {
         let result = engine.classify("Server at 192.168.1.100");
         assert!(result.pii_found.contains(&"ip_address".to_string()));
     }
+
+    // ── PII edge cases ──────────────────────────────────────────────────
+
+    #[test]
+    fn detects_email_with_plus_tag() {
+        let engine = ClassificationEngine::new();
+        let result = engine.classify("Send to user+tag@example.com");
+        assert!(result.pii_found.contains(&"email".to_string()));
+    }
+
+    #[test]
+    fn detects_ssn_in_sentence() {
+        let engine = ClassificationEngine::new();
+        let result = engine.classify("My SSN is 987-65-4321 and I need help");
+        assert!(result.pii_found.contains(&"ssn".to_string()));
+    }
+
+    #[test]
+    fn detects_credit_card_with_dashes() {
+        let engine = ClassificationEngine::new();
+        let result = engine.classify("Card number: 4111-1111-1111-1111");
+        assert!(result.pii_found.contains(&"credit_card".to_string()));
+    }
+
+    #[test]
+    fn detects_phone_with_country_code() {
+        let engine = ClassificationEngine::new();
+        let result = engine.classify("Call +1 (555) 123-4567");
+        assert!(result.pii_found.contains(&"phone".to_string()));
+    }
+
+    #[test]
+    fn ip_boundary_values() {
+        let engine = ClassificationEngine::new();
+        assert!(engine.classify("IP: 0.0.0.0").pii_found.contains(&"ip_address".to_string()));
+        assert!(engine.classify("IP: 255.255.255.255").pii_found.contains(&"ip_address".to_string()));
+    }
+
+    // ── Keyword edge cases ──────────────────────────────────────────────
+
+    #[test]
+    fn keyword_case_insensitive() {
+        let engine = ClassificationEngine::new();
+        assert_eq!(engine.classify("tOp SeCrEt data").level, ClassificationLevel::Restricted);
+        assert_eq!(engine.classify("CONFIDENTIAL info").level, ClassificationLevel::Confidential);
+    }
+
+    #[test]
+    fn multiple_keywords_highest_wins() {
+        let engine = ClassificationEngine::new();
+        // Both confidential and restricted triggered — restricted should win
+        let result = engine.classify("This is confidential and top secret");
+        assert_eq!(result.level, ClassificationLevel::Restricted);
+        assert!(result.keywords_found.len() >= 2);
+    }
+
+    #[test]
+    fn no_pii_no_keywords() {
+        let engine = ClassificationEngine::new();
+        let result = engine.classify("The weather is nice today");
+        assert_eq!(result.level, ClassificationLevel::Internal);
+        assert!(result.pii_found.is_empty());
+        assert!(result.keywords_found.is_empty());
+        assert!(result.rules_triggered.is_empty());
+    }
+
+    // ── Custom patterns ─────────────────────────────────────────────────
+
+    #[test]
+    fn custom_pattern_invalid_regex() {
+        let mut engine = ClassificationEngine::new();
+        let result = engine.add_pattern("bad", "[invalid(", ClassificationLevel::Restricted);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn multiple_custom_patterns() {
+        let mut engine = ClassificationEngine::new();
+        engine.add_pattern("proj_a", r"PROJ-A-\d+", ClassificationLevel::Confidential).unwrap();
+        engine.add_pattern("proj_b", r"PROJ-B-\d+", ClassificationLevel::Restricted).unwrap();
+
+        let r1 = engine.classify("See PROJ-A-100");
+        assert_eq!(r1.level, ClassificationLevel::Confidential);
+
+        let r2 = engine.classify("See PROJ-B-200");
+        assert_eq!(r2.level, ClassificationLevel::Restricted);
+
+        // Both triggered — restricted wins
+        let r3 = engine.classify("PROJ-A-1 and PROJ-B-2");
+        assert_eq!(r3.level, ClassificationLevel::Restricted);
+    }
+
+    // ── Batch edge cases ────────────────────────────────────────────────
+
+    #[test]
+    fn batch_empty() {
+        let engine = ClassificationEngine::new();
+        let results = engine.classify_batch(&[]);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn batch_preserves_order() {
+        let engine = ClassificationEngine::new();
+        let results = engine.classify_batch(&[
+            "TOP SECRET",
+            "normal text",
+            "test@email.com",
+        ]);
+        assert_eq!(results[0].level, ClassificationLevel::Restricted);
+        assert_eq!(results[1].level, ClassificationLevel::Internal);
+        assert!(results[2].level >= ClassificationLevel::Confidential);
+    }
+
+    // ── Multiple PII in one text ────────────────────────────────────────
+
+    #[test]
+    fn multiple_pii_types() {
+        let engine = ClassificationEngine::new();
+        let result = engine.classify(
+            "Contact john@test.com at (555) 123-4567, SSN 123-45-6789, card 4111 1111 1111 1111"
+        );
+        assert!(result.pii_found.contains(&"email".to_string()));
+        assert!(result.pii_found.contains(&"phone".to_string()));
+        assert!(result.pii_found.contains(&"ssn".to_string()));
+        assert!(result.pii_found.contains(&"credit_card".to_string()));
+        assert!(result.pii_found.len() >= 4);
+    }
+
+    // ── Serialization ───────────────────────────────────────────────────
+
+    #[test]
+    fn classification_result_serializes() {
+        let engine = ClassificationEngine::new();
+        let result = engine.classify("test@example.com");
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"level\""));
+        assert!(json.contains("\"piiFound\""));
+    }
+
+    #[test]
+    fn classification_level_ordering() {
+        assert!(ClassificationLevel::Public < ClassificationLevel::Internal);
+        assert!(ClassificationLevel::Internal < ClassificationLevel::Confidential);
+        assert!(ClassificationLevel::Confidential < ClassificationLevel::Restricted);
+    }
 }

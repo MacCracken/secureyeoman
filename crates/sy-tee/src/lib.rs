@@ -183,15 +183,17 @@ fn derive_from_tpm() -> Result<Vec<u8>, String> {
     hex_decode(&key_hex[..64])
 }
 
-fn derive_from_keyring() -> Result<Vec<u8>, String> {
-    let env_key = std::env::var("SECUREYEOMAN_MODEL_ENCRYPTION_KEY")
-        .map_err(|_| "SECUREYEOMAN_MODEL_ENCRYPTION_KEY environment variable not set")?;
-
+fn derive_from_keyring_with(env_key: &str) -> Result<Vec<u8>, String> {
     if env_key.len() < 64 {
         return Err("Model encryption key must be at least 32 bytes (64 hex chars)".into());
     }
-
     hex_decode(&env_key[..64])
+}
+
+fn derive_from_keyring() -> Result<Vec<u8>, String> {
+    let env_key = std::env::var("SECUREYEOMAN_MODEL_ENCRYPTION_KEY")
+        .map_err(|_| "SECUREYEOMAN_MODEL_ENCRYPTION_KEY environment variable not set")?;
+    derive_from_keyring_with(&env_key)
 }
 
 fn hex_decode(hex: &str) -> Result<Vec<u8>, String> {
@@ -226,7 +228,177 @@ mod tests {
     #[test]
     fn bad_magic_rejected() {
         let mut mgr = TeeEncryptionManager::new();
-        let result = mgr.unseal(b"NOT_SEALED_DATA_HERE_AT_ALL", None);
+        // Data long enough to pass length check but with wrong magic
+        let bad_data = vec![0u8; 50];
+        let result = mgr.unseal(&bad_data, None);
         assert!(result.is_err());
+        assert!(result.unwrap_err().contains("SEALED_V1"));
+    }
+
+    #[test]
+    fn tee_source_not_implemented() {
+        let mut mgr = TeeEncryptionManager::new();
+        let result = mgr.seal(b"data", KeySource::Tee);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not yet implemented"));
+    }
+
+    #[test]
+    fn empty_plaintext_roundtrip() {
+        std::env::set_var("SECUREYEOMAN_MODEL_ENCRYPTION_KEY",
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+        let mut mgr = TeeEncryptionManager::new();
+
+        let sealed = mgr.seal(b"", KeySource::Keyring).unwrap();
+        assert!(TeeEncryptionManager::is_sealed(&sealed));
+
+        let unsealed = mgr.unseal(&sealed, None).unwrap();
+        assert!(unsealed.is_empty());
+    }
+
+    #[test]
+    fn data_too_short() {
+        let mut mgr = TeeEncryptionManager::new();
+        let result = mgr.unseal(b"SEALED_V1", None);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("too short"));
+    }
+
+    #[test]
+    fn key_source_override() {
+        std::env::set_var("SECUREYEOMAN_MODEL_ENCRYPTION_KEY",
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+        let mut mgr = TeeEncryptionManager::new();
+
+        let sealed = mgr.seal(b"test data", KeySource::Keyring).unwrap();
+        // Unseal with explicit keyring override (same key, should work)
+        let unsealed = mgr.unseal(&sealed, Some(KeySource::Keyring)).unwrap();
+        assert_eq!(unsealed, b"test data");
+    }
+
+    #[test]
+    fn is_sealed_false_for_non_sealed() {
+        assert!(!TeeEncryptionManager::is_sealed(b""));
+        assert!(!TeeEncryptionManager::is_sealed(b"hello"));
+        assert!(!TeeEncryptionManager::is_sealed(b"SEALED_V"));
+    }
+
+    #[test]
+    fn is_sealed_true_for_magic() {
+        assert!(TeeEncryptionManager::is_sealed(b"SEALED_V1remaining_data"));
+    }
+
+    #[test]
+    fn clear_key_cache_works() {
+        std::env::set_var("SECUREYEOMAN_MODEL_ENCRYPTION_KEY",
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+        let mut mgr = TeeEncryptionManager::new();
+
+        // Populate cache
+        let _ = mgr.seal(b"test", KeySource::Keyring).unwrap();
+        assert!(!mgr.key_cache.is_empty());
+
+        mgr.clear_key_cache();
+        assert!(mgr.key_cache.is_empty());
+    }
+
+    #[test]
+    fn key_source_tags() {
+        assert_eq!(KeySource::Tpm.tag(), 0x01);
+        assert_eq!(KeySource::Tee.tag(), 0x02);
+        assert_eq!(KeySource::Keyring.tag(), 0x03);
+        assert_eq!(KeySource::from_tag(0x01), Some(KeySource::Tpm));
+        assert_eq!(KeySource::from_tag(0x02), Some(KeySource::Tee));
+        assert_eq!(KeySource::from_tag(0x03), Some(KeySource::Keyring));
+        assert_eq!(KeySource::from_tag(0xFF), None);
+    }
+
+    #[test]
+    fn keyring_key_too_short() {
+        // Test the derive_from_keyring function directly via an error path.
+        // We can't safely mutate env vars in parallel tests, so test by
+        // verifying the error type from the function.
+        let result = derive_from_keyring_with("abcdef");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("32 bytes"));
+    }
+
+    #[test]
+    fn seal_unseal_file_roundtrip() {
+        std::env::set_var("SECUREYEOMAN_MODEL_ENCRYPTION_KEY",
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+        let mut mgr = TeeEncryptionManager::new();
+
+        let dir = format!("/tmp/sy-tee-test-{}", std::process::id());
+        let _ = fs::create_dir_all(&dir);
+        let model_path = format!("{dir}/model.bin");
+        fs::write(&model_path, b"model weight data").unwrap();
+
+        let sealed_path = mgr.seal_file(&model_path, KeySource::Keyring).unwrap();
+        assert_eq!(sealed_path, format!("{model_path}.sealed"));
+        assert!(std::path::Path::new(&sealed_path).exists());
+
+        let unsealed = mgr.unseal_file(&sealed_path, None).unwrap();
+        assert_eq!(unsealed, b"model weight data");
+
+        // Cleanup
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn seal_file_not_found() {
+        std::env::set_var("SECUREYEOMAN_MODEL_ENCRYPTION_KEY",
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+        let mut mgr = TeeEncryptionManager::new();
+        let result = mgr.seal_file("/nonexistent/path/model.bin", KeySource::Keyring);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Failed to read"));
+    }
+
+    #[test]
+    fn unseal_file_not_found() {
+        let mut mgr = TeeEncryptionManager::new();
+        let result = mgr.unseal_file("/nonexistent/sealed.bin", None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn derive_from_keyring_with_valid() {
+        let key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        let result = derive_from_keyring_with(key);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 32);
+    }
+
+    #[test]
+    fn derive_from_keyring_with_invalid_hex() {
+        let key = "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
+        let result = derive_from_keyring_with(key);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn hex_decode_valid() {
+        let result = hex_decode("48656c6c6f");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), b"Hello");
+    }
+
+    #[test]
+    fn hex_decode_odd_length() {
+        let result = hex_decode("abc");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn large_plaintext_roundtrip() {
+        std::env::set_var("SECUREYEOMAN_MODEL_ENCRYPTION_KEY",
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+        let mut mgr = TeeEncryptionManager::new();
+
+        let data = vec![0xABu8; 100_000];
+        let sealed = mgr.seal(&data, KeySource::Keyring).unwrap();
+        let unsealed = mgr.unseal(&sealed, None).unwrap();
+        assert_eq!(unsealed, data);
     }
 }

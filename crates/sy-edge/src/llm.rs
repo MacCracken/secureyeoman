@@ -204,6 +204,10 @@ impl LlmClient {
         Ok(data["response"].as_str().unwrap_or("").to_string())
     }
 
+    pub fn provider_count(&self) -> usize {
+        self.providers.len()
+    }
+
     pub fn list_providers(&self) -> Vec<ProviderInfo> {
         self.providers
             .iter()
@@ -213,5 +217,63 @@ impl LlmClient {
                 configured: true,
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn list_providers_returns_vec() {
+        // Just verify from_env doesn't panic and returns a valid vec
+        let client = LlmClient::from_env();
+        let providers = client.list_providers();
+        for p in &providers {
+            assert!(!p.name.is_empty());
+            assert!(p.configured);
+        }
+    }
+
+    #[test]
+    fn from_env_with_openai() {
+        std::env::set_var("OPENAI_API_KEY", "sk-test-key");
+        let client = LlmClient::from_env();
+        assert!(client.provider_count() >= 1);
+        let providers = client.list_providers();
+        assert!(providers.iter().any(|p| p.name == "openai"));
+        std::env::remove_var("OPENAI_API_KEY");
+    }
+
+    #[test]
+    fn from_env_with_ollama() {
+        std::env::set_var("OLLAMA_URL", "http://localhost:11434");
+        let client = LlmClient::from_env();
+        let providers = client.list_providers();
+        assert!(providers.iter().any(|p| p.name == "ollama"));
+        std::env::remove_var("OLLAMA_URL");
+    }
+
+    #[test]
+    fn provider_info_serialization() {
+        let info = ProviderInfo {
+            name: "openai".into(),
+            model: "gpt-4o-mini".into(),
+            configured: true,
+        };
+        let json = serde_json::to_string(&info).unwrap();
+        assert!(json.contains("\"name\":\"openai\""));
+    }
+
+    #[test]
+    fn custom_model_via_env() {
+        std::env::set_var("OPENAI_API_KEY", "sk-test");
+        std::env::set_var("OPENAI_MODEL", "gpt-4o");
+        let client = LlmClient::from_env();
+        let providers = client.list_providers();
+        let openai = providers.iter().find(|p| p.name == "openai").unwrap();
+        assert_eq!(openai.model, "gpt-4o");
+        std::env::remove_var("OPENAI_API_KEY");
+        std::env::remove_var("OPENAI_MODEL");
     }
 }

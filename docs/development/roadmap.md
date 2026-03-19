@@ -4,6 +4,23 @@
 
 ---
 
+## Hybrid TypeScript/Rust Architecture
+
+**Status**: Phase 1-4 complete. 8 Rust crates in `crates/` Cargo workspace, 209 unit tests.
+
+See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hardware test plan, and per-platform verification checklist.
+
+- `sy-crypto` — AES-256-GCM, X25519, Ed25519, HMAC-SHA256, HKDF (98% coverage)
+- `sy-hwprobe` — GPU/TPU/NPU/ASIC detection via sysfs + CLI parsing (56% coverage)
+- `sy-tee` — Model weight sealing with TPM2/keyring keys (88% coverage)
+- `sy-privacy` — DLP PII regex scanning, compiled Rust DFA (98% coverage)
+- `sy-audit` — HMAC-SHA256 linked tamper-evident audit chain (100% coverage)
+- `sy-sandbox` — seccomp-bpf, Landlock, cgroup v2 detection (76% coverage)
+- `sy-edge` — Standalone edge binary, 6.9 MB, 22 API endpoints (37% coverage)
+- `sy-napi` — napi-rs bridge exposing all crates to Node.js
+
+---
+
 ## Phase XX: QA & Manual Testing (Ongoing)
 
 **Priority**: P3 — Ongoing. Continuous verification of features that lack automated integration coverage. Items move to Changelog when confirmed working; new regressions are added here as discovered.

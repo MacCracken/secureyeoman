@@ -157,6 +157,87 @@ fn detect_npu() -> bool {
     false
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detect_returns_valid_capabilities() {
+        let caps = detect();
+        assert!(!caps.node_id.is_empty());
+        assert!(!caps.hostname.is_empty());
+        assert!(!caps.arch.is_empty());
+        assert!(!caps.platform.is_empty());
+        assert!(caps.total_memory_mb > 0);
+        assert!(caps.cpu_cores > 0);
+    }
+
+    #[test]
+    fn node_id_is_deterministic() {
+        let id1 = detect().node_id;
+        let id2 = detect().node_id;
+        assert_eq!(id1, id2);
+    }
+
+    #[test]
+    fn node_id_is_hex() {
+        let id = detect().node_id;
+        assert!(id.len() == 16);
+        assert!(id.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn tags_include_architecture() {
+        let caps = detect();
+        let has_arch_tag = caps.tags.iter().any(|t| t == "x64" || t == "arm64" || t == "riscv64");
+        assert!(has_arch_tag, "Tags should include architecture: {:?}", caps.tags);
+    }
+
+    #[test]
+    fn capabilities_serialization() {
+        let caps = detect();
+        let json = serde_json::to_string(&caps).unwrap();
+        assert!(json.contains("nodeId"));
+        assert!(json.contains("hostname"));
+        assert!(json.contains("totalMemoryMb"));
+
+        let parsed: EdgeCapabilities = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.node_id, caps.node_id);
+        assert_eq!(parsed.hostname, caps.hostname);
+    }
+
+    #[test]
+    fn custom_tags_from_env() {
+        std::env::set_var("SECUREYEOMAN_EDGE_TAGS", "custom-tag,another-tag");
+        let caps = detect();
+        assert!(caps.tags.contains(&"custom-tag".to_string()));
+        assert!(caps.tags.contains(&"another-tag".to_string()));
+        std::env::remove_var("SECUREYEOMAN_EDGE_TAGS");
+    }
+
+    #[test]
+    fn gpu_detection_is_bool() {
+        // Just verify it doesn't panic
+        let _ = detect_gpu();
+    }
+
+    #[test]
+    fn tpu_detection_is_bool() {
+        let _ = detect_tpu();
+    }
+
+    #[test]
+    fn npu_detection_is_bool() {
+        let _ = detect_npu();
+    }
+
+    #[test]
+    fn hex_encode_works() {
+        assert_eq!(hex::encode(&[0x00, 0xFF, 0xAB]), "00ffab");
+        assert_eq!(hex::encode(&[]), "");
+    }
+}
+
 /// Hex encoding helper (avoids pulling in hex crate for just this).
 mod hex {
     pub fn encode(bytes: &[u8]) -> String {

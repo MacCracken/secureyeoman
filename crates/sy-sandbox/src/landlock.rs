@@ -26,6 +26,22 @@ pub fn abi_version() -> u32 {
     }
 }
 
+/// Parse kernel version string and check if >= 5.13.
+pub fn kernel_version_supports_landlock(release: &str) -> bool {
+    let parts: Vec<u32> = release
+        .trim()
+        .split('.')
+        .take(2)
+        .filter_map(|s| s.split('-').next().and_then(|n| n.parse().ok()))
+        .collect();
+
+    if parts.len() >= 2 {
+        (parts[0] > 5) || (parts[0] == 5 && parts[1] >= 13)
+    } else {
+        false
+    }
+}
+
 fn kernel_supports_landlock() -> bool {
     if let Ok(release) = fs::read_to_string("/proc/sys/kernel/osrelease") {
         let parts: Vec<u32> = release

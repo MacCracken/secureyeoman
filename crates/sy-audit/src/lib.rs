@@ -263,7 +263,128 @@ mod tests {
         chain.update_signing_key("new-key");
         chain.record("after", "info", "after rotation", None, None, None);
 
-        // Note: verify with current key only works for entries after rotation
-        assert_eq!(chain.count(), 3); // before + rotation event + after
+        // before + rotation event + after
+        assert_eq!(chain.count(), 3);
+    }
+
+    #[test]
+    fn empty_chain_verifies() {
+        let chain = AuditChain::new("key");
+        let (valid, err) = chain.verify();
+        assert!(valid);
+        assert!(err.is_none());
+        assert_eq!(chain.count(), 0);
+    }
+
+    #[test]
+    fn single_entry_verifies() {
+        let mut chain = AuditChain::new("key");
+        chain.record("test", "info", "single entry", None, None, None);
+        let (valid, _) = chain.verify();
+        assert!(valid);
+    }
+
+    #[test]
+    fn tamper_middle_entry() {
+        let mut chain = AuditChain::new("key");
+        chain.record("e1", "info", "first", None, None, None);
+        chain.record("e2", "info", "second", None, None, None);
+        chain.record("e3", "info", "third", None, None, None);
+
+        chain.entries[1].message = "TAMPERED".into();
+        let (valid, err) = chain.verify();
+        assert!(!valid);
+        assert!(err.unwrap().contains("Entry 1"));
+    }
+
+    #[test]
+    fn tamper_last_entry() {
+        let mut chain = AuditChain::new("key");
+        chain.record("e1", "info", "first", None, None, None);
+        chain.record("e2", "info", "second", None, None, None);
+
+        chain.entries[1].event = "TAMPERED".into();
+        let (valid, err) = chain.verify();
+        assert!(!valid);
+        assert!(err.unwrap().contains("Entry 1"));
+    }
+
+    #[test]
+    fn tamper_previous_hash_link() {
+        let mut chain = AuditChain::new("key");
+        chain.record("e1", "info", "first", None, None, None);
+        chain.record("e2", "info", "second", None, None, None);
+
+        chain.entries[1].integrity.previous_entry_hash = "deadbeef".repeat(8);
+        let (valid, err) = chain.verify();
+        assert!(!valid);
+        assert!(err.unwrap().contains("previous hash mismatch"));
+    }
+
+    #[test]
+    fn entry_with_all_optional_fields() {
+        let mut chain = AuditChain::new("key");
+        let meta = serde_json::json!({"action": "delete", "count": 42, "nested": {"a": true}});
+        chain.record(
+            "task.execute",
+            "warn",
+            "Task executed with metadata",
+            Some("user-123"),
+            Some("task-456"),
+            Some(meta),
+        );
+        let (valid, _) = chain.verify();
+        assert!(valid);
+        assert_eq!(chain.entries[0].user_id.as_deref(), Some("user-123"));
+        assert_eq!(chain.entries[0].task_id.as_deref(), Some("task-456"));
+        assert!(chain.entries[0].metadata.is_some());
+    }
+
+    #[test]
+    fn special_characters_in_message() {
+        let mut chain = AuditChain::new("key");
+        chain.record("test", "info", "line1\nline2\ttab \"quotes\" \\backslash", None, None, None);
+        let (valid, _) = chain.verify();
+        assert!(valid);
+    }
+
+    #[test]
+    fn hash_changes_with_each_entry() {
+        let mut chain = AuditChain::new("key");
+        let h0 = chain.last_hash().to_string();
+
+        chain.record("e1", "info", "first", None, None, None);
+        let h1 = chain.last_hash().to_string();
+        assert_ne!(h0, h1);
+
+        chain.record("e2", "info", "second", None, None, None);
+        let h2 = chain.last_hash().to_string();
+        assert_ne!(h1, h2);
+    }
+
+    #[test]
+    fn entry_ids_are_unique() {
+        let mut chain = AuditChain::new("key");
+        chain.record("e1", "info", "first", None, None, None);
+        chain.record("e2", "info", "second", None, None, None);
+        assert_ne!(chain.entries[0].id, chain.entries[1].id);
+    }
+
+    #[test]
+    fn integrity_version_is_set() {
+        let mut chain = AuditChain::new("key");
+        chain.record("test", "info", "msg", None, None, None);
+        assert_eq!(chain.entries[0].integrity.version, "1.0.0");
+    }
+
+    #[test]
+    fn many_entries_verify() {
+        let mut chain = AuditChain::new("key");
+        for i in 0..100 {
+            chain.record("bulk", "info", &format!("entry {i}"), None, None, None);
+        }
+        let (valid, _) = chain.verify();
+        assert!(valid);
+        assert_eq!(chain.count(), 100);
     }
 }

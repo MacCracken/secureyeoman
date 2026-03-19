@@ -116,4 +116,73 @@ mod tests {
     fn probe_family_unknown_returns_empty() {
         assert!(probe_family("quantum").is_empty());
     }
+
+    #[test]
+    fn probe_all_devices_indexed_sequentially() {
+        let devices = probe_all();
+        for (i, dev) in devices.iter().enumerate() {
+            assert_eq!(dev.index, i as u32, "Device at position {i} has wrong index");
+        }
+    }
+
+    #[test]
+    fn probe_family_tpu() {
+        let _ = probe_family("tpu");
+    }
+
+    #[test]
+    fn probe_family_npu() {
+        let _ = probe_family("npu");
+    }
+
+    #[test]
+    fn probe_family_ai_asic() {
+        let _ = probe_family("ai_asic");
+    }
+
+    #[test]
+    fn probe_family_devices_indexed() {
+        for family in ["gpu", "tpu", "npu", "ai_asic"] {
+            let devices = probe_family(family);
+            for (i, dev) in devices.iter().enumerate() {
+                assert_eq!(dev.index, i as u32);
+                assert_eq!(dev.family, family);
+            }
+        }
+    }
+
+    #[test]
+    fn accelerator_device_new_defaults() {
+        let dev = types::AcceleratorDevice::new("Test GPU", "nvidia", "gpu");
+        assert_eq!(dev.name, "Test GPU");
+        assert_eq!(dev.vendor, "nvidia");
+        assert_eq!(dev.family, "gpu");
+        assert_eq!(dev.index, 0);
+        assert_eq!(dev.vram_total_mb, 0);
+        assert_eq!(dev.vram_used_mb, 0);
+        assert_eq!(dev.vram_free_mb, 0);
+        assert_eq!(dev.utilization_percent, 0);
+        assert!(dev.temperature_celsius.is_none());
+        assert_eq!(dev.driver_version, "unknown");
+        assert!(dev.compute_capability.is_none());
+        assert!(!dev.cuda_available);
+        assert!(!dev.rocm_available);
+        assert!(!dev.tpu_available);
+    }
+
+    #[test]
+    fn accelerator_device_serialization() {
+        let dev = types::AcceleratorDevice::new("RTX 4090", "nvidia", "gpu");
+        let json = serde_json::to_string(&dev).unwrap();
+        assert!(json.contains("\"name\":\"RTX 4090\""));
+        assert!(json.contains("\"vendor\":\"nvidia\""));
+        // Verify camelCase serialization
+        assert!(json.contains("vramTotalMb"));
+        assert!(json.contains("cudaAvailable"));
+
+        // Roundtrip
+        let parsed: types::AcceleratorDevice = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.name, "RTX 4090");
+        assert_eq!(parsed.vendor, "nvidia");
+    }
 }

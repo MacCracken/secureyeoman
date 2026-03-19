@@ -104,6 +104,10 @@ impl Scheduler {
         self.tasks.lock().unwrap().remove(id);
     }
 
+    pub fn task_count(&self) -> usize {
+        self.tasks.lock().unwrap().len()
+    }
+
     pub fn list_tasks(&self) -> Vec<serde_json::Value> {
         let tasks = self.tasks.lock().unwrap();
         tasks
@@ -117,5 +121,79 @@ impl Scheduler {
                 })
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn add_and_list_task() {
+        let sched = Scheduler::new();
+        let body = serde_json::json!({
+            "type": "command",
+            "interval_seconds": 60,
+            "config": {"command": "uptime"}
+        });
+        let id = sched.add_task(body).unwrap();
+        assert!(id.starts_with("task-"));
+
+        let tasks = sched.list_tasks();
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0]["type"], "command");
+        assert_eq!(tasks[0]["interval_seconds"], 60);
+    }
+
+    #[test]
+    fn add_task_missing_type() {
+        let sched = Scheduler::new();
+        let body = serde_json::json!({"interval_seconds": 60});
+        let result = sched.add_task(body);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("type"));
+    }
+
+    #[test]
+    fn add_task_interval_too_short() {
+        let sched = Scheduler::new();
+        let body = serde_json::json!({"type": "webhook", "interval_seconds": 5});
+        let result = sched.add_task(body);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("too short"));
+    }
+
+    #[test]
+    fn remove_task() {
+        let sched = Scheduler::new();
+        let body = serde_json::json!({"type": "llm", "interval_seconds": 60});
+        let id = sched.add_task(body).unwrap();
+        assert_eq!(sched.task_count(), 1);
+
+        sched.remove_task(&id);
+        assert_eq!(sched.task_count(), 0);
+    }
+
+    #[test]
+    fn remove_nonexistent_task() {
+        let sched = Scheduler::new();
+        sched.remove_task("task-nonexistent"); // should not panic
+    }
+
+    #[test]
+    fn default_interval() {
+        let sched = Scheduler::new();
+        let body = serde_json::json!({"type": "command"});
+        let id = sched.add_task(body).unwrap();
+        let tasks = sched.list_tasks();
+        assert_eq!(tasks[0]["interval_seconds"], 60); // default
+    }
+
+    #[test]
+    fn task_ids_unique() {
+        let sched = Scheduler::new();
+        let id1 = sched.add_task(serde_json::json!({"type": "a", "interval_seconds": 60})).unwrap();
+        let id2 = sched.add_task(serde_json::json!({"type": "b", "interval_seconds": 60})).unwrap();
+        assert_ne!(id1, id2);
     }
 }

@@ -148,6 +148,33 @@ pub fn probe_qualcomm() -> Vec<AcceleratorDevice> {
     Vec::new()
 }
 
+/// Parse hl-smi CSV output for testing.
+pub fn parse_hl_smi_output(stdout: &str) -> Vec<AcceleratorDevice> {
+    stdout
+        .trim()
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(|line| {
+            let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
+            let mem_total = parts.get(2).and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
+            let mem_free = parts.get(3).and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
+            let name_str = parts.get(1).unwrap_or(&"Gaudi");
+            let lower = name_str.to_lowercase();
+            let is_gaudi3 = lower.contains("gaudi3") || lower.contains("hl-325");
+            let gen = if is_gaudi3 { "Gaudi3" } else { "Gaudi2" };
+
+            let mut dev = AcceleratorDevice::new(&format!("Intel {gen}"), "habana", "ai_asic");
+            dev.index = parts.first().and_then(|s| s.parse().ok()).unwrap_or(0);
+            dev.vram_total_mb = mem_total;
+            dev.vram_used_mb = mem_total.saturating_sub(mem_free);
+            dev.vram_free_mb = mem_free;
+            dev.driver_version = "habana".into();
+            dev.compute_capability = Some(gen.to_string());
+            dev
+        })
+        .collect()
+}
+
 fn make_qualcomm() -> AcceleratorDevice {
     let mut dev = AcceleratorDevice::new("Qualcomm Cloud AI 100", "qualcomm", "ai_asic");
     dev.vram_total_mb = 32 * 1024;
@@ -162,4 +189,69 @@ struct NeuronDevice {
     model: Option<String>,
     nc_count: Option<u32>,
     memory_per_nc_mb: Option<u32>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_gaudi2() {
+        let output = "0, HL-225B, 98304, 90000\n";
+        let devs = parse_hl_smi_output(output);
+        assert_eq!(devs.len(), 1);
+        assert_eq!(devs[0].name, "Intel Gaudi2");
+        assert_eq!(devs[0].vram_total_mb, 98304);
+        assert_eq!(devs[0].vram_free_mb, 90000);
+        assert_eq!(devs[0].vram_used_mb, 8304);
+        assert_eq!(devs[0].compute_capability, Some("Gaudi2".into()));
+    }
+
+    #[test]
+    fn parse_gaudi3() {
+        let output = "0, HL-325L Gaudi3, 131072, 120000\n";
+        let devs = parse_hl_smi_output(output);
+        assert_eq!(devs[0].name, "Intel Gaudi3");
+        assert_eq!(devs[0].compute_capability, Some("Gaudi3".into()));
+    }
+
+    #[test]
+    fn parse_multiple_gaudi() {
+        let output = "0, HL-225, 98304, 80000\n1, HL-225, 98304, 95000\n";
+        let devs = parse_hl_smi_output(output);
+        assert_eq!(devs.len(), 2);
+        assert_eq!(devs[0].index, 0);
+        assert_eq!(devs[1].index, 1);
+    }
+
+    #[test]
+    fn parse_empty_hl_smi() {
+        assert!(parse_hl_smi_output("").is_empty());
+    }
+
+    #[test]
+    fn qualcomm_device_fields() {
+        let dev = make_qualcomm();
+        assert_eq!(dev.vendor, "qualcomm");
+        assert_eq!(dev.family, "ai_asic");
+        assert_eq!(dev.vram_total_mb, 32 * 1024);
+        assert_eq!(dev.compute_capability, Some("AI 100".into()));
+    }
+
+    #[test]
+    fn neuron_device_deserialization() {
+        let json = r#"[{"model":"trn1","nc_count":2,"memory_per_nc_mb":16384}]"#;
+        let devices: Vec<NeuronDevice> = serde_json::from_str(json).unwrap();
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0].model, Some("trn1".into()));
+        assert_eq!(devices[0].nc_count, Some(2));
+    }
+
+    #[test]
+    fn neuron_device_missing_fields() {
+        let json = r#"[{}]"#;
+        let devices: Vec<NeuronDevice> = serde_json::from_str(json).unwrap();
+        assert!(devices[0].model.is_none());
+        assert!(devices[0].nc_count.is_none());
+    }
 }

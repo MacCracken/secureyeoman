@@ -2,6 +2,7 @@
 
 use std::process::Command;
 
+#[derive(Debug)]
 pub struct ExecOutput {
     pub stdout: String,
     pub stderr: String,
@@ -94,5 +95,99 @@ impl SandboxManager {
 
     pub fn allowed_commands(&self) -> Vec<String> {
         self.allowed.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn allowed_commands_populated() {
+        let sm = SandboxManager::new();
+        let cmds = sm.allowed_commands();
+        assert!(cmds.contains(&"ls".to_string()));
+        assert!(cmds.contains(&"cat".to_string()));
+        assert!(cmds.contains(&"grep".to_string()));
+        assert!(cmds.len() >= 20);
+    }
+
+    #[test]
+    fn blocked_command_rejected() {
+        let sm = SandboxManager::new();
+        let result = sm.execute("rm", &[], None, 30);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("blocked"));
+    }
+
+    #[test]
+    fn unlisted_command_rejected() {
+        let sm = SandboxManager::new();
+        let result = sm.execute("python3", &[], None, 30);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not allowed"));
+    }
+
+    #[test]
+    fn path_traversal_in_args_rejected() {
+        let sm = SandboxManager::new();
+        let result = sm.execute("ls", &["../../etc/passwd".to_string()], None, 30);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("traversal"));
+    }
+
+    #[test]
+    fn allowed_command_executes() {
+        let sm = SandboxManager::new();
+        let result = sm.execute("uname", &["-s".to_string()], None, 30);
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(output.stdout.contains("Linux"));
+        assert_eq!(output.exit_code, 0);
+    }
+
+    #[test]
+    fn ls_with_workspace() {
+        let sm = SandboxManager::new();
+        let result = sm.execute("ls", &[], Some("/tmp"), 30);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().exit_code, 0);
+    }
+
+    #[test]
+    fn bad_workspace_rejected() {
+        let sm = SandboxManager::new();
+        let result = sm.execute("ls", &[], Some("/etc"), 30);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Workspace must be"));
+    }
+
+    #[test]
+    fn command_with_full_path_uses_basename() {
+        let sm = SandboxManager::new();
+        // /usr/bin/rm has basename "rm" which is blocked
+        let result = sm.execute("/usr/bin/rm", &[], None, 30);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("blocked"));
+    }
+
+    #[test]
+    fn blocked_commands_comprehensive() {
+        let sm = SandboxManager::new();
+        for cmd in ["dd", "mkfs", "shutdown", "reboot", "kill", "mount", "iptables"] {
+            let result = sm.execute(cmd, &[], None, 30);
+            assert!(result.is_err(), "{cmd} should be blocked");
+        }
+    }
+
+    #[test]
+    fn stderr_captured() {
+        let sm = SandboxManager::new();
+        // ls a nonexistent path should produce stderr
+        let result = sm.execute("ls", &["/nonexistent_path_xyz".to_string()], None, 30);
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(!output.stderr.is_empty());
+        assert_ne!(output.exit_code, 0);
     }
 }

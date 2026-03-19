@@ -4,8 +4,8 @@ use crate::types::AcceleratorDevice;
 use std::fs;
 use std::path::Path;
 
-/// HBM per chip in GB by TPU version.
-fn hbm_gb(version: &str) -> u64 {
+/// HBM per chip in GB by TPU version. Public for testing.
+pub fn hbm_gb(version: &str) -> u64 {
     match version {
         "v4" => 32,
         "v5e" => 16,
@@ -85,4 +85,34 @@ pub fn probe() -> Vec<AcceleratorDevice> {
     }
 
     devices
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hbm_gb_known_versions() {
+        assert_eq!(hbm_gb("v4"), 32);
+        assert_eq!(hbm_gb("v5e"), 16);
+        assert_eq!(hbm_gb("v5p"), 95);
+    }
+
+    #[test]
+    fn hbm_gb_unknown_defaults_to_16() {
+        assert_eq!(hbm_gb("v6"), 16);
+        assert_eq!(hbm_gb("unknown"), 16);
+        assert_eq!(hbm_gb(""), 16);
+    }
+
+    #[test]
+    fn probe_returns_vec() {
+        // On systems without TPU, returns empty
+        let devs = probe();
+        for d in &devs {
+            assert_eq!(d.family, "tpu");
+            assert_eq!(d.vendor, "google");
+            assert!(d.tpu_available);
+        }
+    }
 }

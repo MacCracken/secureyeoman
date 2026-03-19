@@ -338,4 +338,231 @@ mod tests {
         let bytes = random_bytes(32);
         assert!(bytes.iter().any(|&b| b != 0));
     }
+
+    // ── SHA-256 additional ──────────────────────────────────────────────
+
+    #[test]
+    fn test_sha256_binary_data() {
+        // Ensure binary (non-UTF8) data hashes correctly
+        let data: Vec<u8> = (0u8..=255).collect();
+        let hash = sha256(&data);
+        assert_eq!(hash.len(), 64);
+        // Deterministic
+        assert_eq!(sha256(&data), hash);
+    }
+
+    #[test]
+    fn test_sha256_large_input() {
+        let data = vec![0xABu8; 1_000_000];
+        let hash = sha256(&data);
+        assert_eq!(hash.len(), 64);
+    }
+
+    // ── MD5 additional ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_md5_empty() {
+        assert_eq!(md5(b""), "d41d8cd98f00b204e9800998ecf8427e");
+    }
+
+    // ── HMAC additional ─────────────────────────────────────────────────
+
+    #[test]
+    fn test_hmac_sha256_empty_key() {
+        let result = hmac_sha256(b"data", b"");
+        assert_eq!(result.len(), 64);
+    }
+
+    #[test]
+    fn test_hmac_sha256_empty_data() {
+        let result = hmac_sha256(b"", b"key");
+        assert_eq!(result.len(), 64);
+    }
+
+    #[test]
+    fn test_hmac_sha256_different_keys_produce_different_results() {
+        let a = hmac_sha256(b"same data", b"key1");
+        let b = hmac_sha256(b"same data", b"key2");
+        assert_ne!(a, b);
+    }
+
+    // ── Secure compare additional ───────────────────────────────────────
+
+    #[test]
+    fn test_secure_compare_empty() {
+        assert!(secure_compare(b"", b""));
+    }
+
+    #[test]
+    fn test_secure_compare_single_byte_diff() {
+        assert!(!secure_compare(b"\x00", b"\x01"));
+    }
+
+    #[test]
+    fn test_secure_compare_same_length_different() {
+        assert!(!secure_compare(b"aaaa", b"aaab"));
+    }
+
+    // ── AES-256-GCM additional ──────────────────────────────────────────
+
+    #[test]
+    fn test_aes_256_gcm_empty_plaintext() {
+        let key = random_bytes(32);
+        let iv = random_bytes(12);
+        let encrypted = aes_256_gcm_encrypt(b"", &key, &iv).unwrap();
+        let decrypted = aes_256_gcm_decrypt(&encrypted, &key, &iv).unwrap();
+        assert!(decrypted.is_empty());
+    }
+
+    #[test]
+    fn test_aes_256_gcm_bad_iv_length() {
+        let result = aes_256_gcm_encrypt(b"data", &[0u8; 32], &[0u8; 8]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("IV must be 12 bytes"));
+    }
+
+    #[test]
+    fn test_aes_256_gcm_wrong_key_decrypt() {
+        let key1 = random_bytes(32);
+        let key2 = random_bytes(32);
+        let iv = random_bytes(12);
+        let encrypted = aes_256_gcm_encrypt(b"secret", &key1, &iv).unwrap();
+        assert!(aes_256_gcm_decrypt(&encrypted, &key2, &iv).is_err());
+    }
+
+    #[test]
+    fn test_aes_256_gcm_different_ivs_produce_different_ciphertext() {
+        let key = random_bytes(32);
+        let iv1 = random_bytes(12);
+        let iv2 = random_bytes(12);
+        let e1 = aes_256_gcm_encrypt(b"same data", &key, &iv1).unwrap();
+        let e2 = aes_256_gcm_encrypt(b"same data", &key, &iv2).unwrap();
+        assert_ne!(e1, e2);
+    }
+
+    // ── X25519 additional ───────────────────────────────────────────────
+
+    #[test]
+    fn test_x25519_keypair_uniqueness() {
+        let (sk1, pk1) = x25519_keypair();
+        let (sk2, pk2) = x25519_keypair();
+        assert_ne!(sk1, sk2);
+        assert_ne!(pk1, pk2);
+    }
+
+    #[test]
+    fn test_x25519_invalid_key_size() {
+        let result = x25519_diffie_hellman(&[0u8; 16], &[0u8; 32]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("32 bytes"));
+    }
+
+    #[test]
+    fn test_x25519_invalid_pubkey_size() {
+        let result = x25519_diffie_hellman(&[0u8; 32], &[0u8; 16]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_x25519_key_sizes() {
+        let (sk, pk) = x25519_keypair();
+        assert_eq!(sk.len(), 32);
+        assert_eq!(pk.len(), 32);
+    }
+
+    // ── Ed25519 additional ──────────────────────────────────────────────
+
+    #[test]
+    fn test_ed25519_keypair_sizes() {
+        let (sk, pk) = ed25519_keypair();
+        assert_eq!(sk.len(), 32);
+        assert_eq!(pk.len(), 32);
+    }
+
+    #[test]
+    fn test_ed25519_signature_size() {
+        let (sk, _) = ed25519_keypair();
+        let sig = ed25519_sign(b"test", &sk).unwrap();
+        assert_eq!(sig.len(), 64);
+    }
+
+    #[test]
+    fn test_ed25519_invalid_private_key_size() {
+        let result = ed25519_sign(b"test", &[0u8; 16]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ed25519_invalid_signature_size() {
+        let (_, pk) = ed25519_keypair();
+        let result = ed25519_verify(b"test", &[0u8; 32], &pk);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("64 bytes"));
+    }
+
+    #[test]
+    fn test_ed25519_invalid_public_key_size() {
+        let (sk, _) = ed25519_keypair();
+        let sig = ed25519_sign(b"test", &sk).unwrap();
+        let result = ed25519_verify(b"test", &sig, &[0u8; 16]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ed25519_wrong_public_key() {
+        let (sk, _pk) = ed25519_keypair();
+        let (_, other_pk) = ed25519_keypair();
+        let sig = ed25519_sign(b"test", &sk).unwrap();
+        assert!(!ed25519_verify(b"test", &sig, &other_pk).unwrap());
+    }
+
+    #[test]
+    fn test_ed25519_empty_message() {
+        let (sk, pk) = ed25519_keypair();
+        let sig = ed25519_sign(b"", &sk).unwrap();
+        assert!(ed25519_verify(b"", &sig, &pk).unwrap());
+    }
+
+    // ── HKDF additional ────────────────────────────────────────────────
+
+    #[test]
+    fn test_hkdf_empty_salt() {
+        let ikm = random_bytes(32);
+        let derived = hkdf_sha256(&ikm, b"", b"info", 32).unwrap();
+        assert_eq!(derived.len(), 32);
+    }
+
+    #[test]
+    fn test_hkdf_different_info_produces_different_keys() {
+        let ikm = random_bytes(32);
+        let d1 = hkdf_sha256(&ikm, b"salt", b"info1", 32).unwrap();
+        let d2 = hkdf_sha256(&ikm, b"salt", b"info2", 32).unwrap();
+        assert_ne!(d1, d2);
+    }
+
+    #[test]
+    fn test_hkdf_various_lengths() {
+        let ikm = random_bytes(32);
+        for len in [16, 32, 48, 64] {
+            let derived = hkdf_sha256(&ikm, b"salt", b"info", len).unwrap();
+            assert_eq!(derived.len(), len);
+        }
+    }
+
+    #[test]
+    fn test_hkdf_too_long_output() {
+        let ikm = random_bytes(32);
+        // HKDF-SHA256 max output is 255 * 32 = 8160 bytes
+        let result = hkdf_sha256(&ikm, b"salt", b"info", 8161);
+        assert!(result.is_err());
+    }
+
+    // ── Random bytes additional ─────────────────────────────────────────
+
+    #[test]
+    fn test_random_bytes_uniqueness() {
+        let a = random_bytes(32);
+        let b = random_bytes(32);
+        assert_ne!(a, b); // Astronomically unlikely to collide
+    }
 }
