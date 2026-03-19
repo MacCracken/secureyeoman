@@ -397,6 +397,57 @@ describe('POST /api/v1/mcp/tools/call', () => {
     expect(res.statusCode).toBe(502);
   });
 
+  it('returns 502 on ETIMEDOUT', async () => {
+    const app = buildApp(undefined, {
+      callTool: vi.fn().mockRejectedValue(new Error('connect ETIMEDOUT 10.0.0.1:8080')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-1', toolName: 'test_tool' },
+    });
+    expect(res.statusCode).toBe(502);
+    expect(res.json().message).toContain('unreachable');
+  });
+
+  it('returns 502 on ENOTFOUND', async () => {
+    const app = buildApp(undefined, {
+      callTool: vi.fn().mockRejectedValue(new Error('getaddrinfo ENOTFOUND mcp-server.local')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-1', toolName: 'test_tool' },
+    });
+    expect(res.statusCode).toBe(502);
+    expect(res.json().message).toContain('unreachable');
+  });
+
+  it('returns 502 on abort/timeout', async () => {
+    const app = buildApp(undefined, {
+      callTool: vi.fn().mockRejectedValue(new Error('The operation was aborted')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-1', toolName: 'test_tool' },
+    });
+    expect(res.statusCode).toBe(502);
+    expect(res.json().message).toContain('unreachable');
+  });
+
+  it('returns 502 on UND_ERR (undici fetch error)', async () => {
+    const app = buildApp(undefined, {
+      callTool: vi.fn().mockRejectedValue(new Error('UND_ERR_CONNECT_TIMEOUT')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-1', toolName: 'test_tool' },
+    });
+    expect(res.statusCode).toBe(502);
+  });
+
   it('returns 502 when response too large', async () => {
     const app = buildApp(undefined, {
       callTool: vi.fn().mockRejectedValue(new Error('MCP response too large (>50MB)')),

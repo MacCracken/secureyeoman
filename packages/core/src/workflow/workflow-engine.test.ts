@@ -3010,9 +3010,14 @@ describe('WorkflowEngine.execute — step dispatch: parallel_map', () => {
     );
   });
 
-  it('should respect maxConcurrency', async () => {
+  it('should respect maxConcurrency by processing in correct order', async () => {
     const storage = makeStorage();
     const engine = makeEngine({ storage });
+    // With maxConcurrency=2 and 5 items, batching produces:
+    //   batch 1: items[0..1] → [1, 2]
+    //   batch 2: items[2..3] → [3, 4]
+    //   batch 3: items[4]    → [5]
+    // Results array must preserve order despite batched execution.
     const run = makeRun({ input: { items: [1, 2, 3, 4, 5] } });
     const step = makeStep({
       id: 'pmap2',
@@ -3020,18 +3025,49 @@ describe('WorkflowEngine.execute — step dispatch: parallel_map', () => {
       config: {
         inputListPath: 'input.items',
         maxConcurrency: 2,
-        taskTemplate: '{{input.item}}',
+        taskTemplate: 'item-{{input.item}}-idx-{{input.index}}',
       },
+    });
+    const def = makeDefinition([step]);
+    await engine.execute(run, def);
+
+    // Verify all items processed with correct indices (proves batching preserved order)
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          pmap2: expect.objectContaining({
+            count: 5,
+            results: [
+              'item-1-idx-0',
+              'item-2-idx-1',
+              'item-3-idx-2',
+              'item-4-idx-3',
+              'item-5-idx-4',
+            ],
+          }),
+        }),
+      })
+    );
+  });
+
+  it('should throw when inputListPath resolves to non-array', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const run = makeRun({ input: { items: 'not-an-array' } });
+    const step = makeStep({
+      id: 'pmap-bad',
+      type: 'parallel_map',
+      config: { inputListPath: 'input.items', taskTemplate: '{{input.item}}' },
     });
     const def = makeDefinition([step]);
     await engine.execute(run, def);
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
       expect.objectContaining({
-        status: 'completed',
-        output: expect.objectContaining({
-          pmap2: expect.objectContaining({ count: 5 }),
-        }),
+        status: 'failed',
+        error: expect.stringContaining('did not resolve to an array'),
       })
     );
   });
@@ -3156,6 +3192,46 @@ describe('WorkflowEngine.execute — step dispatch: code_execution', () => {
             stderr: expect.stringContaining('ReferenceError'),
           }),
         }),
+      })
+    );
+  });
+
+  it('should throw for unsupported runtime', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'code-bad-rt',
+      type: 'code_execution',
+      config: { runtime: 'ruby', code: 'puts "hello"' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining("unsupported runtime 'ruby'"),
+      })
+    );
+  });
+
+  it('should throw for empty code', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'code-empty',
+      type: 'code_execution',
+      config: { runtime: 'node', code: '   ' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('code is empty'),
       })
     );
   });
@@ -3391,6 +3467,34 @@ describe('WorkflowEngine.execute — step dispatch: data_validation', () => {
       'data_validation: validation failed (non-fatal)'
     );
   });
+
+  it('should throw when schema is not provided', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const produce = makeStep({
+      id: 'produce',
+      type: 'transform',
+      config: { outputTemplate: 'some data' },
+    });
+    const validate = makeStep({
+      id: 'validate-no-schema',
+      type: 'data_validation',
+      config: { dataPath: 'steps.produce.output' },
+      dependsOn: ['produce'],
+    });
+    const def = makeDefinition([produce, validate], {
+      edges: [{ source: 'produce', target: 'validate-no-schema' }],
+    });
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('schema is required'),
+      })
+    );
+  });
 });
 
 describe('WorkflowEngine.execute — step dispatch: cache_lookup', () => {
@@ -3508,6 +3612,46 @@ describe('WorkflowEngine.execute — step dispatch: a2a_delegate', () => {
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
       expect.objectContaining({ status: 'failed' })
+    );
+  });
+
+  it('should throw when peerId is missing', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'a2a-no-peer',
+      type: 'a2a_delegate',
+      config: { taskTemplate: 'do something' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('peerId is required'),
+      })
+    );
+  });
+
+  it('should throw when taskTemplate resolves to empty', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'a2a-no-task',
+      type: 'a2a_delegate',
+      config: { peerId: 'http://peer:9420', taskTemplate: '' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('taskTemplate is required'),
+      })
     );
   });
 });
