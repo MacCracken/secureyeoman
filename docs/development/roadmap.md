@@ -106,15 +106,6 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### Test Coverage
-
-**Remaining improvement areas:**
-
-| Suite | Area | Notes |
-|-------|------|-------|
-| Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
-| Core E2E | Expand coverage | Add training, delegation, analytics flows (needs Docker) |
-
 ### SQL Migration Consolidation
 
 - [ ] **Consolidate incremental migrations** — 5 migration files (001–005) with growing number of small incremental patches. Consolidate into 3 baseline files (community/pro/enterprise) with all constraints and indexes inline. Reduces startup migration time and simplifies fresh deployments. Preserve `schema_migrations` compatibility so existing installs skip re-applied baselines.
@@ -158,9 +149,9 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 - [ ] **Model pull lifecycle** — SSE progress events for marketplace pull.
 - [ ] **Health/reconnection** — Kill/restart Synapse, verify heartbeat recovery.
 
-### Full Triangle Convergence (SY + Agnostic + AGNOS)
+### SY-AAS-AGNOS Convergence
 
-*Ambitious unification. Depends on all three projects being stable.*
+*Ambitious unification of SecureYeoman, Agnostic Agent System, and AGNOS. Depends on all three projects being stable.*
 
 - [ ] **Unified dev environment** — Shared `docker-compose.unified.yml` with networking across all three projects.
 - [ ] **Unified SSO** — OAuth2/OIDC federation: single identity provider, shared sessions.

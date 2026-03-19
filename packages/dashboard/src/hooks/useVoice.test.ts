@@ -218,4 +218,165 @@ describe('useVoice', () => {
 
     expect(result.current.isListening).toBe(false);
   });
+
+  // ── Error suppression ───────────────────────────────────────────
+
+  it('should suppress aborted error without console.warn', () => {
+    const instance = { ...mockRecognitionInstance };
+    (window as unknown as Record<string, unknown>).SpeechRecognition = function () {
+      return instance;
+    };
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useVoice());
+
+    act(() => {
+      result.current.startListening();
+    });
+
+    act(() => {
+      instance.onerror?.({ error: 'aborted' });
+    });
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(result.current.isListening).toBe(false);
+  });
+
+  it('should suppress no-speech error without console.warn', () => {
+    const instance = { ...mockRecognitionInstance };
+    (window as unknown as Record<string, unknown>).SpeechRecognition = function () {
+      return instance;
+    };
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useVoice());
+
+    act(() => {
+      result.current.startListening();
+    });
+
+    act(() => {
+      instance.onerror?.({ error: 'no-speech' });
+    });
+
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('should warn on not-allowed error', () => {
+    const instance = { ...mockRecognitionInstance };
+    (window as unknown as Record<string, unknown>).SpeechRecognition = function () {
+      return instance;
+    };
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useVoice());
+
+    act(() => {
+      result.current.startListening();
+    });
+
+    act(() => {
+      instance.onerror?.({ error: 'not-allowed' });
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith('Speech recognition error:', 'not-allowed');
+  });
+
+  // ── WebKit fallback ─────────────────────────────────────────────
+
+  it('should fall back to webkitSpeechRecognition', () => {
+    delete (window as unknown as Record<string, unknown>).SpeechRecognition;
+    (window as unknown as Record<string, unknown>).webkitSpeechRecognition = MockSpeechRecognition;
+
+    const { result } = renderHook(() => useVoice());
+    expect(result.current.supported).toBe(true);
+  });
+
+  it('should use webkitSpeechRecognition as primary when SpeechRecognition unavailable', () => {
+    delete (window as unknown as Record<string, unknown>).SpeechRecognition;
+    (window as unknown as Record<string, unknown>).webkitSpeechRecognition = MockSpeechRecognition;
+
+    const { result } = renderHook(() => useVoice());
+
+    act(() => {
+      result.current.startListening();
+    });
+
+    // Should be listening via webkit fallback
+    expect(result.current.isListening).toBe(true);
+  });
+
+  // ── Transcript from recognition result ──────────────────────────
+
+  it('should set transcript from final recognition result', () => {
+    const instance = { ...mockRecognitionInstance };
+    (window as unknown as Record<string, unknown>).SpeechRecognition = function () {
+      return instance;
+    };
+
+    const { result } = renderHook(() => useVoice());
+
+    act(() => {
+      result.current.startListening();
+    });
+
+    // Simulate a final result
+    act(() => {
+      instance.onresult?.({
+        resultIndex: 0,
+        results: {
+          length: 1,
+          0: {
+            isFinal: true,
+            0: { transcript: 'hello world' },
+            length: 1,
+          },
+          item: (i: number) => ({ isFinal: true, 0: { transcript: 'hello world' }, length: 1 }),
+        } as unknown as SpeechRecognitionResultList,
+      });
+    });
+
+    expect(result.current.transcript).toBe('hello world');
+  });
+
+  // ── Toggle voice cancels speech synthesis ───────────────────────
+
+  it('should cancel speech synthesis when toggling voice off', () => {
+    const { result } = renderHook(() => useVoice());
+
+    // Enable voice
+    act(() => {
+      result.current.toggleVoice();
+    });
+    expect(result.current.voiceEnabled).toBe(true);
+
+    // Disable voice
+    act(() => {
+      result.current.toggleVoice();
+    });
+    expect(result.current.voiceEnabled).toBe(false);
+    expect(mockSpeechSynthesis.cancel).toHaveBeenCalled();
+  });
+
+  // ── Start listening fails gracefully ────────────────────────────
+
+  it('should handle start() throwing', () => {
+    const instance = {
+      ...mockRecognitionInstance,
+      start: vi.fn().mockImplementation(() => {
+        throw new Error('not allowed');
+      }),
+    };
+    (window as unknown as Record<string, unknown>).SpeechRecognition = function () {
+      return instance;
+    };
+
+    const { result } = renderHook(() => useVoice());
+
+    act(() => {
+      result.current.startListening();
+    });
+
+    expect(result.current.isListening).toBe(false);
+  });
 });

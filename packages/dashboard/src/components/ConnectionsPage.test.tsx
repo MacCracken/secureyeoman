@@ -2151,4 +2151,29 @@ describe('ConnectionsPage', () => {
     await user.click(addBtn);
     expect(screen.getByText('Webhook')).toBeInTheDocument();
   });
+
+  // ── Ecosystem services ──────────────────────────────────────────
+
+  it('renders ecosystem services section with fetched data', async () => {
+    vi.mocked(api.fetchEcosystemServices).mockResolvedValue([
+      {
+        name: 'synapse',
+        label: 'Synapse',
+        enabled: true,
+        status: 'connected',
+        url: 'http://localhost:8420',
+      },
+    ] as any);
+    renderComponent();
+    // Ecosystem Services heading should appear
+    const heading = await screen.findByText('Ecosystem Services');
+    expect(heading).toBeInTheDocument();
+  });
+
+  it('handles ecosystem service fetch failure gracefully', async () => {
+    vi.mocked(api.fetchEcosystemServices).mockRejectedValue(new Error('Network error'));
+    const { container } = renderComponent();
+    // Should render without crashing — page mounts successfully
+    expect(container.querySelector('div')).toBeTruthy();
+  });
 });

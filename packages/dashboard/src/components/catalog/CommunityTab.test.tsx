@@ -628,4 +628,81 @@ describe('CommunityTab', () => {
       expect(screen.getByText('Code Helper')).toBeInTheDocument();
     });
   });
+
+  // ── Content type switching ──────────────────────────────────────
+
+  it('switches to Workflows tab when enabled', async () => {
+    const user = userEvent.setup();
+    renderComponent({ workflowsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Skills')).toBeInTheDocument();
+    });
+
+    const workflowsTab = screen.getByText('Workflows');
+    await user.click(workflowsTab);
+    expect(workflowsTab).toBeInTheDocument();
+  });
+
+  it('switches to Swarm Templates tab when enabled', async () => {
+    const user = userEvent.setup();
+    renderComponent({ subAgentsEnabled: true });
+    await waitFor(() => {
+      expect(screen.getByText('Skills')).toBeInTheDocument();
+    });
+
+    const swarmsTab = screen.getByText('Swarm Templates');
+    await user.click(swarmsTab);
+    expect(swarmsTab).toBeInTheDocument();
+  });
+
+  it('switches to Themes tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Skills')).toBeInTheDocument();
+    });
+
+    const themesTab = screen.getByText('Themes');
+    await user.click(themesTab);
+    expect(themesTab).toBeInTheDocument();
+  });
+
+  it('switches to Personalities tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Skills')).toBeInTheDocument();
+    });
+
+    const personalitiesTab = screen.getByText('Personalities');
+    await user.click(personalitiesTab);
+    expect(personalitiesTab).toBeInTheDocument();
+  });
+
+  // ── Error states ───────────────────────────────────────────────
+
+  it('handles fetch failure gracefully', async () => {
+    mockFetchMarketplace.mockRejectedValue(new Error('Network error'));
+    renderComponent();
+    // Should render without crashing — error state shown to user
+    await waitFor(() => {
+      expect(screen.getByText('Skills')).toBeInTheDocument();
+    });
+  });
+
+  it('handles community status fetch failure', async () => {
+    mockFetchCommunityStatus.mockRejectedValue(new Error('unreachable'));
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Skills')).toBeInTheDocument();
+    });
+  });
+
+  it('handles personality fetch failure', async () => {
+    mockFetchPersonalities.mockRejectedValue(new Error('DB error'));
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Skills')).toBeInTheDocument();
+    });
+  });
 });

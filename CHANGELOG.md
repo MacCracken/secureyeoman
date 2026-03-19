@@ -64,6 +64,12 @@ Full driver-side integration with AGNOS 2026.3.18 APIs: token budgeting, RAG, ph
 - **Vector store AGNOS backend config** — `VectorConfigSchema` now includes `agnos` sub-config (`runtimeUrl`, `apiKey`, `enableRag`). Vector store factory auto-creates `AgnosClient` from config when not explicitly injected, removing the hard dependency on startup wiring. Deployments can now set `brain.vector.backend: 'agnos'` in config to offload pgvector to AGNOS
 - **MCP tool catalog endpoint** — New `GET /api/v1/mcp/tools/list` endpoint returns full tool definitions including `inputSchema` and `outputSchema` for all registered tools. `McpToolDef` and `McpToolManifest` schemas extended with optional `outputSchema` field. Enables AGNOS reverse registration with complete parameter metadata
 
+### Dashboard Test Coverage — 3 Gap Areas
+
+- **ConnectionsPage** (2 new tests) — Ecosystem services section rendering with fetched data, graceful handling of ecosystem fetch failures
+- **CommunityTab** (7 new tests) — Content type switching (Workflows, Swarm Templates, Themes, Personalities tabs with enable flags), error handling for marketplace fetch failure, community status fetch failure, personality fetch failure
+- **useVoice** (8 new tests) — Error suppression for `aborted`/`no-speech` errors, `not-allowed` error warning, webkitSpeechRecognition fallback, transcript from final recognition result, toggle voice cancels speech synthesis, `start()` throwing gracefully, webkit as primary when SpeechRecognition unavailable
+
 ### E2E Test Expansion — 5 New Test Suites
 
 - **`training.e2e.test.ts`** (4 tests) — Training data preparation via brain memories, knowledge entries as training context, brain stats reflecting data volume, importance-based curation filtering
