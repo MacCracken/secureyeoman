@@ -12,6 +12,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, openSync, readSync, closeSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { native } from '../native/index.js';
 
 export type KeySource = 'tpm' | 'tee' | 'keyring';
 
@@ -37,9 +38,19 @@ export class TeeEncryptionManager {
     const key = this.deriveKey(keySource);
     const iv = randomBytes(IV_LEN);
 
-    const cipher = createCipheriv('aes-256-gcm', key, iv);
-    const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
-    const authTag = cipher.getAuthTag();
+    let encrypted: Buffer;
+    let authTag: Buffer;
+
+    if (native) {
+      // Native returns ciphertext + authTag concatenated
+      const combined = native.aes256GcmEncrypt(plaintext, key, iv);
+      encrypted = Buffer.from(combined.subarray(0, combined.length - AUTH_TAG_LEN));
+      authTag = Buffer.from(combined.subarray(combined.length - AUTH_TAG_LEN));
+    } else {
+      const cipher = createCipheriv('aes-256-gcm', key, iv);
+      encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+      authTag = cipher.getAuthTag();
+    }
 
     const sealed = Buffer.concat([
       MAGIC,
@@ -86,6 +97,12 @@ export class TeeEncryptionManager {
 
     const effectiveSource = keySource ?? detectedSource;
     const key = this.deriveKey(effectiveSource);
+
+    if (native) {
+      // Native expects ciphertext + authTag concatenated
+      const combined = Buffer.concat([ciphertext, authTag]);
+      return Buffer.from(native.aes256GcmDecrypt(combined, key, iv));
+    }
 
     const decipher = createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAuthTag(authTag);

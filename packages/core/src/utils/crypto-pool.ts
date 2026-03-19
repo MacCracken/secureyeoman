@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { sha256 as syncSha256, hmacSha256 as syncHmacSha256 } from './crypto.js';
+import { nativeAvailable } from '../native/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,9 +34,9 @@ export class CryptoPool {
   constructor(opts: CryptoPoolOptions = {}) {
     const poolSize = opts.poolSize ?? 2;
 
-    // In a Bun compiled binary the worker script lives in the virtual FS (/$bunfs/)
-    // and Worker threads cannot resolve it.  Skip the pool and use sync fallback.
-    if (import.meta.url.includes('/$bunfs/')) {
+    // Native Rust module handles crypto in-process — no worker threads needed.
+    // Also skip in Bun compiled binary where worker scripts can't resolve.
+    if (nativeAvailable || import.meta.url.includes('/$bunfs/')) {
       this.closed = true;
       return;
     }

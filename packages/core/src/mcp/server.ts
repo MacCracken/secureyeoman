@@ -71,12 +71,17 @@ export class McpServer {
   async handleToolCall(toolName: string, args: Record<string, unknown>): Promise<unknown> {
     this.logger.info({ toolName }, 'MCP tool call received');
 
-    // GPU tools
-    if (
-      toolName === 'gpu_status' ||
-      toolName === 'local_models_list' ||
-      toolName === 'privacy_route_check'
-    ) {
+    // Accelerator & inference routing tools
+    const ACCEL_TOOLS = [
+      'accelerator_status',
+      'gpu_status',
+      'tpu_status',
+      'npu_status',
+      'asic_status',
+      'local_models_list',
+      'privacy_route_check',
+    ];
+    if (ACCEL_TOOLS.includes(toolName)) {
       return handleGpuToolCall(toolName, args, {
         logger: this.logger,
         classificationEngine: this.classificationEngine,

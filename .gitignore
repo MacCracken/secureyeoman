@@ -43,6 +43,13 @@ Thumbs.db
 *.swp
 *.swo
 
+# Rust / Cargo
+crates/target/
+crates/**/target/
+
+# Native addon binaries (built by napi-rs, not committed)
+packages/core/native/*.node
+
 # Lock files
 *.lock
 

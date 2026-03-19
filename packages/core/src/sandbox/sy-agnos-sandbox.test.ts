@@ -9,11 +9,15 @@ vi.mock('node:child_process', () => ({
 }));
 
 // Mock fs
-vi.mock('node:fs', () => ({
-  mkdtempSync: vi.fn().mockReturnValue('/tmp/sy-agnos-test'),
-  writeFileSync: vi.fn(),
-  rmSync: vi.fn(),
-}));
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...actual,
+    mkdtempSync: vi.fn().mockReturnValue('/tmp/sy-agnos-test'),
+    writeFileSync: vi.fn(),
+    rmSync: vi.fn(),
+  };
+});
 
 const { execFileSync, execFile } = await import('node:child_process');
 

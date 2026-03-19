@@ -3330,12 +3330,26 @@ export async function updateSecurityPolicy(data: Partial<SecurityPolicy>): Promi
   });
 }
 
-// ─── GPU & Inference Routing API ──────────────────────────────────
+// ─── Accelerator & Inference Routing API ──────────────────────────
+
+export type AcceleratorVendor =
+  | 'nvidia'
+  | 'amd'
+  | 'intel'
+  | 'google'
+  | 'apple'
+  | 'aws'
+  | 'qualcomm'
+  | 'habana'
+  | 'vulkan'
+  | 'unknown';
+export type AcceleratorFamily = 'cpu' | 'gpu' | 'npu' | 'tpu' | 'ai_asic';
 
 export interface GpuDevice {
   index: number;
   name: string;
-  vendor: 'nvidia' | 'amd' | 'intel' | 'unknown';
+  vendor: AcceleratorVendor;
+  family: AcceleratorFamily;
   vramTotalMb: number;
   vramUsedMb: number;
   vramFreeMb: number;
@@ -3345,6 +3359,7 @@ export interface GpuDevice {
   computeCapability: string | null;
   cudaAvailable: boolean;
   rocmAvailable: boolean;
+  tpuAvailable: boolean;
 }
 
 export interface GpuProbeResult {
@@ -3354,6 +3369,9 @@ export interface GpuProbeResult {
   totalFreeVramMb: number;
   bestDevice: GpuDevice | null;
   localInferenceViable: boolean;
+  tpuCount: number;
+  tpuAvailable: boolean;
+  source: 'ai-hwaccel' | 'builtin';
   probedAt: string;
 }
 

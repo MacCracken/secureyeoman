@@ -1,0 +1,18 @@
+[package]
+name = "sy-napi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "SecureYeoman napi-rs bridge for Node.js"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+sy-crypto = { path = "../sy-crypto" }
+napi = { version = "2", default-features = false, features = ["napi9", "serde-json"] }
+napi-derive = "2"
+
+[build-dependencies]
+napi-build = "2"

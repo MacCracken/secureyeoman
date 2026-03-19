@@ -2,10 +2,11 @@
  * Cryptographic Utilities for SecureYeoman
  *
  * Security considerations:
- * - Uses Node.js built-in crypto module (FIPS-compliant)
+ * - Uses Rust native module (sy-crypto) when available for performance
+ * - Falls back to Node.js built-in crypto module (FIPS-compliant)
  * - Constant-time comparison for signatures to prevent timing attacks
  * - Secure random generation for IDs and keys
- * - No custom crypto implementations
+ * - SECUREYEOMAN_NO_NATIVE=1 forces TypeScript fallback
  */
 
 import {
@@ -16,6 +17,7 @@ import {
   scrypt as scryptCb,
 } from 'node:crypto';
 import { promisify } from 'node:util';
+import { native } from '../native/index.js';
 
 const scryptAsync = promisify(scryptCb);
 
@@ -24,6 +26,7 @@ const scryptAsync = promisify(scryptCb);
  * Used for hashing task inputs/outputs (not for passwords)
  */
 export function sha256(data: string | Buffer): string {
+  if (native) return native.sha256(Buffer.isBuffer(data) ? data : Buffer.from(data));
   return createHash('sha256').update(data).digest('hex');
 }
 
@@ -32,6 +35,7 @@ export function sha256(data: string | Buffer): string {
  * Faster than SHA-256 — use only for non-security cache keys.
  */
 export function md5(data: string | Buffer): string {
+  if (native) return native.md5(Buffer.isBuffer(data) ? data : Buffer.from(data));
   return createHash('md5').update(data).digest('hex');
 }
 
@@ -40,6 +44,12 @@ export function md5(data: string | Buffer): string {
  * Used for audit chain integrity
  */
 export function hmacSha256(data: string | Buffer, key: string | Buffer): string {
+  if (native) {
+    return native.hmacSha256(
+      Buffer.isBuffer(data) ? data : Buffer.from(data),
+      Buffer.isBuffer(key) ? key : Buffer.from(key),
+    );
+  }
   return createHmac('sha256', key).update(data).digest('hex');
 }
 
@@ -50,6 +60,8 @@ export function hmacSha256(data: string | Buffer, key: string | Buffer): string 
 export function secureCompare(a: string | Buffer, b: string | Buffer): boolean {
   const bufA = typeof a === 'string' ? Buffer.from(a) : a;
   const bufB = typeof b === 'string' ? Buffer.from(b) : b;
+
+  if (native) return native.secureCompare(bufA, bufB);
 
   // Length check (still leaks length, but that's acceptable for our use case)
   if (bufA.length !== bufB.length) {

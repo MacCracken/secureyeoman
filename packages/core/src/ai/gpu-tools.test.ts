@@ -3,14 +3,15 @@ import { GPU_TOOL_DEFINITIONS, handleGpuToolCall } from './gpu-tools.js';
 import type { SecureLogger } from '../logging/logger.js';
 
 // Mock the GPU modules
-vi.mock('./gpu-probe.js', () => ({
-  probeGpu: vi.fn().mockResolvedValue({
+vi.mock('./accelerator/probe.js', () => ({
+  probeAccelerators: vi.fn().mockResolvedValue({
     available: true,
     devices: [
       {
         index: 0,
         name: 'Test GPU',
         vendor: 'nvidia',
+        family: 'gpu',
         vramTotalMb: 24000,
         vramUsedMb: 2000,
         vramFreeMb: 22000,
@@ -20,12 +21,16 @@ vi.mock('./gpu-probe.js', () => ({
         computeCapability: '8.9',
         cudaAvailable: true,
         rocmAvailable: false,
+        tpuAvailable: false,
       },
     ],
     totalVramMb: 24000,
     totalFreeVramMb: 22000,
     bestDevice: null,
     localInferenceViable: true,
+    tpuCount: 0,
+    tpuAvailable: false,
+    source: 'builtin',
     probedAt: new Date().toISOString(),
   }),
 }));
@@ -82,12 +87,28 @@ describe('gpu-tools', () => {
   });
 
   describe('GPU_TOOL_DEFINITIONS', () => {
-    it('defines 3 tools', () => {
-      expect(GPU_TOOL_DEFINITIONS).toHaveLength(3);
+    it('defines 7 tools', () => {
+      expect(GPU_TOOL_DEFINITIONS).toHaveLength(7);
+    });
+
+    it('has accelerator_status tool', () => {
+      expect(GPU_TOOL_DEFINITIONS.find((t) => t.name === 'accelerator_status')).toBeTruthy();
     });
 
     it('has gpu_status tool', () => {
       expect(GPU_TOOL_DEFINITIONS.find((t) => t.name === 'gpu_status')).toBeTruthy();
+    });
+
+    it('has tpu_status tool', () => {
+      expect(GPU_TOOL_DEFINITIONS.find((t) => t.name === 'tpu_status')).toBeTruthy();
+    });
+
+    it('has npu_status tool', () => {
+      expect(GPU_TOOL_DEFINITIONS.find((t) => t.name === 'npu_status')).toBeTruthy();
+    });
+
+    it('has asic_status tool', () => {
+      expect(GPU_TOOL_DEFINITIONS.find((t) => t.name === 'asic_status')).toBeTruthy();
     });
 
     it('has local_models_list tool', () => {
@@ -107,16 +128,25 @@ describe('gpu-tools', () => {
   });
 
   describe('handleGpuToolCall', () => {
-    it('handles gpu_status', async () => {
-      const result = await handleGpuToolCall('gpu_status', {}, { logger: mockLogger });
+    it('handles accelerator_status', async () => {
+      const result = await handleGpuToolCall('accelerator_status', {}, { logger: mockLogger });
       expect(result).toHaveProperty('available', true);
       expect(result).toHaveProperty('devices');
     });
 
-    it('handles gpu_status with refresh', async () => {
-      const { probeGpu } = await import('./gpu-probe.js');
-      await handleGpuToolCall('gpu_status', { refresh: true }, { logger: mockLogger });
-      expect(probeGpu).toHaveBeenCalledWith(true);
+    it('handles accelerator_status with refresh', async () => {
+      const { probeAccelerators } = await import('./accelerator/probe.js');
+      await handleGpuToolCall('accelerator_status', { refresh: true }, { logger: mockLogger });
+      expect(probeAccelerators).toHaveBeenCalledWith(true);
+    });
+
+    it('handles gpu_status and filters to GPU family', async () => {
+      const result = (await handleGpuToolCall('gpu_status', {}, { logger: mockLogger })) as any;
+      expect(result).toHaveProperty('devices');
+      // All returned devices should be GPU family
+      for (const d of result.devices) {
+        expect(d.family).toBe('gpu');
+      }
     });
 
     it('handles local_models_list', async () => {

@@ -48,6 +48,10 @@ export interface EdgeCapabilities {
   cpuCores: number;
   /** Whether GPU is available */
   hasGpu: boolean;
+  /** Whether TPU is available */
+  hasTpu: boolean;
+  /** Whether any AI accelerator (GPU, TPU, NPU, ASIC) is available */
+  hasAccelerator: boolean;
   /** Custom capability tags */
   tags: string[];
   /** Measured bandwidth to parent in Mbps (Phase 14B) */
@@ -292,6 +296,9 @@ export class EdgeRuntime {
 
   getCapabilities(): EdgeCapabilities {
     const os = require('node:os') as typeof import('node:os');
+    const hasGpu = this.detectGpu();
+    const hasTpu = this.detectTpu();
+    const hasNpu = this.detectNpu();
     return {
       nodeId: this.getNodeId(),
       hostname: os.hostname(),
@@ -299,7 +306,9 @@ export class EdgeRuntime {
       platform: os.platform(),
       totalMemoryMb: Math.round(os.totalmem() / (1024 * 1024)),
       cpuCores: os.cpus().length,
-      hasGpu: this.detectGpu(),
+      hasGpu,
+      hasTpu,
+      hasAccelerator: hasGpu || hasTpu || hasNpu,
       tags: this.getCapabilityTags(),
     };
   }
@@ -324,10 +333,58 @@ export class EdgeRuntime {
 
   private detectGpu(): boolean {
     const { existsSync } = require('node:fs') as typeof import('node:fs');
-    // Check for NVIDIA GPU
+    // NVIDIA GPU
     if (existsSync('/dev/nvidia0')) return true;
-    // Check for AMD GPU via DRI
+    // AMD GPU via DRI
     if (existsSync('/dev/dri/renderD128')) return true;
+    return false;
+  }
+
+  private detectTpu(): boolean {
+    const { existsSync, readdirSync, readlinkSync } = require('node:fs') as typeof import('node:fs');
+    const { join } = require('node:path') as typeof import('node:path');
+    // Google TPU via /dev/accel* (matching ai-hwaccel/Synapse detection)
+    if (!existsSync('/sys/class/accel')) return false;
+    try {
+      const entries = readdirSync('/sys/class/accel');
+      for (const entry of entries) {
+        if (!entry.startsWith('accel')) continue;
+        // Exclude AMD XDNA devices
+        try {
+          const target = readlinkSync(join('/sys/class/accel', entry, 'device', 'driver'));
+          if (target.includes('amdxdna')) continue;
+        } catch {
+          // No driver link — may still be TPU
+        }
+        return true;
+      }
+    } catch {
+      // No accel devices
+    }
+    return false;
+  }
+
+  private detectNpu(): boolean {
+    const { existsSync, readdirSync, readlinkSync } = require('node:fs') as typeof import('node:fs');
+    const { join } = require('node:path') as typeof import('node:path');
+    // Intel NPU (Meteor Lake+)
+    if (existsSync('/sys/class/misc/intel_npu')) return true;
+    // AMD XDNA NPU
+    if (existsSync('/sys/class/accel')) {
+      try {
+        const entries = readdirSync('/sys/class/accel');
+        for (const entry of entries) {
+          try {
+            const target = readlinkSync(join('/sys/class/accel', entry, 'device', 'driver'));
+            if (target.includes('amdxdna')) return true;
+          } catch {
+            continue;
+          }
+        }
+      } catch {
+        // No accel devices
+      }
+    }
     return false;
   }
 
@@ -338,6 +395,8 @@ export class EdgeRuntime {
     if (os.arch() === 'arm64') tags.push('arm64');
     if (os.arch() === 'x64') tags.push('x64');
     if (this.detectGpu()) tags.push('gpu');
+    if (this.detectTpu()) tags.push('tpu');
+    if (this.detectNpu()) tags.push('npu');
     if (os.totalmem() > 4 * 1024 * 1024 * 1024) tags.push('high-memory');
     if (os.cpus().length >= 4) tags.push('multi-core');
 
