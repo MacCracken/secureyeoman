@@ -294,7 +294,11 @@ export class SynapseClient {
       method: 'POST',
       body: wireBody,
     })) {
-      yield JSON.parse(event) as { text: string; done: boolean };
+      try {
+        yield JSON.parse(event) as { text: string; done: boolean };
+      } catch {
+        this.logger.warn({ raw: event }, 'failed to parse inference stream SSE event');
+      }
     }
   }
 

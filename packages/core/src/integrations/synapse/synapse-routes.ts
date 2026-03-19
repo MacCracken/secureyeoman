@@ -392,7 +392,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
         // Fallback: transform to snake_case for direct proxy.
         // Parse configJson and normalize camelCase keys to snake_case.
-        const defaultHyperparams = {
+        const defaultHp = {
           learning_rate: 2e-4,
           epochs: 3,
           batch_size: 4,
@@ -401,43 +401,55 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           weight_decay: 0.01,
           max_seq_length: 512,
         };
-        let hyperparams = defaultHyperparams;
+        let hyperparams = defaultHp;
+        let dsFormat = 'jsonl';
+        let dsSplit: string | undefined;
+        let maxSamples: number | undefined;
+        const extras: Record<string, unknown> = {};
         if (configJson) {
           try {
-            const parsed = JSON.parse(configJson) as Record<string, unknown>;
-            // Normalize camelCase keys to snake_case
+            const p = JSON.parse(configJson) as Record<string, unknown>;
             hyperparams = {
-              learning_rate: (parsed.learning_rate ??
-                parsed.learningRate ??
-                defaultHyperparams.learning_rate) as number,
-              epochs: (parsed.epochs ?? defaultHyperparams.epochs) as number,
-              batch_size: (parsed.batch_size ??
-                parsed.batchSize ??
-                defaultHyperparams.batch_size) as number,
-              gradient_accumulation_steps: (parsed.gradient_accumulation_steps ??
-                parsed.gradientAccumulationSteps ??
-                defaultHyperparams.gradient_accumulation_steps) as number,
-              warmup_steps: (parsed.warmup_steps ??
-                parsed.warmupSteps ??
-                defaultHyperparams.warmup_steps) as number,
-              weight_decay: (parsed.weight_decay ??
-                parsed.weightDecay ??
-                defaultHyperparams.weight_decay) as number,
-              max_seq_length: (parsed.max_seq_length ??
-                parsed.maxSeqLength ??
-                defaultHyperparams.max_seq_length) as number,
+              learning_rate: (p.learning_rate ??
+                p.learningRate ??
+                defaultHp.learning_rate) as number,
+              epochs: (p.epochs ?? defaultHp.epochs) as number,
+              batch_size: (p.batch_size ?? p.batchSize ?? defaultHp.batch_size) as number,
+              gradient_accumulation_steps: (p.gradient_accumulation_steps ??
+                p.gradientAccumulationSteps ??
+                defaultHp.gradient_accumulation_steps) as number,
+              warmup_steps: (p.warmup_steps ?? p.warmupSteps ?? defaultHp.warmup_steps) as number,
+              weight_decay: (p.weight_decay ?? p.weightDecay ?? defaultHp.weight_decay) as number,
+              max_seq_length: (p.max_seq_length ??
+                p.maxSeqLength ??
+                defaultHp.max_seq_length) as number,
             };
+            if (p.dataset_format ?? p.datasetFormat)
+              dsFormat = (p.dataset_format ?? p.datasetFormat) as string;
+            if (p.dataset_split ?? p.datasetSplit)
+              dsSplit = (p.dataset_split ?? p.datasetSplit) as string;
+            if (p.max_samples ?? p.maxSamples)
+              maxSamples = (p.max_samples ?? p.maxSamples) as number;
+            if (p.output_name ?? p.outputName) extras.output_name = p.output_name ?? p.outputName;
+            if (p.lora) extras.lora = p.lora;
+            if (p.max_steps ?? p.maxSteps) extras.max_steps = p.max_steps ?? p.maxSteps;
+            if (p.time_budget_secs ?? p.timeBudgetSecs)
+              extras.time_budget_secs = p.time_budget_secs ?? p.timeBudgetSecs;
           } catch {
             // Invalid JSON — use defaults
           }
         }
+        const dataset: Record<string, unknown> = { path: datasetPath ?? '', format: dsFormat };
+        if (dsSplit) dataset.split = dsSplit;
+        if (maxSamples != null) dataset.max_samples = maxSamples;
         const res = await synapseFetch('/training/jobs', {
           method: 'POST',
           body: JSON.stringify({
             base_model: baseModel,
-            dataset: { path: datasetPath ?? '', format: 'jsonl' },
+            dataset,
             method,
             hyperparams,
+            ...extras,
           }),
         });
 

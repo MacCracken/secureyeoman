@@ -212,10 +212,15 @@ export class YeomanBridgeServer {
       const req = call.request;
       // Resolve instance ID: prefer peer address from gRPC metadata,
       // then fall back to the single connected instance if only one exists.
+      // gRPC getPeer() returns "ipv4:HOST:PORT" or "ipv6:[HOST]:PORT".
       const peerAddr = call.getPeer?.() ?? '';
+      const peerHost = peerAddr
+        .replace(/^ipv[46]:/, '')
+        .replace(/:\d+$/, '')
+        .replace(/[[\]]/g, '');
       const instances = this.registry.getHealthy();
       const instanceId =
-        instances.find((i) => peerAddr && i.endpoint.includes(peerAddr.split(':')[0]!))?.id ??
+        instances.find((i) => peerHost && i.endpoint.includes(peerHost))?.id ??
         (instances.length === 1 ? instances[0]!.id : 'unknown');
 
       await this.store.registerModel(instanceId, {

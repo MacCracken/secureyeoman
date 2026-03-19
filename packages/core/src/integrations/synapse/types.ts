@@ -120,7 +120,7 @@ export interface SynapseStatusResponse {
   readonly version: string;
   readonly loaded_models: number;
   readonly registered_backends: string[];
-  readonly hardware: {
+  readonly hardware?: {
     readonly cpu?: {
       readonly model: string;
       readonly cores: number;
