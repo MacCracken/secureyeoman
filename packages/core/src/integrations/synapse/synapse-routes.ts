@@ -390,26 +390,54 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           return reply.code(201).send(data);
         }
 
-        // Fallback: the client handles snake_case transformation, but for
-        // direct proxy we need to do it here. Import the transformation
-        // from the client would be circular, so we do a minimal version.
+        // Fallback: transform to snake_case for direct proxy.
+        // Parse configJson and normalize camelCase keys to snake_case.
+        const defaultHyperparams = {
+          learning_rate: 2e-4,
+          epochs: 3,
+          batch_size: 4,
+          gradient_accumulation_steps: 1,
+          warmup_steps: 100,
+          weight_decay: 0.01,
+          max_seq_length: 512,
+        };
+        let hyperparams = defaultHyperparams;
+        if (configJson) {
+          try {
+            const parsed = JSON.parse(configJson) as Record<string, unknown>;
+            // Normalize camelCase keys to snake_case
+            hyperparams = {
+              learning_rate: (parsed.learning_rate ??
+                parsed.learningRate ??
+                defaultHyperparams.learning_rate) as number,
+              epochs: (parsed.epochs ?? defaultHyperparams.epochs) as number,
+              batch_size: (parsed.batch_size ??
+                parsed.batchSize ??
+                defaultHyperparams.batch_size) as number,
+              gradient_accumulation_steps: (parsed.gradient_accumulation_steps ??
+                parsed.gradientAccumulationSteps ??
+                defaultHyperparams.gradient_accumulation_steps) as number,
+              warmup_steps: (parsed.warmup_steps ??
+                parsed.warmupSteps ??
+                defaultHyperparams.warmup_steps) as number,
+              weight_decay: (parsed.weight_decay ??
+                parsed.weightDecay ??
+                defaultHyperparams.weight_decay) as number,
+              max_seq_length: (parsed.max_seq_length ??
+                parsed.maxSeqLength ??
+                defaultHyperparams.max_seq_length) as number,
+            };
+          } catch {
+            // Invalid JSON — use defaults
+          }
+        }
         const res = await synapseFetch('/training/jobs', {
           method: 'POST',
           body: JSON.stringify({
             base_model: baseModel,
             dataset: { path: datasetPath ?? '', format: 'jsonl' },
             method,
-            hyperparams: configJson
-              ? JSON.parse(configJson)
-              : {
-                  learning_rate: 2e-4,
-                  epochs: 3,
-                  batch_size: 4,
-                  gradient_accumulation_steps: 1,
-                  warmup_steps: 100,
-                  weight_decay: 0.01,
-                  max_seq_length: 512,
-                },
+            hyperparams,
           }),
         });
 

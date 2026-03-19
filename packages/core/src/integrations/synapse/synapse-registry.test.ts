@@ -264,6 +264,42 @@ describe('SynapseRegistry', () => {
     });
   });
 
+  describe('getGpuMemoryFreeMb', () => {
+    it('should return undefined when no heartbeat recorded', () => {
+      registry.register(makeInstance({ id: 'syn-1' }));
+      expect(registry.getGpuMemoryFreeMb('syn-1')).toBeUndefined();
+    });
+
+    it('should return free memory after heartbeat update', () => {
+      registry.register(makeInstance({ id: 'syn-1' }));
+      registry.updateHeartbeat('syn-1', {
+        instanceId: 'syn-1',
+        timestamp: Date.now(),
+        loadedModels: [],
+        gpuMemoryFreeMb: 20000,
+        activeTrainingJobs: 0,
+      });
+      expect(registry.getGpuMemoryFreeMb('syn-1')).toBe(20000);
+    });
+
+    it('should return undefined for unknown instance', () => {
+      expect(registry.getGpuMemoryFreeMb('unknown')).toBeUndefined();
+    });
+
+    it('should clear free memory on unregister', () => {
+      registry.register(makeInstance({ id: 'syn-1' }));
+      registry.updateHeartbeat('syn-1', {
+        instanceId: 'syn-1',
+        timestamp: Date.now(),
+        loadedModels: [],
+        gpuMemoryFreeMb: 20000,
+        activeTrainingJobs: 0,
+      });
+      registry.unregister('syn-1');
+      expect(registry.getGpuMemoryFreeMb('syn-1')).toBeUndefined();
+    });
+  });
+
   describe('markDisconnected', () => {
     it('should set status to disconnected', () => {
       registry.register(makeInstance({ id: 'syn-1' }));

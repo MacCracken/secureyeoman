@@ -103,6 +103,10 @@ export class SynapseRegistry {
     );
   }
 
+  getGpuMemoryFreeMb(instanceId: string): number | undefined {
+    return this.gpuMemoryFree.get(instanceId);
+  }
+
   markDisconnected(instanceId: string): void {
     const instance = this.instances.get(instanceId);
     if (instance) {

@@ -265,7 +265,11 @@ export class SynapseClient {
       method: 'POST',
       body: wireBody,
     })) {
-      yield pullProgressFromWire(JSON.parse(event) as Record<string, unknown>);
+      try {
+        yield pullProgressFromWire(JSON.parse(event) as Record<string, unknown>);
+      } catch {
+        this.logger.warn({ raw: event }, 'failed to parse pull progress SSE event');
+      }
     }
   }
 

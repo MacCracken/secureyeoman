@@ -120,13 +120,15 @@ export class YeomanBridgeServer {
 
       this.logger.info({ memoryMb, gpuCount }, 'GPU allocation request received from Synapse');
 
-      // Find healthy instances with available GPU resources
+      // Find healthy instances with available GPU resources.
+      // Use heartbeat free memory when available, fall back to total.
       const healthy = this.registry.getHealthy();
       const deviceIds: number[] = [];
       let granted = false;
 
       for (const instance of healthy) {
-        const freeMem = instance.capabilities.totalGpuMemoryMb; // approximation
+        const freeMem =
+          this.registry.getGpuMemoryFreeMb(instance.id) ?? instance.capabilities.totalGpuMemoryMb;
         if (freeMem >= memoryMb) {
           // Grant GPUs from this instance (assign sequential device IDs)
           for (let i = 0; i < Math.min(gpuCount, instance.capabilities.gpuCount); i++) {
@@ -208,9 +210,13 @@ export class YeomanBridgeServer {
   ): Promise<void> {
     try {
       const req = call.request;
-      // Synapse identifies itself via the connection — use first healthy instance
+      // Resolve instance ID: prefer peer address from gRPC metadata,
+      // then fall back to the single connected instance if only one exists.
+      const peerAddr = call.getPeer?.() ?? '';
       const instances = this.registry.getHealthy();
-      const instanceId = instances[0]?.id ?? 'unknown';
+      const instanceId =
+        instances.find((i) => peerAddr && i.endpoint.includes(peerAddr.split(':')[0]!))?.id ??
+        (instances.length === 1 ? instances[0]!.id : 'unknown');
 
       await this.store.registerModel(instanceId, {
         modelName: req.modelName as string,
