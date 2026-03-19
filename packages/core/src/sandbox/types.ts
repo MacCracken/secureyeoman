@@ -16,6 +16,7 @@ export interface SandboxCapabilities {
   sgx?: boolean;
   sev?: boolean;
   tpm?: boolean;
+  syAgnos?: boolean;
 }
 
 export interface SandboxOptions {
@@ -63,8 +64,11 @@ export interface Sandbox {
 /** Technology names with their relative isolation strength (higher = stronger). */
 export const SANDBOX_STRENGTH: Record<string, number> = {
   firecracker: 90,
+  'sy-agnos-measured': 88,
   sev: 85,
+  'sy-agnos-verity': 85,
   sgx: 80,
+  'sy-agnos': 80,
   gvisor: 70,
   agnos: 65,
   landlock: 50,

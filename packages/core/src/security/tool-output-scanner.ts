@@ -15,6 +15,7 @@
  */
 
 import type { SecureLogger } from '../logging/logger.js';
+import type { AgnosClient, ScanFinding } from '../integrations/agnos/agnos-client.js';
 
 // ── Pattern registry ────────────────────────────────────────────────────────
 
@@ -110,6 +111,8 @@ export interface ScanResult {
   redacted: boolean;
   /** List of all redaction events (type + count). */
   redactions: Redaction[];
+  /** Phylax scan findings (when agnosClient is configured). */
+  phylaxFindings?: ScanFinding[];
 }
 
 // ── Scanner ──────────────────────────────────────────────────────────────────
@@ -117,16 +120,20 @@ export interface ScanResult {
 export class ToolOutputScanner {
   private readonly patterns: SecretPattern[];
   private readonly logger: SecureLogger | null;
+  private readonly agnosClient: AgnosClient | null;
 
   constructor(
     opts: {
       /** Extra patterns beyond the builtins (e.g. from SecretStore values). */
       extraPatterns?: SecretPattern[];
       logger?: SecureLogger | null;
+      /** Optional AgnosClient for phylax scanning integration. */
+      agnosClient?: AgnosClient | null;
     } = {}
   ) {
     this.patterns = [...BUILTIN_PATTERNS, ...(opts.extraPatterns ?? [])];
     this.logger = opts.logger ?? null;
+    this.agnosClient = opts.agnosClient ?? null;
   }
 
   /**
@@ -180,6 +187,62 @@ export class ToolOutputScanner {
     }
 
     return { text: current, redacted, redactions };
+  }
+
+  /**
+   * Scan text with both local regex patterns and AGNOS phylax scanning.
+   *
+   * Runs the existing local `scan()` first, then augments with phylax results
+   * if an AgnosClient is configured. HIGH/CRITICAL findings are added to redactions.
+   *
+   * @param text     Raw text to scan.
+   * @param source   Caller label for logging.
+   * @returns        ScanResult with merged local + phylax results.
+   */
+  async scanWithPhylax(text: string, source = 'unknown'): Promise<ScanResult> {
+    // Run local scan first
+    const localResult = this.scan(text, source);
+
+    if (!this.agnosClient) return localResult;
+
+    try {
+      const phylaxResult = await this.agnosClient.scanBytes(
+        Buffer.from(localResult.text).toString('base64'),
+        source
+      );
+
+      if (phylaxResult.findings?.length) {
+        const severeFindings = phylaxResult.findings.filter(
+          (f) => f.severity === 'HIGH' || f.severity === 'CRITICAL'
+        );
+
+        for (const finding of severeFindings) {
+          localResult.redactions.push({
+            type: `phylax:${finding.severity.toLowerCase()}`,
+            count: 1,
+          });
+          localResult.redacted = true;
+        }
+
+        localResult.phylaxFindings = phylaxResult.findings;
+
+        if (severeFindings.length > 0 && this.logger) {
+          this.logger.warn(
+            { source, findings: severeFindings.length },
+            'Phylax scanner found HIGH/CRITICAL findings'
+          );
+        }
+      }
+    } catch (err) {
+      if (this.logger) {
+        this.logger.debug(
+          { source, error: err instanceof Error ? err.message : String(err) },
+          'Phylax scanning failed (non-fatal)'
+        );
+      }
+    }
+
+    return localResult;
   }
 }
 

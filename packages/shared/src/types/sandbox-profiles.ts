@@ -22,7 +22,7 @@ export const SandboxProfileSchema = z.object({
   description: z.string().max(500).default(''),
   enabled: z.boolean().default(true),
   technology: z
-    .enum(['auto', 'seccomp', 'landlock', 'gvisor', 'wasm', 'sgx', 'sev', 'none'])
+    .enum(['auto', 'seccomp', 'landlock', 'gvisor', 'wasm', 'sgx', 'sev', 'sy-agnos', 'none'])
     .default('auto'),
   filesystem: z
     .object({

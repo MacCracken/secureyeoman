@@ -47,7 +47,7 @@ describe('SandboxProfileRegistry', () => {
     expect(hs.network.allowed).toBe(false);
     expect(hs.resources.maxMemoryMb).toBe(512);
     expect(hs.credentialProxy.required).toBe(true);
-    expect(hs.technology).toBe('landlock');
+    expect(hs.technology).toBe('auto');
     expect(hs.toolRestrictions.blocklist.length).toBeGreaterThan(0);
   });
 
@@ -129,7 +129,7 @@ describe('SandboxProfileRegistry', () => {
     const hs = registry.getProfile('high-security')!;
     const config = registry.toManagerConfig(hs);
     expect(config.networkAllowed).toBe(false);
-    expect(config.technology).toBe('landlock');
+    expect(config.technology).toBe('auto');
     expect(config.maxMemoryMb).toBe(512);
   });
 });

@@ -26,6 +26,7 @@ import { SgxSandbox } from './sgx-sandbox.js';
 import { SevSandbox } from './sev-sandbox.js';
 import { FirecrackerSandbox } from './firecracker-sandbox.js';
 import { AgnosSandbox, isAgnosticOS } from './agnos-sandbox.js';
+import { SyAgnosSandbox } from './sy-agnos-sandbox.js';
 import {
   CredentialProxy,
   type CredentialProxyHandle,
@@ -44,6 +45,7 @@ export interface SandboxManagerConfig {
     | 'sev'
     | 'firecracker'
     | 'agnos'
+    | 'sy-agnos'
     | 'none';
   allowedReadPaths: string[];
   allowedWritePaths: string[];
@@ -61,6 +63,11 @@ export interface SandboxManagerConfig {
     vcpuCount?: number;
     useJailer?: boolean;
     enableNetwork?: boolean;
+  };
+  /** sy-agnos container sandbox options. */
+  syAgnos?: {
+    imageName?: string;
+    containerRuntime?: 'docker' | 'podman';
   };
 }
 
@@ -174,6 +181,12 @@ export class SandboxManager {
 
     // Explicit technology selection
     switch (tech) {
+      case 'sy-agnos':
+        return (
+          this.tryBackend(new SyAgnosSandbox(this.config.syAgnos), 'sy-agnos container sandbox') ??
+          new NoopSandbox()
+        );
+
       case 'agnos':
         return (
           this.tryBackend(new AgnosSandbox(), 'AGNOS kernel sandbox (daimon)') ?? new NoopSandbox()
@@ -224,7 +237,7 @@ export class SandboxManager {
    * Auto-detect the best available sandbox for the current platform.
    *
    * Ranks technologies by isolation strength and selects the strongest available:
-   * Firecracker > SEV > SGX > gVisor > AGNOS > Landlock > WASM > Darwin > Noop
+   * Firecracker > sy-agnos(88) > SEV > SGX > sy-agnos(80) > gVisor > AGNOS > Landlock > WASM > Darwin > Noop
    */
   private resolveAuto(caps: SandboxCapabilities): Sandbox {
     // Build candidates in strength order
@@ -246,6 +259,18 @@ export class SandboxManager {
         strength: SANDBOX_STRENGTH.sgx ?? 80,
         create: () => new SgxSandbox(),
       });
+
+      // sy-agnos container sandbox — dynamic strength based on image tier
+      const syAgnosSandbox = new SyAgnosSandbox(this.config.syAgnos);
+      if (syAgnosSandbox.isAvailable()) {
+        const syAgnosStrength = syAgnosSandbox.detectStrength();
+        candidates.push({
+          label: 'sy-agnos container',
+          strength: syAgnosStrength,
+          create: () => syAgnosSandbox,
+        });
+      }
+
       candidates.push({
         label: 'gVisor (runsc)',
         strength: SANDBOX_STRENGTH.gvisor ?? 70,
@@ -405,6 +430,27 @@ export class SandboxManager {
           if (caps.platform !== 'linux') missing.push('Linux OS');
           if (!caps.landlock) missing.push('Kernel 5.13+ with Landlock V2');
           return { missing, hint: '' };
+        },
+      },
+      {
+        name: 'sy-agnos',
+        create: () => new SyAgnosSandbox(this.config.syAgnos),
+        prerequisites: () => {
+          const missing: string[] = [];
+          if (caps.platform !== 'linux') missing.push('Linux OS');
+          try {
+            execFileSync('which', ['docker'], { stdio: 'pipe', timeout: 3000 });
+          } catch {
+            try {
+              execFileSync('which', ['podman'], { stdio: 'pipe', timeout: 3000 });
+            } catch {
+              missing.push('docker or podman runtime');
+            }
+          }
+          return {
+            missing,
+            hint: missing.length ? 'Install Docker/Podman and pull the sy-agnos image' : '',
+          };
         },
       },
       {

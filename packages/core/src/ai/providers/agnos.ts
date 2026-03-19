@@ -23,6 +23,7 @@ import type {
 import { BaseProvider, type ProviderConfig } from './base.js';
 import { ProviderUnavailableError, InvalidResponseError } from '../errors.js';
 import type { SecureLogger } from '../../logging/logger.js';
+import type { AgnosClient } from '../../integrations/agnos/agnos-client.js';
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:8088';
 
@@ -91,26 +92,58 @@ interface OAIStreamChunk {
   };
 }
 
+export interface AGNOSProviderTokenBudgetConfig {
+  /** AgnosClient for token budget calls. */
+  agnosClient?: AgnosClient;
+  /** Project identifier for token accounting. */
+  project?: string;
+  /** Token pool name. Default: 'default'. */
+  pool?: string;
+}
+
 export class AGNOSProvider extends BaseProvider {
   readonly name: AIProviderName = 'agnos';
   private readonly baseUrl: string;
+  private readonly agnosClient?: AgnosClient;
+  private readonly tokenProject: string;
+  private readonly tokenPool: string;
 
-  constructor(config: ProviderConfig, logger?: SecureLogger) {
+  constructor(
+    config: ProviderConfig,
+    logger?: SecureLogger,
+    tokenBudget?: AGNOSProviderTokenBudgetConfig
+  ) {
     super(config, logger);
     this.baseUrl = config.model.baseUrl ?? DEFAULT_BASE_URL;
+    this.agnosClient = tokenBudget?.agnosClient;
+    this.tokenProject = tokenBudget?.project ?? 'secureyeoman';
+    this.tokenPool = tokenBudget?.pool ?? 'default';
   }
 
   protected async doChat(request: AIRequest): Promise<AIResponse> {
     const model = this.resolveModel(request);
     const body = this.buildRequestBody(request, model, false);
+
+    // Token budget: check + reserve before inference
+    await this.checkTokenBudget(body);
+
     const response = await this.fetchApi(body);
     const data = (await response.json()) as OAIChatResponse;
-    return this.mapResponse(data, model);
+    const mapped = this.mapResponse(data, model);
+
+    // Token budget: report actual usage after inference
+    await this.reportTokenUsage(mapped.usage.totalTokens);
+
+    return mapped;
   }
 
   async *chatStream(request: AIRequest): AsyncGenerator<AIStreamChunk, void, unknown> {
     const model = this.resolveModel(request);
     const body = this.buildRequestBody(request, model, true);
+
+    // Token budget: check + reserve before inference
+    await this.checkTokenBudget(body);
+
     const response = await this.fetchApi(body);
 
     if (!response.body) {
@@ -334,6 +367,50 @@ export class AGNOSProvider extends BaseProvider {
         );
       }
       throw error;
+    }
+  }
+
+  // ─── Token Budget ───────────────────────────────────────────
+
+  /**
+   * Check and reserve token budget before inference. Best-effort — failures
+   * are logged but never block the request.
+   */
+  private async checkTokenBudget(body: Record<string, unknown>): Promise<void> {
+    if (!this.agnosClient) return;
+
+    try {
+      const estimated = Math.ceil(JSON.stringify(body).length / 4);
+      const check = await this.agnosClient.tokenCheck(this.tokenProject, estimated, this.tokenPool);
+
+      if (!check.allowed) {
+        throw new ProviderUnavailableError(
+          'agnos',
+          429,
+          new Error(
+            `Token budget exceeded for pool "${this.tokenPool}" (remaining: ${check.remaining ?? 0})`
+          )
+        );
+      }
+
+      await this.agnosClient.tokenReserve(this.tokenProject, estimated, this.tokenPool);
+    } catch (err) {
+      // Re-throw budget exceeded errors
+      if (err instanceof ProviderUnavailableError) throw err;
+      // Swallow other errors (network issues, etc.) — best-effort
+    }
+  }
+
+  /**
+   * Report actual token usage after inference. Best-effort — failures are swallowed.
+   */
+  private async reportTokenUsage(actualTokens: number): Promise<void> {
+    if (!this.agnosClient || actualTokens <= 0) return;
+
+    try {
+      await this.agnosClient.tokenReport(this.tokenProject, actualTokens, this.tokenPool);
+    } catch {
+      // Best-effort — don't block on reporting failures
     }
   }
 }

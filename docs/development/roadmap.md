@@ -43,41 +43,74 @@
 
 ---
 
-## Next Release: sy-agnos OS-Level Sandbox
+## sy-agnos OS-Level Sandbox
 
-**Priority**: P0 — Primary focus for next release. See [ADR 044](../adr/044-sy-agnos-sandbox.md).
+**Priority**: P0. See [ADR 044](../adr/044-sy-agnos-sandbox.md).
 
-**Goal**: Ship a purpose-built, hardened AGNOS image (`sy-agnos`) as a medium-weight, ultra-high-security sandbox tier. The OS itself IS the sandbox — immutable rootfs, no shell, baked seccomp, OS-level network policy. Slots between Firecracker (90) and gVisor (70) in the strength ranking, with dynamic scoring that increases as AGNOS hardens.
+**AGNOS side: ALL 3 PHASES COMPLETE** (2026.3.18). Image ready to build. SY driver work can begin immediately.
 
-**Dependency**: AGNOS repo builds the image (~80% of work), SY repo builds the driver (~20%). Image must ship from AGNOS before SY integration begins. See [AGNOS roadmap](https://github.com/MacCracken/agnosticos/blob/main/docs/development/roadmap.md).
+### AGNOS Side — Complete
 
-### Phase 1 — sy-agnos Minimal (strength 80)
+- [x] **Phase 1 (strength 80)** — `recipes/sandbox/sy-agnos-{rootfs,init,nftables}.toml`, `scripts/build-sy-agnos.sh`, `docker/Dockerfile.sy-agnos`, `/etc/sy-agnos-release`
+- [x] **Phase 2 (strength 85)** — dm-verity verified rootfs, `veritysetup format`, hash tree in OCI image, tamper detection (exit 78 on failure)
+- [x] **Phase 3 (strength 88)** — TPM 2.0 measured boot (PCR 8/9/10), `GET /v1/attestation` endpoint, event log
 
-**Blocked on: AGNOS `recipes/sandbox/` image build** — SY items can begin once image is available on GHCR.
+### SY Side — Ready to Implement
 
-AGNOS side (agnosticos repo):
-- [ ] **`recipes/sandbox/sy-agnos-rootfs.toml`** — Strip edge base to minimal: no shell, no pkg mgr, no SSH, no debug tools → squashfs
-- [ ] **`recipes/sandbox/sy-agnos-init.toml`** — 3-process argonaut init (argonaut → sy-agent → health-check)
-- [ ] **`recipes/sandbox/sy-agnos-nftables.toml`** — Boot-baked default-deny egress, allowlist-driven
-- [ ] **`scripts/build-sy-agnos.sh`** — OCI image builder + GHCR publish + cosign
-- [ ] **`/etc/sy-agnos-release`** — JSON metadata with version, hardening level, strength score
-
-SY side (secureyeoman repo):
 - [ ] **`sy-agnos-sandbox.ts`** — New sandbox driver: launch OCI image, pipe task via stdin/stdout, destroy on teardown
-- [ ] **Strength detection** — Read `/etc/sy-agnos-release` from container, report dynamic strength
+- [ ] **Strength detection** — Read `/etc/sy-agnos-release` from container, report dynamic strength (80/85/88 based on dm-verity + TPM)
+- [ ] **Attestation verification** — Call AGNOS `GET /v1/attestation` before dispatching tasks to sy-agnos. Verify PCR values + HMAC signature
 - [ ] **Update `high-security` profile** — Prefer sy-agnos when available (fallback: Firecracker → gVisor → Landlock)
 - [ ] **Tests** — Unit + E2E for sy-agnos driver
 
-### Phase 2 — dm-verity (strength 85)
+---
 
-- [ ] **dm-verity verified rootfs** — Hash-tree verification at boot, tamper-evident
-- [ ] **Strength auto-upgrade** — Manager detects dm-verity, reports strength 85
+## AGNOS Deep Integration
 
-### Phase 3 — Measured Boot + TPM (strength 88)
+**Priority**: P1. AGNOS `2026.3.18` exposes new APIs that SY should leverage. All endpoints have mock fallback — no hard dependency.
 
-- [ ] **TPM 2.0 measured boot** — Boot log attestation before task dispatch
-- [ ] **Remote attestation endpoint** — Fleet management can verify sandbox integrity
-- [ ] **Strength auto-upgrade** — Approaches Firecracker (90) without KVM
+### Token Budgeting (hoosh)
+
+SY agents currently have no per-agent cost control. Hoosh (port 8088) now has token pool management.
+
+- [ ] **`AGNOSProvider` token budget integration** — Before inference, call `POST /v1/tokens/check` with agent ID + estimated tokens. Reserve with `/v1/tokens/reserve`, release unused with `/v1/tokens/release`. Pool per-personality or per-tenant
+- [ ] **Cost dashboard** — Wire hoosh `/v1/tokens/pools` into SY cost tracking dashboard. Show per-pool usage, remaining budget, cost-per-agent
+
+### RAG / Knowledge Sync
+
+SY brains backed by PostgreSQL. AGNOS has federated RAG (`/v1/rag/*`) and vector store (`/v1/vectors/*`). Bidirectional sync enables cross-system knowledge.
+
+- [ ] **`AgnosClient.ragIngest()`** — Push SY brain documents to AGNOS `POST /v1/rag/ingest` for cross-system searchability
+- [ ] **`AgnosClient.ragQuery()`** — Query AGNOS RAG from SY brain context. Augments SY's own PostgreSQL knowledge with system-wide AGNOS knowledge (mneme, other agents)
+- [ ] **`AgnosClient.vectorSearch()`** — Use AGNOS vector store for SY embeddings. Reduces SY's PostgreSQL pgvector dependency for small deployments
+
+### Phylax Threat Scanning
+
+AGNOS has phylax scanning endpoints (`/v1/scan/*`). SY should scan agent outputs before returning to users.
+
+- [ ] **`AgnosClient.scanOutput()`** — Call `POST /v1/scan/bytes` on agent task outputs. Log findings. Block HIGH severity results
+- [ ] **Sandbox egress scanning** — Pipe sy-agnos sandbox egress through phylax before network release
+
+### Remote Execution (sutra integration)
+
+AGNOS now has `POST /v1/agents/{id}/exec` and `PUT/GET /v1/agents/{id}/files/*`. SY can use these for fleet orchestration.
+
+- [ ] **`AgnosClient.execOnAgent()`** — Execute commands on remote AGNOS agents (e.g., deploy SY Edge agents via daimon instead of SSH)
+- [ ] **`AgnosClient.writeFile()` / `readFile()`** — Transfer configs/binaries to AGNOS fleet nodes
+
+### Audit Chain
+
+SY forwards audit events to `/v1/audit/forward`. AGNOS now also accepts sutra-style run records via `POST /v1/audit/runs`.
+
+- [ ] **`AgnosClient.forwardAuditRun()`** — Send SY workflow execution records to AGNOS cryptographic audit chain for unified compliance trail
+- [ ] **Audit verification** — Query AGNOS audit chain to verify SY event integrity
+
+### Bidirectional Tool Registration
+
+AGNOS now has `yeoman_register_tools` MCP tool that fetches SY's tool catalog and registers into daimon. SY should enable this.
+
+- [ ] **Tool catalog endpoint** — Ensure SY's MCP tool list endpoint (`/api/v1/mcp/tools/list`) returns full tool definitions (params, returns) so AGNOS can register them
+- [ ] **Reverse registration** — SY queries AGNOS `GET /v1/mcp/tools` and registers AGNOS tools (phylax_scan, tarang_probe, etc.) into SY's tool registry for agent use
 
 ---
 
@@ -440,6 +473,7 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 - [ ] **Unified SSO across all three projects** — OAuth2/OIDC federation: single identity provider, shared sessions. SecureYeoman as IdP or external OIDC provider.
 - [ ] **Cross-project agent delegation** — SecureYeoman brain delegates to AGNOSTIC agentic workers running on AGNOS. AGNOSTIC is a full multi-agent orchestration platform (not just QA) — supports autonomous task execution, code generation, research, security auditing, and custom agent workflows. Full chain: task → brain → A2A → AGNOSTIC agent worker → AGNOS sandbox → results → brain. Bi-directional: AGNOSTIC agents can also invoke SY skills and knowledge via A2A.
 - [ ] **Unified agent marketplace** — Single marketplace spanning SecureYeoman skills, AGNOSTIC agent capabilities, and AGNOS native agents. Cross-project discovery and installation.
+- [ ] **AgnosAI integration** — When AGNOSTIC migrates from CrewAI to AgnosAI (Rust-native orchestration), SY's A2A protocol remains wire-compatible — same `POST /crews`, MCP tools, and webhook callbacks. SY benefits from 10-100x faster crew execution, <2s boot (vs 15-30s), and <50 MB footprint (vs 1.5 GB). See `agnostic/docs/development/roadmap-v2.md`.
 
 ---
 

@@ -113,7 +113,7 @@ const BUILTIN_PROFILES: SandboxProfile[] = [
     description:
       'Maximum isolation. No network, minimal filesystem, credential proxy enforced, strict tool blocklist.',
     enabled: true,
-    technology: 'landlock',
+    technology: 'auto',
     filesystem: {
       allowedReadPaths: ['/tmp'],
       allowedWritePaths: ['/tmp'],

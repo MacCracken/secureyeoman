@@ -150,6 +150,252 @@ describe('AgnosClient', () => {
     expect(results[0].id).toBe('v1');
   });
 
+  // ── Token Budget (gateway) ──────────────────────────────────
+
+  it('tokenCheck sends POST to gateway /v1/tokens/check', async () => {
+    const gwClient = new AgnosClient(
+      { runtimeUrl: 'http://127.0.0.1:8090', gatewayUrl: 'http://127.0.0.1:8088' },
+      logger
+    );
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ allowed: true, remaining: 500 }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await gwClient.tokenCheck('myproject', 100, 'default');
+    expect(result.allowed).toBe(true);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('http://127.0.0.1:8088/v1/tokens/check');
+  });
+
+  it('tokenReserve sends POST to gateway /v1/tokens/reserve', async () => {
+    const gwClient = new AgnosClient(
+      { runtimeUrl: 'http://127.0.0.1:8090', gatewayUrl: 'http://127.0.0.1:8088' },
+      logger
+    );
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ reserved: true, reservation_id: 'r1' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await gwClient.tokenReserve('myproject', 100, 'default');
+    expect(result.reserved).toBe(true);
+  });
+
+  it('tokenPools returns array from gateway', async () => {
+    const gwClient = new AgnosClient(
+      { runtimeUrl: 'http://127.0.0.1:8090', gatewayUrl: 'http://127.0.0.1:8088' },
+      logger
+    );
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({ pools: [{ name: 'default', total: 1000, used: 200, remaining: 800 }] }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }
+      )
+    );
+
+    const pools = await gwClient.tokenPools();
+    expect(pools).toHaveLength(1);
+    expect(pools[0].name).toBe('default');
+  });
+
+  // ── RAG ────────────────────────────────────────────────────
+
+  it('ragIngest sends POST to /v1/rag/ingest', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ ingested: true, chunks: 3 }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await client.ragIngest('some text', { source: 'test' });
+    expect(result.ingested).toBe(true);
+    expect(result.chunks).toBe(3);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('http://127.0.0.1:8090/v1/rag/ingest');
+  });
+
+  it('ragQuery sends POST to /v1/rag/query', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ chunks: [{ text: 'hello', score: 0.9 }], total: 1 }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await client.ragQuery('test query', 5);
+    expect(result.chunks).toHaveLength(1);
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string);
+    expect(body.query).toBe('test query');
+    expect(body.top_k).toBe(5);
+  });
+
+  // ── Phylax Scanning ────────────────────────────────────────
+
+  it('scanBytes sends POST to /v1/scan/bytes', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ findings: [], scanned: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await client.scanBytes('dGVzdA==', 'test-file');
+    expect(result.scanned).toBe(true);
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string);
+    expect(body.data).toBe('dGVzdA==');
+    expect(body.target_name).toBe('test-file');
+  });
+
+  // ── Remote Execution ───────────────────────────────────────
+
+  it('execOnAgent sends POST to /v1/agents/:id/exec', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ exit_code: 0, stdout: 'ok', stderr: '' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await client.execOnAgent('agent1', 'echo hello', 10);
+    expect(result.exit_code).toBe(0);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('http://127.0.0.1:8090/v1/agents/agent1/exec');
+  });
+
+  it('writeFile sends PUT to /v1/agents/:id/files/*path', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } })
+    );
+
+    await client.writeFile('agent1', '/tmp/test.txt', 'content');
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
+      'http://127.0.0.1:8090/v1/agents/agent1/files/tmp/test.txt'
+    );
+    expect(vi.mocked(fetch).mock.calls[0][1]?.method).toBe('PUT');
+  });
+
+  it('readFile sends GET to /v1/agents/:id/files/*path', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ content: 'hello' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await client.readFile('agent1', '/tmp/test.txt');
+    expect(result.content).toBe('hello');
+  });
+
+  // ── Audit ──────────────────────────────────────────────────
+
+  it('forwardAuditRun sends POST to /v1/audit/runs', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ accepted: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await client.forwardAuditRun({
+      run_id: 'r1',
+      success: true,
+      tasks: [{ name: 'deploy', status: 'success' }],
+    });
+    expect(result.accepted).toBe(true);
+  });
+
+  it('verifyAuditChain sends GET to /v1/audit/chain/verify', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ valid: true, chain_length: 42 }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await client.verifyAuditChain();
+    expect(result.valid).toBe(true);
+    expect(result.chain_length).toBe(42);
+  });
+
+  // ── Attestation ────────────────────────────────────────────
+
+  it('getAttestation sends GET to /v1/attestation', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          pcr_values: { '8': 'a', '9': 'b', '10': 'c' },
+          signature: 'sig',
+          algorithm: 'SHA256',
+          timestamp: '2026-01-01T00:00:00Z',
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      )
+    );
+
+    const result = await client.getAttestation();
+    expect(result.pcr_values['8']).toBe('a');
+    expect(result.signature).toBe('sig');
+  });
+
+  // ── MCP Remote Tools ───────────────────────────────────────
+
+  it('listRemoteTools returns tools array', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ tools: [{ name: 'tool1', description: 'desc1' }] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const tools = await client.listRemoteTools();
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('tool1');
+  });
+
+  it('callRemoteTool sends POST to /v1/mcp/tools/call', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ result: 'ok' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await client.callRemoteTool('tool1', { arg: 'val' });
+    expect((result as any).result).toBe('ok');
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string);
+    expect(body.name).toBe('tool1');
+    expect(body.arguments).toEqual({ arg: 'val' });
+  });
+
+  // ── Gateway API key ────────────────────────────────────────
+
+  it('uses gatewayApiKey for gateway requests', async () => {
+    const gwClient = new AgnosClient(
+      {
+        runtimeUrl: 'http://127.0.0.1:8090',
+        gatewayUrl: 'http://127.0.0.1:8088',
+        gatewayApiKey: 'gw-secret',
+      },
+      logger
+    );
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ allowed: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    await gwClient.tokenCheck('p', 10, 'default');
+    const headers = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
+    expect(headers['X-API-Key']).toBe('gw-secret');
+  });
+
   it('listSandboxProfiles normalizes AGNOS response', async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(

@@ -108,6 +108,41 @@ export function registerAgnosHooks(config: AgnosHooksConfig, deps: AgnosHooksDep
     deps.logger.info('AGNOS audit forwarding registered');
   }
 
+  // ── 1b. Audit run record forwarding ─────────────────────
+  if (config.forwardAudit !== false) {
+    const auditRunPoints: HookPoint[] = ['swarm:after-execute', 'task:after-execute'];
+
+    for (const hookPoint of auditRunPoints) {
+      const id = deps.extensionManager.registerHook(
+        hookPoint,
+        async (context) => {
+          try {
+            const data = (
+              typeof context.data === 'object' && context.data !== null ? context.data : {}
+            ) as Record<string, unknown>;
+
+            await deps.agnosClient.forwardAuditRun({
+              run_id: (data.runId as string) ?? (data.swarmId as string) ?? `run-${Date.now()}`,
+              playbook: (data.playbook as string) ?? context.event,
+              success: (data.success as boolean) ?? true,
+              tasks: (data.tasks as { name: string; status: string; duration_ms?: number }[]) ?? [
+                { name: context.event, status: 'completed' },
+              ],
+              timestamp: new Date(context.timestamp).toISOString(),
+            });
+          } catch {
+            // Non-fatal — audit run forwarding is best-effort
+          }
+          return { vetoed: false, errors: [] };
+        },
+        { priority: 290, semantics: 'observe', extensionId: 'agnos-audit-run-forward' }
+      );
+      hookIds.push(id);
+    }
+
+    deps.logger.info('AGNOS audit run forwarding registered');
+  }
+
   // ── 2. Event publishing ────────────────────────────────────
   if (config.publishEvents !== false) {
     const publishPoints = config.publishHookPoints ?? [

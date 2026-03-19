@@ -748,6 +748,178 @@ export function registerAgnosTools(
     })
   );
 
+  // ── agnos_exec ──────────────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnos_exec',
+    {
+      description:
+        'Execute a command on a remote AGNOS agent. Returns exit code, stdout, and stderr.',
+      inputSchema: {
+        agent_id: z.string().describe('Agent ID to execute on'),
+        command: z.string().describe('Shell command to execute'),
+        timeout_secs: z
+          .number()
+          .int()
+          .min(1)
+          .max(300)
+          .default(30)
+          .describe('Execution timeout in seconds'),
+      },
+    },
+    wrapToolHandler('agnos_exec', middleware, async (args) => {
+      const result = await runtime.post(`/v1/agents/${encodeURIComponent(args.agent_id)}/exec`, {
+        command: args.command,
+        timeout_secs: args.timeout_secs,
+      });
+      return (
+        checkHttpOk(result, 'AGNOS exec failed') ??
+        labelledResponse(`Exec on ${args.agent_id}`, result.body)
+      );
+    })
+  );
+
+  // ── agnos_file_write ───────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnos_file_write',
+    {
+      description: 'Write a file to a remote AGNOS agent filesystem',
+      inputSchema: {
+        agent_id: z.string().describe('Agent ID'),
+        path: z.string().describe('File path on the agent'),
+        content: z.string().describe('File content to write'),
+      },
+    },
+    wrapToolHandler('agnos_file_write', middleware, async (args) => {
+      const safePath = args.path.replace(/^[/]+/, '');
+      const result = await runtime.put(
+        `/v1/agents/${encodeURIComponent(args.agent_id)}/files/${safePath}`,
+        { content: args.content }
+      );
+      return (
+        checkHttpOk(result, 'AGNOS file write failed') ??
+        labelledResponse(`File Written: ${args.path}`, result.body)
+      );
+    })
+  );
+
+  // ── agnos_file_read ────────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnos_file_read',
+    {
+      description: 'Read a file from a remote AGNOS agent filesystem',
+      inputSchema: {
+        agent_id: z.string().describe('Agent ID'),
+        path: z.string().describe('File path on the agent'),
+      },
+    },
+    wrapToolHandler('agnos_file_read', middleware, async (args) => {
+      const safePath = args.path.replace(/^[/]+/, '');
+      const result = await runtime.get(
+        `/v1/agents/${encodeURIComponent(args.agent_id)}/files/${safePath}`
+      );
+      return (
+        checkHttpOk(result, 'AGNOS file read failed') ??
+        labelledResponse(`File: ${args.path}`, result.body)
+      );
+    })
+  );
+
+  // ── agnos_audit_verify ─────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnos_audit_verify',
+    {
+      description:
+        'Verify the integrity of the AGNOS cryptographic audit chain. ' +
+        'Returns chain validity, length, and any detected errors.',
+      inputSchema: {},
+    },
+    wrapToolHandler('agnos_audit_verify', middleware, async () => {
+      const result = await runtime.get('/v1/audit/chain/verify');
+      return (
+        checkHttpOk(result, 'AGNOS audit chain verify failed') ??
+        labelledResponse('Audit Chain Verification', result.body)
+      );
+    })
+  );
+
+  // ── agnos_audit_run ────────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnos_audit_run',
+    {
+      description:
+        'Submit an audit run record to the AGNOS audit subsystem. ' +
+        'Records playbook execution results for compliance tracking.',
+      inputSchema: {
+        run_id: z.string().describe('Unique run identifier'),
+        playbook: z.string().optional().describe('Playbook name'),
+        success: z.boolean().describe('Whether the run succeeded'),
+        tasks: z
+          .array(
+            z.object({
+              name: z.string().describe('Task name'),
+              status: z.string().describe('Task status (success, failed, skipped)'),
+              duration_ms: z.number().int().optional().describe('Task duration in ms'),
+            })
+          )
+          .describe('Tasks executed in this run'),
+      },
+    },
+    wrapToolHandler('agnos_audit_run', middleware, async (args) => {
+      const result = await runtime.post('/v1/audit/runs', {
+        run_id: args.run_id,
+        playbook: args.playbook,
+        success: args.success,
+        tasks: args.tasks,
+        source: 'secureyeoman',
+      });
+      return (
+        checkHttpOk(result, 'AGNOS audit run submit failed') ??
+        labelledResponse('Audit Run Submitted', result.body)
+      );
+    })
+  );
+
+  // ── agnos_token_pools ──────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnos_token_pools',
+    {
+      description: 'List all token budget pools from the AGNOS LLM gateway (hoosh)',
+      inputSchema: {},
+    },
+    wrapToolHandler('agnos_token_pools', middleware, async () => {
+      const result = await gateway.get('/v1/tokens/pools');
+      return (
+        checkHttpOk(result, 'AGNOS token pools failed') ??
+        labelledResponse('Token Pools', result.body)
+      );
+    })
+  );
+
+  // ── agnos_token_pool_detail ────────────────────────────────────────────
+
+  server.registerTool(
+    'agnos_token_pool_detail',
+    {
+      description: 'Get details of a specific token budget pool (usage, limits, remaining)',
+      inputSchema: {
+        pool_name: z.string().describe('Token pool name'),
+      },
+    },
+    wrapToolHandler('agnos_token_pool_detail', middleware, async (args) => {
+      const result = await gateway.get(`/v1/tokens/pools/${encodeURIComponent(args.pool_name)}`);
+      return (
+        checkHttpOk(result, 'AGNOS token pool detail failed') ??
+        labelledResponse(`Token Pool: ${args.pool_name}`, result.body)
+      );
+    })
+  );
+
   // ── agnos_bridge_status ───────────────────────────────────────────────────
 
   server.registerTool(

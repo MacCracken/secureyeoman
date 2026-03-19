@@ -9,6 +9,10 @@ export interface AgnosClientConfig {
   runtimeUrl: string;
   apiKey?: string;
   timeoutMs?: number;
+  /** AGNOS LLM gateway URL (hoosh, default port 8088). Used for token budget APIs. */
+  gatewayUrl?: string;
+  /** API key for the gateway (hoosh). */
+  gatewayApiKey?: string;
 }
 
 export interface AgnosAgentProfile {
@@ -47,15 +51,106 @@ export interface AgnosSandboxProfile {
   allowedHosts?: string[];
 }
 
+export interface TokenCheckResult {
+  allowed: boolean;
+  remaining?: number;
+  pool?: string;
+}
+
+export interface TokenReserveResult {
+  reserved: boolean;
+  reservation_id?: string;
+}
+
+export interface TokenPoolInfo {
+  name: string;
+  total: number;
+  used: number;
+  remaining: number;
+  period_seconds?: number;
+}
+
+export interface RagChunk {
+  text: string;
+  score: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface RagQueryResult {
+  chunks: RagChunk[];
+  total: number;
+}
+
+export interface RagStats {
+  documents: number;
+  chunks: number;
+  index_size_bytes: number;
+}
+
+export interface ScanFinding {
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  description: string;
+  rule?: string;
+}
+
+export interface ScanBytesResult {
+  findings: ScanFinding[];
+  scanned: boolean;
+}
+
+export interface ScanStatusResult {
+  enabled: boolean;
+  engine: string;
+  definitions_updated?: string;
+}
+
+export interface ExecResult {
+  exit_code: number;
+  stdout: string;
+  stderr: string;
+}
+
+export interface AuditRunRecord {
+  run_id: string;
+  playbook?: string;
+  success: boolean;
+  tasks: { name: string; status: string; duration_ms?: number }[];
+  timestamp?: string;
+}
+
+export interface AuditChainVerification {
+  valid: boolean;
+  chain_length: number;
+  last_verified?: string;
+  errors?: string[];
+}
+
+export interface RemoteTool {
+  name: string;
+  description: string;
+  inputSchema?: unknown;
+}
+
+export interface AttestationResult {
+  pcr_values: Record<string, string>;
+  signature: string;
+  algorithm: string;
+  timestamp: string;
+}
+
 export class AgnosClient {
   private readonly runtimeUrl: string;
   private readonly apiKey: string | undefined;
+  private readonly gatewayUrl: string;
+  private readonly gatewayApiKey: string | undefined;
   private readonly timeoutMs: number;
   private readonly logger: SecureLogger;
 
   constructor(config: AgnosClientConfig, logger: SecureLogger) {
     this.runtimeUrl = config.runtimeUrl.replace(/\/+$/, '');
     this.apiKey = config.apiKey;
+    this.gatewayUrl = (config.gatewayUrl ?? 'http://127.0.0.1:8088').replace(/\/+$/, '');
+    this.gatewayApiKey = config.gatewayApiKey;
     this.timeoutMs = config.timeoutMs ?? 10_000;
     this.logger = logger.child({ component: 'agnos-client' });
   }
@@ -247,7 +342,185 @@ export class AgnosClient {
     }
   }
 
+  // ── Token Budget (hoosh gateway) ─────────────────────────
+
+  async tokenCheck(project: string, tokens: number, pool: string): Promise<TokenCheckResult> {
+    return this._fetchGateway('/v1/tokens/check', {
+      method: 'POST',
+      body: { project, tokens, pool },
+    }) as Promise<TokenCheckResult>;
+  }
+
+  async tokenReserve(
+    project: string,
+    tokens: number,
+    pool: string,
+    poolTotal?: number,
+    periodSeconds?: number
+  ): Promise<TokenReserveResult> {
+    return this._fetchGateway('/v1/tokens/reserve', {
+      method: 'POST',
+      body: { project, tokens, pool, pool_total: poolTotal, period_seconds: periodSeconds },
+    }) as Promise<TokenReserveResult>;
+  }
+
+  async tokenReport(project: string, tokens: number, pool: string): Promise<void> {
+    await this._fetchGateway('/v1/tokens/report', {
+      method: 'POST',
+      body: { project, tokens, pool },
+    });
+  }
+
+  async tokenRelease(project: string, pool: string): Promise<void> {
+    await this._fetchGateway('/v1/tokens/release', {
+      method: 'POST',
+      body: { project, pool },
+    });
+  }
+
+  async tokenPools(): Promise<TokenPoolInfo[]> {
+    const res = await this._fetchGateway('/v1/tokens/pools');
+    return (res as { pools: TokenPoolInfo[] }).pools ?? [];
+  }
+
+  async tokenPoolDetail(poolName: string): Promise<TokenPoolInfo> {
+    return this._fetchGateway(
+      `/v1/tokens/pools/${encodeURIComponent(poolName)}`
+    ) as Promise<TokenPoolInfo>;
+  }
+
+  // ── RAG (daimon runtime) ────────────────────────────────
+
+  async ragIngest(
+    text: string,
+    metadata?: Record<string, unknown>,
+    agentId?: string
+  ): Promise<{ ingested: boolean; chunks?: number }> {
+    return this._fetch('/v1/rag/ingest', {
+      method: 'POST',
+      body: { text, metadata, agent_id: agentId },
+    }) as Promise<{ ingested: boolean; chunks?: number }>;
+  }
+
+  async ragQuery(query: string, topK?: number): Promise<RagQueryResult> {
+    return this._fetch('/v1/rag/query', {
+      method: 'POST',
+      body: { query, top_k: topK },
+    }) as Promise<RagQueryResult>;
+  }
+
+  async ragStats(): Promise<RagStats> {
+    return this._fetch('/v1/rag/stats') as Promise<RagStats>;
+  }
+
+  // ── Phylax Scanning (daimon runtime) ────────────────────
+
+  async scanBytes(data: string, targetName?: string): Promise<ScanBytesResult> {
+    return this._fetch('/v1/scan/bytes', {
+      method: 'POST',
+      body: { data, target_name: targetName },
+    }) as Promise<ScanBytesResult>;
+  }
+
+  async scanStatus(): Promise<ScanStatusResult> {
+    return this._fetch('/v1/scan/status') as Promise<ScanStatusResult>;
+  }
+
+  // ── Remote Execution (daimon runtime) ───────────────────
+
+  async execOnAgent(agentId: string, command: string, timeoutSecs?: number): Promise<ExecResult> {
+    return this._fetch(`/v1/agents/${encodeURIComponent(agentId)}/exec`, {
+      method: 'POST',
+      body: { command, timeout_secs: timeoutSecs },
+    }) as Promise<ExecResult>;
+  }
+
+  async writeFile(agentId: string, filePath: string, content: string): Promise<void> {
+    const safePath = filePath.replace(/^\/+/, '');
+    await this._fetch(`/v1/agents/${encodeURIComponent(agentId)}/files/${safePath}`, {
+      method: 'PUT',
+      body: { content },
+    });
+  }
+
+  async readFile(agentId: string, filePath: string): Promise<{ content: string }> {
+    const safePath = filePath.replace(/^\/+/, '');
+    return this._fetch(`/v1/agents/${encodeURIComponent(agentId)}/files/${safePath}`) as Promise<{
+      content: string;
+    }>;
+  }
+
+  // ── Audit Runs (daimon runtime) ─────────────────────────
+
+  async forwardAuditRun(run: AuditRunRecord): Promise<{ accepted: boolean }> {
+    return this._fetch('/v1/audit/runs', {
+      method: 'POST',
+      body: { ...run, source: 'secureyeoman' },
+    }) as Promise<{ accepted: boolean }>;
+  }
+
+  async verifyAuditChain(): Promise<AuditChainVerification> {
+    return this._fetch('/v1/audit/chain/verify') as Promise<AuditChainVerification>;
+  }
+
+  // ── MCP Remote Tools (daimon runtime) ───────────────────
+
+  async listRemoteTools(): Promise<RemoteTool[]> {
+    const res = await this._fetch('/v1/mcp/tools');
+    return (res as { tools: RemoteTool[] }).tools ?? [];
+  }
+
+  async registerRemoteTool(tool: RemoteTool): Promise<{ registered: number }> {
+    return this._fetch('/v1/mcp/tools', {
+      method: 'POST',
+      body: { tools: [tool], source: 'secureyeoman' },
+    }) as Promise<{ registered: number }>;
+  }
+
+  async callRemoteTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+    return this._fetch('/v1/mcp/tools/call', {
+      method: 'POST',
+      body: { name, arguments: args },
+    });
+  }
+
+  // ── Attestation (daimon runtime) ────────────────────────
+
+  async getAttestation(): Promise<AttestationResult> {
+    return this._fetch('/v1/attestation') as Promise<AttestationResult>;
+  }
+
   // ── Internal ───────────────────────────────────────────────
+
+  private async _fetchGateway(
+    path: string,
+    opts?: { method?: string; body?: unknown; signal?: AbortSignal }
+  ): Promise<unknown> {
+    const url = `${this.gatewayUrl}${path}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.gatewayApiKey) headers['X-API-Key'] = this.gatewayApiKey;
+
+    const res = await fetch(url, {
+      method: opts?.method ?? 'GET',
+      headers,
+      body: opts?.body ? JSON.stringify(opts.body) : undefined,
+      signal: opts?.signal ?? AbortSignal.timeout(this.timeoutMs),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(
+        `AGNOS Gateway ${opts?.method ?? 'GET'} ${path} failed: ${res.status} ${text.slice(0, 200)}`
+      );
+    }
+
+    const contentType = res.headers.get('content-type') ?? '';
+    if (contentType.includes('application/json')) {
+      return res.json();
+    }
+    return {};
+  }
+
   private async _fetch(
     path: string,
     opts?: { method?: string; body?: unknown; signal?: AbortSignal }

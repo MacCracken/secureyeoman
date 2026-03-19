@@ -19,6 +19,8 @@ export interface AgnosBootstrapResult {
   sandboxProfiles: AgnosSandboxProfile[];
   mcpToolsRegistered: number;
   bridgeProfile: string;
+  ragStats?: { documents: number; chunks: number; index_size_bytes: number };
+  reverseToolsRegistered: number;
   error?: string;
 }
 
@@ -45,6 +47,7 @@ export async function bootstrapAgnos(
     sandboxProfiles: [],
     mcpToolsRegistered: 0,
     bridgeProfile: bridgeProfile ?? 'full',
+    reverseToolsRegistered: 0,
   };
 
   // ── 1. Service discovery ───────────────────────────────────
@@ -112,6 +115,40 @@ export async function bootstrapAgnos(
         );
       }
     }
+  }
+
+  // ── 4. RAG stats (if capability present) ─────────────────
+  if (result.capabilities.includes('rag')) {
+    try {
+      const stats = await client.ragStats();
+      result.ragStats = stats;
+      logger.info(
+        { documents: stats.documents, chunks: stats.chunks, indexBytes: stats.index_size_bytes },
+        'AGNOS RAG index stats'
+      );
+    } catch (err) {
+      logger.debug(
+        { error: err instanceof Error ? err.message : String(err) },
+        'Failed to fetch AGNOS RAG stats'
+      );
+    }
+  }
+
+  // ── 5. Reverse tool registration ────────────────────────
+  try {
+    const remoteTools = await client.listRemoteTools();
+    result.reverseToolsRegistered = remoteTools.length;
+    if (remoteTools.length > 0) {
+      logger.info(
+        { count: remoteTools.length },
+        'AGNOS remote tools discovered for reverse registration'
+      );
+    }
+  } catch (err) {
+    logger.debug(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Failed to list AGNOS remote tools for reverse registration'
+    );
   }
 
   return result;

@@ -52,4 +52,34 @@ export class AgnosVectorStore implements VectorStore {
   async close(): Promise<void> {
     // No persistent connection to close
   }
+
+  // ── RAG Methods (chunked text, supplements raw vector ops) ──
+
+  /**
+   * Ingest text into the AGNOS RAG pipeline for chunking and indexing.
+   */
+  async ingestText(
+    text: string,
+    metadata?: Record<string, unknown>,
+    agentId?: string
+  ): Promise<{ ingested: boolean; chunks?: number }> {
+    return this.client.ragIngest(text, metadata, agentId);
+  }
+
+  /**
+   * Query the AGNOS RAG index and return ranked chunks with formatted context.
+   */
+  async queryRag(
+    query: string,
+    topK?: number
+  ): Promise<{
+    chunks: { text: string; score: number; metadata?: Record<string, unknown> }[];
+    context: string;
+  }> {
+    const result = await this.client.ragQuery(query, topK);
+    const context = result.chunks
+      .map((c, i) => `[${i + 1}] (score: ${c.score.toFixed(3)}) ${c.text}`)
+      .join('\n\n');
+    return { chunks: result.chunks, context };
+  }
 }

@@ -13,6 +13,7 @@ export { GVisorSandbox, type GVisorSandboxOptions } from './gvisor-sandbox.js';
 export { WasmSandbox, type WasmSandboxOptions } from './wasm-sandbox.js';
 export { FirecrackerSandbox, type FirecrackerSandboxOptions } from './firecracker-sandbox.js';
 export { AgnosSandbox, isAgnosticOS } from './agnos-sandbox.js';
+export { SyAgnosSandbox, type SyAgnosSandboxOptions } from './sy-agnos-sandbox.js';
 export { SgxSandbox, type SgxSandboxOptions } from './sgx-sandbox.js';
 export { SevSandbox, type SevSandboxOptions } from './sev-sandbox.js';
 export { SandboxManager, type SandboxManagerConfig, type SandboxManagerDeps } from './manager.js';
