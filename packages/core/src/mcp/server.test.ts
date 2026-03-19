@@ -110,7 +110,7 @@ describe('McpServer', () => {
   });
 
   describe('handleToolCall', () => {
-    it('logs the tool call and returns status ok', async () => {
+    it('logs the tool call and returns error for unknown tools', async () => {
       server = new McpServer({ logger: mockLogger as any });
       const result = (await server.handleToolCall('my_tool', { foo: 'bar' })) as any;
 
@@ -118,9 +118,37 @@ describe('McpServer', () => {
         expect.objectContaining({ toolName: 'my_tool' }),
         'MCP tool call received'
       );
-      expect(result.status).toBe('ok');
-      expect(result.toolName).toBe('my_tool');
-      expect(result.args).toEqual({ foo: 'bar' });
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ toolName: 'my_tool' }),
+        'Unknown MCP tool call — no handler'
+      );
+      expect(result.error).toBe('Unknown tool: my_tool');
+    });
+
+    it('routes skill tools to soul manager', async () => {
+      const mockSkill = { id: 'summarize', name: 'Summarize', description: 'Summarizes text' };
+      const soulMgr = { ...mockSoulManager, getSkill: vi.fn().mockResolvedValue(mockSkill) };
+      server = new McpServer({
+        logger: mockLogger as any,
+        soulManager: soulMgr as any,
+      });
+
+      const result = (await server.handleToolCall('friday_skill_summarize', { text: 'hi' })) as any;
+      expect(soulMgr.getSkill).toHaveBeenCalledWith('summarize');
+      expect(result.skillId).toBe('summarize');
+      expect(result.name).toBe('Summarize');
+      expect(result.args).toEqual({ text: 'hi' });
+    });
+
+    it('returns error for skill not found', async () => {
+      const soulMgr = { ...mockSoulManager, getSkill: vi.fn().mockResolvedValue(null) };
+      server = new McpServer({
+        logger: mockLogger as any,
+        soulManager: soulMgr as any,
+      });
+
+      const result = (await server.handleToolCall('friday_skill_missing', {})) as any;
+      expect(result.error).toBe('Skill not found: missing');
     });
   });
 });

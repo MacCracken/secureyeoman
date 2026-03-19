@@ -212,6 +212,19 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 | Dashboard | ConnectionsPage, CommunityTab, voice hooks | Next target: 75% stmt |
 | Core E2E | Expand coverage | Add training, delegation, analytics flows (needs Docker) |
 
+### Cross-Project Integration Tests
+
+**Priority**: P3 — Requires full system stack (SY + Synapse + PG + Docker).
+
+End-to-end tests that exercise the SY↔Synapse delegation pipeline with a live Synapse instance. Write when standing up the full system for integration testing.
+
+- [ ] **Synapse REST round-trip** — Boot SY + Synapse via Docker Compose (`--profile synapse`). Verify `GET /api/v1/synapse/status` returns transformed hardware data. Verify `POST /api/v1/synapse/inference` sends snake_case and returns camelCase.
+- [ ] **Training delegation lifecycle** — Submit training job via SY API, verify Synapse receives snake_case request with nested `dataset`/`hyperparams`, poll status until completion, verify SY's delegated job record updates through `pending→running→completed`.
+- [ ] **gRPC bridge connectivity** — Verify `YeomanBridge` server receives `ReportProgress` stream and updates delegated job status. Verify `RegisterCompletedModel` creates a model record in SY's DB.
+- [ ] **SSE streaming relay** — Verify `GET /api/v1/synapse/training/jobs/:id/stream` relays SSE events from Synapse's `/training/jobs/:id/stream` endpoint in real time.
+- [ ] **Model pull lifecycle** — `POST /api/v1/synapse/models/pull` with a real marketplace peer, verify SSE progress events flow through.
+- [ ] **Health/reconnection** — Kill Synapse, verify SY marks instance disconnected. Restart Synapse, verify SY heartbeat poll reconnects and re-registers.
+
 ### Code Audit Backlog (Low Priority)
 
 Items identified during code audit rounds. Fix opportunistically.
