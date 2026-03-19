@@ -173,11 +173,17 @@ export async function startE2EServer(): Promise<E2EServer> {
   const a2aManager = new A2AManager(
     {
       enabled: true,
-      discoveryMethod: 'none' as const,
+      discoveryMethod: 'manual' as const,
       trustedPeers: [],
-      heartbeatIntervalMs: 60000,
       maxPeers: 50,
-      trustThreshold: 'verified' as const,
+      port: 18790,
+      federation: {
+        enabled: false,
+        clusterId: '',
+        region: '',
+        remoteClusters: [],
+        allowContentReplication: false,
+      },
     },
     { storage: a2aStorage, transport: a2aTransport, logger, auditChain }
   );

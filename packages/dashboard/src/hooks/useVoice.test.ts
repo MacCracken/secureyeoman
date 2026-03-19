@@ -331,7 +331,7 @@ describe('useVoice', () => {
             0: { transcript: 'hello world' },
             length: 1,
           },
-          item: (i: number) => ({ isFinal: true, 0: { transcript: 'hello world' }, length: 1 }),
+          item: (_i: number) => ({ isFinal: true, 0: { transcript: 'hello world' }, length: 1 }),
         } as unknown as SpeechRecognitionResultList,
       });
     });
