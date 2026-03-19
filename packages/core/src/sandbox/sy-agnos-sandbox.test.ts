@@ -87,10 +87,11 @@ describe('SyAgnosSandbox', () => {
   describe('verifyAttestation', () => {
     it('returns true when PCR values and signature are present', async () => {
       const sandbox = new SyAgnosSandbox();
+      const pcr = 'a'.repeat(64); // valid 64-char hex
       const mockClient = {
         getAttestation: vi.fn().mockResolvedValue({
-          pcr_values: { '8': 'abc', '9': 'def', '10': 'ghi' },
-          signature: 'hmac-signature-value',
+          pcr_values: { '8': pcr, '9': pcr, '10': pcr },
+          signature: 'a'.repeat(64),
           algorithm: 'SHA256',
           timestamp: '2026-03-18T00:00:00Z',
         }),

@@ -35,6 +35,24 @@ import {
 const DISABLED_MSG =
   'AGNOS tools are disabled. Set MCP_EXPOSE_AGNOS_TOOLS=true and optionally AGNOS_RUNTIME_API_KEY / AGNOS_GATEWAY_API_KEY.';
 
+// ─── Path safety ──────────────────────────────────────────────────────────────
+
+/** Strip leading slashes, resolve `.`/`..` segments, reject traversal. */
+function sanitizeAgnosFilePath(raw: string): string {
+  const segments = raw
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter((s) => s && s !== '.');
+  const safe: string[] = [];
+  for (const seg of segments) {
+    if (seg === '..') safe.pop();
+    else safe.push(seg);
+  }
+  const result = safe.join('/');
+  if (!result) throw new Error('Invalid file path');
+  return result;
+}
+
 // ─── HTTP helpers ─────────────────────────────────────────────────────────────
 
 function runtimeHeaders(config: McpServiceConfig): Record<string, string> {
@@ -792,7 +810,7 @@ export function registerAgnosTools(
       },
     },
     wrapToolHandler('agnos_file_write', middleware, async (args) => {
-      const safePath = args.path.replace(/^[/]+/, '');
+      const safePath = sanitizeAgnosFilePath(args.path);
       const result = await runtime.put(
         `/v1/agents/${encodeURIComponent(args.agent_id)}/files/${safePath}`,
         { content: args.content }
@@ -816,7 +834,7 @@ export function registerAgnosTools(
       },
     },
     wrapToolHandler('agnos_file_read', middleware, async (args) => {
-      const safePath = args.path.replace(/^[/]+/, '');
+      const safePath = sanitizeAgnosFilePath(args.path);
       const result = await runtime.get(
         `/v1/agents/${encodeURIComponent(args.agent_id)}/files/${safePath}`
       );

@@ -189,18 +189,27 @@ export class SyAgnosSandbox implements Sandbox {
     try {
       const attestation: AttestationResult = await agnosClient.getAttestation();
 
-      // Verify required PCR registers are present
+      // Verify required PCR registers are present and well-formed (hex strings)
       const requiredPcrs = ['8', '9', '10'];
+      const pcrHexPattern = /^[0-9a-f]{16,128}$/i;
       for (const pcr of requiredPcrs) {
-        if (!attestation.pcr_values[pcr]) {
+        const value = attestation.pcr_values[pcr];
+        if (!value) {
           this.getLogger().warn({ missing: pcr }, 'Attestation missing required PCR register');
+          return false;
+        }
+        if (!pcrHexPattern.test(value)) {
+          this.getLogger().warn(
+            { pcr, value: value.slice(0, 20) },
+            'Attestation PCR value malformed'
+          );
           return false;
         }
       }
 
-      // Verify HMAC signature is present and non-empty
-      if (!attestation.signature || attestation.signature.length === 0) {
-        this.getLogger().warn('Attestation has empty signature');
+      // Verify HMAC signature is present, non-empty, and looks like a valid signature
+      if (!attestation.signature || attestation.signature.length < 32) {
+        this.getLogger().warn('Attestation has missing or too-short signature');
         return false;
       }
 
@@ -378,11 +387,17 @@ const fn = ${fn.toString()};
     if (!agnosClient || !outputScanner) return;
 
     try {
-      // Use phylax via agnosClient
-      const scanResult = await agnosClient.scanBytes(
+      // Use phylax via agnosClient with 5s timeout to avoid blocking sandbox results
+      const scanPromise = agnosClient.scanBytes(
         Buffer.from(stdout).toString('base64'),
         'sy-agnos-sandbox-output'
       );
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Phylax scan timeout'));
+        }, 5000);
+      });
+      const scanResult = await Promise.race([scanPromise, timeoutPromise]);
 
       if (scanResult.findings?.length) {
         for (const finding of scanResult.findings) {

@@ -436,7 +436,7 @@ export class AgnosClient {
   }
 
   async writeFile(agentId: string, filePath: string, content: string): Promise<void> {
-    const safePath = filePath.replace(/^\/+/, '');
+    const safePath = sanitizeFilePath(filePath);
     await this._fetch(`/v1/agents/${encodeURIComponent(agentId)}/files/${safePath}`, {
       method: 'PUT',
       body: { content },
@@ -444,7 +444,7 @@ export class AgnosClient {
   }
 
   async readFile(agentId: string, filePath: string): Promise<{ content: string }> {
-    const safePath = filePath.replace(/^\/+/, '');
+    const safePath = sanitizeFilePath(filePath);
     return this._fetch(`/v1/agents/${encodeURIComponent(agentId)}/files/${safePath}`) as Promise<{
       content: string;
     }>;
@@ -508,10 +508,8 @@ export class AgnosClient {
     });
 
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(
-        `AGNOS Gateway ${opts?.method ?? 'GET'} ${path} failed: ${res.status} ${text.slice(0, 200)}`
-      );
+      // Don't include response body in errors — may contain credentials or tokens
+      throw new Error(`AGNOS Gateway ${opts?.method ?? 'GET'} ${path} failed: ${res.status}`);
     }
 
     const contentType = res.headers.get('content-type') ?? '';
@@ -537,10 +535,8 @@ export class AgnosClient {
     });
 
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(
-        `AGNOS ${opts?.method ?? 'GET'} ${path} failed: ${res.status} ${text.slice(0, 200)}`
-      );
+      // Don't include response body in errors — may contain credentials or tokens
+      throw new Error(`AGNOS ${opts?.method ?? 'GET'} ${path} failed: ${res.status}`);
     }
 
     const contentType = res.headers.get('content-type') ?? '';
@@ -549,4 +545,24 @@ export class AgnosClient {
     }
     return {};
   }
+}
+
+/** Strip leading slashes, resolve `.`/`..` segments, and reject traversal attempts. */
+function sanitizeFilePath(raw: string): string {
+  const segments = raw
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter((s) => s && s !== '.');
+  const safe: string[] = [];
+  for (const seg of segments) {
+    if (seg === '..') {
+      // Drop parent references — never traverse above root
+      safe.pop();
+    } else {
+      safe.push(seg);
+    }
+  }
+  const result = safe.join('/');
+  if (!result) throw new Error('Invalid file path: resolves to empty');
+  return result;
 }

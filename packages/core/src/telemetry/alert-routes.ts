@@ -38,8 +38,11 @@ export function registerAlertRoutes(app: FastifyInstance, opts: AlertRoutesOptio
       reply: FastifyReply
     ) => {
       try {
-        const limit = request.query.limit ? parseInt(request.query.limit, 10) : undefined;
-        const offset = request.query.offset ? parseInt(request.query.offset, 10) : undefined;
+        const rawLimit = request.query.limit ? parseInt(request.query.limit, 10) : undefined;
+        const rawOffset = request.query.offset ? parseInt(request.query.offset, 10) : undefined;
+        const limit = rawLimit && Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : undefined;
+        const offset =
+          rawOffset && Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : undefined;
         const result = await alertManager.listRules({ limit, offset });
         return reply.send(result);
       } catch (err) {

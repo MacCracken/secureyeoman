@@ -397,7 +397,11 @@ export class AGNOSProvider extends BaseProvider {
     } catch (err) {
       // Re-throw budget exceeded errors
       if (err instanceof ProviderUnavailableError) throw err;
-      // Swallow other errors (network issues, etc.) — best-effort
+      // Best-effort — log but don't block inference
+      this.logger?.debug?.(
+        { error: err instanceof Error ? err.message : String(err) },
+        'Token budget check failed (non-fatal)'
+      );
     }
   }
 

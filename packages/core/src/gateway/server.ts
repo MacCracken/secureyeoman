@@ -3835,6 +3835,7 @@ export class GatewayServer {
           }
 
           if (data.type === 'unsubscribe' && data.payload?.channels) {
+            const unsubscribed: string[] = [];
             for (const channel of data.payload.channels) {
               // Only unsubscribe from channels the client is actually subscribed to
               if (client.channels.has(channel)) {
@@ -3844,8 +3845,18 @@ export class GatewayServer {
                   if (!result.granted) continue;
                 }
                 client.channels.delete(channel);
+                unsubscribed.push(channel);
               }
             }
+            socket.send(
+              JSON.stringify({
+                type: 'ack',
+                channel: 'system',
+                payload: { unsubscribed },
+                timestamp: Date.now(),
+                sequence: 0,
+              })
+            );
           }
         } catch (error) {
           this.getLogger().error(
