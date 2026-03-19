@@ -20,3 +20,8 @@ zeroize = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 hex = "0.4"
+criterion = "0.5"
+
+[[bench]]
+name = "crypto"
+harness = false
