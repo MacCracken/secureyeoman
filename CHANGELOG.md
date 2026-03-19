@@ -64,6 +64,12 @@ Full driver-side integration with AGNOS 2026.3.18 APIs: token budgeting, RAG, ph
 - **Vector store AGNOS backend config** — `VectorConfigSchema` now includes `agnos` sub-config (`runtimeUrl`, `apiKey`, `enableRag`). Vector store factory auto-creates `AgnosClient` from config when not explicitly injected, removing the hard dependency on startup wiring. Deployments can now set `brain.vector.backend: 'agnos'` in config to offload pgvector to AGNOS
 - **MCP tool catalog endpoint** — New `GET /api/v1/mcp/tools/list` endpoint returns full tool definitions including `inputSchema` and `outputSchema` for all registered tools. `McpToolDef` and `McpToolManifest` schemas extended with optional `outputSchema` field. Enables AGNOS reverse registration with complete parameter metadata
 
+### SQL Migration Consolidation
+
+- **5 → 3 files** — Merged `004_optimistic_locking.sql` into `001_community.sql` (version column on personalities + skills in CREATE TABLE) and `005_delegation_self_ref.sql` into `002_pro.sql` (self-reference CHECK constraint on delegations in CREATE TABLE). Both include idempotent ALTER blocks for existing installs
+- **Legacy compatibility** — `004_optimistic_locking` and `005_delegation_self_ref` added to `LEGACY_MIGRATION_IDS` in runner.ts so existing installs that already applied them skip re-running consolidated baselines
+- **Verified** — E2E tests (health, brain, soul, optimistic-locking) pass against fresh PG with consolidated schema. 34 E2E tests confirm version columns and delegation constraints work correctly
+
 ### Dashboard Test Coverage — 3 Gap Areas
 
 - **ConnectionsPage** (2 new tests) — Ecosystem services section rendering with fetched data, graceful handling of ecosystem fetch failures

@@ -106,10 +106,6 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### SQL Migration Consolidation
-
-- [ ] **Consolidate incremental migrations** — 5 migration files (001–005) with growing number of small incremental patches. Consolidate into 3 baseline files (community/pro/enterprise) with all constraints and indexes inline. Reduces startup migration time and simplifies fresh deployments. Preserve `schema_migrations` compatibility so existing installs skip re-applied baselines.
-
 ---
 
 ## Ecosystem Projects — Cross-Project Integration

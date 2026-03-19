@@ -186,7 +186,8 @@ CREATE TABLE IF NOT EXISTS agents.delegations (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     initiated_by text,
     correlation_id text,
-    CONSTRAINT delegations_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text, 'cancelled'::text, 'timeout'::text])))
+    CONSTRAINT delegations_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text, 'cancelled'::text, 'timeout'::text]))),
+    CONSTRAINT delegations_no_self_reference CHECK (id != parent_delegation_id)
 );
 
 
@@ -2122,3 +2123,10 @@ CREATE TABLE IF NOT EXISTS voice.profiles (
 
 CREATE INDEX IF NOT EXISTS idx_voice_profiles_provider ON voice.profiles(provider);
 CREATE INDEX IF NOT EXISTS idx_voice_profiles_created ON voice.profiles(created_at DESC);
+
+-- Idempotent: add delegation self-reference constraint (consolidated from 005_delegation_self_ref)
+DO $$ BEGIN
+ALTER TABLE agents.delegations
+    ADD CONSTRAINT delegations_no_self_reference CHECK (id != parent_delegation_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;

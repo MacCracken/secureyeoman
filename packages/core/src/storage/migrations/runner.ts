@@ -51,6 +51,9 @@ const LEGACY_MIGRATION_IDS = [
   '021_auto_secrets',
   '022_synapse_bridge',
   '023_edge_fleet',
+  // Phase 3 — incrementals now folded into consolidated baselines
+  '004_optimistic_locking',
+  '005_delegation_self_ref',
 ];
 
 /** Current consolidated migration IDs. */

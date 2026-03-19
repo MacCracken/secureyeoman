@@ -1060,7 +1060,8 @@ CREATE TABLE IF NOT EXISTS soul.personalities (
     inject_date_time boolean DEFAULT false NOT NULL,
     empathy_resonance boolean DEFAULT false NOT NULL,
     avatar_url text,
-    tenant_id text DEFAULT 'default'::text NOT NULL
+    tenant_id text DEFAULT 'default'::text NOT NULL,
+    version integer NOT NULL DEFAULT 1
 );
 
 -- Idempotent ADD COLUMN for existing installs + data migration: move proactiveConfig from body → brain_config
@@ -1141,7 +1142,8 @@ CREATE TABLE IF NOT EXISTS soul.skills (
     linked_workflow_id text,
     invoked_count integer DEFAULT 0 NOT NULL,
     autonomy_level character varying(2) DEFAULT 'L1'::character varying NOT NULL,
-    emergency_stop_procedure text
+    emergency_stop_procedure text,
+    version integer NOT NULL DEFAULT 1
 );
 
 
@@ -2937,3 +2939,22 @@ CREATE TABLE IF NOT EXISTS internal.auto_secrets (
 
 COMMENT ON TABLE internal.auto_secrets IS
   'Auto-generated cryptographic secrets persisted across restarts. Values are raw base64url-encoded keys.';
+
+-- Idempotent: add version column for optimistic locking (consolidated from 004_optimistic_locking)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'soul' AND table_name = 'personalities' AND column_name = 'version'
+  ) THEN
+    ALTER TABLE soul.personalities ADD COLUMN version integer NOT NULL DEFAULT 1;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'soul' AND table_name = 'skills' AND column_name = 'version'
+  ) THEN
+    ALTER TABLE soul.skills ADD COLUMN version integer NOT NULL DEFAULT 1;
+  END IF;
+END $$;

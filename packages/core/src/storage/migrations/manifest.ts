@@ -6,11 +6,15 @@
  * script copies *.sql alongside the compiled *.js files so they are
  * always co-located with manifest.js at runtime.
  *
- * Schema is split by license tier (all DDL consolidated into 3 files):
- *   001_community.sql  — Core platform (always applied)
- *   002_pro.sql        — Workflows, analytics, agents, RBAC, voice (pro+)
+ * Schema is split by license tier (consolidated into 3 baseline files):
+ *   001_community.sql  — Core platform, soul, brain, MCP (always applied)
+ *   002_pro.sql        — Workflows, analytics, agents, RBAC, voice, delegations (pro+)
  *   003_enterprise.sql — DLP, training, chaos, federated, IaC, synapse,
  *                        simulation, SCIM, edge fleet, etc. (enterprise)
+ *
+ * Incremental migrations (004_optimistic_locking, 005_delegation_self_ref)
+ * have been folded back into the baselines. Existing installs that already
+ * applied them are handled by the legacy compatibility shim in runner.ts.
  *
  * All baselines are always applied regardless of tier — the full schema
  * must be present for the app to start. Feature gating is handled at the
@@ -52,6 +56,4 @@ export const MIGRATION_MANIFEST: MigrationEntry[] = [
   { id: '001_community', sql: readSql('001_community.sql'), tier: 'community' },
   { id: '002_pro', sql: readSql('002_pro.sql'), tier: 'pro' },
   { id: '003_enterprise', sql: readSql('003_enterprise.sql'), tier: 'enterprise' },
-  { id: '004_optimistic_locking', sql: readSql('004_optimistic_locking.sql'), tier: 'community' },
-  { id: '005_delegation_self_ref', sql: readSql('005_delegation_self_ref.sql'), tier: 'pro' },
 ];
