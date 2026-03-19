@@ -43,74 +43,21 @@
 
 ---
 
-## sy-agnos OS-Level Sandbox
+## AGNOS Deep Integration — Remaining
 
-**Priority**: P0. See [ADR 044](../adr/044-sy-agnos-sandbox.md).
+**Priority**: P1. Core API integration complete (2026.3.19). Remaining items are dashboard/UI work and advanced features.
 
-**AGNOS side: ALL 3 PHASES COMPLETE** (2026.3.18). Image ready to build. SY driver work can begin immediately.
+### Token Budgeting — Remaining
 
-### AGNOS Side — Complete
-
-- [x] **Phase 1 (strength 80)** — `recipes/sandbox/sy-agnos-{rootfs,init,nftables}.toml`, `scripts/build-sy-agnos.sh`, `docker/Dockerfile.sy-agnos`, `/etc/sy-agnos-release`
-- [x] **Phase 2 (strength 85)** — dm-verity verified rootfs, `veritysetup format`, hash tree in OCI image, tamper detection (exit 78 on failure)
-- [x] **Phase 3 (strength 88)** — TPM 2.0 measured boot (PCR 8/9/10), `GET /v1/attestation` endpoint, event log
-
-### SY Side — Ready to Implement
-
-- [ ] **`sy-agnos-sandbox.ts`** — New sandbox driver: launch OCI image, pipe task via stdin/stdout, destroy on teardown
-- [ ] **Strength detection** — Read `/etc/sy-agnos-release` from container, report dynamic strength (80/85/88 based on dm-verity + TPM)
-- [ ] **Attestation verification** — Call AGNOS `GET /v1/attestation` before dispatching tasks to sy-agnos. Verify PCR values + HMAC signature
-- [ ] **Update `high-security` profile** — Prefer sy-agnos when available (fallback: Firecracker → gVisor → Landlock)
-- [ ] **Tests** — Unit + E2E for sy-agnos driver
-
----
-
-## AGNOS Deep Integration
-
-**Priority**: P1. AGNOS `2026.3.18` exposes new APIs that SY should leverage. All endpoints have mock fallback — no hard dependency.
-
-### Token Budgeting (hoosh)
-
-SY agents currently have no per-agent cost control. Hoosh (port 8088) now has token pool management.
-
-- [ ] **`AGNOSProvider` token budget integration** — Before inference, call `POST /v1/tokens/check` with agent ID + estimated tokens. Reserve with `/v1/tokens/reserve`, release unused with `/v1/tokens/release`. Pool per-personality or per-tenant
 - [ ] **Cost dashboard** — Wire hoosh `/v1/tokens/pools` into SY cost tracking dashboard. Show per-pool usage, remaining budget, cost-per-agent
 
-### RAG / Knowledge Sync
+### RAG / Knowledge Sync — Remaining
 
-SY brains backed by PostgreSQL. AGNOS has federated RAG (`/v1/rag/*`) and vector store (`/v1/vectors/*`). Bidirectional sync enables cross-system knowledge.
-
-- [ ] **`AgnosClient.ragIngest()`** — Push SY brain documents to AGNOS `POST /v1/rag/ingest` for cross-system searchability
-- [ ] **`AgnosClient.ragQuery()`** — Query AGNOS RAG from SY brain context. Augments SY's own PostgreSQL knowledge with system-wide AGNOS knowledge (mneme, other agents)
 - [ ] **`AgnosClient.vectorSearch()`** — Use AGNOS vector store for SY embeddings. Reduces SY's PostgreSQL pgvector dependency for small deployments
 
-### Phylax Threat Scanning
-
-AGNOS has phylax scanning endpoints (`/v1/scan/*`). SY should scan agent outputs before returning to users.
-
-- [ ] **`AgnosClient.scanOutput()`** — Call `POST /v1/scan/bytes` on agent task outputs. Log findings. Block HIGH severity results
-- [ ] **Sandbox egress scanning** — Pipe sy-agnos sandbox egress through phylax before network release
-
-### Remote Execution (sutra integration)
-
-AGNOS now has `POST /v1/agents/{id}/exec` and `PUT/GET /v1/agents/{id}/files/*`. SY can use these for fleet orchestration.
-
-- [ ] **`AgnosClient.execOnAgent()`** — Execute commands on remote AGNOS agents (e.g., deploy SY Edge agents via daimon instead of SSH)
-- [ ] **`AgnosClient.writeFile()` / `readFile()`** — Transfer configs/binaries to AGNOS fleet nodes
-
-### Audit Chain
-
-SY forwards audit events to `/v1/audit/forward`. AGNOS now also accepts sutra-style run records via `POST /v1/audit/runs`.
-
-- [ ] **`AgnosClient.forwardAuditRun()`** — Send SY workflow execution records to AGNOS cryptographic audit chain for unified compliance trail
-- [ ] **Audit verification** — Query AGNOS audit chain to verify SY event integrity
-
-### Bidirectional Tool Registration
-
-AGNOS now has `yeoman_register_tools` MCP tool that fetches SY's tool catalog and registers into daimon. SY should enable this.
+### Bidirectional Tool Registration — Remaining
 
 - [ ] **Tool catalog endpoint** — Ensure SY's MCP tool list endpoint (`/api/v1/mcp/tools/list`) returns full tool definitions (params, returns) so AGNOS can register them
-- [ ] **Reverse registration** — SY queries AGNOS `GET /v1/mcp/tools` and registers AGNOS tools (phylax_scan, tarang_probe, etc.) into SY's tool registry for agent use
 
 ---
 
@@ -178,35 +125,6 @@ AGNOS now has `yeoman_register_tools` MCP tool that fetches SY's tool catalog an
 - [ ] **Analytics & reporting flows** — Metrics aggregation, cost tracking, CSV/JSON export
 - [ ] **Brain & RAG flows** — Knowledge ingestion, recall, memory scoping across personalities
 - [ ] **Marketplace flows** — Skill install/uninstall, workflow import, community sync
-- [x] **MCP tool execution flows** — Tool discovery, execution via streamable HTTP, config toggling *(2026.3.18 — 15 E2E tests: server CRUD, tool discovery, config toggling, auth enforcement)*
-
----
-
-## DAG Workflow Step Type Expansion
-
-**Priority**: P1 — Feature. Expand the 23 existing step types with 8 new types that unlock iteration, fan-out, inline execution, and cross-instance delegation patterns.
-
-**Goal**: Close workflow pattern gaps that currently require workarounds (manual subworkflow nesting for loops, hardcoded parallel agents instead of generic fan-out, webhook abuse for notifications).
-
-### New Step Types
-
-- [x] **`loop`** — Repeat a step or step group N times or until a condition evaluates true. Config: `maxIterations`, `conditionExpression`, `stepIds[]`. Prevents infinite loops via hard cap (default 100). *(2026.3.18-1)*
-- [x] **`parallel_map`** — Fan-out: run the same step template across a list of inputs, collect results as an array. Config: `inputListPath`, `taskTemplate`, `maxConcurrency` (default 5). *(2026.3.18-1)*
-- [x] **`code_execution`** — Run sandboxed code (Node.js, Python, Bash) inline within a workflow. Config: `runtime`, `code`/`codeTemplate`, `timeoutMs`. *(2026.3.18-1)*
-- [x] **`delay`** — Pause execution for a duration or until a wall-clock time. Config: `durationMs` or `untilTimestamp`. Capped at 1 hour. *(2026.3.18-1)*
-- [x] **`notification`** — Send alert via webhook channel + logged intent for other channels. Config: `channel`, `messageTemplate`, `recipients[]`, `url`. *(2026.3.18-1)*
-- [x] **`data_validation`** — Validate data against JSON Schema via OutputSchemaValidator. Config: `schema`, `dataPath`, `onFailure` (fail/warn/skip). *(2026.3.18-1)*
-- [x] **`cache_lookup`** — Check context-based cache for dedup patterns. Config: `cacheKey` (Mustache template). *(2026.3.18-1)*
-- [x] **`a2a_delegate`** — Delegate a task to a remote SecureYeoman instance via A2A HTTP. Config: `peerId`, `taskTemplate`, `contextTemplate`, `timeoutMs`. *(2026.3.18-1)*
-
-### Integration Work
-
-- [x] **WorkflowEngine** — All 8 step handlers added to `dispatchStep()` in `workflow-engine.ts` *(2026.3.18-1)*
-- [x] **Shared types** — All 8 step types added to `WorkflowStepTypeSchema` in `workflow.ts` *(2026.3.18-1)*
-- [x] **ReactFlow palette** — All 8 new step nodes with icons and colors in `WorkflowBuilder.tsx` *(2026.3.18-1)*
-- [x] **Template updates** — 4 new built-in templates: `iterative-research` (loop + agent + data_validation), `fan-out-analysis` (parallel_map + transform + notification), `scheduled-data-pipeline` (cache_lookup + code_execution + data_validation + delay), `distributed-task` (parallel_map + a2a_delegate + notification). *(2026.3.18-1)*
-- [x] **Tests** — 20 unit tests for all 8 step handlers: loop (3), parallel_map (3), code_execution (3), delay (2), notification (2), data_validation (3), cache_lookup (2), a2a_delegate (2). *(2026.3.18-1)*
-- [ ] **Docs** — Update workflows guide with new step types, examples, and configuration reference
 
 ---
 
@@ -214,27 +132,9 @@ AGNOS now has `yeoman_register_tools` MCP tool that fetches SY's tool catalog an
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### ~~Code Review & Audit (2026-03-17)~~ — Complete
+### DAG Workflow Docs
 
-*All 8 audit items completed. See [Changelog](../../CHANGELOG.md). Fixes: `readdir` over `ls`, privacy fallback audit log, iptables host validation, SSRF guard on Agnostic targetUrl, fetch mock restoration. Reviews: eslint-disable (89 files, all legitimate), dashboard panel wiring (3 panels connected), probe caching (TTLs appropriate).*
-
-### Error Messaging Consistency
-
-**Priority**: P2 — Quality. Discovered via E2E test assertions that server error responses are inconsistent across routes.
-
-**Problem**: Error responses vary between generic HTTP status text (`"Bad Request"`, `"Conflict"`), structured objects (`{ error, message }`), and descriptive strings. Consumers (dashboard, CLI, tests) can't reliably extract actionable messages.
-
-**Goal**: Unified error envelope across all API routes. Every non-2xx response should return:
-```json
-{ "error": "error_code", "message": "Human-readable explanation", "statusCode": 409 }
-```
-
-- [x] **Audit `sendError()` usage** — Audited: 2,057 calls across 132 files already use consistent `{ error, message, statusCode }` envelope. Only SCIM routes bypassed — now fixed. *(2026.3.18-1)*
-- [x] **Standardize error envelope** — `sendError()` now typed with `ApiErrorResponse` from `@secureyeoman/shared`. Return type annotated. *(2026.3.18-1)*
-- [x] **Conflict errors** — Verified: all 409 responses from optimistic locking already use `sendError(reply, 409, ...)` which produces `{ error: 'Conflict', message: '...', statusCode: 409 }` envelope. *(2026.3.18-1)*
-- [x] **MCP tool call errors** — Route handler now differentiates: 404 (server not found, unknown tool), 503 (no URL, no token), 502 (unreachable, response too large, remote failure), 400 (missing fields, unclassified). Added `502: 'Bad Gateway'` to HTTP status map. 8 new tests. *(2026.3.18-1)*
-- [x] **Dashboard error toasts** — Dashboard API client now captures `error.error` (the HTTP status name from the envelope) as `APIError.code`. Toast callbacks already use `e.message` which comes from `error.message`. *(2026.3.18-1)*
-- [x] **E2E test assertions** — Tightened 409 Conflict assertions across strategy-routes, access-review-routes to validate full `{ error, message, statusCode }` envelope, not just status codes. Pattern established for remaining routes. *(2026.3.18-1)*
+- [ ] **Docs** — Update workflows guide with the 8 new step types (2026.3.18-1), examples, and configuration reference
 
 ### Test Coverage
 
@@ -258,20 +158,9 @@ End-to-end tests that exercise the SY↔Synapse delegation pipeline with a live 
 - [ ] **Model pull lifecycle** — `POST /api/v1/synapse/models/pull` with a real marketplace peer, verify SSE progress events flow through.
 - [ ] **Health/reconnection** — Kill Synapse, verify SY marks instance disconnected. Restart Synapse, verify SY heartbeat poll reconnects and re-registers.
 
-### Code Audit Backlog (Low Priority)
+### SQL Migration Consolidation
 
-Items identified during code audit rounds. Fix opportunistically.
-
-- [x] **File upload chunk count limit** — Added max 1000 chunk count to `document-routes.ts`. *(2026.3.18-1)*
-- [ ] **WebSocket unsubscribe consistency** — Unsubscribe succeeds even without subscribe permission. Cosmetic — no data leak possible.
-- [ ] **Input validator ReDoS** — Injection detection regexes could theoretically backtrack on adversarial input. Mitigated by request size limits. Test with pathological inputs.
-- [x] **Empty catch blocks** — Added debug logging to `secureyeoman.ts` silent catches (license, grace period). Remaining ~20 in voice/multimodal are intentional best-effort. *(2026.3.18-1)*
-- [x] **Agnostic token caching race** — Added promise-based mutex to `getAgnosticHeaders()`. *(2026.3.18-1)*
-- [x] **Template resolution NaN risk** — Added `resolveNumber()` helper to workflow engine. *(2026.3.18-1)*
-- [ ] **Dependency confusion** — Verify `@secureyeoman/shared` is not publishable to public npm or is org-scoped.
-- [x] **Working memory prefetch TTL** — Added 5-min TTL with `evictStalePrefetch()` method. *(2026.3.18-1)*
-- [ ] **Delegation self-reference constraint** — Add DB `CHECK (id != parent_delegation_id)` to `agents.delegations`.
-- [ ] **Alert rules pagination** — `alert-storage.ts` loads up to 1000 rules without offset. Add proper pagination.
+- [ ] **Consolidate incremental migrations** — 5 migration files (001–005) with growing number of small incremental patches. Consolidate into 3 baseline files (community/pro/enterprise) with all constraints and indexes inline. Reduces startup migration time and simplifies fresh deployments. Preserve `schema_migrations` compatibility so existing installs skip re-applied baselines.
 
 ---
 
@@ -428,15 +317,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### Consumer Experience
-
-*Lower barrier to entry and improve daily-use experience for individual users and small teams.*
-
-- [x] **One-click cloud deploy templates** — Railway (`railway.json`), Render (`render.yaml`), and DigitalOcean (`digitalocean-app.json`) with pre-configured env vars. Deploy buttons in release notes. *(2026.3.18 — 3 templates + 19 validation tests)*
-- [x] **Conversation share & export UX** — Per-conversation export (Markdown/JSON/text), JWT-based share links with expiry and revocation. Backend routes + dashboard API client. *(2026.3.18 — 17 unit tests)*
-
----
-
 ### Enterprise Upgrades
 
 *Security hardening and compliance capabilities for enterprise deployments.*
@@ -449,7 +329,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 *Demand-Gated — implement once operational scale or compliance requirements justify the investment.*
 
-- [x] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves *(2026.3.18 — migration 004, CAS on storage layer, 409 route handling, 9 E2E tests)*
 - [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based graph layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
 - [ ] **Agent World — Configurable FPS** — fps slider in card settings popover (1–16 fps), persisted in layout config. Only worthwhile if users report animation overhead on low-power devices.
 - [ ] **Photisnadi in SY container** — Photisnadi baked into agnosticos base image or run as separate container. User choice via `PHOTISNADI_ENABLED` flag. When embedded, supervisord manages Photisnadi process; when external, SY proxies via SUPABASE_URL.
@@ -551,4 +430,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-18. See [Changelog](../../CHANGELOG.md) for full history of completed work.*
+*Last updated: 2026-03-19. See [Changelog](../../CHANGELOG.md) for full history of completed work.*

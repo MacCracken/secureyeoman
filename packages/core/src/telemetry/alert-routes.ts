@@ -31,14 +31,22 @@ export function registerAlertRoutes(app: FastifyInstance, opts: AlertRoutesOptio
   const alertGuardOpts = licenseGuard('advanced_observability', secureYeoman);
 
   // GET /api/v1/alerts/rules
-  app.get('/api/v1/alerts/rules', async (_request, reply: FastifyReply) => {
-    try {
-      const rules = await alertManager.listRules();
-      return reply.send({ rules });
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+  app.get(
+    '/api/v1/alerts/rules',
+    async (
+      request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const limit = request.query.limit ? parseInt(request.query.limit, 10) : undefined;
+        const offset = request.query.offset ? parseInt(request.query.offset, 10) : undefined;
+        const result = await alertManager.listRules({ limit, offset });
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   // POST /api/v1/alerts/rules
   app.post(

@@ -103,16 +103,18 @@ describe('deleteRule', () => {
 });
 
 describe('listRules', () => {
-  it('returns empty array when no rules', async () => {
-    const rules = await storage.listRules();
-    expect(rules).toHaveLength(0);
+  it('returns empty result when no rules', async () => {
+    const result = await storage.listRules();
+    expect(result.rules).toHaveLength(0);
+    expect(result.total).toBe(0);
   });
 
   it('lists all rules in creation order', async () => {
     await storage.createRule({ ...BASE_RULE, name: 'A' });
     await storage.createRule({ ...BASE_RULE, name: 'B' });
-    const rules = await storage.listRules();
-    expect(rules).toHaveLength(2);
+    const result = await storage.listRules();
+    expect(result.rules).toHaveLength(2);
+    expect(result.total).toBe(2);
   });
 
   it('filters by enabled=true when onlyEnabled=true', async () => {
@@ -120,9 +122,23 @@ describe('listRules', () => {
     await storage.createRule({ ...BASE_RULE, name: 'disabled', enabled: false });
     const all = await storage.listRules();
     const onlyEnabled = await storage.listRules(true);
-    expect(all).toHaveLength(2);
-    expect(onlyEnabled).toHaveLength(1);
-    expect(onlyEnabled[0].name).toBe('enabled');
+    expect(all.rules).toHaveLength(2);
+    expect(all.total).toBe(2);
+    expect(onlyEnabled.rules).toHaveLength(1);
+    expect(onlyEnabled.total).toBe(1);
+    expect(onlyEnabled.rules[0].name).toBe('enabled');
+  });
+
+  it('respects limit and offset', async () => {
+    await storage.createRule({ ...BASE_RULE, name: 'A' });
+    await storage.createRule({ ...BASE_RULE, name: 'B' });
+    await storage.createRule({ ...BASE_RULE, name: 'C' });
+    const page1 = await storage.listRules(undefined, { limit: 2, offset: 0 });
+    expect(page1.rules).toHaveLength(2);
+    expect(page1.total).toBe(3);
+    const page2 = await storage.listRules(undefined, { limit: 2, offset: 2 });
+    expect(page2.rules).toHaveLength(1);
+    expect(page2.total).toBe(3);
   });
 });
 

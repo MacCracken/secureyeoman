@@ -34,20 +34,20 @@ const INJECTION_PATTERNS: {
   },
   {
     name: 'prompt_injection_ignore',
-    pattern: /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?|rules?)/gi,
+    pattern: /ignore\s+(?:all\s+)?(?:previous|prior|above)\s+(?:instructions?|prompts?|rules?)/gi,
     severity: 'high',
     block: true,
   },
   {
     name: 'prompt_injection_forget',
-    pattern: /forget\s+(all\s+)?(previous|prior|your)\s+(instructions?|training|context)/gi,
+    pattern: /forget\s+(?:all\s+)?(?:previous|prior|your)\s+(?:instructions?|training|context)/gi,
     severity: 'high',
     block: true,
   },
   {
     name: 'prompt_injection_pretend',
     pattern:
-      /pretend\s+(you\s+are|to\s+be|you're)\s+(a\s+)?(different|new|another)\s+(ai|assistant|bot)/gi,
+      /pretend\s+(?:you\s+are|to\s+be|you're)\s+(?:a\s+)?(?:different|new|another)\s+(?:ai|assistant|bot)/gi,
     severity: 'high',
     block: true,
   },
@@ -59,7 +59,7 @@ const INJECTION_PATTERNS: {
   },
   {
     name: 'prompt_injection_roleplay',
-    pattern: /you\s+are\s+now\s+(in\s+)?(unrestricted|unfiltered|uncensored)\s+mode/gi,
+    pattern: /you\s+are\s+now\s+(?:in\s+)?(?:unrestricted|unfiltered|uncensored)\s+mode/gi,
     severity: 'high',
     block: true,
   },
@@ -73,7 +73,7 @@ const INJECTION_PATTERNS: {
   },
   {
     name: 'sql_union',
-    pattern: /UNION\s+(ALL\s+)?SELECT/gi,
+    pattern: /UNION\s+(?:ALL\s+)?SELECT/gi,
     severity: 'medium',
     block: false,
   },
@@ -81,13 +81,13 @@ const INJECTION_PATTERNS: {
   // XSS (for when output might be rendered)
   {
     name: 'xss_script',
-    pattern: /<script[^>]*>[\s\S]*?<\/script>/gi,
+    pattern: /<script\b[^>]*>/gi,
     severity: 'high',
     block: true,
   },
   {
     name: 'xss_event_handler',
-    pattern: /\bon\w+\s*=\s*["'][^"']*["']/gi,
+    pattern: /\bon\w+=\s*["']/gi,
     severity: 'medium',
     block: false,
   },
@@ -107,7 +107,7 @@ const INJECTION_PATTERNS: {
   },
   {
     name: 'command_substitution',
-    pattern: /\$\([^)]+\)|`[^`]+`/g,
+    pattern: /\$\([^)]{1,500}\)|`[^`]{1,500}`/g,
     severity: 'medium',
     block: false,
   },

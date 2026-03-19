@@ -3836,7 +3836,15 @@ export class GatewayServer {
 
           if (data.type === 'unsubscribe' && data.payload?.channels) {
             for (const channel of data.payload.channels) {
-              client.channels.delete(channel);
+              // Only unsubscribe from channels the client is actually subscribed to
+              if (client.channels.has(channel)) {
+                const perm = CHANNEL_PERMISSIONS[channel];
+                if (perm && client.role) {
+                  const result = this.secureYeoman.getRBAC().checkPermission(client.role, perm);
+                  if (!result.granted) continue;
+                }
+                client.channels.delete(channel);
+              }
             }
           }
         } catch (error) {

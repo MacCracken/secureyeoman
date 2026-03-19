@@ -53,4 +53,5 @@ export const MIGRATION_MANIFEST: MigrationEntry[] = [
   { id: '002_pro', sql: readSql('002_pro.sql'), tier: 'pro' },
   { id: '003_enterprise', sql: readSql('003_enterprise.sql'), tier: 'enterprise' },
   { id: '004_optimistic_locking', sql: readSql('004_optimistic_locking.sql'), tier: 'community' },
+  { id: '005_delegation_self_ref', sql: readSql('005_delegation_self_ref.sql'), tier: 'pro' },
 ];

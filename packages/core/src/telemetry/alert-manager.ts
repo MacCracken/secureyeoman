@@ -52,8 +52,11 @@ export class AlertManager {
     return deleted;
   }
 
-  async listRules(): Promise<AlertRule[]> {
-    return this.storage.listRules();
+  async listRules(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ rules: AlertRule[]; total: number }> {
+    return this.storage.listRules(undefined, opts);
   }
 
   async getRule(id: string): Promise<AlertRule | null> {
@@ -128,7 +131,8 @@ export class AlertManager {
     const now = Date.now();
     if (this._cachedRules && now < this._cacheExpiry) return this._cachedRules;
 
-    this._cachedRules = await this.storage.listRules(true);
+    const result = await this.storage.listRules(true, { limit: 1000 });
+    this._cachedRules = result.rules;
     this._cacheExpiry = now + this.CACHE_TTL_MS;
     return this._cachedRules;
   }

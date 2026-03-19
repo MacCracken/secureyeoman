@@ -6,6 +6,76 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.19]
+
+### sy-agnos Sandbox Driver (P0)
+
+Container-based sandbox execution using sy-agnos OCI images with three isolation tiers (minimal, dm-verity, TPM measured boot).
+
+- **`SyAgnosSandbox`** — New sandbox driver (`packages/core/src/sandbox/sy-agnos-sandbox.ts`) conforming to `Sandbox` interface. Auto-detects Docker/Podman, launches containers with `--read-only --network=none --memory --cpus`, pipes task via stdin/stdout JSON. Graceful fallback to in-process execution
+- **Dynamic strength detection** — Reads `/etc/sy-agnos-release` from container image to report tier-based strength: 80 (minimal), 85 (dm-verity), 88 (TPM measured boot). Three new `SANDBOX_STRENGTH` entries
+- **Attestation verification** — `verifyAttestation()` calls AGNOS `GET /v1/attestation`, validates PCR registers 8/9/10 and HMAC signature before dispatching tasks
+- **SandboxManager integration** — `'sy-agnos'` added to technology union, `resolveBackend()` switch, `resolveAuto()` (dynamic strength insertion between SGX and gVisor), `probeCapabilities()` with Docker/Podman prerequisite check
+- **`high-security` profile** — Changed from `'landlock'` to `'auto'` so auto-selection now prefers sy-agnos (80+) → Firecracker (90) → gVisor (70) → Landlock (50)
+- **Sandbox egress scanning** — Optional phylax integration: scans container stdout via `agnosClient.scanBytes()`, adds `SandboxViolation` with type `'scanning'` for HIGH/CRITICAL findings, configurable `blockHighSeverity`
+
+### AGNOS Deep Integration (P1)
+
+Full driver-side integration with AGNOS 2026.3.18 APIs: token budgeting, RAG, phylax scanning, remote execution, audit chain, and bidirectional tool registration.
+
+#### AgnosClient API Expansion
+
+- **Gateway support** — Added `gatewayUrl` + `gatewayApiKey` to `AgnosClientConfig`, `_fetchGateway()` helper targeting hoosh (port 8088)
+- **Token budget** (6 methods) — `tokenCheck()`, `tokenReserve()`, `tokenReport()`, `tokenRelease()`, `tokenPools()`, `tokenPoolDetail()` via hoosh gateway
+- **RAG** (3 methods) — `ragIngest()`, `ragQuery()`, `ragStats()` via daimon runtime
+- **Phylax scanning** (2 methods) — `scanBytes()` (base64 data), `scanStatus()`
+- **Remote execution** (3 methods) — `execOnAgent()`, `writeFile()`, `readFile()` for fleet orchestration
+- **Audit** (2 methods) — `forwardAuditRun()` for sutra-style run records, `verifyAuditChain()` for chain integrity
+- **MCP remote tools** (3 methods) — `listRemoteTools()`, `registerRemoteTool()`, `callRemoteTool()` for bidirectional tool registration
+- **Attestation** — `getAttestation()` returns PCR values + HMAC signature
+
+#### Token Budget Integration
+
+- **`AGNOSProvider`** — Before inference (`doChat` + `chatStream`), estimates tokens, calls `tokenCheck()` + `tokenReserve()`. After inference, reports actual usage via `tokenReport()`. Budget exceeded returns 429. All token calls best-effort — failures never block inference
+- **`AGNOSProviderTokenBudgetConfig`** — New optional config for `agnosClient`, `project`, `pool`
+
+#### RAG Integration
+
+- **`AgnosVectorStore`** — Added `ingestText()` (pushes to AGNOS RAG pipeline) and `queryRag()` (returns ranked chunks with formatted context string)
+- **Bootstrap** — RAG stats fetched during `bootstrapAgnos()` when `rag` capability present; remote tools discovered via `listRemoteTools()` for reverse registration
+
+#### Phylax Output Scanning
+
+- **`ToolOutputScanner.scanWithPhylax()`** — Runs local regex scan, then augments with AGNOS phylax findings. HIGH/CRITICAL findings added as `phylax:high` / `phylax:critical` redaction types. `ScanResult` extended with optional `phylaxFindings` array
+
+#### MCP Tools
+
+- **Remote execution** — `agnos_exec`, `agnos_file_write`, `agnos_file_read` tools for fleet operations
+- **Audit** — `agnos_audit_verify` (chain integrity), `agnos_audit_run` (manual run submission)
+- **Token pools** — `agnos_token_pools`, `agnos_token_pool_detail`
+
+#### Audit Run Hooks
+
+- **`agnos-hooks.ts`** — New hook on `swarm:after-execute` / `task:after-execute` that creates audit run records via `agnosClient.forwardAuditRun()` with run_id, playbook, success, and task list. Priority 290, best-effort
+
+### Code Audit Backlog — All 5 Items Resolved
+
+- **WebSocket unsubscribe permission check** — Unsubscribe handler now validates RBAC permissions and channel membership before removing subscriptions, matching the subscribe handler's security posture
+- **Input validator ReDoS hardening** — Converted all capturing groups to non-capturing `(?:...)` in injection detection regexes. Added length caps (`{1,500}`) to unbounded character class repetitions (`[^)]*`, `[^`]*`). Simplified XSS `<script>` pattern to match opening tag only (avoids `[\s\S]*?` backtracking). Same fixes applied to MCP middleware input validator
+- **Dependency confusion prevention** — Added `"private": true` to `@secureyeoman/shared` `package.json`, preventing accidental publication to public npm
+- **Delegation self-reference constraint** — New migration `005_delegation_self_ref.sql` adds `CHECK (id != parent_delegation_id)` to `agents.delegations`, preventing circular self-references at the database level
+- **Alert rules pagination** — `AlertStorage.listRules()` now accepts `limit`/`offset` parameters and returns `{ rules, total }`. Route `GET /api/v1/alerts/rules` supports `?limit=&offset=` query params. Default limit 50, max 1000. Internal evaluation cache uses `limit: 1000`
+
+### Tests
+
+- **33 new tests** for AgnosClient API expansion (token budget, RAG, phylax, remote execution, audit, attestation, MCP remote tools, gateway API key)
+- **14 new tests** for SyAgnosSandbox (availability, capabilities, strength detection for all 3 tiers, attestation verification pass/fail, run fallback, container execution, timeout)
+- **2 test updates** for sandbox-profiles `high-security` → `auto` technology change
+- **1 new test** for alert rules pagination (limit/offset behavior)
+- **8 test updates** for alert manager/routes `listRules` return shape change
+
+---
+
 ## [2026.3.18-1]
 
 ### Synapse Integration — Protocol Alignment

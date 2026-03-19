@@ -39,11 +39,10 @@ function makeStorage(rules: AlertRule[] = []) {
       return r ? { ...r, ...patch } : null;
     }),
     deleteRule: vi.fn().mockResolvedValue(true),
-    listRules: vi
-      .fn()
-      .mockImplementation(async (onlyEnabled?: boolean) =>
-        onlyEnabled ? rules.filter((r) => r.enabled) : rules
-      ),
+    listRules: vi.fn().mockImplementation(async (onlyEnabled?: boolean) => {
+      const filtered = onlyEnabled ? rules.filter((r) => r.enabled) : rules;
+      return { rules: filtered, total: filtered.length };
+    }),
     markFired: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -129,13 +128,13 @@ describe('AlertManager.evaluate', () => {
   });
 
   it('does nothing when no enabled rules', async () => {
-    storage.listRules.mockResolvedValue([]);
+    storage.listRules.mockResolvedValue({ rules: [], total: 0 });
     await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
     expect(notif.notify).not.toHaveBeenCalled();
   });
 
   it('fires when threshold crossed', async () => {
-    storage.listRules.mockResolvedValue([makeRule({ threshold: 10 })]);
+    storage.listRules.mockResolvedValue({ rules: [makeRule({ threshold: 10 })], total: 1 });
     await manager.evaluate({ security: { rateLimitHitsTotal: 11 } });
     expect(notif.notify).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'alert', level: 'error' })
@@ -144,35 +143,45 @@ describe('AlertManager.evaluate', () => {
   });
 
   it('does not fire when threshold not crossed', async () => {
-    storage.listRules.mockResolvedValue([makeRule({ threshold: 10, operator: 'gt' })]);
+    storage.listRules.mockResolvedValue({
+      rules: [makeRule({ threshold: 10, operator: 'gt' })],
+      total: 1,
+    });
     await manager.evaluate({ security: { rateLimitHitsTotal: 5 } });
     expect(notif.notify).not.toHaveBeenCalled();
   });
 
   it('does not fire when disabled', async () => {
-    storage.listRules.mockResolvedValue([makeRule({ enabled: false })]);
+    storage.listRules.mockResolvedValue({ rules: [makeRule({ enabled: false })], total: 1 });
     await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
     expect(notif.notify).not.toHaveBeenCalled();
   });
 
   it('respects cooldown window', async () => {
     const recentFire = Date.now() - 60_000; // 60s ago, cooldown=300s
-    storage.listRules.mockResolvedValue([
-      makeRule({ lastFiredAt: recentFire, cooldownSeconds: 300 }),
-    ]);
+    storage.listRules.mockResolvedValue({
+      rules: [makeRule({ lastFiredAt: recentFire, cooldownSeconds: 300 })],
+      total: 1,
+    });
     await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
     expect(notif.notify).not.toHaveBeenCalled();
   });
 
   it('fires after cooldown has elapsed', async () => {
     const oldFire = Date.now() - 400_000; // 400s ago > 300s cooldown
-    storage.listRules.mockResolvedValue([makeRule({ lastFiredAt: oldFire, cooldownSeconds: 300 })]);
+    storage.listRules.mockResolvedValue({
+      rules: [makeRule({ lastFiredAt: oldFire, cooldownSeconds: 300 })],
+      total: 1,
+    });
     await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
     expect(notif.notify).toHaveBeenCalled();
   });
 
   it('skips rule when metric path not found in snapshot', async () => {
-    storage.listRules.mockResolvedValue([makeRule({ metricPath: 'nonexistent.path' })]);
+    storage.listRules.mockResolvedValue({
+      rules: [makeRule({ metricPath: 'nonexistent.path' })],
+      total: 1,
+    });
     await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
     expect(notif.notify).not.toHaveBeenCalled();
   });

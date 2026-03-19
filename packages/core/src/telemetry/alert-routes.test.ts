@@ -29,7 +29,7 @@ function makeRule(overrides: Partial<AlertRule> = {}): AlertRule {
 
 function makeManager(overrides: Record<string, unknown> = {}) {
   return {
-    listRules: vi.fn().mockResolvedValue([makeRule()]),
+    listRules: vi.fn().mockResolvedValue({ rules: [makeRule()], total: 1 }),
     createRule: vi.fn().mockResolvedValue(makeRule()),
     getRule: vi.fn().mockResolvedValue(makeRule()),
     updateRule: vi.fn().mockResolvedValue(makeRule()),

@@ -145,12 +145,21 @@ export class AlertStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listRules(onlyEnabled?: boolean): Promise<AlertRule[]> {
-    const sql = onlyEnabled
-      ? 'SELECT * FROM telemetry.alert_rules WHERE enabled = TRUE ORDER BY created_at ASC LIMIT 1000'
-      : 'SELECT * FROM telemetry.alert_rules ORDER BY created_at ASC LIMIT 1000';
-    const rows = await this.queryMany<AlertRuleRow>(sql);
-    return rows.map(rowToRule);
+  async listRules(
+    onlyEnabled?: boolean,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<{ rules: AlertRule[]; total: number }> {
+    const limit = Math.min(opts?.limit ?? 50, 1000);
+    const offset = opts?.offset ?? 0;
+    const whereClause = onlyEnabled ? 'WHERE enabled = TRUE' : '';
+
+    const countSql = `SELECT COUNT(*)::int AS count FROM telemetry.alert_rules ${whereClause}`;
+    const countRow = await this.queryOne<{ count: number }>(countSql);
+    const total = countRow?.count ?? 0;
+
+    const dataSql = `SELECT * FROM telemetry.alert_rules ${whereClause} ORDER BY created_at ASC LIMIT $1 OFFSET $2`;
+    const rows = await this.queryMany<AlertRuleRow>(dataSql, [limit, offset]);
+    return { rules: rows.map(rowToRule), total };
   }
 
   async markFired(id: string, firedAt: number): Promise<void> {
