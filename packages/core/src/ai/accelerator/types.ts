@@ -57,8 +57,8 @@ export interface AcceleratorProbeResult {
   tpuCount: number;
   /** Whether any TPU is available. */
   tpuAvailable: boolean;
-  /** Whether results came from ai-hwaccel binary or built-in probes. */
-  source: 'ai-hwaccel' | 'builtin';
+  /** Whether results came from native Rust probe, ai-hwaccel binary, or built-in TS probes. */
+  source: 'native' | 'ai-hwaccel' | 'builtin';
   probedAt: string;
 }
 

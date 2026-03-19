@@ -13,6 +13,7 @@ import type {
   AcceleratorVendor,
   AcceleratorFamily,
 } from './types.js';
+import { native } from '../../native/index.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -143,7 +144,21 @@ export async function probeAccelerators(forceRefresh = false): Promise<Accelerat
     return _cached;
   }
 
-  // Primary: ai-hwaccel binary
+  // Primary: native Rust probe (in-process, no child process overhead)
+  if (native) {
+    try {
+      const json = native.probeAccelerators();
+      const devices = JSON.parse(json) as AcceleratorDevice[];
+      const result = buildResult(devices, 'native');
+      _cached = result;
+      _cachedAt = Date.now();
+      return result;
+    } catch {
+      // Fall through to ai-hwaccel binary
+    }
+  }
+
+  // Secondary: ai-hwaccel binary
   const hwaccelDevices = await probeViaHwAccel();
   if (hwaccelDevices !== null) {
     const result = buildResult(hwaccelDevices, 'ai-hwaccel');
@@ -189,7 +204,7 @@ export async function probeAccelerators(forceRefresh = false): Promise<Accelerat
 
 function buildResult(
   devices: AcceleratorDevice[],
-  source: 'ai-hwaccel' | 'builtin'
+  source: 'native' | 'ai-hwaccel' | 'builtin'
 ): AcceleratorProbeResult {
   const totalVramMb = devices.reduce((sum, d) => sum + d.vramTotalMb, 0);
   const totalFreeVramMb = devices.reduce((sum, d) => sum + d.vramFreeMb, 0);

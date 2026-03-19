@@ -9,20 +9,26 @@ vi.mock('node:util', () => ({
   promisify: (fn: unknown) => fn,
 }));
 
-// Mock filesystem to prevent real hardware detection via sysfs
-const mockReaddir = vi.fn().mockRejectedValue(new Error('mocked'));
-const mockReadFile = vi.fn().mockRejectedValue(new Error('mocked'));
-const mockReadlink = vi.fn().mockRejectedValue(new Error('mocked'));
-const mockExistsSync = vi.fn().mockReturnValue(false);
+// Hoist mock fns so they're available when vi.mock factories execute
+const { mockReaddir, mockReadFile, mockReadlink, mockExistsSync } = vi.hoisted(() => ({
+  mockReaddir: vi.fn().mockRejectedValue(new Error('mocked')),
+  mockReadFile: vi.fn().mockRejectedValue(new Error('mocked')),
+  mockReadlink: vi.fn().mockRejectedValue(new Error('mocked')),
+  mockExistsSync: vi.fn().mockReturnValue(false),
+}));
 
 vi.mock('node:fs/promises', () => ({
   readdir: (...args: any[]) => mockReaddir(...args),
   readFile: (...args: any[]) => mockReadFile(...args),
   readlink: (...args: any[]) => mockReadlink(...args),
 }));
-vi.mock('node:fs', () => ({
-  existsSync: (...args: any[]) => mockExistsSync(...args),
-}));
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...actual,
+    existsSync: (...args: any[]) => mockExistsSync(...args),
+  };
+});
 
 import { execFile } from 'node:child_process';
 const mockExecFile = vi.mocked(execFile);

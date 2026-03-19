@@ -41,6 +41,10 @@ export interface NativeModule {
 
   // Random
   randomBytes(length: number): Buffer;
+
+  // Hardware probing
+  probeAccelerators(): string;
+  probeAcceleratorsByFamily(family: string): string;
 }
 
 let _native: NativeModule | null = null;

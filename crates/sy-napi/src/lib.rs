@@ -1,4 +1,4 @@
-//! SecureYeoman napi-rs bridge — exposes sy-crypto to Node.js as a native addon.
+//! SecureYeoman napi-rs bridge — exposes sy-crypto and sy-hwprobe to Node.js.
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -122,4 +122,20 @@ pub fn hkdf_sha256(ikm: Buffer, salt: Buffer, info: Buffer, length: u32) -> Resu
 #[napi]
 pub fn random_bytes(length: u32) -> Buffer {
     sy_crypto::random_bytes(length as usize).into()
+}
+
+// ── Hardware Probing ────────────────────────────────────────────────────────
+
+/// Probe all hardware accelerators. Returns JSON array of AcceleratorDevice.
+#[napi]
+pub fn probe_accelerators() -> String {
+    let devices = sy_hwprobe::probe_all();
+    serde_json::to_string(&devices).unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Probe accelerators matching a specific family (gpu, tpu, npu, ai_asic).
+#[napi]
+pub fn probe_accelerators_by_family(family: String) -> String {
+    let devices = sy_hwprobe::probe_family(&family);
+    serde_json::to_string(&devices).unwrap_or_else(|_| "[]".to_string())
 }
