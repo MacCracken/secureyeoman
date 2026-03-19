@@ -87,7 +87,7 @@ Since v2026.3.12, SecureYeoman has completed a comprehensive 3-round security au
 | | Hybrid FTS + vector (RRF) | Y | - | - | Y | - | - |
 | | Per-personality memory scoping | Y | - | - | - | - | - |
 | | Proactive context compaction | Y | Y | - | Y | - | - |
-| **Orchestration** | MCP tools | 485 | P | P | P | P | P |
+| **Orchestration** | MCP tools | 490 | P | P | P | P | P |
 | | DAG workflow engine (23 step types) | Y | - | - | - | - | - |
 | | Visual workflow builder (ReactFlow) | Y | - | - | - | - | - |
 | | Agent swarms (3 strategies) | Y | - | - | - | - | Y |

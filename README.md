@@ -65,7 +65,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 
 - **Self-hosted, not SaaS** — single binary, Docker, or Kubernetes. Your data stays on your machines.
 - **Governed by design** — RBAC, audit trails, cryptographic integrity, sandboxed execution, OPA/CEL governance.
-- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 485-tool MCP server.
+- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 490-tool MCP server.
 - **Full ML lifecycle** — distillation, LoRA fine-tuning, LLM-as-Judge evaluation, DPO, conversation analytics.
 
 ---
@@ -81,7 +81,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Mul
 | **Training** | Dataset export, distillation, LoRA fine-tuning, pre-training from scratch, LLM-as-Judge eval, DPO/RLHF, federated learning, conversation analytics, A/B experiments, autoresearch (HP tuning, chaos escalation, circuit breaker autotuning) |
 | **Dashboard** | React + Vite + Tailwind (45 themes), mission control, real-time CRDT editing, conversation branching, canvas workspace, inline AI completion, fleet panel |
 | **Integrations** | 38 platforms (Slack, Discord, GitHub, Gmail, Teams, WhatsApp + more), 5 code forge adapters (Delta, GitHub, GitLab, Bitbucket, Gitea), artifact registries (GHCR, GitLab, JFrog Artifactory), 22 CI/CD tools, security toolkits (Kali, network, Docker) |
-| **MCP** | 485 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
+| **MCP** | 490 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
 | **Enterprise** | Multi-tenancy (PostgreSQL RLS), multi-region HA, DLP, supply chain security (SBOM, SLSA, signed releases), OpenTelemetry, Prometheus/Grafana, SCIM 2.0 provisioning, access review campaigns, per-tenant quotas, compliance SoA generator |
 | **Simulation** | Tick-driven engine (realtime/accelerated/turn-based), emotion & mood model (Russell's circumplex), spatial & proximity engine (3D zones, proximity triggers), autoresearch experiment runner |
 | **Knowledge** | Document ingestion (PDF, HTML, MD, URL, GitHub Wiki), RAG with hybrid FTS+vector search, cognitive memory (ACT-R, Hebbian learning) |

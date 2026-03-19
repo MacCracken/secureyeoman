@@ -29,7 +29,7 @@ const INJECTION_PATTERNS: { name: string; pattern: RegExp; block: boolean }[] = 
   },
   // XSS
   { name: 'xss_script', pattern: /<script\b/i, block: true },
-  { name: 'xss_event', pattern: /\bon\w+=\s*["']/i, block: false },
+  { name: 'xss_event', pattern: /\bon\w+\s*=/i, block: false },
   { name: 'xss_javascript', pattern: /javascript\s*:/i, block: true },
   // Template injection (non-greedy with length cap)
   { name: 'template_double', pattern: /\{\{[^}]{0,500}\}\}/, block: false },

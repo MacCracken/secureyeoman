@@ -2,7 +2,7 @@
 
 Self-hosted, enterprise-hardened, answerable only to you. Your data moves when you say so.
 
-**v2026.3.19** | AGPL-3.0 | 485 MCP Tools | 56 CLI Commands | ~22,000 Tests
+**v2026.3.19** | AGPL-3.0 | 490 MCP Tools | 56 CLI Commands | ~22,000 Tests
 
 ---
 
@@ -38,10 +38,10 @@ Anthropic, OpenAI, Gemini, Ollama, DeepSeek, OpenCode, Mistral, LM Studio, Local
 - NVD / CVE vulnerability lookups
 - Kali toolkit (nmap, nuclei, sqlmap)
 
-### 485 MCP Tools & 38 Integrations
+### 490 MCP Tools & 38 Integrations
 - 38 platform integrations
 - 5 code forge adapters + artifact registries
-- 485 tools, 9 resources, 4 prompts
+- 490 tools, 9 resources, 4 prompts
 - SSRF protection + encrypted creds
 
 ### Multi-Agent & Workflows
@@ -105,7 +105,7 @@ The OpenClaw security crisis (2026): 13+ CVEs (20+ GHSAs) including CVSS 8.8 RCE
 | Sandboxing | 6 modes + Firecracker | Basic | OpenShell | TEE + WASM | Basic |
 | Privacy Router | DLP + GPU | No | Gretel DP | No | No |
 | Secrets / Vault | SecretsManager | No | No | TEE vault | No |
-| MCP Tools | 485 | Limited | Inherits OC | Via path | No |
+| MCP Tools | 490 | Limited | Inherits OC | Via path | No |
 | CVEs (2026) | 0 | 13+ | Inherits OC | 0 | Pre-prod |
 | DAG Workflows | 23 step types | No | No | No | No |
 | Integrations | 38 | 23+ | No | ~2 | 11+ |
@@ -120,7 +120,7 @@ The OpenClaw security crisis (2026): 13+ CVEs (20+ GHSAs) including CVSS 8.8 RCE
 - **CISO** — Zero CVEs. Not because we're lucky — because we're paranoid.
 - **COO** — No cloud dependency means no cloud surprises. Your schedule, your uptime.
 - **CFO / Legal** — Every compliance framework needs controls. We ship them, not slide decks.
-- **CTO** — One binary. 485 tools. Six fewer vendor contracts.
+- **CTO** — One binary. 490 tools. Six fewer vendor contracts.
 - **CEO / Board** — Your competitors are patching. You're shipping.
 
 [Read the White Paper](whitepaper.html) — three security pillars, compliance readiness, multi-agent governance.
