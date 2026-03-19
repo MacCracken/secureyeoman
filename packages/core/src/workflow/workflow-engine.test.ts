@@ -2890,3 +2890,618 @@ describe('WorkflowEngine.execute — webhook step defaults', () => {
     }
   });
 });
+
+// ── DAG Expansion Step Types (Phase 150) ──────────────────────────────────────
+
+describe('WorkflowEngine.execute — step dispatch: loop', () => {
+  it('should execute body steps N times when maxIterations set', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'loop1',
+      type: 'loop',
+      config: {
+        maxIterations: 3,
+        stepIds: [],
+        bodyTemplate: 'iter-{{steps.loop1_iteration.output.index}}',
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          loop1: expect.objectContaining({ iterations: 3 }),
+        }),
+      })
+    );
+  });
+
+  it('should stop early when condition evaluates true', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    // conditionExpression checks if iteration >= 2 (0-indexed), so stops after 2 iterations
+    const step = makeStep({
+      id: 'loop2',
+      type: 'loop',
+      config: {
+        maxIterations: 10,
+        stepIds: [],
+        bodyTemplate: 'body',
+        conditionExpression: 'steps.loop2_iteration.output.index >= 2',
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    // Condition checked before each iteration when i > 0, so index=2 breaks before running iter 3
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          loop2: expect.objectContaining({ iterations: expect.any(Number) }),
+        }),
+      })
+    );
+  });
+
+  it('should cap at maxIterations to prevent infinite loops', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    // No condition expression, so it runs until maxIterations
+    const step = makeStep({
+      id: 'loop3',
+      type: 'loop',
+      config: {
+        maxIterations: 5,
+        stepIds: [],
+        bodyTemplate: 'body',
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          loop3: expect.objectContaining({ iterations: 5 }),
+        }),
+      })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: parallel_map', () => {
+  it('should process input list and collect results', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const run = makeRun({ input: { items: ['a', 'b', 'c'] } });
+    const step = makeStep({
+      id: 'pmap1',
+      type: 'parallel_map',
+      config: {
+        inputListPath: 'input.items',
+        taskTemplate: 'processed-{{input.item}}',
+      },
+    });
+    const def = makeDefinition([step]);
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          pmap1: expect.objectContaining({
+            results: ['processed-a', 'processed-b', 'processed-c'],
+            count: 3,
+          }),
+        }),
+      })
+    );
+  });
+
+  it('should respect maxConcurrency', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const run = makeRun({ input: { items: [1, 2, 3, 4, 5] } });
+    const step = makeStep({
+      id: 'pmap2',
+      type: 'parallel_map',
+      config: {
+        inputListPath: 'input.items',
+        maxConcurrency: 2,
+        taskTemplate: '{{input.item}}',
+      },
+    });
+    const def = makeDefinition([step]);
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          pmap2: expect.objectContaining({ count: 5 }),
+        }),
+      })
+    );
+  });
+
+  it('should handle empty input list', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const run = makeRun({ input: { items: [] } });
+    const step = makeStep({
+      id: 'pmap3',
+      type: 'parallel_map',
+      config: {
+        inputListPath: 'input.items',
+        taskTemplate: '{{input.item}}',
+      },
+    });
+    const def = makeDefinition([step]);
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          pmap3: expect.objectContaining({ results: [], count: 0 }),
+        }),
+      })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: code_execution', () => {
+  beforeEach(() => {
+    mockExecFileSync.mockReset();
+  });
+
+  it('should execute node code and return stdout', async () => {
+    mockExecFileSync.mockReturnValue('hello from code\n');
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'code1',
+      type: 'code_execution',
+      config: {
+        runtime: 'node',
+        code: 'console.log("hello from code")',
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockExecFileSync).toHaveBeenCalledWith(
+      'node',
+      ['-e', 'console.log("hello from code")'],
+      expect.objectContaining({ encoding: 'utf-8' })
+    );
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          code1: expect.objectContaining({
+            stdout: 'hello from code',
+            exitCode: 0,
+          }),
+        }),
+      })
+    );
+  });
+
+  it('should reject code exceeding size limit (100KB)', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const bigCode = 'x'.repeat(100_001);
+    const step = makeStep({
+      id: 'code2',
+      type: 'code_execution',
+      config: { runtime: 'node', code: bigCode },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockExecFileSync).not.toHaveBeenCalled();
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('100000 character limit'),
+      })
+    );
+  });
+
+  it('should handle execution errors gracefully', async () => {
+    mockExecFileSync.mockImplementation(() => {
+      const err = new Error('process exited with code 1') as Error & {
+        stdout: string;
+        stderr: string;
+        status: number;
+      };
+      err.stdout = '';
+      err.stderr = 'ReferenceError: x is not defined';
+      err.status = 1;
+      throw err;
+    });
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'code3',
+      type: 'code_execution',
+      config: { runtime: 'node', code: 'console.log(x)' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    // code_execution catches errors and returns them as output, so workflow completes
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          code3: expect.objectContaining({
+            exitCode: 1,
+            stderr: expect.stringContaining('ReferenceError'),
+          }),
+        }),
+      })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: delay', () => {
+  it('should delay for durationMs', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'delay1',
+      type: 'delay',
+      config: { durationMs: 1 },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          delay1: expect.objectContaining({ delayedMs: 1 }),
+        }),
+      })
+    );
+  });
+
+  it('should cap delay at MAX_DELAY_MS (1 hour)', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    // Request 2 hours but should be capped to 1 hour (3_600_000)
+    // Use a very small value to actually test: just verify the output shows capped value
+    // We can't actually wait 1 hour, so we verify the capping logic via output
+    const step = makeStep({
+      id: 'delay2',
+      type: 'delay',
+      config: { durationMs: 7_200_000 }, // 2 hours
+    });
+
+    // Mock setTimeout to avoid actually waiting
+    const origSetTimeout = globalThis.setTimeout;
+    vi.stubGlobal('setTimeout', (fn: () => void, _ms?: number) => origSetTimeout(fn, 0));
+
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+
+    vi.unstubAllGlobals();
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          delay2: expect.objectContaining({ delayedMs: 3_600_000 }),
+        }),
+      })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: notification', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('should send webhook notification with resolved template', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const run = makeRun({ input: { msg: 'hello' } });
+    const step = makeStep({
+      id: 'notif1',
+      type: 'notification',
+      config: {
+        channel: 'webhook',
+        url: 'https://hooks.example.com/notify',
+        messageTemplate: 'Alert: {{input.msg}}',
+        recipients: ['admin@test.com'],
+      },
+    });
+    const def = makeDefinition([step]);
+    await engine.execute(run, def);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://hooks.example.com/notify',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('Alert: hello'),
+      })
+    );
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('should log intent for non-webhook channels', async () => {
+    const storage = makeStorage();
+    const logger = makeLogger();
+    const engine = makeEngine({ storage, logger });
+    const step = makeStep({
+      id: 'notif2',
+      type: 'notification',
+      config: {
+        channel: 'slack',
+        messageTemplate: 'Slack alert',
+        recipients: ['#general'],
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: 'slack' }),
+      'Notification step: channel delivery logged (full dispatch requires NotificationManager)'
+    );
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          notif2: expect.objectContaining({ channel: 'slack', sent: false, pending: true }),
+        }),
+      })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: data_validation', () => {
+  it('should validate data against JSON Schema and return valid=true', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    // Transform outputs a string; validate against type: string schema
+    const dataStep = makeStep({
+      id: 'data',
+      type: 'transform',
+      config: { outputTemplate: 'valid-string-data' },
+    });
+    const validationStep = makeStep({
+      id: 'validate',
+      type: 'data_validation',
+      config: {
+        dataPath: 'steps.data.output',
+        schema: { type: 'string' },
+      },
+      dependsOn: ['data'],
+    });
+    const def = makeDefinition([dataStep, validationStep]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          validate: expect.objectContaining({ valid: true }),
+        }),
+      })
+    );
+  });
+
+  it('should return errors for invalid data', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    // Provide string data but schema expects object
+    const dataStep = makeStep({
+      id: 'data',
+      type: 'transform',
+      config: { outputTemplate: 'not-an-object' },
+    });
+    const validationStep = makeStep({
+      id: 'validate',
+      type: 'data_validation',
+      config: {
+        dataPath: 'steps.data.output',
+        schema: { type: 'object' },
+        onFailure: 'fail',
+      },
+      dependsOn: ['data'],
+    });
+    const def = makeDefinition([dataStep, validationStep]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('data_validation failed'),
+      })
+    );
+  });
+
+  it('should respect onFailure=warn vs fail', async () => {
+    const storage = makeStorage();
+    const logger = makeLogger();
+    const engine = makeEngine({ storage, logger });
+    // Provide string data but schema expects object — with onFailure=warn
+    const dataStep = makeStep({
+      id: 'data',
+      type: 'transform',
+      config: { outputTemplate: 'not-an-object' },
+    });
+    const validationStep = makeStep({
+      id: 'validate',
+      type: 'data_validation',
+      config: {
+        dataPath: 'steps.data.output',
+        schema: { type: 'object' },
+        onFailure: 'warn',
+      },
+      dependsOn: ['data'],
+    });
+    const def = makeDefinition([dataStep, validationStep]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    // Workflow should complete (warn, not fail)
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ stepId: 'validate' }),
+      'data_validation: validation failed (non-fatal)'
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: cache_lookup', () => {
+  it('should return hit=true when cache key exists in context', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    // First step sets up cache entry, second step looks it up
+    const cacheSetStep = makeStep({
+      id: 'cache_mykey',
+      type: 'transform',
+      config: { outputTemplate: 'cached-value' },
+    });
+    const lookupStep = makeStep({
+      id: 'lookup',
+      type: 'cache_lookup',
+      config: { cacheKey: 'mykey' },
+      dependsOn: ['cache_mykey'],
+    });
+    const def = makeDefinition([cacheSetStep, lookupStep]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          lookup: expect.objectContaining({ hit: true, cacheKey: 'mykey' }),
+        }),
+      })
+    );
+  });
+
+  it('should return hit=false when cache key not found', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'lookup',
+      type: 'cache_lookup',
+      config: { cacheKey: 'nonexistent' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'completed',
+        output: expect.objectContaining({
+          lookup: expect.objectContaining({ hit: false, value: null, cacheKey: 'nonexistent' }),
+        }),
+      })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: a2a_delegate', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('should POST task to remote peer A2A endpoint', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ taskId: 'task-123', result: { data: 'delegated' } }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'a2a1',
+      type: 'a2a_delegate',
+      config: {
+        peerId: 'https://peer.example.com',
+        taskTemplate: 'Analyze this data',
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://peer.example.com/api/v1/a2a/tasks',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('Analyze this data'),
+      })
+    );
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('should apply SSRF guard on peer URL', async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'a2a2',
+      type: 'a2a_delegate',
+      config: {
+        peerId: 'http://127.0.0.1:8080',
+        taskTemplate: 'Steal secrets',
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+});

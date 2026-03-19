@@ -391,6 +391,10 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
       payload: { entitlementId: 'ent-1', decision: 'approve' },
     });
     expect(res.statusCode).toBe(409);
+    const body = res.json();
+    expect(body.error).toBe('Conflict');
+    expect(body.message).toContain('closed');
+    expect(body.statusCode).toBe(409);
   });
 
   it('returns 409 when reviewer is not assigned', async () => {
@@ -408,6 +412,10 @@ describe('POST /api/v1/security/access-review/campaigns/:id/decisions', () => {
       payload: { entitlementId: 'ent-1', decision: 'approve' },
     });
     expect(res.statusCode).toBe(409);
+    const body = res.json();
+    expect(body.error).toBe('Conflict');
+    expect(body.message).toContain('reviewer');
+    expect(body.statusCode).toBe(409);
   });
 });
 

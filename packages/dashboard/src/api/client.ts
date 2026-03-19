@@ -244,7 +244,7 @@ async function request<T>(
         throw new APIError(
           error.message || `HTTP ${retryResponse.status}`,
           retryResponse.status,
-          error.code
+          error.error || error.code
         );
       }
       return parseResponseBody(retryResponse);
@@ -261,7 +261,7 @@ async function request<T>(
     throw new APIError(
       error.message || error.error || `HTTP ${response.status}`,
       response.status,
-      error.code
+      error.error || error.code
     );
   }
 

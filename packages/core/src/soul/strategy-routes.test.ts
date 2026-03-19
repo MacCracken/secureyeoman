@@ -157,6 +157,10 @@ describe('POST /api/v1/soul/strategies', () => {
       },
     });
     expect(res.statusCode).toBe(409);
+    const body = res.json();
+    expect(body.error).toBe('Conflict');
+    expect(body.message).toBeDefined();
+    expect(body.statusCode).toBe(409);
   });
 });
 
@@ -242,6 +246,10 @@ describe('PUT /api/v1/soul/strategies/:id — error branches', () => {
       payload: { name: 'Clash' },
     });
     expect(res.statusCode).toBe(409);
+    const body = res.json();
+    expect(body.error).toBe('Conflict');
+    expect(body.message).toBeDefined();
+    expect(body.statusCode).toBe(409);
   });
 
   it('returns 500 on unknown error (fallthrough)', async () => {

@@ -1588,6 +1588,304 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
     autonomyLevel: 'L2' as const,
   },
 
+  // ── Phase 150: DAG Expansion Templates ──────────────────────────────────────
+
+  // ── iterative-research ──────────────────────────────────────────
+  {
+    name: 'iterative-research',
+    description:
+      'Iterative research pipeline: loops up to 5 iterations where an agent researches a topic, data_validation checks quality threshold, and the loop exits early when the research meets the quality bar.',
+    steps: [
+      {
+        id: 'research-loop',
+        type: 'loop',
+        name: 'Research Loop',
+        description: 'Loop up to 5 iterations until research quality threshold is met',
+        config: {
+          maxIterations: 5,
+          condition:
+            'steps.validate-quality.output && steps.validate-quality.output.valid === true',
+          exitWhen: 'condition_met',
+          stepsToRepeat: ['research-iteration', 'validate-quality'],
+        },
+        dependsOn: [],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      agentStep(
+        {
+          id: 'research-iteration',
+          name: 'Research Iteration',
+          description: 'Agent researches the topic, refining based on previous iteration feedback',
+          dependsOn: ['research-loop'],
+          onError: 'continue',
+        },
+        'researcher',
+        'Research the following topic: {{input.topic}}\n\n{{#if steps.validate-quality.output}}Previous iteration feedback: {{steps.validate-quality.output.errors}}\nPlease address the gaps identified above and improve the research quality.{{/if}}\n\nQuality criteria: comprehensive coverage, cited sources, structured analysis, actionable insights.'
+      ),
+      {
+        id: 'validate-quality',
+        type: 'data_validation',
+        name: 'Validate Research Quality',
+        description: 'Check if research output meets the quality threshold schema',
+        config: {
+          schemaTemplate:
+            '{"type":"object","required":["coverage","sources","analysis"],"properties":{"coverage":{"type":"string","minLength":200},"sources":{"type":"array","minItems":{{input.minSources}}},"analysis":{"type":"string","minLength":100}}}',
+          dataTemplate: '{{steps.research-iteration.output}}',
+          failOnInvalid: false,
+        },
+        dependsOn: ['research-iteration'],
+        onError: 'continue',
+      } as unknown as WorkflowStep,
+      transformStep(
+        {
+          id: 'format-result',
+          name: 'Format Final Research',
+          description: 'Format the validated research into a final report',
+          dependsOn: ['research-loop'],
+          condition:
+            'steps.validate-quality.output && steps.validate-quality.output.valid === true',
+          onError: 'continue',
+        },
+        '# Iterative Research Report\n\n**Topic**: {{input.topic}}\n**Iterations**: {{steps.research-loop.output.iterations}}\n\n{{steps.research-iteration.output}}'
+      ),
+      resourceStep(
+        {
+          id: 'save-research',
+          name: 'Save to Knowledge Base',
+          description: 'Persist the validated research output',
+          dependsOn: ['format-result'],
+          onError: 'continue',
+        },
+        'knowledge',
+        '{"title":"Iterative Research — {{input.topic}}","content":"{{steps.format-result.output}}","tags":["research","iterative","validated"]}'
+      ),
+    ],
+    edges: [
+      { source: 'research-loop', target: 'research-iteration' },
+      { source: 'research-iteration', target: 'validate-quality' },
+      { source: 'validate-quality', target: 'research-loop', label: 'loop-back' },
+      { source: 'research-loop', target: 'format-result', label: 'loop-done' },
+      { source: 'format-result', target: 'save-research' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── fan-out-analysis ──────────────────────────────────────────
+  {
+    name: 'fan-out-analysis',
+    description:
+      'Fan-out analysis pipeline: parallel_map fans out analysis across a list of items (URLs, repos, documents), a transform step synthesises the results, and a notification sends a summary via webhook.',
+    steps: [
+      {
+        id: 'fan-out',
+        type: 'parallel_map',
+        name: 'Fan-Out Analysis',
+        description: 'Run analysis in parallel across all input items',
+        config: {
+          itemsTemplate: '{{input.items}}',
+          maxConcurrency: 5,
+          stepTemplate: {
+            type: 'agent',
+            config: {
+              profile: 'analyst',
+              taskTemplate:
+                'Analyze the following item:\n\n{{item}}\n\nProvide: summary, key findings, risk indicators, and an importance score (1-10).',
+            },
+          },
+        },
+        dependsOn: [],
+        onError: 'continue',
+      } as unknown as WorkflowStep,
+      transformStep(
+        {
+          id: 'synthesise-results',
+          name: 'Synthesise Results',
+          description: 'Combine all parallel analysis results into a unified summary',
+          dependsOn: ['fan-out'],
+          onError: 'fail',
+        },
+        '# Fan-Out Analysis Summary\n\n**Items analyzed**: {{input.itemCount}}\n\n## Individual Results\n{{steps.fan-out.output.results}}\n\n## Cross-Item Patterns\nItems sorted by importance score. Common themes and outliers highlighted above.'
+      ),
+      {
+        id: 'notify-summary',
+        type: 'notification',
+        name: 'Send Summary Notification',
+        description: 'Send the analysis summary via the configured notification channel',
+        config: {
+          channel: '{{input.notificationChannel}}',
+          titleTemplate: 'Fan-Out Analysis Complete — {{input.batchName}}',
+          bodyTemplate:
+            'Analysis of {{input.itemCount}} items complete.\n\n{{steps.synthesise-results.output}}',
+          webhookUrl: '{{input.webhookUrl}}',
+        },
+        dependsOn: ['synthesise-results'],
+        onError: 'continue',
+      } as unknown as WorkflowStep,
+    ],
+    edges: [
+      { source: 'fan-out', target: 'synthesise-results' },
+      { source: 'synthesise-results', target: 'notify-summary' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── scheduled-data-pipeline ──────────────────────────────────────
+  {
+    name: 'scheduled-data-pipeline',
+    description:
+      'Scheduled data pipeline with deduplication: cache_lookup checks if data was already processed today, code_execution runs a transform script on cache miss, data_validation validates the output, and delay adds a cool-down period between runs.',
+    steps: [
+      {
+        id: 'check-cache',
+        type: 'cache_lookup',
+        name: 'Check Processing Cache',
+        description: 'Check if this data source was already processed today',
+        config: {
+          keyTemplate: 'pipeline:{{input.pipelineName}}:{{input.date}}',
+          ttlMs: 86_400_000, // 24h
+        },
+        dependsOn: [],
+        onError: 'continue',
+      } as unknown as WorkflowStep,
+      {
+        id: 'run-transform',
+        type: 'code_execution',
+        name: 'Execute Data Transform',
+        description: 'Run the sandboxed data transformation script',
+        config: {
+          runtime: 'javascript',
+          codeTemplate: '{{input.transformScript}}',
+          inputTemplate: '{{input.rawData}}',
+          timeoutMs: 30_000,
+          sandboxed: true,
+        },
+        dependsOn: ['check-cache'],
+        condition: '!steps.check-cache.output || steps.check-cache.output.hit === false',
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      {
+        id: 'validate-output',
+        type: 'data_validation',
+        name: 'Validate Transform Output',
+        description: 'Validate the transformed data against the expected output schema',
+        config: {
+          schemaTemplate: '{{input.outputSchema}}',
+          dataTemplate: '{{steps.run-transform.output.stdout}}',
+          failOnInvalid: true,
+        },
+        dependsOn: ['run-transform'],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      resourceStep(
+        {
+          id: 'save-output',
+          name: 'Save Validated Output',
+          description: 'Persist the validated data to the knowledge base',
+          dependsOn: ['validate-output'],
+          onError: 'continue',
+        },
+        'knowledge',
+        '{"title":"Pipeline Output — {{input.pipelineName}} — {{input.date}}","content":"{{steps.run-transform.output.stdout}}","tags":["pipeline","data","validated"]}'
+      ),
+      {
+        id: 'cooldown',
+        type: 'delay',
+        name: 'Cool-Down Period',
+        description: 'Wait before allowing the next pipeline run',
+        config: {
+          durationMs: '{{input.cooldownMs}}',
+          reason: 'Rate-limit between pipeline executions',
+        },
+        dependsOn: ['save-output'],
+        onError: 'continue',
+      } as unknown as WorkflowStep,
+    ],
+    edges: [
+      { source: 'check-cache', target: 'run-transform', label: 'cache-miss' },
+      { source: 'run-transform', target: 'validate-output' },
+      { source: 'validate-output', target: 'save-output' },
+      { source: 'save-output', target: 'cooldown' },
+    ],
+    triggers: [{ type: 'schedule', config: { cron: '0 2 * * *' } }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── distributed-task ──────────────────────────────────────────
+  {
+    name: 'distributed-task',
+    description:
+      'Distributed task delegation: parallel_map fans out work across a list of remote SecureYeoman peer instances via a2a_delegate, then posts a completion summary notification.',
+    steps: [
+      {
+        id: 'distribute-work',
+        type: 'parallel_map',
+        name: 'Distribute to Peers',
+        description: 'Fan out task delegation across all peer instances',
+        config: {
+          itemsTemplate: '{{input.peerInstances}}',
+          maxConcurrency: 10,
+          stepTemplate: {
+            type: 'a2a_delegate',
+            config: {
+              peerUrlTemplate: '{{item.url}}',
+              taskTemplate: '{{input.taskDescription}}',
+              contextTemplate:
+                'Delegated from {{input.originInstance}}. Peer: {{item.name}}. Payload:\n\n{{input.taskPayload}}',
+              timeoutMs: 300_000,
+            },
+          },
+        },
+        dependsOn: [],
+        onError: 'continue',
+      } as unknown as WorkflowStep,
+      transformStep(
+        {
+          id: 'aggregate-results',
+          name: 'Aggregate Peer Results',
+          description: 'Combine results from all peer delegations',
+          dependsOn: ['distribute-work'],
+          onError: 'fail',
+        },
+        '# Distributed Task Results\n\n**Task**: {{input.taskDescription}}\n**Peers contacted**: {{input.peerCount}}\n\n## Results\n{{steps.distribute-work.output.results}}'
+      ),
+      {
+        id: 'notify-completion',
+        type: 'notification',
+        name: 'Post Completion Summary',
+        description: 'Send a summary notification with aggregated results from all peers',
+        config: {
+          channel: '{{input.notificationChannel}}',
+          titleTemplate: 'Distributed Task Complete — {{input.taskName}}',
+          bodyTemplate:
+            'Task "{{input.taskDescription}}" delegated to {{input.peerCount}} peers.\n\n{{steps.aggregate-results.output}}',
+          webhookUrl: '{{input.webhookUrl}}',
+        },
+        dependsOn: ['aggregate-results'],
+        onError: 'continue',
+      } as unknown as WorkflowStep,
+    ],
+    edges: [
+      { source: 'distribute-work', target: 'aggregate-results' },
+      { source: 'aggregate-results', target: 'notify-completion' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L3' as const,
+  },
+
   // ── Financial Analysis Pipeline (Phase 125) ──────────────────────────────
   {
     name: 'financial-analysis-pipeline',

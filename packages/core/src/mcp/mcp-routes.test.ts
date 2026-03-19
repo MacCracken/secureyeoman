@@ -334,9 +334,110 @@ describe('POST /api/v1/mcp/tools/call', () => {
     expect(handleMock).toHaveBeenCalledOnce();
   });
 
-  it('returns 400 on error', async () => {
+  it('returns 400 when serverId or toolName missing', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-1' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('Missing required fields');
+  });
+
+  it('returns 404 when server not found or disabled', async () => {
     const app = buildApp(undefined, {
-      callTool: vi.fn().mockRejectedValue(new Error('not found')),
+      callTool: vi.fn().mockRejectedValue(new Error('MCP server srv-bad not found or disabled')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-bad', toolName: 'bad' },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 503 when server has no URL', async () => {
+    const app = buildApp(undefined, {
+      callTool: vi.fn().mockRejectedValue(new Error("MCP server 'Test' has no URL configured")),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-1', toolName: 'test_tool' },
+    });
+    expect(res.statusCode).toBe(503);
+  });
+
+  it('returns 503 when token not configured', async () => {
+    const app = buildApp(undefined, {
+      callTool: vi
+        .fn()
+        .mockRejectedValue(
+          new Error('McpClientManager: tokenSecret not configured — cannot call MCP tools')
+        ),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-1', toolName: 'test_tool' },
+    });
+    expect(res.statusCode).toBe(503);
+  });
+
+  it('returns 502 when server unreachable', async () => {
+    const app = buildApp(undefined, {
+      callTool: vi.fn().mockRejectedValue(new Error('fetch failed: ECONNREFUSED')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-1', toolName: 'test_tool' },
+    });
+    expect(res.statusCode).toBe(502);
+  });
+
+  it('returns 502 when response too large', async () => {
+    const app = buildApp(undefined, {
+      callTool: vi.fn().mockRejectedValue(new Error('MCP response too large (>50MB)')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-1', toolName: 'test_tool' },
+    });
+    expect(res.statusCode).toBe(502);
+  });
+
+  it('returns 502 when remote tool call fails', async () => {
+    const app = buildApp(undefined, {
+      callTool: vi
+        .fn()
+        .mockRejectedValue(new Error('MCP tool call failed (500): Internal Server Error')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'srv-1', toolName: 'test_tool' },
+    });
+    expect(res.statusCode).toBe(502);
+  });
+
+  it('returns 404 for unknown local tool', async () => {
+    const handleMock = vi.fn().mockResolvedValue({ error: 'Unknown tool: nonexistent_tool' });
+    const app = buildApp(undefined, undefined, { handleToolCall: handleMock });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/mcp/tools/call',
+      payload: { serverId: 'secureyeoman-local', toolName: 'nonexistent_tool' },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().message).toContain('Unknown tool');
+  });
+
+  it('returns 400 for unclassified errors', async () => {
+    const app = buildApp(undefined, {
+      callTool: vi.fn().mockRejectedValue(new Error('something unexpected')),
     });
     const res = await app.inject({
       method: 'POST',

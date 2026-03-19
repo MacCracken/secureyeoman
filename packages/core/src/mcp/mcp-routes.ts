@@ -318,15 +318,67 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       }>,
       reply: FastifyReply
     ) => {
+      const { serverId, toolName, args } = request.body ?? {};
+      if (!serverId || !toolName) {
+        return sendError(reply, 400, 'Missing required fields: serverId, toolName');
+      }
+
       try {
-        const { serverId, toolName, args } = request.body;
-        const result =
-          serverId === 'secureyeoman-local'
-            ? await mcpServer.handleToolCall(toolName, args ?? {})
-            : await mcpClient.callTool(serverId, toolName, args ?? {});
+        if (serverId === 'secureyeoman-local') {
+          const result = await mcpServer.handleToolCall(toolName, args ?? {});
+          // handleToolCall returns { error: "Unknown tool: ..." } for unrecognized tools
+          if (
+            result &&
+            typeof result === 'object' &&
+            'error' in result &&
+            typeof (result as Record<string, unknown>).error === 'string' &&
+            ((result as Record<string, unknown>).error as string).startsWith('Unknown tool:')
+          ) {
+            return sendError(reply, 404, (result as Record<string, unknown>).error as string);
+          }
+          return { result };
+        }
+
+        const result = await mcpClient.callTool(serverId, toolName, args ?? {});
         return { result };
       } catch (err) {
-        return sendError(reply, 400, toErrorMessage(err));
+        const msg = toErrorMessage(err);
+        // Server not found or disabled
+        if (msg.includes('not found or disabled')) {
+          return sendError(reply, 404, `MCP server not found or disabled: ${serverId}`);
+        }
+        // Server has no URL configured
+        if (msg.includes('has no URL configured')) {
+          return sendError(reply, 503, `MCP server has no URL configured: ${serverId}`);
+        }
+        // Token/auth not configured
+        if (msg.includes('tokenSecret not configured')) {
+          return sendError(reply, 503, 'MCP authentication not configured');
+        }
+        // Response too large
+        if (msg.includes('response too large')) {
+          return sendError(reply, 502, 'MCP server response too large (>50MB)');
+        }
+        // MCP server unreachable (fetch errors, connection refused, timeout)
+        if (
+          msg.includes('fetch failed') ||
+          msg.includes('ECONNREFUSED') ||
+          msg.includes('ENOTFOUND') ||
+          msg.includes('ETIMEDOUT') ||
+          msg.includes('UND_ERR') ||
+          msg.includes('network') ||
+          msg.includes('TimeoutError') ||
+          msg.includes('abort') ||
+          msg.includes('The operation was aborted')
+        ) {
+          return sendError(reply, 502, `MCP server unreachable: ${serverId}`);
+        }
+        // Tool execution error from remote server (MCP tool call failed with HTTP status)
+        if (msg.includes('MCP tool call failed')) {
+          return sendError(reply, 502, `MCP tool call failed: ${msg}`);
+        }
+        // Fallback: unknown errors remain 400
+        return sendError(reply, 400, msg);
       }
     }
   );

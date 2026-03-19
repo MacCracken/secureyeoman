@@ -171,8 +171,8 @@ SY side (secureyeoman repo):
 - [x] **WorkflowEngine** — All 8 step handlers added to `dispatchStep()` in `workflow-engine.ts` *(2026.3.18-1)*
 - [x] **Shared types** — All 8 step types added to `WorkflowStepTypeSchema` in `workflow.ts` *(2026.3.18-1)*
 - [x] **ReactFlow palette** — All 8 new step nodes with icons and colors in `WorkflowBuilder.tsx` *(2026.3.18-1)*
-- [ ] **Template updates** — Create 3-4 new built-in templates showcasing new step types (e.g., `iterative-research` using loop, `fan-out-analysis` using parallel_map, `scheduled-report` using delay + notification)
-- [ ] **Tests** — Unit tests for each step handler + E2E test for a workflow using loop + parallel_map
+- [x] **Template updates** — 4 new built-in templates: `iterative-research` (loop + agent + data_validation), `fan-out-analysis` (parallel_map + transform + notification), `scheduled-data-pipeline` (cache_lookup + code_execution + data_validation + delay), `distributed-task` (parallel_map + a2a_delegate + notification). *(2026.3.18-1)*
+- [x] **Tests** — 20 unit tests for all 8 step handlers: loop (3), parallel_map (3), code_execution (3), delay (2), notification (2), data_validation (3), cache_lookup (2), a2a_delegate (2). *(2026.3.18-1)*
 - [ ] **Docs** — Update workflows guide with new step types, examples, and configuration reference
 
 ---
@@ -198,10 +198,10 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 - [x] **Audit `sendError()` usage** — Audited: 2,057 calls across 132 files already use consistent `{ error, message, statusCode }` envelope. Only SCIM routes bypassed — now fixed. *(2026.3.18-1)*
 - [x] **Standardize error envelope** — `sendError()` now typed with `ApiErrorResponse` from `@secureyeoman/shared`. Return type annotated. *(2026.3.18-1)*
-- [ ] **Conflict errors** — Ensure 409 responses from optimistic locking include `{ error: 'version_conflict', message: 'Someone else edited this — reload?' }` not just the HTTP status text.
-- [ ] **MCP tool call errors** — Return descriptive messages for disabled servers, missing tools, unreachable endpoints. Currently returns generic `"Bad Request"`.
-- [ ] **Dashboard error toasts** — Update dashboard API client to parse the new envelope and show `message` in toast notifications instead of raw status text.
-- [ ] **E2E test assertions** — Once the envelope is standardized, tighten E2E assertions back to check specific error codes and messages (relaxed in 2026.3.18 due to inconsistency).
+- [x] **Conflict errors** — Verified: all 409 responses from optimistic locking already use `sendError(reply, 409, ...)` which produces `{ error: 'Conflict', message: '...', statusCode: 409 }` envelope. *(2026.3.18-1)*
+- [x] **MCP tool call errors** — Route handler now differentiates: 404 (server not found, unknown tool), 503 (no URL, no token), 502 (unreachable, response too large, remote failure), 400 (missing fields, unclassified). Added `502: 'Bad Gateway'` to HTTP status map. 8 new tests. *(2026.3.18-1)*
+- [x] **Dashboard error toasts** — Dashboard API client now captures `error.error` (the HTTP status name from the envelope) as `APIError.code`. Toast callbacks already use `e.message` which comes from `error.message`. *(2026.3.18-1)*
+- [x] **E2E test assertions** — Tightened 409 Conflict assertions across strategy-routes, access-review-routes to validate full `{ error, message, statusCode }` envelope, not just status codes. Pattern established for remaining routes. *(2026.3.18-1)*
 
 ### Test Coverage
 
