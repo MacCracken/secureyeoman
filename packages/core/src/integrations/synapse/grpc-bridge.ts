@@ -3,12 +3,13 @@
  *
  * Implements bidirectional gRPC transport between SecureYeoman and Synapse.
  *
- * - YeomanBridgeServer: gRPC server on SY side (port 8421) — receives
- *   capability announcements, inbound jobs, job status reports, and model
- *   registrations from Synapse.
+ * - YeomanBridgeServer: gRPC server on SY side — receives GPU allocation
+ *   requests, progress reports, scale-out requests, and model registrations
+ *   from Synapse. Matches Synapse's YeomanBridge service definition.
  *
- * - SynapseGrpcClient: gRPC client that connects to Synapse's SynapseService
- *   for streaming training metrics and inference tokens.
+ * - SynapseGrpcClient: gRPC client that connects to Synapse's SynapseBridge
+ *   service for submitting training jobs, streaming job status, pulling models,
+ *   and running inference.
  */
 
 import { join, dirname } from 'node:path';
@@ -38,6 +39,7 @@ function loadProto(): grpc.GrpcObject {
 }
 
 // ── YeomanBridge Server ──────────────────────────────────────────────────────
+// Implements the YeomanBridge service that Synapse calls into SY.
 
 export class YeomanBridgeServer {
   private server: grpc.Server | null = null;
@@ -60,17 +62,17 @@ export class YeomanBridgeServer {
     this.server = new grpc.Server();
 
     this.server.addService(YeomanBridge.service, {
-      announceCapabilities: (...args: Parameters<typeof this._handleAnnounceCapabilities>) => {
-        void this._handleAnnounceCapabilities(...args);
+      requestGpuAllocation: (...args: Parameters<typeof this._handleRequestGpuAllocation>) => {
+        void this._handleRequestGpuAllocation(...args);
       },
-      submitInboundJob: (...args: Parameters<typeof this._handleSubmitInboundJob>) => {
-        void this._handleSubmitInboundJob(...args);
+      reportProgress: (...args: Parameters<typeof this._handleReportProgress>) => {
+        void this._handleReportProgress(...args);
       },
-      reportJobStatus: (...args: Parameters<typeof this._handleReportJobStatus>) => {
-        void this._handleReportJobStatus(...args);
+      requestScaleOut: (...args: Parameters<typeof this._handleRequestScaleOut>) => {
+        void this._handleRequestScaleOut(...args);
       },
-      registerModel: (...args: Parameters<typeof this._handleRegisterModel>) => {
-        void this._handleRegisterModel(...args);
+      registerCompletedModel: (...args: Parameters<typeof this._handleRegisterCompletedModel>) => {
+        void this._handleRegisterCompletedModel(...args);
       },
     });
 
@@ -107,131 +109,127 @@ export class YeomanBridgeServer {
 
   // ── RPC handlers ─────────────────────────────────────────────────────
 
-  private async _handleAnnounceCapabilities(
+  private async _handleRequestGpuAllocation(
     call: grpc.ServerUnaryCall<Record<string, unknown>, Record<string, unknown>>,
     callback: grpc.sendUnaryData<Record<string, unknown>>
   ): Promise<void> {
     try {
       const req = call.request;
-      const instanceId = req.instanceId as string;
-      const capabilities = {
-        gpuCount: req.gpuCount as number,
-        totalGpuMemoryMb: req.totalGpuMemoryMb as number,
-        supportedMethods: req.supportedMethods as string[],
-        loadedModels: req.loadedModels as string[],
-      };
+      const memoryMb = req.memoryMb as number;
+      const gpuCount = req.gpuCount as number;
 
-      await this.store.recordCapabilityAnnouncement(instanceId, capabilities);
+      this.logger.info({ memoryMb, gpuCount }, 'GPU allocation request received from Synapse');
 
-      // Update registry if instance is known
-      const existing = this.registry.get(instanceId);
-      if (existing) {
-        this.registry.updateHeartbeat(instanceId, {
-          instanceId,
-          timestamp: Date.now(),
-          loadedModels: capabilities.loadedModels,
-          gpuMemoryFreeMb: capabilities.totalGpuMemoryMb,
-          activeTrainingJobs: 0,
-        });
+      // Find healthy instances with available GPU resources
+      const healthy = this.registry.getHealthy();
+      const deviceIds: number[] = [];
+      let granted = false;
+
+      for (const instance of healthy) {
+        const freeMem = instance.capabilities.totalGpuMemoryMb; // approximation
+        if (freeMem >= memoryMb) {
+          // Grant GPUs from this instance (assign sequential device IDs)
+          for (let i = 0; i < Math.min(gpuCount, instance.capabilities.gpuCount); i++) {
+            deviceIds.push(i);
+          }
+          if (deviceIds.length >= gpuCount) {
+            granted = true;
+            break;
+          }
+        }
       }
 
-      this.logger.info({ instanceId }, 'capability announcement received via gRPC');
-      callback(null, { success: true, message: 'capabilities recorded' });
+      callback(null, { deviceIds, granted });
     } catch (err) {
-      this.logger.error({ error: toErrorMessage(err) }, 'announceCapabilities failed');
+      this.logger.error({ error: toErrorMessage(err) }, 'requestGpuAllocation failed');
       callback({ code: grpc.status.INTERNAL, message: toErrorMessage(err) });
     }
   }
 
-  private async _handleSubmitInboundJob(
-    call: grpc.ServerUnaryCall<Record<string, unknown>, Record<string, unknown>>,
+  private async _handleReportProgress(
+    call: grpc.ServerReadableStream<Record<string, unknown>, Record<string, unknown>>,
     callback: grpc.sendUnaryData<Record<string, unknown>>
   ): Promise<void> {
     try {
-      const req = call.request;
-      const job = await this.store.createInboundJob(req.instanceId as string, {
-        synapseSourceJobId: req.synapseSourceJobId as string,
-        jobType: req.jobType as string as
-          | 'evaluation'
-          | 'data_curation'
-          | 'model_export'
-          | 'custom',
-        description: req.description as string,
-        payload: req.payloadJson ? JSON.parse(req.payloadJson as string) : {},
-      });
+      for await (const update of call) {
+        const jobId = update.jobId as string;
+        const status = update.status as string;
+        const loss = update.loss as number;
+        const step = update.step as number;
 
-      this.logger.info(
-        { inboundJobId: job.id, jobType: req.jobType },
-        'inbound job submitted via gRPC'
-      );
-      callback(null, { id: job.id, status: job.status });
-    } catch (err) {
-      this.logger.error({ error: toErrorMessage(err) }, 'submitInboundJob failed');
-      callback({ code: grpc.status.INTERNAL, message: toErrorMessage(err) });
-    }
-  }
+        // Find delegated job by Synapse job ID and update it
+        const delegated = await this.store.getDelegatedJobBySynapseId(jobId);
+        if (delegated) {
+          await this.store.updateDelegatedJobStatus(delegated.id, {
+            status: status.toLowerCase(),
+            currentStep: step,
+            currentLoss: loss,
+          });
+        }
 
-  private async _handleReportJobStatus(
-    call: grpc.ServerUnaryCall<Record<string, unknown>, Record<string, unknown>>,
-    callback: grpc.sendUnaryData<Record<string, unknown>>
-  ): Promise<void> {
-    try {
-      const req = call.request;
-      const synapseJobId = req.synapseJobId as string;
-
-      const delegated = await this.store.getDelegatedJobBySynapseId(synapseJobId);
-      if (!delegated) {
-        callback({ code: grpc.status.NOT_FOUND, message: `Unknown synapse job: ${synapseJobId}` });
-        return;
+        this.logger.debug({ jobId, status, step, loss }, 'progress update received from Synapse');
       }
 
-      await this.store.updateDelegatedJobStatus(delegated.id, {
-        status: req.status as string,
-        currentStep: req.step as number,
-        currentLoss: req.loss as number,
-        currentEpoch: req.epoch as number,
-        errorMessage: req.errorMessage as string,
-        modelOutputPath: req.modelOutputPath as string,
-      });
-
-      this.logger.info({ synapseJobId, status: req.status }, 'job status reported via gRPC');
-      callback(null, { success: true, message: 'status updated' });
+      callback(null, {});
     } catch (err) {
-      this.logger.error({ error: toErrorMessage(err) }, 'reportJobStatus failed');
+      this.logger.error({ error: toErrorMessage(err) }, 'reportProgress failed');
       callback({ code: grpc.status.INTERNAL, message: toErrorMessage(err) });
     }
   }
 
-  private async _handleRegisterModel(
+  private async _handleRequestScaleOut(
     call: grpc.ServerUnaryCall<Record<string, unknown>, Record<string, unknown>>,
     callback: grpc.sendUnaryData<Record<string, unknown>>
   ): Promise<void> {
     try {
       const req = call.request;
-      await this.store.registerModel(
-        req.instanceId as string,
-        {
-          modelName: req.modelName as string,
-          modelPath: req.modelPath as string,
-          baseModel: req.baseModel as string,
-          trainingMethod: req.trainingMethod as string,
-        },
-        (req.jobId as string) || undefined
-      );
+      const additionalInstances = req.additionalInstances as number;
+      const reason = req.reason as string;
 
-      this.logger.info(
-        { modelName: req.modelName, instanceId: req.instanceId },
-        'model registered via gRPC'
-      );
-      callback(null, { success: true, message: 'model registered' });
+      this.logger.info({ additionalInstances, reason }, 'scale-out request received from Synapse');
+
+      // For now, SY doesn't auto-scale — return available instance endpoints
+      const healthy = this.registry.getHealthy();
+      const endpoints = healthy.map((i) => i.endpoint);
+
+      callback(null, {
+        approved: endpoints.length > 0,
+        instanceEndpoints: endpoints,
+      });
     } catch (err) {
-      this.logger.error({ error: toErrorMessage(err) }, 'registerModel failed');
+      this.logger.error({ error: toErrorMessage(err) }, 'requestScaleOut failed');
+      callback({ code: grpc.status.INTERNAL, message: toErrorMessage(err) });
+    }
+  }
+
+  private async _handleRegisterCompletedModel(
+    call: grpc.ServerUnaryCall<Record<string, unknown>, Record<string, unknown>>,
+    callback: grpc.sendUnaryData<Record<string, unknown>>
+  ): Promise<void> {
+    try {
+      const req = call.request;
+      // Synapse identifies itself via the connection — use first healthy instance
+      const instances = this.registry.getHealthy();
+      const instanceId = instances[0]?.id ?? 'unknown';
+
+      await this.store.registerModel(instanceId, {
+        modelName: req.modelName as string,
+        modelPath: req.modelPath as string,
+        baseModel: req.baseModel as string,
+        trainingMethod: req.trainingMethod as string,
+      });
+
+      this.logger.info({ modelName: req.modelName, instanceId }, 'model registered via gRPC');
+      callback(null, {});
+    } catch (err) {
+      this.logger.error({ error: toErrorMessage(err) }, 'registerCompletedModel failed');
       callback({ code: grpc.status.INTERNAL, message: toErrorMessage(err) });
     }
   }
 }
 
-// ── SynapseService gRPC Client ──────────────────────────────────────────────
+// ── SynapseBridge gRPC Client ───────────────────────────────────────────────
+// Connects to Synapse's SynapseBridge service.
 
 export class SynapseGrpcClient {
   private client: grpc.Client | null = null;
@@ -247,10 +245,10 @@ export class SynapseGrpcClient {
   connect(): void {
     const proto = loadProto();
     const bridge = (proto.synapse as grpc.GrpcObject).bridge as grpc.GrpcObject;
-    const SynapseService = bridge.SynapseService as grpc.ServiceClientConstructor;
+    const SynapseBridge = bridge.SynapseBridge as grpc.ServiceClientConstructor;
 
     const url = this.grpcUrl.replace(/^https?:\/\//, '');
-    this.client = new SynapseService(url, grpc.credentials.createInsecure());
+    this.client = new SynapseBridge(url, grpc.credentials.createInsecure());
     this.logger.info({ grpcUrl: url }, 'connected to Synapse gRPC service');
   }
 
@@ -262,28 +260,28 @@ export class SynapseGrpcClient {
   }
 
   /**
-   * Stream real-time training metrics for a job.
+   * Stream real-time job status updates.
    */
-  async *streamTrainingMetrics(jobId: string): AsyncGenerator<SynapseStreamMetrics> {
+  async *streamJobStatus(jobId: string): AsyncGenerator<SynapseStreamMetrics> {
     if (!this.client) throw new Error('gRPC client not connected');
 
     const call = (
       this.client as unknown as {
-        streamTrainingMetrics: (
+        getJobStatus: (
           req: Record<string, unknown>
         ) => grpc.ClientReadableStream<Record<string, unknown>>;
       }
-    ).streamTrainingMetrics({ jobId });
+    ).getJobStatus({ jobId });
 
     try {
       for await (const msg of call) {
         yield {
-          jobId: msg.jobId as string,
+          jobId,
           step: msg.step as number,
           loss: msg.loss as number,
           epoch: msg.epoch as number,
-          gpuMemoryUsedMb: msg.gpuMemoryUsedMb as number,
-          timestamp: msg.timestamp as number,
+          gpuMemoryUsedMb: 0,
+          timestamp: Date.now(),
         };
       }
     } finally {
@@ -322,53 +320,37 @@ export class SynapseGrpcClient {
   }
 
   /**
-   * Get capabilities of the remote Synapse instance.
+   * Run synchronous inference via gRPC.
    */
-  async getCapabilities(): Promise<{
-    instanceId: string;
-    gpuCount: number;
-    totalGpuMemoryMb: number;
-    supportedMethods: string[];
-    loadedModels: string[];
-    version: string;
-  }> {
+  async runInference(model: string, prompt: string, maxTokens: number): Promise<{ text: string }> {
     if (!this.client) throw new Error('gRPC client not connected');
 
     return new Promise((resolve, reject) => {
       (
         this.client as unknown as {
-          getCapabilities: (
+          runInference: (
             req: Record<string, unknown>,
             cb: (err: grpc.ServiceError | null, res?: Record<string, unknown>) => void
           ) => void;
         }
-      ).getCapabilities({}, (err, res) => {
+      ).runInference({ model, prompt, maxTokens }, (err, res) => {
         if (err) {
           reject(err);
           return;
         }
-        resolve({
-          instanceId: res!.instanceId as string,
-          gpuCount: res!.gpuCount as number,
-          totalGpuMemoryMb: res!.totalGpuMemoryMb as number,
-          supportedMethods: res!.supportedMethods as string[],
-          loadedModels: res!.loadedModels as string[],
-          version: res!.version as string,
-        });
+        resolve({ text: res!.text as string });
       });
     });
   }
 
   /**
-   * Submit a training job via gRPC (alternative to REST).
+   * Submit a training job via gRPC.
    */
   async submitTrainingJob(req: {
     baseModel: string;
     datasetPath: string;
     method: string;
     configJson?: string;
-    syJobId?: string;
-    syJobType?: string;
   }): Promise<{ jobId: string }> {
     if (!this.client) throw new Error('gRPC client not connected');
 
@@ -386,8 +368,6 @@ export class SynapseGrpcClient {
           datasetPath: req.datasetPath,
           method: req.method,
           configJson: req.configJson ?? '',
-          syJobId: req.syJobId ?? '',
-          syJobType: req.syJobType ?? 'finetune',
         },
         (err, res) => {
           if (err) {
@@ -398,5 +378,35 @@ export class SynapseGrpcClient {
         }
       );
     });
+  }
+
+  /**
+   * Pull a model via gRPC streaming.
+   */
+  async *pullModel(
+    modelName: string,
+    quant: string
+  ): AsyncGenerator<{ downloadedBytes: number; totalBytes: number; state: string }> {
+    if (!this.client) throw new Error('gRPC client not connected');
+
+    const call = (
+      this.client as unknown as {
+        pullModel: (
+          req: Record<string, unknown>
+        ) => grpc.ClientReadableStream<Record<string, unknown>>;
+      }
+    ).pullModel({ modelName, quant });
+
+    try {
+      for await (const msg of call) {
+        yield {
+          downloadedBytes: msg.downloadedBytes as number,
+          totalBytes: msg.totalBytes as number,
+          state: msg.state as string,
+        };
+      }
+    } finally {
+      call.cancel();
+    }
   }
 }

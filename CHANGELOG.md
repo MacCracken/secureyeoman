@@ -6,6 +6,85 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.18-1]
+
+### Synapse Integration — Protocol Alignment
+
+Full audit and correction of the SY↔Synapse integration layer against the actual Synapse Rust codebase. All REST endpoints, gRPC proto definitions, and wire formats now match Synapse's live API.
+
+#### Bug Fixes
+
+- **Job stream endpoint** — Fixed `GET /training/jobs/:id/logs` → `GET /training/jobs/:id/stream` across client, routes, and MCP tools. The old `/logs` path 404'd against Synapse
+- **Field serialization** — Synapse uses snake_case; SY was sending camelCase. Fixed all request/response transformations at the client boundary:
+  - Inference: `maxTokens` → `max_tokens`, `topP` → `top_p`, `topK` → `top_k`, `systemPrompt` → `system_prompt`
+  - Training: `baseModel` → `base_model`, flat `datasetPath` → nested `dataset: { path, format }`, `configJson` → structured `hyperparams` object
+  - Models: `modelName` → `model_name`, `sourceUrl` → `source_url`
+  - Job status: `current_step` → `step`, `current_loss` → `loss`, capitalized `"Running"` → lowercase `"running"`
+- **Status response parsing** — Synapse `/system/status` returns `{ version, loaded_models, hardware: { gpus: [...] }, bridge: {...} }`, not a flat `SynapseInstance`. Client now transforms hardware probe data into SY's `SynapseInstance` shape
+- **Training request structure** — Synapse expects `{ base_model, dataset: { path, format, ... }, method, hyperparams: { learning_rate, ... } }`. SY was sending a flat camelCase object. Client now builds the correct nested snake_case structure
+
+#### gRPC Proto Sync
+
+- **Rewrote `bridge.proto`** to match Synapse's actual service definitions:
+  - `SynapseBridge` (SY→Synapse): `SubmitTrainingJob`, `GetJobStatus` (stream), `PullModel` (stream), `RunInference`, `StreamInference`
+  - `YeomanBridge` (Synapse→SY): `RequestGpuAllocation`, `ReportProgress` (client stream), `RequestScaleOut`, `RegisterCompletedModel`
+- **Updated `grpc-bridge.ts`** — Server implements new `YeomanBridge` RPCs (GPU allocation, progress streaming, scale-out, model registration). Client uses `SynapseBridge` RPCs (job status streaming, model pull, inference)
+
+#### New Endpoints & Tools
+
+- **REST routes**: `GET /api/v1/synapse/models/:id`, `DELETE /api/v1/synapse/models/:id`, `GET /api/v1/synapse/training/jobs/:id/checkpoints`, `GET /api/v1/synapse/training/jobs/:id/metrics`, `GET /api/v1/synapse/gpu/telemetry`
+- **Client methods**: `getModel()`, `deleteModel()`, `getJobCheckpoints()`, `getJobMetrics()`, `getGpuTelemetry()`
+- **MCP tools**: `synapse_get_model`, `synapse_delete_model`, `synapse_job_checkpoints`, `synapse_job_metrics`, `synapse_gpu_telemetry` (8 → 13 tools total)
+
+#### Type Updates
+
+- `SynapseJobStatus` — Added `totalSteps`, `progressPercent`, `error`, `createdAt`, `startedAt`, `completedAt`; status union includes `preparing` and `paused`
+- `SynapseInferenceRequest` — Added `temperature`, `topP`, `topK`, `systemPrompt`
+- `SynapseInferenceResponse` — Added `usage` (token counts) and `finishReason`
+- `SynapsePullRequest` — Changed `quant` → `sourceUrl` + `expectedSha256` to match marketplace pull API
+- Added `SynapseStatusResponse` and `SynapseJobResponse` raw wire types for documentation
+
+#### Tests
+
+- Updated all 51 Synapse unit tests across 4 test files for new wire formats
+- New tests for status response transformation, snake_case request bodies, paginated model listing, `getModel`, `deleteModel`, `streamJobProgress`
+
+---
+
+## [2026.3.18]
+
+### Synapse LLM Controller Integration
+
+Full integration with the Synapse Rust-based LLM controller for distributed model management, inference execution, and training job orchestration.
+
+- **REST proxy** — 11 routes under `/api/v1/synapse/*` proxying to Synapse's REST API (port 8420). Status, models, inference (sync + streaming), training jobs (submit, list, status, cancel, logs), health check
+- **`SynapseClient`** — REST client with SSE streaming support for model pull progress, job logs, and inference tokens
+- **`SynapseRegistry`** — In-memory registry for connected Synapse instances with GPU-aware selection (most free VRAM, fewest active jobs)
+- **`SynapseManager`** — Orchestrator with automatic heartbeat polling, reconnection recovery, and DB persistence via `SynapseStore`
+- **`SynapseStore`** — PostgreSQL storage for instance state, delegated jobs, registered models, inbound jobs, and capability announcements
+- **gRPC bridge** — Bidirectional gRPC transport (`bridge.proto`) for streaming training metrics, inference tokens, and capability announcements
+- **8 MCP tools** — `synapse_status`, `synapse_list_models`, `synapse_pull_model`, `synapse_infer`, `synapse_submit_job`, `synapse_list_jobs`, `synapse_job_status`, `synapse_cancel_job`
+- **Database migration** (`008_synapse.sql`) — `synapse.instances`, `synapse.delegated_jobs`, `synapse.registered_models` tables
+- **Docker Compose** — Synapse service (GHCR image) and synapse-dev (local build) with model/data volumes and health checks
+- **License gating** — All Synapse routes enterprise-gated via `licenseGuard('synapse')`
+- **Service discovery** — Registered as ecosystem service with health path and MCP config key
+
+### Security Audit — Rounds 1–3 + Backlog
+
+Post-feature security audit across the full codebase. 4 rounds of fixes addressing SSRF, path traversal, data loss prevention, code execution limits, delegation recursion, query bounds, and operational hardening.
+
+- **Round 1**: SSRF guards (`assertPublicUrl`), path traversal prevention, data loss safeguards, code execution limits
+- **Round 2**: MCP skill handler fix, low-priority items moved to backlog
+- **Round 3**: Delegation recursion limits, query bounds enforcement, dataset size caps
+- **Backlog cleanup**: Prefetch TTL tuning, token mutex improvements, chunk size limits, logging enhancements
+
+### DAG Workflow Step Types
+
+- **8 new step types** (Phase 150): Extends DAG workflow engine with additional step types for workflow orchestration
+- **Error envelope standardization** — Shared `ApiErrorResponse` type across all packages, SCIM error fix
+
+---
+
 ## [2026.3.17]
 
 ### Firecracker microVM Sandbox

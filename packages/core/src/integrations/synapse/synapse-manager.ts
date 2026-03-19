@@ -196,7 +196,7 @@ export class SynapseManager {
       return await this.store.updateDelegatedJobStatus(delegatedJobId, {
         status: status.status,
         currentStep: status.step,
-        currentLoss: status.loss,
+        currentLoss: status.loss ?? undefined,
         currentEpoch: status.epoch,
       });
     } catch (err) {
@@ -274,11 +274,13 @@ export class SynapseManager {
         return;
       }
 
+      // _gpuMemoryFreeMb is set by the client from Synapse GPU telemetry
+      const extStatus = status as SynapseInstance & { _gpuMemoryFreeMb?: number };
       const heartbeat: SynapseHeartbeat = {
         instanceId: status.id,
         timestamp: Date.now(),
         loadedModels: status.capabilities.loadedModels,
-        gpuMemoryFreeMb: status.capabilities.totalGpuMemoryMb, // approximation until dedicated heartbeat endpoint
+        gpuMemoryFreeMb: extStatus._gpuMemoryFreeMb ?? status.capabilities.totalGpuMemoryMb,
         activeTrainingJobs: 0,
       };
       this.registry.updateHeartbeat(instanceId, heartbeat);

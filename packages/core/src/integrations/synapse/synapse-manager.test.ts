@@ -176,8 +176,14 @@ describe('SynapseManager', () => {
       vi.spyOn(mockClient, 'getJobStatus').mockResolvedValue({
         status: 'running',
         step: 50,
+        totalSteps: 1000,
         loss: 0.3,
         epoch: 1,
+        progressPercent: 5.0,
+        error: null,
+        createdAt: '2026-03-18T00:00:00Z',
+        startedAt: '2026-03-18T00:01:00Z',
+        completedAt: null,
       });
 
       const result = await manager.syncDelegatedJobStatus('dj-1');

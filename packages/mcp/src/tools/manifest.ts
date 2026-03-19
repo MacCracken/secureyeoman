@@ -2506,7 +2506,17 @@ export function getToolManifest(): ToolManifestEntry[] {
     {
       name: 'synapse_pull_model',
       description:
-        'Pull (download) a model from HuggingFace or another registry into the Synapse instance',
+        'Pull (download) a model from a remote Synapse marketplace node into the local instance',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_get_model',
+      description: 'Get details of a specific model by name or ID on the Synapse instance',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_delete_model',
+      description: 'Delete a model from the Synapse instance catalog and disk',
       category: 'synapse',
     },
     {
@@ -2517,7 +2527,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     {
       name: 'synapse_submit_job',
       description:
-        'Submit a training job to Synapse. Supports LoRA, QLoRA, full fine-tune, DPO, and RLHF',
+        'Submit a training job to Synapse. Supports LoRA, QLoRA, full fine-tune, DPO, RLHF, and distillation',
       category: 'synapse',
     },
     {
@@ -2529,12 +2539,27 @@ export function getToolManifest(): ToolManifestEntry[] {
     {
       name: 'synapse_job_status',
       description:
-        'Get detailed status of a specific Synapse training job, including current step, loss, and epoch',
+        'Get detailed status of a specific Synapse training job, including current step, loss, epoch, and progress percent',
       category: 'synapse',
     },
     {
       name: 'synapse_cancel_job',
       description: 'Cancel a running training job on the Synapse instance',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_job_checkpoints',
+      description: 'List checkpoints saved during a Synapse training job',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_job_metrics',
+      description: 'Get training metrics summary for a specific Synapse job',
+      category: 'synapse',
+    },
+    {
+      name: 'synapse_gpu_telemetry',
+      description: 'Get real-time GPU telemetry readings from the Synapse instance',
       category: 'synapse',
     },
 

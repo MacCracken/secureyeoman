@@ -4,6 +4,10 @@
  * Proxies Synapse endpoints (model management, inference, training) so the
  * dashboard and MCP tools can interact with Synapse without direct access.
  * SSE streaming routes relay events from Synapse to the client in real time.
+ *
+ * NOTE: Synapse uses snake_case for JSON field names. The proxy routes
+ * transform between SY's camelCase and Synapse's wire format so callers
+ * (dashboard, MCP) always use camelCase.
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -139,22 +143,87 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
+  // ── GET /api/v1/synapse/models/:id — Get model by ID ───────────────────
+
+  app.get(
+    '/api/v1/synapse/models/:id',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.getModel(req.params.id);
+          return reply.send(data);
+        }
+        const res = await synapseFetch(`/models/${encodeURIComponent(req.params.id)}`);
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, res.status === 404 ? 404 : 502, `Synapse model error: ${body}`);
+        }
+        return reply.send(await res.json());
+      } catch (err) {
+        return sendError(reply, 502, `Synapse model fetch failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── DELETE /api/v1/synapse/models/:id — Delete model ───────────────────
+
+  app.delete(
+    '/api/v1/synapse/models/:id',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (client) {
+          await client.deleteModel(req.params.id);
+          return reply.code(204).send();
+        }
+        const res = await synapseFetch(`/models/${encodeURIComponent(req.params.id)}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(
+            reply,
+            res.status === 404 ? 404 : 502,
+            `Synapse model delete error: ${body}`
+          );
+        }
+        return reply.code(204).send();
+      } catch (err) {
+        return sendError(reply, 502, `Synapse model delete failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
   // ── POST /api/v1/synapse/models/pull — Pull model (SSE progress) ───────
 
   app.post(
     '/api/v1/synapse/models/pull',
     featureGuardOpts,
     async (
-      req: FastifyRequest<{ Body: { modelName: string; quant?: string } }>,
+      req: FastifyRequest<{
+        Body: { modelName: string; sourceUrl: string; expectedSha256?: string };
+      }>,
       reply: FastifyReply
     ) => {
       try {
-        const { modelName, quant } = req.body ?? ({} as { modelName?: string; quant?: string });
-        if (!modelName) return sendError(reply, 400, 'Missing required field: modelName');
+        const { modelName, sourceUrl, expectedSha256 } =
+          req.body ?? ({} as { modelName?: string; sourceUrl?: string; expectedSha256?: string });
+        if (!modelName || !sourceUrl)
+          return sendError(reply, 400, 'Missing required fields: modelName, sourceUrl');
+
+        // Transform to Synapse snake_case wire format
+        const wireBody: Record<string, unknown> = {
+          model_name: modelName,
+          source_url: sourceUrl,
+        };
+        if (expectedSha256) wireBody.expected_sha256 = expectedSha256;
 
         await relaySSE(reply, '/marketplace/pull', {
           method: 'POST',
-          body: JSON.stringify({ modelName, quant }),
+          body: JSON.stringify(wireBody),
         });
       } catch (err) {
         if (!reply.raw.headersSent) {
@@ -173,13 +242,21 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     featureGuardOpts,
     async (
       req: FastifyRequest<{
-        Body: { model: string; prompt: string; maxTokens?: number };
+        Body: {
+          model: string;
+          prompt: string;
+          maxTokens?: number;
+          temperature?: number;
+          topP?: number;
+          topK?: number;
+          systemPrompt?: string;
+        };
       }>,
       reply: FastifyReply
     ) => {
       try {
-        const { model, prompt, maxTokens } =
-          req.body ?? ({} as { model?: string; prompt?: string; maxTokens?: number });
+        const { model, prompt, maxTokens, temperature, topP, topK, systemPrompt } =
+          req.body ?? ({} as Record<string, unknown>);
         if (!model || !prompt)
           return sendError(reply, 400, 'Missing required fields: model, prompt');
 
@@ -189,13 +266,28 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
             model,
             prompt,
             maxTokens: maxTokens ?? 512,
+            temperature,
+            topP,
+            topK,
+            systemPrompt,
           });
           return reply.send(data);
         }
 
+        // Fallback: transform to snake_case for direct proxy
+        const wireBody: Record<string, unknown> = {
+          model,
+          prompt,
+          max_tokens: maxTokens ?? 512,
+        };
+        if (temperature != null) wireBody.temperature = temperature;
+        if (topP != null) wireBody.top_p = topP;
+        if (topK != null) wireBody.top_k = topK;
+        if (systemPrompt != null) wireBody.system_prompt = systemPrompt;
+
         const res = await synapseFetch('/inference', {
           method: 'POST',
-          body: JSON.stringify({ model, prompt, maxTokens: maxTokens ?? 512 }),
+          body: JSON.stringify(wireBody),
         });
 
         if (!res.ok) {
@@ -216,19 +308,38 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     featureGuardOpts,
     async (
       req: FastifyRequest<{
-        Body: { model: string; prompt: string; maxTokens?: number };
+        Body: {
+          model: string;
+          prompt: string;
+          maxTokens?: number;
+          temperature?: number;
+          topP?: number;
+          topK?: number;
+          systemPrompt?: string;
+        };
       }>,
       reply: FastifyReply
     ) => {
       try {
-        const { model, prompt, maxTokens } =
-          req.body ?? ({} as { model?: string; prompt?: string; maxTokens?: number });
+        const { model, prompt, maxTokens, temperature, topP, topK, systemPrompt } =
+          req.body ?? ({} as Record<string, unknown>);
         if (!model || !prompt)
           return sendError(reply, 400, 'Missing required fields: model, prompt');
 
+        // Transform to snake_case
+        const wireBody: Record<string, unknown> = {
+          model,
+          prompt,
+          max_tokens: maxTokens ?? 512,
+        };
+        if (temperature != null) wireBody.temperature = temperature;
+        if (topP != null) wireBody.top_p = topP;
+        if (topK != null) wireBody.top_k = topK;
+        if (systemPrompt != null) wireBody.system_prompt = systemPrompt;
+
         await relaySSE(reply, '/inference/stream', {
           method: 'POST',
-          body: JSON.stringify({ model, prompt, maxTokens: maxTokens ?? 512 }),
+          body: JSON.stringify(wireBody),
         });
       } catch (err) {
         if (!reply.raw.headersSent) {
@@ -279,9 +390,27 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           return reply.code(201).send(data);
         }
 
+        // Fallback: the client handles snake_case transformation, but for
+        // direct proxy we need to do it here. Import the transformation
+        // from the client would be circular, so we do a minimal version.
         const res = await synapseFetch('/training/jobs', {
           method: 'POST',
-          body: JSON.stringify({ baseModel, datasetPath, method, configJson }),
+          body: JSON.stringify({
+            base_model: baseModel,
+            dataset: { path: datasetPath ?? '', format: 'jsonl' },
+            method,
+            hyperparams: configJson
+              ? JSON.parse(configJson)
+              : {
+                  learning_rate: 2e-4,
+                  epochs: 3,
+                  batch_size: 4,
+                  gradient_accumulation_steps: 1,
+                  warmup_steps: 100,
+                  weight_decay: 0.01,
+                  max_seq_length: 512,
+                },
+          }),
         });
 
         if (!res.ok) {
@@ -358,21 +487,73 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
-  // ── GET /api/v1/synapse/training/jobs/:id/logs — Stream job logs (SSE) ─
+  // ── GET /api/v1/synapse/training/jobs/:id/stream — Stream job progress (SSE)
 
   app.get(
-    '/api/v1/synapse/training/jobs/:id/logs',
+    '/api/v1/synapse/training/jobs/:id/stream',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const { id } = req.params;
-        await relaySSE(reply, `/training/jobs/${encodeURIComponent(id)}/logs`);
+        await relaySSE(reply, `/training/jobs/${encodeURIComponent(id)}/stream`);
       } catch (err) {
         if (!reply.raw.headersSent) {
-          return sendError(reply, 502, `Synapse logs error: ${toErrorMessage(err)}`);
+          return sendError(reply, 502, `Synapse stream error: ${toErrorMessage(err)}`);
         }
         reply.raw.write(`data: ${JSON.stringify({ error: toErrorMessage(err) })}\n\n`);
         reply.raw.end();
+      }
+    }
+  );
+
+  // ── GET /api/v1/synapse/training/jobs/:id/checkpoints — List checkpoints
+
+  app.get(
+    '/api/v1/synapse/training/jobs/:id/checkpoints',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.getJobCheckpoints(req.params.id);
+          return reply.send(data);
+        }
+        const res = await synapseFetch(
+          `/training/jobs/${encodeURIComponent(req.params.id)}/checkpoints`
+        );
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, 502, `Synapse checkpoints error: ${body}`);
+        }
+        return reply.send(await res.json());
+      } catch (err) {
+        return sendError(reply, 502, `Synapse checkpoints failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── GET /api/v1/synapse/training/jobs/:id/metrics — Get metrics summary
+
+  app.get(
+    '/api/v1/synapse/training/jobs/:id/metrics',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.getJobMetrics(req.params.id);
+          return reply.send(data);
+        }
+        const res = await synapseFetch(
+          `/training/jobs/${encodeURIComponent(req.params.id)}/metrics`
+        );
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, 502, `Synapse metrics error: ${body}`);
+        }
+        return reply.send(await res.json());
+      } catch (err) {
+        return sendError(reply, 502, `Synapse metrics failed: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -401,6 +582,30 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         return reply.send(await res.json());
       } catch (err) {
         return sendError(reply, 502, `Synapse cancel failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── GET /api/v1/synapse/gpu/telemetry — GPU telemetry ─────────────────
+
+  app.get(
+    '/api/v1/synapse/gpu/telemetry',
+    featureGuardOpts,
+    async (_req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (client) {
+          const data = await client.getGpuTelemetry();
+          return reply.send(data);
+        }
+        const res = await synapseFetch('/system/gpu/telemetry');
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          return sendError(reply, 502, `Synapse telemetry error: ${body}`);
+        }
+        return reply.send(await res.json());
+      } catch (err) {
+        return sendError(reply, 502, `Synapse telemetry failed: ${toErrorMessage(err)}`);
       }
     }
   );
