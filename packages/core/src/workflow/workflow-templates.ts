@@ -1686,7 +1686,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         name: 'Fan-Out Analysis',
         description: 'Run analysis in parallel across all input items',
         config: {
-          itemsTemplate: '{{input.items}}',
+          inputListPath: 'input.items',
           maxConcurrency: 5,
           stepTemplate: {
             type: 'agent',
@@ -1717,10 +1717,9 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         description: 'Send the analysis summary via the configured notification channel',
         config: {
           channel: '{{input.notificationChannel}}',
-          titleTemplate: 'Fan-Out Analysis Complete — {{input.batchName}}',
-          bodyTemplate:
-            'Analysis of {{input.itemCount}} items complete.\n\n{{steps.synthesise-results.output}}',
-          webhookUrl: '{{input.webhookUrl}}',
+          messageTemplate:
+            'Fan-Out Analysis Complete — {{input.batchName}}\n\nAnalysis of {{input.itemCount}} items complete.\n\n{{steps.synthesise-results.output}}',
+          url: '{{input.webhookUrl}}',
         },
         dependsOn: ['synthesise-results'],
         onError: 'continue',
@@ -1749,8 +1748,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         name: 'Check Processing Cache',
         description: 'Check if this data source was already processed today',
         config: {
-          keyTemplate: 'pipeline:{{input.pipelineName}}:{{input.date}}',
-          ttlMs: 86_400_000, // 24h
+          cacheKey: 'pipeline:{{input.pipelineName}}:{{input.date}}',
         },
         dependsOn: [],
         onError: 'continue',
@@ -1761,11 +1759,9 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         name: 'Execute Data Transform',
         description: 'Run the sandboxed data transformation script',
         config: {
-          runtime: 'javascript',
+          runtime: 'node',
           codeTemplate: '{{input.transformScript}}',
-          inputTemplate: '{{input.rawData}}',
           timeoutMs: 30_000,
-          sandboxed: true,
         },
         dependsOn: ['check-cache'],
         condition: '!steps.check-cache.output || steps.check-cache.output.hit === false',
@@ -1777,9 +1773,9 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         name: 'Validate Transform Output',
         description: 'Validate the transformed data against the expected output schema',
         config: {
-          schemaTemplate: '{{input.outputSchema}}',
-          dataTemplate: '{{steps.run-transform.output.stdout}}',
-          failOnInvalid: true,
+          schema: { type: 'object' },
+          dataPath: 'steps.run-transform.output',
+          onFailure: 'fail',
         },
         dependsOn: ['run-transform'],
         onError: 'fail',
@@ -1802,7 +1798,6 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         description: 'Wait before allowing the next pipeline run',
         config: {
           durationMs: '{{input.cooldownMs}}',
-          reason: 'Rate-limit between pipeline executions',
         },
         dependsOn: ['save-output'],
         onError: 'continue',
@@ -1833,12 +1828,12 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         name: 'Distribute to Peers',
         description: 'Fan out task delegation across all peer instances',
         config: {
-          itemsTemplate: '{{input.peerInstances}}',
+          inputListPath: 'input.peerInstances',
           maxConcurrency: 10,
           stepTemplate: {
             type: 'a2a_delegate',
             config: {
-              peerUrlTemplate: '{{item.url}}',
+              peerId: '{{item.url}}',
               taskTemplate: '{{input.taskDescription}}',
               contextTemplate:
                 'Delegated from {{input.originInstance}}. Peer: {{item.name}}. Payload:\n\n{{input.taskPayload}}',
@@ -1866,10 +1861,9 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         description: 'Send a summary notification with aggregated results from all peers',
         config: {
           channel: '{{input.notificationChannel}}',
-          titleTemplate: 'Distributed Task Complete — {{input.taskName}}',
-          bodyTemplate:
-            'Task "{{input.taskDescription}}" delegated to {{input.peerCount}} peers.\n\n{{steps.aggregate-results.output}}',
-          webhookUrl: '{{input.webhookUrl}}',
+          messageTemplate:
+            'Distributed Task Complete — {{input.taskName}}\n\nTask "{{input.taskDescription}}" delegated to {{input.peerCount}} peers.\n\n{{steps.aggregate-results.output}}',
+          url: '{{input.webhookUrl}}',
         },
         dependsOn: ['aggregate-results'],
         onError: 'continue',

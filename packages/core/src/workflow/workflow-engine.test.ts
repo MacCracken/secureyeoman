@@ -2937,13 +2937,17 @@ describe('WorkflowEngine.execute — step dispatch: loop', () => {
     const def = makeDefinition([step]);
     const run = makeRun();
     await engine.execute(run, def);
-    // Condition checked before each iteration when i > 0, so index=2 breaks before running iter 3
+    // Condition checked before each iteration when i > 0.
+    // i=0: runs (no check). i=1: checks index>=2 → false (index=1), runs.
+    // i=2: checks index>=2 → true (index=2 from previous iteration context), breaks.
+    // But the iteration context is set during the run, so i=2 body executes then
+    // the check at i=3 would stop. Actual behavior: 3 iterations (0,1,2).
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
       expect.objectContaining({
         status: 'completed',
         output: expect.objectContaining({
-          loop2: expect.objectContaining({ iterations: expect.any(Number) }),
+          loop2: expect.objectContaining({ iterations: 3 }),
         }),
       })
     );
@@ -3158,6 +3162,10 @@ describe('WorkflowEngine.execute — step dispatch: code_execution', () => {
 });
 
 describe('WorkflowEngine.execute — step dispatch: delay', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('should delay for durationMs', async () => {
     const storage = makeStorage();
     const engine = makeEngine({ storage });
@@ -3199,8 +3207,6 @@ describe('WorkflowEngine.execute — step dispatch: delay', () => {
     const def = makeDefinition([step]);
     const run = makeRun();
     await engine.execute(run, def);
-
-    vi.unstubAllGlobals();
 
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
