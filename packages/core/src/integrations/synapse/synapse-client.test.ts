@@ -760,4 +760,214 @@ describe('SynapseClient', () => {
       expect(fetchSpy.mock.calls[0]![0]).toBe('http://localhost:8420/system/gpu/telemetry');
     });
   });
+
+  // ── SSE streaming ───────────────────────────────────────────────────────
+
+  function sseResponse(lines: string[], status = 200): Response {
+    const encoder = new TextEncoder();
+    const chunks = lines.map((l) => encoder.encode(l + '\n'));
+    let idx = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (idx < chunks.length) {
+          controller.enqueue(chunks[idx]!);
+          idx++;
+        } else {
+          controller.close();
+        }
+      },
+    });
+    return new Response(stream, {
+      status,
+      headers: { 'Content-Type': 'text/event-stream' },
+    });
+  }
+
+  describe('streamJobProgress', () => {
+    it('should exist as a method (renamed from streamJobLogs)', () => {
+      expect(typeof client.streamJobProgress).toBe('function');
+      expect((client as Record<string, unknown>).streamJobLogs).toBeUndefined();
+    });
+
+    it('should yield SSE data lines from /stream endpoint', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        sseResponse([
+          'data: {"step":10,"loss":0.5}',
+          'data: {"step":20,"loss":0.3}',
+          'data: [DONE]',
+        ])
+      );
+
+      const events: string[] = [];
+      for await (const event of client.streamJobProgress('sj-1')) {
+        events.push(event);
+      }
+
+      expect(events).toEqual(['{"step":10,"loss":0.5}', '{"step":20,"loss":0.3}']);
+      expect(fetchSpy.mock.calls[0]![0]).toBe('http://localhost:8420/training/jobs/sj-1/stream');
+    });
+
+    it('should handle empty SSE stream', async () => {
+      fetchSpy.mockResolvedValueOnce(sseResponse([]));
+
+      const events: string[] = [];
+      for await (const event of client.streamJobProgress('sj-1')) {
+        events.push(event);
+      }
+      expect(events).toEqual([]);
+    });
+
+    it('should throw on non-ok SSE response', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('bad request', { status: 400 }));
+
+      const gen = client.streamJobProgress('bad-id');
+      await expect(gen.next()).rejects.toThrow('returned 400');
+    });
+  });
+
+  describe('streamInference', () => {
+    it('should yield parsed chunks and send snake_case body', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        sseResponse(['data: {"text":"Hello","done":false}', 'data: {"text":" world","done":true}'])
+      );
+
+      const chunks: { text: string; done: boolean }[] = [];
+      for await (const chunk of client.streamInference({
+        model: 'llama',
+        prompt: 'hi',
+        maxTokens: 100,
+      })) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks).toEqual([
+        { text: 'Hello', done: false },
+        { text: ' world', done: true },
+      ]);
+
+      const sent = getSentBody(fetchSpy);
+      expect(sent.max_tokens).toBe(100);
+      expect(sent.maxTokens).toBeUndefined();
+    });
+
+    it('should skip malformed SSE events without crashing', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        sseResponse([
+          'data: {"text":"ok","done":false}',
+          'data: not-valid-json',
+          'data: {"text":"after","done":true}',
+        ])
+      );
+
+      const chunks: { text: string; done: boolean }[] = [];
+      for await (const chunk of client.streamInference({
+        model: 'llama',
+        prompt: 'hi',
+        maxTokens: 50,
+      })) {
+        chunks.push(chunk);
+      }
+
+      // Malformed event skipped, other events yielded
+      expect(chunks).toEqual([
+        { text: 'ok', done: false },
+        { text: 'after', done: true },
+      ]);
+    });
+  });
+
+  describe('pullModel', () => {
+    it('should yield parsed progress events with snake_case body', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        sseResponse([
+          'data: {"downloaded_bytes":500,"total_bytes":1000,"state":"downloading"}',
+          'data: {"downloaded_bytes":1000,"total_bytes":1000,"state":"complete"}',
+        ])
+      );
+
+      const progress: { downloadedBytes: number; totalBytes: number; state: string }[] = [];
+      for await (const p of client.pullModel({
+        modelName: 'test-model',
+        sourceUrl: 'http://peer:8420/marketplace/download/test-model',
+      })) {
+        progress.push(p);
+      }
+
+      expect(progress).toEqual([
+        { downloadedBytes: 500, totalBytes: 1000, state: 'downloading' },
+        { downloadedBytes: 1000, totalBytes: 1000, state: 'complete' },
+      ]);
+
+      const sent = getSentBody(fetchSpy);
+      expect(sent.model_name).toBe('test-model');
+      expect(sent.source_url).toBe('http://peer:8420/marketplace/download/test-model');
+    });
+
+    it('should skip malformed SSE events', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        sseResponse([
+          'data: bad-json',
+          'data: {"downloaded_bytes":100,"total_bytes":100,"state":"complete"}',
+        ])
+      );
+
+      const progress: { downloadedBytes: number; totalBytes: number; state: string }[] = [];
+      for await (const p of client.pullModel({
+        modelName: 'test',
+        sourceUrl: 'http://peer/dl/test',
+      })) {
+        progress.push(p);
+      }
+
+      expect(progress).toEqual([{ downloadedBytes: 100, totalBytes: 100, state: 'complete' }]);
+    });
+
+    it('should include expectedSha256 when provided', async () => {
+      fetchSpy.mockResolvedValueOnce(sseResponse([]));
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for await (const _ of client.pullModel({
+        modelName: 'model',
+        sourceUrl: 'http://peer/dl/model',
+        expectedSha256: 'abc123',
+      })) {
+        // consume
+      }
+
+      const sent = getSentBody(fetchSpy);
+      expect(sent.expected_sha256).toBe('abc123');
+    });
+  });
+
+  // ── SSE edge cases ──────────────────────────────────────────────────────
+
+  describe('_streamSSE (via streamJobProgress)', () => {
+    it('should ignore non-data SSE lines (comments, events, ids)', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        sseResponse([': this is a comment', 'event: progress', 'id: 42', 'data: actual-data', ''])
+      );
+
+      const events: string[] = [];
+      for await (const event of client.streamJobProgress('sj-1')) {
+        events.push(event);
+      }
+      expect(events).toEqual(['actual-data']);
+    });
+
+    it('should handle SSE response with no body', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(null, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })
+      );
+
+      const gen = client.streamJobProgress('sj-1');
+      await expect(gen.next()).rejects.toThrow('returned no body');
+    });
+
+    it('should throw on connection error', async () => {
+      fetchSpy.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+
+      const gen = client.streamJobProgress('sj-1');
+      await expect(gen.next()).rejects.toThrow('ECONNREFUSED');
+    });
+  });
 });
