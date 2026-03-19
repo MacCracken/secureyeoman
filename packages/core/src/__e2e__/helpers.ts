@@ -26,6 +26,13 @@ import { BrainManager } from '../brain/manager.js';
 import { BrainStorage } from '../brain/storage.js';
 import { WorkflowManager } from '../workflow/workflow-manager.js';
 import { WorkflowStorage } from '../workflow/workflow-storage.js';
+import { registerA2ARoutes } from '../a2a/a2a-routes.js';
+import { A2AManager } from '../a2a/manager.js';
+import { A2AStorage } from '../a2a/storage.js';
+import { RemoteDelegationTransport } from '../a2a/transport.js';
+import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js';
+import { MarketplaceManager } from '../marketplace/manager.js';
+import { MarketplaceStorage } from '../marketplace/storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { SecurityConfig, SoulConfig } from '@secureyeoman/shared';
 import { BrainConfigSchema } from '@secureyeoman/shared';
@@ -159,6 +166,27 @@ export async function startE2EServer(): Promise<E2EServer> {
 
   // MCP routes (server CRUD, tool discovery, config, tool calls)
   registerMcpRoutes(app, { mcpStorage, mcpClient, mcpServer });
+
+  // A2A routes (peer CRUD, delegation, messaging)
+  const a2aStorage = new A2AStorage();
+  const a2aTransport = new RemoteDelegationTransport({ logger });
+  const a2aManager = new A2AManager(
+    {
+      enabled: true,
+      discoveryMethod: 'none' as const,
+      trustedPeers: [],
+      heartbeatIntervalMs: 60000,
+      maxPeers: 50,
+      trustThreshold: 'verified' as const,
+    },
+    { storage: a2aStorage, transport: a2aTransport, logger, auditChain }
+  );
+  registerA2ARoutes(app, { a2aManager });
+
+  // Marketplace routes (skill CRUD, community sync)
+  const marketplaceStorage = new MarketplaceStorage();
+  const marketplaceManager = new MarketplaceManager(marketplaceStorage, { logger });
+  registerMarketplaceRoutes(app, { marketplaceManager });
 
   // Health
   app.get('/health', async () => ({

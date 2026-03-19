@@ -64,6 +64,16 @@ Full driver-side integration with AGNOS 2026.3.18 APIs: token budgeting, RAG, ph
 - **Vector store AGNOS backend config** — `VectorConfigSchema` now includes `agnos` sub-config (`runtimeUrl`, `apiKey`, `enableRag`). Vector store factory auto-creates `AgnosClient` from config when not explicitly injected, removing the hard dependency on startup wiring. Deployments can now set `brain.vector.backend: 'agnos'` in config to offload pgvector to AGNOS
 - **MCP tool catalog endpoint** — New `GET /api/v1/mcp/tools/list` endpoint returns full tool definitions including `inputSchema` and `outputSchema` for all registered tools. `McpToolDef` and `McpToolManifest` schemas extended with optional `outputSchema` field. Enables AGNOS reverse registration with complete parameter metadata
 
+### E2E Test Expansion — 5 New Test Suites
+
+- **`training.e2e.test.ts`** (4 tests) — Training data preparation via brain memories, knowledge entries as training context, brain stats reflecting data volume, importance-based curation filtering
+- **`a2a.e2e.test.ts`** (8 tests) — A2A peer CRUD (list, register, delete), trust level updates, capabilities endpoint, config endpoint, message listing. Wired A2AManager + A2AStorage into E2E server
+- **`analytics.e2e.test.ts`** (5 tests) — System metrics endpoint, brain stats as analytics source, stats update after ingestion, audit log retrieval, audit chain integrity verification, tasks listing
+- **`brain-rag.e2e.test.ts`** (6 tests) — Multi-topic knowledge ingestion, knowledge updates, all 4 memory types with filtering, importance-based retrieval, bulk pagination, knowledge deletion
+- **`marketplace.e2e.test.ts`** (7 tests) — Marketplace listing with pagination, install/uninstall error handling for missing items, item detail 404, community personalities listing, community sync status, skill create/list/delete lifecycle
+
+E2E helpers extended with A2AManager (storage + transport) and MarketplaceManager route registration.
+
 ### DAG Workflow Documentation
 
 - **Workflows guide updated** — Added all 8 new step types to the step type table (`loop`, `parallel_map`, `code_execution`, `delay`, `notification`, `data_validation`, `cache_lookup`, `a2a_delegate`). Added full reference section with config examples for each. Documented 8 new built-in templates (pr-ci-triage, build-failure-triage, daily-pr-digest, dev-env-provision, iterative-research, fan-out-analysis, scheduled-data-pipeline, distributed-task). Template count updated from 5 to 14

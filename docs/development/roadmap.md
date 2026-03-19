@@ -98,15 +98,7 @@
 
 ## E2E Test Expansion
 
-**Priority**: P1 — Quality. Currently 9 files / 82 tests. Target: cover all major user flows. Keep expanding alongside feature work.
-
-**Goal**: Expand backend E2E test suite (`src/__e2e__/`) to cover flows that unit tests can't adequately verify — multi-step API sequences, cross-module interactions, auth flows.
-
-- [ ] **Training & distillation flows** — Job creation, status polling, completion. Dataset upload → finetune → evaluation pipeline.
-- [ ] **Delegation & A2A flows** — Task delegation to sub-agents, A2A message routing, swarm coordination
-- [ ] **Analytics & reporting flows** — Metrics aggregation, cost tracking, CSV/JSON export
-- [ ] **Brain & RAG flows** — Knowledge ingestion, recall, memory scoping across personalities
-- [ ] **Marketplace flows** — Skill install/uninstall, workflow import, community sync
+**Priority**: P1 — Quality. Currently 18 files / ~112 tests. Keep expanding alongside feature work.
 
 ---
 
