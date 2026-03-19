@@ -57,6 +57,7 @@ const DELTA_TOOL_PREFIXES = ['delta_'];
 const EDGE_TOOL_PREFIXES = ['edge_'];
 const VOICE_TOOL_PREFIXES = ['voice_'];
 const SHRUTI_TOOL_PREFIXES = ['shruti_'];
+const MNEME_TOOL_PREFIXES = ['mneme_'];
 const SECURITY_TOOL_PREFIXES = ['sec_'];
 
 export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions): void {

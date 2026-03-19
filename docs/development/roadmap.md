@@ -153,8 +153,8 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ### Mneme Knowledge Base
 
-- [ ] **Ecosystem service registration** — Mneme added to service discovery, docker-compose, and contributing docs. Docker image being built.
-- [ ] **MCP tools (native)** — `mneme_search`, `mneme_create_note`, `mneme_get_note`, `mneme_link_notes`, `mneme_graph`. Gated by `exposeMnemeTools`.
+- [x] **Ecosystem service registration** — Mneme in service discovery (`mneme`, port 3838, `exposeMnemeTools`). Docker image: `ghcr.io/maccracken/mneme:latest`.
+- [x] **MCP tools (native)** — 8 tools: `mneme_search`, `mneme_get_note`, `mneme_create_note`, `mneme_update_note`, `mneme_list_notes`, `mneme_query_graph`, `mneme_list_vaults`, `mneme_switch_vault`. Client + tool handler + 8 unit tests.
 - [ ] **Brain integration** — Bridge Mneme's knowledge graph into SY's brain/RAG pipeline as a knowledge source.
 - [ ] **Dashboard knowledge explorer** — Inline note viewer, graph visualization widget.
 
