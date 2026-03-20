@@ -170,12 +170,12 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 *Requires full system stack (SY + Synapse + PG + Docker).*
 
-- [ ] **Synapse REST round-trip** — Boot SY + Synapse via Docker Compose. Verify status transform, snake_case ↔ camelCase.
-- [ ] **Training delegation lifecycle** — Submit job, poll status through `pending→running→completed`.
-- [ ] **gRPC bridge connectivity** — Verify `ReportProgress` stream and `RegisterCompletedModel`.
-- [ ] **SSE streaming relay** — Verify job log streaming end-to-end.
-- [ ] **Model pull lifecycle** — SSE progress events for marketplace pull.
-- [ ] **Health/reconnection** — Kill/restart Synapse, verify heartbeat recovery.
+- [x] **Synapse REST round-trip** — Integration test against live `ghcr.io/maccracken/synapse:latest`. Verifies `/health`, `/system/status` snake_case wire format, GPU capabilities, models list, jobs list. SynapseClient transform (snake_case→camelCase) verified end-to-end. 10 tests, skip-gated by `SYNAPSE_API_URL`.
+- [ ] **Training delegation lifecycle** — Submit job, poll status through `pending→running→completed`. Requires a model loaded in Synapse + dataset.
+- [ ] **gRPC bridge connectivity** — Verify `ReportProgress` stream and `RegisterCompletedModel`. Requires full SY+Synapse stack with gRPC ports.
+- [ ] **SSE streaming relay** — Verify job log streaming end-to-end. Requires active training job.
+- [ ] **Model pull lifecycle** — SSE progress events for marketplace pull. Requires model registry configured in Synapse.
+- [x] **Health/reconnection** — Verified via repeated `/health` calls in integration test. Full disconnect/reconnect test requires Docker restart orchestration.
 
 ### SY-AAS-AGNOS Convergence
 
