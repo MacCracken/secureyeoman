@@ -65,6 +65,19 @@ export class McpServer {
       });
     }
 
+    // Mneme knowledge base (if MNEME_URL configured)
+    if (process.env.MNEME_URL) {
+      resources.push({
+        uri: 'mneme://knowledge/all',
+        name: 'Mneme Knowledge Base',
+        description:
+          'AI-native knowledge base with semantic search, auto-linking, and RAG over personal documents',
+        mimeType: 'application/json',
+        serverId: 'mneme-local',
+        serverName: 'Mneme',
+      });
+    }
+
     return resources;
   }
 

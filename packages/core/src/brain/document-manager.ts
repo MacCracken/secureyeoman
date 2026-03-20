@@ -246,6 +246,100 @@ export class DocumentManager {
   }
 
   /**
+   * Ingest notes from a Mneme knowledge base instance.
+   * Fetches all notes (or searches by query), ingests each as a markdown document.
+   */
+  async ingestMneme(
+    mnemeUrl: string,
+    personalityId: string | null,
+    visibility: DocumentVisibility = 'shared',
+    query?: string,
+  ): Promise<KbDocument[]> {
+    const baseUrl = mnemeUrl.replace(/\/$/, '');
+
+    // Fetch notes — either search results or all notes
+    let notes: { id: string; title: string; content?: string }[];
+    if (query) {
+      const searchResp = await fetch(
+        `${baseUrl}/v1/search?q=${encodeURIComponent(query)}`,
+        { signal: AbortSignal.timeout(15_000) },
+      );
+      if (!searchResp.ok) throw new Error(`Mneme search failed: ${searchResp.status}`);
+      const searchData = (await searchResp.json()) as {
+        results: { note_id: string; title: string }[];
+      };
+      // Fetch full content for each result
+      notes = [];
+      for (const hit of searchData.results) {
+        try {
+          const noteResp = await fetch(
+            `${baseUrl}/v1/notes/${encodeURIComponent(hit.note_id)}`,
+            { signal: AbortSignal.timeout(10_000) },
+          );
+          if (noteResp.ok) {
+            const note = (await noteResp.json()) as { id: string; title: string; content: string };
+            notes.push(note);
+          }
+        } catch {
+          // Skip individual note failures
+        }
+      }
+    } else {
+      // Fetch all notes
+      const listResp = await fetch(`${baseUrl}/v1/notes`, {
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!listResp.ok) throw new Error(`Mneme list failed: ${listResp.status}`);
+      const noteList = (await listResp.json()) as { id: string; title: string }[];
+
+      // Fetch content for each note
+      notes = [];
+      for (const entry of noteList) {
+        try {
+          const noteResp = await fetch(
+            `${baseUrl}/v1/notes/${encodeURIComponent(entry.id)}`,
+            { signal: AbortSignal.timeout(10_000) },
+          );
+          if (noteResp.ok) {
+            const note = (await noteResp.json()) as { id: string; title: string; content: string };
+            notes.push(note);
+          }
+        } catch {
+          // Skip individual note failures
+        }
+      }
+    }
+
+    if (notes.length === 0) {
+      this.logger.warn({ mnemeUrl, query }, 'No notes found in Mneme');
+      return [];
+    }
+
+    const results: KbDocument[] = [];
+
+    for (const note of notes) {
+      if (!note.content) continue;
+      try {
+        const title = `mneme: ${note.title}`;
+        const doc = await this.ingestText(note.content, title, personalityId, visibility);
+        results.push(doc);
+      } catch (err) {
+        this.logger.warn(
+          { noteId: note.id, error: String(err) },
+          'Failed to ingest Mneme note',
+        );
+      }
+    }
+
+    this.logger.info(
+      { mnemeUrl, notesFound: notes.length, ingested: results.length },
+      'Mneme knowledge sync complete',
+    );
+
+    return results;
+  }
+
+  /**
    * Ingest an Excalidraw scene into the knowledge base.
    * Extracts text labels from elements for vector embedding searchability.
    */

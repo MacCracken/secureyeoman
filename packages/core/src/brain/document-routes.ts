@@ -234,6 +234,50 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
     }
   );
 
+  // ── POST /api/v1/brain/documents/connectors/mneme-sync ──────────────────
+  app.post(
+    '/api/v1/brain/documents/connectors/mneme-sync',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          mnemeUrl?: string;
+          personalityId?: string;
+          visibility?: string;
+          query?: string;
+        };
+      }>,
+      reply: FastifyReply,
+    ) => {
+      const { mnemeUrl, personalityId, visibility, query } = request.body ?? {};
+
+      const url = mnemeUrl ?? process.env.MNEME_URL ?? 'http://127.0.0.1:3838';
+
+      // Validate URL
+      try {
+        const parsed = new URL(url);
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          return sendError(reply, 400, 'mnemeUrl must use http or https');
+        }
+      } catch {
+        return sendError(reply, 400, 'Invalid mnemeUrl');
+      }
+
+      const vis: DocumentVisibility = visibility === 'shared' ? 'shared' : 'private';
+
+      const docs = await documentManager.ingestMneme(
+        url,
+        personalityId ?? null,
+        vis,
+        query,
+      );
+
+      if (docs.some((d) => d.status === 'ready')) {
+        void documentManager.generateSourceGuide(personalityId ?? null);
+      }
+      return reply.code(201).send({ documents: docs, count: docs.length });
+    },
+  );
+
   // ── GET /api/v1/brain/documents ──────────────────────────────────────────
   app.get(
     '/api/v1/brain/documents',

@@ -5753,6 +5753,23 @@ export async function ingestGithubWiki(
   });
 }
 
+export async function syncMnemeKnowledge(opts?: {
+  mnemeUrl?: string;
+  personalityId?: string;
+  visibility?: string;
+  query?: string;
+}): Promise<{ documents: KbDocument[]; count: number }> {
+  return request('/brain/documents/connectors/mneme-sync', {
+    method: 'POST',
+    body: JSON.stringify({
+      mnemeUrl: opts?.mnemeUrl,
+      personalityId: opts?.personalityId,
+      visibility: opts?.visibility,
+      query: opts?.query,
+    }),
+  });
+}
+
 export async function listDocuments(opts?: {
   personalityId?: string;
   visibility?: string;

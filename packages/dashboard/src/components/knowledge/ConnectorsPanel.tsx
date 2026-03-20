@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Globe, GitBranch, FileText, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { ingestUrl, ingestText, ingestGithubWiki, fetchPersonalities } from '../../api/client';
+import {
+  Globe,
+  GitBranch,
+  FileText,
+  BookOpen,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+} from 'lucide-react';
+import {
+  ingestUrl,
+  ingestText,
+  ingestGithubWiki,
+  syncMnemeKnowledge,
+  fetchPersonalities,
+} from '../../api/client';
 import { useKbScope } from './KnowledgeBaseContext';
 
 export function ConnectorsPanel() {
@@ -28,6 +42,13 @@ export function ConnectorsPanel() {
   const [wikiPersonality, setWikiPersonality] = useState('');
   const [wikiLoading, setWikiLoading] = useState(false);
   const [wikiResult, setWikiResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // Mneme Sync
+  const [mnemeUrl, setMnemeUrl] = useState('');
+  const [mnemeQuery, setMnemeQuery] = useState('');
+  const [mnemePersonality, setMnemePersonality] = useState('');
+  const [mnemeLoading, setMnemeLoading] = useState(false);
+  const [mnemeResult, setMnemeResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   // Paste Text
   const [pasteText, setPasteText] = useState('');
@@ -72,6 +93,26 @@ export function ConnectorsPanel() {
       setWikiResult({ ok: false, msg: err instanceof Error ? err.message : String(err) });
     } finally {
       setWikiLoading(false);
+    }
+  }
+
+  async function handleMnemeSync() {
+    setMnemeLoading(true);
+    setMnemeResult(null);
+    try {
+      const res = await syncMnemeKnowledge({
+        mnemeUrl: mnemeUrl.trim() || undefined,
+        personalityId: isOrg ? undefined : mnemePersonality || undefined,
+        query: mnemeQuery.trim() || undefined,
+      });
+      setMnemeResult({
+        ok: true,
+        msg: `Synced ${res.count} note${res.count !== 1 ? 's' : ''} from Mneme`,
+      });
+    } catch (err) {
+      setMnemeResult({ ok: false, msg: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setMnemeLoading(false);
     }
   }
 
@@ -204,6 +245,50 @@ export function ConnectorsPanel() {
             Sync Wiki
           </button>
           {resultBanner(wikiResult)}
+        </div>
+      </div>
+
+      {/* Mneme Knowledge Base */}
+      <div className="card">
+        <div className="card-header p-3 sm:p-4">
+          <h3 className="card-title text-sm flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-muted-foreground" />
+            Mneme Knowledge Base
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Sync notes from a Mneme instance into the knowledge base. Optionally filter by search
+            query.
+          </p>
+        </div>
+        <div className="card-content space-y-2 p-3 sm:p-4 pt-0 sm:pt-0">
+          <input
+            type="url"
+            value={mnemeUrl}
+            onChange={(e) => {
+              setMnemeUrl(e.target.value);
+            }}
+            placeholder="http://127.0.0.1:3838 (default)"
+            className="w-full bg-card border border-border rounded text-sm py-1.5 px-2"
+          />
+          <input
+            type="text"
+            value={mnemeQuery}
+            onChange={(e) => {
+              setMnemeQuery(e.target.value);
+            }}
+            placeholder="Filter query (optional — leave empty to sync all)"
+            className="w-full bg-card border border-border rounded text-sm py-1.5 px-2"
+          />
+          {!isOrg && <div>{personalitySelector(mnemePersonality, setMnemePersonality)}</div>}
+          <button
+            className="btn btn-primary text-xs h-8 px-3 disabled:opacity-50"
+            onClick={() => void handleMnemeSync()}
+            disabled={mnemeLoading}
+          >
+            {mnemeLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+            Sync from Mneme
+          </button>
+          {resultBanner(mnemeResult)}
         </div>
       </div>
 
