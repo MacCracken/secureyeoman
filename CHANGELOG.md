@@ -188,6 +188,28 @@ E2E helpers extended with A2AManager (storage + transport) and MarketplaceManage
 - **19 Synapse + Shruti integration tests** (skip-gated by env)
 - **3 new sy-edge sandbox tests** for reverse shell tools, metacharacter blocking, /dev/tcp blocking
 
+### Bug Fixes
+
+- **A2A peers migration** — Added missing `updated_at` column to `a2a.peers` table in `003_enterprise.sql`. Storage code referenced this column in INSERT/UPDATE queries, causing all peer registration to fail with a SQL error
+- **Lint** — Added `: unknown` type annotation to catch callback variables in `audit-forwarder.ts` (ESLint `@typescript-eslint/use-unknown-in-catch-callback-variable`)
+- **Prettier** — Formatted 4 pre-existing style violations (`runtimes.ts`, `synapse-client.test.ts`, `ImagePreview.tsx`, `MnemeExplorer.tsx`)
+
+### Test Fixes (25 E2E failures + 1 unit test)
+
+- **`mcp.test.ts`** — Updated expected tool count from 3 → 7 to match full accelerator tool set (accelerator_status, gpu_status, tpu_status, npu_status, asic_status, local_models_list, privacy_route_check)
+- **`mcp.e2e.test.ts`** — Tool calls on non-existent/disabled server return 404 (was expecting 400)
+- **`accelerator-tools.e2e.test.ts`** — Added required `serverId: 'secureyeoman-local'` to all tool call requests; fixed unknown tool to expect 404
+- **`analytics.e2e.test.ts`** — Brain stats `memories`/`knowledge` are objects with `.total`, not numbers; audit query returns `{ entries }` not array; added body to audit verify POST
+- **`marketplace.e2e.test.ts`** — Listing returns `skills` not `items`; community status field is `lastSyncedAt` not `lastSync`; skill DELETE uses `authDeleteHeaders` (no content-type)
+- **`training.e2e.test.ts`** — Brain stats shape: `stats.memories.total` / `stats.knowledge.total`
+- **`input-validation.e2e.test.ts`** — Added missing required `source` field to memory creation
+- **`document-connectors.e2e.test.ts`** — Moved `registerDocumentRoutes` into `startE2EServer` helper to register routes before `listen()` (was failing with `FST_ERR_INSTANCE_ALREADY_LISTENING`)
+- **`a2a.e2e.test.ts`** — Config endpoint returns `{ config: { enabled } }` not `{ enabled }`
+
+### Dependencies
+
+- **`flatted`** — Updated 3.4.1 → 3.4.2 (fixes prototype pollution via `parse()`, GHSA-rf6f-7fwh-wjgh)
+
 ---
 
 ## [2026.3.18-1]
