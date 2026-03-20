@@ -1968,4 +1968,158 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
     createdBy: 'system',
     autonomyLevel: 'L2' as const,
   },
+
+  // ── Rasa: Batch Image Processing ───────────────────────────────
+  {
+    name: 'rasa-batch-image-processing',
+    description:
+      'Batch process images via Rasa: open each image, apply configured filters, export to output directory. Useful for thumbnail generation, format conversion, and watermarking.',
+    steps: [
+      {
+        id: 'batch-export',
+        type: 'tool',
+        name: 'Batch Process Images',
+        description: 'Run batch export via Rasa — import, filter, and re-export images',
+        config: {
+          toolName: 'rasa_batch_export',
+          toolArgs: {
+            input_paths: '{{input.input_paths}}',
+            output_dir: '{{input.output_dir}}',
+            format: '{{input.format}}',
+            filters: '{{input.filters}}',
+          },
+        },
+        dependsOn: [],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      transformStep(
+        {
+          id: 'summary',
+          name: 'Summarise Results',
+          description: 'Format batch processing summary',
+          dependsOn: ['batch-export'],
+          onError: 'continue',
+        },
+        'Batch processed {{input.input_paths.length}} images to {{input.output_dir}} as {{input.format}}.\n\nResult: {{steps.batch-export.output}}',
+      ),
+    ],
+    edges: [{ source: 'batch-export', target: 'summary' }],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── Rasa: Screenshot Annotation Pipeline ───────────────────────
+  {
+    name: 'rasa-screenshot-annotation',
+    description:
+      'Capture screenshot → open in Rasa → add annotation layer → export annotated image. Combines desktop screenshot MCP tool with Rasa editing.',
+    steps: [
+      {
+        id: 'open-image',
+        type: 'tool',
+        name: 'Open Screenshot',
+        description: 'Open the screenshot file in Rasa',
+        config: {
+          toolName: 'rasa_open_image',
+          toolArgs: { path: '{{input.image_path}}' },
+        },
+        dependsOn: [],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      {
+        id: 'add-layer',
+        type: 'tool',
+        name: 'Add Annotation Layer',
+        description: 'Add a new layer for annotations',
+        config: {
+          toolName: 'rasa_edit_layer',
+          toolArgs: { action: 'add', name: 'Annotations' },
+        },
+        dependsOn: ['open-image'],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      agentStep(
+        {
+          id: 'annotate',
+          name: 'Generate Annotations',
+          description: 'Use LLM to describe what annotations to add based on the image context',
+          dependsOn: ['add-layer'],
+          onError: 'continue',
+        },
+        'default',
+        'Describe key areas to annotate in this screenshot for documentation purposes: {{input.context}}',
+      ),
+      {
+        id: 'export',
+        type: 'tool',
+        name: 'Export Annotated Image',
+        description: 'Export the annotated screenshot',
+        config: {
+          toolName: 'rasa_export',
+          toolArgs: {
+            path: '{{input.output_path}}',
+            format: 'png',
+          },
+        },
+        dependsOn: ['annotate'],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+    ],
+    edges: [
+      { source: 'open-image', target: 'add-layer' },
+      { source: 'add-layer', target: 'annotate' },
+      { source: 'annotate', target: 'export' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── Rasa: Thumbnail Generation ─────────────────────────────────
+  {
+    name: 'rasa-thumbnail-generation',
+    description:
+      'Generate thumbnails from source images: open image, apply resize filter, export as JPEG with quality optimization.',
+    steps: [
+      {
+        id: 'open',
+        type: 'tool',
+        name: 'Open Source Image',
+        description: 'Open the source image in Rasa',
+        config: {
+          toolName: 'rasa_open_image',
+          toolArgs: { path: '{{input.source_path}}' },
+        },
+        dependsOn: [],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      {
+        id: 'export-thumb',
+        type: 'tool',
+        name: 'Export Thumbnail',
+        description: 'Export as compressed JPEG thumbnail',
+        config: {
+          toolName: 'rasa_export',
+          toolArgs: {
+            path: '{{input.output_path}}',
+            format: 'jpeg',
+            quality: 75,
+          },
+        },
+        dependsOn: ['open'],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+    ],
+    edges: [{ source: 'open', target: 'export-thumb' }],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L1' as const,
+  },
 ];

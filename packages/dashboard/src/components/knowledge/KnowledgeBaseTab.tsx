@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { FileText, Plug, Activity } from 'lucide-react';
+import { FileText, Plug, Activity, BookOpen } from 'lucide-react';
 import { DocumentsPanel } from './DocumentsPanel';
 import { ConnectorsPanel } from './ConnectorsPanel';
 import { KnowledgeHealthPanel } from './KnowledgeHealthPanel';
+import { MnemeExplorer } from './MnemeExplorer';
 
-type SubTab = 'documents' | 'connectors' | 'health';
+type SubTab = 'documents' | 'connectors' | 'mneme' | 'health';
 
 const SUB_TABS: { id: SubTab; label: string; icon: React.ReactNode }[] = [
   { id: 'documents', label: 'Documents', icon: <FileText className="w-4 h-4" /> },
   { id: 'connectors', label: 'Connectors', icon: <Plug className="w-4 h-4" /> },
+  { id: 'mneme', label: 'Mneme', icon: <BookOpen className="w-4 h-4" /> },
   { id: 'health', label: 'Health', icon: <Activity className="w-4 h-4" /> },
 ];
 
@@ -40,6 +42,7 @@ export function KnowledgeBaseTab() {
       {/* Sub-tab content */}
       {activeSubTab === 'documents' && <DocumentsPanel />}
       {activeSubTab === 'connectors' && <ConnectorsPanel />}
+      {activeSubTab === 'mneme' && <MnemeExplorer />}
       {activeSubTab === 'health' && <KnowledgeHealthPanel />}
     </div>
   );
