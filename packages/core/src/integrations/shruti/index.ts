@@ -1,3 +1,5 @@
+export { SHRUTI_TOOL_DEFINITIONS } from './shruti-tools.js';
+
 export { ShrutiClient } from './shruti-client.js';
 export type {
   ShrutiClientConfig,

@@ -145,8 +145,8 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ### Rasa Image Editor
 
-- [ ] **Ecosystem service registration** — Rasa added to service discovery, docker-compose, and contributing docs. Docker image pending first GHCR release.
-- [ ] **MCP tools (native)** — `rasa_get_document`, `rasa_create_layer`, `rasa_apply_filter`, `rasa_generate_image`, `rasa_export`. Gated by `exposeRasaTools`.
+- [x] **Ecosystem service registration** — Rasa in service discovery (`rasa`, stdio transport via `RASA_MCP_PATH`, `exposeRasaTools`). Docker image: `ghcr.io/maccracken/rasa:latest` (fixed: added `liblcms2` dep, corrected healthcheck).
+- [x] **MCP tools (native)** — 8 tool definitions: `rasa_open_image`, `rasa_get_document`, `rasa_edit_layer`, `rasa_apply_filter`, `rasa_export`, `rasa_batch_export`, `rasa_import_video_frame`, `rasa_export_for_video`. Stdio MCP transport — rasa-mcp binary spawned by SY MCP client manager.
 - [ ] **Image generation workflow** — Workflow templates: text-to-image, batch processing, thumbnail generation, screenshot annotation.
 - [ ] **Dashboard image viewer** — Inline image preview in chat. Gallery view for document history.
 - [ ] **Vision pipeline integration** — Connect Rasa's AI engine to SY's multimodal pipeline for image understanding, OCR, and visual QA.
