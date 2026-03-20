@@ -177,9 +177,10 @@ export async function handleAcceleratorToolCall(
       available: filtered.length > 0,
       totalVramMb: filtered.reduce((sum, d) => sum + d.vramTotalMb, 0),
       totalFreeVramMb: filtered.reduce((sum, d) => sum + d.vramFreeMb, 0),
-      bestDevice: filtered.length > 0
-        ? filtered.reduce((best, d) => (d.vramFreeMb > best.vramFreeMb ? d : best))
-        : null,
+      bestDevice:
+        filtered.length > 0
+          ? filtered.reduce((best, d) => (d.vramFreeMb > best.vramFreeMb ? d : best))
+          : null,
     };
   }
 
@@ -217,10 +218,7 @@ export async function handleAcceleratorToolCall(
       piiFound = classification.piiFound;
     }
 
-    const [accel, localModels] = await Promise.all([
-      probeAccelerators(),
-      refreshLocalModels(),
-    ]);
+    const [accel, localModels] = await Promise.all([probeAccelerators(), refreshLocalModels()]);
 
     return routeWithPrivacy(
       classificationLevel,

@@ -964,7 +964,10 @@ export class WorkflowEngine {
         try {
           inputs = JSON.parse(inputsRaw) as Record<string, string>;
         } catch {
-          this.logger.warn({ inputsRaw, stepId: step.id }, 'ci_trigger: inputs JSON parse failed, using empty');
+          this.logger.warn(
+            { inputsRaw, stepId: step.id },
+            'ci_trigger: inputs JSON parse failed, using empty'
+          );
         }
 
         this.logger.info(
@@ -1286,12 +1289,8 @@ export class WorkflowEngine {
 
       case 'loop': {
         const maxIterations = Number(cfg.maxIterations ?? 100);
-        const conditionExpr = cfg.conditionExpression
-          ? String(cfg.conditionExpression)
-          : undefined;
-        const bodyStepIds = Array.isArray(cfg.stepIds)
-          ? (cfg.stepIds as string[])
-          : [];
+        const conditionExpr = cfg.conditionExpression ? String(cfg.conditionExpression) : undefined;
+        const bodyStepIds = Array.isArray(cfg.stepIds) ? (cfg.stepIds as string[]) : [];
 
         let lastOutput: unknown = null;
         let iterations = 0;
@@ -1304,13 +1303,20 @@ export class WorkflowEngine {
           }
 
           // Provide loop metadata in context
-          ctx.steps[`${step.id}_iteration`] = { output: { index: i, iteration: i + 1 }, status: 'completed' };
+          ctx.steps[`${step.id}_iteration`] = {
+            output: { index: i, iteration: i + 1 },
+            status: 'completed',
+          };
 
           // Execute each body step in order.
           // Body step configs are stored in cfg.stepConfigs keyed by step ID.
-          const stepConfigs = (cfg.stepConfigs ?? Object.create(null)) as Record<string, Record<string, unknown>>;
+          const stepConfigs = (cfg.stepConfigs ?? Object.create(null)) as Record<
+            string,
+            Record<string, unknown>
+          >;
           for (const bodyId of bodyStepIds) {
-            const bodyConfig = stepConfigs[bodyId] ?? (Object.create(null) as Record<string, unknown>);
+            const bodyConfig =
+              stepConfigs[bodyId] ?? (Object.create(null) as Record<string, unknown>);
             const bodyType = (bodyConfig.type as string) ?? 'transform';
             const refStep = {
               id: `${bodyId}_loop_${i}`,
@@ -1349,7 +1355,9 @@ export class WorkflowEngine {
         }
 
         if (!Array.isArray(listValue)) {
-          throw new Error(`parallel_map: inputListPath '${inputListPath}' did not resolve to an array`);
+          throw new Error(
+            `parallel_map: inputListPath '${inputListPath}' did not resolve to an array`
+          );
         }
 
         const taskTemplate = String(cfg.taskTemplate ?? '{{item}}');
@@ -1402,7 +1410,9 @@ export class WorkflowEngine {
 
         const cmd = RUNTIME_MAP[runtime];
         if (!cmd) {
-          throw new Error(`code_execution: unsupported runtime '${runtime}'. Supported: node, python3, bash`);
+          throw new Error(
+            `code_execution: unsupported runtime '${runtime}'. Supported: node, python3, bash`
+          );
         }
 
         try {
@@ -1524,7 +1534,7 @@ export class WorkflowEngine {
         // ctx.steps[`cache_${key}`]. This step checks for that entry.
         const cacheStepKey = `cache_${cacheKey}`;
         const cached = ctx.steps[cacheStepKey];
-        if (cached && cached.status === 'completed' && cached.output !== null) {
+        if (cached?.status === 'completed' && cached.output !== null) {
           return { hit: true, value: cached.output, cacheKey };
         }
 

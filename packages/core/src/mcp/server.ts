@@ -111,7 +111,9 @@ export class McpServer {
         return { skillId: skill.id, name: skill.name, description: skill.description, args };
       } catch (err) {
         this.logger.warn({ toolName, skillId, error: String(err) }, 'Skill lookup failed');
-        return { error: `Skill lookup failed: ${err instanceof Error ? err.message : String(err)}` };
+        return {
+          error: `Skill lookup failed: ${err instanceof Error ? err.message : String(err)}`,
+        };
       }
     }
 

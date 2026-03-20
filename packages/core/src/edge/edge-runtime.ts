@@ -341,7 +341,8 @@ export class EdgeRuntime {
   }
 
   private detectTpu(): boolean {
-    const { existsSync, readdirSync, readlinkSync } = require('node:fs') as typeof import('node:fs');
+    const { existsSync, readdirSync, readlinkSync } =
+      require('node:fs') as typeof import('node:fs');
     const { join } = require('node:path') as typeof import('node:path');
     // Google TPU via /dev/accel* (matching ai-hwaccel/Synapse detection)
     if (!existsSync('/sys/class/accel')) return false;
@@ -365,7 +366,8 @@ export class EdgeRuntime {
   }
 
   private detectNpu(): boolean {
-    const { existsSync, readdirSync, readlinkSync } = require('node:fs') as typeof import('node:fs');
+    const { existsSync, readdirSync, readlinkSync } =
+      require('node:fs') as typeof import('node:fs');
     const { join } = require('node:path') as typeof import('node:path');
     // Intel NPU (Meteor Lake+)
     if (existsSync('/sys/class/misc/intel_npu')) return true;

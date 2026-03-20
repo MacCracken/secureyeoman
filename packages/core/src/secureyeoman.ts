@@ -405,7 +405,10 @@ export class SecureYeoman {
                     );
                   }
                 } catch (err) {
-                  this.logger.debug({ error: String(err) }, 'License cache parse failed — community tier');
+                  this.logger.debug(
+                    { error: String(err) },
+                    'License cache parse failed — community tier'
+                  );
                 }
               }
             } else {
@@ -449,7 +452,10 @@ export class SecureYeoman {
             );
           }
         } catch (err) {
-          this.logger.debug({ error: String(err) }, 'Grace period init failed — enforcement follows config');
+          this.logger.debug(
+            { error: String(err) },
+            'Grace period init failed — enforcement follows config'
+          );
         }
       }
 

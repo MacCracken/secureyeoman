@@ -42,8 +42,8 @@ describe('McpServer', () => {
             'asic_status',
             'local_models_list',
             'privacy_route_check',
-          ].includes(t.name),
-        ),
+          ].includes(t.name)
+        )
       ).toBe(true);
     });
 

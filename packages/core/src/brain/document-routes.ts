@@ -246,7 +246,7 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
           query?: string;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const { mnemeUrl, personalityId, visibility, query } = request.body ?? {};
 
@@ -264,18 +264,13 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
 
       const vis: DocumentVisibility = visibility === 'shared' ? 'shared' : 'private';
 
-      const docs = await documentManager.ingestMneme(
-        url,
-        personalityId ?? null,
-        vis,
-        query,
-      );
+      const docs = await documentManager.ingestMneme(url, personalityId ?? null, vis, query);
 
       if (docs.some((d) => d.status === 'ready')) {
         void documentManager.generateSourceGuide(personalityId ?? null);
       }
       return reply.code(201).send({ documents: docs, count: docs.length });
-    },
+    }
   );
 
   // ── GET /api/v1/brain/documents ──────────────────────────────────────────

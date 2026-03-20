@@ -27,10 +27,20 @@ async function* spawnAndStream(
   code: string,
   timeout: number
 ): AsyncIterable<OutputChunk & { _exitCode?: number }> {
+  // Restricted environment — strip sensitive vars to prevent exfiltration
+  const safeEnv: Record<string, string> = {};
+  const ALLOWED_ENV_PREFIXES = ['PATH', 'HOME', 'USER', 'LANG', 'LC_', 'TERM', 'TZ', 'TMPDIR'];
+  for (const [k, v] of Object.entries(process.env)) {
+    if (v && ALLOWED_ENV_PREFIXES.some((p) => k.startsWith(p))) {
+      safeEnv[k] = v;
+    }
+  }
+
   const child = spawn(command, [...args, code], {
     stdio: ['pipe', 'pipe', 'pipe'],
     timeout,
-    env: { ...process.env },
+    killSignal: 'SIGKILL', // ensure process actually dies on timeout
+    env: safeEnv,
   });
 
   // Close stdin immediately — we pass code via argument
@@ -107,6 +117,12 @@ const NODE_DANGEROUS = [
   /\bfs\s*\.\s*(?:rm|rmdir|unlink|writeFile)Sync\b/,
   /\brequire\s*\(\s*['"]node:fs['"]\s*\)/,
   /\bimport\s*\(\s*['"]node:fs['"]\s*\)/,
+  // Reverse shell / network exfil
+  /\brequire\s*\(\s*['"](?:node:)?net['"]\s*\)/,
+  /\bnew\s+net\.Socket\b/,
+  /\brequire\s*\(\s*['"](?:node:)?dgram['"]\s*\)/,
+  /\bchild_process\b/,
+  /\bglobalThis\s*\[\s*['"]process['"]\]/,
 ];
 
 const PYTHON_DANGEROUS = [
@@ -116,6 +132,19 @@ const PYTHON_DANGEROUS = [
   /\beval\s*\(/,
   /\bexec\s*\(/,
   /\bshutil\.rmtree\b/,
+  // Reverse shell patterns
+  /\bsocket\.socket\b/,
+  /\bsocket\.connect\b/,
+  /\bpty\.spawn\b/,
+  /\bos\.dup2\b/,
+  /\bos\.popen\b/,
+  /\bos\.exec[lv](?:p|pe|e)?\b/,
+  /\bcommands\.getoutput\b/,
+  /\breverse.*shell/i,
+  // Encoding evasion
+  /\bbase64\.b64decode\b/,
+  /\bcodecs\.decode\b.*rot/,
+  /\bchr\s*\(\s*\d+\s*\).*chr\s*\(\s*\d+\s*\)/,
 ];
 
 const SHELL_DANGEROUS = [
@@ -129,6 +158,26 @@ const SHELL_DANGEROUS = [
   /\bwget\b.*\|\s*(?:sh|bash|zsh)\b/,
   /\bchmod\s+[0-7]*s/, // setuid
   /\bnc\s+-[el]/, // netcat listener
+  // Reverse shell patterns
+  /\/dev\/tcp\//,                              // bash /dev/tcp reverse shell
+  /\bmkfifo\b/,                               // named pipe for reverse shell
+  /\bncat\b.*-[el]/,                          // ncat listener
+  /\bsocat\b/,                                // socat bidirectional relay
+  /\btelnet\b.*\|.*(?:sh|bash)\b/,            // telnet pipe to shell
+  /\bpython[23]?\s+-c\s+.*(?:socket|pty)\b/,  // python one-liner reverse shell
+  /\bperl\s+-e\s+.*socket\b/,                 // perl reverse shell
+  /\bruby\s+-e\s+.*(?:TCPSocket|socket)\b/,   // ruby reverse shell
+  /\bphp\s+-r\s+.*fsockopen\b/,               // php reverse shell
+  /\blua\s+-e\s+.*socket\b/,                  // lua reverse shell
+  /\bexec\s+\d+<>\/dev\/tcp\b/,               // fd redirect reverse shell
+  /\bbash\s+-i\s+>&?\s*\/dev\/tcp\b/,         // interactive bash reverse shell
+  /0<&\d+;exec\s/,                            // fd juggling shell
+  // Encoding evasion
+  /\$'\x5c[xX][0-9a-fA-F]/,                   // $'\x41' hex escape
+  /\bbase64\s+-d\b/,                           // base64 decode to exec
+  /\bxxd\s+-r\b/,                             // hex decode
+  /\beval\b.*\$\(/,                           // eval with command substitution
+  /\beval\b.*`/,                              // eval with backtick substitution
 ];
 
 // ─── Node Runtime ───────────────────────────────────────────────────

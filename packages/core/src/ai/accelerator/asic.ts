@@ -96,9 +96,7 @@ export async function probeNeuron(): Promise<AcceleratorDevice[]> {
   try {
     const { readdir, readFile } = await import('node:fs/promises');
     const devEntries = await readdir('/dev');
-    const neuronDevices = devEntries.filter(
-      (e) => e.startsWith('neuron') && /^neuron\d+$/.test(e)
-    );
+    const neuronDevices = devEntries.filter((e) => e.startsWith('neuron') && /^neuron\d+$/.test(e));
     if (neuronDevices.length === 0) return [];
 
     let isTrainium = false;

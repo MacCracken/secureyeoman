@@ -253,17 +253,16 @@ export class DocumentManager {
     mnemeUrl: string,
     personalityId: string | null,
     visibility: DocumentVisibility = 'shared',
-    query?: string,
+    query?: string
   ): Promise<KbDocument[]> {
     const baseUrl = mnemeUrl.replace(/\/$/, '');
 
     // Fetch notes — either search results or all notes
     let notes: { id: string; title: string; content?: string }[];
     if (query) {
-      const searchResp = await fetch(
-        `${baseUrl}/v1/search?q=${encodeURIComponent(query)}`,
-        { signal: AbortSignal.timeout(15_000) },
-      );
+      const searchResp = await fetch(`${baseUrl}/v1/search?q=${encodeURIComponent(query)}`, {
+        signal: AbortSignal.timeout(15_000),
+      });
       if (!searchResp.ok) throw new Error(`Mneme search failed: ${searchResp.status}`);
       const searchData = (await searchResp.json()) as {
         results: { note_id: string; title: string }[];
@@ -272,10 +271,9 @@ export class DocumentManager {
       notes = [];
       for (const hit of searchData.results) {
         try {
-          const noteResp = await fetch(
-            `${baseUrl}/v1/notes/${encodeURIComponent(hit.note_id)}`,
-            { signal: AbortSignal.timeout(10_000) },
-          );
+          const noteResp = await fetch(`${baseUrl}/v1/notes/${encodeURIComponent(hit.note_id)}`, {
+            signal: AbortSignal.timeout(10_000),
+          });
           if (noteResp.ok) {
             const note = (await noteResp.json()) as { id: string; title: string; content: string };
             notes.push(note);
@@ -296,10 +294,9 @@ export class DocumentManager {
       notes = [];
       for (const entry of noteList) {
         try {
-          const noteResp = await fetch(
-            `${baseUrl}/v1/notes/${encodeURIComponent(entry.id)}`,
-            { signal: AbortSignal.timeout(10_000) },
-          );
+          const noteResp = await fetch(`${baseUrl}/v1/notes/${encodeURIComponent(entry.id)}`, {
+            signal: AbortSignal.timeout(10_000),
+          });
           if (noteResp.ok) {
             const note = (await noteResp.json()) as { id: string; title: string; content: string };
             notes.push(note);
@@ -324,16 +321,13 @@ export class DocumentManager {
         const doc = await this.ingestText(note.content, title, personalityId, visibility);
         results.push(doc);
       } catch (err) {
-        this.logger.warn(
-          { noteId: note.id, error: String(err) },
-          'Failed to ingest Mneme note',
-        );
+        this.logger.warn({ noteId: note.id, error: String(err) }, 'Failed to ingest Mneme note');
       }
     }
 
     this.logger.info(
       { mnemeUrl, notesFound: notes.length, ingested: results.length },
-      'Mneme knowledge sync complete',
+      'Mneme knowledge sync complete'
     );
 
     return results;

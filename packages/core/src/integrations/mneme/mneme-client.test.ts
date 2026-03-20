@@ -32,8 +32,8 @@ describe('MnemeClient', () => {
             embedding_backend: 'none',
             embedding_dimension: 0,
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
       );
 
       const health = await client.health();
@@ -62,8 +62,8 @@ describe('MnemeClient', () => {
               },
             ],
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
       );
 
       const result = await client.search('test');
@@ -94,8 +94,8 @@ describe('MnemeClient', () => {
             trust_override: null,
             backlinks: [],
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
       );
 
       const note = await client.createNote({
@@ -124,8 +124,8 @@ describe('MnemeClient', () => {
             trust_override: null,
             backlinks: [],
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
       );
 
       const note = await client.getNote('note-1');
@@ -138,7 +138,7 @@ describe('MnemeClient', () => {
         new Response(JSON.stringify([]), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
-        }),
+        })
       );
 
       const notes = await client.listNotes();
@@ -161,8 +161,8 @@ describe('MnemeClient', () => {
               is_active: true,
             },
           ]),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
       );
 
       const vaults = await client.listVaults();
@@ -174,7 +174,7 @@ describe('MnemeClient', () => {
   describe('error handling', () => {
     it('throws on non-OK response', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response('Not Found', { status: 404 }),
+        new Response('Not Found', { status: 404 })
       );
 
       await expect(client.getNote('nonexistent')).rejects.toThrow('Mneme API error (404)');
@@ -188,8 +188,8 @@ describe('MnemeClient', () => {
           JSON.stringify([
             { id: 'tag-1', name: 'rust', color: null, created_at: '2026-03-19T00:00:00Z' },
           ]),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
       );
 
       const tags = await client.listTags();

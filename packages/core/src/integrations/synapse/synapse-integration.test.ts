@@ -39,9 +39,9 @@ async function synapseGet(path: string): Promise<{ status: number; body: unknown
   return { status: resp.status, body };
 }
 
-async function synapsePost(
+async function _synapsePost(
   path: string,
-  data: unknown,
+  data: unknown
 ): Promise<{ status: number; body: unknown }> {
   const resp = await fetch(`${SYNAPSE_URL}${path}`, {
     method: 'POST',
@@ -127,7 +127,7 @@ describe.skipIf(skip)('Synapse Integration', () => {
     it('getStatus transforms snake_case → camelCase', async () => {
       const client = new SynapseClient(
         { apiUrl: SYNAPSE_URL!, enabled: true, connectionTimeoutMs: 10_000 },
-        noopLogger,
+        noopLogger
       );
 
       const instance = await client.getStatus();
@@ -141,7 +141,7 @@ describe.skipIf(skip)('Synapse Integration', () => {
     it('listModels returns array', async () => {
       const client = new SynapseClient(
         { apiUrl: SYNAPSE_URL!, enabled: true, connectionTimeoutMs: 10_000 },
-        noopLogger,
+        noopLogger
       );
 
       const models = await client.listModels();
@@ -151,7 +151,7 @@ describe.skipIf(skip)('Synapse Integration', () => {
     it('listJobs returns array', async () => {
       const client = new SynapseClient(
         { apiUrl: SYNAPSE_URL!, enabled: true, connectionTimeoutMs: 10_000 },
-        noopLogger,
+        noopLogger
       );
 
       const jobs = await client.listJobs();

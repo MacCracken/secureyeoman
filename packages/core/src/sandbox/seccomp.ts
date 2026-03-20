@@ -9,7 +9,7 @@
  * utilities and detection of kernel support.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { platform } from 'node:os';
 
@@ -114,7 +114,7 @@ export function detectSeccomp(): SeccompStatus {
 
   try {
     // Check kernel version for seccomp support (3.5+ for filter mode)
-    const kernelVersion = execSync('uname -r', { encoding: 'utf-8' }).trim();
+    const kernelVersion = execFileSync('uname', ['-r'], { encoding: 'utf-8' }).trim();
 
     // Check if seccomp is enabled in the kernel
     const statusPath = `/proc/${process.pid}/status`;

@@ -50,9 +50,7 @@ async function probeViaHwAccel(): Promise<AcceleratorDevice[] | null> {
 
 function hwaccelProfileToDevice(profile: HwAccelProfile, index: number): AcceleratorDevice {
   const memMb = Math.round(profile.memory_bytes / (1024 * 1024));
-  const { vendor, family, name, isCuda, isRocm, isTpu } = classifyAccelerator(
-    profile.accelerator
-  );
+  const { vendor, family, name, isCuda, isRocm, isTpu } = classifyAccelerator(profile.accelerator);
 
   return {
     index,
@@ -83,13 +81,41 @@ function classifyAccelerator(accel: string | Record<string, unknown>): {
   if (typeof accel === 'string') {
     switch (accel) {
       case 'MetalGpu':
-        return { vendor: 'apple', family: 'gpu', name: 'Apple Metal GPU', isCuda: false, isRocm: false, isTpu: false };
+        return {
+          vendor: 'apple',
+          family: 'gpu',
+          name: 'Apple Metal GPU',
+          isCuda: false,
+          isRocm: false,
+          isTpu: false,
+        };
       case 'IntelNpu':
-        return { vendor: 'intel', family: 'npu', name: 'Intel NPU', isCuda: false, isRocm: false, isTpu: false };
+        return {
+          vendor: 'intel',
+          family: 'npu',
+          name: 'Intel NPU',
+          isCuda: false,
+          isRocm: false,
+          isTpu: false,
+        };
       case 'AppleNpu':
-        return { vendor: 'apple', family: 'npu', name: 'Apple Neural Engine', isCuda: false, isRocm: false, isTpu: false };
+        return {
+          vendor: 'apple',
+          family: 'npu',
+          name: 'Apple Neural Engine',
+          isCuda: false,
+          isRocm: false,
+          isTpu: false,
+        };
       default:
-        return { vendor: 'unknown', family: 'gpu', name: accel, isCuda: false, isRocm: false, isTpu: false };
+        return {
+          vendor: 'unknown',
+          family: 'gpu',
+          name: accel,
+          isCuda: false,
+          isRocm: false,
+          isTpu: false,
+        };
     }
   }
 
@@ -98,33 +124,103 @@ function classifyAccelerator(accel: string | Record<string, unknown>): {
 
   switch (key) {
     case 'CudaGpu':
-      return { vendor: 'nvidia', family: 'gpu', name: `NVIDIA CUDA GPU ${data.device_id ?? 0}`, isCuda: true, isRocm: false, isTpu: false };
+      return {
+        vendor: 'nvidia',
+        family: 'gpu',
+        name: `NVIDIA CUDA GPU ${data.device_id ?? 0}`,
+        isCuda: true,
+        isRocm: false,
+        isTpu: false,
+      };
     case 'RocmGpu':
-      return { vendor: 'amd', family: 'gpu', name: `AMD ROCm GPU ${data.device_id ?? 0}`, isCuda: false, isRocm: true, isTpu: false };
+      return {
+        vendor: 'amd',
+        family: 'gpu',
+        name: `AMD ROCm GPU ${data.device_id ?? 0}`,
+        isCuda: false,
+        isRocm: true,
+        isTpu: false,
+      };
     case 'VulkanGpu':
-      return { vendor: 'vulkan', family: 'gpu', name: (data.device_name as string) ?? 'Vulkan GPU', isCuda: false, isRocm: false, isTpu: false };
+      return {
+        vendor: 'vulkan',
+        family: 'gpu',
+        name: (data.device_name as string) ?? 'Vulkan GPU',
+        isCuda: false,
+        isRocm: false,
+        isTpu: false,
+      };
     case 'AmdXdnaNpu':
-      return { vendor: 'amd', family: 'npu', name: `AMD XDNA NPU ${data.device_id ?? 0}`, isCuda: false, isRocm: false, isTpu: false };
+      return {
+        vendor: 'amd',
+        family: 'npu',
+        name: `AMD XDNA NPU ${data.device_id ?? 0}`,
+        isCuda: false,
+        isRocm: false,
+        isTpu: false,
+      };
     case 'Tpu': {
       const ver = (data.version as string) ?? '';
       const chips = (data.chip_count as number) ?? 1;
-      return { vendor: 'google', family: 'tpu', name: `Google TPU ${ver} (${chips} chips)`, isCuda: false, isRocm: false, isTpu: true };
+      return {
+        vendor: 'google',
+        family: 'tpu',
+        name: `Google TPU ${ver} (${chips} chips)`,
+        isCuda: false,
+        isRocm: false,
+        isTpu: true,
+      };
     }
     case 'Gaudi': {
       const gen = (data.generation as string) ?? 'Gaudi2';
-      return { vendor: 'habana', family: 'ai_asic', name: `Intel ${gen}`, isCuda: false, isRocm: false, isTpu: false };
+      return {
+        vendor: 'habana',
+        family: 'ai_asic',
+        name: `Intel ${gen}`,
+        isCuda: false,
+        isRocm: false,
+        isTpu: false,
+      };
     }
     case 'AwsNeuron': {
       const chipType = (data.chip_type as string) ?? 'Inferentia';
       const cores = (data.core_count as number) ?? 2;
-      return { vendor: 'aws', family: 'ai_asic', name: `AWS ${chipType} (${cores} cores)`, isCuda: false, isRocm: false, isTpu: false };
+      return {
+        vendor: 'aws',
+        family: 'ai_asic',
+        name: `AWS ${chipType} (${cores} cores)`,
+        isCuda: false,
+        isRocm: false,
+        isTpu: false,
+      };
     }
     case 'QualcommAi100':
-      return { vendor: 'qualcomm', family: 'ai_asic', name: 'Qualcomm Cloud AI 100', isCuda: false, isRocm: false, isTpu: false };
+      return {
+        vendor: 'qualcomm',
+        family: 'ai_asic',
+        name: 'Qualcomm Cloud AI 100',
+        isCuda: false,
+        isRocm: false,
+        isTpu: false,
+      };
     case 'IntelOneApi':
-      return { vendor: 'intel', family: 'gpu', name: `Intel oneAPI GPU ${data.device_id ?? 0}`, isCuda: false, isRocm: false, isTpu: false };
+      return {
+        vendor: 'intel',
+        family: 'gpu',
+        name: `Intel oneAPI GPU ${data.device_id ?? 0}`,
+        isCuda: false,
+        isRocm: false,
+        isTpu: false,
+      };
     default:
-      return { vendor: 'unknown', family: 'gpu', name: key, isCuda: false, isRocm: false, isTpu: false };
+      return {
+        vendor: 'unknown',
+        family: 'gpu',
+        name: key,
+        isCuda: false,
+        isRocm: false,
+        isTpu: false,
+      };
   }
 }
 
@@ -168,32 +264,53 @@ export async function probeAccelerators(forceRefresh = false): Promise<Accelerat
   }
 
   // Fallback: run all family probes in parallel
-  const { probeNvidia, probeAmd, probeIntel, probeOneApi, probeAppleMetal } = await import('./gpu.js');
+  const { probeNvidia, probeAmd, probeIntel, probeOneApi, probeAppleMetal } =
+    await import('./gpu.js');
   const { probeTpu } = await import('./tpu.js');
   const { probeIntelNpu, probeAmdXdna, probeAppleNpu } = await import('./npu.js');
   const { probeGaudi, probeNeuron, probeQualcomm } = await import('./asic.js');
 
-  const [nvidia, amd, intel, oneapi, appleMetal, tpu, intelNpu, amdXdna, appleNpu, gaudi, neuron, qualcomm] =
-    await Promise.all([
-      probeNvidia(),
-      probeAmd(),
-      probeIntel(),
-      probeOneApi(),
-      probeAppleMetal(),
-      probeTpu(),
-      probeIntelNpu(),
-      probeAmdXdna(),
-      probeAppleNpu(),
-      probeGaudi(),
-      probeNeuron(),
-      probeQualcomm(),
-    ]);
+  const [
+    nvidia,
+    amd,
+    intel,
+    oneapi,
+    appleMetal,
+    tpu,
+    intelNpu,
+    amdXdna,
+    appleNpu,
+    gaudi,
+    neuron,
+    qualcomm,
+  ] = await Promise.all([
+    probeNvidia(),
+    probeAmd(),
+    probeIntel(),
+    probeOneApi(),
+    probeAppleMetal(),
+    probeTpu(),
+    probeIntelNpu(),
+    probeAmdXdna(),
+    probeAppleNpu(),
+    probeGaudi(),
+    probeNeuron(),
+    probeQualcomm(),
+  ]);
 
   const devices = [
-    ...nvidia, ...amd, ...intel, ...oneapi, ...appleMetal,
+    ...nvidia,
+    ...amd,
+    ...intel,
+    ...oneapi,
+    ...appleMetal,
     ...tpu,
-    ...intelNpu, ...amdXdna, ...appleNpu,
-    ...gaudi, ...neuron, ...qualcomm,
+    ...intelNpu,
+    ...amdXdna,
+    ...appleNpu,
+    ...gaudi,
+    ...neuron,
+    ...qualcomm,
   ];
 
   const result = buildResult(devices, 'builtin');

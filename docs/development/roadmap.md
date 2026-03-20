@@ -145,19 +145,7 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ### Rasa Image Editor
 
-- [x] **Ecosystem service registration** — Rasa in service discovery (`rasa`, stdio transport via `RASA_MCP_PATH`, `exposeRasaTools`). Docker image: `ghcr.io/maccracken/rasa:latest` (fixed: added `liblcms2` dep, corrected healthcheck).
-- [x] **MCP tools (native)** — 8 tool definitions: `rasa_open_image`, `rasa_get_document`, `rasa_edit_layer`, `rasa_apply_filter`, `rasa_export`, `rasa_batch_export`, `rasa_import_video_frame`, `rasa_export_for_video`. Stdio MCP transport — rasa-mcp binary spawned by SY MCP client manager.
-- [x] **Image generation workflow** — 3 built-in workflow templates: `rasa-batch-image-processing` (batch filter+export), `rasa-screenshot-annotation` (open → annotate layer → LLM context → export), `rasa-thumbnail-generation` (open → JPEG export).
-- [x] **Dashboard image viewer** — `ImagePreview` component with inline thumbnail + lightbox (zoom 0.25x–5x, wheel zoom, download). `ImageGallery` grid for batch results. Located in `chat/ImagePreview.tsx`.
 - [ ] **Vision pipeline integration** — Connect Rasa's AI engine to SY's multimodal pipeline for image understanding, OCR, and visual QA.
-
-### Mneme Knowledge Base
-
-- [x] **Ecosystem service registration** — Mneme in service discovery (`mneme`, port 3838, `exposeMnemeTools`). Docker image: `ghcr.io/maccracken/mneme:latest`.
-- [x] **MCP tools (native)** — 8 tools: `mneme_search`, `mneme_get_note`, `mneme_create_note`, `mneme_update_note`, `mneme_list_notes`, `mneme_query_graph`, `mneme_list_vaults`, `mneme_switch_vault`. Client + tool handler + 8 unit tests.
-- [x] **Brain integration** — `DocumentManager.ingestMneme()` syncs notes into SY knowledge base. Route: `POST /api/v1/brain/documents/connectors/mneme-sync`. Supports query filtering, personality scoping, visibility control. MCP resource `mneme://knowledge/all` exposed when `MNEME_URL` configured.
-- [x] **Dashboard connector** — Mneme Sync panel in ConnectorsPanel (Knowledge Base > Connectors tab). URL input, optional search filter, personality selector, sync button. API client: `syncMnemeKnowledge()`.
-- [x] **Dashboard knowledge explorer** — `MnemeExplorer` component: list/graph toggle (WebGL via React Sigma + Graphology), search, tag filter, note detail with content + backlinks. Added as "Mneme" subtab in Knowledge Base tab.
 
 ### Tazama Video Editor
 
@@ -170,12 +158,10 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 *Requires full system stack (SY + Synapse + PG + Docker).*
 
-- [x] **Synapse REST round-trip** — Integration test against live `ghcr.io/maccracken/synapse:latest`. Verifies `/health`, `/system/status` snake_case wire format, GPU capabilities, models list, jobs list. SynapseClient transform (snake_case→camelCase) verified end-to-end. 10 tests, skip-gated by `SYNAPSE_API_URL`.
 - [ ] **Training delegation lifecycle** — Submit job, poll status through `pending→running→completed`. Requires a model loaded in Synapse + dataset.
 - [ ] **gRPC bridge connectivity** — Verify `ReportProgress` stream and `RegisterCompletedModel`. Requires full SY+Synapse stack with gRPC ports.
 - [ ] **SSE streaming relay** — Verify job log streaming end-to-end. Requires active training job.
 - [ ] **Model pull lifecycle** — SSE progress events for marketplace pull. Requires model registry configured in Synapse.
-- [x] **Health/reconnection** — Verified via repeated `/health` calls in integration test. Full disconnect/reconnect test requires Docker restart orchestration.
 
 ### SY-AAS-AGNOS Convergence
 

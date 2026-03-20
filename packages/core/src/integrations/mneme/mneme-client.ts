@@ -107,17 +107,13 @@ export class MnemeClient {
     return this.get<MnemeNote>(`/v1/notes/${encodeURIComponent(id)}`);
   }
 
-  async createNote(opts: {
-    title: string;
-    content: string;
-    tags?: string[];
-  }): Promise<MnemeNote> {
+  async createNote(opts: { title: string; content: string; tags?: string[] }): Promise<MnemeNote> {
     return this.post<MnemeNote>('/v1/notes', opts);
   }
 
   async updateNote(
     id: string,
-    opts: { title?: string; content?: string; tags?: string[] },
+    opts: { title?: string; content?: string; tags?: string[] }
   ): Promise<MnemeNote> {
     return this.put<MnemeNote>(`/v1/notes/${encodeURIComponent(id)}`, opts);
   }

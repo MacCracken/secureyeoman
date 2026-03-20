@@ -10,7 +10,7 @@
  * Skipped when SHRUTI_URL is not set.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 const SHRUTI_URL = process.env.SHRUTI_URL;
 const skip = !SHRUTI_URL;
@@ -25,7 +25,7 @@ async function shrutiGet(path: string): Promise<{ status: number; body: unknown 
 
 async function shrutiPost(
   path: string,
-  data: unknown,
+  data: unknown
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const resp = await fetch(`${SHRUTI_URL}${path}`, {
     method: 'POST',

@@ -57,7 +57,9 @@ const DELTA_TOOL_PREFIXES = ['delta_'];
 const EDGE_TOOL_PREFIXES = ['edge_'];
 const VOICE_TOOL_PREFIXES = ['voice_'];
 const SHRUTI_TOOL_PREFIXES = ['shruti_'];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for auto-discovery when service is available
 const MNEME_TOOL_PREFIXES = ['mneme_'];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for auto-discovery when service is available
 const RASA_TOOL_PREFIXES = ['rasa_'];
 const SECURITY_TOOL_PREFIXES = ['sec_'];
 

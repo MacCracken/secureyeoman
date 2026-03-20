@@ -2000,7 +2000,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
           dependsOn: ['batch-export'],
           onError: 'continue',
         },
-        'Batch processed {{input.input_paths.length}} images to {{input.output_dir}} as {{input.format}}.\n\nResult: {{steps.batch-export.output}}',
+        'Batch processed {{input.input_paths.length}} images to {{input.output_dir}} as {{input.format}}.\n\nResult: {{steps.batch-export.output}}'
       ),
     ],
     edges: [{ source: 'batch-export', target: 'summary' }],
@@ -2050,7 +2050,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
           onError: 'continue',
         },
         'default',
-        'Describe key areas to annotate in this screenshot for documentation purposes: {{input.context}}',
+        'Describe key areas to annotate in this screenshot for documentation purposes: {{input.context}}'
       ),
       {
         id: 'export',

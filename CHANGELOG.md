@@ -98,13 +98,77 @@ E2E helpers extended with A2AManager (storage + transport) and MarketplaceManage
 - **Delegation self-reference constraint** — New migration `005_delegation_self_ref.sql` adds `CHECK (id != parent_delegation_id)` to `agents.delegations`, preventing circular self-references at the database level
 - **Alert rules pagination** — `AlertStorage.listRules()` now accepts `limit`/`offset` parameters and returns `{ rules, total }`. Route `GET /api/v1/alerts/rules` supports `?limit=&offset=` query params. Default limit 50, max 1000. Internal evaluation cache uses `limit: 1000`
 
+### Hybrid TypeScript/Rust Architecture
+
+8 Rust crates in `crates/` Cargo workspace (edition 2024, rust-version 1.89). Performance-critical and security-critical backend services ported to Rust with transparent TypeScript fallback.
+
+#### Rust Crates
+
+- **sy-crypto** — AES-256-GCM, X25519, Ed25519, HMAC-SHA256, HKDF, SHA-256, MD5, secure random. 42 tests, 98% coverage
+- **sy-hwprobe** — Hardware accelerator detection via `ai-hwaccel` (crates.io). Converts `AcceleratorProfile` → SY `AcceleratorDevice` for TS layer. Replaces 6 hand-rolled vendor modules
+- **sy-tee** — AES-256-GCM model weight sealing with TPM2/keyring key sources. Wire format: `SEALED_V1 || iv || authTag || keySourceTag || ciphertext`. 19 tests, 88% coverage
+- **sy-privacy** — DLP PII regex scanning (compiled Rust DFA). 5 PII patterns, keyword matching, custom regex. 25 tests, 98% coverage
+- **sy-audit** — HMAC-SHA256 linked tamper-evident audit chain with key rotation. 15 tests, 100% coverage
+- **sy-sandbox** — seccomp-bpf syscall allowlist (87 allowed / 14 blocked), Landlock ABI detection, cgroup v2 detection. 23 tests, 91% coverage
+- **sy-edge** — Standalone edge runtime binary (6.9 MB, replaces 15-20 MB Go binary). 22 API endpoints, A2A, metrics, memory store, sandbox, LLM, messaging, scheduler. 84 tests, 56% coverage
+- **sy-napi** — napi-rs bridge exposing sy-crypto, sy-hwprobe, sy-privacy to Node.js as `.node` addon
+
+#### TypeScript Integration
+
+- **`packages/core/src/native/index.ts`** — Conditional native module loader with `SECUREYEOMAN_NO_NATIVE=1` override and Bun detection
+- **`crypto.ts`** — sha256, md5, hmacSha256, secureCompare now use native when available
+- **`crypto-pool.ts`** — Skips worker thread pool when native module loaded
+- **`tee-encryption.ts`** — AES-256-GCM seal/unseal uses native path
+- **`accelerator/probe.ts`** — Native Rust probe (in-process) → ai-hwaccel binary → built-in TS probes fallback chain
+- **`native-parity.test.ts`** — 25 parity tests verifying TS/Rust produce identical outputs
+
+#### Build & Config
+
+- Cargo workspace: `crates/Cargo.toml` with 8 members
+- npm scripts: `build:rust`, `build:napi`, `build:edge-rust`
+- `.gitignore`: `crates/target/`, `packages/core/native/*.node`
+- Tauri desktop: `sy-crypto` path dependency for offline desktop crypto
+- Benchmarks: criterion benchmarks for sy-crypto (20 benchmarks) and sy-hwprobe (7 benchmarks)
+- Testing matrix: `docs/development/rust-testing-matrix.md` with per-machine verification checklist
+
+### Ecosystem Integrations
+
+#### Mneme Knowledge Base — Full Integration
+
+- **Service discovery** — `mneme`, port 3838, `exposeMnemeTools`. Docker image: `ghcr.io/maccracken/mneme:latest`
+- **MCP tools** — 8 tools: `mneme_search`, `mneme_get_note`, `mneme_create_note`, `mneme_update_note`, `mneme_list_notes`, `mneme_query_graph`, `mneme_list_vaults`, `mneme_switch_vault`
+- **HTTP client** — `MnemeClient` with full CRUD, search, tags, vaults, RAG query
+- **Brain integration** — `DocumentManager.ingestMneme()` syncs notes into SY knowledge base. Route: `POST /api/v1/brain/documents/connectors/mneme-sync`. MCP resource `mneme://knowledge/all`
+- **Dashboard** — Mneme Sync panel in ConnectorsPanel. `MnemeExplorer` component with list/graph toggle (WebGL via React Sigma + Graphology ForceAtlas2), search, tag filter, note detail with backlinks. Added as "Mneme" subtab in Knowledge Base tab
+
+#### Rasa Image Editor — Service + Tools + Workflows
+
+- **Service discovery** — `rasa`, stdio MCP transport via `RASA_MCP_PATH`. Docker image fixed: added `liblcms2` runtime dep, corrected healthcheck
+- **MCP tools** — 8 tool definitions: `rasa_open_image`, `rasa_get_document`, `rasa_edit_layer`, `rasa_apply_filter`, `rasa_export`, `rasa_batch_export`, `rasa_import_video_frame`, `rasa_export_for_video`
+- **Workflow templates** — 3 built-in: `rasa-batch-image-processing`, `rasa-screenshot-annotation`, `rasa-thumbnail-generation`
+- **Dashboard** — `ImagePreview` component (inline thumbnail + lightbox with zoom 0.25x–5x, wheel zoom, download). `ImageGallery` grid for batch results
+
+#### Shruti DAW — Tools + Integration Tests
+
+- **MCP tools** — 7 tool definitions: `shruti_session`, `shruti_tracks`, `shruti_mixer`, `shruti_transport`, `shruti_export`, `shruti_analysis`, `shruti_edit`
+- **Integration tests** — 9 tests against live `ghcr.io/maccracken/shruti:latest` (health, session create/info, track add/list/master, transport, heartbeat). Skip-gated by `SHRUTI_URL`
+
+#### Synapse LLM Controller — Integration Tests
+
+- **Integration tests** — 10 tests against live `ghcr.io/maccracken/synapse:latest`. Verifies `/health`, `/system/status` snake_case wire format, GPU capabilities, SynapseClient transform (snake_case→camelCase), models list, jobs list, heartbeat. Skip-gated by `SYNAPSE_API_URL`
+
 ### Tests
 
+- **233 Rust tests** across 8 crates (all passing)
+- **17,464 TypeScript tests** across 743 files (741 passed, 2 skipped for integration)
 - **33 new tests** for AgnosClient API expansion (token budget, RAG, phylax, remote execution, audit, attestation, MCP remote tools, gateway API key)
 - **14 new tests** for SyAgnosSandbox (availability, capabilities, strength detection for all 3 tiers, attestation verification pass/fail, run fallback, container execution, timeout)
 - **2 test updates** for sandbox-profiles `high-security` → `auto` technology change
 - **1 new test** for alert rules pagination (limit/offset behavior)
 - **8 test updates** for alert manager/routes `listRules` return shape change
+- **25 native-parity tests** verifying Rust/TS crypto produce identical outputs
+- **8 Mneme client unit tests**
+- **19 Synapse + Shruti integration tests** (skip-gated by env)
 
 ---
 

@@ -142,7 +142,7 @@ export interface MnemeToolHandlerDeps {
 export async function handleMnemeToolCall(
   toolName: string,
   args: Record<string, unknown>,
-  deps: MnemeToolHandlerDeps,
+  deps: MnemeToolHandlerDeps
 ): Promise<unknown> {
   const { mnemeClient, logger } = deps;
 

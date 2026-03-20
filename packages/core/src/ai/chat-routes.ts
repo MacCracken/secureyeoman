@@ -1157,11 +1157,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           const role = msg.role === 'assistant' ? 'assistant' : 'user';
           if (msg.content && typeof msg.content === 'string') {
             let content = msg.content;
-            if (
-              i < recentStart &&
-              role === 'assistant' &&
-              content.length > HISTORY_MSG_MAX_CHARS
-            ) {
+            if (i < recentStart && role === 'assistant' && content.length > HISTORY_MSG_MAX_CHARS) {
               content = content.slice(0, HISTORY_MSG_MAX_CHARS) + '\n…[earlier response trimmed]';
             }
             messages.push({ role, content });
@@ -2235,8 +2231,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 role === 'assistant' &&
                 content.length > HISTORY_MSG_MAX_CHARS
               ) {
-                content =
-                  content.slice(0, HISTORY_MSG_MAX_CHARS) + '\n…[earlier response trimmed]';
+                content = content.slice(0, HISTORY_MSG_MAX_CHARS) + '\n…[earlier response trimmed]';
               }
               messages.push({ role, content });
             }

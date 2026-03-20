@@ -192,11 +192,9 @@ export async function probeIntel(): Promise<AcceleratorDevice[]> {
 /** Probe Intel oneAPI GPUs (Arc / Data Center Max) via xpu-smi. */
 export async function probeOneApi(): Promise<AcceleratorDevice[]> {
   try {
-    const { stdout } = await execFileAsync(
-      'xpu-smi',
-      ['discovery', '--dump', '1,2,18,19'],
-      { timeout: 5000 }
-    );
+    const { stdout } = await execFileAsync('xpu-smi', ['discovery', '--dump', '1,2,18,19'], {
+      timeout: 5000,
+    });
 
     return stdout
       .trim()

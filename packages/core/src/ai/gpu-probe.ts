@@ -14,7 +14,10 @@ export type {
   GpuProbeResult,
 } from './accelerator/types.js';
 
-export { estimateVramRequirement, _resetProbeCache as _resetGpuCache } from './accelerator/probe.js';
+export {
+  estimateVramRequirement,
+  _resetProbeCache as _resetGpuCache,
+} from './accelerator/probe.js';
 
 import { probeAccelerators } from './accelerator/probe.js';
 

@@ -47,7 +47,7 @@ export function hmacSha256(data: string | Buffer, key: string | Buffer): string 
   if (native) {
     return native.hmacSha256(
       Buffer.isBuffer(data) ? data : Buffer.from(data),
-      Buffer.isBuffer(key) ? key : Buffer.from(key),
+      Buffer.isBuffer(key) ? key : Buffer.from(key)
     );
   }
   return createHmac('sha256', key).update(data).digest('hex');
