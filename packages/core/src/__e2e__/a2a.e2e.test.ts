@@ -145,7 +145,8 @@ describe('A2A Config', () => {
     });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toHaveProperty('enabled');
+    expect(body).toHaveProperty('config');
+    expect(body.config).toHaveProperty('enabled');
   });
 });
 

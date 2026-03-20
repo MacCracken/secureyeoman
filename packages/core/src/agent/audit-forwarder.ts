@@ -72,7 +72,7 @@ export class AuditForwarder {
     this.stopped = false;
 
     this.timer = setInterval(() => {
-      this.flush().catch((err) => this.logger?.warn({ error: String(err) }, 'Audit flush failed'));
+      this.flush().catch((err: unknown) => this.logger?.warn({ error: String(err) }, 'Audit flush failed'));
     }, this.flushIntervalMs);
 
     // Unref so the timer doesn't prevent process exit
@@ -92,7 +92,7 @@ export class AuditForwarder {
 
     // Flush immediately when buffer is full
     if (this.buffer.length >= this.batchSize) {
-      this.flush().catch((err) => this.logger?.warn({ error: String(err) }, 'Audit flush failed'));
+      this.flush().catch((err: unknown) => this.logger?.warn({ error: String(err) }, 'Audit flush failed'));
     }
   }
 

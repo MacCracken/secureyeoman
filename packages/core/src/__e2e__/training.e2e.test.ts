@@ -105,8 +105,8 @@ describe('Training data preparation', () => {
     });
     expect(res.status).toBe(200);
     const { stats } = await res.json();
-    expect(stats.memories).toBeGreaterThanOrEqual(1);
-    expect(stats.knowledge).toBeGreaterThanOrEqual(1);
+    expect(stats.memories.total).toBeGreaterThanOrEqual(1);
+    expect(stats.knowledge.total).toBeGreaterThanOrEqual(1);
   });
 });
 

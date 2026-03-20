@@ -349,7 +349,7 @@ describe('MCP Tool Call', () => {
         args: {},
       }),
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
     const body = await res.json();
     expect(body.error).toBeDefined();
   });
@@ -373,7 +373,7 @@ describe('MCP Tool Call', () => {
         args: {},
       }),
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
     const body = await res.json();
     expect(body.error).toBeDefined();
   });

@@ -35,7 +35,7 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ toolName: 'accelerator_status', args: {} }),
+      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'accelerator_status', args: {} }),
     });
 
     expect(res.status).toBe(200);
@@ -48,7 +48,7 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ toolName: 'gpu_status', args: {} }),
+      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'gpu_status', args: {} }),
     });
 
     expect(res.status).toBe(200);
@@ -58,7 +58,7 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ toolName: 'tpu_status', args: {} }),
+      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'tpu_status', args: {} }),
     });
 
     expect(res.status).toBe(200);
@@ -68,7 +68,7 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ toolName: 'npu_status', args: {} }),
+      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'npu_status', args: {} }),
     });
 
     expect(res.status).toBe(200);
@@ -78,7 +78,7 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ toolName: 'asic_status', args: {} }),
+      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'asic_status', args: {} }),
     });
 
     expect(res.status).toBe(200);
@@ -88,7 +88,7 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ toolName: 'local_models_list', args: {} }),
+      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'local_models_list', args: {} }),
     });
 
     expect(res.status).toBe(200);
@@ -99,6 +99,7 @@ describe('Accelerator MCP Tools', () => {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify({
+        serverId: 'secureyeoman-local',
         toolName: 'privacy_route_check',
         args: { content: 'Hello world' },
       }),
@@ -111,10 +112,11 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ toolName: 'nonexistent_tool', args: {} }),
+      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'nonexistent_tool', args: {} }),
     });
 
-    expect(res.status).toBe(200);
+    // Local handler returns 404 for unknown tools
+    expect(res.status).toBe(404);
     const data = (await res.json()) as { error?: string };
     expect(data.error).toBeDefined();
   });
@@ -123,7 +125,7 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ toolName: 'accelerator_status', args: {} }),
+      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'accelerator_status', args: {} }),
     });
 
     expect(res.status).toBe(401);

@@ -9,6 +9,7 @@ import {
   startE2EServer,
   login,
   authHeaders,
+  authDeleteHeaders,
   setupTestDb,
   teardownTestDb,
   truncateAllTables,
@@ -40,8 +41,8 @@ describe('Marketplace listing', () => {
     });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toHaveProperty('items');
-    expect(Array.isArray(body.items)).toBe(true);
+    expect(body).toHaveProperty('skills');
+    expect(Array.isArray(body.skills)).toBe(true);
   });
 
   it('supports pagination', async () => {
@@ -50,7 +51,7 @@ describe('Marketplace listing', () => {
     });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toHaveProperty('items');
+    expect(body).toHaveProperty('skills');
     expect(body).toHaveProperty('total');
     expect(typeof body.total).toBe('number');
   });
@@ -104,7 +105,7 @@ describe('Community personalities', () => {
     expect([200, 404]).toContain(res.status);
     if (res.status === 200) {
       const body = await res.json();
-      expect(body).toHaveProperty('lastSync');
+      expect(body).toHaveProperty('lastSyncedAt');
     }
   });
 });
@@ -149,7 +150,7 @@ describe('Skill lifecycle via soul routes', () => {
 
     const delRes = await fetch(`${server.baseUrl}/api/v1/soul/skills/${skill.id}`, {
       method: 'DELETE',
-      headers: authHeaders(token),
+      headers: authDeleteHeaders(token),
     });
     expect([200, 204]).toContain(delRes.status);
   });

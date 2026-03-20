@@ -246,8 +246,8 @@ describe('McpServer', () => {
   it('should expose tools and resources', async () => {
     const server = new McpServer({ logger: createNoopLogger() });
     const tools = await server.getExposedTools();
-    // GPU tools are always registered (gpu_status, local_models_list, privacy_route_check)
-    expect(tools.length).toBe(3);
+    // Accelerator tools are always registered (accelerator_status, gpu_status, tpu_status, npu_status, asic_status, local_models_list, privacy_route_check)
+    expect(tools.length).toBe(7);
     expect(server.getExposedResources()).toEqual([]);
   });
 

@@ -33,6 +33,8 @@ import { RemoteDelegationTransport } from '../a2a/transport.js';
 import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js';
 import { MarketplaceManager } from '../marketplace/manager.js';
 import { MarketplaceStorage } from '../marketplace/storage.js';
+import { registerDocumentRoutes } from '../brain/document-routes.js';
+import { DocumentManager } from '../brain/document-manager.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { SecurityConfig, SoulConfig } from '@secureyeoman/shared';
 import { BrainConfigSchema } from '@secureyeoman/shared';
@@ -193,6 +195,14 @@ export async function startE2EServer(): Promise<E2EServer> {
   const marketplaceStorage = new MarketplaceStorage();
   const marketplaceManager = new MarketplaceManager(marketplaceStorage, { logger });
   registerMarketplaceRoutes(app, { marketplaceManager });
+
+  // Document routes (text ingestion, connectors)
+  const documentManager = new DocumentManager({
+    brainManager,
+    storage: brainStorage,
+    logger,
+  });
+  registerDocumentRoutes(app, { documentManager, brainManager });
 
   // Health
   app.get('/health', async () => ({

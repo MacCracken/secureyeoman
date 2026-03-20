@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS a2a.peers (
     status text DEFAULT 'unknown'::text NOT NULL,
     last_seen timestamp with time zone DEFAULT now() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT peers_status_check CHECK ((status = ANY (ARRAY['online'::text, 'offline'::text, 'unknown'::text]))),
     CONSTRAINT peers_trust_level_check CHECK ((trust_level = ANY (ARRAY['untrusted'::text, 'verified'::text, 'trusted'::text])))
 );

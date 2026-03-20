@@ -57,8 +57,8 @@ describe('Brain stats as analytics source', () => {
     const { stats } = await res.json();
     expect(stats).toHaveProperty('memories');
     expect(stats).toHaveProperty('knowledge');
-    expect(typeof stats.memories).toBe('number');
-    expect(typeof stats.knowledge).toBe('number');
+    expect(typeof stats.memories.total).toBe('number');
+    expect(typeof stats.knowledge.total).toBe('number');
   });
 
   it('stats update after data ingestion', async () => {
@@ -90,8 +90,8 @@ describe('Brain stats as analytics source', () => {
       headers: authHeaders(token),
     });
     const { stats: statsAfter } = await after.json();
-    expect(statsAfter.memories).toBeGreaterThan(statsBefore.memories);
-    expect(statsAfter.knowledge).toBeGreaterThan(statsBefore.knowledge);
+    expect(statsAfter.memories.total).toBeGreaterThan(statsBefore.memories.total);
+    expect(statsAfter.knowledge.total).toBeGreaterThan(statsBefore.knowledge.total);
   });
 });
 
@@ -102,13 +102,14 @@ describe('Audit log as reporting source', () => {
     });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(Array.isArray(body)).toBe(true);
+    expect(Array.isArray(body.entries)).toBe(true);
   });
 
   it('audit chain verifies integrity', async () => {
     const res = await fetch(`${server.baseUrl}/api/v1/audit/verify`, {
       method: 'POST',
       headers: authHeaders(token),
+      body: '{}',
     });
     expect(res.status).toBe(200);
     const body = await res.json();

@@ -15,13 +15,6 @@ import {
   authHeaders,
   type E2EServer,
 } from './helpers.js';
-import { DocumentManager } from '../brain/document-manager.js';
-import { BrainManager } from '../brain/manager.js';
-import { BrainStorage } from '../brain/storage.js';
-import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
-import { BrainConfigSchema } from '@secureyeoman/shared';
-import { registerDocumentRoutes } from '../brain/document-routes.js';
-import { noopLogger } from './helpers.js';
 
 let server: E2EServer;
 let token: string;
@@ -29,28 +22,6 @@ let token: string;
 beforeAll(async () => {
   await setupTestDb();
   server = await startE2EServer();
-
-  // Wire document routes into the same server
-  const logger = noopLogger();
-  const auditStorage = new InMemoryAuditStorage();
-  const auditChain = new AuditChain({
-    storage: auditStorage,
-    signingKey: 'e2e-doc-test-key-at-least-32chars!!',
-  });
-  await auditChain.initialize();
-
-  const brainStorage = new BrainStorage();
-  const brainConfig = BrainConfigSchema.parse({ enabled: true });
-  const brainManager = new BrainManager(brainStorage, brainConfig, { auditChain, logger });
-
-  const documentManager = new DocumentManager({
-    brainManager,
-    storage: brainStorage,
-    logger,
-  });
-
-  registerDocumentRoutes(server.app, { documentManager, brainManager });
-
   const auth = await login(server.baseUrl);
   token = auth.accessToken;
 });

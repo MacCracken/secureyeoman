@@ -149,6 +149,7 @@ describe('Input Validation', () => {
         body: JSON.stringify({
           type: 'episodic',
           content,
+          source: 'e2e',
           importance: 0.5,
         }),
       });
