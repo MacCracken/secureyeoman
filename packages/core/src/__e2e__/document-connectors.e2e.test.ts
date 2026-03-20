@@ -105,16 +105,13 @@ describe('Document Connectors', () => {
 
   describe('POST /api/v1/brain/documents/connectors/mneme-sync', () => {
     it('returns error when mneme is not reachable', async () => {
-      const res = await fetch(
-        `${server.baseUrl}/api/v1/brain/documents/connectors/mneme-sync`,
-        {
-          method: 'POST',
-          headers: authHeaders(token),
-          body: JSON.stringify({
-            mnemeUrl: 'http://127.0.0.1:19999', // not running
-          }),
-        },
-      );
+      const res = await fetch(`${server.baseUrl}/api/v1/brain/documents/connectors/mneme-sync`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({
+          mnemeUrl: 'http://127.0.0.1:19999', // not running
+        }),
+      });
 
       // Should return 500 or similar since Mneme is not running
       // The route itself should not crash
@@ -122,16 +119,13 @@ describe('Document Connectors', () => {
     });
 
     it('rejects invalid URL scheme', async () => {
-      const res = await fetch(
-        `${server.baseUrl}/api/v1/brain/documents/connectors/mneme-sync`,
-        {
-          method: 'POST',
-          headers: authHeaders(token),
-          body: JSON.stringify({
-            mnemeUrl: 'ftp://evil.com',
-          }),
-        },
-      );
+      const res = await fetch(`${server.baseUrl}/api/v1/brain/documents/connectors/mneme-sync`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({
+          mnemeUrl: 'ftp://evil.com',
+        }),
+      });
 
       expect(res.status).toBe(400);
     });

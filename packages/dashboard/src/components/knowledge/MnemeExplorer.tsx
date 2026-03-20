@@ -140,13 +140,17 @@ export function MnemeExplorer() {
         </h3>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => { setViewMode('list'); }}
+            onClick={() => {
+              setViewMode('list');
+            }}
             className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <List className="w-4 h-4" />
           </button>
           <button
-            onClick={() => { setViewMode('graph'); }}
+            onClick={() => {
+              setViewMode('graph');
+            }}
             className={`p-1.5 rounded ${viewMode === 'graph' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <Network className="w-4 h-4" />
@@ -160,7 +164,9 @@ export function MnemeExplorer() {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => { setSearchQuery(e.target.value); }}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+          }}
           placeholder="Search Mneme notes..."
           className="w-full bg-card border border-border rounded text-sm py-1.5 pl-8 pr-2"
         />
@@ -172,7 +178,9 @@ export function MnemeExplorer() {
           {tags.map((tag) => (
             <button
               key={tag.id}
-              onClick={() => { setSearchQuery(`#${tag.name}`); }}
+              onClick={() => {
+                setSearchQuery(`#${tag.name}`);
+              }}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/50 text-xs text-muted-foreground hover:text-foreground"
             >
               <Tag className="w-2.5 h-2.5" />
@@ -189,7 +197,9 @@ export function MnemeExplorer() {
             nodes={graphData.nodes}
             edges={graphData.edges}
             height={300}
-            onNodeClick={(id) => { setSelectedNoteId(id); }}
+            onNodeClick={(id) => {
+              setSelectedNoteId(id);
+            }}
             layout="forceatlas2"
           />
         </div>
@@ -212,7 +222,9 @@ export function MnemeExplorer() {
           {displayNotes.map((note) => (
             <button
               key={note.id}
-              onClick={() => { setSelectedNoteId(note.id); }}
+              onClick={() => {
+                setSelectedNoteId(note.id);
+              }}
               className={`w-full text-left px-3 py-2 rounded text-xs hover:bg-accent/50 transition-colors ${
                 selectedNoteId === note.id ? 'bg-accent' : ''
               }`}
@@ -239,7 +251,9 @@ export function MnemeExplorer() {
                 {selectedNote.title}
               </h4>
               <button
-                onClick={() => { setSelectedNoteId(null); }}
+                onClick={() => {
+                  setSelectedNoteId(null);
+                }}
                 className="text-muted-foreground hover:text-foreground text-xs"
               >
                 Close
@@ -268,7 +282,9 @@ export function MnemeExplorer() {
                 {selectedNote.backlinks.map((bl) => (
                   <button
                     key={bl.source_id}
-                    onClick={() => { setSelectedNoteId(bl.source_id); }}
+                    onClick={() => {
+                      setSelectedNoteId(bl.source_id);
+                    }}
                     className="text-xs text-primary hover:underline flex items-center gap-1"
                   >
                     <ExternalLink className="w-2.5 h-2.5" />

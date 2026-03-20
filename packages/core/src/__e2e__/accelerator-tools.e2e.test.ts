@@ -35,7 +35,11 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'accelerator_status', args: {} }),
+      body: JSON.stringify({
+        serverId: 'secureyeoman-local',
+        toolName: 'accelerator_status',
+        args: {},
+      }),
     });
 
     expect(res.status).toBe(200);
@@ -88,7 +92,11 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'local_models_list', args: {} }),
+      body: JSON.stringify({
+        serverId: 'secureyeoman-local',
+        toolName: 'local_models_list',
+        args: {},
+      }),
     });
 
     expect(res.status).toBe(200);
@@ -112,7 +120,11 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'nonexistent_tool', args: {} }),
+      body: JSON.stringify({
+        serverId: 'secureyeoman-local',
+        toolName: 'nonexistent_tool',
+        args: {},
+      }),
     });
 
     // Local handler returns 404 for unknown tools
@@ -125,7 +137,11 @@ describe('Accelerator MCP Tools', () => {
     const res = await fetch(`${server.baseUrl}/api/v1/mcp/tools/call`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ serverId: 'secureyeoman-local', toolName: 'accelerator_status', args: {} }),
+      body: JSON.stringify({
+        serverId: 'secureyeoman-local',
+        toolName: 'accelerator_status',
+        args: {},
+      }),
     });
 
     expect(res.status).toBe(401);

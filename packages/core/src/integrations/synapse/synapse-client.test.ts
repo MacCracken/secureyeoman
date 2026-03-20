@@ -925,7 +925,6 @@ describe('SynapseClient', () => {
     it('should include expectedSha256 when provided', async () => {
       fetchSpy.mockResolvedValueOnce(sseResponse([]));
 
-       
       for await (const _ of client.pullModel({
         modelName: 'model',
         sourceUrl: 'http://peer/dl/model',

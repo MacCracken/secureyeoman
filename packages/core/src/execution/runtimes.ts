@@ -159,25 +159,25 @@ const SHELL_DANGEROUS = [
   /\bchmod\s+[0-7]*s/, // setuid
   /\bnc\s+-[el]/, // netcat listener
   // Reverse shell patterns
-  /\/dev\/tcp\//,                              // bash /dev/tcp reverse shell
-  /\bmkfifo\b/,                               // named pipe for reverse shell
-  /\bncat\b.*-[el]/,                          // ncat listener
-  /\bsocat\b/,                                // socat bidirectional relay
-  /\btelnet\b.*\|.*(?:sh|bash)\b/,            // telnet pipe to shell
-  /\bpython[23]?\s+-c\s+.*(?:socket|pty)\b/,  // python one-liner reverse shell
-  /\bperl\s+-e\s+.*socket\b/,                 // perl reverse shell
-  /\bruby\s+-e\s+.*(?:TCPSocket|socket)\b/,   // ruby reverse shell
-  /\bphp\s+-r\s+.*fsockopen\b/,               // php reverse shell
-  /\blua\s+-e\s+.*socket\b/,                  // lua reverse shell
-  /\bexec\s+\d+<>\/dev\/tcp\b/,               // fd redirect reverse shell
-  /\bbash\s+-i\s+>&?\s*\/dev\/tcp\b/,         // interactive bash reverse shell
-  /0<&\d+;exec\s/,                            // fd juggling shell
+  /\/dev\/tcp\//, // bash /dev/tcp reverse shell
+  /\bmkfifo\b/, // named pipe for reverse shell
+  /\bncat\b.*-[el]/, // ncat listener
+  /\bsocat\b/, // socat bidirectional relay
+  /\btelnet\b.*\|.*(?:sh|bash)\b/, // telnet pipe to shell
+  /\bpython[23]?\s+-c\s+.*(?:socket|pty)\b/, // python one-liner reverse shell
+  /\bperl\s+-e\s+.*socket\b/, // perl reverse shell
+  /\bruby\s+-e\s+.*(?:TCPSocket|socket)\b/, // ruby reverse shell
+  /\bphp\s+-r\s+.*fsockopen\b/, // php reverse shell
+  /\blua\s+-e\s+.*socket\b/, // lua reverse shell
+  /\bexec\s+\d+<>\/dev\/tcp\b/, // fd redirect reverse shell
+  /\bbash\s+-i\s+>&?\s*\/dev\/tcp\b/, // interactive bash reverse shell
+  /0<&\d+;exec\s/, // fd juggling shell
   // Encoding evasion
-  /\$'\x5c[xX][0-9a-fA-F]/,                   // $'\x41' hex escape
-  /\bbase64\s+-d\b/,                           // base64 decode to exec
-  /\bxxd\s+-r\b/,                             // hex decode
-  /\beval\b.*\$\(/,                           // eval with command substitution
-  /\beval\b.*`/,                              // eval with backtick substitution
+  /\$'\x5c[xX][0-9a-fA-F]/, // $'\x41' hex escape
+  /\bbase64\s+-d\b/, // base64 decode to exec
+  /\bxxd\s+-r\b/, // hex decode
+  /\beval\b.*\$\(/, // eval with command substitution
+  /\beval\b.*`/, // eval with backtick substitution
 ];
 
 // ─── Node Runtime ───────────────────────────────────────────────────

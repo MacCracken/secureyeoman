@@ -40,15 +40,21 @@ export function ImagePreview({ src, alt, className }: ImagePreviewProps) {
       {lightbox && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
-          onClick={() => { setLightbox(false); }}
+          onClick={() => {
+            setLightbox(false);
+          }}
         >
           {/* Controls */}
           <div
             className="absolute top-4 right-4 flex items-center gap-2 z-10"
-            onClick={(e) => { e.stopPropagation(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
           >
             <button
-              onClick={() => { setZoom((z) => Math.max(0.25, z - 0.25)); }}
+              onClick={() => {
+                setZoom((z) => Math.max(0.25, z - 0.25));
+              }}
               className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
             >
               <ZoomOut className="w-4 h-4" />
@@ -57,7 +63,9 @@ export function ImagePreview({ src, alt, className }: ImagePreviewProps) {
               {Math.round(zoom * 100)}%
             </span>
             <button
-              onClick={() => { setZoom((z) => Math.min(5, z + 0.25)); }}
+              onClick={() => {
+                setZoom((z) => Math.min(5, z + 0.25));
+              }}
               className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
             >
               <ZoomIn className="w-4 h-4" />
@@ -66,12 +74,16 @@ export function ImagePreview({ src, alt, className }: ImagePreviewProps) {
               href={src}
               download
               className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
-              onClick={(e) => { e.stopPropagation(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
             >
               <Download className="w-4 h-4" />
             </a>
             <button
-              onClick={() => { setLightbox(false); }}
+              onClick={() => {
+                setLightbox(false);
+              }}
               className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
             >
               <X className="w-4 h-4" />
@@ -80,7 +92,9 @@ export function ImagePreview({ src, alt, className }: ImagePreviewProps) {
 
           {/* Image */}
           <div
-            onClick={(e) => { e.stopPropagation(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
             className="overflow-auto max-w-[90vw] max-h-[90vh]"
           >
             <img
