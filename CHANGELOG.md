@@ -157,10 +157,27 @@ E2E helpers extended with A2AManager (storage + transport) and MarketplaceManage
 
 - **Integration tests** — 10 tests against live `ghcr.io/maccracken/synapse:latest`. Verifies `/health`, `/system/status` snake_case wire format, GPU capabilities, SynapseClient transform (snake_case→camelCase), models list, jobs list, heartbeat. Skip-gated by `SYNAPSE_API_URL`
 
+### Reverse Shell & Command Injection Hardening
+
+- **`runtimes.ts`** — 27 new dangerous patterns: Node.js net/dgram imports, Python socket/pty/os.dup2/encoding evasion (base64/codecs/chr), Shell /dev/tcp reverse shells, mkfifo, ncat/socat/telnet, perl/ruby/php/lua one-liners, fd redirect shells, base64/xxd decode, eval with command substitution
+- **Environment restriction** — Child processes only receive `PATH`, `HOME`, `USER`, `LANG`, `LC_*`, `TERM`, `TZ`, `TMPDIR`. Prevents API key exfiltration via env vars
+- **SIGKILL on timeout** — `killSignal: 'SIGKILL'` ensures process termination (was default SIGTERM which can be caught)
+- **`seccomp.ts`** — `execSync('uname -r')` → `execFileSync('uname', ['-r'])` eliminates unnecessary shell invocation
+- **sy-edge sandbox** — 16 new blocked commands: `nc`, `ncat`, `socat`, `telnet`, `nmap`, `bash`, `sh`, `zsh`, `python`, `python3`, `perl`, `ruby`, `php`, `lua`, `node`, `gcc`, `cc`, `make`, `chmod`, `chown`. Shell metacharacter validation on arguments (`|`, `;`, `` ` ``, `$(`, `${`, `/dev/tcp`, `mkfifo`)
+
+### E2E Test Expansion
+
+3 new E2E test suites (21 files / 192 tests total, was 18 / 173):
+
+- **`document-connectors.e2e.test.ts`** (6 tests) — Text ingestion success/validation, document listing, Mneme sync connector (unreachable service handling, invalid URL scheme rejection)
+- **`accelerator-tools.e2e.test.ts`** (9 tests) — All 7 accelerator MCP tools via tool call endpoint, unknown tool error response, authentication required
+- **`input-validation.e2e.test.ts`** (7 tests) — Path traversal in brain topic, command injection in MCP tool args, SQL injection in tool name, command injection in workflow name, oversized password, unicode control characters, malicious A2A peer URL, XSS stored safely in memory
+
 ### Tests
 
-- **233 Rust tests** across 8 crates (all passing)
+- **236 Rust tests** across 8 crates (all passing)
 - **17,464 TypeScript tests** across 743 files (741 passed, 2 skipped for integration)
+- **192 E2E tests** across 21 files (was 173 / 18)
 - **33 new tests** for AgnosClient API expansion (token budget, RAG, phylax, remote execution, audit, attestation, MCP remote tools, gateway API key)
 - **14 new tests** for SyAgnosSandbox (availability, capabilities, strength detection for all 3 tiers, attestation verification pass/fail, run fallback, container execution, timeout)
 - **2 test updates** for sandbox-profiles `high-security` → `auto` technology change
@@ -169,6 +186,7 @@ E2E helpers extended with A2AManager (storage + transport) and MarketplaceManage
 - **25 native-parity tests** verifying Rust/TS crypto produce identical outputs
 - **8 Mneme client unit tests**
 - **19 Synapse + Shruti integration tests** (skip-gated by env)
+- **3 new sy-edge sandbox tests** for reverse shell tools, metacharacter blocking, /dev/tcp blocking
 
 ---
 
