@@ -20,7 +20,7 @@ import type {
 } from '@secureyeoman/shared';
 import { errorToString } from '../utils/errors.js';
 import { isEligibleForNative, executeViaNative } from './agnosai-bridge.js';
-import type { AgentProfile } from './types.js';
+import type { AgentProfile } from '@secureyeoman/shared';
 
 export interface SwarmManagerDeps {
   storage: SwarmStorage;

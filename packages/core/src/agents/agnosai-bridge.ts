@@ -6,7 +6,6 @@
  * SwarmRun + SwarmMember response shapes so the dashboard is unaffected.
  */
 
-import { randomUUID } from 'node:crypto';
 import type {
   SwarmTemplate,
   SwarmRunParams,
@@ -14,7 +13,7 @@ import type {
   SwarmMember,
   SwarmStrategy,
 } from '@secureyeoman/shared';
-import type { AgentProfile } from '../agents/types.js';
+import type { AgentProfile } from '@secureyeoman/shared';
 import * as agnosai from '../native/agnosai.js';
 import type { AgnosaiCrewState, AgnosaiTaskResult } from '../native/agnosai.js';
 
@@ -98,7 +97,7 @@ export function buildCrewSpec(
   // For sequential, chain tasks as dependencies
   if (template.strategy === 'sequential') {
     for (let i = 1; i < tasks.length; i++) {
-      tasks[i].dependencies = [i - 1];
+      tasks[i]!.dependencies = [i - 1];
     }
   }
 

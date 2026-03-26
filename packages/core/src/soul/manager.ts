@@ -216,6 +216,7 @@ export class SoulManager {
         valenceDelta: result.valence * scale,
         arousalDelta: Math.abs(result.valence) * 0.1,
         source: 'bhava_sentiment',
+        metadata: {},
       });
     } catch {
       // Best-effort — sentiment feedback should never fail the response
