@@ -21,14 +21,14 @@ See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hard
 
 ### Shared Ecosystem Crates — Future
 
-As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Synapse, Shruti, Tazama, Rasa, Mneme), domain-specific logic should be extracted into standalone published crates — same pattern as `ai-hwaccel` for hardware detection and `tarang` for audio/video processing.
+As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Ifran, Shruti, Tazama, Rasa, Mneme), domain-specific logic should be extracted into standalone published crates — same pattern as `ai-hwaccel` for hardware detection and `tarang` for audio/video processing.
 
 **Candidates** (publish when domain logic outgrows SY-only use):
 
 | Candidate | Current Location | Trigger to Extract | Consumers |
 |-----------|-----------------|-------------------|-----------|
-| `sy-cryptokit` | `crates/sy-crypto` + `sy-tee` + `sy-audit` | TEE wire format, audit chain HMAC scheme, or A2A envelope encryption becomes reusable outside SY | SY, AGNOS, Agnostic, Synapse |
-| `sy-privacy-core` | `crates/sy-privacy` | DLP classification engine needed by Agnostic agents or Synapse routing | SY, Agnostic, Synapse |
+| `sy-cryptokit` | `crates/sy-crypto` + `sy-tee` + `sy-audit` | TEE wire format, audit chain HMAC scheme, or A2A envelope encryption becomes reusable outside SY | SY, AGNOS, Agnostic, Ifran |
+| `sy-privacy-core` | `crates/sy-privacy` | DLP classification engine needed by Agnostic agents or Ifran routing | SY, Agnostic, Ifran |
 | `sy-sandbox-core` | `crates/sy-sandbox` | Landlock/seccomp policy engine shared with AGNOS runtime | SY, AGNOS, Agnosticos |
 
 **Not candidates** (too SY-specific): `sy-edge` (SY binary), `sy-napi` (SY Node bridge), `sy-hwprobe` (already delegates to `ai-hwaccel`).
@@ -133,6 +133,26 @@ As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Synapse, Shruti, 
 
 ---
 
+## Ecosystem Crate Migration
+
+*Replace hand-rolled infrastructure with shared ecosystem crates. Reduces maintenance surface and aligns primitives across SY, Ifran, and sibling projects.*
+
+### Hoosh — replace LLM provider layer (~2,000+ lines)
+
+- [ ] **Replace 16 provider implementations with hoosh** — SY's `packages/core/src/ai/providers/` (anthropic, openai, gemini, ollama, deepseek, mistral, grok, groq, openrouter, lmstudio, localai, letta, opencode, agnos, openai-ws) → hoosh provider registry. SY keeps personality binding, cost tracking, and model tiering as thin wrappers.
+- [ ] **Delegate model routing to hoosh** — Replace `model-router.ts` complexity scoring and provider selection with hoosh's routing strategies (Priority, RoundRobin, LowestLatency). SY maps personality model allowlists to hoosh route filters.
+- [ ] **Delegate provider health tracking to hoosh** — Replace `provider-health.ts` ring buffer with hoosh's built-in health checks and automatic failover.
+- [ ] **Use hoosh for hardware-aware local inference** — hoosh handles Ollama/llama.cpp/LMStudio/LocalAI routing with `ai-hwaccel` detection. SY drops `sy-hwprobe` Rust crate (currently a thin wrapper around `ai-hwaccel`).
+
+### Majra — replace concurrency primitives (~3,200+ lines)
+
+- [ ] **Replace event dispatcher with majra pub/sub** — SY's `EventDispatcher` (14 event types, webhook delivery, retry logic) → majra topic-based pub/sub. Webhook delivery moves to a majra relay subscriber.
+- [ ] **Replace rate limiter with majra ratelimit** — SY's sliding window rate limiter (`rate-limiter.ts`, 475 lines, 7 static rules) → majra per-key token bucket. Keep Redis-backed variant as separate concern.
+- [ ] **Replace workflow DAG executor with majra scheduling** — SY's `workflow-engine.ts` topological sort (custom in-degree algorithm, MAX_PARALLEL_STEPS batching) → majra DAG scheduling + priority queues. SY keeps step type handlers and condition evaluation.
+- [ ] **Replace A2A heartbeat with majra heartbeat** — SY's A2AManager heartbeat loop (60s interval, missed-heartbeat tracking, peer online/offline) → majra heartbeat protocol. SY keeps trust levels, capability queries, and mDNS discovery.
+- [ ] **Replace A2A relay with majra relay** — SY's A2A message transport → majra relay for peer-to-peer message routing with dedup and sequencing.
+- [ ] **Use majra barrier for swarm coordination** — SY's swarm result gathering (parallel agent batch execution, result aggregation) → majra N-way barrier sync.
+
 ## Engineering Backlog
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
@@ -154,14 +174,14 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 - [ ] **MCP tools (native)** — `tazama_*` tool set for programmatic video editing from chat and workflows.
 - [ ] **Vision pipeline bridge** — Connect video analysis to SY's multimodal pipeline and DeepLens edge camera feed.
 
-### Synapse LLM Controller — Integration Tests
+### Ifran LLM Controller — Integration Tests
 
-*Requires full system stack (SY + Synapse + PG + Docker).*
+*Requires full system stack (SY + Ifran + PG + Docker).*
 
-- [ ] **Training delegation lifecycle** — Submit job, poll status through `pending→running→completed`. Requires a model loaded in Synapse + dataset.
-- [ ] **gRPC bridge connectivity** — Verify `ReportProgress` stream and `RegisterCompletedModel`. Requires full SY+Synapse stack with gRPC ports.
+- [ ] **Training delegation lifecycle** — Submit job, poll status through `pending→running→completed`. Requires a model loaded in Ifran + dataset.
+- [ ] **gRPC bridge connectivity** — Verify `ReportProgress` stream and `RegisterCompletedModel`. Requires full SY+Ifran stack with gRPC ports.
 - [ ] **SSE streaming relay** — Verify job log streaming end-to-end. Requires active training job.
-- [ ] **Model pull lifecycle** — SSE progress events for marketplace pull. Requires model registry configured in Synapse.
+- [ ] **Model pull lifecycle** — SSE progress events for marketplace pull. Requires model registry configured in Ifran.
 
 ### SY-AAS-AGNOS Convergence
 

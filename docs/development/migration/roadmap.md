@@ -1,0 +1,282 @@
+# SecureYeoman — TypeScript to Rust Migration Roadmap
+
+> **Goal**: Migrate SY's core engine from TypeScript/Bun to Rust, consuming AGNOS shared crates directly. TypeScript remains as UI/plugin/scripting layer. Target: ~12MB binary (down from 124MB), sub-millisecond agent lifecycle, zero GC pauses.
+>
+> **Principle**: Don't rewrite — replace. Each subsystem maps to an existing AGNOS crate that's already tested, benchmarked, and production-ready. The migration is wiring, not invention.
+
+---
+
+## Current State
+
+| Layer | Tech | LOC | Status |
+|-------|------|-----|--------|
+| **Core engine** | TypeScript/Bun | 20,683 | Migration target |
+| **MCP server** | TypeScript | 46,015 | Migration target |
+| **Shared types** | TypeScript (Zod) | 11,602 | → Rust types with serde |
+| **Dashboard** | React/Vite | 169,516 | Stays (UI layer) |
+| **Desktop shell** | Tauri v2 | — | Stays (wraps Rust core) |
+| **Mobile shell** | Capacitor v6 | — | Stays or → Tauri mobile |
+| **Rust crates** | 8 crates | 5,633 | Foundation for migration |
+| **Edge binary** | Rust | 2,895 | Already migrated (was Go) |
+
+---
+
+## Migration Principles
+
+1. **Bottom-up**: Migrate foundational layers first (types, crypto, personality), then orchestration, then API surface. Dashboard migrates last (or stays React behind a Rust API).
+
+2. **Crate-by-crate**: Each SY subsystem maps to an AGNOS crate or existing sy-* crate. Replace the TS module with a Rust dep. Test parity at each step.
+
+3. **Bridge shrinks over time**: sy-napi starts as the primary bridge (Rust ↔ Node). As more subsystems move to Rust, the bridge surface shrinks until the TS layer is optional.
+
+4. **No big bang**: SY keeps working at every stage. The Bun runtime and TS code runs alongside Rust via napi. Subsystems migrate one at a time.
+
+---
+
+## Phase 0 — Foundation Already Done
+
+These Rust crates already exist in SY and don't need migration:
+
+| SY Crate | Purpose | Status |
+|----------|---------|--------|
+| sy-crypto | AES-256-GCM, X25519, Ed25519, HMAC, HKDF | Done |
+| sy-hwprobe | GPU/TPU/NPU detection (via ai-hwaccel) | Done |
+| sy-privacy | DLP, PII classification | Done |
+| sy-audit | HMAC-SHA256 tamper-evident log chain | Done |
+| sy-sandbox | seccomp-bpf, Landlock, cgroup v2 | Done |
+| sy-tee | Model weight sealing (TPM2) | Done |
+| sy-edge | Standalone edge binary (22 endpoints, 6.9MB) | Done (was Go) |
+| sy-napi | Node.js napi bridge | Done |
+
+---
+
+## Phase 1 — Personality & Identity (bhava replaces soul/spirit)
+
+**SY modules**: `packages/core/src/soul/`, `packages/core/src/spirit/`
+**Replaces with**: `bhava = "1.0"` (30 modules, 785 tests, sub-nanosecond)
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | Replace soul personality types with `bhava::traits::PersonalityProfile` | T.Ron, Friday, BlueShirtGuy presets already in bhava |
+| 2 | Replace mood/emotion tracking with `bhava::mood::EmotionalState` | 6D PAD vectors, decay, triggers, history |
+| 3 | Replace identity layers with `bhava::archetype::IdentityContent` | Soul/Spirit/Brain/Body/Heart — exact same model |
+| 4 | Replace spirit rules with `bhava::spirit::Spirit` | Passions, inspirations, pains |
+| 5 | Wire bhava sentiment analysis into agent response pipeline | `bhava::monitor::SentimentMonitor` for streaming feedback |
+| 6 | Replace personality-driven temperature with `bhava::reasoning::ReasoningStrategy` | Trait-scored strategy selection |
+| 7 | Add EQ, display rules, micro-expressions for richer agent behavior | New capabilities SY didn't have before |
+| 8 | Update sy-napi bridge for bhava types | Expose PersonalityProfile, EmotionalState to TS layer |
+
+**Result**: SY agents get 30 modules of emotional intelligence replacing inline personality code. T.Ron's personality is `bhava::presets::tron()` — deterministic, benchmarked, auditable.
+
+---
+
+## Phase 2 — Agent Orchestration (agnosai replaces core agent engine)
+
+**SY modules**: `packages/core/src/agent/`, `packages/core/src/agents/`, `packages/core/src/task/`, `packages/core/src/workflow/`
+**Replaces with**: `agnosai` (620 tests, 106 benchmarks, 2000-4500x faster cached)
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | Replace agent lifecycle with agnosai Agent/Crew/Task types | Direct Rust types, no serialization overhead |
+| 2 | Replace workflow DAG engine with agnosai task scheduling | Dependency resolution, parallel execution |
+| 3 | Replace crew composition with agnosai crew builder | Bhava personality-aware crew assembly |
+| 4 | Replace agent-eval with agnosai evaluation pipeline | Quality scoring, replay |
+| 5 | Migrate A2A delegation to agnosai delegation module | Agent-to-agent protocol |
+| 6 | Wire agnosai into sy-napi bridge | Expose Agent, Crew, Task to TS for dashboard |
+
+**Result**: Agent orchestration runs at Rust speed. Crew creation that took 200ms in TS takes <0.1ms. The 2000x cached speedup becomes the baseline.
+
+---
+
+## Phase 3 — LLM Routing (hoosh client replaces AI providers)
+
+**SY modules**: `packages/core/src/ai/` (16 providers, embeddings, accelerator)
+**Replaces with**: `hoosh` client (15 providers, caching, rate limiting, token budgets)
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | Replace 16 TS provider implementations with hoosh routing | One HTTP call to hoosh:8088 instead of 16 separate SDKs |
+| 2 | Replace embedding providers with hoosh embedding endpoint | Unified interface |
+| 3 | Replace token accounting with hoosh token budget API | Per-agent budgets enforced server-side |
+| 4 | Replace hardware accelerator detection with ai-hwaccel | Already in sy-hwprobe, extend |
+| 5 | Remove all LLM SDK dependencies from package.json | Massive dependency reduction |
+
+**Result**: SY drops 16 LLM SDK dependencies. All inference routes through hoosh. Token budgets enforced at the infrastructure level, not application level.
+
+---
+
+## Phase 4 — Knowledge & Memory (daimon APIs replace brain)
+
+**SY modules**: `packages/core/src/brain/` (memory, knowledge, vector store, RAG)
+**Replaces with**: daimon REST API (vector store, RAG, memory endpoints already exist)
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | Replace vector store integration with daimon `/v1/vectors/*` API | Insert, search, collections |
+| 2 | Replace RAG pipeline with daimon `/v1/rag/*` API | Ingest, query, stats |
+| 3 | Replace memory store with daimon `/v1/agents/:id/memory` API | Per-agent memory |
+| 4 | Replace knowledge base with daimon `/v1/knowledge/*` API | Search, index, stats |
+| 5 | Replace audit trails with sy-audit + daimon audit chain | Already Rust, just extend |
+
+**Result**: SY's brain becomes a thin client over daimon. The intelligence stays, the infrastructure delegates.
+
+---
+
+## Phase 5 — Security Stack (AGNOS crates replace TS security)
+
+**SY modules**: `packages/core/src/security/`, `packages/core/src/sandbox/`
+**Replaces with**: existing sy-* crates + AGNOS crates
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | sy-crypto already handles AES/X25519/Ed25519 | Keep, extend with libro for messaging |
+| 2 | sy-sandbox already handles seccomp/Landlock | Keep, integrate with agnosys/kavach |
+| 3 | sy-audit already handles HMAC chains | Keep, integrate with sigil for trust |
+| 4 | sy-privacy already handles DLP/PII | Keep, extend with t-ron for MCP security |
+| 5 | Replace TS RBAC with Rust policy engine | Performance + auditability |
+| 6 | Replace TS key rotation with Rust implementation | Deterministic timing, no GC interference |
+
+**Result**: Security stack is fully Rust. No GC pauses during crypto operations. Audit chain runs at hardware speed.
+
+---
+
+## Phase 6 — Communication & Voice (dhvani replaces multimodal)
+
+**SY modules**: `packages/core/src/multimodal/`, `packages/core/src/comms/`
+**Replaces with**: `dhvani` (audio engine + voice synthesis when ready)
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | Replace TTS with dhvani voice synthesis (when Phase v2.0 lands) | Bhava personality → prosody. No cloud TTS API |
+| 2 | Replace STT with dhvani capture → hoosh Whisper | Local audio pipeline |
+| 3 | Replace E2E comms encryption with sy-crypto + pqc | Post-quantum secure |
+| 4 | T.Ron speaks with a voice shaped by `bhava::presets::tron()` | Personality-driven voice, zero network latency |
+
+**Result**: SY agents have native voice. No ElevenLabs, no OpenAI TTS. Pure DSP, personality-driven.
+
+---
+
+## Phase 7 — Core Engine (Rust binary replaces Bun)
+
+**After Phases 1-6, the remaining TS in core is**:
+- HTTP gateway (Fastify) → replace with axum (like shruti-ai serve.rs)
+- Integration adapters (31 platforms) → keep as Rust HTTP clients or TS plugins
+- Config management → Rust + TOML
+- CLI → Rust (clap)
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | Replace Fastify gateway with axum HTTP server | Same endpoints, Rust performance |
+| 2 | Migrate config to TOML (AGNOS convention) | Drop JS config parsing |
+| 3 | Build `secureyeoman` Rust binary | Single binary: agent engine + API + MCP |
+| 4 | Move integrations to plugin system | 31 adapters as loadable modules or HTTP bridges |
+| 5 | sy-napi becomes optional (only for TS plugin runtime) | Bridge shrinks to plugin boundary |
+
+**Result**: SY is a single Rust binary (~12MB). Bun/Node is optional — only needed if TS plugins are loaded.
+
+---
+
+## Phase 8 — Dashboard & Desktop
+
+**The dashboard (169K LOC React) doesn't need to migrate immediately.** Options:
+
+| Option | Effort | Notes |
+|--------|--------|-------|
+| Keep React + Vite | None | Dashboard talks to Rust API via HTTP. Already works with Tauri v2 shell |
+| Migrate to egui | Very High | Only if desktop-native performance matters (unlikely for a dashboard) |
+| Keep Tauri v2 desktop | None | Tauri wraps the React dashboard + calls Rust core directly |
+
+**Recommendation**: Keep React dashboard. It's a UI — 169K LOC of React is fine behind a Rust API. The performance wins are in the engine, not the dashboard.
+
+---
+
+## Phase 9 — Edge Consolidation
+
+**sy-edge is already Rust (6.9MB).** After Phase 7, the main SY binary and edge binary share the same crate foundation:
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | Unify sy-edge with main SY binary | Feature-gated: `--edge` mode strips dashboard/integrations |
+| 2 | SY Edge → SY with `edge` profile | One binary, one codebase, two deployment modes |
+| 3 | Edge participates in daimon fleet | Full fleet citizen, not a separate product |
+
+**Result**: SY Edge is no longer a separate project — it's a build profile of the main binary.
+
+---
+
+## Binary Size Estimates
+
+| Phase | Binary | Size | Runtime |
+|-------|--------|------|---------|
+| **Current** | Bun + TS bundle | ~124MB | Bun VM + GC |
+| **Phase 0-2** | Bun + Rust (napi) | ~90MB | Hybrid (less TS work) |
+| **Phase 3-5** | Bun + mostly Rust | ~50MB | Bun for gateway only |
+| **Phase 7** | Pure Rust | ~12-15MB | Native, zero overhead |
+| **Phase 9** | Rust (edge mode) | ~7-8MB | Minimal, fleet-ready |
+
+---
+
+## Crate Dependency Map (Post-Migration)
+
+```
+secureyeoman (Rust binary, ~12MB)
+├── agnosai        — agent orchestration, crews, tasks
+├── bhava          — personality, mood, emotion, reasoning (1.0)
+├── dhvani         — audio, voice synthesis (when ready)
+├── hoosh-client   — LLM routing (HTTP client to hoosh:8088)
+├── sy-crypto      — AES-256-GCM, X25519, Ed25519
+├── sy-audit       — HMAC tamper-evident log
+├── sy-privacy     — DLP, PII classification
+├── sy-sandbox     — seccomp, Landlock
+├── sy-tee         — TPM2 model sealing
+├── ai-hwaccel     — GPU/NPU detection
+├── libro          — encrypted messaging
+├── sigil          — trust verification
+├── pqc            — post-quantum crypto
+├── t-ron          — MCP security monitor
+├── axum           — HTTP server
+├── tokio          — async runtime
+└── serde + toml   — config, serialization
+```
+
+---
+
+## Migration Order (Recommended)
+
+```
+Phase 1 (bhava)     ← lowest risk, highest immediate value, bhava is 1.0
+    ↓
+Phase 2 (agnosai)   ← biggest performance win, replaces core engine logic
+    ↓
+Phase 5 (security)  ← already mostly Rust, extend existing crates
+    ↓
+Phase 3 (hoosh)     ← drops 16 SDK deps, simplifies AI routing
+    ↓
+Phase 4 (daimon)    ← brain becomes thin client, removes vector store deps
+    ↓
+Phase 6 (dhvani)    ← when voice synthesis is ready in dhvani
+    ↓
+Phase 7 (core)      ← the final swap: Bun → axum, TS → Rust CLI
+    ↓
+Phase 9 (edge)      ← unify main + edge into one binary
+```
+
+**Phase 8 (dashboard)**: Runs in parallel, stays React, no urgency.
+
+---
+
+## Success Criteria
+
+- [ ] Binary size < 15MB (down from 124MB)
+- [ ] Agent creation < 0.1ms (down from ~200ms)
+- [ ] Zero GC pauses during operation
+- [ ] All 180+ MCP tools functional
+- [ ] All 31 integrations functional (via plugin or native)
+- [ ] Dashboard connects to Rust API without changes
+- [ ] sy-edge is a build profile, not a separate binary
+- [ ] T.Ron speaks with personality-driven voice
+- [ ] Benchmark suite proves parity or improvement on every migrated subsystem
+
+---
+
+*Last Updated: 2026-03-25*
