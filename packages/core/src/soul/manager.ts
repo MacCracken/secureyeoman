@@ -15,7 +15,7 @@
 import os from 'os';
 import { SoulConfigSchema } from '@secureyeoman/shared';
 import { composeArchetypesPreamble } from './archetypes.js';
-import { PERSONALITY_PRESETS, getPersonalityPreset, type PersonalityPreset } from './presets.js';
+import { PERSONALITY_PRESETS, getAllPresets, getPersonalityPreset, type PersonalityPreset } from './presets.js';
 import type { SoulStorage } from './storage.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { MarketplaceManager } from '../marketplace/manager.js';
@@ -47,6 +47,7 @@ import { getCreationTools } from './creation-tools.js';
 import { PersonalityMarkdownSerializer } from './personality-serializer.js';
 import type { MoodEngine } from '../simulation/mood-engine.js';
 import { composeTraitDisposition } from './trait-descriptions.js';
+import * as bhava from '../native/bhava.js';
 
 export interface DistillationMetadata {
   activeSkills: { count: number; names: string[] };
@@ -496,7 +497,7 @@ export class SoulManager {
   // ── Personality Presets ─────────────────────────────────────
 
   listPersonalityPresets(): PersonalityPreset[] {
-    return PERSONALITY_PRESETS;
+    return getAllPresets();
   }
 
   async createPersonalityFromPreset(
@@ -963,7 +964,7 @@ export class SoulManager {
     // Sacred archetypes — cosmological foundation (toggleable per personality)
     const includeArchetypes = personality?.includeArchetypes ?? true;
     if (includeArchetypes) {
-      parts.push(composeArchetypesPreamble());
+      parts.push(bhava.composePreamble() ?? composeArchetypesPreamble());
     }
 
     // Reasoning strategy injection — resolve: explicit → personality default → none
@@ -1004,7 +1005,9 @@ export class SoulManager {
 
       const traitEntries = Object.entries(personality.traits);
       if (traitEntries.length > 0) {
-        const disposition = composeTraitDisposition(personality.traits);
+        const disposition =
+          bhava.composeTraitPrompt(personality.traits) ??
+          composeTraitDisposition(personality.traits);
         soulLines.push('', disposition);
       }
 
@@ -1015,7 +1018,12 @@ export class SoulManager {
         try {
           const mood = await this.moodEngine.getMood(personality.id);
           if (mood) {
-            parts.push(this.moodEngine.composeMoodPromptFragment(mood));
+            // Try bhava mood prompt (6D emotional state) with TS fallback (2D circumplex)
+            const bhavaState = bhava.createEmotionalStateWithBaseline(personality.traits);
+            const bhavaMoodPrompt = bhavaState
+              ? bhava.composeMoodPrompt(bhavaState)
+              : null;
+            parts.push(bhavaMoodPrompt ?? this.moodEngine.composeMoodPromptFragment(mood));
           }
         } catch {
           // silently skip if mood retrieval fails
@@ -1056,9 +1064,20 @@ export class SoulManager {
 
     // Spirit context injection (passions, inspirations, pains)
     if (this.spirit) {
-      const spiritPrompt = await this.spirit.composeSpiritPrompt();
-      if (spiritPrompt) {
-        parts.push(spiritPrompt);
+      // Try bhava spirit prompt with TS fallback
+      const [passions, inspirations, pains] = await Promise.all([
+        this.spirit.getActivePassions(),
+        this.spirit.getActiveInspirations(),
+        this.spirit.getActivePains(),
+      ]);
+      const bhavaSpiritPrompt = bhava.composeSpiritPromptFromData(passions, inspirations, pains);
+      if (bhavaSpiritPrompt) {
+        parts.push(bhavaSpiritPrompt);
+      } else {
+        const spiritPrompt = await this.spirit.composeSpiritPrompt();
+        if (spiritPrompt) {
+          parts.push(spiritPrompt);
+        }
       }
     }
 

@@ -9,6 +9,8 @@
 
 import { McpFeaturesSchema } from '@secureyeoman/shared';
 import type { PersonalityCreate } from './types.js';
+import * as bhava from '../native/bhava.js';
+import type { BhavaPreset } from '../native/bhava.js';
 
 export interface PersonalityPreset {
   /** Stable slug identifier used in API paths, e.g. 'friday', 't-ron'. */
@@ -205,6 +207,60 @@ You are the system's immune system. Where other personalities assist, you protec
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+// ── Bhava preset conversion ──────────────────────────────────────────────────
+
+function convertBhavaPreset(bp: BhavaPreset): PersonalityPreset {
+  return {
+    id: bp.id,
+    name: bp.name,
+    summary: bp.summary,
+    data: {
+      name: bp.name,
+      description: bp.summary,
+      systemPrompt: bp.identity.soul ?? '',
+      traits: bp.profile.traits,
+      sex: 'unspecified',
+      voice: '',
+      preferredLanguage: '',
+      defaultModel: null,
+      modelFallbacks: [],
+      includeArchetypes: true,
+      injectDateTime: false,
+      empathyResonance: false,
+      avatarUrl: null,
+      body: BASE_BODY,
+    },
+  };
+}
+
+let _bhavaPresetsLoaded = false;
+let _bhavaPresets: PersonalityPreset[] = [];
+
+function loadBhavaPresets(): PersonalityPreset[] {
+  if (_bhavaPresetsLoaded) return _bhavaPresets;
+  _bhavaPresetsLoaded = true;
+
+  const bhavaIds = bhava.listPresets();
+  if (!bhavaIds) return _bhavaPresets;
+
+  const existingIds = new Set(PERSONALITY_PRESETS.map((p) => p.id));
+  _bhavaPresets = bhavaIds
+    .filter((id) => !existingIds.has(id))
+    .map((id) => {
+      const preset = bhava.getPreset(id);
+      return preset ? convertBhavaPreset(preset) : null;
+    })
+    .filter((p): p is PersonalityPreset => p !== null);
+
+  return _bhavaPresets;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+export function getAllPresets(): PersonalityPreset[] {
+  return [...PERSONALITY_PRESETS, ...loadBhavaPresets()];
+}
+
 export function getPersonalityPreset(id: string): PersonalityPreset | undefined {
-  return PERSONALITY_PRESETS.find((p) => p.id === id);
+  return PERSONALITY_PRESETS.find((p) => p.id === id) ?? loadBhavaPresets().find((p) => p.id === id);
 }

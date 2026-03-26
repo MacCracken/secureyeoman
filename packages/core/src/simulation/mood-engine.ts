@@ -13,6 +13,7 @@
 import type { MoodState, MoodLabel, MoodEventCreate, MoodEvent } from '@secureyeoman/shared';
 import type { SimulationStore } from './simulation-store.js';
 import type { SecureLogger } from '../logging/logger.js';
+import * as bhava from '../native/bhava.js';
 import { uuidv7 } from '../utils/crypto.js';
 
 // ── Trait value → mood modifiers (15 traits × 5 levels) ─────────────
@@ -357,6 +358,13 @@ export class MoodEngine {
    * trait keys (backward compat). Applies compound effects for trait combinations.
    */
   deriveBaseline(traits: Record<string, string>): { valence: number; arousal: number } {
+    // Try bhava's 6D baseline derivation (maps joy→valence, arousal→arousal)
+    const bhavaBaseline = bhava.deriveBaseline(traits);
+    if (bhavaBaseline) {
+      return { valence: bhavaBaseline.joy, arousal: Math.max(0, bhavaBaseline.arousal) };
+    }
+
+    // Fallback: original SY 2D circumplex derivation
     let totalV = 0;
     let totalA = 0;
     let count = 0;

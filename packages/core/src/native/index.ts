@@ -49,6 +49,38 @@ export interface NativeModule {
   // DLP classification
   classifyText(text: string): string;
   classifyTextBatch(texts: string[]): string;
+
+  // Bhava personality engine
+  bhavaCreateProfile(name: string, traitsJson: string): string;
+  bhavaComposeTraitPrompt(traitsJson: string): string;
+  bhavaProfileCompatibility(aJson: string, bJson: string): number;
+  bhavaProfileToMarkdown(name: string, traitsJson: string): string;
+  bhavaProfileFromMarkdown(markdown: string): string;
+  bhavaListPresets(): string;
+  bhavaGetPreset(id: string): string;
+  bhavaComposePreamble(): string;
+  bhavaComposeIdentityPrompt(identityJson: string): string;
+  bhavaCreateEmotionalState(): string;
+  bhavaCreateEmotionalStateWithBaseline(traitsJson: string): string;
+  bhavaDeriveBaseline(traitsJson: string): string;
+  bhavaStimulate(stateJson: string, emotion: string, intensity: number): string;
+  bhavaApplyDecay(stateJson: string): string;
+  bhavaClassifyMood(stateJson: string): string;
+  bhavaMoodDeviation(stateJson: string): number;
+  bhavaComposeMoodPrompt(stateJson: string): string;
+  bhavaActionTendency(stateJson: string): string;
+  bhavaCreateSpirit(): string;
+  bhavaSpiritFromData(passionsJson: string, inspirationsJson: string, painsJson: string): string;
+  bhavaComposeSpiritPrompt(spiritJson: string): string;
+  bhavaApplySentimentFeedback(text: string, stateJson: string, scale: number): string;
+  bhavaFeedbackFromOutcome(stateJson: string, outcome: string): string;
+  bhavaComposeSystemPrompt(
+    traitsJson: string,
+    identityJson: string,
+    stateJson: string,
+    spiritText: string,
+  ): string;
+  bhavaBuildMetadata(name: string, traitsJson: string, stateJson: string): string;
 }
 
 let _native: NativeModule | null = null;
