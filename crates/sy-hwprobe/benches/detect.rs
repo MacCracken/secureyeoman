@@ -36,12 +36,7 @@ fn bench_quantization_suggest(c: &mut Criterion) {
 fn bench_sharding_plan(c: &mut Criterion) {
     let registry = detect_registry();
     c.bench_function("plan_sharding 70B BF16", |b| {
-        b.iter(|| {
-            registry.plan_sharding(
-                70_000_000_000,
-                &ai_hwaccel::QuantizationLevel::BFloat16,
-            )
-        })
+        b.iter(|| registry.plan_sharding(70_000_000_000, &ai_hwaccel::QuantizationLevel::BFloat16))
     });
 }
 

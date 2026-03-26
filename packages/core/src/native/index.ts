@@ -82,7 +82,7 @@ export interface NativeModule {
     traitsJson: string,
     identityJson: string,
     stateJson: string,
-    spiritText: string,
+    spiritText: string
   ): string;
   bhavaBuildMetadata(name: string, traitsJson: string, stateJson: string): string;
 

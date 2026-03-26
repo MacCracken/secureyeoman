@@ -100,9 +100,15 @@ impl LlmClient {
         let model = model_override.unwrap_or(&provider.model);
 
         match provider.name.as_str() {
-            "anthropic" => self.complete_anthropic(provider, prompt, model, max_tokens).await,
+            "anthropic" => {
+                self.complete_anthropic(provider, prompt, model, max_tokens)
+                    .await
+            }
             "ollama" => self.complete_ollama(provider, prompt, model).await,
-            _ => self.complete_openai_compat(provider, prompt, model, max_tokens).await,
+            _ => {
+                self.complete_openai_compat(provider, prompt, model, max_tokens)
+                    .await
+            }
         }
     }
 

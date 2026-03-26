@@ -32,11 +32,7 @@ impl Scheduler {
         }
     }
 
-    pub fn start(
-        &self,
-        _llm: llm::LlmClient,
-        _messenger: messaging::Messenger,
-    ) -> JoinHandle<()> {
+    pub fn start(&self, _llm: llm::LlmClient, _messenger: messaging::Messenger) -> JoinHandle<()> {
         let tasks = self.tasks.clone();
 
         tokio::spawn(async move {
@@ -47,7 +43,7 @@ impl Scheduler {
                 let now = Instant::now();
 
                 for task in tasks_guard.values_mut() {
-                    let should_run = task.last_run.map_or(true, |last| {
+                    let should_run = task.last_run.is_none_or(|last| {
                         now.duration_since(last).as_secs() >= task.interval_seconds
                     });
 
@@ -80,12 +76,16 @@ impl Scheduler {
             .unwrap_or(60);
 
         if interval < MIN_INTERVAL_SECS {
-            return Err(format!(
-                "Interval too short (min {MIN_INTERVAL_SECS}s)"
-            ));
+            return Err(format!("Interval too short (min {MIN_INTERVAL_SECS}s)"));
         }
 
-        let id = format!("task-{}", sy_crypto::random_bytes(8).iter().map(|b| format!("{b:02x}")).collect::<String>());
+        let id = format!(
+            "task-{}",
+            sy_crypto::random_bytes(8)
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect::<String>()
+        );
 
         let task = ScheduledTask {
             id: id.clone(),
@@ -184,7 +184,7 @@ mod tests {
     fn default_interval() {
         let sched = Scheduler::new();
         let body = serde_json::json!({"type": "command"});
-        let id = sched.add_task(body).unwrap();
+        let _id = sched.add_task(body).unwrap();
         let tasks = sched.list_tasks();
         assert_eq!(tasks[0]["interval_seconds"], 60); // default
     }
@@ -192,8 +192,12 @@ mod tests {
     #[test]
     fn task_ids_unique() {
         let sched = Scheduler::new();
-        let id1 = sched.add_task(serde_json::json!({"type": "a", "interval_seconds": 60})).unwrap();
-        let id2 = sched.add_task(serde_json::json!({"type": "b", "interval_seconds": 60})).unwrap();
+        let id1 = sched
+            .add_task(serde_json::json!({"type": "a", "interval_seconds": 60}))
+            .unwrap();
+        let id2 = sched
+            .add_task(serde_json::json!({"type": "b", "interval_seconds": 60}))
+            .unwrap();
         assert_ne!(id1, id2);
     }
 }

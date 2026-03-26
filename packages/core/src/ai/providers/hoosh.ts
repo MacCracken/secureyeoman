@@ -46,11 +46,7 @@ export class HooshProvider extends BaseProvider {
   private readonly tokenProject: string;
   private readonly tokenPool: string;
 
-  constructor(
-    config: ProviderConfig,
-    logger?: SecureLogger,
-    hooshConfig?: HooshProviderConfig
-  ) {
+  constructor(config: ProviderConfig, logger?: SecureLogger, hooshConfig?: HooshProviderConfig) {
     super(config, logger);
     this.baseUrl = config.model.baseUrl ?? DEFAULT_BASE_URL;
     this.agnosClient = hooshConfig?.agnosClient;

@@ -218,7 +218,10 @@ export class SwarmManager {
       if (profiles && isEligibleForNative(template, profiles)) {
         const nativeResult = await executeViaNative(template, params, profiles);
         if (nativeResult) {
-          this.logger.debug({ runId: run.id, strategy: template.strategy }, 'Swarm executed via native agnosai');
+          this.logger.debug(
+            { runId: run.id, strategy: template.strategy },
+            'Swarm executed via native agnosai'
+          );
           result = nativeResult.result ?? '';
 
           // Persist members from native result
@@ -523,7 +526,7 @@ export class SwarmManager {
    * Returns null if any profile is missing (native path requires all profiles).
    */
   private async resolveProfiles(
-    template: SwarmTemplate,
+    template: SwarmTemplate
   ): Promise<Map<string, AgentProfile> | null> {
     try {
       const profiles = new Map<string, AgentProfile>();

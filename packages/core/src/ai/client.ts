@@ -228,7 +228,11 @@ export class AIClient {
   private getLocalFirstPreAttemptIndices(): number[] {
     if (!this.primaryModelConfig.localFirst) return [];
     // Hoosh handles local-first routing internally — no SY-side pre-attempts needed
-    if (LOCAL_PROVIDERS.has(this.primaryModelConfig.provider) || this.primaryModelConfig.provider === 'hoosh') return [];
+    if (
+      LOCAL_PROVIDERS.has(this.primaryModelConfig.provider) ||
+      this.primaryModelConfig.provider === 'hoosh'
+    )
+      return [];
     return this.fallbackConfigs
       .map((fb, i) => (LOCAL_PROVIDERS.has(fb.provider) ? i : -1))
       .filter((i) => i >= 0);

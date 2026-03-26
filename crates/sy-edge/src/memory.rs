@@ -60,11 +60,10 @@ impl MemoryStore {
         let data = self.data.read().unwrap();
         let entry = data.get(namespace)?.get(key)?;
 
-        if let Some(exp) = entry.expires_at {
-            if Self::now_epoch() > exp {
+        if let Some(exp) = entry.expires_at
+            && Self::now_epoch() > exp {
                 return None;
             }
-        }
 
         Some(entry.value.clone())
     }
@@ -123,7 +122,7 @@ impl MemoryStore {
         data.get(namespace)
             .map(|ns| {
                 ns.iter()
-                    .filter(|(_, e)| e.expires_at.map_or(true, |exp| now <= exp))
+                    .filter(|(_, e)| e.expires_at.is_none_or(|exp| now <= exp))
                     .map(|(k, _)| k.clone())
                     .collect()
             })
@@ -153,7 +152,9 @@ mod tests {
     #[test]
     fn put_and_get() {
         let store = test_store();
-        store.put("ns", "key1", serde_json::json!("hello"), None).unwrap();
+        store
+            .put("ns", "key1", serde_json::json!("hello"), None)
+            .unwrap();
         let val = store.get("ns", "key1");
         assert_eq!(val, Some(serde_json::json!("hello")));
     }
@@ -213,7 +214,9 @@ mod tests {
     fn ttl_expired_returns_none() {
         let store = test_store();
         // Set TTL to 0 seconds (already expired)
-        store.put("ns", "k", serde_json::json!("temp"), Some(0)).unwrap();
+        store
+            .put("ns", "k", serde_json::json!("temp"), Some(0))
+            .unwrap();
         // Wait a moment for epoch to advance
         std::thread::sleep(std::time::Duration::from_millis(1100));
         assert!(store.get("ns", "k").is_none());
@@ -222,7 +225,9 @@ mod tests {
     #[test]
     fn ttl_not_expired_returns_value() {
         let store = test_store();
-        store.put("ns", "k", serde_json::json!("temp"), Some(3600)).unwrap();
+        store
+            .put("ns", "k", serde_json::json!("temp"), Some(3600))
+            .unwrap();
         assert_eq!(store.get("ns", "k"), Some(serde_json::json!("temp")));
     }
 
@@ -246,12 +251,22 @@ mod tests {
     #[test]
     fn json_value_types() {
         let store = test_store();
-        store.put("ns", "str", serde_json::json!("hello"), None).unwrap();
+        store
+            .put("ns", "str", serde_json::json!("hello"), None)
+            .unwrap();
         store.put("ns", "num", serde_json::json!(42), None).unwrap();
-        store.put("ns", "bool", serde_json::json!(true), None).unwrap();
-        store.put("ns", "null", serde_json::json!(null), None).unwrap();
-        store.put("ns", "arr", serde_json::json!([1, 2, 3]), None).unwrap();
-        store.put("ns", "obj", serde_json::json!({"a": 1}), None).unwrap();
+        store
+            .put("ns", "bool", serde_json::json!(true), None)
+            .unwrap();
+        store
+            .put("ns", "null", serde_json::json!(null), None)
+            .unwrap();
+        store
+            .put("ns", "arr", serde_json::json!([1, 2, 3]), None)
+            .unwrap();
+        store
+            .put("ns", "obj", serde_json::json!({"a": 1}), None)
+            .unwrap();
 
         assert_eq!(store.get("ns", "str"), Some(serde_json::json!("hello")));
         assert_eq!(store.get("ns", "num"), Some(serde_json::json!(42)));

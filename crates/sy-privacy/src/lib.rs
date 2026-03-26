@@ -41,6 +41,12 @@ pub struct ClassificationEngine {
     pii_as_confidential: bool,
 }
 
+impl Default for ClassificationEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ClassificationEngine {
     pub fn new() -> Self {
         Self {
@@ -197,7 +203,11 @@ mod tests {
     fn custom_pattern() {
         let mut engine = ClassificationEngine::new();
         engine
-            .add_pattern("project_x", r"PROJECT-X-\d+", ClassificationLevel::Restricted)
+            .add_pattern(
+                "project_x",
+                r"PROJECT-X-\d+",
+                ClassificationLevel::Restricted,
+            )
             .unwrap();
         let result = engine.classify("See PROJECT-X-42 for details");
         assert_eq!(result.level, ClassificationLevel::Restricted);
@@ -264,8 +274,18 @@ mod tests {
     #[test]
     fn ip_boundary_values() {
         let engine = ClassificationEngine::new();
-        assert!(engine.classify("IP: 0.0.0.0").pii_found.contains(&"ip_address".to_string()));
-        assert!(engine.classify("IP: 255.255.255.255").pii_found.contains(&"ip_address".to_string()));
+        assert!(
+            engine
+                .classify("IP: 0.0.0.0")
+                .pii_found
+                .contains(&"ip_address".to_string())
+        );
+        assert!(
+            engine
+                .classify("IP: 255.255.255.255")
+                .pii_found
+                .contains(&"ip_address".to_string())
+        );
     }
 
     // ── Keyword edge cases ──────────────────────────────────────────────
@@ -273,8 +293,14 @@ mod tests {
     #[test]
     fn keyword_case_insensitive() {
         let engine = ClassificationEngine::new();
-        assert_eq!(engine.classify("tOp SeCrEt data").level, ClassificationLevel::Restricted);
-        assert_eq!(engine.classify("CONFIDENTIAL info").level, ClassificationLevel::Confidential);
+        assert_eq!(
+            engine.classify("tOp SeCrEt data").level,
+            ClassificationLevel::Restricted
+        );
+        assert_eq!(
+            engine.classify("CONFIDENTIAL info").level,
+            ClassificationLevel::Confidential
+        );
     }
 
     #[test]
@@ -308,8 +334,12 @@ mod tests {
     #[test]
     fn multiple_custom_patterns() {
         let mut engine = ClassificationEngine::new();
-        engine.add_pattern("proj_a", r"PROJ-A-\d+", ClassificationLevel::Confidential).unwrap();
-        engine.add_pattern("proj_b", r"PROJ-B-\d+", ClassificationLevel::Restricted).unwrap();
+        engine
+            .add_pattern("proj_a", r"PROJ-A-\d+", ClassificationLevel::Confidential)
+            .unwrap();
+        engine
+            .add_pattern("proj_b", r"PROJ-B-\d+", ClassificationLevel::Restricted)
+            .unwrap();
 
         let r1 = engine.classify("See PROJ-A-100");
         assert_eq!(r1.level, ClassificationLevel::Confidential);
@@ -334,11 +364,7 @@ mod tests {
     #[test]
     fn batch_preserves_order() {
         let engine = ClassificationEngine::new();
-        let results = engine.classify_batch(&[
-            "TOP SECRET",
-            "normal text",
-            "test@email.com",
-        ]);
+        let results = engine.classify_batch(&["TOP SECRET", "normal text", "test@email.com"]);
         assert_eq!(results[0].level, ClassificationLevel::Restricted);
         assert_eq!(results[1].level, ClassificationLevel::Internal);
         assert!(results[2].level >= ClassificationLevel::Confidential);
@@ -350,7 +376,7 @@ mod tests {
     fn multiple_pii_types() {
         let engine = ClassificationEngine::new();
         let result = engine.classify(
-            "Contact john@test.com at (555) 123-4567, SSN 123-45-6789, card 4111 1111 1111 1111"
+            "Contact john@test.com at (555) 123-4567, SSN 123-45-6789, card 4111 1111 1111 1111",
         );
         assert!(result.pii_found.contains(&"email".to_string()));
         assert!(result.pii_found.contains(&"phone".to_string()));

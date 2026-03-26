@@ -11,8 +11,8 @@
 //! - Cryptographic random bytes
 
 use aes_gcm::{
-    aead::{Aead, KeyInit},
     Aes256Gcm, Nonce,
+    aead::{Aead, KeyInit},
 };
 use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
 use hkdf::Hkdf;
@@ -60,7 +60,10 @@ pub fn secure_compare(a: &[u8], b: &[u8]) -> bool {
 /// - `iv`: 12 bytes (nonce)
 pub fn aes_256_gcm_encrypt(plaintext: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, String> {
     if key.len() != 32 {
-        return Err(format!("AES-256-GCM key must be 32 bytes, got {}", key.len()));
+        return Err(format!(
+            "AES-256-GCM key must be 32 bytes, got {}",
+            key.len()
+        ));
     }
     if iv.len() != 12 {
         return Err(format!("AES-256-GCM IV must be 12 bytes, got {}", iv.len()));
@@ -79,7 +82,10 @@ pub fn aes_256_gcm_encrypt(plaintext: &[u8], key: &[u8], iv: &[u8]) -> Result<Ve
 /// - `iv`: 12 bytes (nonce)
 pub fn aes_256_gcm_decrypt(ciphertext: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, String> {
     if key.len() != 32 {
-        return Err(format!("AES-256-GCM key must be 32 bytes, got {}", key.len()));
+        return Err(format!(
+            "AES-256-GCM key must be 32 bytes, got {}",
+            key.len()
+        ));
     }
     if iv.len() != 12 {
         return Err(format!("AES-256-GCM IV must be 12 bytes, got {}", iv.len()));

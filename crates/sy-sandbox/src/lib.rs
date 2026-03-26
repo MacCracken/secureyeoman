@@ -3,9 +3,9 @@
 //! Runs as subprocess for privilege isolation. Direct kernel interaction
 //! via sysfs reads (no libseccomp dependency yet — planned for future with `libseccomp-sys`).
 
-pub mod seccomp;
-pub mod landlock;
 pub mod cgroup;
+pub mod landlock;
+pub mod seccomp;
 
 use serde::{Deserialize, Serialize};
 
@@ -117,8 +117,7 @@ mod tests {
         assert!(!mode.is_empty());
         // Should return a valid mode string
         assert!(
-            ["disabled", "strict", "filter", "unsupported", "unknown"]
-                .contains(&mode.as_str()),
+            ["disabled", "strict", "filter", "unsupported", "unknown"].contains(&mode.as_str()),
         );
     }
 

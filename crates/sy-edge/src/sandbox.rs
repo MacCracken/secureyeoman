@@ -10,16 +10,36 @@ pub struct ExecOutput {
 }
 
 const DEFAULT_ALLOWED: &[&str] = &[
-    "ls", "cat", "head", "tail", "wc", "grep", "find", "df", "du", "uname", "hostname", "ping",
-    "curl", "wget", "ip", "ss", "ps", "top", "free", "lsblk", "lscpu", "sensors", "journalctl",
+    "ls",
+    "cat",
+    "head",
+    "tail",
+    "wc",
+    "grep",
+    "find",
+    "df",
+    "du",
+    "uname",
+    "hostname",
+    "ping",
+    "curl",
+    "wget",
+    "ip",
+    "ss",
+    "ps",
+    "top",
+    "free",
+    "lsblk",
+    "lscpu",
+    "sensors",
+    "journalctl",
 ];
 
 const BLOCKED: &[&str] = &[
-    "rm", "dd", "mkfs", "shutdown", "reboot", "poweroff", "halt", "init", "kill", "pkill",
-    "mount", "fdisk", "iptables", "nft",
-    // Reverse shell / network exfil tools
-    "nc", "ncat", "socat", "telnet", "nmap", "bash", "sh", "zsh", "python", "python3",
-    "perl", "ruby", "php", "lua", "node", "gcc", "cc", "make", "chmod", "chown",
+    "rm", "dd", "mkfs", "shutdown", "reboot", "poweroff", "halt", "init", "kill", "pkill", "mount",
+    "fdisk", "iptables", "nft", // Reverse shell / network exfil tools
+    "nc", "ncat", "socat", "telnet", "nmap", "bash", "sh", "zsh", "python", "python3", "perl",
+    "ruby", "php", "lua", "node", "gcc", "cc", "make", "chmod", "chown",
 ];
 
 const MAX_OUTPUT: usize = 1_048_576; // 1 MB
@@ -43,7 +63,7 @@ impl SandboxManager {
         timeout_secs: u64,
     ) -> Result<ExecOutput, String> {
         // Check against blocklist
-        let cmd_base = command.split('/').last().unwrap_or(command);
+        let cmd_base = command.split('/').next_back().unwrap_or(command);
         if BLOCKED.contains(&cmd_base) {
             return Err(format!("Command blocked: {cmd_base}"));
         }
@@ -55,8 +75,8 @@ impl SandboxManager {
 
         // Validate workspace path (prevent traversal)
         if let Some(ws) = workspace {
-            let canonical = std::fs::canonicalize(ws)
-                .map_err(|e| format!("Invalid workspace: {e}"))?;
+            let canonical =
+                std::fs::canonicalize(ws).map_err(|e| format!("Invalid workspace: {e}"))?;
             if !canonical.starts_with("/tmp") && !canonical.starts_with("/home") {
                 return Err("Workspace must be under /tmp or /home".into());
             }
@@ -68,9 +88,13 @@ impl SandboxManager {
                 return Err("Path traversal detected in arguments".into());
             }
             // Block shell metacharacters that could enable injection
-            if arg.contains('|') || arg.contains(';') || arg.contains('`')
-                || arg.contains("$(") || arg.contains("${")
-                || arg.contains("/dev/tcp") || arg.contains("mkfifo")
+            if arg.contains('|')
+                || arg.contains(';')
+                || arg.contains('`')
+                || arg.contains("$(")
+                || arg.contains("${")
+                || arg.contains("/dev/tcp")
+                || arg.contains("mkfifo")
             {
                 return Err("Shell metacharacter detected in arguments".into());
             }
@@ -82,9 +106,7 @@ impl SandboxManager {
             cmd.current_dir(ws);
         }
 
-        let output = cmd
-            .output()
-            .map_err(|e| format!("Execution failed: {e}"))?;
+        let output = cmd.output().map_err(|e| format!("Execution failed: {e}"))?;
 
         // Wait with timeout (basic — Command::output blocks)
         let _ = timeout_secs; // TODO: implement proper timeout with tokio
@@ -184,7 +206,9 @@ mod tests {
     #[test]
     fn blocked_commands_comprehensive() {
         let sm = SandboxManager::new();
-        for cmd in ["dd", "mkfs", "shutdown", "reboot", "kill", "mount", "iptables"] {
+        for cmd in [
+            "dd", "mkfs", "shutdown", "reboot", "kill", "mount", "iptables",
+        ] {
             let result = sm.execute(cmd, &[], None, 30);
             assert!(result.is_err(), "{cmd} should be blocked");
         }
@@ -204,7 +228,9 @@ mod tests {
     #[test]
     fn reverse_shell_tools_blocked() {
         let sm = SandboxManager::new();
-        for cmd in ["nc", "ncat", "socat", "bash", "sh", "python3", "perl", "ruby", "php"] {
+        for cmd in [
+            "nc", "ncat", "socat", "bash", "sh", "python3", "perl", "ruby", "php",
+        ] {
             let result = sm.execute(cmd, &[], None, 30);
             assert!(result.is_err(), "{cmd} should be blocked");
         }

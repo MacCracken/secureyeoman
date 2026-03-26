@@ -1,6 +1,6 @@
 //! Benchmarks for sy-crypto primitives.
 
-use criterion::{Criterion, criterion_group, criterion_main, black_box};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use sy_crypto::*;
 
 fn bench_sha256(c: &mut Criterion) {

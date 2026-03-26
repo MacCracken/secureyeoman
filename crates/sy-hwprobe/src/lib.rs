@@ -66,7 +66,7 @@ pub fn detect_registry() -> AcceleratorRegistry {
 /// Convert an ai-hwaccel `AcceleratorProfile` to an SY `AcceleratorDevice`.
 fn profile_to_device(profile: &AcceleratorProfile, index: u32) -> AcceleratorDevice {
     let mem_mb = profile.memory_bytes / (1024 * 1024);
-    let family = profile.accelerator.family();
+    let _family = profile.accelerator.family();
 
     let (vendor, family_str, name, cuda, rocm, tpu) = match &profile.accelerator {
         AcceleratorType::CudaGpu { device_id } => (
@@ -93,22 +93,10 @@ fn profile_to_device(profile: &AcceleratorProfile, index: u32) -> AcceleratorDev
             false,
             false,
         ),
-        AcceleratorType::VulkanGpu { device_name, .. } => (
-            "vulkan",
-            "gpu",
-            device_name.clone(),
-            false,
-            false,
-            false,
-        ),
-        AcceleratorType::IntelNpu => (
-            "intel",
-            "npu",
-            "Intel NPU".to_string(),
-            false,
-            false,
-            false,
-        ),
+        AcceleratorType::VulkanGpu { device_name, .. } => {
+            ("vulkan", "gpu", device_name.clone(), false, false, false)
+        }
+        AcceleratorType::IntelNpu => ("intel", "npu", "Intel NPU".to_string(), false, false, false),
         AcceleratorType::AmdXdnaNpu { device_id } => (
             "amd",
             "npu",
@@ -173,14 +161,7 @@ fn profile_to_device(profile: &AcceleratorProfile, index: u32) -> AcceleratorDev
             false,
             false,
         ),
-        AcceleratorType::Cpu => (
-            "cpu",
-            "cpu",
-            "CPU".to_string(),
-            false,
-            false,
-            false,
-        ),
+        AcceleratorType::Cpu => ("cpu", "cpu", "CPU".to_string(), false, false, false),
         _ => (
             "unknown",
             "gpu",
@@ -201,7 +182,10 @@ fn profile_to_device(profile: &AcceleratorProfile, index: u32) -> AcceleratorDev
         vram_free_mb: mem_mb,
         utilization_percent: 0,
         temperature_celsius: None,
-        driver_version: profile.driver_version.clone().unwrap_or_else(|| "unknown".to_string()),
+        driver_version: profile
+            .driver_version
+            .clone()
+            .unwrap_or_else(|| "unknown".to_string()),
         compute_capability: profile.compute_capability.clone(),
         cuda_available: cuda,
         rocm_available: rocm,
@@ -237,7 +221,10 @@ mod tests {
     fn probe_all_devices_indexed_sequentially() {
         let devices = probe_all();
         for (i, dev) in devices.iter().enumerate() {
-            assert_eq!(dev.index, i as u32, "Device at position {i} has wrong index");
+            assert_eq!(
+                dev.index, i as u32,
+                "Device at position {i} has wrong index"
+            );
         }
     }
 

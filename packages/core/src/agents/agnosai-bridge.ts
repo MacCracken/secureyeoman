@@ -56,10 +56,7 @@ function mapStrategy(strategy: SwarmStrategy): string {
   }
 }
 
-function profileToAgnosaiAgent(
-  profile: AgentProfile,
-  role: string,
-): AgnosaiAgent {
+function profileToAgnosaiAgent(profile: AgentProfile, role: string): AgnosaiAgent {
   return {
     agent_key: profile.name.toLowerCase().replace(/\s+/g, '-'),
     name: profile.name,
@@ -78,7 +75,7 @@ function profileToAgnosaiAgent(
 export function buildCrewSpec(
   template: SwarmTemplate,
   params: SwarmRunParams,
-  profiles: Map<string, AgentProfile>,
+  profiles: Map<string, AgentProfile>
 ): string | null {
   const agents: AgnosaiAgent[] = [];
   const tasks: AgnosaiTask[] = [];
@@ -124,11 +121,11 @@ export function buildCrewSpec(
 export function crewStateToSwarmRun(
   crewState: AgnosaiCrewState,
   template: SwarmTemplate,
-  params: SwarmRunParams,
+  params: SwarmRunParams
 ): SwarmRun {
   const now = Date.now();
   const members = crewState.results.map((result, i) =>
-    taskResultToSwarmMember(result, template, crewState.crew_id, i),
+    taskResultToSwarmMember(result, template, crewState.crew_id, i)
   );
 
   const totalPromptTokens = crewState.profile?.cost_usd
@@ -148,7 +145,7 @@ export function crewStateToSwarmRun(
     result: lastResult?.output ?? null,
     error:
       crewState.status === 'Failed'
-        ? crewState.results.find((r) => r.status === 'Failed')?.output ?? 'Crew execution failed'
+        ? (crewState.results.find((r) => r.status === 'Failed')?.output ?? 'Crew execution failed')
         : null,
     tokenBudget: params.tokenBudget ?? 100000,
     tokensUsedPrompt: totalPromptTokens,
@@ -165,7 +162,7 @@ function taskResultToSwarmMember(
   result: AgnosaiTaskResult,
   template: SwarmTemplate,
   swarmRunId: string,
-  index: number,
+  index: number
 ): SwarmMember {
   const role = template.roles[index];
   const now = Date.now();
@@ -223,7 +220,7 @@ function mapTaskStatus(status: string): string {
  */
 export function isEligibleForNative(
   template: SwarmTemplate,
-  profiles: Map<string, AgentProfile>,
+  profiles: Map<string, AgentProfile>
 ): boolean {
   if (template.strategy === 'dynamic') return false;
 
@@ -243,7 +240,7 @@ export function isEligibleForNative(
 export async function executeViaNative(
   template: SwarmTemplate,
   params: SwarmRunParams,
-  profiles: Map<string, AgentProfile>,
+  profiles: Map<string, AgentProfile>
 ): Promise<SwarmRun | null> {
   const specJson = buildCrewSpec(template, params, profiles);
   if (!specJson) return null;

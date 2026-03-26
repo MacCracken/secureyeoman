@@ -64,7 +64,10 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/v1/scheduler/tasks/{id}", delete(scheduler_remove))
         // Update
         .route("/api/v1/update/check", get(update_check))
-        .layer(middleware::from_fn_with_state(shared.clone(), auth_middleware));
+        .layer(middleware::from_fn_with_state(
+            shared.clone(),
+            auth_middleware,
+        ));
 
     Router::new()
         .merge(public_routes)
@@ -141,7 +144,10 @@ async fn a2a_receive(
     State(state): State<SharedState>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
-    let msg_type = body.get("type").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let msg_type = body
+        .get("type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
     let from = body
         .get("fromPeerId")
         .and_then(|v| v.as_str())
@@ -165,7 +171,10 @@ async fn metrics_current(State(state): State<SharedState>) -> Json<serde_json::V
 
 async fn metrics_prometheus(State(state): State<SharedState>) -> impl IntoResponse {
     (
-        [(axum::http::header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; charset=utf-8",
+        )],
         state.metrics.prometheus(),
     )
 }
@@ -217,9 +226,16 @@ async fn memory_put(
     Path((namespace, key)): Path<(String, String)>,
     Json(body): Json<MemoryPutBody>,
 ) -> impl IntoResponse {
-    match state.memory.put(&namespace, &key, body.value, body.ttl_seconds) {
+    match state
+        .memory
+        .put(&namespace, &key, body.value, body.ttl_seconds)
+    {
         Ok(()) => StatusCode::OK.into_response(),
-        Err(e) => (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "error": e }))).into_response(),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": e })),
+        )
+            .into_response(),
     }
 }
 
@@ -370,10 +386,7 @@ async fn scheduler_add(
     }
 }
 
-async fn scheduler_remove(
-    State(state): State<SharedState>,
-    Path(id): Path<String>,
-) -> StatusCode {
+async fn scheduler_remove(State(state): State<SharedState>, Path(id): Path<String>) -> StatusCode {
     state.scheduler.remove_task(&id);
     StatusCode::NO_CONTENT
 }
@@ -467,9 +480,7 @@ mod tests {
     #[tokio::test]
     async fn metrics_current() {
         let app = build_router(test_state());
-        let req = Request::get("/api/v1/metrics")
-            .body(Body::empty())
-            .unwrap();
+        let req = Request::get("/api/v1/metrics").body(Body::empty()).unwrap();
         let resp = app.oneshot(req).await.unwrap();
         assert_eq!(resp.status(), SC::OK);
         let body = body_string(resp.into_body()).await;
@@ -640,9 +651,7 @@ mod tests {
     #[tokio::test]
     async fn not_found_route() {
         let app = build_router(test_state());
-        let req = Request::get("/nonexistent")
-            .body(Body::empty())
-            .unwrap();
+        let req = Request::get("/nonexistent").body(Body::empty()).unwrap();
         let resp = app.oneshot(req).await.unwrap();
         // Axum returns 404 for unmatched routes
         assert_eq!(resp.status(), SC::NOT_FOUND);
@@ -661,9 +670,7 @@ mod tests {
     #[tokio::test]
     async fn memory_namespaces() {
         let app = build_router(test_state());
-        let req = Request::get("/api/v1/memory")
-            .body(Body::empty())
-            .unwrap();
+        let req = Request::get("/api/v1/memory").body(Body::empty()).unwrap();
         let resp = app.oneshot(req).await.unwrap();
         assert_eq!(resp.status(), SC::OK);
         let body = body_string(resp.into_body()).await;

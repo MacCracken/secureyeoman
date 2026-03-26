@@ -1189,14 +1189,29 @@ export class WorkflowEngine {
         if (nativeAgnosai) {
           const crewSpec = JSON.stringify({
             name: title,
-            agents: [{ agent_key: preset || 'default', role: preset || 'agent', goal: description || title, tools: [] }],
-            tasks: [{ description: description || title, priority: priority === 'high' ? 3 : priority === 'low' ? 1 : 2 }],
+            agents: [
+              {
+                agent_key: preset || 'default',
+                role: preset || 'agent',
+                goal: description || title,
+                tools: [],
+              },
+            ],
+            tasks: [
+              {
+                description: description || title,
+                priority: priority === 'high' ? 3 : priority === 'low' ? 1 : 2,
+              },
+            ],
             process,
           });
 
           const crewState = await nativeAgnosai.runCrew(crewSpec);
           if (crewState) {
-            this.logger.info({ preset, title, priority }, 'agnostic_crew: executed via native agnosai');
+            this.logger.info(
+              { preset, title, priority },
+              'agnostic_crew: executed via native agnosai'
+            );
             return { crewId: crewState.crew_id, status: crewState.status, preset, title };
           }
         }

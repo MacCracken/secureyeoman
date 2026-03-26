@@ -161,7 +161,12 @@ mod tests {
 
     #[test]
     fn target_info_redacted() {
-        unsafe { std::env::set_var("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/secret") };
+        unsafe {
+            std::env::set_var(
+                "DISCORD_WEBHOOK_URL",
+                "https://discord.com/api/webhooks/secret",
+            )
+        };
         let m = Messenger::from_env();
         let targets = m.list_targets();
         // URL is not in the public struct

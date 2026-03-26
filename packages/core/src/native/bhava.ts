@@ -67,7 +67,7 @@ export function composeTraitPrompt(traits: Record<string, string>): string | nul
 
 export function profileCompatibility(
   traitsA: Record<string, string>,
-  traitsB: Record<string, string>,
+  traitsB: Record<string, string>
 ): number | null {
   if (!native) return null;
   try {
@@ -147,9 +147,7 @@ export function createEmotionalState(): string | null {
   }
 }
 
-export function createEmotionalStateWithBaseline(
-  traits: Record<string, string>,
-): string | null {
+export function createEmotionalStateWithBaseline(traits: Record<string, string>): string | null {
   if (!native) return null;
   try {
     return native.bhavaCreateEmotionalStateWithBaseline(JSON.stringify(traits));
@@ -158,9 +156,7 @@ export function createEmotionalStateWithBaseline(
   }
 }
 
-export function deriveBaseline(
-  traits: Record<string, string>,
-): BhavaBaseline | null {
+export function deriveBaseline(traits: Record<string, string>): BhavaBaseline | null {
   if (!native) return null;
   try {
     return JSON.parse(native.bhavaDeriveBaseline(JSON.stringify(traits)));
@@ -169,11 +165,7 @@ export function deriveBaseline(
   }
 }
 
-export function stimulate(
-  stateJson: string,
-  emotion: string,
-  intensity: number,
-): string | null {
+export function stimulate(stateJson: string, emotion: string, intensity: number): string | null {
   if (!native) return null;
   try {
     return native.bhavaStimulate(stateJson, emotion, intensity);
@@ -236,7 +228,7 @@ export interface BhavaReasoningResult {
 }
 
 export function selectReasoningStrategy(
-  traits: Record<string, string>,
+  traits: Record<string, string>
 ): BhavaReasoningResult | null {
   if (!native) return null;
   try {
@@ -293,14 +285,24 @@ export function composeEqPrompt(traits: Record<string, string>): string | null {
 export function composeSpiritPromptFromData(
   passions: Passion[],
   inspirations: Inspiration[],
-  pains: Pain[],
+  pains: Pain[]
 ): string | null {
   if (!native) return null;
   try {
     const spiritJson = native.bhavaSpiritFromData(
-      JSON.stringify(passions.map((p) => ({ name: p.name, description: p.description, intensity: p.intensity }))),
-      JSON.stringify(inspirations.map((i) => ({ source: i.source, description: i.description, impact: i.impact }))),
-      JSON.stringify(pains.map((p) => ({ trigger: p.trigger, description: p.description, severity: p.severity }))),
+      JSON.stringify(
+        passions.map((p) => ({ name: p.name, description: p.description, intensity: p.intensity }))
+      ),
+      JSON.stringify(
+        inspirations.map((i) => ({
+          source: i.source,
+          description: i.description,
+          impact: i.impact,
+        }))
+      ),
+      JSON.stringify(
+        pains.map((p) => ({ trigger: p.trigger, description: p.description, severity: p.severity }))
+      )
     );
     return native.bhavaComposeSpiritPrompt(spiritJson);
   } catch {
@@ -313,7 +315,7 @@ export function composeSpiritPromptFromData(
 export function applySentimentFeedback(
   text: string,
   stateJson: string,
-  scale: number,
+  scale: number
 ): BhavaSentimentResult | null {
   if (!native) return null;
   try {
@@ -325,7 +327,7 @@ export function applySentimentFeedback(
 
 export function feedbackFromOutcome(
   stateJson: string,
-  outcome: 'praised' | 'criticized' | 'surprised' | 'threatened' | 'neutral',
+  outcome: 'praised' | 'criticized' | 'surprised' | 'threatened' | 'neutral'
 ): string | null {
   if (!native) return null;
   try {
@@ -341,7 +343,7 @@ export function composeSystemPrompt(
   traits: Record<string, string>,
   identity: Record<string, string | null>,
   stateJson: string | null,
-  spiritText: string,
+  spiritText: string
 ): string | null {
   if (!native) return null;
   try {
@@ -349,7 +351,7 @@ export function composeSystemPrompt(
       JSON.stringify(traits),
       JSON.stringify(identity),
       stateJson ?? 'null',
-      spiritText,
+      spiritText
     );
   } catch {
     return null;
@@ -361,7 +363,7 @@ export function composeSystemPrompt(
 export function buildMetadata(
   name: string,
   traits: Record<string, string>,
-  stateJson: string | null,
+  stateJson: string | null
 ): BhavaMetadata | null {
   if (!native) return null;
   try {

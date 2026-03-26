@@ -103,10 +103,7 @@ export function topologicalSort(tasksJson: string): AgnosaiTopoResult | null {
 
 // ── Model Routing ──────────────────────────────────────────────────────────
 
-export function routeModel(
-  taskType: string,
-  complexity: string,
-): AgnosaiModelRoute | null {
+export function routeModel(taskType: string, complexity: string): AgnosaiModelRoute | null {
   if (!native) return null;
   try {
     return JSON.parse(native.agnosaiRouteModel(taskType, complexity));
@@ -117,10 +114,7 @@ export function routeModel(
 
 // ── Agent Scoring ──────────────────────────────────────────────────────────
 
-export function rankAgents(
-  agentsJson: string,
-  taskJson: string,
-): [number, number][] | null {
+export function rankAgents(agentsJson: string, taskJson: string): [number, number][] | null {
   if (!native) return null;
   try {
     return JSON.parse(native.agnosaiRankAgents(agentsJson, taskJson));
@@ -154,7 +148,7 @@ export function listBuiltinTools(): string[] | null {
 // ── Learning ───────────────────────────────────────────────────────────────
 
 export function ucb1Select(
-  arms: { name: string; rewards: number; pulls: number }[],
+  arms: { name: string; rewards: number; pulls: number }[]
 ): AgnosaiUcb1Result | null {
   if (!native) return null;
   try {

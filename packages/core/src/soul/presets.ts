@@ -262,5 +262,7 @@ export function getAllPresets(): PersonalityPreset[] {
 }
 
 export function getPersonalityPreset(id: string): PersonalityPreset | undefined {
-  return PERSONALITY_PRESETS.find((p) => p.id === id) ?? loadBhavaPresets().find((p) => p.id === id);
+  return (
+    PERSONALITY_PRESETS.find((p) => p.id === id) ?? loadBhavaPresets().find((p) => p.id === id)
+  );
 }

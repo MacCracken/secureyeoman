@@ -40,7 +40,7 @@ pub fn secure_compare(a: Buffer, b: Buffer) -> bool {
 pub fn aes_256_gcm_encrypt(plaintext: Buffer, key: Buffer, iv: Buffer) -> Result<Buffer> {
     sy_crypto::aes_256_gcm_encrypt(&plaintext, &key, &iv)
         .map(|v| v.into())
-        .map_err(|e| Error::from_reason(e))
+        .map_err(Error::from_reason)
 }
 
 /// Decrypt AES-256-GCM ciphertext (with auth tag appended).
@@ -48,7 +48,7 @@ pub fn aes_256_gcm_encrypt(plaintext: Buffer, key: Buffer, iv: Buffer) -> Result
 pub fn aes_256_gcm_decrypt(ciphertext: Buffer, key: Buffer, iv: Buffer) -> Result<Buffer> {
     sy_crypto::aes_256_gcm_decrypt(&ciphertext, &key, &iv)
         .map(|v| v.into())
-        .map_err(|e| Error::from_reason(e))
+        .map_err(Error::from_reason)
 }
 
 // ── X25519 ──────────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ pub fn x25519_keypair() -> X25519KeyPair {
 pub fn x25519_diffie_hellman(private_key: Buffer, public_key: Buffer) -> Result<Buffer> {
     sy_crypto::x25519_diffie_hellman(&private_key, &public_key)
         .map(|v| v.into())
-        .map_err(|e| Error::from_reason(e))
+        .map_err(Error::from_reason)
 }
 
 // ── Ed25519 ─────────────────────────────────────────────────────────────────
@@ -100,14 +100,13 @@ pub fn ed25519_keypair() -> Ed25519KeyPair {
 pub fn ed25519_sign(data: Buffer, private_key: Buffer) -> Result<Buffer> {
     sy_crypto::ed25519_sign(&data, &private_key)
         .map(|v| v.into())
-        .map_err(|e| Error::from_reason(e))
+        .map_err(Error::from_reason)
 }
 
 /// Ed25519 verify.
 #[napi]
 pub fn ed25519_verify(data: Buffer, signature: Buffer, public_key: Buffer) -> Result<bool> {
-    sy_crypto::ed25519_verify(&data, &signature, &public_key)
-        .map_err(|e| Error::from_reason(e))
+    sy_crypto::ed25519_verify(&data, &signature, &public_key).map_err(Error::from_reason)
 }
 
 // ── HKDF ────────────────────────────────────────────────────────────────────
@@ -117,7 +116,7 @@ pub fn ed25519_verify(data: Buffer, signature: Buffer, public_key: Buffer) -> Re
 pub fn hkdf_sha256(ikm: Buffer, salt: Buffer, info: Buffer, length: u32) -> Result<Buffer> {
     sy_crypto::hkdf_sha256(&ikm, &salt, &info, length as usize)
         .map(|v| v.into())
-        .map_err(|e| Error::from_reason(e))
+        .map_err(Error::from_reason)
 }
 
 // ── Random ──────────────────────────────────────────────────────────────────

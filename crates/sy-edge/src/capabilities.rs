@@ -20,9 +20,7 @@ pub struct EdgeCapabilities {
 }
 
 pub fn detect() -> EdgeCapabilities {
-    let hostname = gethostname::gethostname()
-        .to_string_lossy()
-        .to_string();
+    let hostname = gethostname::gethostname().to_string_lossy().to_string();
     let arch = std::env::consts::ARCH.to_string();
     let platform = std::env::consts::OS.to_string();
 
@@ -128,11 +126,10 @@ fn detect_tpu() -> bool {
             }
             // Exclude AMD XDNA
             let driver = entry.path().join("device/driver");
-            if let Ok(target) = fs::read_link(&driver) {
-                if target.to_string_lossy().contains("amdxdna") {
+            if let Ok(target) = fs::read_link(&driver)
+                && target.to_string_lossy().contains("amdxdna") {
                     continue;
                 }
-            }
             return true;
         }
     }
@@ -147,11 +144,10 @@ fn detect_npu() -> bool {
     if let Ok(entries) = fs::read_dir(accel_dir) {
         for entry in entries.flatten() {
             let driver = entry.path().join("device/driver");
-            if let Ok(target) = fs::read_link(&driver) {
-                if target.to_string_lossy().contains("amdxdna") {
+            if let Ok(target) = fs::read_link(&driver)
+                && target.to_string_lossy().contains("amdxdna") {
                     return true;
                 }
-            }
         }
     }
     false
@@ -189,8 +185,15 @@ mod tests {
     #[test]
     fn tags_include_architecture() {
         let caps = detect();
-        let has_arch_tag = caps.tags.iter().any(|t| t == "x64" || t == "arm64" || t == "riscv64");
-        assert!(has_arch_tag, "Tags should include architecture: {:?}", caps.tags);
+        let has_arch_tag = caps
+            .tags
+            .iter()
+            .any(|t| t == "x64" || t == "arm64" || t == "riscv64");
+        assert!(
+            has_arch_tag,
+            "Tags should include architecture: {:?}",
+            caps.tags
+        );
     }
 
     #[test]

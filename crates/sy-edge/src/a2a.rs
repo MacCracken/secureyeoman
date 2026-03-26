@@ -42,8 +42,8 @@ impl A2AManager {
             .ok()
             .and_then(|s| s.parse::<u16>().ok())
             .unwrap_or(18891);
-        let host = std::env::var("SECUREYEOMAN_EDGE_HOST")
-            .unwrap_or_else(|_| "0.0.0.0".to_string());
+        let host =
+            std::env::var("SECUREYEOMAN_EDGE_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
 
         let body = serde_json::json!({
             "url": format!("http://{host}:{port}"),
@@ -62,7 +62,10 @@ impl A2AManager {
             req = req.bearer_auth(tok);
         }
 
-        let resp = req.send().await.map_err(|e| format!("Request failed: {e}"))?;
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {e}"))?;
 
         if !resp.status().is_success() {
             let status = resp.status();
@@ -79,7 +82,10 @@ impl A2AManager {
             id: String,
         }
 
-        let data: RegResponse = resp.json().await.map_err(|e| format!("Parse failed: {e}"))?;
+        let data: RegResponse = resp
+            .json()
+            .await
+            .map_err(|e| format!("Parse failed: {e}"))?;
         Ok(data.peer.map(|p| p.id).unwrap_or_else(|| "unknown".into()))
     }
 
@@ -87,8 +93,8 @@ impl A2AManager {
         if let (Some(msg_type), Some(from)) = (
             msg.get("type").and_then(|v| v.as_str()),
             msg.get("fromPeerId").and_then(|v| v.as_str()),
-        ) {
-            if msg_type == "heartbeat" {
+        )
+            && msg_type == "heartbeat" {
                 let url = msg
                     .get("url")
                     .and_then(|v| v.as_str())
@@ -104,7 +110,6 @@ impl A2AManager {
                     },
                 );
             }
-        }
     }
 
     pub fn handle_heartbeat(&self, from: &str, url: &str) {

@@ -3,19 +3,19 @@
 //! Replaces the Go edge binary with a smaller, lower-RSS Rust implementation.
 //! Reuses sy-crypto and sy-hwprobe workspace crates.
 
-mod server;
 mod a2a;
 mod capabilities;
-mod sandbox;
-mod mdns;
-mod scheduler;
-mod llm;
-mod metrics;
 mod certpin;
-mod updater;
+mod llm;
+mod mdns;
 mod memory;
 mod messaging;
+mod metrics;
 mod ratelimit;
+mod sandbox;
+mod scheduler;
+mod server;
+mod updater;
 
 use clap::{Parser, Subcommand};
 use tracing::{info, warn};
@@ -92,11 +92,11 @@ async fn main() {
                 .ok()
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(18891);
-            let host = std::env::var("SECUREYEOMAN_EDGE_HOST")
-                .unwrap_or_else(|_| "0.0.0.0".to_string());
+            let host =
+                std::env::var("SECUREYEOMAN_EDGE_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
             let parent = std::env::var("SECUREYEOMAN_PARENT_URL").ok();
-            let log_level = std::env::var("SECUREYEOMAN_EDGE_LOG_LEVEL")
-                .unwrap_or_else(|_| "info".to_string());
+            let log_level =
+                std::env::var("SECUREYEOMAN_EDGE_LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
 
             init_tracing(&log_level);
             run_start(port, host, parent).await;
@@ -105,7 +105,7 @@ async fn main() {
 }
 
 fn init_tracing(level: &str) {
-    use tracing_subscriber::{fmt, EnvFilter};
+    use tracing_subscriber::{EnvFilter, fmt};
 
     let filter = EnvFilter::try_new(level).unwrap_or_else(|_| EnvFilter::new("info"));
 
@@ -149,7 +149,10 @@ async fn run_start(port: u16, host: String, parent_url: Option<String>) {
     let parent = parent_url.or_else(|| std::env::var("SECUREYEOMAN_PARENT_URL").ok());
     if let Some(ref url) = parent {
         let token = std::env::var("SECUREYEOMAN_EDGE_TOKEN").ok();
-        match a2a_manager.register_with_parent(url, token.as_deref()).await {
+        match a2a_manager
+            .register_with_parent(url, token.as_deref())
+            .await
+        {
             Ok(peer_id) => info!(parent_url = %url, peer_id, "Registered with parent"),
             Err(e) => warn!(parent_url = %url, error = %e, "Failed to register with parent"),
         }

@@ -15,7 +15,12 @@
 import os from 'os';
 import { SoulConfigSchema } from '@secureyeoman/shared';
 import { composeArchetypesPreamble } from './archetypes.js';
-import { PERSONALITY_PRESETS, getAllPresets, getPersonalityPreset, type PersonalityPreset } from './presets.js';
+import {
+  PERSONALITY_PRESETS,
+  getAllPresets,
+  getPersonalityPreset,
+  type PersonalityPreset,
+} from './presets.js';
 import type { SoulStorage } from './storage.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { MarketplaceManager } from '../marketplace/manager.js';
@@ -193,7 +198,7 @@ export class SoulManager {
   async processSentimentFeedback(
     personalityId: string,
     responseText: string,
-    scale = 0.3,
+    scale = 0.3
   ): Promise<void> {
     if (!this.moodEngine || !responseText) return;
     try {
@@ -1070,9 +1075,7 @@ export class SoulManager {
           if (mood) {
             // Try bhava mood prompt (6D emotional state) with TS fallback (2D circumplex)
             const bhavaState = bhava.createEmotionalStateWithBaseline(personality.traits);
-            const bhavaMoodPrompt = bhavaState
-              ? bhava.composeMoodPrompt(bhavaState)
-              : null;
+            const bhavaMoodPrompt = bhavaState ? bhava.composeMoodPrompt(bhavaState) : null;
             parts.push(bhavaMoodPrompt ?? this.moodEngine.composeMoodPromptFragment(mood));
           }
         } catch {

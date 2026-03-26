@@ -69,7 +69,10 @@ impl AuditChain {
         // Build entry without integrity first (for hashing)
         let mut entry_data = BTreeMap::new();
         entry_data.insert("id", serde_json::Value::String(id.clone()));
-        entry_data.insert("correlationId", serde_json::Value::String(correlation_id.clone()));
+        entry_data.insert(
+            "correlationId",
+            serde_json::Value::String(correlation_id.clone()),
+        );
         entry_data.insert("event", serde_json::Value::String(event.to_string()));
         entry_data.insert("level", serde_json::Value::String(level.to_string()));
         entry_data.insert("message", serde_json::Value::String(message.to_string()));
@@ -90,10 +93,7 @@ impl AuditChain {
 
         // Compute signature: HMAC-SHA256(entryHash:previousHash, signingKey)
         let sig_input = format!("{}:{}", entry_hash, self.last_hash);
-        let signature = sy_crypto::hmac_sha256(
-            sig_input.as_bytes(),
-            self.signing_key.as_bytes(),
-        );
+        let signature = sy_crypto::hmac_sha256(sig_input.as_bytes(), self.signing_key.as_bytes());
 
         let entry = AuditEntry {
             id,
@@ -138,10 +138,8 @@ impl AuditChain {
 
             // Verify signature
             let sig_input = format!("{}:{}", entry_hash, prev_hash);
-            let expected_sig = sy_crypto::hmac_sha256(
-                sig_input.as_bytes(),
-                self.signing_key.as_bytes(),
-            );
+            let expected_sig =
+                sy_crypto::hmac_sha256(sig_input.as_bytes(), self.signing_key.as_bytes());
 
             if !sy_crypto::secure_compare(
                 entry.integrity.signature.as_bytes(),
@@ -189,11 +187,17 @@ impl AuditChain {
     fn compute_entry_hash(&self, entry: &AuditEntry) -> String {
         let mut data = BTreeMap::new();
         data.insert("id", serde_json::Value::String(entry.id.clone()));
-        data.insert("correlationId", serde_json::Value::String(entry.correlation_id.clone()));
+        data.insert(
+            "correlationId",
+            serde_json::Value::String(entry.correlation_id.clone()),
+        );
         data.insert("event", serde_json::Value::String(entry.event.clone()));
         data.insert("level", serde_json::Value::String(entry.level.clone()));
         data.insert("message", serde_json::Value::String(entry.message.clone()));
-        data.insert("timestamp", serde_json::Value::Number(entry.timestamp.into()));
+        data.insert(
+            "timestamp",
+            serde_json::Value::Number(entry.timestamp.into()),
+        );
         if let Some(ref uid) = entry.user_id {
             data.insert("userId", serde_json::Value::String(uid.clone()));
         }
@@ -228,8 +232,22 @@ mod tests {
     #[test]
     fn record_and_verify() {
         let mut chain = AuditChain::new("test-signing-key");
-        chain.record("user.login", "info", "User logged in", Some("user-1"), None, None);
-        chain.record("task.create", "info", "Task created", None, Some("task-1"), None);
+        chain.record(
+            "user.login",
+            "info",
+            "User logged in",
+            Some("user-1"),
+            None,
+            None,
+        );
+        chain.record(
+            "task.create",
+            "info",
+            "Task created",
+            None,
+            Some("task-1"),
+            None,
+        );
 
         let (valid, err) = chain.verify();
         assert!(valid, "Chain should be valid: {:?}", err);
@@ -343,7 +361,14 @@ mod tests {
     #[test]
     fn special_characters_in_message() {
         let mut chain = AuditChain::new("key");
-        chain.record("test", "info", "line1\nline2\ttab \"quotes\" \\backslash", None, None, None);
+        chain.record(
+            "test",
+            "info",
+            "line1\nline2\ttab \"quotes\" \\backslash",
+            None,
+            None,
+            None,
+        );
         let (valid, _) = chain.verify();
         assert!(valid);
     }

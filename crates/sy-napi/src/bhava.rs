@@ -223,13 +223,11 @@ fn profile_from_sy_traits(
 ) -> PersonalityProfile {
     let mut profile = PersonalityProfile::new(name);
     for (key, value) in traits {
-        if let Some(level_str) = value.as_str() {
-            if let Some(kind) = parse_trait_kind(key) {
-                if let Some(level) = sy_level_to_bhava(key, level_str) {
+        if let Some(level_str) = value.as_str()
+            && let Some(kind) = parse_trait_kind(key)
+                && let Some(level) = sy_level_to_bhava(key, level_str) {
                     profile.set_trait(kind, level);
                 }
-            }
-        }
     }
     profile
 }
@@ -241,7 +239,10 @@ fn profile_to_sy_json(profile: &PersonalityProfile) -> serde_json::Value {
         let key = trait_kind_to_str(kind);
         let level = profile.get_trait(kind);
         let sy_name = bhava_level_to_sy(key, level);
-        traits.insert(key.to_string(), serde_json::Value::String(sy_name.to_string()));
+        traits.insert(
+            key.to_string(),
+            serde_json::Value::String(sy_name.to_string()),
+        );
     }
 
     serde_json::json!({
@@ -717,7 +718,11 @@ pub fn bhava_compose_system_prompt(
 /// Build personality metadata for agent registration.
 /// Returns JSON { name, description, active_traits, mood_state, group_averages }.
 #[napi]
-pub fn bhava_build_metadata(name: String, traits_json: String, state_json: String) -> Result<String> {
+pub fn bhava_build_metadata(
+    name: String,
+    traits_json: String,
+    state_json: String,
+) -> Result<String> {
     let traits: serde_json::Map<String, serde_json::Value> =
         serde_json::from_str(&traits_json).map_err(|e| Error::from_reason(format!("{e}")))?;
     let profile = profile_from_sy_traits(&name, &traits);

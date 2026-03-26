@@ -45,6 +45,12 @@ pub struct TeeEncryptionManager {
     key_cache: HashMap<u8, Vec<u8>>,
 }
 
+impl Default for TeeEncryptionManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TeeEncryptionManager {
     pub fn new() -> Self {
         Self {
@@ -57,15 +63,15 @@ impl TeeEncryptionManager {
         let key = self.derive_key(key_source)?;
         let iv = sy_crypto::random_bytes(IV_LEN);
 
-        let encrypted =
-            sy_crypto::aes_256_gcm_encrypt(plaintext, &key, &iv)?;
+        let encrypted = sy_crypto::aes_256_gcm_encrypt(plaintext, &key, &iv)?;
 
         // aes_gcm returns ciphertext + auth_tag concatenated
         let ct_len = encrypted.len() - AUTH_TAG_LEN;
         let auth_tag = &encrypted[ct_len..];
         let ciphertext = &encrypted[..ct_len];
 
-        let mut sealed = Vec::with_capacity(MAGIC.len() + IV_LEN + AUTH_TAG_LEN + 1 + ciphertext.len());
+        let mut sealed =
+            Vec::with_capacity(MAGIC.len() + IV_LEN + AUTH_TAG_LEN + 1 + ciphertext.len());
         sealed.extend_from_slice(MAGIC);
         sealed.extend_from_slice(&iv);
         sealed.extend_from_slice(auth_tag);
@@ -97,9 +103,8 @@ impl TeeEncryptionManager {
         offset += 1;
         let ciphertext = &sealed[offset..];
 
-        let source = key_source_override.unwrap_or_else(|| {
-            KeySource::from_tag(key_tag).unwrap_or(KeySource::Keyring)
-        });
+        let source = key_source_override
+            .unwrap_or_else(|| KeySource::from_tag(key_tag).unwrap_or(KeySource::Keyring));
 
         let key = self.derive_key(source)?;
 
@@ -117,13 +122,8 @@ impl TeeEncryptionManager {
     }
 
     /// Seal a file on disk. Returns path to sealed output.
-    pub fn seal_file(
-        &mut self,
-        path: &str,
-        key_source: KeySource,
-    ) -> Result<String, String> {
-        let plaintext =
-            fs::read(path).map_err(|e| format!("Failed to read {path}: {e}"))?;
+    pub fn seal_file(&mut self, path: &str, key_source: KeySource) -> Result<String, String> {
+        let plaintext = fs::read(path).map_err(|e| format!("Failed to read {path}: {e}"))?;
         let sealed = self.seal(&plaintext, key_source)?;
         let sealed_path = format!("{path}.sealed");
         fs::write(&sealed_path, &sealed)
@@ -137,8 +137,7 @@ impl TeeEncryptionManager {
         path: &str,
         key_source: Option<KeySource>,
     ) -> Result<Vec<u8>, String> {
-        let sealed =
-            fs::read(path).map_err(|e| format!("Failed to read {path}: {e}"))?;
+        let sealed = fs::read(path).map_err(|e| format!("Failed to read {path}: {e}"))?;
         self.unseal(&sealed, key_source)
     }
 
@@ -197,7 +196,7 @@ fn derive_from_keyring() -> Result<Vec<u8>, String> {
 }
 
 fn hex_decode(hex: &str) -> Result<Vec<u8>, String> {
-    if hex.len() % 2 != 0 {
+    if !hex.len().is_multiple_of(2) {
         return Err("Hex string must have even length".into());
     }
     (0..hex.len())

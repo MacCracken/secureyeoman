@@ -12,9 +12,9 @@ use tokio::runtime::Runtime;
 
 use agnosai::core::{AgentDefinition, CrewSpec, ResourceBudget, Task};
 use agnosai::llm::router::{self, TaskProfile, TaskType};
+use agnosai::orchestrator::Orchestrator;
 use agnosai::orchestrator::scheduler::{self, Scheduler};
 use agnosai::orchestrator::scoring;
-use agnosai::orchestrator::Orchestrator;
 
 // ── Tokio Runtime ──────────────────────────────────────────────────────────
 
@@ -171,7 +171,11 @@ pub fn agnosai_route_model(task_type: String, complexity: String) -> Result<Stri
         "reason" => TaskType::Reason,
         "research" => TaskType::Research,
         "multistep" | "multi_step" => TaskType::MultiStep,
-        _ => return Err(Error::from_reason(format!("Unknown task type: {task_type}"))),
+        _ => {
+            return Err(Error::from_reason(format!(
+                "Unknown task type: {task_type}"
+            )));
+        }
     };
 
     let cx = router::parse_complexity(&complexity);
@@ -261,7 +265,10 @@ pub fn agnosai_ucb1_select(arms_json: String) -> Result<String> {
     let mut best_score = f64::NEG_INFINITY;
 
     for arm in &arms {
-        let name = arm.get("name").and_then(|v| v.as_str()).unwrap_or("unknown");
+        let name = arm
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown");
         let rewards = arm.get("rewards").and_then(|v| v.as_f64()).unwrap_or(0.0);
         let pulls = arm.get("pulls").and_then(|v| v.as_f64()).unwrap_or(0.0);
 
