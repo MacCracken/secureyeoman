@@ -6,7 +6,7 @@
 
 ## Hybrid TypeScript/Rust Architecture
 
-**Status**: Phase 1-4 complete. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89. Migration Phases 1-3 complete (bhava 1.1.0 + agnosai 0.25.3 via NAPI + hoosh gateway provider).
+**Status**: Phase 1-4 complete. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89. Migration Phases 1-3 complete (bhava 1.1.0 + agnosai 0.25.3 via NAPI + hoosh gateway with full routing delegation).
 
 See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hardware test plan, and per-platform verification checklist.
 
@@ -137,23 +137,17 @@ As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Ifran, Shruti, Ta
 
 *Replace hand-rolled infrastructure with shared ecosystem crates. Reduces maintenance surface and aligns primitives across SY, Ifran, and sibling projects.*
 
-### Hoosh — replace LLM provider layer (~2,000+ lines)
+### Majra — replace concurrency & distributed primitives (~3,500+ lines)
 
-- [x] **Replace 16 provider implementations with hoosh** — HooshProvider routes through hoosh:8088 via OpenAI-compatible API. Shared `oai-compat.ts` mappers. Existing providers kept as fallbacks.
-- [x] **Hoosh embedding provider** — HooshEmbeddingProvider via `/v1/embeddings` endpoint.
-- [ ] **Delegate model routing to hoosh** — Replace `model-router.ts` complexity scoring and provider selection with hoosh's routing strategies (Priority, RoundRobin, LowestLatency). SY maps personality model allowlists to hoosh route filters.
-- [ ] **Delegate provider health tracking to hoosh** — Replace `provider-health.ts` ring buffer with hoosh's built-in health checks and automatic failover.
-- [ ] **Use hoosh for hardware-aware local inference** — hoosh handles Ollama/llama.cpp/LMStudio/LocalAI routing with `ai-hwaccel` detection. SY drops `sy-hwprobe` Rust crate (currently a thin wrapper around `ai-hwaccel`).
-- [ ] **Remove LLM SDK dependencies** — Once hoosh is the default provider, remove anthropic/openai/gemini/etc. SDKs from package.json.
+*majra v0.22.3 — all primitives production-ready, 133 tests, 90%+ coverage, zero unsafe, `Send + Sync` guaranteed. Already consumed by Ifran, daimon, stiva.*
 
-### Majra — replace concurrency primitives (~3,200+ lines)
-
-- [ ] **Replace event dispatcher with majra pub/sub** — SY's `EventDispatcher` (14 event types, webhook delivery, retry logic) → majra topic-based pub/sub. Webhook delivery moves to a majra relay subscriber.
-- [ ] **Replace rate limiter with majra ratelimit** — SY's sliding window rate limiter (`rate-limiter.ts`, 475 lines, 7 static rules) → majra per-key token bucket. Keep Redis-backed variant as separate concern.
-- [ ] **Replace workflow DAG executor with majra scheduling** — SY's `workflow-engine.ts` topological sort (custom in-degree algorithm, MAX_PARALLEL_STEPS batching) → majra DAG scheduling + priority queues. SY keeps step type handlers and condition evaluation.
-- [ ] **Replace A2A heartbeat with majra heartbeat** — SY's A2AManager heartbeat loop (60s interval, missed-heartbeat tracking, peer online/offline) → majra heartbeat protocol. SY keeps trust levels, capability queries, and mDNS discovery.
-- [ ] **Replace A2A relay with majra relay** — SY's A2A message transport → majra relay for peer-to-peer message routing with dedup and sequencing.
-- [ ] **Use majra barrier for swarm coordination** — SY's swarm result gathering (parallel agent batch execution, result aggregation) → majra N-way barrier sync.
+- [ ] **Replace event dispatcher with majra pub/sub** — SY's `EventDispatcher` (14 hardcoded event types, 258 LOC) → majra `TypedPubSub<T>` with MQTT-style wildcard patterns (`workflow.*`, `tool.#`), backpressure policies, replay buffers, and filtered subscriptions. SY keeps HMAC-signed webhook delivery as a subscriber.
+- [ ] **Replace rate limiter with majra ratelimit** — SY's sliding window rate limiter (`rate-limiter.ts`, 527 LOC, 8 static rules) → majra per-key token bucket with lazy refill and stale-key eviction. Smoother burst handling. SY keeps rule definitions and action policies (reject/delay/log).
+- [ ] **Replace workflow DAG executor with majra dag engine** — SY's `workflow-engine.ts` topological sort (1,740 LOC, max 20 parallel) → majra `WorkflowEngine` with tier-based parallel scheduling, retry with exponential backoff, 4 error policies (fail/continue/skip/fallback), pluggable `WorkflowStorage` (in-memory or SQLite), and cooperative cancellation. SY keeps 16+ step type handlers, condition evaluation, schema validation, subworkflow nesting, SSRF guards, and OTel tracing.
+- [ ] **Replace A2A heartbeat with majra heartbeat** — SY's A2AManager (60s fixed interval, simple counter, 427 LOC) → majra `ConcurrentHeartbeatTracker` with configurable TTL, Online→Suspect→Offline state machine, GPU telemetry, fleet stats aggregation, and auto-eviction. SY keeps trust levels, capability queries, and mDNS discovery.
+- [ ] **Replace A2A relay with majra relay** — SY's single HTTP POST transport (no dedup, no sequencing) → majra `Relay` with atomic sequence counters, per-sender dedup, broadcast/unicast, pluggable `Transport` trait, and `ConnectionPool` with per-endpoint reuse. SY keeps trust-based routing and W3C traceparent propagation.
+- [ ] **Use majra barrier for swarm coordination** — SY's implicit `Promise.all()` (no deadlock recovery, no timeout) → majra `AsyncBarrierSet` with N-way sync, `arrive_and_wait()`, deadlock recovery via `force()`, and race-safe wakeups. SY keeps cost-aware role scheduling and result synthesis.
+- [ ] **Use majra managed queue for training/inference jobs** — New capability: majra's `ManagedQueue` with GPU/VRAM-aware dequeue, job lifecycle tracking (Queued→Running→Completed/Failed), max concurrency enforcement, and optional SQLite persistence. Replaces ad-hoc job management in distillation and inference pipelines.
 
 ## Engineering Backlog
 

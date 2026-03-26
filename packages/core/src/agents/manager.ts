@@ -67,6 +67,8 @@ export interface SubAgentManagerDeps {
   extensionManager?: ExtensionManager;
   /** Cost calculator injected for intelligent model routing. */
   costCalculator?: CostCalculator;
+  /** Active LLM provider name. When 'hoosh', model routing delegates provider selection. */
+  activeProvider?: string;
 }
 
 interface ActiveDelegation {
@@ -432,6 +434,7 @@ export class SubAgentManager {
           defaultModel: profile.defaultModel ?? undefined,
           tokenBudget,
           context: params.context,
+          activeProvider: this.deps.activeProvider,
         });
 
         if (routingDecision.selectedModel && routingDecision.confidence >= 0.5) {

@@ -176,8 +176,8 @@ export class AIClient {
       return null;
     }
 
-    // Skip when primary is already a local provider
-    if (LOCAL_PROVIDERS.has(this.providerName)) {
+    // Skip when primary is already a local provider or a gateway that handles routing internally
+    if (LOCAL_PROVIDERS.has(this.providerName) || this.providerName === 'hoosh') {
       return null;
     }
 
@@ -227,7 +227,8 @@ export class AIClient {
    */
   private getLocalFirstPreAttemptIndices(): number[] {
     if (!this.primaryModelConfig.localFirst) return [];
-    if (LOCAL_PROVIDERS.has(this.primaryModelConfig.provider)) return [];
+    // Hoosh handles local-first routing internally — no SY-side pre-attempts needed
+    if (LOCAL_PROVIDERS.has(this.primaryModelConfig.provider) || this.primaryModelConfig.provider === 'hoosh') return [];
     return this.fallbackConfigs
       .map((fb, i) => (LOCAL_PROVIDERS.has(fb.provider) ? i : -1))
       .filter((i) => i >= 0);

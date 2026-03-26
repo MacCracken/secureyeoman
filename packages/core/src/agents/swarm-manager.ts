@@ -30,6 +30,8 @@ export interface SwarmManagerDeps {
   costCalculator?: CostCalculator;
   /** Per-personality model allowlist forwarded to the model router. */
   allowedModels?: string[];
+  /** Active LLM provider name. When 'hoosh', model routing delegates provider selection. */
+  activeProvider?: string;
 }
 
 export class SwarmManager {
@@ -38,6 +40,7 @@ export class SwarmManager {
   private readonly logger: SecureLogger;
   private readonly modelRouter: ModelRouter | null;
   private readonly allowedModels: string[];
+  private readonly activeProvider: string | undefined;
 
   constructor(deps: SwarmManagerDeps) {
     this.storage = deps.storage;
@@ -45,6 +48,7 @@ export class SwarmManager {
     this.logger = deps.logger;
     this.modelRouter = deps.costCalculator ? new ModelRouter(deps.costCalculator) : null;
     this.allowedModels = deps.allowedModels ?? [];
+    this.activeProvider = deps.activeProvider;
   }
 
   /**
@@ -73,6 +77,7 @@ export class SwarmManager {
         allowedModels: this.allowedModels,
         tokenBudget: perBudget,
         context,
+        activeProvider: this.activeProvider,
       });
       roleDecisions.push({
         role: roleConfig.role,
@@ -95,6 +100,7 @@ export class SwarmManager {
       allowedModels: this.allowedModels,
       tokenBudget,
       context,
+      activeProvider: this.activeProvider,
     });
     if (decision.selectedModel && decision.confidence >= 0.5) {
       return decision.selectedModel;

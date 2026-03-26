@@ -279,10 +279,17 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         }
 
         const router = new ModelRouter(costCalculator);
+        let activeProvider: string | undefined;
+        try {
+          activeProvider = secureYeoman.getAIClient()?.getProviderName();
+        } catch {
+          // AI client may not be initialized yet — route without activeProvider
+        }
         const decision = router.route(task, {
           allowedModels,
           tokenBudget,
           context,
+          activeProvider,
         });
 
         const taskProfile = profileTask(task, context);
@@ -412,6 +419,36 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       const config = secureYeoman.getConfig();
       const { provider, model, baseUrl, apiKeyEnv } = config.model;
       const isLocal = LOCAL_PROVIDERS.has(provider);
+
+      // Hoosh gateway — ping health endpoint directly
+      if (provider === 'hoosh' || provider === 'agnos') {
+        const gatewayUrl = baseUrl ?? 'http://127.0.0.1:8088';
+        const start = Date.now();
+        try {
+          const res = await fetch(`${gatewayUrl}/v1/health`, {
+            signal: AbortSignal.timeout(5000),
+          });
+          const latencyMs = Date.now() - start;
+          return {
+            status: res.ok ? 'reachable' : 'unreachable',
+            provider,
+            model,
+            local: true,
+            baseUrl: gatewayUrl,
+            latencyMs: res.ok ? latencyMs : undefined,
+            gateway: true,
+          };
+        } catch {
+          return {
+            status: 'unreachable',
+            provider,
+            model,
+            local: true,
+            baseUrl: gatewayUrl,
+            gateway: true,
+          };
+        }
+      }
 
       if (isLocal) {
         const providerBaseUrl =

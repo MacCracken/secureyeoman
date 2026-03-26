@@ -175,6 +175,12 @@ export interface RouterOptions {
   context?: string;
   /** When set, filter out providers that don't meet TEE requirements. */
   confidentialCompute?: 'off' | 'optional' | 'required';
+  /**
+   * The active LLM provider. When set to 'hoosh', the router delegates provider
+   * selection to the hoosh gateway — models are selected by tier from the full
+   * registry without filtering by local API key availability.
+   */
+  activeProvider?: string;
 }
 
 export class ModelRouter {
@@ -205,12 +211,17 @@ export class ModelRouter {
       tokenBudget = 50000,
       context,
       confidentialCompute,
+      activeProvider,
     } = options;
 
     const taskProfile = profileTask(task, context);
     const tier = targetTier(taskProfile);
 
-    const grouped = getAvailableModels(true); // only providers with API keys set
+    // When hoosh is the active provider, it handles provider selection internally.
+    // We still do task profiling and tier-based model selection, but use the full
+    // model registry (hoosh has its own API keys) and always return provider: 'hoosh'.
+    const hooshActive = activeProvider === 'hoosh';
+    const grouped = getAvailableModels(!hooshActive); // skip API key filter when hoosh is active
     const allModels: AvailableModel[] = Object.values(grouped).flat();
 
     // Filter by allowedModels allowlist and TEE requirements
@@ -277,7 +288,7 @@ export class ModelRouter {
 
     return {
       selectedModel: selected.model,
-      selectedProvider: selected.provider,
+      selectedProvider: hooshActive ? 'hoosh' : selected.provider,
       tier,
       confidence,
       taskProfile,

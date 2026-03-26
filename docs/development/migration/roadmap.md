@@ -123,13 +123,16 @@ These Rust crates already exist in SY and don't need migration:
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 1 | Replace 16 TS provider implementations with hoosh routing | **Done** | HooshProvider via OpenAI-compatible `/v1/chat/completions`. Shared OAI mappers in `oai-compat.ts` |
-| 2 | Replace embedding providers with hoosh embedding endpoint | **Done** | HooshEmbeddingProvider via `/v1/embeddings` |
-| 3 | Replace token accounting with hoosh token budget API | **Done** | Token check/reserve/report via AgnosClient (integrated in both AGNOS and Hoosh providers) |
-| 4 | Replace hardware accelerator detection with ai-hwaccel | **Done** | Already in sy-hwprobe |
-| 5 | Remove all LLM SDK dependencies from package.json | Not started | Deferred — existing providers kept for backward compat; SDKs removed when hoosh is default |
+| 1 | HooshProvider + shared OAI mappers | **Done** | `hoosh.ts` via `/v1/chat/completions`, `oai-compat.ts` shared types, `agnos.ts` refactored |
+| 2 | HooshEmbeddingProvider | **Done** | `embeddings/hoosh.ts` via `/v1/embeddings` |
+| 3 | Token budget integration | **Done** | Token check/reserve/report via AgnosClient in both AGNOS and Hoosh providers |
+| 4 | Wire into factory, config, cost-calculator | **Done** | `'hoosh'` in all enums, factory switch, PROVIDER_KEY_ENV |
+| 5 | Delegate model routing to hoosh | **Done** | `activeProvider` option in RouterOptions; when 'hoosh', skips API key filtering and returns `provider: 'hoosh'` |
+| 6 | Delegate provider health to hoosh | **Done** | HealthTracker records under 'hoosh' key; `/api/v1/ai/health` pings hoosh gateway directly |
+| 7 | Drop sy-hwprobe for routing | **Done** | Privacy routing and localFirst pre-attempts skip when hoosh is active. MCP accelerator tools remain |
+| 8 | Move LLM SDKs to optionalDependencies | **Done** | @anthropic-ai/sdk, openai, @google/generative-ai moved to optionalDependencies in core package.json |
 
-**Result**: HooshProvider routes all inference through hoosh:8088. Existing 16 providers remain as fallbacks for users not running hoosh. Token budgets enforced at the infrastructure level via hoosh gateway.
+**Result**: HooshProvider routes all inference through hoosh:8088. Model routing delegates provider selection to hoosh. Privacy routing and local-first pre-attempts are bypassed when hoosh handles it. LLM SDKs are optional — only needed for direct provider access.
 
 ### Phase 3 — Files Changed
 
@@ -291,7 +294,7 @@ Phase 1 (bhava)     ← COMPLETE — bhava 1.1.0 integrated via NAPI, 31 functio
     ↓
 Phase 2 (agnosai)   ← COMPLETE — agnosai 0.25.3 integrated via NAPI, agent/crew/task/workflow bridged
     ↓
-Phase 3 (hoosh)     ← COMPLETE — HooshProvider + HooshEmbeddingProvider, shared oai-compat mappers
+Phase 3 (hoosh)     ← COMPLETE — HooshProvider, embeddings, routing delegation, health delegation, SDK optionalized
     ↓
 Phase 5 (security)  ← already mostly Rust, extend existing crates
     ↓
