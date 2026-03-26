@@ -465,3 +465,131 @@ function barrierArriveJS(name: string, participant: string): BarrierResult {
   if (b.arrived.size >= b.expected.size) return { status: 'released' };
   return { status: 'waiting', arrived: b.arrived.size, expected: b.expected.size };
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Managed Queue
+// ════════════════════════════════════════════════════════════════════════════
+
+export type QueuePriority = 'critical' | 'high' | 'normal' | 'low' | 'background';
+export type QueueJobState = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+export interface QueueJob {
+  id: string;
+  priority: string;
+  state: string;
+  payload: unknown;
+}
+
+/**
+ * Enqueue a job. Returns the job ID.
+ */
+export function queueEnqueue(priority: QueuePriority, payload: unknown): string {
+  if (native?.majraQueueEnqueue) {
+    return native.majraQueueEnqueue(priority, JSON.stringify(payload));
+  }
+  return queueEnqueueJS(priority, payload);
+}
+
+/**
+ * Dequeue the next eligible job.
+ */
+export function queueDequeue(): QueueJob | null {
+  if (native?.majraQueueDequeue) {
+    const json = native.majraQueueDequeue();
+    return json ? (JSON.parse(json) as QueueJob) : null;
+  }
+  return queueDequeueJS();
+}
+
+/**
+ * Mark a job as completed.
+ */
+export function queueComplete(jobId: string): boolean {
+  if (native?.majraQueueComplete) {
+    return native.majraQueueComplete(jobId);
+  }
+  const job = jsQueue.get(jobId);
+  if (!job || job.state !== 'running') return false;
+  job.state = 'completed';
+  return true;
+}
+
+/**
+ * Mark a job as failed.
+ */
+export function queueFail(jobId: string): boolean {
+  if (native?.majraQueueFail) {
+    return native.majraQueueFail(jobId);
+  }
+  const job = jsQueue.get(jobId);
+  if (!job || job.state !== 'running') return false;
+  job.state = 'failed';
+  return true;
+}
+
+/**
+ * Cancel a job.
+ */
+export function queueCancel(jobId: string): boolean {
+  if (native?.majraQueueCancel) {
+    return native.majraQueueCancel(jobId);
+  }
+  const job = jsQueue.get(jobId);
+  if (!job || (job.state !== 'queued' && job.state !== 'running')) return false;
+  job.state = 'cancelled';
+  return true;
+}
+
+/**
+ * Get a job's current state.
+ */
+export function queueGet(jobId: string): QueueJob | null {
+  if (native?.majraQueueGet) {
+    const json = native.majraQueueGet(jobId);
+    return json ? (JSON.parse(json) as QueueJob) : null;
+  }
+  const job = jsQueue.get(jobId);
+  return job ? { id: jobId, priority: job.priority, state: job.state, payload: job.payload } : null;
+}
+
+/**
+ * Number of currently running jobs.
+ */
+export function queueRunningCount(): number {
+  return native?.majraQueueRunningCount?.() ?? jsQueueRunning;
+}
+
+/**
+ * Total tracked jobs (all states).
+ */
+export function queueJobCount(): number {
+  return native?.majraQueueJobCount?.() ?? jsQueue.size;
+}
+
+// JS Fallback
+const PRIORITY_ORDER: QueuePriority[] = ['critical', 'high', 'normal', 'low', 'background'];
+const jsQueue = new Map<
+  string,
+  { priority: QueuePriority; state: QueueJobState; payload: unknown }
+>();
+let jsQueueRunning = 0;
+let jsQueueIdCounter = 0;
+
+function queueEnqueueJS(priority: QueuePriority, payload: unknown): string {
+  const id = `jsq-${++jsQueueIdCounter}`;
+  jsQueue.set(id, { priority, state: 'queued', payload });
+  return id;
+}
+
+function queueDequeueJS(): QueueJob | null {
+  for (const pri of PRIORITY_ORDER) {
+    for (const [id, job] of jsQueue) {
+      if (job.state === 'queued' && job.priority === pri) {
+        job.state = 'running';
+        jsQueueRunning++;
+        return { id, priority: job.priority, state: job.state, payload: job.payload };
+      }
+    }
+  }
+  return null;
+}

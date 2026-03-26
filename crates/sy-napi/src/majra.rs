@@ -364,3 +364,119 @@ pub fn majra_barrier_complete(name: String) -> Option<String> {
 pub fn majra_barrier_count() -> u32 {
     barriers().len() as u32
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Managed Queue
+// ════════════════════════════════════════════════════════════════════════════
+
+use majra::queue::{ManagedQueue, ManagedQueueConfig, Priority};
+
+fn job_queue() -> &'static ManagedQueue<serde_json::Value> {
+    static QUEUE: OnceLock<ManagedQueue<serde_json::Value>> = OnceLock::new();
+    QUEUE.get_or_init(|| {
+        ManagedQueue::new(ManagedQueueConfig {
+            max_concurrency: 4,
+            finished_ttl: std::time::Duration::from_secs(3600),
+        })
+    })
+}
+
+fn parse_priority(s: &str) -> Priority {
+    match s {
+        "critical" => Priority::Critical,
+        "high" => Priority::High,
+        "normal" => Priority::Normal,
+        "low" => Priority::Low,
+        "background" => Priority::Background,
+        _ => Priority::Normal,
+    }
+}
+
+/// Enqueue a job. Returns the job ID (UUID string).
+/// `priority`: "critical"|"high"|"normal"|"low"|"background"
+/// `payload_json`: arbitrary JSON payload (job config).
+#[napi]
+pub fn majra_queue_enqueue(priority: String, payload_json: String) -> String {
+    let payload: serde_json::Value =
+        serde_json::from_str(&payload_json).unwrap_or(serde_json::Value::Null);
+    let pri = parse_priority(&priority);
+    let id = runtime().block_on(async { job_queue().enqueue(pri, payload, None).await });
+    id.to_string()
+}
+
+/// Dequeue the next eligible job (no resource constraints).
+/// Returns JSON job or null if queue is empty / concurrency maxed.
+#[napi]
+pub fn majra_queue_dequeue() -> Option<String> {
+    runtime().block_on(async {
+        job_queue().dequeue_any().await.map(|item| {
+            serde_json::json!({
+                "id": item.id.to_string(),
+                "priority": format!("{}", item.priority),
+                "state": format!("{}", item.state),
+                "payload": item.payload,
+            })
+            .to_string()
+        })
+    })
+}
+
+/// Mark a job as completed.
+#[napi]
+pub fn majra_queue_complete(job_id: String) -> bool {
+    let id = match uuid::Uuid::parse_str(&job_id) {
+        Ok(id) => id,
+        Err(_) => return false,
+    };
+    job_queue().complete(id).is_ok()
+}
+
+/// Mark a job as failed.
+#[napi]
+pub fn majra_queue_fail(job_id: String) -> bool {
+    let id = match uuid::Uuid::parse_str(&job_id) {
+        Ok(id) => id,
+        Err(_) => return false,
+    };
+    job_queue().fail(id).is_ok()
+}
+
+/// Cancel a job (from Queued or Running state).
+#[napi]
+pub fn majra_queue_cancel(job_id: String) -> bool {
+    let id = match uuid::Uuid::parse_str(&job_id) {
+        Ok(id) => id,
+        Err(_) => return false,
+    };
+    runtime().block_on(async { job_queue().cancel(id).await.is_ok() })
+}
+
+/// Get the current state of a job. Returns JSON or null.
+#[napi]
+pub fn majra_queue_get(job_id: String) -> Option<String> {
+    let id = match uuid::Uuid::parse_str(&job_id) {
+        Ok(id) => id,
+        Err(_) => return None,
+    };
+    job_queue().get(&id).map(|item| {
+        serde_json::json!({
+            "id": item.id.to_string(),
+            "priority": format!("{}", item.priority),
+            "state": format!("{}", item.state),
+            "payload": item.payload,
+        })
+        .to_string()
+    })
+}
+
+/// Number of jobs currently running.
+#[napi]
+pub fn majra_queue_running_count() -> u32 {
+    job_queue().running_count() as u32
+}
+
+/// Total number of tracked jobs (all states).
+#[napi]
+pub fn majra_queue_job_count() -> u32 {
+    job_queue().job_count() as u32
+}

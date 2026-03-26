@@ -111,6 +111,14 @@ export interface NativeModule {
   majraBarrierForce(name: string, deadParticipant: string): string;
   majraBarrierComplete(name: string): string | null;
   majraBarrierCount(): number;
+  majraQueueEnqueue(priority: string, payloadJson: string): string;
+  majraQueueDequeue(): string | null;
+  majraQueueComplete(jobId: string): boolean;
+  majraQueueFail(jobId: string): boolean;
+  majraQueueCancel(jobId: string): boolean;
+  majraQueueGet(jobId: string): string | null;
+  majraQueueRunningCount(): number;
+  majraQueueJobCount(): number;
 
   // AgnosAI orchestration engine
   agnosaiRunCrew(specJson: string): Promise<string>;
