@@ -40,6 +40,7 @@ import { LettaProvider } from './providers/letta.js';
 import { GroqProvider } from './providers/groq.js';
 import { OpenRouterProvider } from './providers/openrouter.js';
 import { AGNOSProvider } from './providers/agnos.js';
+import { HooshProvider } from './providers/hoosh.js';
 import { CostCalculator } from './cost-calculator.js';
 import { UsageTracker, type UsageStats } from './usage-tracker.js';
 import type { UsageStorage } from './usage-storage.js';
@@ -878,7 +879,7 @@ export class AIClient {
   }
 
   private createProvider(config: AIClientConfig): AIProvider {
-    const noKeyProviders = ['ollama', 'lmstudio', 'localai'];
+    const noKeyProviders = ['ollama', 'lmstudio', 'localai', 'hoosh'];
     // Provider account key resolution happens lazily via ensureInitialized().
     // At construction time, fall back to env var for immediate use.
     const apiKey = !noKeyProviders.includes(config.model.provider)
@@ -922,6 +923,8 @@ export class AIClient {
         return new OpenRouterProvider(providerConfig, this.logger ?? undefined);
       case 'agnos':
         return new AGNOSProvider(providerConfig, this.logger ?? undefined);
+      case 'hoosh':
+        return new HooshProvider(providerConfig, this.logger ?? undefined);
       default:
         throw new Error(`Unknown AI provider: ${config.model.provider}`);
     }

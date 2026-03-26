@@ -686,7 +686,7 @@ export const VectorConfigSchema = z
       .default({}),
     api: z
       .object({
-        provider: z.enum(['openai', 'gemini', 'ollama']).default('openai'),
+        provider: z.enum(['openai', 'gemini', 'ollama', 'hoosh']).default('openai'),
         model: z.string().default('text-embedding-3-small'),
         baseUrl: z.string().url().optional(),
       })

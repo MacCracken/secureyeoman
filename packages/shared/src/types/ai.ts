@@ -234,5 +234,6 @@ export const AIProviderNameSchema = z.enum([
   'groq',
   'openrouter',
   'agnos',
+  'hoosh',
 ]);
 export type AIProviderName = z.infer<typeof AIProviderNameSchema>;

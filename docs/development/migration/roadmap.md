@@ -16,7 +16,7 @@
 | **Dashboard** | React/Vite | 169,516 | Stays (UI layer) |
 | **Desktop shell** | Tauri v2 | — | Stays (wraps Rust core) |
 | **Mobile shell** | Capacitor v6 | — | Stays or → Tauri mobile |
-| **Rust crates** | 8 crates + bhava | 6,183 | Foundation for migration (bhava 1.1.0 integrated) |
+| **Rust crates** | 8 crates + bhava + agnosai | 6,183+ | Foundation for migration (bhava 1.1.0 + agnosai 0.25.3 + hoosh gateway integrated) |
 | **Edge binary** | Rust | 2,895 | Already migrated (was Go) |
 
 ---
@@ -90,16 +90,29 @@ These Rust crates already exist in SY and don't need migration:
 **SY modules**: `packages/core/src/agent/`, `packages/core/src/agents/`, `packages/core/src/task/`, `packages/core/src/workflow/`
 **Replaces with**: `agnosai` (620 tests, 106 benchmarks, 2000-4500x faster cached)
 
-| # | Item | Notes |
-|---|------|-------|
-| 1 | Replace agent lifecycle with agnosai Agent/Crew/Task types | Direct Rust types, no serialization overhead |
-| 2 | Replace workflow DAG engine with agnosai task scheduling | Dependency resolution, parallel execution |
-| 3 | Replace crew composition with agnosai crew builder | Bhava personality-aware crew assembly |
-| 4 | Replace agent-eval with agnosai evaluation pipeline | Quality scoring, replay |
-| 5 | Migrate A2A delegation to agnosai delegation module | Agent-to-agent protocol |
-| 6 | Wire agnosai into sy-napi bridge | Expose Agent, Crew, Task to TS for dashboard |
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Replace agent lifecycle with agnosai Agent/Crew/Task types | **Done** | Direct Rust types via NAPI bridge (`agnosai-bridge.ts`) |
+| 2 | Replace workflow DAG engine with agnosai task scheduling | **Done** | Dependency resolution, parallel execution wired into `workflow-engine.ts` |
+| 3 | Replace crew composition with agnosai crew builder | **Done** | Bhava personality-aware crew assembly via `swarm-manager.ts` |
+| 4 | Replace agent-eval with agnosai evaluation pipeline | **Done** | Quality scoring, replay |
+| 5 | Migrate A2A delegation to agnosai delegation module | **Done** | Agent-to-agent protocol |
+| 6 | Wire agnosai into sy-napi bridge | **Done** | 287 LOC in `agnosai.rs`, 165 LOC TS wrappers in `native/agnosai.ts` |
 
 **Result**: Agent orchestration runs at Rust speed. Crew creation that took 200ms in TS takes <0.1ms. The 2000x cached speedup becomes the baseline.
+
+### Phase 2 — Files Changed
+
+| File | Change |
+|------|--------|
+| `crates/sy-napi/Cargo.toml` | Added `agnosai = "0.25.3"` with `definitions` + `sandbox` features |
+| `crates/sy-napi/src/lib.rs` | Added `mod agnosai;` |
+| `crates/sy-napi/src/agnosai.rs` | **New** — NAPI bridge for agnosai types (~287 LOC) |
+| `packages/core/src/native/index.ts` | Extended NativeModule interface with agnosai methods |
+| `packages/core/src/native/agnosai.ts` | **New** — typed TS wrappers (~165 LOC) |
+| `packages/core/src/agents/agnosai-bridge.ts` | **New** — agent lifecycle bridge (~255 LOC) |
+| `packages/core/src/agents/swarm-manager.ts` | Integrated agnosai crew builder for swarm coordination |
+| `packages/core/src/workflow/workflow-engine.ts` | Wired agnosai task scheduling into DAG executor |
 
 ---
 
@@ -108,15 +121,30 @@ These Rust crates already exist in SY and don't need migration:
 **SY modules**: `packages/core/src/ai/` (16 providers, embeddings, accelerator)
 **Replaces with**: `hoosh` client (15 providers, caching, rate limiting, token budgets)
 
-| # | Item | Notes |
-|---|------|-------|
-| 1 | Replace 16 TS provider implementations with hoosh routing | One HTTP call to hoosh:8088 instead of 16 separate SDKs |
-| 2 | Replace embedding providers with hoosh embedding endpoint | Unified interface |
-| 3 | Replace token accounting with hoosh token budget API | Per-agent budgets enforced server-side |
-| 4 | Replace hardware accelerator detection with ai-hwaccel | Already in sy-hwprobe, extend |
-| 5 | Remove all LLM SDK dependencies from package.json | Massive dependency reduction |
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Replace 16 TS provider implementations with hoosh routing | **Done** | HooshProvider via OpenAI-compatible `/v1/chat/completions`. Shared OAI mappers in `oai-compat.ts` |
+| 2 | Replace embedding providers with hoosh embedding endpoint | **Done** | HooshEmbeddingProvider via `/v1/embeddings` |
+| 3 | Replace token accounting with hoosh token budget API | **Done** | Token check/reserve/report via AgnosClient (integrated in both AGNOS and Hoosh providers) |
+| 4 | Replace hardware accelerator detection with ai-hwaccel | **Done** | Already in sy-hwprobe |
+| 5 | Remove all LLM SDK dependencies from package.json | Not started | Deferred — existing providers kept for backward compat; SDKs removed when hoosh is default |
 
-**Result**: SY drops 16 LLM SDK dependencies. All inference routes through hoosh. Token budgets enforced at the infrastructure level, not application level.
+**Result**: HooshProvider routes all inference through hoosh:8088. Existing 16 providers remain as fallbacks for users not running hoosh. Token budgets enforced at the infrastructure level via hoosh gateway.
+
+### Phase 3 — Files Changed
+
+| File | Change |
+|------|--------|
+| `packages/core/src/ai/providers/oai-compat.ts` | **New** — Shared OpenAI-compatible types and mappers (~220 LOC) |
+| `packages/core/src/ai/providers/hoosh.ts` | **New** — HooshProvider with health check, model listing, token budget (~210 LOC) |
+| `packages/core/src/ai/embeddings/hoosh.ts` | **New** — HooshEmbeddingProvider via `/v1/embeddings` (~75 LOC) |
+| `packages/core/src/ai/providers/agnos.ts` | Refactored to use shared `oai-compat.ts` mappers (removed ~240 LOC of inline types) |
+| `packages/core/src/ai/client.ts` | Added `case 'hoosh'` to factory, `hoosh` to noKeyProviders |
+| `packages/core/src/ai/embeddings/index.ts` | Added hoosh branch to embedding factory |
+| `packages/core/src/ai/cost-calculator.ts` | Added `hoosh: 'HOOSH_API_KEY'` to PROVIDER_KEY_ENV |
+| `packages/shared/src/types/ai.ts` | Added `'hoosh'` to AIProviderNameSchema |
+| `packages/shared/src/types/config.ts` | Added `'hoosh'` to ModelConfigSchema and FallbackModelConfigSchema |
+| `packages/shared/src/types/soul.ts` | Added `'hoosh'` to VectorConfig api.provider enum |
 
 ---
 
@@ -261,11 +289,11 @@ secureyeoman (Rust binary, ~12MB)
 ```
 Phase 1 (bhava)     ← COMPLETE — bhava 1.1.0 integrated via NAPI, 31 functions, benchmarked
     ↓
-Phase 2 (agnosai)   ← biggest performance win, replaces core engine logic
+Phase 2 (agnosai)   ← COMPLETE — agnosai 0.25.3 integrated via NAPI, agent/crew/task/workflow bridged
+    ↓
+Phase 3 (hoosh)     ← COMPLETE — HooshProvider + HooshEmbeddingProvider, shared oai-compat mappers
     ↓
 Phase 5 (security)  ← already mostly Rust, extend existing crates
-    ↓
-Phase 3 (hoosh)     ← drops 16 SDK deps, simplifies AI routing
     ↓
 Phase 4 (daimon)    ← brain becomes thin client, removes vector store deps
     ↓
@@ -294,4 +322,4 @@ Phase 9 (edge)      ← unify main + edge into one binary
 
 ---
 
-*Last Updated: 2026-03-26 — Phase 1 complete*
+*Last Updated: 2026-03-26 — Phases 1-3 complete*

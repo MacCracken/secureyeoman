@@ -1,13 +1,16 @@
 /**
- * AGNOS Gateway Provider
+ * Hoosh Gateway Provider
  *
- * Routes LLM calls through the AGNOS LLM gateway, which provides:
- * - Multi-provider routing (Ollama, llama.cpp, OpenAI, Anthropic)
- * - Token accounting per agent
+ * Routes all LLM calls through the hoosh AI inference gateway, which provides:
+ * - Multi-provider routing (OpenAI, Anthropic, Gemini, Ollama, Groq, Mistral, etc.)
+ * - Configurable routing strategies (Priority, RoundRobin, LowestLatency)
+ * - Token budget management
  * - Response caching and rate limiting
  * - Local-first with cloud fallback
  *
  * Uses OpenAI-compatible /v1/chat/completions endpoint.
+ * This is the Phase 3 migration provider — replaces 16 individual provider SDKs
+ * with a single HTTP call to hoosh.
  */
 
 import type { AIRequest, AIResponse, AIStreamChunk, AIProviderName } from '@secureyeoman/shared';
@@ -27,17 +30,17 @@ import {
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:8088';
 
-export interface AGNOSProviderTokenBudgetConfig {
-  /** AgnosClient for token budget calls. */
+export interface HooshProviderConfig {
+  /** AgnosClient for token budget calls. Optional — skipped when absent. */
   agnosClient?: AgnosClient;
-  /** Project identifier for token accounting. */
+  /** Token budget project identifier. Default: 'secureyeoman'. */
   project?: string;
-  /** Token pool name. Default: 'default'. */
+  /** Token budget pool name. Default: 'default'. */
   pool?: string;
 }
 
-export class AGNOSProvider extends BaseProvider {
-  readonly name: AIProviderName = 'agnos';
+export class HooshProvider extends BaseProvider {
+  readonly name: AIProviderName = 'hoosh';
   private readonly baseUrl: string;
   private readonly agnosClient?: AgnosClient;
   private readonly tokenProject: string;
@@ -46,14 +49,16 @@ export class AGNOSProvider extends BaseProvider {
   constructor(
     config: ProviderConfig,
     logger?: SecureLogger,
-    tokenBudget?: AGNOSProviderTokenBudgetConfig
+    hooshConfig?: HooshProviderConfig
   ) {
     super(config, logger);
     this.baseUrl = config.model.baseUrl ?? DEFAULT_BASE_URL;
-    this.agnosClient = tokenBudget?.agnosClient;
-    this.tokenProject = tokenBudget?.project ?? 'secureyeoman';
-    this.tokenPool = tokenBudget?.pool ?? 'default';
+    this.agnosClient = hooshConfig?.agnosClient;
+    this.tokenProject = hooshConfig?.project ?? 'secureyeoman';
+    this.tokenPool = hooshConfig?.pool ?? 'default';
   }
+
+  // ─── Chat ───────────────────────────────────────────────────
 
   protected async doChat(request: AIRequest): Promise<AIResponse> {
     const model = this.resolveModel(request);
@@ -71,7 +76,7 @@ export class AGNOSProvider extends BaseProvider {
 
     const response = await this.fetchApi(body);
     const data = (await response.json()) as OAIChatResponse;
-    const mapped = mapOAIResponse(data, model, 'agnos');
+    const mapped = mapOAIResponse(data, model, 'hoosh');
 
     await this.reportTokenUsage(mapped.usage.totalTokens);
 
@@ -95,7 +100,7 @@ export class AGNOSProvider extends BaseProvider {
     const response = await this.fetchApi(body);
 
     if (!response.body) {
-      throw new InvalidResponseError('agnos', 'No response body for streaming');
+      throw new InvalidResponseError('hoosh', 'No response body for streaming');
     }
 
     for await (const chunk of parseOAISSEStream(response.body.getReader(), new TextDecoder())) {
@@ -103,7 +108,41 @@ export class AGNOSProvider extends BaseProvider {
     }
   }
 
-  // ─── Helpers ─────────────────────────────────────────────────
+  // ─── Gateway Discovery ──────────────────────────────────────
+
+  /** Check if the hoosh gateway is reachable and healthy. */
+  async isHealthy(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/v1/health`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  /** List models available through the hoosh gateway. */
+  async listModels(): Promise<string[]> {
+    try {
+      const headers: Record<string, string> = {};
+      if (this.apiKey) headers.Authorization = `Bearer ${this.apiKey}`;
+
+      const res = await fetch(`${this.baseUrl}/v1/models`, {
+        headers,
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!res.ok) return [];
+
+      const data = (await res.json()) as { data?: { id: string }[] };
+      return data.data?.map((m) => m.id) ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  // ─── HTTP ───────────────────────────────────────────────────
 
   private async fetchApi(body: Record<string, unknown>): Promise<Response> {
     const url = `${this.baseUrl}/v1/chat/completions`;
@@ -120,13 +159,13 @@ export class AGNOSProvider extends BaseProvider {
 
       if (!response.ok) {
         if (response.status === 429) {
-          throw new ProviderUnavailableError('agnos', 429);
+          throw new ProviderUnavailableError('hoosh', 429);
         }
         if (response.status >= 500) {
-          throw new ProviderUnavailableError('agnos', response.status);
+          throw new ProviderUnavailableError('hoosh', response.status);
         }
         throw new InvalidResponseError(
-          'agnos',
+          'hoosh',
           `HTTP ${response.status}: ${await response.text().catch(() => '')}`
         );
       }
@@ -139,7 +178,7 @@ export class AGNOSProvider extends BaseProvider {
       const msg = error instanceof Error ? error.message : String(error);
       if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
         throw new ProviderUnavailableError(
-          'agnos',
+          'hoosh',
           undefined,
           error instanceof Error ? error : undefined
         );
@@ -150,10 +189,6 @@ export class AGNOSProvider extends BaseProvider {
 
   // ─── Token Budget ───────────────────────────────────────────
 
-  /**
-   * Check and reserve token budget before inference. Best-effort — failures
-   * are logged but never block the request.
-   */
   private async checkTokenBudget(body: Record<string, unknown>): Promise<void> {
     if (!this.agnosClient) return;
 
@@ -163,7 +198,7 @@ export class AGNOSProvider extends BaseProvider {
 
       if (!check.allowed) {
         throw new ProviderUnavailableError(
-          'agnos',
+          'hoosh',
           429,
           new Error(
             `Token budget exceeded for pool "${this.tokenPool}" (remaining: ${check.remaining ?? 0})`
@@ -173,9 +208,7 @@ export class AGNOSProvider extends BaseProvider {
 
       await this.agnosClient.tokenReserve(this.tokenProject, estimated, this.tokenPool);
     } catch (err) {
-      // Re-throw budget exceeded errors
       if (err instanceof ProviderUnavailableError) throw err;
-      // Best-effort — log but don't block inference
       this.logger?.debug?.(
         { error: err instanceof Error ? err.message : String(err) },
         'Token budget check failed (non-fatal)'
@@ -183,9 +216,6 @@ export class AGNOSProvider extends BaseProvider {
     }
   }
 
-  /**
-   * Report actual token usage after inference. Best-effort — failures are swallowed.
-   */
   private async reportTokenUsage(actualTokens: number): Promise<void> {
     if (!this.agnosClient || actualTokens <= 0) return;
 

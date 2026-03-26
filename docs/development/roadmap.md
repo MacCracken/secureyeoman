@@ -6,7 +6,7 @@
 
 ## Hybrid TypeScript/Rust Architecture
 
-**Status**: Phase 1-4 complete. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89.
+**Status**: Phase 1-4 complete. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89. Migration Phases 1-3 complete (bhava 1.1.0 + agnosai 0.25.3 via NAPI + hoosh gateway provider).
 
 See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hardware test plan, and per-platform verification checklist.
 
@@ -139,10 +139,12 @@ As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Ifran, Shruti, Ta
 
 ### Hoosh — replace LLM provider layer (~2,000+ lines)
 
-- [ ] **Replace 16 provider implementations with hoosh** — SY's `packages/core/src/ai/providers/` (anthropic, openai, gemini, ollama, deepseek, mistral, grok, groq, openrouter, lmstudio, localai, letta, opencode, agnos, openai-ws) → hoosh provider registry. SY keeps personality binding, cost tracking, and model tiering as thin wrappers.
+- [x] **Replace 16 provider implementations with hoosh** — HooshProvider routes through hoosh:8088 via OpenAI-compatible API. Shared `oai-compat.ts` mappers. Existing providers kept as fallbacks.
+- [x] **Hoosh embedding provider** — HooshEmbeddingProvider via `/v1/embeddings` endpoint.
 - [ ] **Delegate model routing to hoosh** — Replace `model-router.ts` complexity scoring and provider selection with hoosh's routing strategies (Priority, RoundRobin, LowestLatency). SY maps personality model allowlists to hoosh route filters.
 - [ ] **Delegate provider health tracking to hoosh** — Replace `provider-health.ts` ring buffer with hoosh's built-in health checks and automatic failover.
 - [ ] **Use hoosh for hardware-aware local inference** — hoosh handles Ollama/llama.cpp/LMStudio/LocalAI routing with `ai-hwaccel` detection. SY drops `sy-hwprobe` Rust crate (currently a thin wrapper around `ai-hwaccel`).
+- [ ] **Remove LLM SDK dependencies** — Once hoosh is the default provider, remove anthropic/openai/gemini/etc. SDKs from package.json.
 
 ### Majra — replace concurrency primitives (~3,200+ lines)
 
