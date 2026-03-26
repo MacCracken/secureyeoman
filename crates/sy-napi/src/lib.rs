@@ -1,6 +1,7 @@
 //! SecureYeoman napi-rs bridge — exposes sy-crypto, sy-hwprobe, sy-privacy,
 //! sy-audit, and bhava to Node.js.
 
+mod agnosai;
 mod bhava;
 
 use napi::bindgen_prelude::*;

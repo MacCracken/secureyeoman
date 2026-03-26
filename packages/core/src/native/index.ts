@@ -85,6 +85,18 @@ export interface NativeModule {
     spiritText: string,
   ): string;
   bhavaBuildMetadata(name: string, traitsJson: string, stateJson: string): string;
+
+  // AgnosAI orchestration engine
+  agnosaiRunCrew(specJson: string): Promise<string>;
+  agnosaiCancelCrew(crewId: string): Promise<void>;
+  agnosaiValidateCrew(specJson: string): string;
+  agnosaiScheduleTasks(tasksJson: string): string;
+  agnosaiTopologicalSort(tasksJson: string): string;
+  agnosaiRouteModel(taskType: string, complexity: string): string;
+  agnosaiRankAgents(agentsJson: string, taskJson: string): string;
+  agnosaiCreateAgentDef(profileJson: string): string;
+  agnosaiListBuiltinTools(): string;
+  agnosaiUcb1Select(armsJson: string): string;
 }
 
 let _native: NativeModule | null = null;

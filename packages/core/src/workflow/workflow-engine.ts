@@ -1178,14 +1178,34 @@ export class WorkflowEngine {
 
       // ── Agnostic Crew Delegation ──────────────────────────────────────
       case 'agnostic_crew': {
-        if (!this.agnosticConfig) {
-          throw new Error('agnostic_crew: Agnostic platform not configured');
-        }
         const preset = this.resolveTemplate(String(cfg.preset ?? ''), ctx);
         const title = this.resolveTemplate(String(cfg.title ?? step.name), ctx);
         const description = this.resolveTemplate(String(cfg.description ?? ''), ctx);
         const priority = String(cfg.priority ?? 'medium');
         const process = String(cfg.process ?? 'sequential');
+
+        // Try native agnosai execution first (no HTTP round-trip)
+        const nativeAgnosai = await import('../native/agnosai.js').catch(() => null);
+        if (nativeAgnosai) {
+          const crewSpec = JSON.stringify({
+            name: title,
+            agents: [{ agent_key: preset || 'default', role: preset || 'agent', goal: description || title, tools: [] }],
+            tasks: [{ description: description || title, priority: priority === 'high' ? 3 : priority === 'low' ? 1 : 2 }],
+            process,
+          });
+
+          const crewState = await nativeAgnosai.runCrew(crewSpec);
+          if (crewState) {
+            this.logger.info({ preset, title, priority }, 'agnostic_crew: executed via native agnosai');
+            return { crewId: crewState.crew_id, status: crewState.status, preset, title };
+          }
+        }
+
+        // Fallback: HTTP to Agnostic platform
+        if (!this.agnosticConfig) {
+          throw new Error('agnostic_crew: Agnostic platform not configured and native unavailable');
+        }
+
         const targetUrl = cfg.targetUrl
           ? this.resolveTemplate(String(cfg.targetUrl), ctx)
           : undefined;
@@ -1197,7 +1217,7 @@ export class WorkflowEngine {
 
         this.logger.info(
           { preset, title, priority },
-          'agnostic_crew: submitting crew to Agnostic platform'
+          'agnostic_crew: submitting crew to Agnostic platform via HTTP'
         );
 
         const headers = await this.getAgnosticHeaders();
