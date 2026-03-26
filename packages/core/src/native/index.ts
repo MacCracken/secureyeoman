@@ -94,6 +94,11 @@ export interface NativeModule {
   majraPatternCount(): number;
   majraMessagesPublished(): number;
   majraCleanupDead(): number;
+  majraRatelimitRegister(ruleName: string, windowMs: number, maxRequests: number): void;
+  majraRatelimitCheck(ruleName: string, key: string): string;
+  majraRatelimitEvict(ruleName: string, maxIdleMs: number): number;
+  majraRatelimitStats(ruleName: string): string | null;
+  majraRatelimitRemove(ruleName: string): boolean;
 
   // AgnosAI orchestration engine
   agnosaiRunCrew(specJson: string): Promise<string>;

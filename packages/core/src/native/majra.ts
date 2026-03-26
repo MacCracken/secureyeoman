@@ -143,3 +143,129 @@ function subscribeJS(pattern: string, handler: MessageHandler): void {
   handlers.push(handler);
   jsSubs.set(pattern, handlers);
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Rate Limiter
+// ════════════════════════════════════════════════════════════════════════════
+
+export interface RatelimitCheckResult {
+  allowed: boolean;
+  activeKeys: number;
+  totalAllowed: number;
+  totalRejected: number;
+}
+
+export interface RatelimitStats {
+  activeKeys: number;
+  totalAllowed: number;
+  totalRejected: number;
+  totalEvicted: number;
+}
+
+/**
+ * Register a rate limit rule. Converts SY's windowMs/maxRequests to
+ * majra's token bucket (rate = maxRequests/windowSecs, burst = maxRequests).
+ */
+export function ratelimitRegister(ruleName: string, windowMs: number, maxRequests: number): void {
+  if (native?.majraRatelimitRegister) {
+    native.majraRatelimitRegister(ruleName, windowMs, maxRequests);
+    return;
+  }
+  jsRules.set(ruleName, { windowMs, maxRequests, windows: new Map() });
+}
+
+/**
+ * Check if a request is allowed for a given rule and key.
+ */
+export function ratelimitCheck(ruleName: string, key: string): RatelimitCheckResult {
+  if (native?.majraRatelimitCheck) {
+    return JSON.parse(native.majraRatelimitCheck(ruleName, key)) as RatelimitCheckResult;
+  }
+  return ratelimitCheckJS(ruleName, key);
+}
+
+/**
+ * Evict stale keys from a limiter.
+ */
+export function ratelimitEvict(ruleName: string, maxIdleMs: number): number {
+  if (native?.majraRatelimitEvict) {
+    return native.majraRatelimitEvict(ruleName, maxIdleMs);
+  }
+  // JS fallback: clear all windows for this rule when maxIdleMs=0
+  const rule = jsRules.get(ruleName);
+  if (!rule) return 0;
+  const count = rule.windows.size;
+  rule.windows.clear();
+  return count;
+}
+
+/**
+ * Reset a specific key within a rule (clear its window).
+ */
+export function ratelimitResetKey(ruleName: string, key: string): void {
+  if (native?.majraRatelimitEvict) {
+    // Native: evict all keys with 0 idle time (clears everything for this rule)
+    native.majraRatelimitEvict(ruleName, 0);
+    return;
+  }
+  // JS fallback: delete the specific window
+  const rule = jsRules.get(ruleName);
+  if (rule) {
+    rule.windows.delete(`${ruleName}:${key}`);
+  }
+}
+
+/**
+ * Get stats for a limiter.
+ */
+export function ratelimitStats(ruleName: string): RatelimitStats | null {
+  if (native?.majraRatelimitStats) {
+    const json = native.majraRatelimitStats(ruleName);
+    return json ? (JSON.parse(json) as RatelimitStats) : null;
+  }
+  const rule = jsRules.get(ruleName);
+  return rule
+    ? { activeKeys: rule.windows.size, totalAllowed: 0, totalRejected: 0, totalEvicted: 0 }
+    : null;
+}
+
+/**
+ * Remove a registered rule.
+ */
+export function ratelimitRemove(ruleName: string): boolean {
+  if (native?.majraRatelimitRemove) {
+    return native.majraRatelimitRemove(ruleName);
+  }
+  return jsRules.delete(ruleName);
+}
+
+// ── JS Fallback (sliding window) ───────────────────────────────────────────
+
+interface JSRule {
+  windowMs: number;
+  maxRequests: number;
+  windows: Map<string, { count: number; windowStart: number }>;
+}
+
+const jsRules = new Map<string, JSRule>();
+
+function ratelimitCheckJS(ruleName: string, key: string): RatelimitCheckResult {
+  const rule = jsRules.get(ruleName);
+  if (!rule) return { allowed: true, activeKeys: 0, totalAllowed: 0, totalRejected: 0 };
+
+  const now = Date.now();
+  const windowKey = `${ruleName}:${key}`;
+  let window = rule.windows.get(windowKey);
+
+  if (!window || now - window.windowStart >= rule.windowMs) {
+    window = { count: 0, windowStart: now };
+    rule.windows.set(windowKey, window);
+  }
+
+  if (window.count < rule.maxRequests) {
+    window.count++;
+    return { allowed: true, activeKeys: rule.windows.size, totalAllowed: 0, totalRejected: 0 };
+  }
+
+  return { allowed: false, activeKeys: rule.windows.size, totalAllowed: 0, totalRejected: 0 };
+}

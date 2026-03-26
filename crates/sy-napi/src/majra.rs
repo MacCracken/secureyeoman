@@ -1,6 +1,7 @@
-//! Majra pub/sub — NAPI bindings for Node.js.
+//! Majra — NAPI bindings for Node.js.
 //!
-//! Exposes majra's `PubSub` as a global in-process event bus.
+//! Exposes majra's `PubSub` as a global in-process event bus and
+//! `RateLimiter` as a per-key token bucket rate limiter.
 //! TypeScript subscribers receive messages via `ThreadsafeFunction` callbacks.
 
 use std::sync::OnceLock;
@@ -9,7 +10,11 @@ use napi::threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFun
 use napi_derive::napi;
 use tokio::runtime::Runtime;
 
+use std::collections::HashMap;
+use std::sync::Mutex;
+
 use majra::pubsub::{self, PubSub};
+use majra::ratelimit;
 
 // ── Tokio Runtime ──────────────────────────────────────────────────────────
 
@@ -104,4 +109,97 @@ pub fn majra_messages_published() -> u32 {
 #[napi]
 pub fn majra_cleanup_dead() -> u32 {
     pubsub().cleanup_dead_subscribers() as u32
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Rate Limiter
+// ════════════════════════════════════════════════════════════════════════════
+
+fn limiters() -> &'static Mutex<HashMap<String, ratelimit::RateLimiter>> {
+    static LIMITERS: OnceLock<Mutex<HashMap<String, ratelimit::RateLimiter>>> = OnceLock::new();
+    LIMITERS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Register a rate limit rule. Converts SY's `windowMs`/`maxRequests` to
+/// majra's `rate` (tokens/sec) and `burst` (max tokens).
+///
+/// rate  = maxRequests / (windowMs / 1000)
+/// burst = maxRequests
+#[napi]
+pub fn majra_ratelimit_register(rule_name: String, window_ms: u32, max_requests: u32) {
+    let window_secs = window_ms as f64 / 1000.0;
+    let rate = max_requests as f64 / window_secs;
+    let burst = max_requests as usize;
+    let limiter = ratelimit::RateLimiter::new(rate, burst);
+
+    let mut map = limiters().lock().unwrap_or_else(|e| e.into_inner());
+    map.insert(rule_name, limiter);
+}
+
+/// Check if a request is allowed for a given rule and key.
+/// Returns JSON: `{ "allowed": bool, "remaining": u32, "totalAllowed": u64, "totalRejected": u64 }`.
+///
+/// If the rule is not registered, returns allowed=true (fail-open).
+#[napi]
+pub fn majra_ratelimit_check(rule_name: String, key: String) -> String {
+    let map = limiters().lock().unwrap_or_else(|e| e.into_inner());
+
+    if let Some(limiter) = map.get(&rule_name) {
+        let compound_key = format!("{rule_name}:{key}");
+        let allowed = limiter.check(&compound_key);
+        let stats = limiter.stats();
+
+        serde_json::json!({
+            "allowed": allowed,
+            "activeKeys": stats.active_keys,
+            "totalAllowed": stats.total_allowed,
+            "totalRejected": stats.total_rejected,
+        })
+        .to_string()
+    } else {
+        // Fail-open for unregistered rules
+        serde_json::json!({
+            "allowed": true,
+            "activeKeys": 0,
+            "totalAllowed": 0,
+            "totalRejected": 0,
+        })
+        .to_string()
+    }
+}
+
+/// Evict stale keys from a limiter. Returns the number of keys evicted.
+#[napi]
+pub fn majra_ratelimit_evict(rule_name: String, max_idle_ms: u32) -> u32 {
+    let map = limiters().lock().unwrap_or_else(|e| e.into_inner());
+
+    if let Some(limiter) = map.get(&rule_name) {
+        limiter.evict_stale(std::time::Duration::from_millis(max_idle_ms as u64)) as u32
+    } else {
+        0
+    }
+}
+
+/// Get stats for a limiter. Returns JSON or null if not found.
+#[napi]
+pub fn majra_ratelimit_stats(rule_name: String) -> Option<String> {
+    let map = limiters().lock().unwrap_or_else(|e| e.into_inner());
+
+    map.get(&rule_name).map(|limiter| {
+        let stats = limiter.stats();
+        serde_json::json!({
+            "activeKeys": stats.active_keys,
+            "totalAllowed": stats.total_allowed,
+            "totalRejected": stats.total_rejected,
+            "totalEvicted": stats.total_evicted,
+        })
+        .to_string()
+    })
+}
+
+/// Remove a registered rule.
+#[napi]
+pub fn majra_ratelimit_remove(rule_name: String) -> bool {
+    let mut map = limiters().lock().unwrap_or_else(|e| e.into_inner());
+    map.remove(&rule_name).is_some()
 }

@@ -14,9 +14,9 @@ sy-crypto = { path = "../sy-crypto" }
 sy-hwprobe = { path = "../sy-hwprobe" }
 sy-privacy = { path = "../sy-privacy" }
 sy-audit = { path = "../sy-audit" }
-bhava = { version = "1.1.0", features = ["presets"] }
+bhava = { version = "1.1.1", features = ["presets"] }
 agnosai = { version = "0.25.3", features = ["definitions", "sandbox"] }
-majra = { path = "../../../majra", features = ["pubsub"] }
+majra = { path = "../../../majra", features = ["pubsub", "ratelimit"] }
 chrono = "0.4"
 uuid = "1"
 tokio = { version = "1", features = ["rt-multi-thread"] }

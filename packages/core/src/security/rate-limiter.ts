@@ -1,13 +1,17 @@
 /**
- * Rate Limiter for SecureYeoman
+ * Rate Limiter for SecureYeoman — backed by majra token bucket.
  *
  * Security considerations:
- * - Sliding window algorithm for accurate rate limiting
+ * - Per-key token bucket algorithm via majra (lazy refill, no background tasks)
  * - Per-user, per-IP, and global limits
- * - Automatic cleanup of expired entries
+ * - Automatic stale key eviction
  * - Audit logging of rate limit violations
+ *
+ * SY keeps rule definitions, action policies (reject/delay/log), and the
+ * Fastify hook. The underlying rate limiting engine is majra.
  */
 
+import * as majra from '../native/majra.js';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
 import type { SecurityConfig } from '@secureyeoman/shared';
 import { RedisRateLimiter } from './rate-limiter-redis.js';
@@ -51,37 +55,17 @@ export interface RateLimiterLike {
   getStats(): { totalHits: number; totalChecks: number };
 }
 
-/** Maximum number of tracked windows before early eviction / rejection. */
-const MAX_WINDOWS = 100_000;
-
-interface WindowEntry {
-  count: number;
-  windowStart: number;
-}
-
 /**
- * Sliding window rate limiter
+ * Token bucket rate limiter backed by majra.
  */
 export class RateLimiter {
-  private readonly windows = new Map<string, WindowEntry>();
   private readonly rules = new Map<string, RateLimitRule>();
   private readonly defaultRule: RateLimitRule;
+  private readonly usageCounters = new Map<string, { count: number; windowStart: number }>();
   private logger: SecureLogger | null = null;
   private cleanupInterval: NodeJS.Timeout | null = null;
 
-  /**
-   * Monotonically increasing counter of requests that were rejected (rate
-   * limit exceeded). Exposed via getStats() and surfaced in the security
-   * section of the MetricsSnapshot so the dashboard can display threat
-   * indicators in real time.
-   */
   private totalHits = 0;
-
-  /**
-   * Monotonically increasing counter of ALL rate-limit checks performed,
-   * regardless of outcome. Together with totalHits this lets consumers
-   * compute a "blocked request ratio" for monitoring and alerting.
-   */
   private totalChecks = 0;
 
   constructor(config: SecurityConfig['rateLimiting']) {
@@ -93,7 +77,10 @@ export class RateLimiter {
       onExceed: 'reject',
     };
 
-    // Start cleanup interval (every minute)
+    // Register default rule in majra
+    majra.ratelimitRegister('default', config.defaultWindowMs, config.defaultMaxRequests);
+
+    // Start stale key eviction (every minute)
     this.startCleanup();
   }
 
@@ -113,6 +100,7 @@ export class RateLimiter {
    */
   addRule(rule: RateLimitRule): void {
     this.rules.set(rule.name, rule);
+    majra.ratelimitRegister(rule.name, rule.windowMs, rule.maxRequests);
     this.getLogger().debug({ ruleName: rule.name }, 'Rate limit rule added');
   }
 
@@ -120,6 +108,7 @@ export class RateLimiter {
    * Remove a rate limit rule
    */
   removeRule(name: string): boolean {
+    majra.ratelimitRemove(name);
     return this.rules.delete(name);
   }
 
@@ -132,63 +121,37 @@ export class RateLimiter {
     context?: { userId?: string; ipAddress?: string }
   ): RateLimitResult {
     const rule = this.rules.get(ruleName) ?? this.defaultRule;
-    const windowKey = this.buildWindowKey(rule.name, rule.keyType, key);
-    const now = Date.now();
+    const windowKey = this.buildWindowKey(rule.keyType, key);
 
-    // Track every check for metrics — this counter never resets and is
-    // exposed via getStats() → MetricsSnapshot.security.
     this.totalChecks++;
 
-    // Get or create window
-    let window = this.windows.get(windowKey);
+    const result = majra.ratelimitCheck(rule.name, windowKey);
 
-    if (!window || now - window.windowStart >= rule.windowMs) {
-      // If at capacity, run early eviction before inserting a new entry
-      if (!this.windows.has(windowKey) && this.windows.size >= MAX_WINDOWS) {
-        this.cleanup();
-        // If still at capacity after cleanup, reject the request
-        if (this.windows.size >= MAX_WINDOWS) {
-          this.totalHits++;
-          this.getLogger().warn(
-            { windowsSize: this.windows.size },
-            'Rate limiter at max capacity, rejecting request'
-          );
-          return {
-            allowed: false,
-            remaining: 0,
-            resetAt: now + rule.windowMs,
-            retryAfter: Math.ceil(rule.windowMs / 1000),
-          };
-        }
-      }
-      // Start new window
-      window = {
-        count: 0,
-        windowStart: now,
-      };
-      this.windows.set(windowKey, window);
+    // Track usage for getUsage() and getStats()
+    const counterKey = `${rule.name}:${windowKey}`;
+    const now = Date.now();
+    let counter = this.usageCounters.get(counterKey);
+    if (!counter || now - counter.windowStart >= rule.windowMs) {
+      counter = { count: 0, windowStart: now };
+      this.usageCounters.set(counterKey, counter);
     }
+    counter.count++;
 
-    // Calculate remaining
-    const remaining = Math.max(0, rule.maxRequests - window.count);
-    const resetAt = window.windowStart + rule.windowMs;
-
-    // Check if under limit
-    if (window.count < rule.maxRequests) {
-      // Increment counter
-      window.count++;
+    if (result.allowed) {
+      const remaining = Math.max(0, rule.maxRequests - counter.count);
+      const resetAt = counter.windowStart + rule.windowMs;
 
       return {
         allowed: true,
-        remaining: remaining - 1,
+        remaining,
         resetAt,
       };
     }
 
-    // Rate limit exceeded — increment the hit counter so the metrics
-    // snapshot accurately reflects how many requests have been blocked.
+    // Rate limit exceeded
     this.totalHits++;
-    const retryAfter = Math.ceil((resetAt - now) / 1000);
+    const resetAt = counter.windowStart + rule.windowMs;
+    const retryAfter = Math.ceil(rule.windowMs / 1000);
 
     // Log violation
     this.getLogger().warn(
@@ -198,7 +161,6 @@ export class RateLimiter {
         keyType: rule.keyType,
         windowMs: rule.windowMs,
         maxRequests: rule.maxRequests,
-        currentCount: window.count,
         userId: context?.userId,
         ipAddress: context?.ipAddress,
       },
@@ -207,7 +169,6 @@ export class RateLimiter {
 
     // Handle based on rule action
     if (rule.onExceed === 'log_only') {
-      window.count++;
       return {
         allowed: true,
         remaining: 0,
@@ -257,8 +218,9 @@ export class RateLimiter {
    */
   reset(ruleName: string, key: string): void {
     const rule = this.rules.get(ruleName) ?? this.defaultRule;
-    const windowKey = this.buildWindowKey(rule.name, rule.keyType, key);
-    this.windows.delete(windowKey);
+    const windowKey = this.buildWindowKey(rule.keyType, key);
+    majra.ratelimitResetKey(rule.name, windowKey);
+    this.usageCounters.delete(`${rule.name}:${windowKey}`);
   }
 
   /**
@@ -269,29 +231,36 @@ export class RateLimiter {
     key: string
   ): { count: number; limit: number; windowMs: number } | null {
     const rule = this.rules.get(ruleName) ?? this.defaultRule;
-    const windowKey = this.buildWindowKey(rule.name, rule.keyType, key);
-    const window = this.windows.get(windowKey);
+    const windowKey = this.buildWindowKey(rule.keyType, key);
+    const counterKey = `${rule.name}:${windowKey}`;
+    const counter = this.usageCounters.get(counterKey);
 
-    if (!window) {
+    if (!counter) {
+      return null;
+    }
+
+    // Check if window has expired
+    if (Date.now() - counter.windowStart >= rule.windowMs) {
+      this.usageCounters.delete(counterKey);
       return null;
     }
 
     return {
-      count: window.count,
+      count: counter.count,
       limit: rule.maxRequests,
       windowMs: rule.windowMs,
     };
   }
 
   /**
-   * Build a unique key for the window map
+   * Build a unique key for rate limiting
    */
-  private buildWindowKey(ruleName: string, keyType: string, key: string): string {
-    return `${ruleName}:${keyType}:${key}`;
+  private buildWindowKey(keyType: string, key: string): string {
+    return `${keyType}:${key}`;
   }
 
   /**
-   * Start periodic cleanup of expired windows
+   * Start periodic stale key eviction
    */
   private startCleanup(): void {
     if (this.cleanupInterval) {
@@ -299,35 +268,15 @@ export class RateLimiter {
     }
 
     this.cleanupInterval = setInterval(() => {
-      this.cleanup();
+      // Evict keys idle for more than 5 minutes
+      for (const rule of this.rules.values()) {
+        majra.ratelimitEvict(rule.name, rule.windowMs * 2);
+      }
+      majra.ratelimitEvict('default', this.defaultRule.windowMs * 2);
     }, 60000); // Every minute
 
     // Don't prevent process exit
     this.cleanupInterval.unref();
-  }
-
-  /**
-   * Clean up expired windows
-   */
-  private cleanup(): void {
-    const now = Date.now();
-    let cleaned = 0;
-
-    for (const [key, window] of this.windows.entries()) {
-      // Find the rule for this window
-      const ruleName = key.split(':')[0];
-      const rule = ruleName ? (this.rules.get(ruleName) ?? this.defaultRule) : this.defaultRule;
-
-      // Check if window is expired
-      if (now - window.windowStart >= rule.windowMs) {
-        this.windows.delete(key);
-        cleaned++;
-      }
-    }
-
-    if (cleaned > 0) {
-      this.getLogger().debug({ cleanedWindows: cleaned }, 'Rate limiter cleanup');
-    }
   }
 
   /**
@@ -340,25 +289,6 @@ export class RateLimiter {
     }
   }
 
-  /**
-   * Get comprehensive statistics about the current rate limiting state.
-   *
-   * Returns a snapshot of all rate limiter counters and metrics that can be
-   * surfaced through the metrics endpoint and WebSocket broadcasts. This
-   * enables the dashboard to display real-time rate limiting health and
-   * threat indicators.
-   *
-   * The returned object contains:
-   *  - activeWindows: Number of sliding-window buckets currently tracked
-   *  - rules:         Number of registered rate limit rules
-   *  - totalHits:     Cumulative count of requests that were rejected because
-   *                   they exceeded a rate limit (i.e. the "blocked" count).
-   *                   This counter is monotonically increasing and is never
-   *                   reset — useful for computing rates over time windows.
-   *  - totalChecks:   Cumulative count of ALL rate limit checks performed
-   *                   (both allowed and rejected). Useful for calculating
-   *                   the ratio of blocked-to-total requests.
-   */
   getStats(): {
     activeWindows: number;
     rules: number;
@@ -366,7 +296,7 @@ export class RateLimiter {
     totalChecks: number;
   } {
     return {
-      activeWindows: this.windows.size,
+      activeWindows: this.usageCounters.size,
       rules: this.rules.size,
       totalHits: this.totalHits,
       totalChecks: this.totalChecks,
@@ -375,14 +305,6 @@ export class RateLimiter {
 
   /**
    * Create a Fastify onRequest hook that enforces rate limits globally.
-   *
-   * Route-specific limits per IP:
-   *   terminal routes   - 10 req/min
-   *   workflow execute   - 10 req/min
-   *   auth routes        - 5 req/min
-   *   all other API      - 100 req/min
-   *
-   * Skips: health checks, WebSocket upgrades, non-API routes.
    */
   createFastifyHook(): (
     request: { url: string; ip: string; headers: Record<string, string | string[] | undefined> },
@@ -479,9 +401,6 @@ const STATIC_RULES: RateLimitRule[] = [
  *
  * When `config.rateLimiting.redisUrl` is set, returns a Redis-backed
  * `RedisRateLimiter`; otherwise returns the in-memory `RateLimiter`.
- *
- * The `auth_attempts` rule is configurable via `authLoginMaxAttempts` and
- * `authLoginWindowMs` so development environments can relax the defaults.
  */
 export function createRateLimiter(config: SecurityConfig): RateLimiterLike {
   const rl = config.rateLimiting;
@@ -494,8 +413,6 @@ export function createRateLimiter(config: SecurityConfig): RateLimiterLike {
     onExceed: 'reject',
   };
 
-  // Refresh tokens are long-lived — 10 per minute per IP is generous but
-  // still blocks credential-stuffing loops that cycle through stolen tokens.
   const authRefreshRule: RateLimitRule = {
     name: 'auth_refresh',
     windowMs: 60_000, // 1 min
@@ -504,7 +421,6 @@ export function createRateLimiter(config: SecurityConfig): RateLimiterLike {
     onExceed: 'reject',
   };
 
-  // Password reset is high-value: 3 attempts per hour per IP.
   const authResetRule: RateLimitRule = {
     name: 'auth_reset_password',
     windowMs: 3_600_000, // 1 hour
