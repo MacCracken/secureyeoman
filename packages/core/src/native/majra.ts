@@ -145,6 +145,129 @@ function subscribeJS(pattern: string, handler: MessageHandler): void {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// DirectChannel — raw broadcast, ~73M msg/s
+// ════════════════════════════════════════════════════════════════════════════
+
+export type DirectHandler = (payload: unknown) => void;
+
+/**
+ * Publish to the direct broadcast channel. All subscribers receive every message.
+ * Returns the number of active receivers.
+ */
+export function directPublish(payload: unknown): number {
+  if (native?.majraDirectPublish) {
+    return native.majraDirectPublish(JSON.stringify(payload));
+  }
+  // JS fallback
+  let count = 0;
+  for (const handler of jsDirectSubs) {
+    try {
+      handler(payload);
+      count++;
+    } catch {
+      /* skip */
+    }
+  }
+  return count;
+}
+
+/**
+ * Subscribe to the direct broadcast channel.
+ */
+export function directSubscribe(handler: DirectHandler): void {
+  if (native?.majraDirectSubscribe) {
+    native.majraDirectSubscribe((json: string) => {
+      try {
+        handler(JSON.parse(json));
+      } catch {
+        /* skip */
+      }
+    });
+    return;
+  }
+  jsDirectSubs.push(handler);
+}
+
+export function directSubscriberCount(): number {
+  return native?.majraDirectSubscriberCount?.() ?? jsDirectSubs.length;
+}
+
+export function directMessagesPublished(): number {
+  return native?.majraDirectMessagesPublished?.() ?? 0;
+}
+
+const jsDirectSubs: DirectHandler[] = [];
+
+// ════════════════════════════════════════════════════════════════════════════
+// HashedChannel — hashed topic routing, ~16M msg/s
+// ════════════════════════════════════════════════════════════════════════════
+
+export interface HashedMessage {
+  topicHash: number;
+  timestampNs: number;
+  payload: unknown;
+}
+
+export type HashedHandler = (message: HashedMessage) => void;
+
+/**
+ * Publish to a hashed topic. O(1) — no string allocation on hot path.
+ */
+export function hashedPublish(topic: string, payload: unknown): number {
+  if (native?.majraHashedPublish) {
+    return native.majraHashedPublish(topic, JSON.stringify(payload));
+  }
+  // JS fallback
+  const handlers = jsHashedSubs.get(topic) ?? [];
+  const msg: HashedMessage = { topicHash: 0, timestampNs: Date.now() * 1e6, payload };
+  for (const h of handlers) {
+    try {
+      h(msg);
+    } catch {
+      /* skip */
+    }
+  }
+  return handlers.length;
+}
+
+/**
+ * Subscribe to a hashed topic.
+ */
+export function hashedSubscribe(topic: string, handler: HashedHandler): void {
+  if (native?.majraHashedSubscribe) {
+    native.majraHashedSubscribe(topic, (json: string) => {
+      try {
+        handler(JSON.parse(json) as HashedMessage);
+      } catch {
+        /* skip */
+      }
+    });
+    return;
+  }
+  const handlers = jsHashedSubs.get(topic) ?? [];
+  handlers.push(handler);
+  jsHashedSubs.set(topic, handlers);
+}
+
+export function hashedUnsubscribe(topic: string): void {
+  if (native?.majraHashedUnsubscribe) {
+    native.majraHashedUnsubscribe(topic);
+    return;
+  }
+  jsHashedSubs.delete(topic);
+}
+
+export function hashedTopicCount(): number {
+  return native?.majraHashedTopicCount?.() ?? jsHashedSubs.size;
+}
+
+export function hashedMessagesPublished(): number {
+  return native?.majraHashedMessagesPublished?.() ?? 0;
+}
+
+const jsHashedSubs = new Map<string, HashedHandler[]>();
+
+// ════════════════════════════════════════════════════════════════════════════
 // Rate Limiter
 // ════════════════════════════════════════════════════════════════════════════
 

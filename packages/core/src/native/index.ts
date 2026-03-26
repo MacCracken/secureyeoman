@@ -94,6 +94,19 @@ export interface NativeModule {
   majraPatternCount(): number;
   majraMessagesPublished(): number;
   majraCleanupDead(): number;
+  // Direct channel (raw broadcast, ~73M msg/s)
+  majraDirectPublish(payloadJson: string): number;
+  majraDirectSubscribe(callback: (message: string) => void): void;
+  majraDirectSubscriberCount(): number;
+  majraDirectMessagesPublished(): number;
+
+  // Hashed channel (hashed topic routing, ~16M msg/s)
+  majraHashedPublish(topic: string, payloadJson: string): number;
+  majraHashedSubscribe(topic: string, callback: (message: string) => void): void;
+  majraHashedTopicCount(): number;
+  majraHashedMessagesPublished(): number;
+  majraHashedUnsubscribe(topic: string): void;
+
   majraRatelimitRegister(ruleName: string, windowMs: number, maxRequests: number): void;
   majraRatelimitCheck(ruleName: string, key: string): string;
   majraRatelimitEvict(ruleName: string, maxIdleMs: number): number;
