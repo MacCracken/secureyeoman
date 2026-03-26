@@ -86,6 +86,15 @@ export interface NativeModule {
   ): string;
   bhavaBuildMetadata(name: string, traitsJson: string, stateJson: string): string;
 
+  // Majra pub/sub
+  majraMatchesPattern(pattern: string, topic: string): boolean;
+  majraPublish(topic: string, payloadJson: string): number;
+  majraSubscribe(pattern: string, callback: (message: string) => void): void;
+  majraUnsubscribeAll(pattern: string): void;
+  majraPatternCount(): number;
+  majraMessagesPublished(): number;
+  majraCleanupDead(): number;
+
   // AgnosAI orchestration engine
   agnosaiRunCrew(specJson: string): Promise<string>;
   agnosaiCancelCrew(crewId: string): Promise<void>;

@@ -46,6 +46,7 @@ function createMockSecureYeoman(
     getPersonality: vi.fn().mockReturnValue(null),
     getActivePersonality: vi.fn().mockReturnValue(null),
     getSkill: vi.fn().mockResolvedValue(null),
+    processSentimentFeedback: vi.fn().mockResolvedValue(undefined),
   };
 
   const mockBrainManager = {
@@ -83,7 +84,11 @@ function createMockSecureYeoman(
             throw new Error('AI client not available');
           })
         : vi.fn().mockReturnValue(overrides.aiClient ?? mockAiClient),
-    getSoulManager: vi.fn().mockReturnValue(overrides.soulManager ?? mockSoulManager),
+    getSoulManager: vi
+      .fn()
+      .mockReturnValue(
+        overrides.soulManager ? { ...mockSoulManager, ...overrides.soulManager } : mockSoulManager
+      ),
     getBrainManager:
       overrides.hasBrain === false
         ? vi.fn().mockImplementation(() => {

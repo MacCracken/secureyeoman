@@ -1,16 +1,17 @@
 /**
- * EventDispatcher — Core event bus with webhook delivery and retry logic.
+ * EventDispatcher — Core event bus backed by majra pub/sub.
  *
- * When an event is emitted, the dispatcher:
- * 1. Finds all enabled subscriptions matching the event type
- * 2. Creates a delivery record for each subscription
- * 3. Attempts HTTP POST to the webhook URL with HMAC signing
- * 4. Retries failed deliveries with exponential backoff
+ * Events are published to majra's in-process pub/sub with MQTT-style
+ * wildcard topic matching (`workflow.*`, `tool.#`). Webhook delivery
+ * is registered as a majra subscriber, preserving HMAC signing and
+ * exponential backoff retries.
  *
- * A background timer processes pending retries at a configurable interval.
+ * Topic format: event types use dot-delimited names (e.g. `tool.called`)
+ * which map to `/`-delimited majra topics (e.g. `tool/called`).
  */
 
 import { createHmac } from 'node:crypto';
+import * as majra from '../native/majra.js';
 import type { EventSubscriptionStore } from './event-subscription-store.js';
 import type { EventPayload, EventSubscription, EventDelivery } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
@@ -19,6 +20,14 @@ import { errorToString } from '../utils/errors.js';
 export interface EventDispatcherDeps {
   store: EventSubscriptionStore;
   logger: SecureLogger;
+}
+
+/**
+ * Convert dot-delimited event type to majra topic (slash-delimited).
+ * e.g. `workflow.started` → `workflow/started`
+ */
+function toMajraTopic(eventType: string): string {
+  return eventType.replace(/\./g, '/');
 }
 
 export class EventDispatcher {
@@ -32,10 +41,25 @@ export class EventDispatcher {
   }
 
   /**
-   * Emit an event to all matching subscriptions.
-   * Creates delivery records and attempts immediate delivery.
+   * Emit an event — publishes to majra pub/sub for internal fan-out
+   * and delivers to webhook subscriptions.
+   *
+   * Majra handles wildcard pattern matching for internal subscribers
+   * (e.g. `workflow.*`, `tool.#`). Webhook delivery always runs directly.
    */
   async emit(event: EventPayload): Promise<void> {
+    // Publish to majra for internal subscribers (audit, logging, plugins)
+    const topic = toMajraTopic(event.type);
+    majra.publish(topic, event);
+
+    // Webhook delivery always runs directly — not through majra
+    await this.deliverWebhooks(event);
+  }
+
+  /**
+   * Deliver an event to all matching webhook subscriptions.
+   */
+  private async deliverWebhooks(event: EventPayload): Promise<void> {
     let subscriptions: EventSubscription[];
     try {
       subscriptions = await this.store.getSubscriptionsForEvent(event.type, event.tenantId);
@@ -124,9 +148,12 @@ export class EventDispatcher {
     return count;
   }
 
-  /** Start the retry processing timer. */
+  /**
+   * Start the retry processing timer.
+   */
   start(intervalMs = 30_000): void {
     if (this.retryTimer) return;
+
     this.retryTimer = setInterval(() => {
       void this.processRetries();
     }, intervalMs);

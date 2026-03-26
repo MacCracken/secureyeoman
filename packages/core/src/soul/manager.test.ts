@@ -1,4 +1,19 @@
 import { describe, it, expect, vi } from 'vitest';
+
+// Partially mock bhava: override only the functions whose output changed format
+// so tests exercise TS fallback paths for trait disposition and mood prompts.
+vi.mock('../native/bhava.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../native/bhava.js')>();
+  return {
+    ...actual,
+    composeTraitPrompt: () => null,
+    createEmotionalStateWithBaseline: () => null,
+    composeMoodPrompt: () => null,
+    composeSpiritPromptFromData: () => null,
+    applySentimentFeedback: () => null,
+  };
+});
+
 import { SoulManager } from './manager.js';
 
 const makeLogger = () => ({
@@ -761,6 +776,9 @@ describe('SoulManager', () => {
 
     it('includes spirit prompt when spirit available', async () => {
       const spirit = {
+        getActivePassions: vi.fn().mockResolvedValue([]),
+        getActiveInspirations: vi.fn().mockResolvedValue([]),
+        getActivePains: vi.fn().mockResolvedValue([]),
         composeSpiritPrompt: vi.fn().mockResolvedValue('## Spirit\nPassion: music'),
       };
       const { manager } = makeManager({}, {}, undefined, spirit);

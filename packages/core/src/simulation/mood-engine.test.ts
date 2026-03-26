@@ -1,4 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock bhava native so deriveBaseline tests exercise the TS fallback path
+vi.mock('../native/bhava.js', () => ({
+  deriveBaseline: () => null,
+  createEmotionalStateWithBaseline: () => null,
+  applySentimentFeedback: () => null,
+}));
+
 import {
   MoodEngine,
   getMoodLabel,

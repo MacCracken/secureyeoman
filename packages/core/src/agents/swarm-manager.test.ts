@@ -1,4 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
+
+// Mock agnosai-bridge so tests exercise the TS orchestration path
+vi.mock('./agnosai-bridge.js', () => ({
+  isEligibleForNative: () => false,
+  executeViaNative: async () => null,
+}));
+
 import { SwarmManager } from './swarm-manager.js';
 import type { SwarmStorage } from './swarm-storage.js';
 import type { SubAgentManager } from './manager.js';
