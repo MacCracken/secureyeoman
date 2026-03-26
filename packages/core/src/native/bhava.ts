@@ -227,6 +227,67 @@ export function actionTendency(stateJson: string): string | null {
   }
 }
 
+// ── Reasoning Strategy ──────────────────────────────────────────────────────
+
+export interface BhavaReasoningResult {
+  strategy: string;
+  description: string;
+  scores: [string, number][];
+}
+
+export function selectReasoningStrategy(
+  traits: Record<string, string>,
+): BhavaReasoningResult | null {
+  if (!native) return null;
+  try {
+    return JSON.parse(native.bhavaSelectReasoningStrategy(JSON.stringify(traits)));
+  } catch {
+    return null;
+  }
+}
+
+export function composeReasoningPrompt(traits: Record<string, string>): string | null {
+  if (!native) return null;
+  try {
+    return native.bhavaComposeReasoningPrompt(JSON.stringify(traits));
+  } catch {
+    return null;
+  }
+}
+
+// ── EQ (Emotional Intelligence) ─────────────────────────────────────────────
+
+export interface BhavaEqProfile {
+  perception: number;
+  facilitation: number;
+  understanding: number;
+  management: number;
+  overall: number;
+  level: string;
+  perception_bonus: number;
+  management_bonus: number;
+  stress_recovery_bonus: number;
+  contagion_resistance: number;
+}
+
+export function deriveEq(traits: Record<string, string>): BhavaEqProfile | null {
+  if (!native) return null;
+  try {
+    return JSON.parse(native.bhavaDeriveEq(JSON.stringify(traits)));
+  } catch {
+    return null;
+  }
+}
+
+export function composeEqPrompt(traits: Record<string, string>): string | null {
+  if (!native) return null;
+  try {
+    return native.bhavaComposeEqPrompt(JSON.stringify(traits));
+  } catch {
+    return null;
+  }
+}
+
 // ── Spirit ──────────────────────────────────────────────────────────────────
 
 export function composeSpiritPromptFromData(

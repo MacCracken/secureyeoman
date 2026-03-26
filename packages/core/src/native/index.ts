@@ -74,6 +74,10 @@ export interface NativeModule {
   bhavaComposeSpiritPrompt(spiritJson: string): string;
   bhavaApplySentimentFeedback(text: string, stateJson: string, scale: number): string;
   bhavaFeedbackFromOutcome(stateJson: string, outcome: string): string;
+  bhavaSelectReasoningStrategy(traitsJson: string): string;
+  bhavaComposeReasoningPrompt(traitsJson: string): string;
+  bhavaDeriveEq(traitsJson: string): string;
+  bhavaComposeEqPrompt(traitsJson: string): string;
   bhavaComposeSystemPrompt(
     traitsJson: string,
     identityJson: string,

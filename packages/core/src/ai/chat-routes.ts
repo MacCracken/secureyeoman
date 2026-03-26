@@ -1975,6 +1975,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           // Best-effort — skip on error
         }
 
+        // Fire-and-forget sentiment → mood feedback loop (bhava Phase 1)
+        if (effectivePersonalityId && response.content) {
+          soulManager
+            .processSentimentFeedback(effectivePersonalityId, response.content)
+            .catch(() => {});
+        }
+
         return {
           role: 'assistant' as const,
           content: response.content,
@@ -3064,6 +3071,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           }
         } catch {
           // Best-effort — skip on error
+        }
+
+        // Fire-and-forget sentiment → mood feedback loop (bhava Phase 1)
+        if (effectivePersonalityId && guardrailedContent) {
+          soulManager
+            .processSentimentFeedback(effectivePersonalityId, guardrailedContent)
+            .catch(() => {});
         }
 
         emit({

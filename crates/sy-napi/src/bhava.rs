@@ -593,6 +593,78 @@ pub fn bhava_feedback_from_outcome(state_json: String, outcome: String) -> Resul
     serde_json::to_string(&state).map_err(|e| Error::from_reason(format!("{e}")))
 }
 
+// ── Reasoning Strategy ─────────────────────────────────────────────────────
+
+/// Select dominant reasoning strategy from personality traits.
+/// Returns JSON { strategy: string, description: string, scores: [[strategy, score]] }.
+#[napi]
+pub fn bhava_select_reasoning_strategy(traits_json: String) -> Result<String> {
+    let traits: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_str(&traits_json).map_err(|e| Error::from_reason(format!("{e}")))?;
+    let profile = profile_from_sy_traits("_", &traits);
+
+    let strategy = bhava::reasoning::select_reasoning_strategy(&profile);
+    let description = bhava::reasoning::strategy_description(strategy);
+    let scores: Vec<(String, f32)> = bhava::reasoning::reasoning_scores(&profile)
+        .into_iter()
+        .map(|(s, score)| (s.to_string(), score))
+        .collect();
+
+    let result = serde_json::json!({
+        "strategy": strategy.to_string(),
+        "description": description,
+        "scores": scores,
+    });
+
+    serde_json::to_string(&result).map_err(|e| Error::from_reason(format!("{e}")))
+}
+
+/// Compose reasoning strategy prompt fragment from personality traits.
+#[napi]
+pub fn bhava_compose_reasoning_prompt(traits_json: String) -> Result<String> {
+    let traits: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_str(&traits_json).map_err(|e| Error::from_reason(format!("{e}")))?;
+    let profile = profile_from_sy_traits("_", &traits);
+    Ok(bhava::reasoning::compose_reasoning_prompt(&profile))
+}
+
+// ── EQ (Emotional Intelligence) ───────────────────────────────────────────
+
+/// Derive EQ profile from personality traits.
+/// Returns JSON { perception, facilitation, understanding, management, overall, level }.
+#[napi]
+pub fn bhava_derive_eq(traits_json: String) -> Result<String> {
+    let traits: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_str(&traits_json).map_err(|e| Error::from_reason(format!("{e}")))?;
+    let profile = profile_from_sy_traits("_", &traits);
+    let eq = bhava::eq::eq_from_personality(&profile);
+
+    let result = serde_json::json!({
+        "perception": eq.perception,
+        "facilitation": eq.facilitation,
+        "understanding": eq.understanding,
+        "management": eq.management,
+        "overall": eq.overall(),
+        "level": eq.level().to_string(),
+        "perception_bonus": eq.perception_bonus(),
+        "management_bonus": eq.management_bonus(),
+        "stress_recovery_bonus": eq.stress_recovery_bonus(),
+        "contagion_resistance": eq.contagion_resistance(),
+    });
+
+    serde_json::to_string(&result).map_err(|e| Error::from_reason(format!("{e}")))
+}
+
+/// Compose EQ prompt fragment for system prompt injection.
+#[napi]
+pub fn bhava_compose_eq_prompt(traits_json: String) -> Result<String> {
+    let traits: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_str(&traits_json).map_err(|e| Error::from_reason(format!("{e}")))?;
+    let profile = profile_from_sy_traits("_", &traits);
+    let eq = bhava::eq::eq_from_personality(&profile);
+    Ok(bhava::eq::compose_eq_prompt(&eq))
+}
+
 // ── Full System Prompt Composition ─────────────────────────────────────────
 
 /// Compose the complete personality section of a system prompt.

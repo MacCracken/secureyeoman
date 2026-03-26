@@ -182,6 +182,41 @@ export class SoulManager {
     this.moodEngine = engine;
   }
 
+  /**
+   * Analyze response text sentiment and feed back into the personality's
+   * emotional state. Uses bhava's 6D sentiment analysis when native module
+   * is available, falls back to a no-op otherwise.
+   *
+   * Call this after persisting an assistant response to close the
+   * sentiment → mood → prompt feedback loop.
+   */
+  async processSentimentFeedback(
+    personalityId: string,
+    responseText: string,
+    scale = 0.3,
+  ): Promise<void> {
+    if (!this.moodEngine || !responseText) return;
+    try {
+      const personality = await this.storage.getPersonality(personalityId);
+      if (!personality) return;
+
+      const stateJson = bhava.createEmotionalStateWithBaseline(personality.traits);
+      if (!stateJson) return;
+
+      const result = bhava.applySentimentFeedback(responseText, stateJson, scale);
+      if (!result) return;
+
+      await this.moodEngine.applyEvent(personalityId, {
+        eventType: 'response_sentiment',
+        valenceDelta: result.valence * scale,
+        arousalDelta: Math.abs(result.valence) * 0.1,
+        source: 'bhava_sentiment',
+      });
+    } catch {
+      // Best-effort — sentiment feedback should never fail the response
+    }
+  }
+
   setMarketplaceManager(manager: MarketplaceManager): void {
     this.marketplace = manager;
   }
@@ -967,7 +1002,8 @@ export class SoulManager {
       parts.push(bhava.composePreamble() ?? composeArchetypesPreamble());
     }
 
-    // Reasoning strategy injection — resolve: explicit → personality default → none
+    // Reasoning strategy injection — resolve: explicit → personality default → bhava trait-derived → none
+    let strategyInjected = false;
     if (this.strategyStorage) {
       const resolvedId = strategyId ?? personality?.body?.defaultStrategyId ?? null;
       if (resolvedId) {
@@ -975,10 +1011,18 @@ export class SoulManager {
           const strategy = await this.strategyStorage.getStrategy(resolvedId);
           if (strategy?.promptPrefix) {
             parts.push(`## Reasoning Strategy: ${strategy.name}\n${strategy.promptPrefix}`);
+            strategyInjected = true;
           }
         } catch {
           // silently skip if strategy lookup fails
         }
+      }
+    }
+    // Fallback: derive reasoning strategy from personality traits via bhava
+    if (!strategyInjected && personality?.traits) {
+      const bhavaReasoning = bhava.composeReasoningPrompt(personality.traits);
+      if (bhavaReasoning) {
+        parts.push(bhavaReasoning);
       }
     }
 
@@ -1009,6 +1053,12 @@ export class SoulManager {
           bhava.composeTraitPrompt(personality.traits) ??
           composeTraitDisposition(personality.traits);
         soulLines.push('', disposition);
+      }
+
+      // EQ prompt — emotional intelligence profile derived from traits (bhava)
+      const eqPrompt = bhava.composeEqPrompt(personality.traits);
+      if (eqPrompt) {
+        soulLines.push('', eqPrompt);
       }
 
       parts.push(soulLines.join('\n'));
