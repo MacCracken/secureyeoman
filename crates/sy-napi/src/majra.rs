@@ -13,6 +13,8 @@ use tokio::runtime::Runtime;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use majra::barrier;
+use majra::heartbeat;
 use majra::pubsub::{self, PubSub};
 use majra::ratelimit;
 
@@ -202,4 +204,163 @@ pub fn majra_ratelimit_stats(rule_name: String) -> Option<String> {
 pub fn majra_ratelimit_remove(rule_name: String) -> bool {
     let mut map = limiters().lock().unwrap_or_else(|e| e.into_inner());
     map.remove(&rule_name).is_some()
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Heartbeat Tracker
+// ════════════════════════════════════════════════════════════════════════════
+
+fn tracker() -> &'static heartbeat::ConcurrentHeartbeatTracker {
+    static TRACKER: OnceLock<heartbeat::ConcurrentHeartbeatTracker> = OnceLock::new();
+    TRACKER.get_or_init(|| {
+        heartbeat::ConcurrentHeartbeatTracker::new(heartbeat::HeartbeatConfig {
+            suspect_after: std::time::Duration::from_secs(30),
+            offline_after: std::time::Duration::from_secs(90),
+            eviction_policy: None,
+        })
+    })
+}
+
+/// Register a peer node for heartbeat tracking.
+#[napi]
+pub fn majra_heartbeat_register(id: String, metadata_json: String) {
+    let metadata: serde_json::Value =
+        serde_json::from_str(&metadata_json).unwrap_or(serde_json::Value::Null);
+    tracker().register(id, metadata);
+}
+
+/// Record a heartbeat from a node. Returns true if the node was known.
+#[napi]
+pub fn majra_heartbeat(id: String) -> bool {
+    tracker().heartbeat(&id)
+}
+
+/// Remove a node from tracking.
+#[napi]
+pub fn majra_heartbeat_deregister(id: String) -> bool {
+    tracker().deregister(&id)
+}
+
+/// Sweep all nodes, transitioning statuses based on elapsed time.
+/// Returns JSON array of transitions: `[{ "id": string, "status": string }]`.
+#[napi]
+pub fn majra_heartbeat_update() -> String {
+    let transitions = tracker().update_statuses();
+    let result: Vec<serde_json::Value> = transitions
+        .into_iter()
+        .map(|(id, status)| {
+            serde_json::json!({
+                "id": id,
+                "status": format!("{status}"),
+            })
+        })
+        .collect();
+    serde_json::to_string(&result).unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Get a node's current status. Returns JSON or null.
+#[napi]
+pub fn majra_heartbeat_get(id: String) -> Option<String> {
+    tracker().get(&id).map(|state| {
+        serde_json::json!({
+            "status": format!("{}", state.status),
+            "metadata": state.metadata,
+        })
+        .to_string()
+    })
+}
+
+/// List nodes by status. Returns JSON array.
+#[napi]
+pub fn majra_heartbeat_list(status: String) -> String {
+    let s = match status.as_str() {
+        "online" => heartbeat::Status::Online,
+        "suspect" => heartbeat::Status::Suspect,
+        _ => heartbeat::Status::Offline,
+    };
+    let nodes = tracker().list_by_status(s);
+    let result: Vec<serde_json::Value> = nodes
+        .into_iter()
+        .map(|(id, state)| {
+            serde_json::json!({
+                "id": id,
+                "status": format!("{}", state.status),
+                "metadata": state.metadata,
+            })
+        })
+        .collect();
+    serde_json::to_string(&result).unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Total tracked nodes.
+#[napi]
+pub fn majra_heartbeat_count() -> u32 {
+    tracker().len() as u32
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Barrier
+// ════════════════════════════════════════════════════════════════════════════
+
+fn barriers() -> &'static barrier::AsyncBarrierSet {
+    static BARRIERS: OnceLock<barrier::AsyncBarrierSet> = OnceLock::new();
+    BARRIERS.get_or_init(barrier::AsyncBarrierSet::new)
+}
+
+/// Create a new barrier expecting a set of participants.
+/// `participants_json`: JSON array of participant IDs.
+#[napi]
+pub fn majra_barrier_create(name: String, participants_json: String) {
+    let participants: Vec<String> =
+        serde_json::from_str(&participants_json).unwrap_or_default();
+    let set: std::collections::HashSet<String> = participants.into_iter().collect();
+    barriers().create(&name, set);
+}
+
+/// Record a participant's arrival at a barrier.
+/// Returns JSON: `{ "status": "waiting"|"released"|"unknown", "arrived"?: n, "expected"?: n }`.
+#[napi]
+pub fn majra_barrier_arrive(name: String, participant: String) -> String {
+    let result = barriers().arrive(&name, &participant);
+    match result {
+        barrier::BarrierResult::Waiting { arrived, expected } => {
+            serde_json::json!({ "status": "waiting", "arrived": arrived, "expected": expected })
+        }
+        barrier::BarrierResult::Released => serde_json::json!({ "status": "released" }),
+        barrier::BarrierResult::Unknown | _ => serde_json::json!({ "status": "unknown" }),
+    }
+    .to_string()
+}
+
+/// Force a barrier to release by removing a dead participant.
+#[napi]
+pub fn majra_barrier_force(name: String, dead_participant: String) -> String {
+    let result = barriers().force(&name, &dead_participant);
+    match result {
+        barrier::BarrierResult::Waiting { arrived, expected } => {
+            serde_json::json!({ "status": "waiting", "arrived": arrived, "expected": expected })
+        }
+        barrier::BarrierResult::Released => serde_json::json!({ "status": "released" }),
+        barrier::BarrierResult::Unknown | _ => serde_json::json!({ "status": "unknown" }),
+    }
+    .to_string()
+}
+
+/// Remove a completed barrier and return a record.
+#[napi]
+pub fn majra_barrier_complete(name: String) -> Option<String> {
+    barriers().complete(&name).map(|record| {
+        serde_json::json!({
+            "name": record.name,
+            "participants": record.participants,
+            "forced": record.forced,
+        })
+        .to_string()
+    })
+}
+
+/// Number of active barriers.
+#[napi]
+pub fn majra_barrier_count() -> u32 {
+    barriers().len() as u32
 }

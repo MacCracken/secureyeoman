@@ -269,3 +269,199 @@ function ratelimitCheckJS(ruleName: string, key: string): RatelimitCheckResult {
 
   return { allowed: false, activeKeys: rule.windows.size, totalAllowed: 0, totalRejected: 0 };
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Heartbeat Tracker
+// ════════════════════════════════════════════════════════════════════════════
+
+export type HeartbeatStatus = 'online' | 'suspect' | 'offline';
+
+export interface HeartbeatNode {
+  id: string;
+  status: string;
+  metadata: unknown;
+}
+
+export interface HeartbeatTransition {
+  id: string;
+  status: string;
+}
+
+/**
+ * Register a peer node for heartbeat tracking.
+ */
+export function heartbeatRegister(id: string, metadata: unknown): void {
+  if (native?.majraHeartbeatRegister) {
+    native.majraHeartbeatRegister(id, JSON.stringify(metadata));
+    return;
+  }
+  jsHeartbeats.set(id, { status: 'online', lastSeen: Date.now(), metadata });
+}
+
+/**
+ * Record a heartbeat from a node. Returns true if the node was known.
+ */
+export function heartbeat(id: string): boolean {
+  if (native?.majraHeartbeat) {
+    return native.majraHeartbeat(id);
+  }
+  const node = jsHeartbeats.get(id);
+  if (!node) return false;
+  node.status = 'online';
+  node.lastSeen = Date.now();
+  return true;
+}
+
+/**
+ * Remove a node from tracking.
+ */
+export function heartbeatDeregister(id: string): boolean {
+  if (native?.majraHeartbeatDeregister) {
+    return native.majraHeartbeatDeregister(id);
+  }
+  return jsHeartbeats.delete(id);
+}
+
+/**
+ * Sweep all nodes, transitioning statuses based on elapsed time.
+ * Returns transitions that occurred.
+ */
+export function heartbeatUpdate(): HeartbeatTransition[] {
+  if (native?.majraHeartbeatUpdate) {
+    return JSON.parse(native.majraHeartbeatUpdate()) as HeartbeatTransition[];
+  }
+  return heartbeatUpdateJS();
+}
+
+/**
+ * Get a node's current state.
+ */
+export function heartbeatGet(id: string): HeartbeatNode | null {
+  if (native?.majraHeartbeatGet) {
+    const json = native.majraHeartbeatGet(id);
+    return json ? ({ id, ...JSON.parse(json) } as HeartbeatNode) : null;
+  }
+  const node = jsHeartbeats.get(id);
+  return node ? { id, status: node.status, metadata: node.metadata } : null;
+}
+
+/**
+ * List nodes by status.
+ */
+export function heartbeatList(status: HeartbeatStatus): HeartbeatNode[] {
+  if (native?.majraHeartbeatList) {
+    return JSON.parse(native.majraHeartbeatList(status)) as HeartbeatNode[];
+  }
+  return [...jsHeartbeats.entries()]
+    .filter(([, n]) => n.status === status)
+    .map(([id, n]) => ({ id, status: n.status, metadata: n.metadata }));
+}
+
+/**
+ * Total tracked nodes.
+ */
+export function heartbeatCount(): number {
+  return native?.majraHeartbeatCount?.() ?? jsHeartbeats.size;
+}
+
+// JS Fallback state
+const SUSPECT_MS = 30_000;
+const OFFLINE_MS = 90_000;
+const jsHeartbeats = new Map<string, { status: string; lastSeen: number; metadata: unknown }>();
+
+function heartbeatUpdateJS(): HeartbeatTransition[] {
+  const now = Date.now();
+  const transitions: HeartbeatTransition[] = [];
+  for (const [id, node] of jsHeartbeats) {
+    const elapsed = now - node.lastSeen;
+    const prev = node.status;
+    if (elapsed >= OFFLINE_MS) node.status = 'offline';
+    else if (elapsed >= SUSPECT_MS) node.status = 'suspect';
+    else node.status = 'online';
+    if (node.status !== prev) transitions.push({ id, status: node.status });
+  }
+  return transitions;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Barrier
+// ════════════════════════════════════════════════════════════════════════════
+
+export interface BarrierResult {
+  status: 'waiting' | 'released' | 'unknown';
+  arrived?: number;
+  expected?: number;
+}
+
+export interface BarrierRecord {
+  name: string;
+  participants: string[];
+  forced: boolean;
+}
+
+/**
+ * Create a new barrier expecting a set of participants.
+ */
+export function barrierCreate(name: string, participants: string[]): void {
+  if (native?.majraBarrierCreate) {
+    native.majraBarrierCreate(name, JSON.stringify(participants));
+    return;
+  }
+  jsBarriers.set(name, { expected: new Set(participants), arrived: new Set() });
+}
+
+/**
+ * Record a participant's arrival at a barrier.
+ */
+export function barrierArrive(name: string, participant: string): BarrierResult {
+  if (native?.majraBarrierArrive) {
+    return JSON.parse(native.majraBarrierArrive(name, participant)) as BarrierResult;
+  }
+  return barrierArriveJS(name, participant);
+}
+
+/**
+ * Force a barrier to release by removing a dead participant.
+ */
+export function barrierForce(name: string, deadParticipant: string): BarrierResult {
+  if (native?.majraBarrierForce) {
+    return JSON.parse(native.majraBarrierForce(name, deadParticipant)) as BarrierResult;
+  }
+  const b = jsBarriers.get(name);
+  if (!b) return { status: 'unknown' };
+  b.expected.delete(deadParticipant);
+  if (b.arrived.size >= b.expected.size) return { status: 'released' };
+  return { status: 'waiting', arrived: b.arrived.size, expected: b.expected.size };
+}
+
+/**
+ * Remove a completed barrier and return a record.
+ */
+export function barrierComplete(name: string): BarrierRecord | null {
+  if (native?.majraBarrierComplete) {
+    const json = native.majraBarrierComplete(name);
+    return json ? (JSON.parse(json) as BarrierRecord) : null;
+  }
+  const b = jsBarriers.get(name);
+  if (!b) return null;
+  jsBarriers.delete(name);
+  return { name, participants: [...b.arrived], forced: false };
+}
+
+/**
+ * Number of active barriers.
+ */
+export function barrierCount(): number {
+  return native?.majraBarrierCount?.() ?? jsBarriers.size;
+}
+
+// JS Fallback state
+const jsBarriers = new Map<string, { expected: Set<string>; arrived: Set<string> }>();
+
+function barrierArriveJS(name: string, participant: string): BarrierResult {
+  const b = jsBarriers.get(name);
+  if (!b) return { status: 'unknown' };
+  b.arrived.add(participant);
+  if (b.arrived.size >= b.expected.size) return { status: 'released' };
+  return { status: 'waiting', arrived: b.arrived.size, expected: b.expected.size };
+}

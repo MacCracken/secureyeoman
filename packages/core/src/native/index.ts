@@ -99,6 +99,18 @@ export interface NativeModule {
   majraRatelimitEvict(ruleName: string, maxIdleMs: number): number;
   majraRatelimitStats(ruleName: string): string | null;
   majraRatelimitRemove(ruleName: string): boolean;
+  majraHeartbeatRegister(id: string, metadataJson: string): void;
+  majraHeartbeat(id: string): boolean;
+  majraHeartbeatDeregister(id: string): boolean;
+  majraHeartbeatUpdate(): string;
+  majraHeartbeatGet(id: string): string | null;
+  majraHeartbeatList(status: string): string;
+  majraHeartbeatCount(): number;
+  majraBarrierCreate(name: string, participantsJson: string): void;
+  majraBarrierArrive(name: string, participant: string): string;
+  majraBarrierForce(name: string, deadParticipant: string): string;
+  majraBarrierComplete(name: string): string | null;
+  majraBarrierCount(): number;
 
   // AgnosAI orchestration engine
   agnosaiRunCrew(specJson: string): Promise<string>;

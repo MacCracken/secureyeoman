@@ -3,6 +3,9 @@
  *
  * Handles discovery, heartbeats, trust levels, delegation, and capability
  * queries across the A2A mesh network.
+ *
+ * Heartbeat tracking is backed by majra's ConcurrentHeartbeatTracker with
+ * Online → Suspect → Offline FSM (30s suspect, 90s offline).
  */
 
 import type { A2AConfig } from '@secureyeoman/shared';
@@ -14,6 +17,7 @@ import { manualDiscover, mdnsDiscover } from './discovery.js';
 import type { PeerAgent, Capability, A2AMessage, TrustLevel } from './types.js';
 import { uuidv7 } from '../utils/crypto.js';
 import { assertPublicUrl } from '../utils/ssrf-guard.js';
+import * as majra from '../native/majra.js';
 
 export interface A2AManagerDeps {
   storage: A2AStorage;
@@ -22,9 +26,6 @@ export interface A2AManagerDeps {
   auditChain: AuditChain;
 }
 
-/** Maximum consecutive heartbeat misses before marking a peer offline. */
-const MAX_MISSED_HEARTBEATS = 3;
-
 /** Heartbeat interval in milliseconds. */
 const HEARTBEAT_INTERVAL_MS = 60_000;
 
@@ -32,7 +33,6 @@ export class A2AManager {
   private readonly config: A2AConfig;
   private readonly deps: A2AManagerDeps;
   private heartbeatTimer: NodeJS.Timeout | null = null;
-  private readonly missedHeartbeats = new Map<string, number>();
 
   constructor(config: A2AConfig, deps: A2AManagerDeps) {
     this.config = config;
@@ -40,10 +40,10 @@ export class A2AManager {
   }
 
   async initialize(): Promise<void> {
-    // Load known peers from storage and seed missed-heartbeat counters
+    // Load known peers from storage and register in majra heartbeat tracker
     const { peers } = await this.deps.storage.listPeers();
     for (const peer of peers) {
-      this.missedHeartbeats.set(peer.id, 0);
+      majra.heartbeatRegister(peer.id, { name: peer.name, url: peer.url });
     }
 
     // Start heartbeat interval
@@ -96,7 +96,7 @@ export class A2AManager {
       if (info.capabilities.length > 0) {
         await this.deps.storage.setCapabilities(peer.id, info.capabilities);
       }
-      this.missedHeartbeats.set(peer.id, 0);
+      majra.heartbeatRegister(peer.id, { name: peer.name, url: peer.url });
 
       await this.auditRecord('a2a_peer_added', {
         peerId: peer.id,
@@ -117,7 +117,7 @@ export class A2AManager {
       trustLevel: 'untrusted',
       status: 'unknown',
     });
-    this.missedHeartbeats.set(peer.id, 0);
+    majra.heartbeatRegister(peer.id, { name: peer.name, url: peer.url });
 
     await this.auditRecord('a2a_peer_added', {
       peerId: peer.id,
@@ -148,7 +148,7 @@ export class A2AManager {
       trustLevel: 'trusted',
       status: 'unknown',
     });
-    this.missedHeartbeats.set(peer.id, 0);
+    majra.heartbeatRegister(peer.id, { name: peer.name, url: peer.url });
 
     await this.auditRecord('a2a_local_peer_registered', {
       peerId: peer.id,
@@ -162,7 +162,7 @@ export class A2AManager {
   async removePeer(id: string): Promise<boolean> {
     const removed = await this.deps.storage.removePeer(id);
     if (removed) {
-      this.missedHeartbeats.delete(id);
+      majra.heartbeatDeregister(id);
       await this.auditRecord('a2a_peer_removed', { peerId: id });
     }
     return removed;
@@ -208,7 +208,7 @@ export class A2AManager {
         if (info.capabilities.length > 0) {
           await this.deps.storage.setCapabilities(peer.id, info.capabilities);
         }
-        this.missedHeartbeats.set(peer.id, 0);
+        majra.heartbeatRegister(peer.id, { name: peer.name, url: peer.url });
         const fullPeer = await this.deps.storage.getPeer(peer.id);
         if (fullPeer) newPeers.push(fullPeer);
       }
@@ -229,7 +229,7 @@ export class A2AManager {
         if (info.capabilities.length > 0) {
           await this.deps.storage.setCapabilities(peer.id, info.capabilities);
         }
-        this.missedHeartbeats.set(peer.id, 0);
+        majra.heartbeatRegister(peer.id, { name: peer.name, url: peer.url });
         const fullPeer = await this.deps.storage.getPeer(peer.id);
         if (fullPeer) newPeers.push(fullPeer);
       }
@@ -371,7 +371,7 @@ export class A2AManager {
     for (const peer of peers) {
       if (peer.status === 'offline') continue;
 
-      const heartbeat: A2AMessage = {
+      const heartbeatMsg: A2AMessage = {
         id: uuidv7(),
         type: 'a2a:heartbeat',
         fromPeerId: 'self',
@@ -380,34 +380,29 @@ export class A2AManager {
         timestamp: Date.now(),
       };
 
-      const ok = await this.deps.transport.send(peer, heartbeat);
+      const ok = await this.deps.transport.send(peer, heartbeatMsg);
       if (ok) {
-        this.missedHeartbeats.set(peer.id, 0);
-        if (peer.status !== 'online') {
-          await this.deps.storage.updatePeer(peer.id, {
-            status: 'online',
-            lastSeen: Date.now(),
-          });
-        } else {
-          await this.deps.storage.updatePeer(peer.id, {
-            lastSeen: Date.now(),
-          });
-        }
-      } else {
-        const missed = (this.missedHeartbeats.get(peer.id) ?? 0) + 1;
-        this.missedHeartbeats.set(peer.id, missed);
+        // Record successful heartbeat in majra tracker
+        majra.heartbeat(peer.id);
+        await this.deps.storage.updatePeer(peer.id, {
+          status: 'online',
+          lastSeen: Date.now(),
+        });
+      }
+    }
 
-        if (missed >= MAX_MISSED_HEARTBEATS) {
-          await this.deps.storage.updatePeer(peer.id, { status: 'offline' });
-          this.deps.logger.warn(
-            {
-              peerId: peer.id,
-              peerName: peer.name,
-              missedCount: missed,
-            },
-            'Peer marked offline after missed heartbeats'
-          );
-        }
+    // Run majra status sweep — transitions nodes through Online→Suspect→Offline
+    const transitions = majra.heartbeatUpdate();
+    for (const { id, status } of transitions) {
+      // SY peer status: 'online' | 'offline' | 'unknown'
+      // majra suspect maps to 'online' (not yet fully offline)
+      const peerStatus = status === 'offline' ? 'offline' : 'online';
+      await this.deps.storage.updatePeer(id, { status: peerStatus });
+
+      if (status === 'suspect') {
+        this.deps.logger.debug({ peerId: id }, 'Peer suspect — missed heartbeat window');
+      } else if (status === 'offline') {
+        this.deps.logger.warn({ peerId: id }, 'Peer transitioned to offline');
       }
     }
   }
