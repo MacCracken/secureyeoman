@@ -133,6 +133,24 @@ export interface NativeModule {
   majraQueueRunningCount(): number;
   majraQueueJobCount(): number;
 
+  // Szal workflow engine
+  szalEvaluateCondition(expression: string, contextJson: string): boolean;
+  szalValidateFlow(flowJson: string): string;
+  szalCreateStep(configJson: string): string;
+  szalBuildDagFlow(name: string, stepsJson: string): string;
+  szalResolveTemplate(template: string, contextJson: string): string;
+
+  // Bote MCP service
+  boteRegisterTool(toolJson: string): void;
+  boteListTools(): string;
+  boteGetTool(name: string): string | null;
+  boteValidateParams(toolName: string, paramsJson: string): string;
+  boteRemoveTool(name: string): boolean;
+  boteToolCount(): number;
+  boteParseJsonrpc(requestJson: string): string;
+  boteJsonrpcSuccess(id: string, resultJson: string): string;
+  boteJsonrpcError(id: string, code: number, message: string): string;
+
   // AgnosAI orchestration engine
   agnosaiRunCrew(specJson: string): Promise<string>;
   agnosaiCancelCrew(crewId: string): Promise<void>;
