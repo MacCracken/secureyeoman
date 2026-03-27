@@ -6,7 +6,7 @@
 
 ## Hybrid TypeScript/Rust Architecture
 
-**Status**: Phase 1-4 complete. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89. Migration Phases 1-3 complete (bhava 1.1.0 + agnosai 0.25.3 via NAPI + hoosh gateway with full routing delegation).
+**Status**: Phase 1-4 complete. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89. Migration Phases 1-3 complete (bhava 1.1.1 + agnosai 0.25.3 + majra 1.0.0 via NAPI + hoosh gateway with full routing delegation).
 
 See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hardware test plan, and per-platform verification checklist.
 
@@ -137,17 +137,12 @@ As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Ifran, Shruti, Ta
 
 *Replace hand-rolled infrastructure with shared ecosystem crates. Reduces maintenance surface and aligns primitives across SY, Ifran, and sibling projects.*
 
-### Majra — replace concurrency & distributed primitives (~3,500+ lines)
+### Majra — replace concurrency & distributed primitives
 
-*majra v0.22.3 — all primitives production-ready, 133 tests, 90%+ coverage, zero unsafe, `Send + Sync` guaranteed. Already consumed by Ifran, daimon, stiva.*
+*majra 1.0.0 integrated via sy-napi. 5 of 7 targets complete. All 3 pub/sub tiers exposed (DirectChannel, HashedChannel, TypedPubSub).*
 
-- [ ] **Replace event dispatcher with majra pub/sub** — SY's `EventDispatcher` (14 hardcoded event types, 258 LOC) → majra `TypedPubSub<T>` with MQTT-style wildcard patterns (`workflow.*`, `tool.#`), backpressure policies, replay buffers, and filtered subscriptions. SY keeps HMAC-signed webhook delivery as a subscriber.
-- [ ] **Replace rate limiter with majra ratelimit** — SY's sliding window rate limiter (`rate-limiter.ts`, 527 LOC, 8 static rules) → majra per-key token bucket with lazy refill and stale-key eviction. Smoother burst handling. SY keeps rule definitions and action policies (reject/delay/log).
-- [ ] **Replace workflow DAG executor with majra dag engine** — SY's `workflow-engine.ts` topological sort (1,740 LOC, max 20 parallel) → majra `WorkflowEngine` with tier-based parallel scheduling, retry with exponential backoff, 4 error policies (fail/continue/skip/fallback), pluggable `WorkflowStorage` (in-memory or SQLite), and cooperative cancellation. SY keeps 16+ step type handlers, condition evaluation, schema validation, subworkflow nesting, SSRF guards, and OTel tracing.
-- [ ] **Replace A2A heartbeat with majra heartbeat** — SY's A2AManager (60s fixed interval, simple counter, 427 LOC) → majra `ConcurrentHeartbeatTracker` with configurable TTL, Online→Suspect→Offline state machine, GPU telemetry, fleet stats aggregation, and auto-eviction. SY keeps trust levels, capability queries, and mDNS discovery.
-- [ ] **Replace A2A relay with majra relay** — SY's single HTTP POST transport (no dedup, no sequencing) → majra `Relay` with atomic sequence counters, per-sender dedup, broadcast/unicast, pluggable `Transport` trait, and `ConnectionPool` with per-endpoint reuse. SY keeps trust-based routing and W3C traceparent propagation.
-- [ ] **Use majra barrier for swarm coordination** — SY's implicit `Promise.all()` (no deadlock recovery, no timeout) → majra `AsyncBarrierSet` with N-way sync, `arrive_and_wait()`, deadlock recovery via `force()`, and race-safe wakeups. SY keeps cost-aware role scheduling and result synthesis.
-- [ ] **Use majra managed queue for training/inference jobs** — New capability: majra's `ManagedQueue` with GPU/VRAM-aware dequeue, job lifecycle tracking (Queued→Running→Completed/Failed), max concurrency enforcement, and optional SQLite persistence. Replaces ad-hoc job management in distillation and inference pipelines.
+- [ ] **Replace workflow DAG executor with szal engine** — SY's `workflow-engine.ts` topological sort (1,740 LOC, max 20 parallel) → szal `Engine` with tier-based parallel scheduling, retry, rollback, and cancellation. Blocked on szal P0s: step type/config fields, condition evaluation, 'any' trigger mode. SY keeps 16+ step type handlers, condition evaluation, schema validation, subworkflow nesting, SSRF guards, and OTel tracing.
+- [ ] **Replace A2A relay with majra relay** — SY's single HTTP POST transport (no dedup, no sequencing) → majra `Relay` with atomic sequence counters, per-sender dedup, broadcast/unicast, pluggable `Transport` trait, and `ConnectionPool` with per-endpoint reuse. Deferred until A2A transport layer migrates to Rust. SY keeps trust-based routing and W3C traceparent propagation.
 
 ## Engineering Backlog
 

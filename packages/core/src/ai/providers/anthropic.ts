@@ -261,7 +261,9 @@ export class AnthropicProvider extends BaseProvider {
                 signature: tb.signature,
               }) as unknown as Anthropic.ContentBlock
           ),
-          ...(msg.content ? [{ type: 'text' as const, text: msg.content }] : []),
+          ...(msg.content
+            ? [{ type: 'text' as const, text: msg.content } as unknown as Anthropic.ContentBlock]
+            : []),
           ...(msg.toolCalls ?? []).map(
             (tc) =>
               ({

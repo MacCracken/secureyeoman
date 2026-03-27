@@ -25,15 +25,21 @@
     "clean": "rm -rf dist"
   },
   "optionalDependencies": {
-    "@anthropic-ai/sdk": "^0.27.3",
-    "@google/generative-ai": "^0.24.1",
-    "openai": "^6.19.0"
+    "@qdrant/js-client-rest": "^1.12.0",
+    "baileys": "^6.7.9",
+    "faiss-node": "^0.5.1",
+    "isolated-vm": "^6.0.2",
+    "pino-pretty": "^11.2.2"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@fastify/compress": "^8.0.1",
     "@fastify/multipart": "^9.4.0",
     "@fastify/static": "^8.0.0",
     "@fastify/websocket": "^11.2.0",
+    "@google/generative-ai": "^0.24.1",
+    "@grpc/grpc-js": "^1.12.5",
+    "@grpc/proto-loader": "^0.7.13",
     "@octokit/rest": "^22.0.1",
     "@octokit/webhooks": "^14.2.0",
     "@opentelemetry/api": "^1.9.0",
@@ -48,6 +54,7 @@
     "ioredis": "^5.9.2",
     "jose": "^6.0.0",
     "nodemailer": "^8.0.1",
+    "openai": "^6.33.0",
     "openid-client": "^6.0.0",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
@@ -57,16 +64,7 @@
     "twitter-api-v2": "^1.18.0",
     "yaml": "^2.5.0",
     "yjs": "^13.6.29",
-    "zod": "^3.23.8",
-    "@grpc/grpc-js": "^1.12.5",
-    "@grpc/proto-loader": "^0.7.13"
-  },
-  "optionalDependencies": {
-    "baileys": "^6.7.9",
-    "isolated-vm": "^6.0.2",
-    "@qdrant/js-client-rest": "^1.12.0",
-    "faiss-node": "^0.5.1",
-    "pino-pretty": "^11.2.2"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@opentelemetry/exporter-trace-otlp-grpc": "^0.212.0",

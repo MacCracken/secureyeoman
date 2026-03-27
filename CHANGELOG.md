@@ -6,6 +6,52 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.26]
+
+### Majra 1.0.0 Integration
+
+Integrated majra 1.0.0 (crates.io) into sy-napi as the shared concurrency and messaging layer. 5 of 7 roadmap targets complete. All 3 pub/sub channel tiers exposed via NAPI with TypeScript wrappers and JS fallbacks.
+
+#### NAPI Bindings (`crates/sy-napi/src/majra.rs`)
+
+- **Pub/sub (TypedPubSub)** — `majra_publish`, `majra_subscribe`, `majra_unsubscribe_all`, `majra_matches_pattern`, `majra_pattern_count`, `majra_messages_published`, `majra_cleanup_dead`. MQTT-style wildcard topic matching (`*` one segment, `#` trailing). ~1.1M msg/s
+- **DirectChannel** — `majra_direct_publish`, `majra_direct_subscribe`, `majra_direct_subscriber_count`, `majra_direct_messages_published`. Raw broadcast, no routing. ~73M msg/s
+- **HashedChannel** — `majra_hashed_publish`, `majra_hashed_subscribe`, `majra_hashed_unsubscribe`, `majra_hashed_topic_count`, `majra_hashed_messages_published`. Hashed topic routing, O(1) lookup. ~16M msg/s
+- **Rate limiter** — `majra_ratelimit_register`, `majra_ratelimit_check`, `majra_ratelimit_evict`, `majra_ratelimit_stats`, `majra_ratelimit_remove`. Per-key token bucket with lazy refill and stale-key eviction
+- **Heartbeat tracker** — `majra_heartbeat_register`, `majra_heartbeat`, `majra_heartbeat_deregister`, `majra_heartbeat_update`, `majra_heartbeat_get`, `majra_heartbeat_list`, `majra_heartbeat_count`. Online→Suspect→Offline FSM (30s/90s)
+- **Barrier** — `majra_barrier_create`, `majra_barrier_arrive`, `majra_barrier_force`, `majra_barrier_complete`, `majra_barrier_count`. N-way sync with deadlock recovery
+- **Managed queue** — `majra_queue_enqueue`, `majra_queue_dequeue`, `majra_queue_complete`, `majra_queue_fail`, `majra_queue_cancel`, `majra_queue_get`, `majra_queue_running_count`, `majra_queue_job_count`. 5-tier priority, max concurrency, lifecycle tracking
+
+#### TypeScript Wrapper (`packages/core/src/native/majra.ts`)
+
+All NAPI functions wrapped with JS fallback implementations for environments without the native module. Exports: `publish`, `subscribe`, `matchesPattern`, `directPublish`, `directSubscribe`, `hashedPublish`, `hashedSubscribe`, `ratelimitRegister`, `ratelimitCheck`, `heartbeatRegister`, `heartbeat`, `heartbeatUpdate`, `barrierCreate`, `barrierArrive`, `barrierForce`, `queueEnqueue`, `queueDequeue`, `queueComplete`, `queueFail`, `queueCancel`
+
+#### Refactored Modules
+
+- **EventDispatcher** — Now publishes to majra pub/sub for internal fan-out (audit, logging, plugins). Webhook delivery runs directly, not through pub/sub. Topic format: `tool/called`, `workflow/started` (dot→slash)
+- **RateLimiter** — Internal sliding window replaced with majra token bucket per rule. SY keeps rule definitions, action policies (reject/delay/log), Fastify hook, usage counters, and stats
+- **A2AManager** — `missedHeartbeats: Map<string, number>` replaced with majra `ConcurrentHeartbeatTracker`. Peers registered on add/discover, heartbeat recorded on successful ping, `heartbeatUpdate()` sweeps statuses. Suspect maps to 'online' (SY has no suspect status), offline maps to 'offline'
+
+### Bhava Integration Test Fixes
+
+Fixed 21 pre-existing test failures caused by bhava native module integration drift — tests were written for TS fallback paths but the native binary now takes precedence.
+
+- **mood-engine.test.ts** (7 fixes) — Mock bhava `deriveBaseline` to exercise TS `TRAIT_VALUE_MODIFIERS` fallback path
+- **soul/manager.test.ts** (3 fixes) — Partial bhava mock (trait/mood/spirit format changes) + added missing `getActivePassions`, `getActiveInspirations`, `getActivePains` to spirit mock
+- **chat-routes.test.ts** (10 fixes) — Added `processSentimentFeedback` to default `mockSoulManager` + spread defaults into overrides so inline mocks inherit it
+- **swarm-manager.test.ts** (1 fix) — Mock `agnosai-bridge` (`isEligibleForNative: false`) to prevent native path from hijacking `delegate` calls
+
+### Pre-existing Type Errors Fixed
+
+- **agnosai-bridge.ts** — Fixed `AgentProfile` import (was `../agents/types.js`, now `@secureyeoman/shared`), added non-null assertion on `tasks[i]`, removed unused `randomUUID` import
+- **swarm-manager.ts** — Fixed `AgentProfile` import (same)
+- **soul/manager.ts** — Added missing `metadata: {}` to `moodEngine.applyEvent()` call
+
+### Dependency Updates
+
+- **bhava** — `1.1.0` → `1.1.1`
+- **majra** — Added `1.0.0` (new dependency) with features: pubsub, ratelimit, heartbeat, barrier, queue
+
 ## [2026.3.19]
 
 ### sy-agnos Sandbox Driver (P0)
