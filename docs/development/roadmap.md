@@ -137,12 +137,22 @@ As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Ifran, Shruti, Ta
 
 *Replace hand-rolled infrastructure with shared ecosystem crates. Reduces maintenance surface and aligns primitives across SY, Ifran, and sibling projects.*
 
-### Majra — replace concurrency & distributed primitives
+### Ecosystem Crate Status
 
-*majra 1.0.0 integrated via sy-napi. 5 of 7 targets complete. All 3 pub/sub tiers exposed (DirectChannel, HashedChannel, TypedPubSub).*
+*All ecosystem crates integrated via sy-napi with TypeScript wrappers and JS fallbacks.*
 
-- [ ] **Replace workflow DAG executor with szal engine** — SY's `workflow-engine.ts` topological sort (1,740 LOC, max 20 parallel) → szal `Engine` with tier-based parallel scheduling, retry, rollback, and cancellation. Blocked on szal P0s: step type/config fields, condition evaluation, 'any' trigger mode. SY keeps 16+ step type handlers, condition evaluation, schema validation, subworkflow nesting, SSRF guards, and OTel tracing.
-- [ ] **Replace A2A relay with majra relay** — SY's single HTTP POST transport (no dedup, no sequencing) → majra `Relay` with atomic sequence counters, per-sender dedup, broadcast/unicast, pluggable `Transport` trait, and `ConnectionPool` with per-endpoint reuse. Deferred until A2A transport layer migrates to Rust. SY keeps trust-based routing and W3C traceparent propagation.
+| Crate | Version | Integration |
+|-------|---------|-------------|
+| majra | 1.0.1 | pub/sub (3 tiers), ratelimit, heartbeat, barrier, queue |
+| szal | 1.0.1 | condition eval, template resolution, flow validation, step builder |
+| bote | 0.50.0 | tool registry, schema validation, JSON-RPC protocol |
+| bhava | 1.1.1 | personality engine, traits, mood, spirit |
+| agnosai | 0.25.3 | crew orchestration, model routing, agent scoring |
+
+### Remaining
+
+- [ ] **Full workflow DAG delegation to szal** — Currently szal handles condition evaluation and template resolution. Full DAG execution (topological sort + tier-based parallel scheduling) still runs in TS. Moving execution to szal requires the 24 step type handlers to be callable from Rust, which happens when more of the stack migrates. Incremental — not blocked.
+- [ ] **A2A relay → majra relay** — SY's single HTTP POST transport → majra `Relay` with dedup, sequencing, connection pooling. Deferred until A2A transport layer migrates to Rust.
 
 ## Engineering Backlog
 

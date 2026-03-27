@@ -138,6 +138,7 @@ export interface NativeModule {
   szalValidateFlow(flowJson: string): string;
   szalCreateStep(configJson: string): string;
   szalBuildDagFlow(name: string, stepsJson: string): string;
+  szalTopologicalSort(stepsJson: string): string;
   szalResolveTemplate(template: string, contextJson: string): string;
 
   // Bote MCP service

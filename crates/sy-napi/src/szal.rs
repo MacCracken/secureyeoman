@@ -122,6 +122,110 @@ pub fn szal_build_dag_flow(name: String, steps_json: String) -> napi::Result<Str
     serde_json::to_string(&flow).map_err(|e| napi::Error::from_reason(format!("{e}")))
 }
 
+/// Topological sort of workflow steps into parallel execution tiers.
+/// Input: JSON array of `{ id, dependsOn, triggerMode? }` objects.
+/// Returns JSON: `string[][]` — tiers of step IDs in execution order.
+/// Throws on cycle detection.
+#[napi]
+pub fn szal_topological_sort(steps_json: String) -> napi::Result<String> {
+    let raw_steps: Vec<serde_json::Value> = serde_json::from_str(&steps_json)
+        .map_err(|e| napi::Error::from_reason(format!("Invalid steps JSON: {e}")))?;
+
+    struct StepInput {
+        id: String,
+        depends_on: Vec<String>,
+        trigger_mode: Option<String>,
+    }
+
+    let steps: Vec<StepInput> = raw_steps
+        .iter()
+        .map(|v| StepInput {
+            id: v
+                .get("id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
+            depends_on: v
+                .get("dependsOn")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default(),
+            trigger_mode: v
+                .get("triggerMode")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+        })
+        .collect();
+
+    // Build in-degree map
+    let mut in_degree: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    let mut adjacency: std::collections::HashMap<String, Vec<String>> =
+        std::collections::HashMap::new();
+
+    for step in &steps {
+        let required = if step.trigger_mode.as_deref() == Some("any") && !step.depends_on.is_empty()
+        {
+            1
+        } else {
+            step.depends_on.len()
+        };
+        in_degree.insert(step.id.clone(), required);
+        for dep in &step.depends_on {
+            adjacency
+                .entry(dep.clone())
+                .or_default()
+                .push(step.id.clone());
+        }
+    }
+
+    let mut tiers: Vec<Vec<String>> = Vec::new();
+    let mut frontier: Vec<String> = steps
+        .iter()
+        .filter(|s| in_degree.get(&s.id).copied().unwrap_or(0) == 0)
+        .map(|s| s.id.clone())
+        .collect();
+
+    while !frontier.is_empty() {
+        tiers.push(frontier.clone());
+        let mut next_frontier = Vec::new();
+        for id in &frontier {
+            for successor in adjacency.get(id).unwrap_or(&Vec::new()) {
+                let current = in_degree.get(successor).copied().unwrap_or(0);
+                if current == 0 {
+                    continue;
+                }
+                let new_degree = current - 1;
+                in_degree.insert(successor.clone(), new_degree);
+                if new_degree == 0 {
+                    next_frontier.push(successor.clone());
+                }
+            }
+        }
+        frontier = next_frontier;
+    }
+
+    let visited: usize = tiers.iter().map(|t| t.len()).sum();
+    if visited != steps.len() {
+        let visited_set: std::collections::HashSet<&str> =
+            tiers.iter().flat_map(|t| t.iter().map(|s| s.as_str())).collect();
+        let cycle_steps: Vec<&str> = steps
+            .iter()
+            .filter(|s| !visited_set.contains(s.id.as_str()))
+            .map(|s| s.id.as_str())
+            .collect();
+        return Err(napi::Error::from_reason(format!(
+            "Workflow contains a cycle involving: {}",
+            cycle_steps.join(", ")
+        )));
+    }
+
+    serde_json::to_string(&tiers).map_err(|e| napi::Error::from_reason(format!("{e}")))
+}
+
 /// Resolve template variables in a string.
 /// Supports dot-notation path walking: `{{steps.build.output.url}}`
 #[napi]

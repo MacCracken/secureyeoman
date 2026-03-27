@@ -96,6 +96,69 @@ export function buildDagFlow(name: string, stepsJson: string): string {
   return JSON.stringify({ name, mode: 'dag', steps: JSON.parse(stepsJson) });
 }
 
+// ── Topological Sort ──────────────────────────────────────────────────────
+
+export interface TopoStep {
+  id: string;
+  dependsOn: string[];
+  triggerMode?: 'all' | 'any';
+}
+
+/**
+ * Topological sort of workflow steps into parallel execution tiers.
+ * Returns `string[][]` — tiers of step IDs in execution order.
+ * Throws on cycle detection.
+ */
+export function topologicalSort(steps: TopoStep[]): string[][] {
+  if (native?.szalTopologicalSort) {
+    const json = native.szalTopologicalSort(JSON.stringify(steps));
+    return JSON.parse(json) as string[][];
+  }
+  return topologicalSortJS(steps);
+}
+
+function topologicalSortJS(steps: TopoStep[]): string[][] {
+  const inDegree = new Map<string, number>();
+  const adjacency = new Map<string, string[]>();
+
+  for (const step of steps) {
+    const required =
+      step.triggerMode === 'any' ? Math.min(1, step.dependsOn.length) : step.dependsOn.length;
+    inDegree.set(step.id, required);
+    for (const dep of step.dependsOn) {
+      if (!adjacency.has(dep)) adjacency.set(dep, []);
+      adjacency.get(dep)!.push(step.id);
+    }
+  }
+
+  const tiers: string[][] = [];
+  let frontier = steps.filter((s) => (inDegree.get(s.id) ?? 0) === 0).map((s) => s.id);
+
+  while (frontier.length > 0) {
+    tiers.push(frontier);
+    const next: string[] = [];
+    for (const id of frontier) {
+      for (const successor of adjacency.get(id) ?? []) {
+        const current = inDegree.get(successor) ?? 0;
+        if (current <= 0) continue;
+        const newDeg = current - 1;
+        inDegree.set(successor, newDeg);
+        if (newDeg === 0) next.push(successor);
+      }
+    }
+    frontier = next;
+  }
+
+  const visited = tiers.flat();
+  if (visited.length !== steps.length) {
+    const visitedSet = new Set(visited);
+    const cycleSteps = steps.filter((s) => !visitedSet.has(s.id)).map((s) => s.id);
+    throw new Error(`Workflow contains a cycle involving: ${cycleSteps.join(', ')}`);
+  }
+
+  return tiers;
+}
+
 // ── Template Resolution ───────────────────────────────────────────────────
 
 /**

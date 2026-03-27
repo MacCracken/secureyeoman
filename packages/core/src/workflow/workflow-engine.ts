@@ -241,45 +241,19 @@ export class WorkflowEngine {
   // ── Topological Sort (Kahn's algorithm) ──────────────────────
 
   private topologicalSort(steps: WorkflowStep[]): string[][] {
-    const inDegree = new Map<string, number>();
-    const adjacency = new Map<string, string[]>();
-
-    for (const step of steps) {
-      // For 'any' steps, require only 1 dep to complete (not all of them).
-      const required =
-        step.triggerMode === 'any' ? Math.min(1, step.dependsOn.length) : step.dependsOn.length;
-      inDegree.set(step.id, required);
-      for (const dep of step.dependsOn) {
-        if (!adjacency.has(dep)) adjacency.set(dep, []);
-        adjacency.get(dep)!.push(step.id);
-      }
-    }
-
-    const tiers: string[][] = [];
-    let frontier = steps.filter((s) => (inDegree.get(s.id) ?? 0) === 0).map((s) => s.id);
-
-    while (frontier.length > 0) {
-      tiers.push(frontier);
-      const nextFrontier: string[] = [];
-      for (const id of frontier) {
-        for (const successor of adjacency.get(id) ?? []) {
-          const current = inDegree.get(successor) ?? 0;
-          if (current <= 0) continue; // already enqueued (e.g. 'any' step with multiple deps)
-          const newDegree = current - 1;
-          inDegree.set(successor, newDegree);
-          if (newDegree === 0) nextFrontier.push(successor);
-        }
-      }
-      frontier = nextFrontier;
-    }
-
-    const visited = tiers.flat();
-    if (visited.length !== steps.length) {
-      const cycleSteps = steps.map((s) => s.id).filter((id) => !visited.includes(id));
+    try {
+      return szal.topologicalSort(
+        steps.map((s) => ({
+          id: s.id,
+          dependsOn: s.dependsOn,
+          triggerMode: s.triggerMode as 'all' | 'any' | undefined,
+        }))
+      );
+    } catch (err) {
+      // szal throws on cycle — convert to WorkflowCycleError
+      const cycleSteps = steps.map((s) => s.id);
       throw new WorkflowCycleError(cycleSteps);
     }
-
-    return tiers;
   }
 
   // ── Step Execution ────────────────────────────────────────────
