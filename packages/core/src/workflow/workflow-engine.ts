@@ -19,9 +19,10 @@ import type { SwarmManager } from '../agents/swarm-manager.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import { WorkflowStorage } from './workflow-storage.js';
 import {
-  evaluateCondition,
+  evaluateCondition as safeEvalCondition,
   validateConditionExpression as safeValidateCondition,
 } from './safe-eval.js';
+import * as szal from '../native/szal.js';
 import { OutputSchemaValidator } from '../security/output-schema-validator.js';
 import type { DataCurationManager } from '../training/data-curation.js';
 import type { EvaluationManager } from '../training/evaluation-manager.js';
@@ -1683,17 +1684,7 @@ export class WorkflowEngine {
   // ── Template Resolution ───────────────────────────────────────
 
   resolveTemplate(template: string, ctx: WorkflowEngineContext): string {
-    return template.replace(/\{\{([^}]+)\}\}/g, (_, path: string) => {
-      const parts = path.trim().split('.');
-      let value: unknown = { steps: ctx.steps, input: ctx.input };
-      for (const part of parts) {
-        if (value === null || value === undefined) return '';
-        value = (value as Record<string, unknown>)[part];
-      }
-      if (value === null || value === undefined) return '';
-      if (typeof value === 'object') return JSON.stringify(value);
-      return String(value);
-    });
+    return szal.resolveTemplate(template, { steps: ctx.steps, input: ctx.input });
   }
 
   // ── Condition Validation ─────────────────────────────────────
@@ -1730,7 +1721,13 @@ export class WorkflowEngine {
 
   evaluateCondition(expr: string, ctx: WorkflowEngineContext): boolean {
     try {
-      return evaluateCondition(expr, { steps: ctx.steps, input: ctx.input });
+      // Try szal's Rust-backed evaluator first (== != && || path resolution)
+      // Fall back to safe-eval for expressions with comparison operators (> < >= <=)
+      const context = { steps: ctx.steps, input: ctx.input };
+      if (/[<>]/.test(expr)) {
+        return safeEvalCondition(expr, context);
+      }
+      return szal.evaluateCondition(expr, context);
     } catch (err) {
       this.logger.warn(
         {

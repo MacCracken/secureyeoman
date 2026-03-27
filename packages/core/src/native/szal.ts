@@ -133,8 +133,8 @@ function evaluateConditionJS(expression: string, context: unknown): boolean {
     return expression.split('&&').every((part) => evaluateConditionJS(part.trim(), context));
   }
 
-  // Handle == and !=
-  const eqMatch = expression.match(/^(.+?)\s*(==|!=)\s*(.+)$/);
+  // Handle ==, ===, !=, !==
+  const eqMatch = expression.match(/^(.+?)\s*(===|!==|==|!=)\s*(.+)$/);
   if (eqMatch) {
     const left = resolvePath(eqMatch[1]!);
     const rightRaw = eqMatch[3]!.trim();
@@ -145,11 +145,17 @@ function evaluateConditionJS(expression: string, context: unknown): boolean {
         : rightRaw === 'false'
           ? false
           : Number(rightRaw);
-    return eqMatch[2] === '==' ? left === right : left !== right;
+    const isEq = eqMatch[2] === '==' || eqMatch[2] === '===';
+    return isEq ? left === right : left !== right;
   }
 
+  // Boolean literals
+  const trimmed = expression.trim();
+  if (trimmed === 'true') return true;
+  if (trimmed === 'false') return false;
+
   // Bare path = truthy check
-  return !!resolvePath(expression);
+  return !!resolvePath(trimmed);
 }
 
 function resolveTemplateJS(template: string, context: unknown): string {

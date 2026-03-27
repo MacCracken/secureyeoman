@@ -4,6 +4,7 @@
 
 import type { McpToolDef, McpResourceDef, McpToolManifest } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
+import * as bote from '../native/bote.js';
 import { McpStorage } from './storage.js';
 import type { McpCredentialManager } from './credential-manager.js';
 import { SignJWT } from 'jose';
@@ -67,6 +68,20 @@ export class McpClientManager {
     }));
     this.discoveredTools.set(serverId, mcpTools);
     await this.storage.saveTools(serverId, serverName, tools);
+
+    // Mirror into bote's Rust-backed registry for schema validation
+    for (const tool of mcpTools) {
+      bote.registerTool({
+        name: tool.name,
+        description: tool.description,
+        input_schema: tool.inputSchema as {
+          type: string;
+          properties?: Record<string, unknown>;
+          required?: string[];
+        },
+      });
+    }
+
     this.logger.info(
       {
         serverId,
