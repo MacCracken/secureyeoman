@@ -6,6 +6,60 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
+## [2026.3.27]
+
+### Dependency Upgrades
+
+- **agnosai** — `0.25.3` → `1.0.0` (major version bump, brings hoosh 1.0.0 transitively)
+- **bhava** — `1.1.1` → `1.2.0`
+- **ai-hwaccel** — `0.19` → `1.0.0` (major version bump)
+
+### sy-hwprobe — ai-hwaccel 1.0 Migration
+
+- Updated `VulkanGpu` match arm for renamed field (`device_name` → `device_id`)
+- Added explicit match arms for 5 new accelerator types: `CerebrasWse`, `GraphcoreIpu`, `GroqLpu`, `SamsungNpu`, `MediaTekApu`
+- All 13 sy-hwprobe tests pass
+
+### Phase 5 — Security Crate NAPI Bridges
+
+Bridged all 5 remaining security crates to Node.js via sy-napi, closing the last gaps in the Rust→TS integration layer. Each module includes a TypeScript wrapper with JS fallback for environments without the native binary.
+
+#### sy-audit NAPI Bridge (7 functions)
+
+- `audit_chain_create` / `audit_chain_record` / `audit_chain_verify` / `audit_chain_count` / `audit_chain_last_hash` / `audit_chain_rotate_key` / `audit_chain_destroy`
+- Global registry pattern: multiple named chains keyed by chain ID (tenant isolation)
+- TS wrapper: `packages/core/src/native/audit.ts` with full JS fallback (HMAC-SHA256 chain)
+
+#### sy-sandbox NAPI Bridge (10 functions)
+
+- `sandbox_detect_capabilities` — full system capability scan (seccomp, Landlock, cgroup v2, namespaces)
+- `sandbox_is_syscall_allowed` / `sandbox_allowed_syscalls` / `sandbox_blocked_syscalls` — seccomp policy inspection
+- `sandbox_seccomp_mode` / `sandbox_landlock_available` / `sandbox_landlock_abi` — LSM detection
+- `sandbox_cgroup_v2` / `sandbox_cgroup_memory_limit` / `sandbox_cgroup_memory_current` — resource limits
+- TS wrapper: `packages/core/src/native/sandbox.ts` with stub fallbacks (all unavailable)
+
+#### sy-tee NAPI Bridge (4 functions)
+
+- `tee_seal` / `tee_unseal` — AES-256-GCM model weight encryption with TPM/keyring keys
+- `tee_is_sealed` — SEALED_V1 magic detection
+- `tee_clear_key_cache` — flush cached encryption keys
+- TS wrapper: `packages/core/src/native/tee.ts` (seal/unseal require native, is_sealed has JS fallback)
+
+#### sy-privacy NAPI Expansion (5 functions)
+
+- `privacy_engine_create` / `privacy_engine_add_pattern` / `privacy_engine_classify` / `privacy_engine_classify_batch` / `privacy_engine_destroy`
+- Named engines with persistent custom regex patterns (previously only stateless classify was exposed)
+- TS wrapper: `packages/core/src/native/privacy.ts` with full JS fallback (PII patterns, keywords, custom regex)
+
+### Code Quality
+
+- Fixed 154 `@typescript-eslint/no-unnecessary-type-arguments` lint errors across dashboard
+- Fixed unused import (`AddServerForm`) in ConnectionsPage
+- Fixed unused catch variable in workflow-engine
+- Fixed circular lint fix in TaskKanbanWidget
+- Formatted 2 Rust files (sy-napi/szal.rs, sy-sandbox/landlock.rs)
+- Added `#[allow(dead_code)]` to 4 sy-edge utility methods used only in tests
+
 ## [2026.3.26]
 
 ### Majra 1.0.0 Integration
@@ -49,7 +103,7 @@ Fixed 21 pre-existing test failures caused by bhava native module integration dr
 
 ### Dependency Updates
 
-- **bhava** — `1.1.0` → `1.1.1`
+- **bhava** — `1.1.0` → `1.1.1` → `1.2.0`
 - **majra** — Added `1.0.0` (new dependency) with features: pubsub, ratelimit, heartbeat, barrier, queue
 
 ## [2026.3.19]

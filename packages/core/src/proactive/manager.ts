@@ -159,7 +159,7 @@ export class ProactiveManager {
     context?: Record<string, unknown>
   ): Promise<{ suggestion?: Suggestion; result?: ActionResult }> {
     const trigger = await this.storage.getTrigger(triggerId);
-    if (!trigger || !trigger.enabled) {
+    if (!trigger?.enabled) {
       return {};
     }
 

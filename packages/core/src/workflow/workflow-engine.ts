@@ -249,7 +249,7 @@ export class WorkflowEngine {
           triggerMode: s.triggerMode as 'all' | 'any' | undefined,
         }))
       );
-    } catch (err) {
+    } catch {
       // szal throws on cycle — convert to WorkflowCycleError
       const cycleSteps = steps.map((s) => s.id);
       throw new WorkflowCycleError(cycleSteps);

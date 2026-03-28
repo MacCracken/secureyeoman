@@ -73,11 +73,11 @@ export function usePushToTalk(
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number>(0);
+  const animationFrameRef = useRef(0);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const maxDurationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastVoiceActivityRef = useRef<number>(0);
-  const hasVoicedRef = useRef<boolean>(false);
+  const lastVoiceActivityRef = useRef(0);
+  const hasVoicedRef = useRef(false);
 
   const isSupported = typeof window !== 'undefined' && !!getRecognitionConstructor();
 

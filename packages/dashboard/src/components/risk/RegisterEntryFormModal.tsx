@@ -54,8 +54,8 @@ interface RegisterEntryFormModalProps {
 
 export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntryFormModalProps) {
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<string>('operational');
-  const [severity, setSeverity] = useState<string>('medium');
+  const [category, setCategory] = useState('operational');
+  const [severity, setSeverity] = useState('medium');
   const [likelihood, setLikelihood] = useState(3);
   const [impact, setImpact] = useState(3);
   const [owner, setOwner] = useState('');

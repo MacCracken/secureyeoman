@@ -104,6 +104,7 @@ impl Scheduler {
         self.tasks.lock().unwrap().remove(id);
     }
 
+    #[allow(dead_code)]
     pub fn task_count(&self) -> usize {
         self.tasks.lock().unwrap().len()
     }

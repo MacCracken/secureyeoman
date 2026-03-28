@@ -22,7 +22,7 @@ const ENTITY_TYPES = [
 ] as const;
 
 export function EntityExplorerPanel({ personalityId }: EntityExplorerPanelProps) {
-  const [activeType, setActiveType] = useState<string>('all');
+  const [activeType, setActiveType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data: topEntities = [], isLoading } = useQuery({

@@ -71,7 +71,7 @@ export function PersonalitiesTab() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [toast, setToast] = useState<string | null>(null);
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  const [collapsedCategories, setCollapsedCategories] = useState(new Set());
 
   const { data, isLoading } = useQuery({
     queryKey: ['personalities-community'],

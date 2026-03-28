@@ -42,7 +42,7 @@ export function RoleForm({
   onCancel: () => void;
   isPending: boolean;
 }) {
-  const [form, setForm] = useState<RoleFormData>(
+  const [form, setForm] = useState(
     initial ?? { name: '', description: '', permissions: '', inheritFrom: '' }
   );
 

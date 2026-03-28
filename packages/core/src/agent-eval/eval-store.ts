@@ -134,7 +134,7 @@ export class EvalStore extends PgBaseStorage {
   }
 
   async getScenario(id: string, tenantId = 'default'): Promise<EvalScenario | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       'SELECT * FROM eval.scenarios WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
@@ -158,7 +158,7 @@ export class EvalStore extends PgBaseStorage {
     const limit = Math.min(opts.limit ?? 100, 500);
     const offset = opts.offset ?? 0;
     let idx = nextIdx;
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM eval.scenarios ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
     );
@@ -240,10 +240,10 @@ export class EvalStore extends PgBaseStorage {
   }
 
   async getSuite(id: string, tenantId = 'default'): Promise<EvalSuite | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM eval.suites WHERE id = $1 AND tenant_id = $2',
-      [id, tenantId]
-    );
+    const row = await this.queryOne('SELECT * FROM eval.suites WHERE id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
     return row ? rowToSuite(row) : null;
   }
 
@@ -259,7 +259,7 @@ export class EvalStore extends PgBaseStorage {
 
     const limit = Math.min(opts.limit ?? 100, 500);
     const offset = opts.offset ?? 0;
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       'SELECT * FROM eval.suites WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
       [tenantId, limit, offset]
     );
@@ -342,13 +342,13 @@ export class EvalStore extends PgBaseStorage {
   }
 
   async getSuiteRun(id: string, tenantId = 'default'): Promise<SuiteRunResult | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       'SELECT * FROM eval.suite_runs WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
     if (!row) return null;
 
-    const scenarioRows = await this.queryMany<Record<string, unknown>>(
+    const scenarioRows = await this.queryMany(
       'SELECT * FROM eval.scenario_runs WHERE suite_run_id = $1 ORDER BY created_at',
       [id]
     );
@@ -373,7 +373,7 @@ export class EvalStore extends PgBaseStorage {
     const limit = Math.min(opts.limit ?? 50, 200);
     const offset = opts.offset ?? 0;
     let idx = nextIdx;
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM eval.suite_runs ${where} ORDER BY started_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
     );

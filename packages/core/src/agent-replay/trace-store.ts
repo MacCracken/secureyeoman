@@ -72,7 +72,7 @@ export class TraceStore extends PgBaseStorage {
   }
 
   async getTrace(id: string, tenantId = 'default'): Promise<ExecutionTrace | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       'SELECT * FROM agent_replay.traces WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
@@ -122,7 +122,7 @@ export class TraceStore extends PgBaseStorage {
     let idx = nextIdx;
 
     // List view omits steps for performance
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT id, conversation_id, personality_id, personality_name,
               model, provider, input, output, '[]'::jsonb AS steps,
               total_duration_ms, total_input_tokens, total_output_tokens,

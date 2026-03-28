@@ -11,7 +11,7 @@ import {
 
 export function ComputerUseTab() {
   const queryClient = useQueryClient();
-  const [selectedSession, setSelectedSession] = useState<string>('');
+  const [selectedSession, setSelectedSession] = useState('');
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['cu-stats'],

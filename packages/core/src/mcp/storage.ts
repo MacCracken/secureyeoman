@@ -182,18 +182,12 @@ export class McpStorage extends PgBaseStorage {
   }
 
   async getServer(id: string): Promise<McpServerConfig | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM mcp.servers WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM mcp.servers WHERE id = $1', [id]);
     return row ? this.rowToConfig(row) : null;
   }
 
   async findServerByName(name: string): Promise<McpServerConfig | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM mcp.servers WHERE name = $1',
-      [name]
-    );
+    const row = await this.queryOne('SELECT * FROM mcp.servers WHERE name = $1', [name]);
     return row ? this.rowToConfig(row) : null;
   }
 
@@ -208,7 +202,7 @@ export class McpStorage extends PgBaseStorage {
       'SELECT COUNT(*) as count FROM mcp.servers'
     );
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       'SELECT * FROM mcp.servers ORDER BY created_at DESC LIMIT $1 OFFSET $2',
       [limit, offset]
     );
@@ -296,10 +290,9 @@ export class McpStorage extends PgBaseStorage {
   async loadTools(serverId: string): Promise<McpToolDef[]> {
     const server = await this.getServer(serverId);
     if (!server) return [];
-    const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM mcp.server_tools WHERE server_id = $1',
-      [serverId]
-    );
+    const rows = await this.queryMany('SELECT * FROM mcp.server_tools WHERE server_id = $1', [
+      serverId,
+    ]);
     return rows.map((row) => ({
       name: row.name as string,
       description: (row.description as string) ?? '',
@@ -380,15 +373,14 @@ export class McpStorage extends PgBaseStorage {
   }
 
   async getHealth(serverId: string): Promise<McpServerHealth | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM mcp.server_health WHERE server_id = $1',
-      [serverId]
-    );
+    const row = await this.queryOne('SELECT * FROM mcp.server_health WHERE server_id = $1', [
+      serverId,
+    ]);
     return row ? this.rowToHealth(row) : null;
   }
 
   async getAllHealth(): Promise<McpServerHealth[]> {
-    const rows = await this.queryMany<Record<string, unknown>>('SELECT * FROM mcp.server_health');
+    const rows = await this.queryMany('SELECT * FROM mcp.server_health');
     return rows.map((r) => this.rowToHealth(r));
   }
 

@@ -93,7 +93,7 @@ export function VoiceProfileManager() {
   // Form state
   const [formMode, setFormMode] = useState<'closed' | 'create' | 'edit'>('closed');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<ProfileFormData>(EMPTY_FORM);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Delete confirmation

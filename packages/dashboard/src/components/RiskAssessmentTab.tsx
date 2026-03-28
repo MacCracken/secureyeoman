@@ -849,7 +849,7 @@ export function RiskAssessmentTab() {
   const qc = useQueryClient();
   const [subTab, setSubTab] = useState<SubTab>('overview');
   const [runModal, setRunModal] = useState(false);
-  const [selectedDomains, setSelectedDomains] = useState<RiskDomain[]>([...ALL_DOMAINS]);
+  const [selectedDomains, setSelectedDomains] = useState([...ALL_DOMAINS]);
   const [windowDays, setWindowDays] = useState(7);
   const [assessmentName, setAssessmentName] = useState('');
 

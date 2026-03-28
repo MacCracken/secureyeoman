@@ -137,7 +137,7 @@ const _PROVIDER_ENV_NAMES = new Set(PROVIDERS.map((p) => p.envVarName));
 export function ProviderKeysSettings() {
   const queryClient = useQueryClient();
 
-  const [selectedProviderId, setSelectedProviderId] = useState<string>('');
+  const [selectedProviderId, setSelectedProviderId] = useState('');
   const [keyValue, setKeyValue] = useState('');
   const [customEnvName, setCustomEnvName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ envVarName: string; label: string } | null>(

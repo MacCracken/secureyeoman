@@ -441,7 +441,7 @@ export class SwarmStorage extends PgBaseStorage {
   // ── Profile skills ────────────────────────────────────────────
 
   async getProfileSkills(profileId: string): Promise<CatalogSkill[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT ms.* FROM agents.profile_skills ps
          JOIN marketplace.skills ms ON ms.id = ps.skill_id
         WHERE ps.profile_id = $1

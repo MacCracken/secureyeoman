@@ -51,7 +51,7 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
     refetchInterval: 30_000,
   });
 
-  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
+  const [expandedProviders, setExpandedProviders] = useState(new Set());
 
   // Expand current provider once on initial data load
   const resolvedProvider = data?.current.provider;

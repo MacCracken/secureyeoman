@@ -47,7 +47,7 @@ const EMPTY_FORM: AddServerForm = {
 export function McpManager() {
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [form, setForm] = useState<AddServerForm>(EMPTY_FORM);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<McpServerConfig | null>(null);
 

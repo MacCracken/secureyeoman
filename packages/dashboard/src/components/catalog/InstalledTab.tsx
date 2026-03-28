@@ -612,7 +612,7 @@ export function InstalledTab({
   workflowsEnabled?: boolean;
   subAgentsEnabled?: boolean;
 }) {
-  const [filterPersonalityId, setFilterPersonalityId] = useState<string>('');
+  const [filterPersonalityId, setFilterPersonalityId] = useState('');
   const hiddenTypes: ContentType[] = [
     ...(!workflowsEnabled ? ['workflows' as const] : []),
     ...(!subAgentsEnabled ? ['swarms' as const] : []),

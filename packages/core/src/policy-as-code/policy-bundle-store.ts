@@ -69,10 +69,7 @@ export class PolicyBundleStore extends PgBaseStorage {
   }
 
   async getBundle(id: string): Promise<PolicyBundle | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM policy_as_code.bundles WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM policy_as_code.bundles WHERE id = $1', [id]);
     return row ? rowToBundle(row) : null;
   }
 
@@ -93,7 +90,7 @@ export class PolicyBundleStore extends PgBaseStorage {
     const offset = opts.offset ?? 0;
 
     // Omit files for list performance
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT id, metadata, '[]'::jsonb AS files, commit_sha, ref,
               compiled_at, valid, validation_errors, tenant_id
        FROM policy_as_code.bundles ${where}
@@ -138,17 +135,14 @@ export class PolicyBundleStore extends PgBaseStorage {
   }
 
   async getDeployment(id: string): Promise<PolicyDeployment | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM policy_as_code.deployments WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM policy_as_code.deployments WHERE id = $1', [id]);
     return row ? rowToDeployment(row) : null;
   }
 
   async listDeployments(bundleName?: string, limit = 50): Promise<PolicyDeployment[]> {
     const { where, values, nextIdx } = buildWhere([{ column: 'bundle_name', value: bundleName }]);
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM policy_as_code.deployments ${where}
        ORDER BY deployed_at DESC LIMIT $${nextIdx}`,
       [...values, Math.min(limit, 200)]

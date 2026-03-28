@@ -38,10 +38,7 @@ export class WorkspaceStorage extends PgBaseStorage {
   }
 
   async get(id: string): Promise<Workspace | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM workspace.workspaces WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM workspace.workspaces WHERE id = $1', [id]);
     if (!row) return null;
     const members = await this.getMembers(id);
     return {
@@ -66,7 +63,7 @@ export class WorkspaceStorage extends PgBaseStorage {
       'SELECT COUNT(*) as count FROM workspace.workspaces'
     );
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       'SELECT * FROM workspace.workspaces ORDER BY created_at DESC LIMIT $1 OFFSET $2',
       [limit, offset]
     );
@@ -172,7 +169,7 @@ export class WorkspaceStorage extends PgBaseStorage {
       [workspaceId]
     );
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       'SELECT * FROM workspace.members WHERE workspace_id = $1 LIMIT $2 OFFSET $3',
       [workspaceId, limit, offset]
     );
@@ -190,7 +187,7 @@ export class WorkspaceStorage extends PgBaseStorage {
   }
 
   async getMember(workspaceId: string, userId: string): Promise<WorkspaceMember | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       'SELECT * FROM workspace.members WHERE workspace_id = $1 AND user_id = $2',
       [workspaceId, userId]
     );
@@ -203,10 +200,9 @@ export class WorkspaceStorage extends PgBaseStorage {
   }
 
   private async getMembers(workspaceId: string): Promise<WorkspaceMember[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM workspace.members WHERE workspace_id = $1',
-      [workspaceId]
-    );
+    const rows = await this.queryMany('SELECT * FROM workspace.members WHERE workspace_id = $1', [
+      workspaceId,
+    ]);
     return rows.map((r) => ({
       userId: r.user_id as string,
       role: r.role as WorkspaceMember['role'],

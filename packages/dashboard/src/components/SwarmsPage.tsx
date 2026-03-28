@@ -390,7 +390,7 @@ function TemplateForm({
   const [name, setName] = useState(initialValues?.name ?? '');
   const [description, setDescription] = useState(initialValues?.description ?? '');
   const [strategy, setStrategy] = useState<Strategy>(initialValues?.strategy! ?? 'sequential');
-  const [roles, setRoles] = useState<RoleDraft[]>(
+  const [roles, setRoles] = useState(
     initialValues?.roles.length
       ? initialValues.roles.map((r) => ({
           role: r.role,

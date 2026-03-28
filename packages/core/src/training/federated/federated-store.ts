@@ -109,10 +109,7 @@ export class FederatedStore extends PgBaseStorage {
   }
 
   async getSession(id: string): Promise<FederatedSession | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM federated.sessions WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM federated.sessions WHERE id = $1', [id]);
     return row ? rowToSession(row) : null;
   }
 
@@ -131,7 +128,7 @@ export class FederatedStore extends PgBaseStorage {
     const offset = opts.offset ?? 0;
     let idx = nextIdx;
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM federated.sessions ${where}
        ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
@@ -172,10 +169,7 @@ export class FederatedStore extends PgBaseStorage {
   }
 
   async getParticipant(id: string): Promise<FederatedParticipant | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM federated.participants WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM federated.participants WHERE id = $1', [id]);
     return row ? rowToParticipant(row) : null;
   }
 
@@ -187,7 +181,7 @@ export class FederatedStore extends PgBaseStorage {
     const limit = Math.min(opts.limit ?? 100, 500);
 
     return (
-      await this.queryMany<Record<string, unknown>>(
+      await this.queryMany(
         `SELECT * FROM federated.participants ${where}
        ORDER BY registered_at DESC LIMIT $${nextIdx}`,
         [...values, limit]
@@ -231,17 +225,14 @@ export class FederatedStore extends PgBaseStorage {
   }
 
   async getRound(id: string): Promise<FederatedRound | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM federated.rounds WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM federated.rounds WHERE id = $1', [id]);
     return row ? rowToRound(row) : null;
   }
 
   async listRounds(sessionId: string, opts: { limit?: number } = {}): Promise<FederatedRound[]> {
     const limit = Math.min(opts.limit ?? 50, 500);
     return (
-      await this.queryMany<Record<string, unknown>>(
+      await this.queryMany(
         `SELECT * FROM federated.rounds WHERE session_id = $1
        ORDER BY round_number DESC LIMIT $2`,
         [sessionId, limit]
@@ -274,7 +265,7 @@ export class FederatedStore extends PgBaseStorage {
   }
 
   async getUpdatesForRound(roundId: string): Promise<ModelUpdate[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       'SELECT * FROM federated.model_updates WHERE round_id = $1 ORDER BY submitted_at',
       [roundId]
     );

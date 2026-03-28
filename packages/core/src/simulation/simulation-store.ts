@@ -204,7 +204,7 @@ export class SimulationStore extends PgBaseStorage {
   }
 
   async getTickConfig(personalityId: string): Promise<TickConfig | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       'SELECT * FROM simulation.tick_configs WHERE personality_id = $1',
       [personalityId]
     );
@@ -261,7 +261,7 @@ export class SimulationStore extends PgBaseStorage {
   }
 
   async getMoodState(personalityId: string): Promise<MoodState | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       'SELECT * FROM simulation.mood_states WHERE personality_id = $1',
       [personalityId]
     );
@@ -309,7 +309,7 @@ export class SimulationStore extends PgBaseStorage {
   ): Promise<MoodEvent[]> {
     const limit = Math.min(opts.limit ?? 50, 200);
     if (opts.since) {
-      const rows = await this.queryMany<Record<string, unknown>>(
+      const rows = await this.queryMany(
         `SELECT * FROM simulation.mood_events
          WHERE personality_id = $1 AND created_at >= $2
          ORDER BY created_at DESC LIMIT $3`,
@@ -317,7 +317,7 @@ export class SimulationStore extends PgBaseStorage {
       );
       return rows.map(rowToMoodEvent);
     }
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM simulation.mood_events
        WHERE personality_id = $1
        ORDER BY created_at DESC LIMIT $2`,
@@ -359,7 +359,7 @@ export class SimulationStore extends PgBaseStorage {
   }
 
   async getEntityLocation(personalityId: string, entityId: string): Promise<EntityLocation | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       'SELECT * FROM simulation.entity_locations WHERE personality_id = $1 AND entity_id = $2',
       [personalityId, entityId]
     );
@@ -372,7 +372,7 @@ export class SimulationStore extends PgBaseStorage {
   ): Promise<EntityLocation[]> {
     const limit = Math.min(opts.limit ?? 200, 500);
     if (opts.zoneId) {
-      const rows = await this.queryMany<Record<string, unknown>>(
+      const rows = await this.queryMany(
         `SELECT * FROM simulation.entity_locations
          WHERE personality_id = $1 AND zone_id = $2
          ORDER BY updated_at DESC LIMIT $3`,
@@ -380,7 +380,7 @@ export class SimulationStore extends PgBaseStorage {
       );
       return rows.map(rowToEntityLocation);
     }
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM simulation.entity_locations
        WHERE personality_id = $1
        ORDER BY updated_at DESC LIMIT $2`,
@@ -426,7 +426,7 @@ export class SimulationStore extends PgBaseStorage {
   }
 
   async getSpatialZone(personalityId: string, zoneId: string): Promise<SpatialZone | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       'SELECT * FROM simulation.spatial_zones WHERE personality_id = $1 AND zone_id = $2',
       [personalityId, zoneId]
     );
@@ -434,7 +434,7 @@ export class SimulationStore extends PgBaseStorage {
   }
 
   async listSpatialZones(personalityId: string): Promise<SpatialZone[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       'SELECT * FROM simulation.spatial_zones WHERE personality_id = $1 ORDER BY created_at',
       [personalityId]
     );
@@ -487,7 +487,7 @@ export class SimulationStore extends PgBaseStorage {
     opts: { enabledOnly?: boolean } = {}
   ): Promise<ProximityRule[]> {
     const enabledFilter = opts.enabledOnly ? ' AND enabled = true' : '';
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM simulation.proximity_rules
        WHERE personality_id = $1${enabledFilter}
        ORDER BY created_at`,
@@ -538,7 +538,7 @@ export class SimulationStore extends PgBaseStorage {
   ): Promise<ProximityEvent[]> {
     const limit = Math.min(opts.limit ?? 50, 200);
     if (opts.sinceTick != null) {
-      const rows = await this.queryMany<Record<string, unknown>>(
+      const rows = await this.queryMany(
         `SELECT * FROM simulation.proximity_events
          WHERE personality_id = $1 AND tick >= $2
          ORDER BY tick DESC, created_at DESC LIMIT $3`,
@@ -546,7 +546,7 @@ export class SimulationStore extends PgBaseStorage {
       );
       return rows.map(rowToProximityEvent);
     }
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM simulation.proximity_events
        WHERE personality_id = $1
        ORDER BY tick DESC, created_at DESC LIMIT $2`,
@@ -594,7 +594,7 @@ export class SimulationStore extends PgBaseStorage {
     sourceEntityId: string,
     targetEntityId: string
   ): Promise<EntityRelationship | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       `SELECT * FROM simulation.entity_relationships
        WHERE personality_id = $1 AND source_entity_id = $2 AND target_entity_id = $3`,
       [personalityId, sourceEntityId, targetEntityId]
@@ -628,7 +628,7 @@ export class SimulationStore extends PgBaseStorage {
     }
 
     params.push(limit);
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM simulation.entity_relationships
        WHERE ${conditions.join(' AND ')}
        ORDER BY updated_at DESC LIMIT $${idx}`,
@@ -651,7 +651,7 @@ export class SimulationStore extends PgBaseStorage {
   }
 
   async listAllRelationships(personalityId: string): Promise<EntityRelationship[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM simulation.entity_relationships WHERE personality_id = $1`,
       [personalityId]
     );
@@ -702,7 +702,7 @@ export class SimulationStore extends PgBaseStorage {
     }
 
     params.push(limit);
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM simulation.relationship_events
        WHERE ${conditions.join(' AND ')}
        ORDER BY created_at DESC LIMIT $${idx}`,
@@ -735,7 +735,7 @@ export class SimulationStore extends PgBaseStorage {
   }
 
   async listEntityGroups(personalityId: string): Promise<EntityGroup[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM simulation.entity_groups
        WHERE personality_id = $1
        ORDER BY created_at`,
@@ -745,7 +745,7 @@ export class SimulationStore extends PgBaseStorage {
   }
 
   async getEntityGroup(personalityId: string, groupId: string): Promise<EntityGroup | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       `SELECT * FROM simulation.entity_groups
        WHERE personality_id = $1 AND group_id = $2`,
       [personalityId, groupId]

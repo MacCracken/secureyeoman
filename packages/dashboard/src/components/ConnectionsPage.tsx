@@ -49,7 +49,6 @@ import {
   EMPTY_FORM,
   type TabType,
   type IntegrationSubTab,
-  type AddServerForm,
 } from './connections/platformMetadata';
 import { MessagingTab } from './connections/MessagingTab';
 import { EmailTab } from './connections/EmailTab';
@@ -93,7 +92,7 @@ export function ConnectionsPage() {
   const [activeTab, setActiveTab] = useState<TabType>(initialState.tab);
   const [activeSubTab, setActiveSubTab] = useState<IntegrationSubTab>(initialState.subTab);
   const [showAddMcpForm, setShowAddMcpForm] = useState(false);
-  const [mcpForm, setMcpForm] = useState<AddServerForm>(EMPTY_FORM);
+  const [mcpForm, setMcpForm] = useState(EMPTY_FORM);
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [toolsExpanded, setToolsExpanded] = useState(false);

@@ -82,7 +82,7 @@ export function VoiceProviderPicker() {
   const [sttTestStatus, setSttTestStatus] = useState<
     'idle' | 'recording' | 'transcribing' | 'success' | 'error'
   >('idle');
-  const [sttTranscript, setSttTranscript] = useState<string>('');
+  const [sttTranscript, setSttTranscript] = useState('');
 
   const ttsMutation = useMutation({
     mutationFn: (provider: string) => updateMultimodalProvider('tts', provider),

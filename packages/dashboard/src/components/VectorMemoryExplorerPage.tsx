@@ -60,7 +60,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /** Selected personality filter: ALL_PERSONALITIES or a personality id */
-  const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>(ALL_PERSONALITIES);
+  const [selectedPersonalityId, setSelectedPersonalityId] = useState(ALL_PERSONALITIES);
 
   // Add memory form
   const [newType, setNewType] = useState<'episodic' | 'semantic' | 'procedural' | 'preference'>(

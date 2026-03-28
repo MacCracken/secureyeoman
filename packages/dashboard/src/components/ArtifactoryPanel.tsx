@@ -57,7 +57,7 @@ export function ArtifactoryPanel() {
   const [selectedConn, setSelectedConn] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>('repos');
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
-  const [browsePath, setBrowsePath] = useState<string>('');
+  const [browsePath, setBrowsePath] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBuild, setSelectedBuild] = useState<string | null>(null);
   const [promoteForm, setPromoteForm] = useState({ targetRepo: '', status: '' });

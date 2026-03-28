@@ -92,7 +92,7 @@ export class ScanHistoryStore extends PgBaseStorage {
     );
     const total = parseCount(countResult);
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM sandbox.scan_history ${where}
        ORDER BY created_at DESC
        LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
@@ -103,10 +103,7 @@ export class ScanHistoryStore extends PgBaseStorage {
   }
 
   async getById(id: string): Promise<ScanHistoryRow | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM sandbox.scan_history WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM sandbox.scan_history WHERE id = $1', [id]);
     return row ? this.mapRow(row) : null;
   }
 

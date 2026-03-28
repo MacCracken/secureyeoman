@@ -61,9 +61,10 @@ impl MemoryStore {
         let entry = data.get(namespace)?.get(key)?;
 
         if let Some(exp) = entry.expires_at
-            && Self::now_epoch() > exp {
-                return None;
-            }
+            && Self::now_epoch() > exp
+        {
+            return None;
+        }
 
         Some(entry.value.clone())
     }

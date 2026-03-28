@@ -46,7 +46,7 @@ export function SoulSystemTab() {
 
   // Soul config form state
   const [formEnabled, setFormEnabled] = useState(soulConfig?.enabled ?? true);
-  const [formLearningMode, setFormLearningMode] = useState<string[]>(
+  const [formLearningMode, setFormLearningMode] = useState(
     soulConfig?.learningMode ?? ['user_authored']
   );
   const [formMaxSkills, setFormMaxSkills] = useState(soulConfig?.maxSkills ?? 100);
@@ -364,7 +364,7 @@ function StrategyManagementCard() {
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState('');
   const [formSlug, setFormSlug] = useState('');
-  const [formCategory, setFormCategory] = useState<string>('chain_of_thought');
+  const [formCategory, setFormCategory] = useState('chain_of_thought');
   const [formDescription, setFormDescription] = useState('');
   const [formPrefix, setFormPrefix] = useState('');
 

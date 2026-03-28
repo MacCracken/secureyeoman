@@ -204,10 +204,10 @@ export function RiskRegisterTable({
 }: RiskRegisterTableProps) {
   const [sortField, setSortField] = useState<SortField>('riskScore');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [filterStatus, setFilterStatus] = useState<string>('');
-  const [filterCategory, setFilterCategory] = useState<string>('');
-  const [filterSeverity, setFilterSeverity] = useState<string>('');
+  const [expandedIds, setExpandedIds] = useState(new Set());
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterSeverity, setFilterSeverity] = useState('');
 
   const handleSort = useCallback(
     (field: SortField) => {

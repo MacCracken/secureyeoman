@@ -12,9 +12,10 @@ pub fn is_available() -> bool {
 pub fn abi_version() -> u32 {
     // Try reading the restrict_self proc entry
     if let Ok(content) = fs::read_to_string("/proc/sys/kernel/landlock_restrict_self")
-        && let Some(v) = parse_abi_from_proc(&content) {
-            return v;
-        }
+        && let Some(v) = parse_abi_from_proc(&content)
+    {
+        return v;
+    }
 
     // Fallback: check kernel version >= 5.13
     if kernel_supports_landlock() {

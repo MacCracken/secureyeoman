@@ -93,25 +93,26 @@ impl A2AManager {
         if let (Some(msg_type), Some(from)) = (
             msg.get("type").and_then(|v| v.as_str()),
             msg.get("fromPeerId").and_then(|v| v.as_str()),
-        )
-            && msg_type == "heartbeat" {
-                let url = msg
-                    .get("url")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string();
-                let mut peers = self.peers.lock().unwrap();
-                peers.insert(
-                    from.to_string(),
-                    PeerState {
-                        id: from.to_string(),
-                        url,
-                        last_seen: Instant::now(),
-                    },
-                );
-            }
+        ) && msg_type == "heartbeat"
+        {
+            let url = msg
+                .get("url")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let mut peers = self.peers.lock().unwrap();
+            peers.insert(
+                from.to_string(),
+                PeerState {
+                    id: from.to_string(),
+                    url,
+                    last_seen: Instant::now(),
+                },
+            );
+        }
     }
 
+    #[allow(dead_code)]
     pub fn handle_heartbeat(&self, from: &str, url: &str) {
         let mut peers = self.peers.lock().unwrap();
         peers.insert(

@@ -45,7 +45,7 @@ const TIER_CONFIG = {
 
 export function ConversationHistory({ conversationId }: { conversationId: string }) {
   const queryClient = useQueryClient();
-  const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
+  const [expandedEntries, setExpandedEntries] = useState(new Set());
   const [showContext, setShowContext] = useState(false);
 
   const { data: historyData, isLoading } = useQuery({

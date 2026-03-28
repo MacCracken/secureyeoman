@@ -57,17 +57,12 @@ export class CommsStorage extends PgBaseStorage {
   }
 
   async getPeer(id: string): Promise<AgentIdentity | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM comms.peers WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM comms.peers WHERE id = $1', [id]);
     return row ? rowToPeer(row) : null;
   }
 
   async listPeers(): Promise<AgentIdentity[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM comms.peers ORDER BY last_seen_at DESC'
-    );
+    const rows = await this.queryMany('SELECT * FROM comms.peers ORDER BY last_seen_at DESC');
     return rows.map(rowToPeer);
   }
 

@@ -69,7 +69,7 @@ export function SimulationPanel() {
   const [activeTab, setActiveTab] = useState<SimTab>('tick');
 
   // New tick config form state
-  const [newMode, setNewMode] = useState<string>('realtime');
+  const [newMode, setNewMode] = useState('realtime');
   const [newInterval, setNewInterval] = useState(1000);
   const [newTimeScale, setNewTimeScale] = useState(1.0);
 

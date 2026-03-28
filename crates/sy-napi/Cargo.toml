@@ -14,8 +14,10 @@ sy-crypto = { path = "../sy-crypto" }
 sy-hwprobe = { path = "../sy-hwprobe" }
 sy-privacy = { path = "../sy-privacy" }
 sy-audit = { path = "../sy-audit" }
-bhava = { version = "1.1.1", features = ["presets"] }
-agnosai = { version = "0.25.3", features = ["definitions", "sandbox"] }
+sy-sandbox = { path = "../sy-sandbox" }
+sy-tee = { path = "../sy-tee" }
+bhava = { version = "1.2.0", features = ["presets"] }
+agnosai = { version = "1.0.0", features = ["definitions", "sandbox"] }
 majra = { version = "1.0", features = ["pubsub", "ratelimit", "heartbeat", "barrier", "queue"] }
 szal = { version = "1.0", features = ["majra"] }
 bote = { version = "0.50", features = ["bridge"] }

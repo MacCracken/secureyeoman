@@ -64,7 +64,7 @@ export class HeartbeatLogStorage extends PgBaseStorage {
     );
     const total = parseCount(countRow);
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT id, check_name, personality_id, ran_at, status, message, duration_ms, error_detail
          FROM proactive.heartbeat_log ${where}
          ORDER BY ran_at DESC

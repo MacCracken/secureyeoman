@@ -130,15 +130,12 @@ export class MarketplaceStorage extends PgBaseStorage {
   }
 
   async getSkill(id: string): Promise<CatalogSkill | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM marketplace.skills WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM marketplace.skills WHERE id = $1', [id]);
     return row ? this.rowToSkill(row) : null;
   }
 
   async findByNameAndSource(name: string, source: string): Promise<CatalogSkill | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
+    const row = await this.queryOne(
       'SELECT * FROM marketplace.skills WHERE name = $1 AND source = $2',
       [name, source]
     );
@@ -242,7 +239,7 @@ export class MarketplaceStorage extends PgBaseStorage {
     const fullSql = `SELECT * FROM marketplace.skills${where} ORDER BY download_count DESC LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
     params.push(limit, offset);
 
-    const rows = await this.queryMany<Record<string, unknown>>(fullSql, params);
+    const rows = await this.queryMany(fullSql, params);
     const skills = rows.map((r) => this.rowToSkill(r));
 
     if (personalityId !== undefined) {

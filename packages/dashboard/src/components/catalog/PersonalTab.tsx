@@ -73,8 +73,8 @@ export function PersonalTab() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string>('');
-  const [filterSource, setFilterSource] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterSource, setFilterSource] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
@@ -119,7 +119,7 @@ export function PersonalTab() {
     if (!a.isDefault && b.isDefault) return 1;
     return a.name.localeCompare(b.name);
   });
-  const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
+  const [selectedPersonalityId, setSelectedPersonalityId] = useState('');
   // Auto-select default personality when data first loads
   const personalityInitialized = useRef(false);
   useEffect(() => {

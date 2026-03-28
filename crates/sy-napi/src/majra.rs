@@ -426,8 +426,7 @@ fn barriers() -> &'static barrier::AsyncBarrierSet {
 /// `participants_json`: JSON array of participant IDs.
 #[napi]
 pub fn majra_barrier_create(name: String, participants_json: String) {
-    let participants: Vec<String> =
-        serde_json::from_str(&participants_json).unwrap_or_default();
+    let participants: Vec<String> = serde_json::from_str(&participants_json).unwrap_or_default();
     let set: std::collections::HashSet<String> = participants.into_iter().collect();
     barriers().create(&name, set);
 }

@@ -640,7 +640,7 @@ export function FederationTab() {
   const queryClient = useQueryClient();
   const [subTab, setSubTab] = useState<FedSubTab>('peers');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [expandedPeers, setExpandedPeers] = useState<Set<string>>(new Set());
+  const [expandedPeers, setExpandedPeers] = useState(new Set());
   const [checkingHealthId, setCheckingHealthId] = useState<string | null>(null);
   const [togglingFeatureId, setTogglingFeatureId] = useState<string | null>(null);
   const [marketplacePeer, setMarketplacePeer] = useState<FederationPeer | null>(null);

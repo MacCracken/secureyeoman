@@ -225,9 +225,10 @@ fn profile_from_sy_traits(
     for (key, value) in traits {
         if let Some(level_str) = value.as_str()
             && let Some(kind) = parse_trait_kind(key)
-                && let Some(level) = sy_level_to_bhava(key, level_str) {
-                    profile.set_trait(kind, level);
-                }
+            && let Some(level) = sy_level_to_bhava(key, level_str)
+        {
+            profile.set_trait(kind, level);
+        }
     }
     profile
 }

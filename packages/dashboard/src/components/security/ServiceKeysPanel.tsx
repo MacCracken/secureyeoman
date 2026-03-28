@@ -117,7 +117,7 @@ export const SERVICE_KEY_NAMES = new Set(SERVICE_KEYS.map((k) => k.name));
 
 export function ServiceKeysPanel() {
   const queryClient = useQueryClient();
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);

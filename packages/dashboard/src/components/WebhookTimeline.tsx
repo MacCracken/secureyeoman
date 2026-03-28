@@ -28,7 +28,7 @@ const CONCLUSION_COLORS: Record<string, string> = {
 const PROVIDERS = ['all', 'github', 'gitlab', 'jenkins', 'northflank', 'delta', 'travis'] as const;
 
 export function WebhookTimeline() {
-  const [providerFilter, setProviderFilter] = useState<string>('all');
+  const [providerFilter, setProviderFilter] = useState('all');
   const [repoFilter, setRepoFilter] = useState('');
   const [eventFilter, setEventFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);

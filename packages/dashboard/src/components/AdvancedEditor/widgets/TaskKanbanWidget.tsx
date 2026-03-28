@@ -30,7 +30,7 @@ export function TaskKanbanWidget() {
 
   const tasks: Task[] = data?.tasks ?? [];
   const stages: KanbanStage[] = ['Planning', 'Executing', 'Validating', 'Done', 'Failed'];
-  const grouped = stages.reduce<Record<KanbanStage, Task[]>>(
+  const grouped = stages.reduce(
     (acc, s) => {
       acc[s] = tasks.filter((t) => getStage(t.status) === s);
       return acc;

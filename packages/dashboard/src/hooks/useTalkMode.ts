@@ -77,13 +77,13 @@ export function useTalkMode(
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number>(0);
+  const animationFrameRef = useRef(0);
   const maxDurationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastVoiceActivityRef = useRef<number>(0);
-  const hasVoicedRef = useRef<boolean>(false);
-  const interimTranscriptRef = useRef<string>('');
-  const finalTranscriptRef = useRef<string>('');
+  const lastVoiceActivityRef = useRef(0);
+  const hasVoicedRef = useRef(false);
+  const interimTranscriptRef = useRef('');
+  const finalTranscriptRef = useRef('');
 
   const isSupported = typeof window !== 'undefined' && !!getRecognitionConstructor();
 

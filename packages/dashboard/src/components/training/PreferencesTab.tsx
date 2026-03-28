@@ -9,7 +9,7 @@ import {
 
 export function PreferencesTab() {
   const queryClient = useQueryClient();
-  const [sourceFilter, setSourceFilter] = useState<string>('');
+  const [sourceFilter, setSourceFilter] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['preference-pairs', sourceFilter],

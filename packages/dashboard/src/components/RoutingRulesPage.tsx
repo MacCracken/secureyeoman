@@ -135,7 +135,7 @@ function ruleToForm(r: RoutingRule): RuleFormState {
 export function RoutingRulesPage() {
   const qc = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<RuleFormState>(EMPTY_FORM);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [testParams, setTestParams] = useState({ platform: '', text: '' });
   const [testResult, setTestResult] = useState<{ matched: boolean; reason?: string } | null>(null);

@@ -90,7 +90,7 @@ export function useCatalogInstall(invalidateKeys: string[][]) {
 export function usePersonalityInit(
   personalities: Personality[]
 ): [string, React.Dispatch<React.SetStateAction<string>>] {
-  const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
+  const [selectedPersonalityId, setSelectedPersonalityId] = useState('');
   const initialized = useRef(false);
   const activePersonality = personalities.find((p) => p.isActive);
 

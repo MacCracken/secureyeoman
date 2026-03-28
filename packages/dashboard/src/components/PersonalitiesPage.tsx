@@ -72,7 +72,7 @@ export function PersonalityEditor({
 }: { initialEditingId?: string; onBack?: () => void } = {}) {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [editing, setEditing] = useState<string | null>(initialEditingId === 'new' ? 'new' : null);
+  const [editing, setEditing] = useState(initialEditingId === 'new' ? 'new' : null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Personality | null>(null);
   const [deleteLockedMsg, setDeleteLockedMsg] = useState<string | null>(null);

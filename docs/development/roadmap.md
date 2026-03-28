@@ -6,7 +6,7 @@
 
 ## Hybrid TypeScript/Rust Architecture
 
-**Status**: Phase 1-4 complete. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89. Migration Phases 1-3 complete (bhava 1.1.1 + agnosai 0.25.3 + majra 1.0.0 via NAPI + hoosh gateway with full routing delegation).
+**Status**: Phase 1-5 complete. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89. Migration Phases 1-3 complete (bhava 1.2.0 + agnosai 0.25.3 + majra 1.0.0 via NAPI + hoosh gateway with full routing delegation). Phase 5 (security): all 8 crates now fully bridged to Node.js via sy-napi (26 new NAPI functions across audit, sandbox, tee, privacy).
 
 See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hardware test plan, and per-platform verification checklist.
 
@@ -146,8 +146,9 @@ As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Ifran, Shruti, Ta
 | majra | 1.0.1 | pub/sub (3 tiers), ratelimit, heartbeat, barrier, queue |
 | szal | 1.0.1 | condition eval, template resolution, flow validation, step builder |
 | bote | 0.50.0 | tool registry, schema validation, JSON-RPC protocol |
-| bhava | 1.1.1 | personality engine, traits, mood, spirit |
-| agnosai | 0.25.3 | crew orchestration, model routing, agent scoring |
+| bhava | 1.2.0 | personality engine, traits, mood, spirit |
+| agnosai | 1.0.0 | crew orchestration, model routing, agent scoring |
+| ai-hwaccel | 1.0.0 | hardware accelerator detection (GPU, TPU, NPU, ASIC) via sy-hwprobe |
 
 ### Remaining
 

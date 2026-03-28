@@ -24,8 +24,8 @@ interface StreamPoint {
 
 export function LiveTab() {
   const [lossSeries, setLossSeries] = useState<StreamPoint[]>([]);
-  const [throughput, setThroughput] = useState<number>(0);
-  const [agreement, setAgreement] = useState<number>(0);
+  const [throughput, setThroughput] = useState(0);
+  const [agreement, setAgreement] = useState(0);
   const [rewardSeries, setRewardSeries] = useState<StreamPoint[]>([]);
   const esRef = useRef<EventSource | null>(null);
 

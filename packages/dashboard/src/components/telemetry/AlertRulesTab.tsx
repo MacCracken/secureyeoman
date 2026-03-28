@@ -266,7 +266,7 @@ function RuleForm({
   onCancel: () => void;
   saving: boolean;
 }) {
-  const [form, setForm] = useState<RuleFormState>(initial ?? BLANK_FORM);
+  const [form, setForm] = useState(initial ?? BLANK_FORM);
 
   const set = (k: keyof RuleFormState, v: unknown) => {
     setForm((f) => ({ ...f, [k]: v }));

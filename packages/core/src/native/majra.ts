@@ -632,7 +632,7 @@ export function queueComplete(jobId: string): boolean {
     return native.majraQueueComplete(jobId);
   }
   const job = jsQueue.get(jobId);
-  if (!job || job.state !== 'running') return false;
+  if (job?.state !== 'running') return false;
   job.state = 'completed';
   return true;
 }
@@ -645,7 +645,7 @@ export function queueFail(jobId: string): boolean {
     return native.majraQueueFail(jobId);
   }
   const job = jsQueue.get(jobId);
-  if (!job || job.state !== 'running') return false;
+  if (job?.state !== 'running') return false;
   job.state = 'failed';
   return true;
 }

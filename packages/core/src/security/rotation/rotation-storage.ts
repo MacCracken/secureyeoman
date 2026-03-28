@@ -37,17 +37,14 @@ export class RotationStorage extends PgBaseStorage {
   }
 
   async get(name: string): Promise<SecretMetadata | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM rotation.secret_metadata WHERE name = $1',
-      [name]
-    );
+    const row = await this.queryOne('SELECT * FROM rotation.secret_metadata WHERE name = $1', [
+      name,
+    ]);
     return row ? this.rowToMeta(row) : null;
   }
 
   async getAll(): Promise<SecretMetadata[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM rotation.secret_metadata ORDER BY name'
-    );
+    const rows = await this.queryMany('SELECT * FROM rotation.secret_metadata ORDER BY name');
     return rows.map((r) => this.rowToMeta(r));
   }
 

@@ -32,7 +32,7 @@ const DAY_OPTIONS = [7, 30, 90] as const;
 
 export default function AnalyticsTab() {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('sentiment');
-  const [days, setDays] = useState<number>(30);
+  const [days, setDays] = useState(30);
 
   const { data: personalitiesData } = useQuery({
     queryKey: ['personalities'],

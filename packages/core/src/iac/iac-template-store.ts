@@ -95,10 +95,7 @@ export class IacTemplateStore extends PgBaseStorage {
   }
 
   async getTemplate(id: string): Promise<IacTemplate | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM iac.templates WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM iac.templates WHERE id = $1', [id]);
     return row ? rowToTemplate(row) : null;
   }
 
@@ -129,7 +126,7 @@ export class IacTemplateStore extends PgBaseStorage {
     const offset = opts.offset ?? 0;
 
     // Omit files for list performance
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT id, name, description, tool, cloud_provider, category,
               version, '[]'::jsonb AS files, variables, tags,
               sra_control_ids, policy_bundle_name, commit_sha, ref,
@@ -177,10 +174,7 @@ export class IacTemplateStore extends PgBaseStorage {
   }
 
   async getDeployment(id: string): Promise<IacDeployment | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM iac.deployments WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM iac.deployments WHERE id = $1', [id]);
     return row ? rowToDeployment(row) : null;
   }
 
@@ -189,7 +183,7 @@ export class IacTemplateStore extends PgBaseStorage {
       { column: 'template_name', value: templateName },
     ]);
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM iac.deployments ${where}
        ORDER BY deployed_at DESC LIMIT $${nextIdx}`,
       [...values, Math.min(limit, 200)]

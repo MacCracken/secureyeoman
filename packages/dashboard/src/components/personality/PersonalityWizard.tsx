@@ -35,12 +35,12 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
   const [name, setName] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [description, setDescription] = useState('');
-  const [formality, setFormality] = useState<string>('balanced');
-  const [humor, setHumor] = useState<string>('dry');
-  const [verbosity, setVerbosity] = useState<string>('concise');
-  const [reasoning, setReasoning] = useState<string>('analytical');
+  const [formality, setFormality] = useState('balanced');
+  const [humor, setHumor] = useState('dry');
+  const [verbosity, setVerbosity] = useState('concise');
+  const [reasoning, setReasoning] = useState('analytical');
   const [constraints, setConstraints] = useState('');
-  const [sex, setSex] = useState<string>('unspecified');
+  const [sex, setSex] = useState('unspecified');
   const [error, setError] = useState<string | null>(null);
 
   const stepIndex = STEPS.indexOf(currentStep);

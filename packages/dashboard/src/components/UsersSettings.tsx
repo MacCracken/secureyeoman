@@ -28,7 +28,7 @@ export function UsersSettings() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingUser, setEditingUser] = useState<UserInfo | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<UserInfo | null>(null);
-  const [createForm, setCreateForm] = useState<CreateForm>(EMPTY_CREATE);
+  const [createForm, setCreateForm] = useState(EMPTY_CREATE);
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editIsAdmin, setEditIsAdmin] = useState(false);
 

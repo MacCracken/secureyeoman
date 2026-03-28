@@ -197,7 +197,7 @@ function evaluateConditionJS(expression: string, context: unknown): boolean {
   }
 
   // Handle ==, ===, !=, !==
-  const eqMatch = expression.match(/^(.+?)\s*(===|!==|==|!=)\s*(.+)$/);
+  const eqMatch = /^(.+?)\s*(===|!==|==|!=)\s*(.+)$/.exec(expression);
   if (eqMatch) {
     const left = resolvePath(eqMatch[1]!);
     const rightRaw = eqMatch[3]!.trim();

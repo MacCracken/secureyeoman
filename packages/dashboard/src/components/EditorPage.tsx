@@ -88,7 +88,7 @@ function StandardEditorPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [tabs, setTabs] = useState<EditorTab[]>(() => [createEditorTab('untitled.ts', '/tmp')]);
-  const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id);
+  const [activeTabId, setActiveTabId] = useState(tabs[0].id);
   const [showExplorer, setShowExplorer] = useState(
     () => localStorage.getItem('editor:showExplorer') === 'true'
   );
@@ -131,7 +131,7 @@ function StandardEditorPage() {
   const [showSearch, setShowSearch] = useState(false);
 
   // ── Terminal output ref (feeds watch mode in chat) ──
-  const terminalOutputRef = useRef<string>('');
+  const terminalOutputRef = useRef('');
 
   // ── Memory ──
   const [memoryEnabled, setMemoryEnabled] = useState(

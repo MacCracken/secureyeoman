@@ -88,10 +88,7 @@ export class ChaosStore extends PgBaseStorage {
   }
 
   async getExperiment(id: string): Promise<ChaosExperiment | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM chaos.experiments WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM chaos.experiments WHERE id = $1', [id]);
     return row ? rowToExperiment(row) : null;
   }
 
@@ -114,7 +111,7 @@ export class ChaosStore extends PgBaseStorage {
     const offset = opts.offset ?? 0;
     let idx = nextIdx;
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM chaos.experiments ${where}
        ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
       [...values, limit, offset]
@@ -182,7 +179,7 @@ export class ChaosStore extends PgBaseStorage {
   }
 
   async getResults(experimentId: string): Promise<ChaosExperimentResult[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       `SELECT * FROM chaos.experiment_results
        WHERE experiment_id = $1 ORDER BY created_at DESC`,
       [experimentId]

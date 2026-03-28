@@ -210,6 +210,7 @@ impl LlmClient {
         Ok(data["response"].as_str().unwrap_or("").to_string())
     }
 
+    #[allow(dead_code)]
     pub fn provider_count(&self) -> usize {
         self.providers.len()
     }

@@ -579,7 +579,7 @@ export function EntityWidget({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamsRef = useRef<StreamParticle[]>([]);
   const timeRef = useRef(0);
-  const animRef = useRef<number>(0);
+  const animRef = useRef(0);
   const stateRef = useRef(state);
   const lidRef = useRef(STATE_CONFIG[state].lidOpenness);
   stateRef.current = state;

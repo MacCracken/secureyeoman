@@ -414,7 +414,7 @@ function ActiveDelegationsTab({
 // ── History Tab ───────────────────────────────────────────────────
 
 function HistoryTab() {
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({

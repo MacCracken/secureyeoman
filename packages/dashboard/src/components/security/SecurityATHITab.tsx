@@ -122,7 +122,7 @@ function ScenarioModal({
   onSubmit: (data: ScenarioFormData) => void;
   initial?: ScenarioFormData;
 }) {
-  const [form, setForm] = useState<ScenarioFormData>(
+  const [form, setForm] = useState(
     initial ?? {
       title: '',
       description: '',

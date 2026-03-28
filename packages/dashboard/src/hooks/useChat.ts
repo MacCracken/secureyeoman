@@ -33,9 +33,7 @@ export interface UseChatReturn {
 export function useChat(options?: UseChatOptions): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(
-    options?.conversationId ?? null
-  );
+  const [activeConversationId, setActiveConversationId] = useState(options?.conversationId ?? null);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const prevExternalId = useRef<string | null | undefined>(undefined);
   // Track IDs we auto-created so we don't re-fetch them
@@ -256,9 +254,7 @@ export interface UseChatStreamReturn {
 export function useChatStream(options?: UseChatStreamOptions): UseChatStreamReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isPending, setIsPending] = useState(false);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(
-    options?.conversationId ?? null
-  );
+  const [activeConversationId, setActiveConversationId] = useState(options?.conversationId ?? null);
   const [streamingThinking, setStreamingThinking] = useState('');
   const [streamingContent, setStreamingContent] = useState('');
   const [activeToolCalls, setActiveToolCalls] = useState<ActiveToolCall[]>([]);

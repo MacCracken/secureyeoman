@@ -110,7 +110,7 @@ export function DepartmentFormModal({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [mission, setMission] = useState('');
-  const [appetite, setAppetite] = useState<RiskAppetite>({ ...DEFAULT_APPETITE });
+  const [appetite, setAppetite] = useState({ ...DEFAULT_APPETITE });
   const [targets, setTargets] = useState<ComplianceTarget[]>([]);
 
   // Populate form on open or department change

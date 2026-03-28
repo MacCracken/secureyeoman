@@ -535,7 +535,7 @@ function PoliciesView() {
 }
 
 function DelegationFrameworkView() {
-  const [openTenants, setOpenTenants] = useState<Set<string>>(new Set());
+  const [openTenants, setOpenTenants] = useState(new Set());
   const { data: activeIntentData, isLoading } = useQuery({
     queryKey: ['activeIntent'],
     queryFn: () => fetchActiveIntent().catch(() => null),

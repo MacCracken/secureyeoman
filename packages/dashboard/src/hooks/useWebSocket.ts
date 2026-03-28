@@ -33,7 +33,7 @@ export function useWebSocket(path: string): UseWebSocketReturn {
   const maxReconnectDelay = 30000;
 
   // Track subscribed channels for re-subscription
-  const subscribedChannelsRef = useRef<Set<string>>(new Set());
+  const subscribedChannelsRef = useRef(new Set());
   // Queue messages while disconnected
   const messageQueueRef = useRef<unknown[]>([]);
 

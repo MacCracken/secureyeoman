@@ -15,10 +15,7 @@ use szal::step::{BackoffStrategy, StepDef, TriggerMode};
 ///
 /// Expression format: `steps.build.status == 'completed' && input.env == 'prod'`
 #[napi]
-pub fn szal_evaluate_condition(
-    expression: String,
-    context_json: String,
-) -> napi::Result<bool> {
+pub fn szal_evaluate_condition(expression: String, context_json: String) -> napi::Result<bool> {
     let context: serde_json::Value = serde_json::from_str(&context_json)
         .map_err(|e| napi::Error::from_reason(format!("Invalid context JSON: {e}")))?;
 
@@ -210,8 +207,10 @@ pub fn szal_topological_sort(steps_json: String) -> napi::Result<String> {
 
     let visited: usize = tiers.iter().map(|t| t.len()).sum();
     if visited != steps.len() {
-        let visited_set: std::collections::HashSet<&str> =
-            tiers.iter().flat_map(|t| t.iter().map(|s| s.as_str())).collect();
+        let visited_set: std::collections::HashSet<&str> = tiers
+            .iter()
+            .flat_map(|t| t.iter().map(|s| s.as_str()))
+            .collect();
         let cycle_steps: Vec<&str> = steps
             .iter()
             .filter(|s| !visited_set.contains(s.id.as_str()))

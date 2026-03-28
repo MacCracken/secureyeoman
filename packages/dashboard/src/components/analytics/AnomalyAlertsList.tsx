@@ -31,7 +31,7 @@ function timeAgo(isoString: string): string {
 }
 
 export function AnomalyAlertsList() {
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState('all');
 
   const { data, isLoading } = useQuery({
     queryKey: ['anomalies', typeFilter],

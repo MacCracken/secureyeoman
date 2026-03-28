@@ -300,8 +300,8 @@ const EMPTY_FILTERS: CostHistoryParams = {
 };
 
 function CostHistoryTab() {
-  const [filters, setFilters] = useState<CostHistoryParams>(EMPTY_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState<CostHistoryParams>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
 
   const { data: personalitiesData } = useQuery<{ personalities: Personality[] }>({
     queryKey: ['personalities'],

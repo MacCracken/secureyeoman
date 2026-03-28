@@ -2,10 +2,14 @@
 //! sy-audit, bhava, majra, szal, and bote to Node.js.
 
 mod agnosai;
+mod audit;
 mod bhava;
 mod bote;
 mod majra;
+mod privacy;
+mod sandbox;
 mod szal;
+mod tee;
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;

@@ -47,10 +47,7 @@ export class ExperimentStorage extends PgBaseStorage {
   }
 
   async get(id: string): Promise<Experiment | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM experiment.experiments WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM experiment.experiments WHERE id = $1', [id]);
     return row ? this.rowToExperiment(row) : null;
   }
 
@@ -65,7 +62,7 @@ export class ExperimentStorage extends PgBaseStorage {
       'SELECT COUNT(*) as count FROM experiment.experiments'
     );
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       'SELECT * FROM experiment.experiments ORDER BY created_at DESC LIMIT $1 OFFSET $2',
       [limit, offset]
     );

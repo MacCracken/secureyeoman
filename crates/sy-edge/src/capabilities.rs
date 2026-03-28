@@ -127,9 +127,10 @@ fn detect_tpu() -> bool {
             // Exclude AMD XDNA
             let driver = entry.path().join("device/driver");
             if let Ok(target) = fs::read_link(&driver)
-                && target.to_string_lossy().contains("amdxdna") {
-                    continue;
-                }
+                && target.to_string_lossy().contains("amdxdna")
+            {
+                continue;
+            }
             return true;
         }
     }
@@ -145,9 +146,10 @@ fn detect_npu() -> bool {
         for entry in entries.flatten() {
             let driver = entry.path().join("device/driver");
             if let Ok(target) = fs::read_link(&driver)
-                && target.to_string_lossy().contains("amdxdna") {
-                    return true;
-                }
+                && target.to_string_lossy().contains("amdxdna")
+            {
+                return true;
+            }
         }
     }
     false

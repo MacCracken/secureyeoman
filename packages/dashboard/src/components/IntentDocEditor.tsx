@@ -159,7 +159,7 @@ function GoalsSection({
   onChange: (d: OrgIntentDoc) => void;
 }) {
   const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [draft, setDraft] = useState<OrgIntentGoal>(DEFAULT_GOAL);
+  const [draft, setDraft] = useState(DEFAULT_GOAL);
   const goals = doc.goals ?? [];
 
   const startAdd = () => {
@@ -348,7 +348,7 @@ function SignalsSection({
   onChange: (d: OrgIntentDoc) => void;
 }) {
   const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [draft, setDraft] = useState<OrgIntentSignal>(DEFAULT_SIGNAL);
+  const [draft, setDraft] = useState(DEFAULT_SIGNAL);
   const items = doc.signals ?? [];
 
   const set = (k: keyof OrgIntentSignal, v: unknown) => {
@@ -488,7 +488,7 @@ function DataSourcesSection({
   onChange: (d: OrgIntentDoc) => void;
 }) {
   const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [draft, setDraft] = useState<OrgIntentDataSource>(DEFAULT_DS);
+  const [draft, setDraft] = useState(DEFAULT_DS);
   const items = doc.dataSources ?? [];
   const set = (k: keyof OrgIntentDataSource, v: unknown) => {
     setDraft((d) => ({ ...d, [k]: v }));
@@ -615,7 +615,7 @@ function AuthorizedActionsSection({
   onChange: (d: OrgIntentDoc) => void;
 }) {
   const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [draft, setDraft] = useState<OrgIntentAuthorizedAction>(DEFAULT_ACTION);
+  const [draft, setDraft] = useState(DEFAULT_ACTION);
   const items = doc.authorizedActions ?? [];
   const set = (k: keyof OrgIntentAuthorizedAction, v: unknown) => {
     setDraft((d) => ({ ...d, [k]: v }));
@@ -765,7 +765,7 @@ function TradeoffProfilesSection({
   onChange: (d: OrgIntentDoc) => void;
 }) {
   const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [draft, setDraft] = useState<OrgIntentTradeoffProfile>(DEFAULT_PROFILE);
+  const [draft, setDraft] = useState(DEFAULT_PROFILE);
   const items = doc.tradeoffProfiles ?? [];
   const set = (k: keyof OrgIntentTradeoffProfile, v: unknown) => {
     setDraft((d) => ({ ...d, [k]: v }));
@@ -892,7 +892,7 @@ function HardBoundariesSection({
   onChange: (d: OrgIntentDoc) => void;
 }) {
   const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [draft, setDraft] = useState<OrgIntentHardBoundary>(DEFAULT_BOUNDARY);
+  const [draft, setDraft] = useState(DEFAULT_BOUNDARY);
   const items = doc.hardBoundaries ?? [];
   const set = (k: keyof OrgIntentHardBoundary, v: unknown) => {
     setDraft((d) => ({ ...d, [k]: v }));
@@ -991,7 +991,7 @@ function PoliciesSection({
   onChange: (d: OrgIntentDoc) => void;
 }) {
   const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [draft, setDraft] = useState<OrgIntentPolicy>(DEFAULT_POLICY);
+  const [draft, setDraft] = useState(DEFAULT_POLICY);
   const items = doc.policies ?? [];
   const set = (k: keyof OrgIntentPolicy, v: unknown) => {
     setDraft((d) => ({ ...d, [k]: v }));
@@ -1098,7 +1098,7 @@ function DelegationSection({
   onChange: (d: OrgIntentDoc) => void;
 }) {
   const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [draft, setDraft] = useState<OrgIntentDelegationTenant>(DEFAULT_TENANT);
+  const [draft, setDraft] = useState(DEFAULT_TENANT);
   const items = doc.delegationFramework?.tenants ?? [];
   const save = () => {
     const updated =

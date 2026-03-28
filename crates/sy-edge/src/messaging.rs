@@ -118,6 +118,7 @@ impl Messenger {
         }
     }
 
+    #[allow(dead_code)]
     pub fn target_count(&self) -> usize {
         self.targets.len()
     }

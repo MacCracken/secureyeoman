@@ -167,10 +167,8 @@ export function ChatPage() {
   const hasAuditory = personalityCapabilities.includes('auditory');
 
   const [expandedBrainIdx, setExpandedBrainIdx] = useState<number | null>(null);
-  const [rememberedIndices, setRememberedIndices] = useState<Set<number>>(new Set());
-  const [feedbackGiven, setFeedbackGiven] = useState<Map<number, 'positive' | 'negative'>>(
-    new Map()
-  );
+  const [rememberedIndices, setRememberedIndices] = useState(new Set());
+  const [feedbackGiven, setFeedbackGiven] = useState(new Map());
   const [editingMsgIdx, setEditingMsgIdx] = useState<number | null>(null);
 
   const {

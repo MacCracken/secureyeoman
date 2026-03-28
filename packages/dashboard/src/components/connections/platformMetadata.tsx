@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { type ReactNode } from 'react';
 
 export const LOCAL_MCP_NAME = 'YEOMAN MCP';

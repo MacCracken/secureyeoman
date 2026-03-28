@@ -53,8 +53,8 @@ export function SkillsManager() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [editing, setEditing] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string>('');
-  const [filterSource, setFilterSource] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterSource, setFilterSource] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
   const [saveWarnings, setSaveWarnings] = useState<string[]>([]);
   const [escalationWarning, setEscalationWarning] = useState<string | null>(null);

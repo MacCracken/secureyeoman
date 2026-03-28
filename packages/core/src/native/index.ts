@@ -50,6 +50,13 @@ export interface NativeModule {
   classifyText(text: string): string;
   classifyTextBatch(texts: string[]): string;
 
+  // Privacy engine (stateful, with custom patterns)
+  privacyEngineCreate(engineId: string): void;
+  privacyEngineAddPattern(engineId: string, name: string, pattern: string, level: string): void;
+  privacyEngineClassify(engineId: string, text: string): string;
+  privacyEngineClassifyBatch(engineId: string, texts: string[]): string;
+  privacyEngineDestroy(engineId: string): boolean;
+
   // Bhava personality engine
   bhavaCreateProfile(name: string, traitsJson: string): string;
   bhavaComposeTraitPrompt(traitsJson: string): string;
@@ -151,6 +158,41 @@ export interface NativeModule {
   boteParseJsonrpc(requestJson: string): string;
   boteJsonrpcSuccess(id: string, resultJson: string): string;
   boteJsonrpcError(id: string, code: number, message: string): string;
+
+  // Audit chain
+  auditChainCreate(chainId: string, signingKey: string): void;
+  auditChainRecord(
+    chainId: string,
+    event: string,
+    level: string,
+    message: string,
+    userId: string | null,
+    taskId: string | null,
+    metadataJson: string | null
+  ): string;
+  auditChainVerify(chainId: string): string;
+  auditChainCount(chainId: string): number;
+  auditChainLastHash(chainId: string): string;
+  auditChainRotateKey(chainId: string, newKey: string): void;
+  auditChainDestroy(chainId: string): boolean;
+
+  // Sandbox capabilities
+  sandboxDetectCapabilities(): string;
+  sandboxIsSyscallAllowed(name: string): boolean;
+  sandboxAllowedSyscalls(): string[];
+  sandboxBlockedSyscalls(): string[];
+  sandboxSeccompMode(): string;
+  sandboxLandlockAvailable(): boolean;
+  sandboxLandlockAbi(): number;
+  sandboxCgroupV2(): boolean;
+  sandboxCgroupMemoryLimit(): number | null;
+  sandboxCgroupMemoryCurrent(): number | null;
+
+  // TEE model weight sealing
+  teeSeal(plaintext: Buffer, keySource: string): Buffer;
+  teeUnseal(sealed: Buffer, keySourceOverride: string | null): Buffer;
+  teeIsSealed(data: Buffer): boolean;
+  teeClearKeyCache(): void;
 
   // AgnosAI orchestration engine
   agnosaiRunCrew(specJson: string): Promise<string>;

@@ -43,10 +43,9 @@ export class DashboardStorage extends PgBaseStorage {
   }
 
   async get(id: string): Promise<CustomDashboard | null> {
-    const row = await this.queryOne<Record<string, unknown>>(
-      'SELECT * FROM dashboard.custom_dashboards WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne('SELECT * FROM dashboard.custom_dashboards WHERE id = $1', [
+      id,
+    ]);
     return row ? this.rowToDashboard(row) : null;
   }
 
@@ -61,7 +60,7 @@ export class DashboardStorage extends PgBaseStorage {
       'SELECT COUNT(*) as count FROM dashboard.custom_dashboards'
     );
 
-    const rows = await this.queryMany<Record<string, unknown>>(
+    const rows = await this.queryMany(
       'SELECT * FROM dashboard.custom_dashboards ORDER BY created_at DESC LIMIT $1 OFFSET $2',
       [limit, offset]
     );
