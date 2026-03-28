@@ -29,12 +29,10 @@ use crate::state::AppState;
 /// Build the full axum router with middleware stack.
 pub fn build_router(state: AppState) -> Router {
     // Routes implemented in Rust
-    let api = Router::new().route("/health", get(health::health));
-    // Future phases will add more:
-    // .merge(auth::router())
-    // .merge(brain::router())
-    // .merge(soul::router())
-    // etc.
+    let api = Router::new()
+        .route("/health", get(health::health))
+        .merge(crate::routes::brain::router())
+        .merge(crate::routes::soul::router());
 
     // Fallback: proxy everything else to Fastify
     let app = api.fallback(proxy_to_fastify);

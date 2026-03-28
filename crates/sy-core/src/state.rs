@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 use std::time::Instant;
+use sqlx::PgPool;
 use sy_types::CoreConfig;
 
 use crate::auth::jwt::JwtConfig;
@@ -16,6 +17,7 @@ pub struct AppState {
 struct AppStateInner {
     pub config: CoreConfig,
     pub jwt_config: JwtConfig,
+    pub db_pool: Option<PgPool>,
     pub started_at: Instant,
     pub version: String,
 }
@@ -35,10 +37,22 @@ impl AppState {
             inner: Arc::new(AppStateInner {
                 config,
                 jwt_config,
+                db_pool: None,
                 started_at: Instant::now(),
                 version: env!("CARGO_PKG_VERSION").to_string(),
             }),
         }
+    }
+
+    /// Set the database pool (called after async pool creation).
+    pub fn with_db(mut self, pool: PgPool) -> Self {
+        // Safe: only called during init before any clones
+        Arc::get_mut(&mut self.inner).unwrap().db_pool = Some(pool);
+        self
+    }
+
+    pub fn db(&self) -> Option<&PgPool> {
+        self.inner.db_pool.as_ref()
     }
 
     pub fn config(&self) -> &CoreConfig {

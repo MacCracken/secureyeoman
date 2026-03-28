@@ -9,6 +9,7 @@
 //! Fastify server via a built-in reverse proxy.
 
 mod auth;
+mod db;
 mod middleware;
 mod proxy;
 mod routes;
@@ -32,7 +33,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = sy_types::CoreConfig::default();
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
 
-    let app_state = state::AppState::new(config);
+    let mut app_state = state::AppState::new(config);
+
+    // Connect to database if DATABASE_URL is set
+    match db::pool::create_pool().await {
+        Ok(pool) => {
+            info!("Connected to PostgreSQL");
+            app_state = app_state.with_db(pool);
+        }
+        Err(e) => {
+            info!("No database connection: {e} — brain/soul routes will return 503");
+        }
+    }
+
     let app = server::build_router(app_state);
 
     info!("sy-core listening on {addr}");
