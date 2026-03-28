@@ -10,6 +10,19 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 *Consolidated release — includes all work since 2026.3.18-1.*
 
+### Phase 7.0 — Core Engine Foundation
+
+Scaffolded the Rust axum binary that will replace the Bun/Fastify TypeScript server.
+
+- **sy-core** — New axum binary crate (`crates/sy-core/`) with health endpoint, middleware skeleton (correlation ID, security headers, CORS, compression, tracing), and reverse proxy fallback to Fastify for unmigrated routes
+- **sy-types** — New shared types crate (`crates/sy-types/`) with initial type ports: `HealthResponse`, `ApiError`, `PaginatedResponse`, `AuthUser`, `Permission`, `CoreConfig`, `Memory`, `KnowledgeEntry`, `MemoryType`
+- **Reverse proxy** — `proxy_to_fastify` handler forwards unimplemented routes to `localhost:$FASTIFY_PORT` during migration. 404 when no fallback configured
+- **5 tests** — health endpoint, unknown route 404, correlation ID propagation, security headers
+
+### Ifran/Synapse Rename
+
+Renamed all "Synapse" references to "Ifran" across the codebase (49 files). Directory `integrations/synapse/` → `integrations/ifran/`, all type names, env vars (`SYNAPSE_API_URL` → `IFRAN_API_URL`), service discovery, dashboard, docs.
+
 ### Dependency Upgrades
 
 - **agnosai** — `0.25.3` → `1.0.0` (major version bump, brings hoosh 1.0.0 transitively)

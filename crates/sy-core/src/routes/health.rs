@@ -1,0 +1,51 @@
+//! Health check endpoints — must match the existing TS response shape exactly.
+
+use axum::Json;
+use axum::extract::State;
+use sy_types::HealthResponse;
+
+use crate::state::AppState;
+
+/// GET /health — liveness probe.
+pub async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
+    Json(HealthResponse {
+        status: "ok".to_string(),
+        version: state.version().to_string(),
+        uptime_seconds: state.uptime_seconds(),
+        environment: Some(state.config().environment.clone()),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::Router;
+    use axum::body::Body;
+    use axum::http::Request;
+    use axum::routing::get;
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    fn test_state() -> AppState {
+        AppState::new(sy_types::CoreConfig::default())
+    }
+
+    #[tokio::test]
+    async fn health_returns_ok() {
+        let app = Router::new()
+            .route("/health", get(health))
+            .with_state(test_state());
+
+        let resp = app
+            .oneshot(Request::get("/health").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), 200);
+        let body = resp.into_body().collect().await.unwrap().to_bytes();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["status"], "ok");
+        assert!(json["version"].is_string());
+        assert!(json["uptimeSeconds"].is_number());
+    }
+}

@@ -6,7 +6,7 @@
 
 ## Hybrid TypeScript/Rust Architecture
 
-**Status**: Phase 1-5 complete, Phase 4 (daimon) initial integration done. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89. Migration Phases 1-3 complete (bhava 1.2.0 + agnosai 0.25.3 + majra 1.0.0 via NAPI + hoosh gateway with full routing delegation). Phase 5 (security): all 8 crates now fully bridged to Node.js via sy-napi (26 new NAPI functions across audit, sandbox, tee, privacy).
+**Status**: Phase 1-5 complete, Phase 4 (daimon) initial integration done. Phase 7.0 (core engine foundation) scaffolded — sy-core axum binary + sy-types crate. 8 Rust crates in `crates/` Cargo workspace, 233 tests. Edition 2024, rust-version 1.89. Migration Phases 1-3 complete (bhava 1.2.0 + agnosai 0.25.3 + majra 1.0.0 via NAPI + hoosh gateway with full routing delegation). Phase 5 (security): all 8 crates now fully bridged to Node.js via sy-napi (26 new NAPI functions across audit, sandbox, tee, privacy).
 
 See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hardware test plan, and per-platform verification checklist.
 

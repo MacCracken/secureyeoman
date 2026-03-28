@@ -1,0 +1,108 @@
+//! Server router — builds the axum Router with middleware and routes.
+//!
+//! Middleware order mirrors the 16 Fastify hooks from server.ts:
+//! 1. Tracing (tower-http TraceLayer)
+//! 2. Compression (tower-http CompressionLayer)
+//! 3. Correlation ID
+//! 4. Security headers
+//! 5. CORS (tower-http CorsLayer)
+//!
+//! Stubs for Phase 7.1: backpressure, fingerprinting, IP reputation,
+//! body limits, rate limiting, auth, RBAC.
+//!
+//! Unimplemented routes fall through to the Fastify reverse proxy.
+
+use axum::Router;
+use axum::routing::get;
+use tower_http::compression::CompressionLayer;
+use tower_http::cors::{Any, CorsLayer};
+use tower_http::trace::TraceLayer;
+
+use crate::middleware::correlation_id::CorrelationIdLayer;
+use crate::middleware::security_headers::SecurityHeadersLayer;
+use crate::proxy::proxy_to_fastify;
+use crate::routes::health;
+use crate::state::AppState;
+
+/// Build the full axum router with middleware stack.
+pub fn build_router(state: AppState) -> Router {
+    // Routes implemented in Rust
+    let api = Router::new().route("/health", get(health::health));
+    // Future phases will add more:
+    // .merge(auth::router())
+    // .merge(brain::router())
+    // .merge(soul::router())
+    // etc.
+
+    // Fallback: proxy everything else to Fastify
+    let app = api.fallback(proxy_to_fastify);
+
+    // Middleware stack (outermost = first to execute)
+    app.layer(SecurityHeadersLayer)
+        .layer(CorrelationIdLayer)
+        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
+        .layer(CompressionLayer::new())
+        .layer(TraceLayer::new_for_http())
+        .with_state(state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::Request;
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    fn test_state() -> AppState {
+        AppState::new(sy_types::CoreConfig::default())
+    }
+
+    #[tokio::test]
+    async fn health_endpoint_works() {
+        let app = build_router(test_state());
+        let resp = app
+            .oneshot(Request::get("/health").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), 200);
+        let body = resp.into_body().collect().await.unwrap().to_bytes();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["status"], "ok");
+    }
+
+    #[tokio::test]
+    async fn unknown_route_returns_404_without_fallback() {
+        // No fastify_fallback_port → 404
+        let app = build_router(test_state());
+        let resp = app
+            .oneshot(Request::get("/api/v1/nonexistent").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), 404);
+    }
+
+    #[tokio::test]
+    async fn correlation_id_set_on_response() {
+        let app = build_router(test_state());
+        let resp = app
+            .oneshot(Request::get("/health").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert!(resp.headers().get("x-correlation-id").is_some());
+    }
+
+    #[tokio::test]
+    async fn security_headers_set() {
+        let app = build_router(test_state());
+        let resp = app
+            .oneshot(Request::get("/health").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(
+            resp.headers().get("x-content-type-options").unwrap(),
+            "nosniff"
+        );
+        assert_eq!(resp.headers().get("x-frame-options").unwrap(), "DENY");
+    }
+}
