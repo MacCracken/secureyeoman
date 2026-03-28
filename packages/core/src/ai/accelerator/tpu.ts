@@ -2,7 +2,7 @@
  * TPU family probes — Google TPU v4/v5e/v5p.
  *
  * Detection via /dev/accel* + /sys/class/accel sysfs, matching ai-hwaccel
- * and Synapse detection approaches.
+ * and Ifran detection approaches.
  */
 
 import type { AcceleratorDevice } from './types.js';

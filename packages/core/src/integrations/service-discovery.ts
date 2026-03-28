@@ -23,7 +23,7 @@ export type EcosystemServiceId =
   | 'agnostic'
   | 'agnos'
   | 'daimon'
-  | 'synapse'
+  | 'ifran'
   | 'delta'
   | 'bullshift'
   | 'photisnadi'
@@ -103,14 +103,14 @@ const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
     mcpConfigKey: 'exposeDaimonTools',
   },
   {
-    id: 'synapse',
-    displayName: 'Synapse LLM Controller',
+    id: 'ifran',
+    displayName: 'Ifran LLM Controller',
     description: 'Local LLM model management, inference, and training job orchestration',
-    urlEnv: 'SYNAPSE_API_URL',
+    urlEnv: 'IFRAN_API_URL',
     defaultUrl: 'http://127.0.0.1:8420',
     healthPath: '/health',
     requiredSecrets: [],
-    mcpConfigKey: 'exposeSynapseTools',
+    mcpConfigKey: 'exposeIfranTools',
   },
   {
     id: 'delta',

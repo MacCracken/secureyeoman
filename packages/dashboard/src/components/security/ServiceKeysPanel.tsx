@@ -71,8 +71,8 @@ export const SERVICE_KEYS: ServiceKeyDef[] = [
   },
   { name: 'PHOTISNADI_USER_ID', label: 'Photisnadi User ID', category: 'Yeoman MCP' },
   {
-    name: 'SYNAPSE_API_URL',
-    label: 'Synapse LLM Controller API URL',
+    name: 'IFRAN_API_URL',
+    label: 'Ifran LLM Controller API URL',
     category: 'Yeoman MCP',
     isUrl: true,
   },

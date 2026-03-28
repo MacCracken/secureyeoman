@@ -35,7 +35,7 @@ const LEGACY_MIGRATION_IDS = [
   '006_federated_learning',
   '007_pretrain_jobs',
   // Phase 2 — pre-consolidation tier-split incrementals (now folded into baselines)
-  '008_synapse',
+  '008_ifran',
   '009_security_hardening',
   '010_encrypt_idp_secrets',
   '011_sso_auth_codes',
@@ -49,7 +49,7 @@ const LEGACY_MIGRATION_IDS = [
   '019_spatial',
   '020_relationships',
   '021_auto_secrets',
-  '022_synapse_bridge',
+  '022_ifran_bridge',
   '023_edge_fleet',
   // Phase 3 — incrementals now folded into consolidated baselines
   '004_optimistic_locking',

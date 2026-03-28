@@ -733,7 +733,7 @@ describe('Tier Audit — feature classification', () => {
     expect(ENTERPRISE_FEATURES).toContain('dlp_security');
     expect(ENTERPRISE_FEATURES).toContain('compliance_governance');
     expect(ENTERPRISE_FEATURES).toContain('supply_chain');
-    expect(ENTERPRISE_FEATURES).toContain('synapse');
+    expect(ENTERPRISE_FEATURES).toContain('ifran');
     expect(ENTERPRISE_FEATURES).toContain('break_glass');
     expect(ENTERPRISE_FEATURES).toContain('simulation');
     expect(ENTERPRISE_FEATURES).toContain('edge_fleet');

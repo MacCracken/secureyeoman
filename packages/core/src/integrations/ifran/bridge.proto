@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package synapse.bridge;
+package ifran.bridge;
 
-// ── SynapseBridge ─────────────────────────────────────────────────────────────
-// Matches Synapse's bridge.proto — SY calls these RPCs on Synapse.
-service SynapseBridge {
+// ── IfranBridge ─────────────────────────────────────────────────────────────
+// Matches Ifran's bridge.proto — SY calls these RPCs on Ifran.
+service IfranBridge {
   rpc SubmitTrainingJob(TrainingJobRequest) returns (TrainingJobResponse);
   rpc GetJobStatus(JobStatusRequest) returns (stream JobStatusUpdate);
   rpc PullModel(PullModelRequest) returns (stream PullProgress);
@@ -12,7 +12,7 @@ service SynapseBridge {
   rpc StreamInference(InferenceRequest) returns (stream StreamChunk);
 }
 
-// Matches Synapse's bridge.proto — Synapse calls these RPCs on SY.
+// Matches Ifran's bridge.proto — Ifran calls these RPCs on SY.
 service YeomanBridge {
   rpc RequestGpuAllocation(GpuRequest) returns (GpuAllocation);
   rpc ReportProgress(stream ProgressUpdate) returns (Ack);

@@ -9,7 +9,7 @@
  * Schema is split by license tier (consolidated into 3 baseline files):
  *   001_community.sql  — Core platform, soul, brain, MCP (always applied)
  *   002_pro.sql        — Workflows, analytics, agents, RBAC, voice, delegations (pro+)
- *   003_enterprise.sql — DLP, training, chaos, federated, IaC, synapse,
+ *   003_enterprise.sql — DLP, training, chaos, federated, IaC, ifran,
  *                        simulation, SCIM, edge fleet, etc. (enterprise)
  *
  * Incremental migrations (004_optimistic_locking, 005_delegation_self_ref)

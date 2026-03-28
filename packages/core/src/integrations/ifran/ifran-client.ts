@@ -1,28 +1,28 @@
 /**
- * Synapse REST Client
+ * Ifran REST Client
  *
- * Communicates with a Synapse LLM controller instance via its REST API (port 8420).
+ * Communicates with a Ifran LLM controller instance via its REST API (port 8420).
  * Supports both request/response and SSE streaming endpoints.
  *
- * IMPORTANT: Synapse uses snake_case for all JSON field names. This client
- * transforms between SY's camelCase types and Synapse's wire format at the
+ * IMPORTANT: Ifran uses snake_case for all JSON field names. This client
+ * transforms between SY's camelCase types and Ifran's wire format at the
  * boundary so all internal SY code uses camelCase consistently.
  */
 
 import type { SecureLogger } from '../../logging/logger.js';
 import { toErrorMessage } from '../../utils/errors.js';
 import type {
-  SynapseConfig,
-  SynapseInstance,
-  SynapseTrainingJobRequest,
-  SynapseTrainingJobResponse,
-  SynapseJobStatus,
-  SynapseInferenceRequest,
-  SynapseInferenceResponse,
-  SynapsePullRequest,
-  SynapsePullProgress,
-  SynapseStatusResponse,
-  SynapseJobResponse,
+  IfranConfig,
+  IfranInstance,
+  IfranTrainingJobRequest,
+  IfranTrainingJobResponse,
+  IfranJobStatus,
+  IfranInferenceRequest,
+  IfranInferenceResponse,
+  IfranPullRequest,
+  IfranPullProgress,
+  IfranStatusResponse,
+  IfranJobResponse,
 } from './types.js';
 
 interface FetchOptions {
@@ -33,8 +33,8 @@ interface FetchOptions {
 
 // ── Wire format transformers ────────────────────────────────────────────────
 
-/** Convert Synapse /system/status response → SynapseInstance. */
-function statusToInstance(raw: SynapseStatusResponse, endpoint: string): SynapseInstance {
+/** Convert Ifran /system/status response → IfranInstance. */
+function statusToInstance(raw: IfranStatusResponse, endpoint: string): IfranInstance {
   const gpus = raw.hardware?.gpus ?? [];
   const totalGpuMemoryMb = gpus.reduce((sum, g) => sum + (g.memory_total_mb ?? 0), 0);
   const gpuMemoryFreeMb = gpus.reduce((sum, g) => sum + (g.memory_free_mb ?? 0), 0);
@@ -53,13 +53,13 @@ function statusToInstance(raw: SynapseStatusResponse, endpoint: string): Synapse
     lastHeartbeat: Date.now(),
     // Expose free memory for heartbeat approximation
     _gpuMemoryFreeMb: gpuMemoryFreeMb,
-  } as SynapseInstance & { _gpuMemoryFreeMb: number };
+  } as IfranInstance & { _gpuMemoryFreeMb: number };
 }
 
-/** Convert Synapse JobResponse (snake_case) → SynapseJobStatus (camelCase). */
-function jobResponseToStatus(raw: SynapseJobResponse): SynapseJobStatus {
+/** Convert Ifran JobResponse (snake_case) → IfranJobStatus (camelCase). */
+function jobResponseToStatus(raw: IfranJobResponse): IfranJobStatus {
   return {
-    status: raw.status.toLowerCase() as SynapseJobStatus['status'],
+    status: raw.status.toLowerCase() as IfranJobStatus['status'],
     step: raw.current_step ?? 0,
     totalSteps: raw.total_steps ?? 0,
     loss: raw.current_loss ?? null,
@@ -72,8 +72,8 @@ function jobResponseToStatus(raw: SynapseJobResponse): SynapseJobStatus {
   };
 }
 
-/** Convert SY training request → Synapse snake_case wire format. */
-function trainingRequestToWire(req: SynapseTrainingJobRequest): Record<string, unknown> {
+/** Convert SY training request → Ifran snake_case wire format. */
+function trainingRequestToWire(req: IfranTrainingJobRequest): Record<string, unknown> {
   // Parse configJson for hyperparams and extra options
   const hyperparams: Record<string, unknown> = {
     learning_rate: 2e-4,
@@ -127,7 +127,7 @@ function trainingRequestToWire(req: SynapseTrainingJobRequest): Record<string, u
     }
   }
 
-  // Map SY method names to Synapse TrainingMethod enum values
+  // Map SY method names to Ifran TrainingMethod enum values
   const methodMap: Record<string, string> = {
     full: 'full_fine_tune',
     lora: 'lora',
@@ -157,8 +157,8 @@ function trainingRequestToWire(req: SynapseTrainingJobRequest): Record<string, u
   return wire;
 }
 
-/** Convert SY inference request → Synapse snake_case wire format. */
-function inferenceRequestToWire(req: SynapseInferenceRequest): Record<string, unknown> {
+/** Convert SY inference request → Ifran snake_case wire format. */
+function inferenceRequestToWire(req: IfranInferenceRequest): Record<string, unknown> {
   const wire: Record<string, unknown> = {
     model: req.model,
     prompt: req.prompt,
@@ -171,8 +171,8 @@ function inferenceRequestToWire(req: SynapseInferenceRequest): Record<string, un
   return wire;
 }
 
-/** Convert Synapse inference response → SynapseInferenceResponse. */
-function inferenceResponseFromWire(raw: Record<string, unknown>): SynapseInferenceResponse {
+/** Convert Ifran inference response → IfranInferenceResponse. */
+function inferenceResponseFromWire(raw: Record<string, unknown>): IfranInferenceResponse {
   const usage = raw.usage as Record<string, number> | undefined;
   return {
     text: raw.text as string,
@@ -187,8 +187,8 @@ function inferenceResponseFromWire(raw: Record<string, unknown>): SynapseInferen
   };
 }
 
-/** Convert SY pull request → Synapse snake_case wire format. */
-function pullRequestToWire(req: SynapsePullRequest): Record<string, unknown> {
+/** Convert SY pull request → Ifran snake_case wire format. */
+function pullRequestToWire(req: IfranPullRequest): Record<string, unknown> {
   const wire: Record<string, unknown> = {
     model_name: req.modelName,
     source_url: req.sourceUrl,
@@ -197,50 +197,50 @@ function pullRequestToWire(req: SynapsePullRequest): Record<string, unknown> {
   return wire;
 }
 
-/** Convert Synapse pull progress event → SynapsePullProgress. */
-function pullProgressFromWire(raw: Record<string, unknown>): SynapsePullProgress {
+/** Convert Ifran pull progress event → IfranPullProgress. */
+function pullProgressFromWire(raw: Record<string, unknown>): IfranPullProgress {
   return {
     downloadedBytes: (raw.downloaded_bytes as number) ?? 0,
     totalBytes: (raw.total_bytes as number) ?? 0,
-    state: (raw.state as SynapsePullProgress['state']) ?? 'downloading',
+    state: (raw.state as IfranPullProgress['state']) ?? 'downloading',
   };
 }
 
 // ── Client ──────────────────────────────────────────────────────────────────
 
-export class SynapseClient {
+export class IfranClient {
   private readonly apiUrl: string;
   private readonly timeoutMs: number;
   private readonly logger: SecureLogger;
 
-  constructor(config: SynapseConfig, logger: SecureLogger) {
+  constructor(config: IfranConfig, logger: SecureLogger) {
     this.apiUrl = config.apiUrl.replace(/\/+$/, '');
     this.timeoutMs = config.connectionTimeoutMs;
-    this.logger = logger.child({ component: 'synapse-client' });
+    this.logger = logger.child({ component: 'ifran-client' });
   }
 
-  async getStatus(): Promise<SynapseInstance> {
-    const raw = (await this._fetch('/system/status')) as SynapseStatusResponse;
+  async getStatus(): Promise<IfranInstance> {
+    const raw = (await this._fetch('/system/status')) as IfranStatusResponse;
     return statusToInstance(raw, this.apiUrl);
   }
 
-  async submitTrainingJob(req: SynapseTrainingJobRequest): Promise<SynapseTrainingJobResponse> {
+  async submitTrainingJob(req: IfranTrainingJobRequest): Promise<IfranTrainingJobResponse> {
     this.logger.info(
       { baseModel: req.baseModel, method: req.method },
-      'submitting training job to Synapse'
+      'submitting training job to Ifran'
     );
     const wireBody = trainingRequestToWire(req);
     const res = (await this._fetch('/training/jobs', {
       method: 'POST',
       body: wireBody,
-    })) as SynapseJobResponse;
+    })) as IfranJobResponse;
     return { jobId: res.id };
   }
 
-  async getJobStatus(jobId: string): Promise<SynapseJobStatus> {
+  async getJobStatus(jobId: string): Promise<IfranJobStatus> {
     const raw = (await this._fetch(
       `/training/jobs/${encodeURIComponent(jobId)}`
-    )) as SynapseJobResponse;
+    )) as IfranJobResponse;
     return jobResponseToStatus(raw);
   }
 
@@ -259,7 +259,7 @@ export class SynapseClient {
     return this._fetch(`/training/jobs/${encodeURIComponent(jobId)}/metrics`);
   }
 
-  async *pullModel(req: SynapsePullRequest): AsyncGenerator<SynapsePullProgress> {
+  async *pullModel(req: IfranPullRequest): AsyncGenerator<IfranPullProgress> {
     const wireBody = pullRequestToWire(req);
     for await (const event of this._streamSSE('/marketplace/pull', {
       method: 'POST',
@@ -273,11 +273,8 @@ export class SynapseClient {
     }
   }
 
-  async runInference(req: SynapseInferenceRequest): Promise<SynapseInferenceResponse> {
-    this.logger.debug(
-      { model: req.model, maxTokens: req.maxTokens },
-      'running inference on Synapse'
-    );
+  async runInference(req: IfranInferenceRequest): Promise<IfranInferenceResponse> {
+    this.logger.debug({ model: req.model, maxTokens: req.maxTokens }, 'running inference on Ifran');
     const wireBody = inferenceRequestToWire(req);
     const raw = (await this._fetch('/inference', {
       method: 'POST',
@@ -287,7 +284,7 @@ export class SynapseClient {
   }
 
   async *streamInference(
-    req: SynapseInferenceRequest
+    req: IfranInferenceRequest
   ): AsyncGenerator<{ text: string; done: boolean }> {
     const wireBody = inferenceRequestToWire(req);
     for await (const event of this._streamSSE('/inference/stream', {
@@ -304,7 +301,7 @@ export class SynapseClient {
 
   async listModels(): Promise<unknown[]> {
     const res = await this._fetch('/models');
-    // Synapse returns { data: [...], limit, offset, total } for paginated endpoints
+    // Ifran returns { data: [...], limit, offset, total } for paginated endpoints
     if (res && typeof res === 'object' && 'data' in (res as Record<string, unknown>)) {
       return (res as Record<string, unknown>).data as unknown[];
     }
@@ -320,7 +317,7 @@ export class SynapseClient {
   }
 
   async cancelJob(jobId: string): Promise<unknown> {
-    this.logger.info({ jobId }, 'cancelling training job on Synapse');
+    this.logger.info({ jobId }, 'cancelling training job on Ifran');
     const res = await this._fetch(`/training/jobs/${encodeURIComponent(jobId)}/cancel`, {
       method: 'POST',
     });
@@ -481,14 +478,14 @@ export class SynapseClient {
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => '');
-        throw new Error(`Synapse ${method} ${path} returned ${response.status}: ${errorBody}`);
+        throw new Error(`Ifran ${method} ${path} returned ${response.status}: ${errorBody}`);
       }
 
       return await response.json();
     } catch (err) {
       this.logger.error(
         { endpoint: url, method, error: toErrorMessage(err) },
-        'Synapse request failed'
+        'Ifran request failed'
       );
       throw err;
     }
@@ -514,19 +511,19 @@ export class SynapseClient {
     } catch (err) {
       this.logger.error(
         { endpoint: url, error: toErrorMessage(err) },
-        'Synapse SSE connection failed'
+        'Ifran SSE connection failed'
       );
       throw err;
     }
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '');
-      throw new Error(`Synapse SSE ${method} ${path} returned ${response.status}: ${errorBody}`);
+      throw new Error(`Ifran SSE ${method} ${path} returned ${response.status}: ${errorBody}`);
     }
 
     const body = response.body;
     if (!body) {
-      throw new Error(`Synapse SSE ${method} ${path} returned no body`);
+      throw new Error(`Ifran SSE ${method} ${path} returned no body`);
     }
 
     const reader = body.getReader();

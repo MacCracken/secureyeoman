@@ -228,9 +228,7 @@ export class SecureYeoman {
   private videoStreamManager:
     | import('./body/capture/video-stream-manager.js').VideoStreamManager
     | null = null;
-  private synapseManager:
-    | import('./integrations/synapse/synapse-manager.js').SynapseManager
-    | null = null;
+  private ifranManager: import('./integrations/ifran/ifran-manager.js').IfranManager | null = null;
   private edgeStore: import('./edge/edge-store.js').EdgeStore | null = null;
 
   // CPU usage sampler — updated every getMetrics() call to compute a rolling delta
@@ -742,7 +740,7 @@ export class SecureYeoman {
           notificationManager: this.platformMod.getNotificationManager(),
           chatConversationStorage: this.platformMod.getConversationStorage(),
           soulStorage: null, // SoulStorage is internal to SoulModule
-          getSynapseManager: () => this.synapseManager,
+          getIfranManager: () => this.ifranManager,
         });
         await this.trainingMod.init({ config: this.config, logger: this.logger });
         this.logger.debug('TrainingModule initialized');
@@ -843,25 +841,25 @@ export class SecureYeoman {
         }
       }
 
-      // Step 6e: Initialize Synapse bridge (enterprise, config-gated)
-      if (process.env.SYNAPSE_API_URL) {
-        await this.initOptional('Synapse manager', async () => {
-          const { SynapseManager } = await import('./integrations/synapse/synapse-manager.js');
-          const { SynapseStore } = await import('./integrations/synapse/synapse-store.js');
+      // Step 6e: Initialize Ifran bridge (enterprise, config-gated)
+      if (process.env.IFRAN_API_URL) {
+        await this.initOptional('Ifran manager', async () => {
+          const { IfranManager } = await import('./integrations/ifran/ifran-manager.js');
+          const { IfranStore } = await import('./integrations/ifran/ifran-store.js');
           const pool = getPool();
-          const store = new SynapseStore(pool, this.logger!.child({ component: 'SynapseStore' }));
-          this.synapseManager = new SynapseManager(
+          const store = new IfranStore(pool, this.logger!.child({ component: 'IfranStore' }));
+          this.ifranManager = new IfranManager(
             {
-              apiUrl: process.env.SYNAPSE_API_URL!,
-              grpcUrl: process.env.SYNAPSE_GRPC_URL ?? 'http://localhost:8421',
+              apiUrl: process.env.IFRAN_API_URL!,
+              grpcUrl: process.env.IFRAN_GRPC_URL ?? 'http://localhost:8421',
               enabled: true,
-              heartbeatIntervalMs: Number(process.env.SYNAPSE_HEARTBEAT_MS ?? 10_000),
-              connectionTimeoutMs: Number(process.env.SYNAPSE_TIMEOUT_MS ?? 15_000),
+              heartbeatIntervalMs: Number(process.env.IFRAN_HEARTBEAT_MS ?? 10_000),
+              connectionTimeoutMs: Number(process.env.IFRAN_TIMEOUT_MS ?? 15_000),
             },
             this.logger!,
             store
           );
-          await this.synapseManager.init();
+          await this.ifranManager.init();
         });
       }
 
@@ -1855,9 +1853,9 @@ export class SecureYeoman {
     this.ensureInitialized();
     return this.browserSessionStorage;
   }
-  getSynapseManager(): import('./integrations/synapse/synapse-manager.js').SynapseManager | null {
+  getIfranManager(): import('./integrations/ifran/ifran-manager.js').IfranManager | null {
     this.ensureInitialized();
-    return this.synapseManager;
+    return this.ifranManager;
   }
   getEdgeStore(): import('./edge/edge-store.js').EdgeStore | null {
     this.ensureInitialized();
@@ -2373,9 +2371,9 @@ export class SecureYeoman {
       this.browserSessionStorage.close();
       this.browserSessionStorage = null;
     }
-    if (this.synapseManager) {
-      this.synapseManager.shutdown();
-      this.synapseManager = null;
+    if (this.ifranManager) {
+      this.ifranManager.shutdown();
+      this.ifranManager = null;
     }
 
     // Close PostgreSQL pool last

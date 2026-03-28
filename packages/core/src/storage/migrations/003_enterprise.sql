@@ -1485,13 +1485,13 @@ CREATE INDEX IF NOT EXISTS idx_federated_updates_participant
 
 
 -- ===========================================================================
--- Consolidated from 008_synapse.sql
--- Synapse LLM Controller integration
+-- Consolidated from 008_ifran.sql
+-- Ifran LLM Controller integration
 -- ===========================================================================
 
-CREATE SCHEMA IF NOT EXISTS synapse;
+CREATE SCHEMA IF NOT EXISTS ifran;
 
-CREATE TABLE IF NOT EXISTS synapse.instances (
+CREATE TABLE IF NOT EXISTS ifran.instances (
   id TEXT PRIMARY KEY,
   endpoint TEXT NOT NULL,
   grpc_endpoint TEXT,
@@ -1509,10 +1509,10 @@ CREATE TABLE IF NOT EXISTS synapse.instances (
   metadata JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE TABLE IF NOT EXISTS synapse.delegated_jobs (
+CREATE TABLE IF NOT EXISTS ifran.delegated_jobs (
   id TEXT PRIMARY KEY,
-  synapse_instance_id TEXT NOT NULL REFERENCES synapse.instances(id) ON DELETE CASCADE,
-  synapse_job_id TEXT NOT NULL,
+  ifran_instance_id TEXT NOT NULL REFERENCES ifran.instances(id) ON DELETE CASCADE,
+  ifran_job_id TEXT NOT NULL,
   sy_job_id TEXT,
   sy_job_type TEXT NOT NULL DEFAULT 'finetune',
   base_model TEXT NOT NULL,
@@ -1531,24 +1531,24 @@ CREATE TABLE IF NOT EXISTS synapse.delegated_jobs (
   completed_at BIGINT
 );
 
-CREATE INDEX IF NOT EXISTS idx_delegated_jobs_instance ON synapse.delegated_jobs(synapse_instance_id);
-CREATE INDEX IF NOT EXISTS idx_delegated_jobs_status ON synapse.delegated_jobs(status);
-CREATE INDEX IF NOT EXISTS idx_delegated_jobs_sy_job ON synapse.delegated_jobs(sy_job_id);
+CREATE INDEX IF NOT EXISTS idx_delegated_jobs_instance ON ifran.delegated_jobs(ifran_instance_id);
+CREATE INDEX IF NOT EXISTS idx_delegated_jobs_status ON ifran.delegated_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_delegated_jobs_sy_job ON ifran.delegated_jobs(sy_job_id);
 
-CREATE TABLE IF NOT EXISTS synapse.registered_models (
+CREATE TABLE IF NOT EXISTS ifran.registered_models (
   id TEXT PRIMARY KEY,
-  synapse_instance_id TEXT NOT NULL REFERENCES synapse.instances(id) ON DELETE CASCADE,
+  ifran_instance_id TEXT NOT NULL REFERENCES ifran.instances(id) ON DELETE CASCADE,
   model_name TEXT NOT NULL,
   model_path TEXT NOT NULL,
   base_model TEXT,
   training_method TEXT,
-  job_id TEXT REFERENCES synapse.delegated_jobs(id) ON DELETE SET NULL,
+  job_id TEXT REFERENCES ifran.delegated_jobs(id) ON DELETE SET NULL,
   registered_at BIGINT NOT NULL DEFAULT 0,
   metadata JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX IF NOT EXISTS idx_registered_models_instance ON synapse.registered_models(synapse_instance_id);
-CREATE INDEX IF NOT EXISTS idx_registered_models_name ON synapse.registered_models(model_name);
+CREATE INDEX IF NOT EXISTS idx_registered_models_instance ON ifran.registered_models(ifran_instance_id);
+CREATE INDEX IF NOT EXISTS idx_registered_models_name ON ifran.registered_models(model_name);
 
 
 -- ===========================================================================
@@ -1904,14 +1904,14 @@ CREATE INDEX IF NOT EXISTS idx_entity_groups_personality
 
 
 -- ===========================================================================
--- Consolidated from 022_synapse_bridge.sql
--- Synapse Bridge: inbound jobs, capability announcements, backend tracking
+-- Consolidated from 022_ifran_bridge.sql
+-- Ifran Bridge: inbound jobs, capability announcements, backend tracking
 -- ===========================================================================
 
-CREATE TABLE IF NOT EXISTS synapse.inbound_jobs (
+CREATE TABLE IF NOT EXISTS ifran.inbound_jobs (
   id TEXT PRIMARY KEY,
-  synapse_instance_id TEXT NOT NULL REFERENCES synapse.instances(id) ON DELETE CASCADE,
-  synapse_source_job_id TEXT,
+  ifran_instance_id TEXT NOT NULL REFERENCES ifran.instances(id) ON DELETE CASCADE,
+  ifran_source_job_id TEXT,
   job_type TEXT NOT NULL DEFAULT 'evaluation',
   description TEXT,
   payload JSONB NOT NULL DEFAULT '{}',
@@ -1923,17 +1923,17 @@ CREATE TABLE IF NOT EXISTS synapse.inbound_jobs (
   completed_at BIGINT
 );
 
-CREATE INDEX IF NOT EXISTS idx_inbound_jobs_instance ON synapse.inbound_jobs(synapse_instance_id);
-CREATE INDEX IF NOT EXISTS idx_inbound_jobs_status ON synapse.inbound_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_inbound_jobs_instance ON ifran.inbound_jobs(ifran_instance_id);
+CREATE INDEX IF NOT EXISTS idx_inbound_jobs_status ON ifran.inbound_jobs(status);
 
-CREATE TABLE IF NOT EXISTS synapse.capability_announcements (
+CREATE TABLE IF NOT EXISTS ifran.capability_announcements (
   id TEXT PRIMARY KEY,
-  synapse_instance_id TEXT NOT NULL REFERENCES synapse.instances(id) ON DELETE CASCADE,
+  ifran_instance_id TEXT NOT NULL REFERENCES ifran.instances(id) ON DELETE CASCADE,
   capabilities JSONB NOT NULL DEFAULT '{}',
   announced_at BIGINT NOT NULL DEFAULT 0
 );
 
-CREATE INDEX IF NOT EXISTS idx_cap_announce_instance ON synapse.capability_announcements(synapse_instance_id);
+CREATE INDEX IF NOT EXISTS idx_cap_announce_instance ON ifran.capability_announcements(ifran_instance_id);
 
 DO $$ BEGIN
   ALTER TABLE training.finetune_jobs ADD COLUMN IF NOT EXISTS backend TEXT NOT NULL DEFAULT 'local';
@@ -1941,7 +1941,7 @@ EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  ALTER TABLE training.finetune_jobs ADD COLUMN IF NOT EXISTS synapse_delegated_job_id TEXT;
+  ALTER TABLE training.finetune_jobs ADD COLUMN IF NOT EXISTS ifran_delegated_job_id TEXT;
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
@@ -1951,7 +1951,7 @@ EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  ALTER TABLE training.pretrain_jobs ADD COLUMN IF NOT EXISTS synapse_delegated_job_id TEXT;
+  ALTER TABLE training.pretrain_jobs ADD COLUMN IF NOT EXISTS ifran_delegated_job_id TEXT;
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 

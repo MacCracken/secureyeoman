@@ -1,32 +1,32 @@
 /**
- * Synapse Registry
+ * Ifran Registry
  *
- * Tracks connected Synapse instances and provides selection logic
+ * Tracks connected Ifran instances and provides selection logic
  * for routing training jobs to the best available instance.
  */
 
 import type { SecureLogger } from '../../logging/logger.js';
-import type { SynapseInstance, SynapseHeartbeat } from './types.js';
+import type { IfranInstance, IfranHeartbeat } from './types.js';
 
-export class SynapseRegistry {
-  private readonly instances = new Map<string, SynapseInstance>();
+export class IfranRegistry {
+  private readonly instances = new Map<string, IfranInstance>();
   private readonly gpuMemoryFree = new Map<string, number>();
   private readonly activeJobCounts = new Map<string, number>();
   private readonly logger: SecureLogger;
 
   constructor(logger: SecureLogger) {
-    this.logger = logger.child({ component: 'synapse-registry' });
+    this.logger = logger.child({ component: 'ifran-registry' });
   }
 
   get size(): number {
     return this.instances.size;
   }
 
-  register(instance: SynapseInstance): void {
+  register(instance: IfranInstance): void {
     this.instances.set(instance.id, instance);
     this.logger.info(
       { instanceId: instance.id, endpoint: instance.endpoint, version: instance.version },
-      'registered Synapse instance'
+      'registered Ifran instance'
     );
   }
 
@@ -35,19 +35,19 @@ export class SynapseRegistry {
     this.gpuMemoryFree.delete(instanceId);
     this.activeJobCounts.delete(instanceId);
     if (removed) {
-      this.logger.info({ instanceId }, 'unregistered Synapse instance');
+      this.logger.info({ instanceId }, 'unregistered Ifran instance');
     }
   }
 
-  get(instanceId: string): SynapseInstance | undefined {
+  get(instanceId: string): IfranInstance | undefined {
     return this.instances.get(instanceId);
   }
 
-  list(): SynapseInstance[] {
+  list(): IfranInstance[] {
     return [...this.instances.values()];
   }
 
-  getHealthy(): SynapseInstance[] {
+  getHealthy(): IfranInstance[] {
     return [...this.instances.values()].filter((i) => i.status === 'connected');
   }
 
@@ -56,7 +56,7 @@ export class SynapseRegistry {
    * training method. Falls back to total GPU memory when live data is unavailable.
    * Breaks ties by fewest active training jobs.
    */
-  getBestForTraining(method: string): SynapseInstance | null {
+  getBestForTraining(method: string): IfranInstance | null {
     const candidates = this.getHealthy().filter((i) =>
       i.capabilities.supportedMethods.includes(method)
     );
@@ -75,10 +75,10 @@ export class SynapseRegistry {
     return candidates[0] ?? null;
   }
 
-  updateHeartbeat(instanceId: string, heartbeat: SynapseHeartbeat): void {
+  updateHeartbeat(instanceId: string, heartbeat: IfranHeartbeat): void {
     const instance = this.instances.get(instanceId);
     if (!instance) {
-      this.logger.warn({ instanceId }, 'heartbeat received for unknown Synapse instance');
+      this.logger.warn({ instanceId }, 'heartbeat received for unknown Ifran instance');
       return;
     }
 
@@ -99,7 +99,7 @@ export class SynapseRegistry {
         activeTrainingJobs: heartbeat.activeTrainingJobs,
         loadedModels: heartbeat.loadedModels.length,
       },
-      'Synapse heartbeat processed'
+      'Ifran heartbeat processed'
     );
   }
 
@@ -111,7 +111,7 @@ export class SynapseRegistry {
     const instance = this.instances.get(instanceId);
     if (instance) {
       instance.status = 'disconnected';
-      this.logger.warn({ instanceId }, 'Synapse instance marked disconnected');
+      this.logger.warn({ instanceId }, 'Ifran instance marked disconnected');
     }
   }
 }

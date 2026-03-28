@@ -19,7 +19,7 @@ import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type { AlertManager } from '../telemetry/alert-manager.js';
 import { emitJobCompletion } from '../telemetry/job-completion-events.js';
-import type { SynapseManager } from '../integrations/synapse/synapse-manager.js';
+import type { IfranManager } from '../integrations/ifran/ifran-manager.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,7 +27,7 @@ export type FinetuneStatus = 'pending' | 'running' | 'complete' | 'failed' | 'ca
 
 export type TrainingMethod = 'sft' | 'dpo' | 'rlhf' | 'reward' | 'pretrain';
 
-export type TrainingBackend = 'local' | 'synapse';
+export type TrainingBackend = 'local' | 'ifran';
 
 export interface FinetuneJobConfig {
   name: string;
@@ -49,7 +49,7 @@ export interface FinetuneJobConfig {
   resumeFromCheckpoint?: string;
   rewardModelPath?: string;
   searchId?: string;
-  /** Execute on local Docker (default) or delegate to a remote Synapse instance. */
+  /** Execute on local Docker (default) or delegate to a remote Ifran instance. */
   backend?: TrainingBackend;
 }
 
@@ -81,7 +81,7 @@ export interface FinetuneJob {
   rewardModelPath: string | null;
   searchId: string | null;
   backend: TrainingBackend;
-  synapseDelegatedJobId: string | null;
+  ifranDelegatedJobId: string | null;
 }
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ function rowToJob(row: Record<string, unknown>): FinetuneJob {
     rewardModelPath: (row.reward_model_path as string | null) ?? null,
     searchId: (row.search_id as string | null) ?? null,
     backend: (row.backend as TrainingBackend) ?? 'local',
-    synapseDelegatedJobId: (row.synapse_delegated_job_id as string | null) ?? null,
+    ifranDelegatedJobId: (row.ifran_delegated_job_id as string | null) ?? null,
   };
 }
 
@@ -131,7 +131,7 @@ export class FinetuneManager {
     workDir = '/tmp/secureyeoman-finetune',
     onJobComplete?: (jobId: string, job: FinetuneJob) => Promise<void>,
     private readonly getAlertManager?: () => AlertManager | null,
-    private readonly getSynapseManager?: () => SynapseManager | null
+    private readonly getIfranManager?: () => IfranManager | null
   ) {
     this.workDir = workDir;
     this.onJobComplete = onJobComplete;
@@ -257,9 +257,9 @@ export class FinetuneManager {
       throw new Error(`Job ${jobId} is not pending (status=${job.status})`);
     }
 
-    // ── Synapse backend delegation ──────────────────────────────────────
-    if (job.backend === 'synapse') {
-      await this._startSynapseJob(job);
+    // ── Ifran backend delegation ──────────────────────────────────────
+    if (job.backend === 'ifran') {
+      await this._startIfranJob(job);
       return;
     }
 
@@ -506,15 +506,15 @@ export class FinetuneManager {
    * Register a completed adapter with Ollama via `ollama create`.
    */
   /**
-   * Delegate a job to a remote Synapse instance instead of running Docker locally.
+   * Delegate a job to a remote Ifran instance instead of running Docker locally.
    */
-  private async _startSynapseJob(job: FinetuneJob): Promise<void> {
-    const synapse = this.getSynapseManager?.();
-    if (!synapse?.isAvailable()) {
-      throw new Error('Synapse backend requested but no healthy Synapse instance is available');
+  private async _startIfranJob(job: FinetuneJob): Promise<void> {
+    const ifran = this.getIfranManager?.();
+    if (!ifran?.isAvailable()) {
+      throw new Error('Ifran backend requested but no healthy Ifran instance is available');
     }
 
-    const { response, delegatedJob } = await synapse.delegateTrainingJob(
+    const { response, delegatedJob } = await ifran.delegateTrainingJob(
       {
         baseModel: job.baseModel,
         datasetPath: job.datasetPath,
@@ -533,14 +533,14 @@ export class FinetuneManager {
 
     await this.pool.query(
       `UPDATE training.finetune_jobs
-       SET status='running', container_id=$1, synapse_delegated_job_id=$2
+       SET status='running', container_id=$1, ifran_delegated_job_id=$2
        WHERE id=$3`,
-      [`synapse:${response.jobId}`, delegatedJob?.id ?? null, job.id]
+      [`ifran:${response.jobId}`, delegatedJob?.id ?? null, job.id]
     );
 
     this.logger.info(
-      { jobId: job.id, synapseJobId: response.jobId },
-      'Finetune job delegated to Synapse'
+      { jobId: job.id, ifranJobId: response.jobId },
+      'Finetune job delegated to Ifran'
     );
   }
 

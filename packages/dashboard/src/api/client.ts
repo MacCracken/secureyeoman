@@ -2074,7 +2074,7 @@ export interface McpConfigResponse {
   exposeAgnosTools: boolean;
   exposeBullshiftTools: boolean;
   exposePhotisnadiTools: boolean;
-  exposeSynapseTools: boolean;
+  exposeIfranTools: boolean;
   exposeDeltaTools: boolean;
   exposeVoiceTools: boolean;
   exposeEdgeTools: boolean;
@@ -2120,7 +2120,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeAgnosTools: false,
       exposeBullshiftTools: false,
       exposePhotisnadiTools: false,
-      exposeSynapseTools: false,
+      exposeIfranTools: false,
       exposeDeltaTools: false,
       exposeVoiceTools: false,
       exposeEdgeTools: false,

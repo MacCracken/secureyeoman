@@ -2157,8 +2157,8 @@ describe('ConnectionsPage', () => {
   it('renders ecosystem services section with fetched data', async () => {
     vi.mocked(api.fetchEcosystemServices).mockResolvedValue([
       {
-        name: 'synapse',
-        label: 'Synapse',
+        name: 'ifran',
+        label: 'Ifran',
         enabled: true,
         status: 'connected',
         url: 'http://localhost:8420',

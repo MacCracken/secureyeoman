@@ -1,13 +1,13 @@
 /**
- * Synapse gRPC Bridge
+ * Ifran gRPC Bridge
  *
- * Implements bidirectional gRPC transport between SecureYeoman and Synapse.
+ * Implements bidirectional gRPC transport between SecureYeoman and Ifran.
  *
  * - YeomanBridgeServer: gRPC server on SY side — receives GPU allocation
  *   requests, progress reports, scale-out requests, and model registrations
- *   from Synapse. Matches Synapse's YeomanBridge service definition.
+ *   from Ifran. Matches Ifran's YeomanBridge service definition.
  *
- * - SynapseGrpcClient: gRPC client that connects to Synapse's SynapseBridge
+ * - IfranGrpcClient: gRPC client that connects to Ifran's IfranBridge
  *   service for submitting training jobs, streaming job status, pulling models,
  *   and running inference.
  */
@@ -18,9 +18,9 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import type { SecureLogger } from '../../logging/logger.js';
 import { toErrorMessage } from '../../utils/errors.js';
-import type { SynapseStore } from './synapse-store.js';
-import type { SynapseRegistry } from './synapse-registry.js';
-import type { SynapseBridgeConfig, SynapseStreamMetrics } from './types.js';
+import type { IfranStore } from './ifran-store.js';
+import type { IfranRegistry } from './ifran-registry.js';
+import type { IfranBridgeConfig, IfranStreamMetrics } from './types.js';
 
 // ── Proto loading ────────────────────────────────────────────────────────────
 
@@ -39,16 +39,16 @@ function loadProto(): grpc.GrpcObject {
 }
 
 // ── YeomanBridge Server ──────────────────────────────────────────────────────
-// Implements the YeomanBridge service that Synapse calls into SY.
+// Implements the YeomanBridge service that Ifran calls into SY.
 
 export class YeomanBridgeServer {
   private server: grpc.Server | null = null;
   private readonly logger: SecureLogger;
 
   constructor(
-    private readonly config: SynapseBridgeConfig,
-    private readonly store: SynapseStore,
-    private readonly registry: SynapseRegistry,
+    private readonly config: IfranBridgeConfig,
+    private readonly store: IfranStore,
+    private readonly registry: IfranRegistry,
     logger: SecureLogger
   ) {
     this.logger = logger.child({ component: 'yeoman-bridge-grpc' });
@@ -56,7 +56,7 @@ export class YeomanBridgeServer {
 
   async start(): Promise<void> {
     const proto = loadProto();
-    const bridge = (proto.synapse as grpc.GrpcObject).bridge as grpc.GrpcObject;
+    const bridge = (proto.ifran as grpc.GrpcObject).bridge as grpc.GrpcObject;
     const YeomanBridge = bridge.YeomanBridge as grpc.ServiceClientConstructor;
 
     this.server = new grpc.Server();
@@ -118,7 +118,7 @@ export class YeomanBridgeServer {
       const memoryMb = req.memoryMb as number;
       const gpuCount = req.gpuCount as number;
 
-      this.logger.info({ memoryMb, gpuCount }, 'GPU allocation request received from Synapse');
+      this.logger.info({ memoryMb, gpuCount }, 'GPU allocation request received from Ifran');
 
       // Find healthy instances with available GPU resources.
       // Use heartbeat free memory when available, fall back to total.
@@ -159,8 +159,8 @@ export class YeomanBridgeServer {
         const loss = update.loss as number;
         const step = update.step as number;
 
-        // Find delegated job by Synapse job ID and update it
-        const delegated = await this.store.getDelegatedJobBySynapseId(jobId);
+        // Find delegated job by Ifran job ID and update it
+        const delegated = await this.store.getDelegatedJobByIfranId(jobId);
         if (delegated) {
           await this.store.updateDelegatedJobStatus(delegated.id, {
             status: status.toLowerCase(),
@@ -169,7 +169,7 @@ export class YeomanBridgeServer {
           });
         }
 
-        this.logger.debug({ jobId, status, step, loss }, 'progress update received from Synapse');
+        this.logger.debug({ jobId, status, step, loss }, 'progress update received from Ifran');
       }
 
       callback(null, {});
@@ -188,7 +188,7 @@ export class YeomanBridgeServer {
       const additionalInstances = req.additionalInstances as number;
       const reason = req.reason as string;
 
-      this.logger.info({ additionalInstances, reason }, 'scale-out request received from Synapse');
+      this.logger.info({ additionalInstances, reason }, 'scale-out request received from Ifran');
 
       // For now, SY doesn't auto-scale — return available instance endpoints
       const healthy = this.registry.getHealthy();
@@ -239,10 +239,10 @@ export class YeomanBridgeServer {
   }
 }
 
-// ── SynapseBridge gRPC Client ───────────────────────────────────────────────
-// Connects to Synapse's SynapseBridge service.
+// ── IfranBridge gRPC Client ───────────────────────────────────────────────
+// Connects to Ifran's IfranBridge service.
 
-export class SynapseGrpcClient {
+export class IfranGrpcClient {
   private client: grpc.Client | null = null;
   private readonly logger: SecureLogger;
 
@@ -250,17 +250,17 @@ export class SynapseGrpcClient {
     private readonly grpcUrl: string,
     logger: SecureLogger
   ) {
-    this.logger = logger.child({ component: 'synapse-grpc-client' });
+    this.logger = logger.child({ component: 'ifran-grpc-client' });
   }
 
   connect(): void {
     const proto = loadProto();
-    const bridge = (proto.synapse as grpc.GrpcObject).bridge as grpc.GrpcObject;
-    const SynapseBridge = bridge.SynapseBridge as grpc.ServiceClientConstructor;
+    const bridge = (proto.ifran as grpc.GrpcObject).bridge as grpc.GrpcObject;
+    const IfranBridge = bridge.IfranBridge as grpc.ServiceClientConstructor;
 
     const url = this.grpcUrl.replace(/^https?:\/\//, '');
-    this.client = new SynapseBridge(url, grpc.credentials.createInsecure());
-    this.logger.info({ grpcUrl: url }, 'connected to Synapse gRPC service');
+    this.client = new IfranBridge(url, grpc.credentials.createInsecure());
+    this.logger.info({ grpcUrl: url }, 'connected to Ifran gRPC service');
   }
 
   close(): void {
@@ -273,7 +273,7 @@ export class SynapseGrpcClient {
   /**
    * Stream real-time job status updates.
    */
-  async *streamJobStatus(jobId: string): AsyncGenerator<SynapseStreamMetrics> {
+  async *streamJobStatus(jobId: string): AsyncGenerator<IfranStreamMetrics> {
     if (!this.client) throw new Error('gRPC client not connected');
 
     const call = (

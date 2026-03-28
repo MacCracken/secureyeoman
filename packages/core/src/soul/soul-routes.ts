@@ -930,7 +930,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeTerminal: false,
               exposeBullshift: false,
               exposePhotisnadi: false,
-              exposeSynapse: false,
+              exposeIfran: false,
               exposeDelta: false,
               exposeVoice: false,
               exposeEdge: false,

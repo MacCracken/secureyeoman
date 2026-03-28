@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SynapseStore } from './synapse-store.js';
+import { IfranStore } from './ifran-store.js';
 
 function createMockPool() {
   return {
@@ -17,13 +17,13 @@ function createMockLogger() {
   } as unknown as import('../../logging/logger.js').SecureLogger;
 }
 
-describe('SynapseStore', () => {
-  let store: SynapseStore;
+describe('IfranStore', () => {
+  let store: IfranStore;
   let mockPool: ReturnType<typeof createMockPool>;
 
   beforeEach(() => {
     mockPool = createMockPool();
-    store = new SynapseStore(mockPool, createMockLogger());
+    store = new IfranStore(mockPool, createMockLogger());
   });
 
   describe('upsertInstance', () => {
@@ -44,7 +44,7 @@ describe('SynapseStore', () => {
 
       expect(mockPool.query).toHaveBeenCalledTimes(1);
       const [sql, params] = (mockPool.query as ReturnType<typeof vi.fn>).mock.calls[0]!;
-      expect(sql).toContain('INSERT INTO synapse.instances');
+      expect(sql).toContain('INSERT INTO ifran.instances');
       expect(sql).toContain('ON CONFLICT');
       expect(params[0]).toBe('syn-1');
       expect(params[3]).toBe(2); // gpuCount
@@ -63,7 +63,7 @@ describe('SynapseStore', () => {
 
       expect(mockPool.query).toHaveBeenCalledTimes(1);
       const [sql] = (mockPool.query as ReturnType<typeof vi.fn>).mock.calls[0]!;
-      expect(sql).toContain('UPDATE synapse.instances');
+      expect(sql).toContain('UPDATE ifran.instances');
       expect(sql).toContain('gpu_memory_free_mb');
     });
   });
@@ -83,8 +83,8 @@ describe('SynapseStore', () => {
         rows: [
           {
             id: 'test-uuid',
-            synapse_instance_id: 'syn-1',
-            synapse_job_id: 'sj-1',
+            ifran_instance_id: 'syn-1',
+            ifran_job_id: 'sj-1',
             sy_job_id: 'fj-1',
             sy_job_type: 'finetune',
             base_model: 'llama-7b',
@@ -113,8 +113,8 @@ describe('SynapseStore', () => {
         'finetune'
       );
 
-      expect(result.synapseInstanceId).toBe('syn-1');
-      expect(result.synapseJobId).toBe('sj-1');
+      expect(result.ifranInstanceId).toBe('syn-1');
+      expect(result.ifranJobId).toBe('sj-1');
       expect(result.syJobId).toBe('fj-1');
       expect(result.status).toBe('pending');
     });
@@ -126,8 +126,8 @@ describe('SynapseStore', () => {
         rows: [
           {
             id: 'dj-1',
-            synapse_instance_id: 'syn-1',
-            synapse_job_id: 'sj-1',
+            ifran_instance_id: 'syn-1',
+            ifran_job_id: 'sj-1',
             sy_job_id: null,
             sy_job_type: 'finetune',
             base_model: 'llama-7b',
@@ -165,8 +165,8 @@ describe('SynapseStore', () => {
         rows: [
           {
             id: 'dj-1',
-            synapse_instance_id: 'syn-1',
-            synapse_job_id: 'sj-1',
+            ifran_instance_id: 'syn-1',
+            ifran_job_id: 'sj-1',
             sy_job_id: null,
             sy_job_type: 'finetune',
             base_model: 'llama-7b',
@@ -194,13 +194,13 @@ describe('SynapseStore', () => {
   });
 
   describe('createInboundJob', () => {
-    it('should create an inbound job from Synapse', async () => {
+    it('should create an inbound job from Ifran', async () => {
       (mockPool.query as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         rows: [
           {
             id: 'ij-1',
-            synapse_instance_id: 'syn-1',
-            synapse_source_job_id: 'ssj-1',
+            ifran_instance_id: 'syn-1',
+            ifran_source_job_id: 'ssj-1',
             job_type: 'evaluation',
             description: 'evaluate model X',
             payload: { model: 'llama-7b' },
@@ -215,13 +215,13 @@ describe('SynapseStore', () => {
       });
 
       const result = await store.createInboundJob('syn-1', {
-        synapseSourceJobId: 'ssj-1',
+        ifranSourceJobId: 'ssj-1',
         jobType: 'evaluation',
         description: 'evaluate model X',
         payload: { model: 'llama-7b' },
       });
 
-      expect(result.synapseInstanceId).toBe('syn-1');
+      expect(result.ifranInstanceId).toBe('syn-1');
       expect(result.jobType).toBe('evaluation');
       expect(result.status).toBe('pending');
     });
@@ -233,8 +233,8 @@ describe('SynapseStore', () => {
         rows: [
           {
             id: 'ij-1',
-            synapse_instance_id: 'syn-1',
-            synapse_source_job_id: null,
+            ifran_instance_id: 'syn-1',
+            ifran_source_job_id: null,
             job_type: 'evaluation',
             description: null,
             payload: {},
@@ -268,7 +268,7 @@ describe('SynapseStore', () => {
       });
 
       const [sql] = (mockPool.query as ReturnType<typeof vi.fn>).mock.calls[0]!;
-      expect(sql).toContain('INSERT INTO synapse.capability_announcements');
+      expect(sql).toContain('INSERT INTO ifran.capability_announcements');
     });
   });
 
@@ -278,7 +278,7 @@ describe('SynapseStore', () => {
         rows: [
           {
             id: 'rm-1',
-            synapse_instance_id: 'syn-1',
+            ifran_instance_id: 'syn-1',
             model_name: 'my-finetune',
             model_path: '/models/my-finetune',
             base_model: 'llama-7b',
@@ -325,7 +325,7 @@ describe('SynapseStore', () => {
       await store.listInboundJobs();
 
       const [sql] = (mockPool.query as ReturnType<typeof vi.fn>).mock.calls[0]!;
-      expect(sql).toContain('synapse.inbound_jobs');
+      expect(sql).toContain('ifran.inbound_jobs');
       expect(sql).not.toContain('WHERE');
     });
   });

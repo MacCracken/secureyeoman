@@ -38,7 +38,7 @@ export type LicensedFeature =
   | 'dlp_security'
   | 'compliance_governance'
   | 'supply_chain'
-  | 'synapse'
+  | 'ifran'
   | 'break_glass'
   | 'simulation'
   | 'edge_fleet';
@@ -68,7 +68,7 @@ export const ENTERPRISE_FEATURES: LicensedFeature[] = [
   'dlp_security',
   'compliance_governance',
   'supply_chain',
-  'synapse',
+  'ifran',
   'break_glass',
   'simulation',
   'edge_fleet',
@@ -101,7 +101,7 @@ export const FEATURE_TIER_MAP: Record<LicensedFeature, LicenseTier> = {
   dlp_security: 'enterprise',
   compliance_governance: 'enterprise',
   supply_chain: 'enterprise',
-  synapse: 'enterprise',
+  ifran: 'enterprise',
   break_glass: 'enterprise',
   simulation: 'enterprise',
   edge_fleet: 'enterprise',

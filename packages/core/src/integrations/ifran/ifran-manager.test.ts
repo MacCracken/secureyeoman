@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SynapseManager } from './synapse-manager.js';
-import type { SynapseConfig, SynapseInstance } from './types.js';
-import type { SynapseStore } from './synapse-store.js';
+import { IfranManager } from './ifran-manager.js';
+import type { IfranConfig, IfranInstance } from './types.js';
+import type { IfranStore } from './ifran-store.js';
 
 function createMockLogger() {
   const logger = {
@@ -21,20 +21,20 @@ function createMockStore() {
     markDisconnected: vi.fn(),
     createDelegatedJob: vi.fn().mockResolvedValue({
       id: 'dj-1',
-      synapseInstanceId: 'syn-1',
-      synapseJobId: 'sj-1',
+      ifranInstanceId: 'syn-1',
+      ifranJobId: 'sj-1',
       status: 'pending',
     }),
     getDelegatedJob: vi.fn(),
-    getDelegatedJobBySynapseId: vi.fn(),
+    getDelegatedJobByIfranId: vi.fn(),
     updateDelegatedJobStatus: vi.fn(),
     registerModel: vi.fn(),
     listInstances: vi.fn().mockResolvedValue([]),
     recordCapabilityAnnouncement: vi.fn(),
-  } as unknown as SynapseStore;
+  } as unknown as IfranStore;
 }
 
-const defaultConfig: SynapseConfig = {
+const defaultConfig: IfranConfig = {
   apiUrl: 'http://localhost:8420',
   grpcUrl: 'http://localhost:8421',
   enabled: true,
@@ -42,7 +42,7 @@ const defaultConfig: SynapseConfig = {
   connectionTimeoutMs: 5_000,
 };
 
-function makeInstance(overrides: Partial<SynapseInstance> = {}): SynapseInstance {
+function makeInstance(overrides: Partial<IfranInstance> = {}): IfranInstance {
   return {
     id: 'syn-1',
     endpoint: 'http://localhost:8420',
@@ -59,13 +59,13 @@ function makeInstance(overrides: Partial<SynapseInstance> = {}): SynapseInstance
   };
 }
 
-describe('SynapseManager', () => {
-  let manager: SynapseManager;
+describe('IfranManager', () => {
+  let manager: IfranManager;
   let mockStore: ReturnType<typeof createMockStore>;
 
   beforeEach(() => {
     mockStore = createMockStore();
-    manager = new SynapseManager(defaultConfig, createMockLogger(), mockStore);
+    manager = new IfranManager(defaultConfig, createMockLogger(), mockStore);
   });
 
   describe('constructor', () => {
@@ -76,14 +76,14 @@ describe('SynapseManager', () => {
     });
 
     it('should create manager without store', () => {
-      const noStoreManager = new SynapseManager(defaultConfig, createMockLogger());
+      const noStoreManager = new IfranManager(defaultConfig, createMockLogger());
       expect(noStoreManager.getStore()).toBeNull();
     });
   });
 
   describe('init', () => {
     it('should skip when disabled', async () => {
-      const disabledManager = new SynapseManager(
+      const disabledManager = new IfranManager(
         { ...defaultConfig, enabled: false },
         createMockLogger(),
         mockStore
@@ -101,7 +101,7 @@ describe('SynapseManager', () => {
           datasetPath: '/data/train.jsonl',
           method: 'sft',
         })
-      ).rejects.toThrow('No healthy Synapse instance available');
+      ).rejects.toThrow('No healthy Ifran instance available');
     });
 
     it('should delegate when a healthy instance exists', async () => {
@@ -145,7 +145,7 @@ describe('SynapseManager', () => {
     });
 
     it('should not create delegation record when no store', async () => {
-      const noStoreManager = new SynapseManager(defaultConfig, createMockLogger());
+      const noStoreManager = new IfranManager(defaultConfig, createMockLogger());
       noStoreManager.getRegistry().register(makeInstance());
       vi.spyOn(noStoreManager.getClient(), 'submitTrainingJob').mockResolvedValue({
         jobId: 'sj-3',
@@ -164,7 +164,7 @@ describe('SynapseManager', () => {
     it('should include error message in exception from client', async () => {
       manager.getRegistry().register(makeInstance());
       vi.spyOn(manager.getClient(), 'submitTrainingJob').mockRejectedValue(
-        new Error('Synapse POST /training/jobs returned 400: bad config')
+        new Error('Ifran POST /training/jobs returned 400: bad config')
       );
 
       await expect(
@@ -179,7 +179,7 @@ describe('SynapseManager', () => {
 
   describe('syncDelegatedJobStatus', () => {
     it('should return null when no store', async () => {
-      const managerNoStore = new SynapseManager(defaultConfig, createMockLogger());
+      const managerNoStore = new IfranManager(defaultConfig, createMockLogger());
       const result = await managerNoStore.syncDelegatedJobStatus('dj-1');
       expect(result).toBeNull();
     });
@@ -191,10 +191,10 @@ describe('SynapseManager', () => {
       expect(result).toBeNull();
     });
 
-    it('should sync status from Synapse and update store', async () => {
+    it('should sync status from Ifran and update store', async () => {
       (mockStore.getDelegatedJob as ReturnType<typeof vi.fn>).mockResolvedValue({
         id: 'dj-1',
-        synapseJobId: 'sj-1',
+        ifranJobId: 'sj-1',
       });
       (mockStore.updateDelegatedJobStatus as ReturnType<typeof vi.fn>).mockResolvedValue({
         id: 'dj-1',
@@ -228,7 +228,7 @@ describe('SynapseManager', () => {
     it('should handle null loss by converting to undefined for store', async () => {
       (mockStore.getDelegatedJob as ReturnType<typeof vi.fn>).mockResolvedValue({
         id: 'dj-2',
-        synapseJobId: 'sj-2',
+        ifranJobId: 'sj-2',
       });
       (mockStore.updateDelegatedJobStatus as ReturnType<typeof vi.fn>).mockResolvedValue({
         id: 'dj-2',
@@ -258,11 +258,11 @@ describe('SynapseManager', () => {
     });
 
     it('should return stale job record when getJobStatus throws', async () => {
-      const staleJob = { id: 'dj-3', synapseJobId: 'sj-3', status: 'running' };
+      const staleJob = { id: 'dj-3', ifranJobId: 'sj-3', status: 'running' };
       (mockStore.getDelegatedJob as ReturnType<typeof vi.fn>).mockResolvedValue(staleJob);
 
       vi.spyOn(manager.getClient(), 'getJobStatus').mockRejectedValue(
-        new Error('Synapse unreachable')
+        new Error('Ifran unreachable')
       );
 
       const result = await manager.syncDelegatedJobStatus('dj-3');
@@ -292,7 +292,7 @@ describe('SynapseManager', () => {
     });
 
     it('should warn and skip when no store configured', async () => {
-      const noStoreManager = new SynapseManager(defaultConfig, createMockLogger());
+      const noStoreManager = new IfranManager(defaultConfig, createMockLogger());
       // Should not throw
       await noStoreManager.registerModel('syn-1', {
         modelName: 'test',

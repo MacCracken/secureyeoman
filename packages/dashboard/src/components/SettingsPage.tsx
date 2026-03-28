@@ -1181,7 +1181,7 @@ const FEATURE_LABELS: Record<string, string> = {
   dlp_security: 'Data Loss Prevention',
   compliance_governance: 'Compliance & Governance',
   supply_chain: 'Supply Chain Security',
-  synapse: 'Synapse LLM Controller',
+  ifran: 'Ifran LLM Controller',
   break_glass: 'Break Glass Recovery',
   simulation: 'Simulation Engine',
   edge_fleet: 'Edge Fleet',

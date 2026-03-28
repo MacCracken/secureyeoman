@@ -344,7 +344,7 @@ export class EdgeRuntime {
     const { existsSync, readdirSync, readlinkSync } =
       require('node:fs') as typeof import('node:fs');
     const { join } = require('node:path') as typeof import('node:path');
-    // Google TPU via /dev/accel* (matching ai-hwaccel/Synapse detection)
+    // Google TPU via /dev/accel* (matching ai-hwaccel/Ifran detection)
     if (!existsSync('/sys/class/accel')) return false;
     try {
       const entries = readdirSync('/sys/class/accel');

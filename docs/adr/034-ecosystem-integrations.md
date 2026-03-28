@@ -1,4 +1,4 @@
-# ADR 034: Ecosystem Service Integrations (Synapse, AGNOS, Delta, Shruti)
+# ADR 034: Ecosystem Service Integrations (Ifran, AGNOS, Delta, Shruti)
 
 **Status**: Accepted
 **Date**: 2026-03-10 (consolidated 2026-03-13)
@@ -13,17 +13,17 @@ SecureYeoman integrates with several ecosystem services that extend its capabili
 - **Enterprise licensing** where applicable
 - **Graceful degradation** — SY remains functional when any ecosystem service is unreachable
 
-This ADR consolidates the integration decisions for all four ecosystem services: Synapse (compute backend), AGNOS (agent runtime), Delta (code forge), and Shruti (digital audio workstation).
+This ADR consolidates the integration decisions for all four ecosystem services: Ifran (compute backend), AGNOS (agent runtime), Delta (code forge), and Shruti (digital audio workstation).
 
 ---
 
-## 1. Synapse — LLM Compute Backend
+## 1. Ifran — LLM Compute Backend
 
 **Implementation status**: Fully implemented (2026-03-10)
 
 ### Architecture
 
-SecureYeoman acts as the orchestrator; Synapse acts as the compute backend. SY owns the workflow lifecycle (job creation, scheduling, progress tracking, result storage) while Synapse owns the compute lifecycle (model loading, GPU allocation, training execution, inference serving).
+SecureYeoman acts as the orchestrator; Ifran acts as the compute backend. SY owns the workflow lifecycle (job creation, scheduling, progress tracking, result storage) while Ifran owns the compute lifecycle (model loading, GPU allocation, training execution, inference serving).
 
 ### Communication Protocol
 
@@ -32,56 +32,56 @@ SecureYeoman acts as the orchestrator; Synapse acts as the compute backend. SY o
 
 ### Discovery & Connection
 
-Synapse endpoint is resolved in priority order:
+Ifran endpoint is resolved in priority order:
 
-1. `SYNAPSE_API_URL` environment variable
-2. `synapse.apiUrl` in SecureYeoman config
+1. `IFRAN_API_URL` environment variable
+2. `ifran.apiUrl` in SecureYeoman config
 3. Well-known default: `http://localhost:8420`
 
 ### Health & Degraded Mode
 
-- **Heartbeat**: SY pings Synapse `/health` every 10 seconds.
-- **Capability announcements**: On first successful heartbeat, Synapse reports its available models, GPU count, and supported training backends. SY caches this for routing decisions.
-- **Degraded mode**: When Synapse is unreachable, SY falls back to local Docker execution for training jobs. Inference requests that require Synapse-hosted models return 503 with a descriptive error. The dashboard shows Synapse status as degraded.
+- **Heartbeat**: SY pings Ifran `/health` every 10 seconds.
+- **Capability announcements**: On first successful heartbeat, Ifran reports its available models, GPU count, and supported training backends. SY caches this for routing decisions.
+- **Degraded mode**: When Ifran is unreachable, SY falls back to local Docker execution for training jobs. Inference requests that require Ifran-hosted models return 503 with a descriptive error. The dashboard shows Ifran status as degraded.
 
 ### Training Delegation
 
-FinetuneManager, DistillationManager, and PretrainManager gain a `backend` option (`'local' | 'synapse'`). When set to `'synapse'`:
+FinetuneManager, DistillationManager, and PretrainManager gain a `backend` option (`'local' | 'ifran'`). When set to `'ifran'`:
 
-1. SY serializes the job spec (dataset reference, hyperparameters, base model) and POSTs to Synapse `/v1/jobs`.
-2. Synapse returns a job ID. SY stores the mapping in `synapse.delegated_jobs`.
-3. SY polls Synapse `/v1/jobs/:id` for progress updates, writing them to the existing training job tables.
-4. On completion, Synapse reports the artifact location. SY registers the resulting model in its model registry.
+1. SY serializes the job spec (dataset reference, hyperparameters, base model) and POSTs to Ifran `/v1/jobs`.
+2. Ifran returns a job ID. SY stores the mapping in `ifran.delegated_jobs`.
+3. SY polls Ifran `/v1/jobs/:id` for progress updates, writing them to the existing training job tables.
+4. On completion, Ifran reports the artifact location. SY registers the resulting model in its model registry.
 
 ### Database Schema
 
-A new `synapse` schema with three tables:
+A new `ifran` schema with three tables:
 
 | Table | Purpose |
 |-------|---------|
-| `synapse.instances` | Registered Synapse endpoints with health state, capabilities, last heartbeat |
-| `synapse.delegated_jobs` | Mapping between SY training job IDs and Synapse job IDs, with status sync |
-| `synapse.registered_models` | Models available on Synapse instances, synced from capability announcements |
+| `ifran.instances` | Registered Ifran endpoints with health state, capabilities, last heartbeat |
+| `ifran.delegated_jobs` | Mapping between SY training job IDs and Ifran job IDs, with status sync |
+| `ifran.registered_models` | Models available on Ifran instances, synced from capability announcements |
 
 ### MCP Tools (5 tools)
 
-Gated by enterprise licensing (`synapse` in `FEATURE_TIER_MAP`):
+Gated by enterprise licensing (`ifran` in `FEATURE_TIER_MAP`):
 
 | Tool | Description |
 |------|-------------|
-| `synapse_status` | Check Synapse connectivity and capabilities |
-| `synapse_list_models` | List models available on connected Synapse instances |
-| `synapse_pull_model` | Pull a model to a Synapse instance |
-| `synapse_infer` | Run inference on a Synapse-hosted model |
-| `synapse_submit_job` | Submit a training job to Synapse |
+| `ifran_status` | Check Ifran connectivity and capabilities |
+| `ifran_list_models` | List models available on connected Ifran instances |
+| `ifran_pull_model` | Pull a model to a Ifran instance |
+| `ifran_infer` | Run inference on a Ifran-hosted model |
+| `ifran_submit_job` | Submit a training job to Ifran |
 
 ### Licensing
 
-Synapse integration is gated as an enterprise feature (`synapse` in `FEATURE_TIER_MAP`). Community and pro tiers cannot enable the integration even if a Synapse instance is reachable.
+Ifran integration is gated as an enterprise feature (`ifran` in `FEATURE_TIER_MAP`). Community and pro tiers cannot enable the integration even if a Ifran instance is reachable.
 
 ### Docker Compose
 
-Synapse is added to both the `dev` and `full-dev` compose profiles, using the `ghcr.io/maccracken/synapse:latest` image with GPU passthrough configuration.
+Ifran is added to both the `dev` and `full-dev` compose profiles, using the `ghcr.io/maccracken/ifran:latest` image with GPU passthrough configuration.
 
 ---
 
@@ -354,7 +354,7 @@ shruti:
 
 ### Positive
 
-- **Scalable compute** (Synapse): Training and inference workloads can be offloaded to dedicated GPU infrastructure without modifying SY's workflow logic.
+- **Scalable compute** (Ifran): Training and inference workloads can be offloaded to dedicated GPU infrastructure without modifying SY's workflow logic.
 - **Graceful degradation** (all): Local fallback or non-fatal startup ensures SY remains functional when any ecosystem service is unavailable.
 - **Cross-agent observability** (AGNOS): SY's audit trail and domain events are visible to all AGNOS agents and the AGNOS dashboard.
 - **Shared RAG** (AGNOS): The vector store bridge allows SY to participate in AGNOS's shared knowledge graph without duplicating embeddings.
@@ -367,9 +367,9 @@ shruti:
 
 ### Negative
 
-- **Network dependency** (Synapse): Delegated jobs depend on Synapse availability during execution. Network partitions mid-training require Synapse-side checkpointing to avoid data loss.
+- **Network dependency** (Ifran): Delegated jobs depend on Ifran availability during execution. Network partitions mid-training require Ifran-side checkpointing to avoid data loss.
 - **Additional infrastructure** (all): Operators must deploy and maintain each ecosystem service to use its features.
-- **Schema growth** (Synapse): Three new tables in a dedicated schema add migration complexity.
+- **Schema growth** (Ifran): Three new tables in a dedicated schema add migration complexity.
 - **Runtime coupling** (AGNOS): While non-fatal, the integration adds a dependency on AGNOS availability for full functionality. Degraded mode loses audit forwarding and event pub/sub.
 - **Event volume** (AGNOS): High-throughput SY deployments may generate significant event traffic to AGNOS. The batch/flush mechanism mitigates this but operators should monitor.
 - **Webhook surface area** (Delta): Each new provider adds surface area to the webhook normalization layer. Signature verification and event mapping must be maintained per-provider.
@@ -378,8 +378,8 @@ shruti:
 
 ### Neutral
 
-- Existing local training workflows are unchanged. The Synapse `backend` option defaults to `'local'`.
-- Synapse's gRPC streaming port is reserved but not consumed, avoiding premature protocol coupling.
+- Existing local training workflows are unchanged. The Ifran `backend` option defaults to `'local'`.
+- Ifran's gRPC streaming port is reserved but not consumed, avoiding premature protocol coupling.
 - All existing `agnos_*` MCP tools continue to work unchanged. The lifecycle integration is additive.
 - The `AgnosClient` reuses SY's existing HTTP and circuit breaker infrastructure. No new networking dependencies.
 - Existing CI/CD webhook consumers are unaffected. Delta is additive.
@@ -398,14 +398,14 @@ shruti:
 
 | Service | Status | Port | MCP Tools | License Gate |
 |---------|--------|------|-----------|--------------|
-| Synapse | Fully implemented | 8420 (REST), 8421 (gRPC reserved) | 5 `synapse_*` | Enterprise |
+| Ifran | Fully implemented | 8420 (REST), 8421 (gRPC reserved) | 5 `ifran_*` | Enterprise |
 | AGNOS | Fully implemented | 8090 (runtime), 8088 (LLM gateway) | 20 `agnos_*` (pre-existing) | None |
 | Delta | Fully implemented (Docker/dashboard pending) | 3000 (default) | 10 `delta_*` | None |
 | Shruti | Proposed (awaiting Shruti HTTP server) | 8050 | 10 `shruti_*` (planned) | None |
 
 ## References
 
-- Synapse project: Rust-based LLM controller for model management, inference, and training
+- Ifran project: Rust-based LLM controller for model management, inference, and training
 - AGNOS runtime API: port 8090, LLM gateway port 8088
 - Delta project: Rust-based self-hosted code forge for the AGNOS ecosystem
 - Shruti project: Rust-native DAW with AI agent API (`shruti-ai` crate)
@@ -416,5 +416,5 @@ shruti:
 - `packages/core/src/gateway/cicd-webhook-routes.ts` — webhook ingestion for all providers
 - `packages/mcp/src/tools/manifest.ts` — MCP tool registration
 - `packages/mcp/src/tools/agnos-tools.ts` — AGNOS MCP tools (20 tools)
-- ADR 029: LLM Pre-Training from Scratch (local training pipeline that Synapse can augment)
+- ADR 029: LLM Pre-Training from Scratch (local training pipeline that Ifran can augment)
 - ADR 027: Federated Learning (complementary distributed training approach)

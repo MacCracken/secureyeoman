@@ -118,7 +118,7 @@ import { registerNotionRoutes } from '../integrations/notion/notion-routes.js';
 import { registerGoogleWorkspaceRoutes } from '../integrations/google-workspace-routes.js';
 import { registerTradingRoutes } from '../integrations/trading/trading-routes.js';
 import { registerPhotisnadiRoutes } from '../integrations/photisnadi/photisnadi-routes.js';
-import { registerSynapseRoutes } from '../integrations/synapse/synapse-routes.js';
+import { registerIfranRoutes } from '../integrations/ifran/ifran-routes.js';
 import { registerEdgeFleetRoutes } from '../edge/edge-fleet-routes.js';
 import { registerEcosystemRoutes } from '../integrations/ecosystem-routes.js';
 import { ServiceDiscoveryManager } from '../integrations/service-discovery.js';
@@ -971,11 +971,11 @@ export class GatewayServer {
       // Trading routes are optional — skip on error
     }
 
-    // Synapse LLM controller proxy routes
+    // Ifran LLM controller proxy routes
     try {
-      registerSynapseRoutes(this.app, { secureYeoman: this.secureYeoman });
+      registerIfranRoutes(this.app, { secureYeoman: this.secureYeoman });
     } catch {
-      // Synapse routes are optional — skip on error
+      // Ifran routes are optional — skip on error
     }
 
     // Edge fleet management routes (Phase 14C)

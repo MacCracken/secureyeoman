@@ -1,12 +1,12 @@
 /**
- * Synapse Routes — REST proxy for the Synapse LLM controller.
+ * Ifran Routes — REST proxy for the Ifran LLM controller.
  *
- * Proxies Synapse endpoints (model management, inference, training) so the
- * dashboard and MCP tools can interact with Synapse without direct access.
- * SSE streaming routes relay events from Synapse to the client in real time.
+ * Proxies Ifran endpoints (model management, inference, training) so the
+ * dashboard and MCP tools can interact with Ifran without direct access.
+ * SSE streaming routes relay events from Ifran to the client in real time.
  *
- * NOTE: Synapse uses snake_case for JSON field names. The proxy routes
- * transform between SY's camelCase and Synapse's wire format so callers
+ * NOTE: Ifran uses snake_case for JSON field names. The proxy routes
+ * transform between SY's camelCase and Ifran's wire format so callers
  * (dashboard, MCP) always use camelCase.
  */
 
@@ -14,15 +14,15 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { sendError, toErrorMessage } from '../../utils/errors.js';
 import type { SecureYeoman } from '../../secureyeoman.js';
 import { licenseGuard } from '../../licensing/license-guard.js';
-import type { SynapseInboundJobRequest, SynapseCapabilities } from './types.js';
-import type { SynapseClient } from './synapse-client.js';
+import type { IfranInboundJobRequest, IfranCapabilities } from './types.js';
+import type { IfranClient } from './ifran-client.js';
 
-const SYNAPSE_API_URL = (process.env.SYNAPSE_API_URL ?? 'http://localhost:8420').replace(/\/$/, '');
+const IFRAN_API_URL = (process.env.IFRAN_API_URL ?? 'http://localhost:8420').replace(/\/$/, '');
 
 // ── Helper ──────────────────────────────────────────────────────────────────
 
-async function synapseFetch(path: string, opts?: RequestInit): Promise<Response> {
-  const res = await fetch(`${SYNAPSE_API_URL}${path}`, {
+async function ifranFetch(path: string, opts?: RequestInit): Promise<Response> {
+  const res = await fetch(`${IFRAN_API_URL}${path}`, {
     ...opts,
     headers: {
       'Content-Type': 'application/json',
@@ -37,7 +37,7 @@ async function synapseFetch(path: string, opts?: RequestInit): Promise<Response>
 // ── SSE relay helper ────────────────────────────────────────────────────────
 
 async function relaySSE(reply: FastifyReply, path: string, opts?: RequestInit): Promise<void> {
-  const res = await synapseFetch(path, {
+  const res = await ifranFetch(path, {
     ...opts,
     headers: {
       ...(opts?.headers as Record<string, string> | undefined),
@@ -47,7 +47,7 @@ async function relaySSE(reply: FastifyReply, path: string, opts?: RequestInit): 
 
   if (!res.ok) {
     const errorBody = await res.text().catch(() => '');
-    sendError(reply, res.status >= 500 ? 502 : res.status, `Synapse error: ${errorBody}`);
+    sendError(reply, res.status >= 500 ? 502 : res.status, `Ifran error: ${errorBody}`);
     return;
   }
 
@@ -83,22 +83,22 @@ async function relaySSE(reply: FastifyReply, path: string, opts?: RequestInit): 
 
 // ── Route Registration ──────────────────────────────────────────────────────
 
-export interface SynapseRouteOptions {
+export interface IfranRouteOptions {
   secureYeoman?: SecureYeoman;
 }
 
-/** Get the typed SynapseClient from the manager when available. */
-function getClient(opts?: SynapseRouteOptions): SynapseClient | null {
-  return opts?.secureYeoman?.getSynapseManager()?.getClient() ?? null;
+/** Get the typed IfranClient from the manager when available. */
+function getClient(opts?: IfranRouteOptions): IfranClient | null {
+  return opts?.secureYeoman?.getIfranManager()?.getClient() ?? null;
 }
 
-export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteOptions): void {
-  const featureGuardOpts = licenseGuard('synapse', opts?.secureYeoman);
+export function registerIfranRoutes(app: FastifyInstance, opts?: IfranRouteOptions): void {
+  const featureGuardOpts = licenseGuard('ifran', opts?.secureYeoman);
 
-  // ── GET /api/v1/synapse/status — Synapse status & capabilities ──────────
+  // ── GET /api/v1/ifran/status — Ifran status & capabilities ──────────
 
   app.get(
-    '/api/v1/synapse/status',
+    '/api/v1/ifran/status',
     featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
@@ -107,22 +107,22 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           const data = await client.getStatus();
           return reply.send(data);
         }
-        const res = await synapseFetch('/system/status');
+        const res = await ifranFetch('/system/status');
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, 502, `Synapse status error: ${body}`);
+          return sendError(reply, 502, `Ifran status error: ${body}`);
         }
         return reply.send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse unreachable: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran unreachable: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── GET /api/v1/synapse/models — List available models ──────────────────
+  // ── GET /api/v1/ifran/models — List available models ──────────────────
 
   app.get(
-    '/api/v1/synapse/models',
+    '/api/v1/ifran/models',
     featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
@@ -131,22 +131,22 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           const data = await client.listModels();
           return reply.send(data);
         }
-        const res = await synapseFetch('/models');
+        const res = await ifranFetch('/models');
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, 502, `Synapse models error: ${body}`);
+          return sendError(reply, 502, `Ifran models error: ${body}`);
         }
         return reply.send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse unreachable: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran unreachable: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── GET /api/v1/synapse/models/:id — Get model by ID ───────────────────
+  // ── GET /api/v1/ifran/models/:id — Get model by ID ───────────────────
 
   app.get(
-    '/api/v1/synapse/models/:id',
+    '/api/v1/ifran/models/:id',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
@@ -155,22 +155,22 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           const data = await client.getModel(req.params.id);
           return reply.send(data);
         }
-        const res = await synapseFetch(`/models/${encodeURIComponent(req.params.id)}`);
+        const res = await ifranFetch(`/models/${encodeURIComponent(req.params.id)}`);
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, res.status === 404 ? 404 : 502, `Synapse model error: ${body}`);
+          return sendError(reply, res.status === 404 ? 404 : 502, `Ifran model error: ${body}`);
         }
         return reply.send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse model fetch failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran model fetch failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── DELETE /api/v1/synapse/models/:id — Delete model ───────────────────
+  // ── DELETE /api/v1/ifran/models/:id — Delete model ───────────────────
 
   app.delete(
-    '/api/v1/synapse/models/:id',
+    '/api/v1/ifran/models/:id',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
@@ -179,7 +179,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           await client.deleteModel(req.params.id);
           return reply.code(204).send();
         }
-        const res = await synapseFetch(`/models/${encodeURIComponent(req.params.id)}`, {
+        const res = await ifranFetch(`/models/${encodeURIComponent(req.params.id)}`, {
           method: 'DELETE',
         });
         if (!res.ok) {
@@ -187,20 +187,20 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           return sendError(
             reply,
             res.status === 404 ? 404 : 502,
-            `Synapse model delete error: ${body}`
+            `Ifran model delete error: ${body}`
           );
         }
         return reply.code(204).send();
       } catch (err) {
-        return sendError(reply, 502, `Synapse model delete failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran model delete failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── POST /api/v1/synapse/models/pull — Pull model (SSE progress) ───────
+  // ── POST /api/v1/ifran/models/pull — Pull model (SSE progress) ───────
 
   app.post(
-    '/api/v1/synapse/models/pull',
+    '/api/v1/ifran/models/pull',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
@@ -214,7 +214,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         if (!modelName || !sourceUrl)
           return sendError(reply, 400, 'Missing required fields: modelName, sourceUrl');
 
-        // Transform to Synapse snake_case wire format
+        // Transform to Ifran snake_case wire format
         const wireBody: Record<string, unknown> = {
           model_name: modelName,
           source_url: sourceUrl,
@@ -227,7 +227,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         });
       } catch (err) {
         if (!reply.raw.headersSent) {
-          return sendError(reply, 502, `Synapse pull error: ${toErrorMessage(err)}`);
+          return sendError(reply, 502, `Ifran pull error: ${toErrorMessage(err)}`);
         }
         reply.raw.write(`data: ${JSON.stringify({ error: toErrorMessage(err) })}\n\n`);
         reply.raw.end();
@@ -235,10 +235,10 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
-  // ── POST /api/v1/synapse/inference — Run inference ─────────────────────
+  // ── POST /api/v1/ifran/inference — Run inference ─────────────────────
 
   app.post(
-    '/api/v1/synapse/inference',
+    '/api/v1/ifran/inference',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
@@ -285,26 +285,26 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         if (topK != null) wireBody.top_k = topK;
         if (systemPrompt != null) wireBody.system_prompt = systemPrompt;
 
-        const res = await synapseFetch('/inference', {
+        const res = await ifranFetch('/inference', {
           method: 'POST',
           body: JSON.stringify(wireBody),
         });
 
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, 502, `Synapse inference error: ${body}`);
+          return sendError(reply, 502, `Ifran inference error: ${body}`);
         }
         return reply.send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse inference failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran inference failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── POST /api/v1/synapse/inference/stream — Stream inference (SSE) ─────
+  // ── POST /api/v1/ifran/inference/stream — Stream inference (SSE) ─────
 
   app.post(
-    '/api/v1/synapse/inference/stream',
+    '/api/v1/ifran/inference/stream',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
@@ -343,7 +343,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         });
       } catch (err) {
         if (!reply.raw.headersSent) {
-          return sendError(reply, 502, `Synapse stream error: ${toErrorMessage(err)}`);
+          return sendError(reply, 502, `Ifran stream error: ${toErrorMessage(err)}`);
         }
         reply.raw.write(`data: ${JSON.stringify({ error: toErrorMessage(err) })}\n\n`);
         reply.raw.end();
@@ -351,10 +351,10 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
-  // ── POST /api/v1/synapse/training/jobs — Submit training job ───────────
+  // ── POST /api/v1/ifran/training/jobs — Submit training job ───────────
 
   app.post(
-    '/api/v1/synapse/training/jobs',
+    '/api/v1/ifran/training/jobs',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
@@ -442,7 +442,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         const dataset: Record<string, unknown> = { path: datasetPath ?? '', format: dsFormat };
         if (dsSplit) dataset.split = dsSplit;
         if (maxSamples != null) dataset.max_samples = maxSamples;
-        const res = await synapseFetch('/training/jobs', {
+        const res = await ifranFetch('/training/jobs', {
           method: 'POST',
           body: JSON.stringify({
             base_model: baseModel,
@@ -455,19 +455,19 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, 502, `Synapse training submit error: ${body}`);
+          return sendError(reply, 502, `Ifran training submit error: ${body}`);
         }
         return reply.code(201).send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse training submit failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran training submit failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── GET /api/v1/synapse/training/jobs — List training jobs ─────────────
+  // ── GET /api/v1/ifran/training/jobs — List training jobs ─────────────
 
   app.get(
-    '/api/v1/synapse/training/jobs',
+    '/api/v1/ifran/training/jobs',
     featureGuardOpts,
     async (
       req: FastifyRequest<{ Querystring: { status?: string; limit?: string; offset?: string } }>,
@@ -488,23 +488,23 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
 
         const qs = params.toString();
         const path = `/training/jobs${qs ? `?${qs}` : ''}`;
-        const res = await synapseFetch(path);
+        const res = await ifranFetch(path);
 
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, 502, `Synapse jobs list error: ${body}`);
+          return sendError(reply, 502, `Ifran jobs list error: ${body}`);
         }
         return reply.send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse jobs list failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran jobs list failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── GET /api/v1/synapse/training/jobs/:id — Get specific job ───────────
+  // ── GET /api/v1/ifran/training/jobs/:id — Get specific job ───────────
 
   app.get(
-    '/api/v1/synapse/training/jobs/:id',
+    '/api/v1/ifran/training/jobs/:id',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
@@ -515,22 +515,22 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           return reply.send(data);
         }
 
-        const res = await synapseFetch(`/training/jobs/${encodeURIComponent(id)}`);
+        const res = await ifranFetch(`/training/jobs/${encodeURIComponent(id)}`);
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, res.status === 404 ? 404 : 502, `Synapse job error: ${body}`);
+          return sendError(reply, res.status === 404 ? 404 : 502, `Ifran job error: ${body}`);
         }
         return reply.send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse job fetch failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran job fetch failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── GET /api/v1/synapse/training/jobs/:id/stream — Stream job progress (SSE)
+  // ── GET /api/v1/ifran/training/jobs/:id/stream — Stream job progress (SSE)
 
   app.get(
-    '/api/v1/synapse/training/jobs/:id/stream',
+    '/api/v1/ifran/training/jobs/:id/stream',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
@@ -538,7 +538,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
         await relaySSE(reply, `/training/jobs/${encodeURIComponent(id)}/stream`);
       } catch (err) {
         if (!reply.raw.headersSent) {
-          return sendError(reply, 502, `Synapse stream error: ${toErrorMessage(err)}`);
+          return sendError(reply, 502, `Ifran stream error: ${toErrorMessage(err)}`);
         }
         reply.raw.write(`data: ${JSON.stringify({ error: toErrorMessage(err) })}\n\n`);
         reply.raw.end();
@@ -546,10 +546,10 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
-  // ── GET /api/v1/synapse/training/jobs/:id/checkpoints — List checkpoints
+  // ── GET /api/v1/ifran/training/jobs/:id/checkpoints — List checkpoints
 
   app.get(
-    '/api/v1/synapse/training/jobs/:id/checkpoints',
+    '/api/v1/ifran/training/jobs/:id/checkpoints',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
@@ -558,24 +558,24 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           const data = await client.getJobCheckpoints(req.params.id);
           return reply.send(data);
         }
-        const res = await synapseFetch(
+        const res = await ifranFetch(
           `/training/jobs/${encodeURIComponent(req.params.id)}/checkpoints`
         );
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, 502, `Synapse checkpoints error: ${body}`);
+          return sendError(reply, 502, `Ifran checkpoints error: ${body}`);
         }
         return reply.send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse checkpoints failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran checkpoints failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── GET /api/v1/synapse/training/jobs/:id/metrics — Get metrics summary
+  // ── GET /api/v1/ifran/training/jobs/:id/metrics — Get metrics summary
 
   app.get(
-    '/api/v1/synapse/training/jobs/:id/metrics',
+    '/api/v1/ifran/training/jobs/:id/metrics',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
@@ -584,24 +584,22 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           const data = await client.getJobMetrics(req.params.id);
           return reply.send(data);
         }
-        const res = await synapseFetch(
-          `/training/jobs/${encodeURIComponent(req.params.id)}/metrics`
-        );
+        const res = await ifranFetch(`/training/jobs/${encodeURIComponent(req.params.id)}/metrics`);
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, 502, `Synapse metrics error: ${body}`);
+          return sendError(reply, 502, `Ifran metrics error: ${body}`);
         }
         return reply.send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse metrics failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran metrics failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── POST /api/v1/synapse/training/jobs/:id/cancel — Cancel job ────────
+  // ── POST /api/v1/ifran/training/jobs/:id/cancel — Cancel job ────────
 
   app.post(
-    '/api/v1/synapse/training/jobs/:id/cancel',
+    '/api/v1/ifran/training/jobs/:id/cancel',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
@@ -612,24 +610,24 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           return reply.send(data);
         }
 
-        const res = await synapseFetch(`/training/jobs/${encodeURIComponent(id)}/cancel`, {
+        const res = await ifranFetch(`/training/jobs/${encodeURIComponent(id)}/cancel`, {
           method: 'POST',
         });
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, res.status === 404 ? 404 : 502, `Synapse cancel error: ${body}`);
+          return sendError(reply, res.status === 404 ? 404 : 502, `Ifran cancel error: ${body}`);
         }
         return reply.send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse cancel failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran cancel failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── GET /api/v1/synapse/gpu/telemetry — GPU telemetry ─────────────────
+  // ── GET /api/v1/ifran/gpu/telemetry — GPU telemetry ─────────────────
 
   app.get(
-    '/api/v1/synapse/gpu/telemetry',
+    '/api/v1/ifran/gpu/telemetry',
     featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
@@ -638,72 +636,72 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
           const data = await client.getGpuTelemetry();
           return reply.send(data);
         }
-        const res = await synapseFetch('/system/gpu/telemetry');
+        const res = await ifranFetch('/system/gpu/telemetry');
         if (!res.ok) {
           const body = await res.text().catch(() => '');
-          return sendError(reply, 502, `Synapse telemetry error: ${body}`);
+          return sendError(reply, 502, `Ifran telemetry error: ${body}`);
         }
         return reply.send(await res.json());
       } catch (err) {
-        return sendError(reply, 502, `Synapse telemetry failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran telemetry failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
-  // ── GET /api/v1/synapse/health — Synapse health check ─────────────────
+  // ── GET /api/v1/ifran/health — Ifran health check ─────────────────
 
-  app.get('/api/v1/synapse/health', async (_req: FastifyRequest, reply: FastifyReply) => {
+  app.get('/api/v1/ifran/health', async (_req: FastifyRequest, reply: FastifyReply) => {
     try {
-      const res = await synapseFetch('/health', {
+      const res = await ifranFetch('/health', {
         signal: AbortSignal.timeout(5_000),
       });
 
       if (!res.ok) {
         return reply.code(502).send({
           status: 'unhealthy',
-          synapseUrl: SYNAPSE_API_URL,
+          ifranUrl: IFRAN_API_URL,
           httpStatus: res.status,
         });
       }
 
       const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-      return reply.send({ status: 'healthy', synapseUrl: SYNAPSE_API_URL, ...data });
+      return reply.send({ status: 'healthy', ifranUrl: IFRAN_API_URL, ...data });
     } catch (err) {
       return reply.code(502).send({
         status: 'unreachable',
-        synapseUrl: SYNAPSE_API_URL,
+        ifranUrl: IFRAN_API_URL,
         error: toErrorMessage(err),
       });
     }
   });
 
-  // ── Bidirectional: inbound job delegation (Synapse → SY) ───────────────
+  // ── Bidirectional: inbound job delegation (Ifran → SY) ───────────────
 
-  // POST /api/v1/synapse/bridge/jobs — Synapse submits a job to SY
+  // POST /api/v1/ifran/bridge/jobs — Ifran submits a job to SY
   app.post(
-    '/api/v1/synapse/bridge/jobs',
+    '/api/v1/ifran/bridge/jobs',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
-        Body: SynapseInboundJobRequest & { instanceId: string };
+        Body: IfranInboundJobRequest & { instanceId: string };
       }>,
       reply: FastifyReply
     ) => {
       try {
-        const { instanceId, jobType, description, payload, synapseSourceJobId } =
-          req.body ?? ({} as SynapseInboundJobRequest & { instanceId: string });
+        const { instanceId, jobType, description, payload, ifranSourceJobId } =
+          req.body ?? ({} as IfranInboundJobRequest & { instanceId: string });
         if (!instanceId || !jobType) {
           return sendError(reply, 400, 'Missing required fields: instanceId, jobType');
         }
 
-        const manager = opts?.secureYeoman?.getSynapseManager();
+        const manager = opts?.secureYeoman?.getIfranManager();
         const store = manager?.getStore();
         if (!store) {
-          return sendError(reply, 503, 'Synapse bridge not initialized');
+          return sendError(reply, 503, 'Ifran bridge not initialized');
         }
 
         const job = await store.createInboundJob(instanceId, {
-          synapseSourceJobId,
+          ifranSourceJobId,
           jobType: jobType,
           description,
           payload: payload ?? {},
@@ -715,9 +713,9 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
-  // GET /api/v1/synapse/bridge/jobs — List inbound jobs
+  // GET /api/v1/ifran/bridge/jobs — List inbound jobs
   app.get(
-    '/api/v1/synapse/bridge/jobs',
+    '/api/v1/ifran/bridge/jobs',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
@@ -726,10 +724,10 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
       reply: FastifyReply
     ) => {
       try {
-        const manager = opts?.secureYeoman?.getSynapseManager();
+        const manager = opts?.secureYeoman?.getIfranManager();
         const store = manager?.getStore();
         if (!store) {
-          return sendError(reply, 503, 'Synapse bridge not initialized');
+          return sendError(reply, 503, 'Ifran bridge not initialized');
         }
 
         const { status, instanceId, limit } = req.query;
@@ -745,16 +743,16 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
-  // GET /api/v1/synapse/bridge/jobs/:id — Get inbound job status
+  // GET /api/v1/ifran/bridge/jobs/:id — Get inbound job status
   app.get(
-    '/api/v1/synapse/bridge/jobs/:id',
+    '/api/v1/ifran/bridge/jobs/:id',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        const manager = opts?.secureYeoman?.getSynapseManager();
+        const manager = opts?.secureYeoman?.getIfranManager();
         const store = manager?.getStore();
         if (!store) {
-          return sendError(reply, 503, 'Synapse bridge not initialized');
+          return sendError(reply, 503, 'Ifran bridge not initialized');
         }
 
         const job = await store.getInboundJob(req.params.id);
@@ -766,9 +764,9 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
-  // PATCH /api/v1/synapse/bridge/jobs/:id — Update inbound job (result/completion)
+  // PATCH /api/v1/ifran/bridge/jobs/:id — Update inbound job (result/completion)
   app.patch(
-    '/api/v1/synapse/bridge/jobs/:id',
+    '/api/v1/ifran/bridge/jobs/:id',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
@@ -778,10 +776,10 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
       reply: FastifyReply
     ) => {
       try {
-        const manager = opts?.secureYeoman?.getSynapseManager();
+        const manager = opts?.secureYeoman?.getIfranManager();
         const store = manager?.getStore();
         if (!store) {
-          return sendError(reply, 503, 'Synapse bridge not initialized');
+          return sendError(reply, 503, 'Ifran bridge not initialized');
         }
 
         const updated = await store.updateInboundJob(req.params.id, req.body ?? {});
@@ -793,27 +791,27 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
-  // POST /api/v1/synapse/bridge/capabilities — Receive capability announcement
+  // POST /api/v1/ifran/bridge/capabilities — Receive capability announcement
   app.post(
-    '/api/v1/synapse/bridge/capabilities',
+    '/api/v1/ifran/bridge/capabilities',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
-        Body: { instanceId: string; capabilities: SynapseCapabilities };
+        Body: { instanceId: string; capabilities: IfranCapabilities };
       }>,
       reply: FastifyReply
     ) => {
       try {
         const { instanceId, capabilities } =
-          req.body ?? ({} as { instanceId?: string; capabilities?: SynapseCapabilities });
+          req.body ?? ({} as { instanceId?: string; capabilities?: IfranCapabilities });
         if (!instanceId || !capabilities) {
           return sendError(reply, 400, 'Missing required fields: instanceId, capabilities');
         }
 
-        const manager = opts?.secureYeoman?.getSynapseManager();
+        const manager = opts?.secureYeoman?.getIfranManager();
         const store = manager?.getStore();
         if (!store) {
-          return sendError(reply, 503, 'Synapse bridge not initialized');
+          return sendError(reply, 503, 'Ifran bridge not initialized');
         }
 
         // Record announcement and update registry
@@ -841,14 +839,14 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
-  // POST /api/v1/synapse/bridge/webhook — Job completion callback from Synapse
+  // POST /api/v1/ifran/bridge/webhook — Job completion callback from Ifran
   app.post(
-    '/api/v1/synapse/bridge/webhook',
+    '/api/v1/ifran/bridge/webhook',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
         Body: {
-          synapseJobId: string;
+          ifranJobId: string;
           status: string;
           modelOutputPath?: string;
           errorMessage?: string;
@@ -860,21 +858,21 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
       reply: FastifyReply
     ) => {
       try {
-        const { synapseJobId, status, modelOutputPath, errorMessage, step, loss, epoch } =
+        const { ifranJobId, status, modelOutputPath, errorMessage, step, loss, epoch } =
           req.body ?? ({} as Record<string, unknown>);
-        if (!synapseJobId || !status) {
-          return sendError(reply, 400, 'Missing required fields: synapseJobId, status');
+        if (!ifranJobId || !status) {
+          return sendError(reply, 400, 'Missing required fields: ifranJobId, status');
         }
 
-        const manager = opts?.secureYeoman?.getSynapseManager();
+        const manager = opts?.secureYeoman?.getIfranManager();
         const store = manager?.getStore();
         if (!store) {
-          return sendError(reply, 503, 'Synapse bridge not initialized');
+          return sendError(reply, 503, 'Ifran bridge not initialized');
         }
 
-        const delegated = await store.getDelegatedJobBySynapseId(synapseJobId);
+        const delegated = await store.getDelegatedJobByIfranId(ifranJobId);
         if (!delegated) {
-          return sendError(reply, 404, `No delegated job found for synapseJobId: ${synapseJobId}`);
+          return sendError(reply, 404, `No delegated job found for ifranJobId: ${ifranJobId}`);
         }
 
         await store.updateDelegatedJobStatus(delegated.id, {
@@ -893,9 +891,9 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     }
   );
 
-  // GET /api/v1/synapse/bridge/delegated-jobs — List delegated jobs (SY → Synapse)
+  // GET /api/v1/ifran/bridge/delegated-jobs — List delegated jobs (SY → Ifran)
   app.get(
-    '/api/v1/synapse/bridge/delegated-jobs',
+    '/api/v1/ifran/bridge/delegated-jobs',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
@@ -904,10 +902,10 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
       reply: FastifyReply
     ) => {
       try {
-        const manager = opts?.secureYeoman?.getSynapseManager();
+        const manager = opts?.secureYeoman?.getIfranManager();
         const store = manager?.getStore();
         if (!store) {
-          return sendError(reply, 503, 'Synapse bridge not initialized');
+          return sendError(reply, 503, 'Ifran bridge not initialized');
         }
 
         const { status, instanceId, limit } = req.query;
@@ -926,46 +924,51 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
   // ── Evaluation ─────────────────────────────────────────────────────────
 
   app.post(
-    '/api/v1/synapse/eval/runs',
+    '/api/v1/ifran/eval/runs',
     featureGuardOpts,
-    async (req: FastifyRequest<{ Body: { modelId: string; benchmarks: string[]; datasetPath?: string } }>, reply: FastifyReply) => {
+    async (
+      req: FastifyRequest<{
+        Body: { modelId: string; benchmarks: string[]; datasetPath?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const result = await client.createEvalRun(req.body);
         return reply.send(result);
       } catch (err) {
-        return sendError(reply, 502, `Synapse eval create failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran eval create failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
   app.get(
-    '/api/v1/synapse/eval/runs',
+    '/api/v1/ifran/eval/runs',
     featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const runs = await client.listEvalRuns();
         return reply.send(runs);
       } catch (err) {
-        return sendError(reply, 502, `Synapse eval list failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran eval list failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
   app.get(
-    '/api/v1/synapse/eval/runs/:runId',
+    '/api/v1/ifran/eval/runs/:runId',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { runId: string } }>, reply: FastifyReply) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const run = await client.getEvalRun(req.params.runId);
         return reply.send(run);
       } catch (err) {
-        return sendError(reply, 502, `Synapse eval get failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran eval get failed: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -973,7 +976,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
   // ── Experiments (Hyperparameter Sweeps) ────────────────────────────────
 
   app.post(
-    '/api/v1/synapse/experiments',
+    '/api/v1/ifran/experiments',
     featureGuardOpts,
     async (
       req: FastifyRequest<{
@@ -989,26 +992,26 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     ) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const result = await client.createExperiment(req.body);
         return reply.send(result);
       } catch (err) {
-        return sendError(reply, 502, `Synapse experiment create failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran experiment create failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
   app.get(
-    '/api/v1/synapse/experiments/:experimentId',
+    '/api/v1/ifran/experiments/:experimentId',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { experimentId: string } }>, reply: FastifyReply) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const result = await client.getExperiment(req.params.experimentId);
         return reply.send(result);
       } catch (err) {
-        return sendError(reply, 502, `Synapse experiment get failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran experiment get failed: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -1016,31 +1019,31 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
   // ── Marketplace ────────────────────────────────────────────────────────
 
   app.get(
-    '/api/v1/synapse/marketplace/models',
+    '/api/v1/ifran/marketplace/models',
     featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const models = await client.listMarketplaceModels();
         return reply.send(models);
       } catch (err) {
-        return sendError(reply, 502, `Synapse marketplace list failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran marketplace list failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
   app.post(
-    '/api/v1/synapse/marketplace/models/:modelId/pull',
+    '/api/v1/ifran/marketplace/models/:modelId/pull',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { modelId: string } }>, reply: FastifyReply) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const result = await client.pullMarketplaceModel(req.params.modelId);
         return reply.send(result);
       } catch (err) {
-        return sendError(reply, 502, `Synapse marketplace pull failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran marketplace pull failed: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -1048,64 +1051,70 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
   // ── RLHF Annotation ───────────────────────────────────────────────────
 
   app.post(
-    '/api/v1/synapse/rlhf/sessions',
+    '/api/v1/ifran/rlhf/sessions',
     featureGuardOpts,
-    async (req: FastifyRequest<{ Body: { modelId: string; name?: string } }>, reply: FastifyReply) => {
+    async (
+      req: FastifyRequest<{ Body: { modelId: string; name?: string } }>,
+      reply: FastifyReply
+    ) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const result = await client.createRlhfSession(req.body);
         return reply.send(result);
       } catch (err) {
-        return sendError(reply, 502, `Synapse RLHF session create failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran RLHF session create failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
   app.get(
-    '/api/v1/synapse/rlhf/sessions/:sessionId',
+    '/api/v1/ifran/rlhf/sessions/:sessionId',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { sessionId: string } }>, reply: FastifyReply) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const result = await client.getRlhfSession(req.params.sessionId);
         return reply.send(result);
       } catch (err) {
-        return sendError(reply, 502, `Synapse RLHF session get failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran RLHF session get failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
   app.post(
-    '/api/v1/synapse/rlhf/sessions/:sessionId/annotate',
+    '/api/v1/ifran/rlhf/sessions/:sessionId/annotate',
     featureGuardOpts,
     async (
-      req: FastifyRequest<{ Params: { sessionId: string }; Body: { pairId: string; preferred: 'a' | 'b' } }>,
+      req: FastifyRequest<{
+        Params: { sessionId: string };
+        Body: { pairId: string; preferred: 'a' | 'b' };
+      }>,
       reply: FastifyReply
     ) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const result = await client.submitRlhfAnnotation(req.params.sessionId, req.body);
         return reply.send(result);
       } catch (err) {
-        return sendError(reply, 502, `Synapse RLHF annotate failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran RLHF annotate failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
   app.post(
-    '/api/v1/synapse/rlhf/sessions/:sessionId/export-dpo',
+    '/api/v1/ifran/rlhf/sessions/:sessionId/export-dpo',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { sessionId: string } }>, reply: FastifyReply) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const result = await client.exportRlhfForDpo(req.params.sessionId);
         return reply.send(result);
       } catch (err) {
-        return sendError(reply, 502, `Synapse RLHF export failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran RLHF export failed: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -1113,7 +1122,7 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
   // ── Lineage ────────────────────────────────────────────────────────────
 
   app.get(
-    '/api/v1/synapse/lineage/:modelId/ancestry',
+    '/api/v1/ifran/lineage/:modelId/ancestry',
     featureGuardOpts,
     async (
       req: FastifyRequest<{ Params: { modelId: string }; Querystring: { maxDepth?: string } }>,
@@ -1121,12 +1130,12 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
     ) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const maxDepth = req.query.maxDepth ? Number(req.query.maxDepth) : undefined;
         const lineage = await client.getModelLineage(req.params.modelId, maxDepth);
         return reply.send(lineage);
       } catch (err) {
-        return sendError(reply, 502, `Synapse lineage get failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran lineage get failed: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -1134,31 +1143,31 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
   // ── Fleet ──────────────────────────────────────────────────────────────
 
   app.get(
-    '/api/v1/synapse/fleet/nodes',
+    '/api/v1/ifran/fleet/nodes',
     featureGuardOpts,
     async (_req: FastifyRequest, reply: FastifyReply) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const nodes = await client.listFleetNodes();
         return reply.send(nodes);
       } catch (err) {
-        return sendError(reply, 502, `Synapse fleet list failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran fleet list failed: ${toErrorMessage(err)}`);
       }
     }
   );
 
   app.get(
-    '/api/v1/synapse/fleet/nodes/:nodeId',
+    '/api/v1/ifran/fleet/nodes/:nodeId',
     featureGuardOpts,
     async (req: FastifyRequest<{ Params: { nodeId: string } }>, reply: FastifyReply) => {
       try {
         const client = getClient(opts);
-        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        if (!client) return sendError(reply, 503, 'Ifran not connected');
         const node = await client.getFleetNode(req.params.nodeId);
         return reply.send(node);
       } catch (err) {
-        return sendError(reply, 502, `Synapse fleet node get failed: ${toErrorMessage(err)}`);
+        return sendError(reply, 502, `Ifran fleet node get failed: ${toErrorMessage(err)}`);
       }
     }
   );

@@ -202,7 +202,7 @@ export interface Personality {
       exposeGithub?: boolean;
       exposeDocker?: boolean;
       exposeTerminal?: boolean;
-      exposeSynapse?: boolean;
+      exposeIfran?: boolean;
       exposeDelta?: boolean;
       exposeVoice?: boolean;
       exposeEdge?: boolean;
@@ -323,7 +323,7 @@ export interface PersonalityCreate {
       exposeGithub?: boolean;
       exposeDocker?: boolean;
       exposeTerminal?: boolean;
-      exposeSynapse?: boolean;
+      exposeIfran?: boolean;
       exposeDelta?: boolean;
       exposeVoice?: boolean;
       exposeEdge?: boolean;
@@ -928,7 +928,7 @@ export interface McpFeatureConfig {
   exposeAgnosTools: boolean;
   exposeBullshiftTools: boolean;
   exposePhotisnadiTools: boolean;
-  exposeSynapseTools: boolean;
+  exposeIfranTools: boolean;
   exposeDeltaTools: boolean;
   exposeVoiceTools: boolean;
   exposeEdgeTools: boolean;

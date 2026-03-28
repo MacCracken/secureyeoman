@@ -76,7 +76,7 @@ export interface McpFeatureConfig {
   // Ecosystem service tools
   exposeBullshiftTools: boolean;
   exposePhotisnadiTools: boolean;
-  exposeSynapseTools: boolean;
+  exposeIfranTools: boolean;
   exposeDeltaTools: boolean;
   exposeEdgeTools: boolean;
   exposeVoiceTools: boolean;
@@ -122,7 +122,7 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   exposeAgnosTools: false,
   exposeBullshiftTools: false,
   exposePhotisnadiTools: false,
-  exposeSynapseTools: false,
+  exposeIfranTools: false,
   exposeDeltaTools: false,
   exposeEdgeTools: false,
   exposeVoiceTools: true,

@@ -16,7 +16,7 @@ import type {
   PretrainingConfig,
 } from '@secureyeoman/shared';
 import type { CorpusLoader } from './corpus-loader.js';
-import type { SynapseManager } from '../integrations/synapse/synapse-manager.js';
+import type { IfranManager } from '../integrations/ifran/ifran-manager.js';
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 
@@ -62,8 +62,8 @@ function rowToJob(row: Record<string, unknown>): PretrainJob {
     completedAt:
       row.completed_at instanceof Date ? row.completed_at.getTime() : Number(row.completed_at ?? 0),
     tenantId: (row.tenant_id as string) ?? 'default',
-    backend: (row.backend as 'local' | 'synapse') ?? 'local',
-    synapseDelegatedJobId: (row.synapse_delegated_job_id as string | null) ?? null,
+    backend: (row.backend as 'local' | 'ifran') ?? 'local',
+    ifranDelegatedJobId: (row.ifran_delegated_job_id as string | null) ?? null,
   };
 }
 
@@ -87,7 +87,7 @@ export class PretrainManager {
     private readonly logger: SecureLogger,
     private readonly config: PretrainingConfig,
     private readonly corpusLoader?: CorpusLoader,
-    private readonly getSynapseManager?: () => SynapseManager | null
+    private readonly getIfranManager?: () => IfranManager | null
   ) {}
 
   async createJob(input: PretrainJobCreate): Promise<PretrainJob> {
@@ -269,7 +269,7 @@ export class PretrainManager {
   }
 
   /**
-   * Start a pre-training job. If backend=synapse, delegates to Synapse;
+   * Start a pre-training job. If backend=ifran, delegates to Ifran;
    * otherwise falls through to the existing local Docker path.
    */
   async startJob(jobId: string): Promise<void> {
@@ -279,13 +279,13 @@ export class PretrainManager {
       throw new Error(`Job ${jobId} is not pending (status=${job.status})`);
     }
 
-    if (job.backend === 'synapse') {
-      const synapse = this.getSynapseManager?.();
-      if (!synapse?.isAvailable()) {
-        throw new Error('Synapse backend requested but no healthy Synapse instance is available');
+    if (job.backend === 'ifran') {
+      const ifran = this.getIfranManager?.();
+      if (!ifran?.isAvailable()) {
+        throw new Error('Ifran backend requested but no healthy Ifran instance is available');
       }
 
-      const { response, delegatedJob } = await synapse.delegateTrainingJob(
+      const { response, delegatedJob } = await ifran.delegateTrainingJob(
         {
           baseModel: `pretrain:${job.architecture}:${job.parameterCount}`,
           datasetPath: job.corpusSourceIds.join(','),
@@ -310,14 +310,14 @@ export class PretrainManager {
 
       await this.pool.query(
         `UPDATE training.pretrain_jobs
-         SET status = 'training', container_id = $1, synapse_delegated_job_id = $2, started_at = $3
+         SET status = 'training', container_id = $1, ifran_delegated_job_id = $2, started_at = $3
          WHERE id = $4`,
-        [`synapse:${response.jobId}`, delegatedJob?.id ?? null, Date.now(), jobId]
+        [`ifran:${response.jobId}`, delegatedJob?.id ?? null, Date.now(), jobId]
       );
 
       this.logger.info(
-        { jobId, synapseJobId: response.jobId },
-        'Pre-training job delegated to Synapse'
+        { jobId, ifranJobId: response.jobId },
+        'Pre-training job delegated to Ifran'
       );
       return;
     }

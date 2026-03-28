@@ -6,13 +6,16 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 ---
 
-## [2026.3.27]
+## [2026.3.28]
+
+*Consolidated release — includes all work since 2026.3.18-1.*
 
 ### Dependency Upgrades
 
 - **agnosai** — `0.25.3` → `1.0.0` (major version bump, brings hoosh 1.0.0 transitively)
-- **bhava** — `1.1.1` → `1.2.0`
+- **bhava** — `1.1.0` → `1.2.0`
 - **ai-hwaccel** — `0.19` → `1.0.0` (major version bump)
+- **majra** — Added `1.0.0` (new dependency) with features: pubsub, ratelimit, heartbeat, barrier, queue
 
 ### sy-hwprobe — ai-hwaccel 1.0 Migration
 
@@ -79,20 +82,9 @@ Integrated daimon 0.5.0 (agent orchestrator) as a brain/memory/vector backend vi
 - `createVectorStore()` factory handles `'daimon'` backend with auto-client creation
 - Daimon registered as ecosystem service (`daimon`, port 8090, `DAIMON_URL` env var)
 
-### Code Quality
-
-- Fixed 154 `@typescript-eslint/no-unnecessary-type-arguments` lint errors across dashboard
-- Fixed unused import (`AddServerForm`) in ConnectionsPage
-- Fixed unused catch variable in workflow-engine
-- Fixed circular lint fix in TaskKanbanWidget
-- Formatted 2 Rust files (sy-napi/szal.rs, sy-sandbox/landlock.rs)
-- Added `#[allow(dead_code)]` to 4 sy-edge utility methods used only in tests
-
-## [2026.3.26]
-
 ### Majra 1.0.0 Integration
 
-Integrated majra 1.0.0 (crates.io) into sy-napi as the shared concurrency and messaging layer. 5 of 7 roadmap targets complete. All 3 pub/sub channel tiers exposed via NAPI with TypeScript wrappers and JS fallbacks.
+Integrated majra 1.0.0 (crates.io) into sy-napi as the shared concurrency and messaging layer. All 3 pub/sub channel tiers exposed via NAPI with TypeScript wrappers and JS fallbacks.
 
 #### NAPI Bindings (`crates/sy-napi/src/majra.rs`)
 
@@ -104,265 +96,123 @@ Integrated majra 1.0.0 (crates.io) into sy-napi as the shared concurrency and me
 - **Barrier** — `majra_barrier_create`, `majra_barrier_arrive`, `majra_barrier_force`, `majra_barrier_complete`, `majra_barrier_count`. N-way sync with deadlock recovery
 - **Managed queue** — `majra_queue_enqueue`, `majra_queue_dequeue`, `majra_queue_complete`, `majra_queue_fail`, `majra_queue_cancel`, `majra_queue_get`, `majra_queue_running_count`, `majra_queue_job_count`. 5-tier priority, max concurrency, lifecycle tracking
 
-#### TypeScript Wrapper (`packages/core/src/native/majra.ts`)
-
-All NAPI functions wrapped with JS fallback implementations for environments without the native module. Exports: `publish`, `subscribe`, `matchesPattern`, `directPublish`, `directSubscribe`, `hashedPublish`, `hashedSubscribe`, `ratelimitRegister`, `ratelimitCheck`, `heartbeatRegister`, `heartbeat`, `heartbeatUpdate`, `barrierCreate`, `barrierArrive`, `barrierForce`, `queueEnqueue`, `queueDequeue`, `queueComplete`, `queueFail`, `queueCancel`
-
 #### Refactored Modules
 
 - **EventDispatcher** — Now publishes to majra pub/sub for internal fan-out (audit, logging, plugins). Webhook delivery runs directly, not through pub/sub. Topic format: `tool/called`, `workflow/started` (dot→slash)
 - **RateLimiter** — Internal sliding window replaced with majra token bucket per rule. SY keeps rule definitions, action policies (reject/delay/log), Fastify hook, usage counters, and stats
-- **A2AManager** — `missedHeartbeats: Map<string, number>` replaced with majra `ConcurrentHeartbeatTracker`. Peers registered on add/discover, heartbeat recorded on successful ping, `heartbeatUpdate()` sweeps statuses. Suspect maps to 'online' (SY has no suspect status), offline maps to 'offline'
+- **A2AManager** — `missedHeartbeats: Map<string, number>` replaced with majra `ConcurrentHeartbeatTracker`. Peers registered on add/discover, heartbeat recorded on successful ping, `heartbeatUpdate()` sweeps statuses
 
-### Bhava Integration Test Fixes
+### Ifran/Ifran Integration Expansion
 
-Fixed 21 pre-existing test failures caused by bhava native module integration drift — tests were written for TS fallback paths but the native binary now takes precedence.
+Expanded Ifran integration with 12 new client methods and 20 new proxy routes, exposing Ifran's full API surface to the SY dashboard.
 
-- **mood-engine.test.ts** (7 fixes) — Mock bhava `deriveBaseline` to exercise TS `TRAIT_VALUE_MODIFIERS` fallback path
-- **soul/manager.test.ts** (3 fixes) — Partial bhava mock (trait/mood/spirit format changes) + added missing `getActivePassions`, `getActiveInspirations`, `getActivePains` to spirit mock
-- **chat-routes.test.ts** (10 fixes) — Added `processSentimentFeedback` to default `mockSoulManager` + spread defaults into overrides so inline mocks inherit it
-- **swarm-manager.test.ts** (1 fix) — Mock `agnosai-bridge` (`isEligibleForNative: false`) to prevent native path from hijacking `delegate` calls
+#### IfranClient — New Methods
 
-### Pre-existing Type Errors Fixed
+- **Evaluation**: `createEvalRun`, `listEvalRuns`, `getEvalRun` — MMLU, HellaSwag, HumanEval, perplexity benchmarks
+- **Experiments**: `createExperiment`, `getExperiment` — grid/random/Bayesian hyperparameter sweeps
+- **Marketplace**: `listMarketplaceModels`, `pullMarketplaceModel` — model discovery and download
+- **RLHF**: `createRlhfSession`, `getRlhfSession`, `submitRlhfAnnotation`, `exportRlhfForDpo` — annotation sessions with DPO export
+- **Lineage**: `getModelLineage` — full model provenance chain with depth control
+- **Fleet**: `listFleetNodes`, `getFleetNode` — multi-node status
 
-- **agnosai-bridge.ts** — Fixed `AgentProfile` import (was `../agents/types.js`, now `@secureyeoman/shared`), added non-null assertion on `tasks[i]`, removed unused `randomUUID` import
-- **swarm-manager.ts** — Fixed `AgentProfile` import (same)
-- **soul/manager.ts** — Added missing `metadata: {}` to `moodEngine.applyEvent()` call
+#### Proxy Routes — 20 New Endpoints
 
-### Dependency Updates
+All under `/api/v1/synapse/` with license guard:
+- `POST/GET /eval/runs`, `GET /eval/runs/:runId`
+- `POST /experiments`, `GET /experiments/:experimentId`
+- `GET /marketplace/models`, `POST /marketplace/models/:modelId/pull`
+- `POST/GET /rlhf/sessions/:sessionId`, `POST .../annotate`, `POST .../export-dpo`
+- `GET /lineage/:modelId/ancestry`
+- `GET /fleet/nodes`, `GET /fleet/nodes/:nodeId`
 
-- **bhava** — `1.1.0` → `1.1.1` → `1.2.0`
-- **majra** — Added `1.0.0` (new dependency) with features: pubsub, ratelimit, heartbeat, barrier, queue
-
-## [2026.3.19]
-
-### sy-agnos Sandbox Driver (P0)
+### sy-agnos Sandbox Driver
 
 Container-based sandbox execution using sy-agnos OCI images with three isolation tiers (minimal, dm-verity, TPM measured boot).
 
-- **`SyAgnosSandbox`** — New sandbox driver (`packages/core/src/sandbox/sy-agnos-sandbox.ts`) conforming to `Sandbox` interface. Auto-detects Docker/Podman, launches containers with `--read-only --network=none --memory --cpus`, pipes task via stdin/stdout JSON. Graceful fallback to in-process execution
-- **Dynamic strength detection** — Reads `/etc/sy-agnos-release` from container image to report tier-based strength: 80 (minimal), 85 (dm-verity), 88 (TPM measured boot). Three new `SANDBOX_STRENGTH` entries
-- **Attestation verification** — `verifyAttestation()` calls AGNOS `GET /v1/attestation`, validates PCR registers 8/9/10 and HMAC signature before dispatching tasks
-- **SandboxManager integration** — `'sy-agnos'` added to technology union, `resolveBackend()` switch, `resolveAuto()` (dynamic strength insertion between SGX and gVisor), `probeCapabilities()` with Docker/Podman prerequisite check
-- **`high-security` profile** — Changed from `'landlock'` to `'auto'` so auto-selection now prefers sy-agnos (80+) → Firecracker (90) → gVisor (70) → Landlock (50)
-- **Sandbox egress scanning** — Optional phylax integration: scans container stdout via `agnosClient.scanBytes()`, adds `SandboxViolation` with type `'scanning'` for HIGH/CRITICAL findings, configurable `blockHighSeverity`
+- **`SyAgnosSandbox`** — New sandbox driver conforming to `Sandbox` interface. Auto-detects Docker/Podman, launches containers with `--read-only --network=none --memory --cpus`
+- **Dynamic strength detection** — Reads `/etc/sy-agnos-release` for tier-based strength: 80 (minimal), 85 (dm-verity), 88 (TPM measured boot)
+- **Attestation verification** — `verifyAttestation()` validates PCR registers 8/9/10 and HMAC signature
+- **`high-security` profile** — Changed from `'landlock'` to `'auto'` (prefers sy-agnos → Firecracker → gVisor → Landlock)
+- **Sandbox egress scanning** — Optional phylax integration for HIGH/CRITICAL findings
 
-### AGNOS Deep Integration (P1)
+### AGNOS Deep Integration
 
-Full driver-side integration with AGNOS 2026.3.18 APIs: token budgeting, RAG, phylax scanning, remote execution, audit chain, and bidirectional tool registration.
+Full driver-side integration with AGNOS APIs: token budgeting, RAG, phylax scanning, remote execution, audit chain, and bidirectional tool registration.
 
-#### AgnosClient API Expansion
-
-- **Gateway support** — Added `gatewayUrl` + `gatewayApiKey` to `AgnosClientConfig`, `_fetchGateway()` helper targeting hoosh (port 8088)
-- **Token budget** (6 methods) — `tokenCheck()`, `tokenReserve()`, `tokenReport()`, `tokenRelease()`, `tokenPools()`, `tokenPoolDetail()` via hoosh gateway
-- **RAG** (3 methods) — `ragIngest()`, `ragQuery()`, `ragStats()` via daimon runtime
-- **Phylax scanning** (2 methods) — `scanBytes()` (base64 data), `scanStatus()`
-- **Remote execution** (3 methods) — `execOnAgent()`, `writeFile()`, `readFile()` for fleet orchestration
-- **Audit** (2 methods) — `forwardAuditRun()` for sutra-style run records, `verifyAuditChain()` for chain integrity
-- **MCP remote tools** (3 methods) — `listRemoteTools()`, `registerRemoteTool()`, `callRemoteTool()` for bidirectional tool registration
-- **Attestation** — `getAttestation()` returns PCR values + HMAC signature
-
-#### Token Budget Integration
-
-- **`AGNOSProvider`** — Before inference (`doChat` + `chatStream`), estimates tokens, calls `tokenCheck()` + `tokenReserve()`. After inference, reports actual usage via `tokenReport()`. Budget exceeded returns 429. All token calls best-effort — failures never block inference
-- **`AGNOSProviderTokenBudgetConfig`** — New optional config for `agnosClient`, `project`, `pool`
-
-#### RAG Integration
-
-- **`AgnosVectorStore`** — Added `ingestText()` (pushes to AGNOS RAG pipeline) and `queryRag()` (returns ranked chunks with formatted context string)
-- **Bootstrap** — RAG stats fetched during `bootstrapAgnos()` when `rag` capability present; remote tools discovered via `listRemoteTools()` for reverse registration
-
-#### Phylax Output Scanning
-
-- **`ToolOutputScanner.scanWithPhylax()`** — Runs local regex scan, then augments with AGNOS phylax findings. HIGH/CRITICAL findings added as `phylax:high` / `phylax:critical` redaction types. `ScanResult` extended with optional `phylaxFindings` array
-
-#### MCP Tools
-
-- **Remote execution** — `agnos_exec`, `agnos_file_write`, `agnos_file_read` tools for fleet operations
-- **Audit** — `agnos_audit_verify` (chain integrity), `agnos_audit_run` (manual run submission)
-- **Token pools** — `agnos_token_pools`, `agnos_token_pool_detail`
-
-#### Audit Run Hooks
-
-- **`agnos-hooks.ts`** — New hook on `swarm:after-execute` / `task:after-execute` that creates audit run records via `agnosClient.forwardAuditRun()` with run_id, playbook, success, and task list. Priority 290, best-effort
-
-### AGNOS Deep Integration — Final 3 Items
-
-- **Token pool cost dashboard** — New API endpoints `GET /api/v1/provider-accounts/token-pools` and `GET /api/v1/provider-accounts/token-pools/:name` proxy AGNOS hoosh gateway token pool data. CostDashboard component shows AGNOS Token Pools table with pool name, used/remaining/total counts, and color-coded usage bar (green <70%, amber <90%, red 90%+). Gracefully hidden when AGNOS gateway is not configured
-- **Vector store AGNOS backend config** — `VectorConfigSchema` now includes `agnos` sub-config (`runtimeUrl`, `apiKey`, `enableRag`). Vector store factory auto-creates `AgnosClient` from config when not explicitly injected, removing the hard dependency on startup wiring. Deployments can now set `brain.vector.backend: 'agnos'` in config to offload pgvector to AGNOS
-- **MCP tool catalog endpoint** — New `GET /api/v1/mcp/tools/list` endpoint returns full tool definitions including `inputSchema` and `outputSchema` for all registered tools. `McpToolDef` and `McpToolManifest` schemas extended with optional `outputSchema` field. Enables AGNOS reverse registration with complete parameter metadata
+- **AgnosClient API** — 20+ new methods: token budget (6), RAG (3), phylax scanning (2), remote execution (3), audit (2), MCP remote tools (3), attestation (1)
+- **Token budget integration** — Pre-check + reserve before inference, report actual usage after. Budget exceeded returns 429
+- **RAG integration** — `AgnosVectorStore` with `ingestText()` and `queryRag()`
+- **Phylax output scanning** — `scanWithPhylax()` augments local scan with AGNOS findings
+- **MCP tools** — `agnos_exec`, `agnos_file_write`, `agnos_file_read`, `agnos_audit_verify`, `agnos_audit_run`, `agnos_token_pools`, `agnos_token_pool_detail`
+- **Token pool cost dashboard** — CostDashboard component with color-coded usage bars
 
 ### SQL Migration Consolidation
 
-- **5 → 3 files** — Merged `004_optimistic_locking.sql` into `001_community.sql` (version column on personalities + skills in CREATE TABLE) and `005_delegation_self_ref.sql` into `002_pro.sql` (self-reference CHECK constraint on delegations in CREATE TABLE). Both include idempotent ALTER blocks for existing installs
-- **Legacy compatibility** — `004_optimistic_locking` and `005_delegation_self_ref` added to `LEGACY_MIGRATION_IDS` in runner.ts so existing installs that already applied them skip re-running consolidated baselines
-- **Verified** — E2E tests (health, brain, soul, optimistic-locking) pass against fresh PG with consolidated schema. 34 E2E tests confirm version columns and delegation constraints work correctly
-
-### Dashboard Test Coverage — 3 Gap Areas
-
-- **ConnectionsPage** (2 new tests) — Ecosystem services section rendering with fetched data, graceful handling of ecosystem fetch failures
-- **CommunityTab** (7 new tests) — Content type switching (Workflows, Swarm Templates, Themes, Personalities tabs with enable flags), error handling for marketplace fetch failure, community status fetch failure, personality fetch failure
-- **useVoice** (8 new tests) — Error suppression for `aborted`/`no-speech` errors, `not-allowed` error warning, webkitSpeechRecognition fallback, transcript from final recognition result, toggle voice cancels speech synthesis, `start()` throwing gracefully, webkit as primary when SpeechRecognition unavailable
-
-### E2E Test Expansion — 5 New Test Suites
-
-- **`training.e2e.test.ts`** (4 tests) — Training data preparation via brain memories, knowledge entries as training context, brain stats reflecting data volume, importance-based curation filtering
-- **`a2a.e2e.test.ts`** (8 tests) — A2A peer CRUD (list, register, delete), trust level updates, capabilities endpoint, config endpoint, message listing. Wired A2AManager + A2AStorage into E2E server
-- **`analytics.e2e.test.ts`** (5 tests) — System metrics endpoint, brain stats as analytics source, stats update after ingestion, audit log retrieval, audit chain integrity verification, tasks listing
-- **`brain-rag.e2e.test.ts`** (6 tests) — Multi-topic knowledge ingestion, knowledge updates, all 4 memory types with filtering, importance-based retrieval, bulk pagination, knowledge deletion
-- **`marketplace.e2e.test.ts`** (7 tests) — Marketplace listing with pagination, install/uninstall error handling for missing items, item detail 404, community personalities listing, community sync status, skill create/list/delete lifecycle
-
-E2E helpers extended with A2AManager (storage + transport) and MarketplaceManager route registration.
-
-### DAG Workflow Documentation
-
-- **Workflows guide updated** — Added all 8 new step types to the step type table (`loop`, `parallel_map`, `code_execution`, `delay`, `notification`, `data_validation`, `cache_lookup`, `a2a_delegate`). Added full reference section with config examples for each. Documented 8 new built-in templates (pr-ci-triage, build-failure-triage, daily-pr-digest, dev-env-provision, iterative-research, fan-out-analysis, scheduled-data-pipeline, distributed-task). Template count updated from 5 to 14
-
-### Code Audit Backlog — All 5 Items Resolved
-
-- **WebSocket unsubscribe permission check** — Unsubscribe handler now validates RBAC permissions and channel membership before removing subscriptions, matching the subscribe handler's security posture
-- **Input validator ReDoS hardening** — Converted all capturing groups to non-capturing `(?:...)` in injection detection regexes. Added length caps (`{1,500}`) to unbounded character class repetitions (`[^)]*`, `[^`]*`). Simplified XSS `<script>` pattern to match opening tag only (avoids `[\s\S]*?` backtracking). Same fixes applied to MCP middleware input validator
-- **Dependency confusion prevention** — Added `"private": true` to `@secureyeoman/shared` `package.json`, preventing accidental publication to public npm
-- **Delegation self-reference constraint** — New migration `005_delegation_self_ref.sql` adds `CHECK (id != parent_delegation_id)` to `agents.delegations`, preventing circular self-references at the database level
-- **Alert rules pagination** — `AlertStorage.listRules()` now accepts `limit`/`offset` parameters and returns `{ rules, total }`. Route `GET /api/v1/alerts/rules` supports `?limit=&offset=` query params. Default limit 50, max 1000. Internal evaluation cache uses `limit: 1000`
-
-### Hybrid TypeScript/Rust Architecture
-
-8 Rust crates in `crates/` Cargo workspace (edition 2024, rust-version 1.89). Performance-critical and security-critical backend services ported to Rust with transparent TypeScript fallback.
-
-#### Rust Crates
-
-- **sy-crypto** — AES-256-GCM, X25519, Ed25519, HMAC-SHA256, HKDF, SHA-256, MD5, secure random. 42 tests, 98% coverage
-- **sy-hwprobe** — Hardware accelerator detection via `ai-hwaccel` (crates.io). Converts `AcceleratorProfile` → SY `AcceleratorDevice` for TS layer. Replaces 6 hand-rolled vendor modules
-- **sy-tee** — AES-256-GCM model weight sealing with TPM2/keyring key sources. Wire format: `SEALED_V1 || iv || authTag || keySourceTag || ciphertext`. 19 tests, 88% coverage
-- **sy-privacy** — DLP PII regex scanning (compiled Rust DFA). 5 PII patterns, keyword matching, custom regex. 25 tests, 98% coverage
-- **sy-audit** — HMAC-SHA256 linked tamper-evident audit chain with key rotation. 15 tests, 100% coverage
-- **sy-sandbox** — seccomp-bpf syscall allowlist (87 allowed / 14 blocked), Landlock ABI detection, cgroup v2 detection. 23 tests, 91% coverage
-- **sy-edge** — Standalone edge runtime binary (6.9 MB, replaces 15-20 MB Go binary). 22 API endpoints, A2A, metrics, memory store, sandbox, LLM, messaging, scheduler. 84 tests, 56% coverage
-- **sy-napi** — napi-rs bridge exposing sy-crypto, sy-hwprobe, sy-privacy to Node.js as `.node` addon
-
-#### TypeScript Integration
-
-- **`packages/core/src/native/index.ts`** — Conditional native module loader with `SECUREYEOMAN_NO_NATIVE=1` override and Bun detection
-- **`crypto.ts`** — sha256, md5, hmacSha256, secureCompare now use native when available
-- **`crypto-pool.ts`** — Skips worker thread pool when native module loaded
-- **`tee-encryption.ts`** — AES-256-GCM seal/unseal uses native path
-- **`accelerator/probe.ts`** — Native Rust probe (in-process) → ai-hwaccel binary → built-in TS probes fallback chain
-- **`native-parity.test.ts`** — 25 parity tests verifying TS/Rust produce identical outputs
-
-#### Build & Config
-
-- Cargo workspace: `crates/Cargo.toml` with 8 members
-- npm scripts: `build:rust`, `build:napi`, `build:edge-rust`
-- `.gitignore`: `crates/target/`, `packages/core/native/*.node`
-- Tauri desktop: `sy-crypto` path dependency for offline desktop crypto
-- Benchmarks: criterion benchmarks for sy-crypto (20 benchmarks) and sy-hwprobe (7 benchmarks)
-- Testing matrix: `docs/development/rust-testing-matrix.md` with per-machine verification checklist
-
-### Ecosystem Integrations
-
-#### Mneme Knowledge Base — Full Integration
-
-- **Service discovery** — `mneme`, port 3838, `exposeMnemeTools`. Docker image: `ghcr.io/maccracken/mneme:latest`
-- **MCP tools** — 8 tools: `mneme_search`, `mneme_get_note`, `mneme_create_note`, `mneme_update_note`, `mneme_list_notes`, `mneme_query_graph`, `mneme_list_vaults`, `mneme_switch_vault`
-- **HTTP client** — `MnemeClient` with full CRUD, search, tags, vaults, RAG query
-- **Brain integration** — `DocumentManager.ingestMneme()` syncs notes into SY knowledge base. Route: `POST /api/v1/brain/documents/connectors/mneme-sync`. MCP resource `mneme://knowledge/all`
-- **Dashboard** — Mneme Sync panel in ConnectorsPanel. `MnemeExplorer` component with list/graph toggle (WebGL via React Sigma + Graphology ForceAtlas2), search, tag filter, note detail with backlinks. Added as "Mneme" subtab in Knowledge Base tab
-
-#### Rasa Image Editor — Service + Tools + Workflows
-
-- **Service discovery** — `rasa`, stdio MCP transport via `RASA_MCP_PATH`. Docker image fixed: added `liblcms2` runtime dep, corrected healthcheck
-- **MCP tools** — 8 tool definitions: `rasa_open_image`, `rasa_get_document`, `rasa_edit_layer`, `rasa_apply_filter`, `rasa_export`, `rasa_batch_export`, `rasa_import_video_frame`, `rasa_export_for_video`
-- **Workflow templates** — 3 built-in: `rasa-batch-image-processing`, `rasa-screenshot-annotation`, `rasa-thumbnail-generation`
-- **Dashboard** — `ImagePreview` component (inline thumbnail + lightbox with zoom 0.25x–5x, wheel zoom, download). `ImageGallery` grid for batch results
-
-#### Shruti DAW — Tools + Integration Tests
-
-- **MCP tools** — 7 tool definitions: `shruti_session`, `shruti_tracks`, `shruti_mixer`, `shruti_transport`, `shruti_export`, `shruti_analysis`, `shruti_edit`
-- **Integration tests** — 9 tests against live `ghcr.io/maccracken/shruti:latest` (health, session create/info, track add/list/master, transport, heartbeat). Skip-gated by `SHRUTI_URL`
-
-#### Synapse LLM Controller — Integration Tests
-
-- **Integration tests** — 10 tests against live `ghcr.io/maccracken/synapse:latest`. Verifies `/health`, `/system/status` snake_case wire format, GPU capabilities, SynapseClient transform (snake_case→camelCase), models list, jobs list, heartbeat. Skip-gated by `SYNAPSE_API_URL`
+- **5 → 3 files** — Merged optimistic locking and delegation self-ref into base migrations with idempotent ALTER blocks
+- **Legacy compatibility** — Existing installs skip re-running consolidated baselines
 
 ### Reverse Shell & Command Injection Hardening
 
-- **`runtimes.ts`** — 27 new dangerous patterns: Node.js net/dgram imports, Python socket/pty/os.dup2/encoding evasion (base64/codecs/chr), Shell /dev/tcp reverse shells, mkfifo, ncat/socat/telnet, perl/ruby/php/lua one-liners, fd redirect shells, base64/xxd decode, eval with command substitution
-- **Environment restriction** — Child processes only receive `PATH`, `HOME`, `USER`, `LANG`, `LC_*`, `TERM`, `TZ`, `TMPDIR`. Prevents API key exfiltration via env vars
-- **SIGKILL on timeout** — `killSignal: 'SIGKILL'` ensures process termination (was default SIGTERM which can be caught)
-- **`seccomp.ts`** — `execSync('uname -r')` → `execFileSync('uname', ['-r'])` eliminates unnecessary shell invocation
-- **sy-edge sandbox** — 16 new blocked commands: `nc`, `ncat`, `socat`, `telnet`, `nmap`, `bash`, `sh`, `zsh`, `python`, `python3`, `perl`, `ruby`, `php`, `lua`, `node`, `gcc`, `cc`, `make`, `chmod`, `chown`. Shell metacharacter validation on arguments (`|`, `;`, `` ` ``, `$(`, `${`, `/dev/tcp`, `mkfifo`)
+- 27 new dangerous patterns in `runtimes.ts` (Node.js, Python, Shell, Perl, Ruby, PHP, Lua)
+- Environment restriction — child processes only receive safe env vars
+- `SIGKILL` on timeout instead of `SIGTERM`
+- sy-edge: 16 new blocked commands, shell metacharacter validation
 
-### E2E Test Expansion
+### Bhava Integration Test Fixes
 
-3 new E2E test suites (21 files / 192 tests total, was 18 / 173):
+Fixed 21 pre-existing test failures caused by bhava native module integration drift.
 
-- **`document-connectors.e2e.test.ts`** (6 tests) — Text ingestion success/validation, document listing, Mneme sync connector (unreachable service handling, invalid URL scheme rejection)
-- **`accelerator-tools.e2e.test.ts`** (9 tests) — All 7 accelerator MCP tools via tool call endpoint, unknown tool error response, authentication required
-- **`input-validation.e2e.test.ts`** (7 tests) — Path traversal in brain topic, command injection in MCP tool args, SQL injection in tool name, command injection in workflow name, oversized password, unicode control characters, malicious A2A peer URL, XSS stored safely in memory
+### Code Quality
 
-### Tests
+- Fixed 154 `@typescript-eslint/no-unnecessary-type-arguments` lint errors across dashboard
+- Fixed unused imports, catch variables, circular lint fixes
+- Formatted Rust files (sy-napi/szal.rs, sy-sandbox/landlock.rs)
+- Added `#[allow(dead_code)]` to 4 sy-edge utility methods used only in tests
+- Fixed `AgentProfile` import in agnosai-bridge.ts and swarm-manager.ts
+- WebSocket unsubscribe permission check, input validator ReDoS hardening
+- Dependency confusion prevention (`"private": true` on @secureyeoman/shared)
+- Alert rules pagination (limit/offset, max 1000)
 
-- **236 Rust tests** across 8 crates (all passing)
-- **17,464 TypeScript tests** across 743 files (741 passed, 2 skipped for integration)
-- **192 E2E tests** across 21 files (was 173 / 18)
-- **33 new tests** for AgnosClient API expansion (token budget, RAG, phylax, remote execution, audit, attestation, MCP remote tools, gateway API key)
-- **14 new tests** for SyAgnosSandbox (availability, capabilities, strength detection for all 3 tiers, attestation verification pass/fail, run fallback, container execution, timeout)
-- **2 test updates** for sandbox-profiles `high-security` → `auto` technology change
-- **1 new test** for alert rules pagination (limit/offset behavior)
-- **8 test updates** for alert manager/routes `listRules` return shape change
+### Dashboard & E2E Tests
+
+- **Dashboard tests** — ConnectionsPage (2), CommunityTab (7), useVoice (8)
+- **E2E expansion** — 8 new test suites: training, a2a, analytics, brain-rag, marketplace, document-connectors, accelerator-tools, input-validation
 - **25 native-parity tests** verifying Rust/TS crypto produce identical outputs
-- **8 Mneme client unit tests**
-- **19 Synapse + Shruti integration tests** (skip-gated by env)
-- **3 new sy-edge sandbox tests** for reverse shell tools, metacharacter blocking, /dev/tcp blocking
+- **19 Ifran + Shruti integration tests** (skip-gated by env)
+
+### DAG Workflow Documentation
+
+- Added 8 new step types and 8 new built-in templates (14 total)
 
 ### Bug Fixes
 
-- **A2A peers migration** — Added missing `updated_at` column to `a2a.peers` table in `003_enterprise.sql`. Storage code referenced this column in INSERT/UPDATE queries, causing all peer registration to fail with a SQL error
-- **Lint** — Added `: unknown` type annotation to catch callback variables in `audit-forwarder.ts` (ESLint `@typescript-eslint/use-unknown-in-catch-callback-variable`)
-- **Prettier** — Formatted 4 pre-existing style violations (`runtimes.ts`, `synapse-client.test.ts`, `ImagePreview.tsx`, `MnemeExplorer.tsx`)
-
-### Test Fixes (25 E2E failures + 1 unit test)
-
-- **`mcp.test.ts`** — Updated expected tool count from 3 → 7 to match full accelerator tool set (accelerator_status, gpu_status, tpu_status, npu_status, asic_status, local_models_list, privacy_route_check)
-- **`mcp.e2e.test.ts`** — Tool calls on non-existent/disabled server return 404 (was expecting 400)
-- **`accelerator-tools.e2e.test.ts`** — Added required `serverId: 'secureyeoman-local'` to all tool call requests; fixed unknown tool to expect 404
-- **`analytics.e2e.test.ts`** — Brain stats `memories`/`knowledge` are objects with `.total`, not numbers; audit query returns `{ entries }` not array; added body to audit verify POST
-- **`marketplace.e2e.test.ts`** — Listing returns `skills` not `items`; community status field is `lastSyncedAt` not `lastSync`; skill DELETE uses `authDeleteHeaders` (no content-type)
-- **`training.e2e.test.ts`** — Brain stats shape: `stats.memories.total` / `stats.knowledge.total`
-- **`input-validation.e2e.test.ts`** — Added missing required `source` field to memory creation
-- **`document-connectors.e2e.test.ts`** — Moved `registerDocumentRoutes` into `startE2EServer` helper to register routes before `listen()` (was failing with `FST_ERR_INSTANCE_ALREADY_LISTENING`)
-- **`a2a.e2e.test.ts`** — Config endpoint returns `{ config: { enabled } }` not `{ enabled }`
-
-### Dependencies
-
-- **`flatted`** — Updated 3.4.1 → 3.4.2 (fixes prototype pollution via `parse()`, GHSA-rf6f-7fwh-wjgh)
-
----
+- A2A peers migration — missing `updated_at` column
+- `flatted` 3.4.1 → 3.4.2 (prototype pollution fix)
+- 25 E2E test fixes for response shape changes
 
 ## [2026.3.18-1]
 
-### Synapse Integration — Protocol Alignment
+### Ifran Integration — Protocol Alignment
 
-Full audit and correction of the SY↔Synapse integration layer against the actual Synapse Rust codebase. All REST endpoints, gRPC proto definitions, and wire formats now match Synapse's live API.
+Full audit and correction of the SY↔Ifran integration layer against the actual Ifran Rust codebase. All REST endpoints, gRPC proto definitions, and wire formats now match Ifran's live API.
 
 #### Bug Fixes
 
-- **Job stream endpoint** — Fixed `GET /training/jobs/:id/logs` → `GET /training/jobs/:id/stream` across client, routes, and MCP tools. The old `/logs` path 404'd against Synapse
-- **Field serialization** — Synapse uses snake_case; SY was sending camelCase. Fixed all request/response transformations at the client boundary:
+- **Job stream endpoint** — Fixed `GET /training/jobs/:id/logs` → `GET /training/jobs/:id/stream` across client, routes, and MCP tools. The old `/logs` path 404'd against Ifran
+- **Field serialization** — Ifran uses snake_case; SY was sending camelCase. Fixed all request/response transformations at the client boundary:
   - Inference: `maxTokens` → `max_tokens`, `topP` → `top_p`, `topK` → `top_k`, `systemPrompt` → `system_prompt`
   - Training: `baseModel` → `base_model`, flat `datasetPath` → nested `dataset: { path, format }`, `configJson` → structured `hyperparams` object
   - Models: `modelName` → `model_name`, `sourceUrl` → `source_url`
   - Job status: `current_step` → `step`, `current_loss` → `loss`, capitalized `"Running"` → lowercase `"running"`
-- **Status response parsing** — Synapse `/system/status` returns `{ version, loaded_models, hardware: { gpus: [...] }, bridge: {...} }`, not a flat `SynapseInstance`. Client now transforms hardware probe data into SY's `SynapseInstance` shape
-- **Training request structure** — Synapse expects `{ base_model, dataset: { path, format, ... }, method, hyperparams: { learning_rate, ... } }`. SY was sending a flat camelCase object. Client now builds the correct nested snake_case structure
+- **Status response parsing** — Ifran `/system/status` returns `{ version, loaded_models, hardware: { gpus: [...] }, bridge: {...} }`, not a flat `IfranInstance`. Client now transforms hardware probe data into SY's `IfranInstance` shape
+- **Training request structure** — Ifran expects `{ base_model, dataset: { path, format, ... }, method, hyperparams: { learning_rate, ... } }`. SY was sending a flat camelCase object. Client now builds the correct nested snake_case structure
 
 #### gRPC Proto Sync
 
-- **Rewrote `bridge.proto`** to match Synapse's actual service definitions:
-  - `SynapseBridge` (SY→Synapse): `SubmitTrainingJob`, `GetJobStatus` (stream), `PullModel` (stream), `RunInference`, `StreamInference`
-  - `YeomanBridge` (Synapse→SY): `RequestGpuAllocation`, `ReportProgress` (client stream), `RequestScaleOut`, `RegisterCompletedModel`
-- **Updated `grpc-bridge.ts`** — Server implements new `YeomanBridge` RPCs (GPU allocation, progress streaming, scale-out, model registration). Client uses `SynapseBridge` RPCs (job status streaming, model pull, inference)
+- **Rewrote `bridge.proto`** to match Ifran's actual service definitions:
+  - `IfranBridge` (SY→Ifran): `SubmitTrainingJob`, `GetJobStatus` (stream), `PullModel` (stream), `RunInference`, `StreamInference`
+  - `YeomanBridge` (Ifran→SY): `RequestGpuAllocation`, `ReportProgress` (client stream), `RequestScaleOut`, `RegisterCompletedModel`
+- **Updated `grpc-bridge.ts`** — Server implements new `YeomanBridge` RPCs (GPU allocation, progress streaming, scale-out, model registration). Client uses `IfranBridge` RPCs (job status streaming, model pull, inference)
 
 #### New Endpoints & Tools
 
@@ -372,35 +222,35 @@ Full audit and correction of the SY↔Synapse integration layer against the actu
 
 #### Type Updates
 
-- `SynapseJobStatus` — Added `totalSteps`, `progressPercent`, `error`, `createdAt`, `startedAt`, `completedAt`; status union includes `preparing` and `paused`
-- `SynapseInferenceRequest` — Added `temperature`, `topP`, `topK`, `systemPrompt`
-- `SynapseInferenceResponse` — Added `usage` (token counts) and `finishReason`
-- `SynapsePullRequest` — Changed `quant` → `sourceUrl` + `expectedSha256` to match marketplace pull API
-- Added `SynapseStatusResponse` and `SynapseJobResponse` raw wire types for documentation
+- `IfranJobStatus` — Added `totalSteps`, `progressPercent`, `error`, `createdAt`, `startedAt`, `completedAt`; status union includes `preparing` and `paused`
+- `IfranInferenceRequest` — Added `temperature`, `topP`, `topK`, `systemPrompt`
+- `IfranInferenceResponse` — Added `usage` (token counts) and `finishReason`
+- `IfranPullRequest` — Changed `quant` → `sourceUrl` + `expectedSha256` to match marketplace pull API
+- Added `IfranStatusResponse` and `IfranJobResponse` raw wire types for documentation
 
 #### Tests
 
-- Updated all 51 Synapse unit tests across 4 test files for new wire formats
+- Updated all 51 Ifran unit tests across 4 test files for new wire formats
 - New tests for status response transformation, snake_case request bodies, paginated model listing, `getModel`, `deleteModel`, `streamJobProgress`
 
 ---
 
 ## [2026.3.18]
 
-### Synapse LLM Controller Integration
+### Ifran LLM Controller Integration
 
-Full integration with the Synapse Rust-based LLM controller for distributed model management, inference execution, and training job orchestration.
+Full integration with the Ifran Rust-based LLM controller for distributed model management, inference execution, and training job orchestration.
 
-- **REST proxy** — 11 routes under `/api/v1/synapse/*` proxying to Synapse's REST API (port 8420). Status, models, inference (sync + streaming), training jobs (submit, list, status, cancel, logs), health check
-- **`SynapseClient`** — REST client with SSE streaming support for model pull progress, job logs, and inference tokens
-- **`SynapseRegistry`** — In-memory registry for connected Synapse instances with GPU-aware selection (most free VRAM, fewest active jobs)
-- **`SynapseManager`** — Orchestrator with automatic heartbeat polling, reconnection recovery, and DB persistence via `SynapseStore`
-- **`SynapseStore`** — PostgreSQL storage for instance state, delegated jobs, registered models, inbound jobs, and capability announcements
+- **REST proxy** — 11 routes under `/api/v1/synapse/*` proxying to Ifran's REST API (port 8420). Status, models, inference (sync + streaming), training jobs (submit, list, status, cancel, logs), health check
+- **`IfranClient`** — REST client with SSE streaming support for model pull progress, job logs, and inference tokens
+- **`IfranRegistry`** — In-memory registry for connected Ifran instances with GPU-aware selection (most free VRAM, fewest active jobs)
+- **`IfranManager`** — Orchestrator with automatic heartbeat polling, reconnection recovery, and DB persistence via `IfranStore`
+- **`IfranStore`** — PostgreSQL storage for instance state, delegated jobs, registered models, inbound jobs, and capability announcements
 - **gRPC bridge** — Bidirectional gRPC transport (`bridge.proto`) for streaming training metrics, inference tokens, and capability announcements
 - **8 MCP tools** — `synapse_status`, `synapse_list_models`, `synapse_pull_model`, `synapse_infer`, `synapse_submit_job`, `synapse_list_jobs`, `synapse_job_status`, `synapse_cancel_job`
 - **Database migration** (`008_synapse.sql`) — `synapse.instances`, `synapse.delegated_jobs`, `synapse.registered_models` tables
-- **Docker Compose** — Synapse service (GHCR image) and synapse-dev (local build) with model/data volumes and health checks
-- **License gating** — All Synapse routes enterprise-gated via `licenseGuard('synapse')`
+- **Docker Compose** — Ifran service (GHCR image) and synapse-dev (local build) with model/data volumes and health checks
+- **License gating** — All Ifran routes enterprise-gated via `licenseGuard('synapse')`
 - **Service discovery** — Registered as ecosystem service with health path and MCP config key
 
 ### Security Audit — Rounds 1–3 + Backlog
@@ -1004,21 +854,21 @@ Comprehensive code audit across the entire codebase (3 rounds: critical/high, me
 - Fixed health endpoint reporting `networkMode: 'local'` when TLS is terminated by Caddy — added `TLS_TERMINATED_BY_PROXY` env var so Fastify knows TLS is active even though it serves plain HTTP internally
 - Entrypoint now sets `TLS_TERMINATED_BY_PROXY=true` when Caddy handles TLS termination
 
-**Bidirectional Synapse gRPC Bridge** (`integrations/synapse/grpc-bridge.ts`, `bridge.proto`)
-- `YeomanBridgeServer` — gRPC server (port 8421) receives capability announcements, inbound jobs, status reports, and model registrations from Synapse
-- `SynapseGrpcClient` — gRPC client for streaming training metrics and inference tokens from Synapse
-- Proto file with 2 services (`SynapseService`, `YeomanBridge`) and 10 RPC methods
+**Bidirectional Ifran gRPC Bridge** (`integrations/synapse/grpc-bridge.ts`, `bridge.proto`)
+- `YeomanBridgeServer` — gRPC server (port 8421) receives capability announcements, inbound jobs, status reports, and model registrations from Ifran
+- `IfranGrpcClient` — gRPC client for streaming training metrics and inference tokens from Ifran
+- Proto file with 2 services (`IfranService`, `YeomanBridge`) and 10 RPC methods
 - Bidirectional heartbeat streaming support
 - Dependencies: `@grpc/grpc-js` v1.12.5, `@grpc/proto-loader` v0.7.13
 
-**Training Job Delegation to Synapse** (`training/finetune-manager.ts`, `training/pretrain-manager.ts`)
-- Both finetune and pretrain managers can now delegate jobs to remote Synapse instances instead of running locally
+**Training Job Delegation to Ifran** (`training/finetune-manager.ts`, `training/pretrain-manager.ts`)
+- Both finetune and pretrain managers can now delegate jobs to remote Ifran instances instead of running locally
 - New `TrainingBackend` type: `'local' | 'synapse'` — `backend` field on job configs and DB rows
-- `synapseDelegatedJobId` field for Synapse-side job correlation
-- `_startSynapseJob()` in finetune manager, `startJob()` in pretrain manager with Synapse delegation
+- `synapseDelegatedJobId` field for Ifran-side job correlation
+- `_startIfranJob()` in finetune manager, `startJob()` in pretrain manager with Ifran delegation
 
-**Synapse Inbound Job Delegation** (`synapse-store.ts`, `synapse-routes.ts`, `022_synapse_bridge.sql`)
-- Synapse can submit jobs back to SecureYeoman (reverse delegation)
+**Ifran Inbound Job Delegation** (`synapse-store.ts`, `synapse-routes.ts`, `022_synapse_bridge.sql`)
+- Ifran can submit jobs back to SecureYeoman (reverse delegation)
 - `synapse.inbound_jobs` table with job_type, payload, status, result tracking
 - `synapse.capability_announcements` table for audit trail
 - Inbound job types: `evaluation`, `data_curation`, `model_export`, `custom`
@@ -1027,7 +877,7 @@ Comprehensive code audit across the entire codebase (3 rounds: critical/high, me
   - GET/PATCH jobs/:id — status and result updates
   - POST capabilities — receive capability announcements
   - POST webhook — receive delegated job progress/completion updates
-  - GET delegated-jobs — list SY→Synapse delegated jobs with filtering
+  - GET delegated-jobs — list SY→Ifran delegated jobs with filtering
 
 **New E2E Test Suites** (3 files, `src/__e2e__/`)
 - `api-key-lifecycle.e2e.test.ts` — full API key lifecycle (creation, listing, revocation, rotation, scope enforcement)
@@ -1413,14 +1263,14 @@ Unified code forge adapter interface with Delta, GitHub, GitLab, Bitbucket, and 
 
 - **Total**: 147 new tests across forge adapters, registries, Artifactory, webhooks, and timeline.
 
-### Synapse LLM Controller — API Path Fixes & GHCR Image Fix
+### Ifran LLM Controller — API Path Fixes & GHCR Image Fix
 
-Live-tested Synapse locally. Fixed API path mismatches across client, routes, and MCP tools. Diagnosed and fixed GHCR container image GLIBC incompatibility.
+Live-tested Ifran locally. Fixed API path mismatches across client, routes, and MCP tools. Diagnosed and fixed GHCR container image GLIBC incompatibility.
 
-- **API path corrections**: Synapse routes have no `/api/v1/` prefix — routes are `/models`, `/system/status`, `/training/jobs`, `/inference`, `/marketplace/pull`, etc. Fixed all `synapseFetch()` calls in `synapse-routes.ts`, all `_fetch()` calls in `synapse-client.ts`, and all `syn()` calls in `synapse-tools.ts` (MCP).
-- **`getStatus()` path fix**: `/api/v1/status` → `/system/status` (correct Synapse route).
-- **`pullModel()` path fix**: `/api/v1/models/pull` → `/marketplace/pull` (Synapse uses marketplace endpoint for model pulling).
-- **GHCR image GLIBC fix** (Synapse repo): `docker/Dockerfile.release` base changed from `debian:bookworm-slim` (GLIBC 2.36) to `ubuntu:24.04` (GLIBC 2.39) — CI runner (`ubuntu-latest`) compiles against 2.39, so the runtime image must match.
+- **API path corrections**: Ifran routes have no `/api/v1/` prefix — routes are `/models`, `/system/status`, `/training/jobs`, `/inference`, `/marketplace/pull`, etc. Fixed all `synapseFetch()` calls in `synapse-routes.ts`, all `_fetch()` calls in `synapse-client.ts`, and all `syn()` calls in `synapse-tools.ts` (MCP).
+- **`getStatus()` path fix**: `/api/v1/status` → `/system/status` (correct Ifran route).
+- **`pullModel()` path fix**: `/api/v1/models/pull` → `/marketplace/pull` (Ifran uses marketplace endpoint for model pulling).
+- **GHCR image GLIBC fix** (Ifran repo): `docker/Dockerfile.release` base changed from `debian:bookworm-slim` (GLIBC 2.36) to `ubuntu:24.04` (GLIBC 2.39) — CI runner (`ubuntu-latest`) compiles against 2.39, so the runtime image must match.
 - **Verified endpoints**: `/health`, `/system/status`, `/models`, `/training/jobs`, `/marketplace/entries`, `/eval/runs` — all responding correctly. Hardware detection working (CPU, GPU, memory).
 
 ### Delta MCP Tools — API Path Fixes & 7 New Tools
@@ -1440,7 +1290,7 @@ Pushed dashboard statement coverage from 69.91% to 71.12% (target: 70%). Added E
 Unified all in-house projects into consistent service discovery and Docker Compose patterns.
 
 - **Service discovery expansion**: `ServiceDiscoveryManager` registry expanded from 3 → 7 services (agnostic, agnos, synapse, delta, bullshift, photisnadi, aequi). Each service has probe, enable/disable lifecycle, secrets provisioning, and dashboard auto-rendering via `ConnectionsPage`.
-- **Docker Compose profile normalization**: All in-house services now follow the agnostic pattern — standalone profile (own name) for GHCR image, `full-dev` profile for local sibling build. Synapse, bullshift, photisnadi moved from `dev` to standalone profiles (`--profile synapse`, `--profile bullshift`, `--profile photisnadi`). Delta added (`--profile delta`). Aequi stubbed (`--profile aequi`).
+- **Docker Compose profile normalization**: All in-house services now follow the agnostic pattern — standalone profile (own name) for GHCR image, `full-dev` profile for local sibling build. Ifran, bullshift, photisnadi moved from `dev` to standalone profiles (`--profile synapse`, `--profile bullshift`, `--profile photisnadi`). Delta added (`--profile delta`). Aequi stubbed (`--profile aequi`).
 - **Delta docker-compose**: `delta` (GHCR) and `delta-dev` (local `../delta` build) services. Port 8070. 3 volumes (repos, artifacts, data). `DELTA_URL` + `DELTA_API_TOKEN` env vars on `sy-mcp`.
 - **Aequi stub**: `aequi` and `aequi-dev` services stubbed for future accounting platform integration. Port 8060. `exposeAequiTools` + `aequiUrl` added to MCP schema and config.
 - **Photisnadi healthcheck fix**: Healthcheck updated from `/` to `/api/v1/health` (existing endpoint in `lib/server/api.dart`).
@@ -1519,19 +1369,19 @@ Voice profiles, real-time streaming, self-hosted TTS/STT providers, and dashboar
 
 **Totals**: 132 new tests across 10 test files. 14 TTS providers (was 11), 10 STT providers (was 8), 3 new MCP tools (total 421+).
 
-### Synapse LLM Controller Integration
+### Ifran LLM Controller Integration
 
-Full integration with Synapse, the Rust-based local LLM controller for model management, inference, and training job orchestration. See ADR 034.
+Full integration with Ifran, the Rust-based local LLM controller for model management, inference, and training job orchestration. See ADR 034.
 
 - **REST proxy routes** (`integrations/synapse/synapse-routes.ts`): 11 Fastify routes under `/api/v1/synapse/*` — status, models (list/pull with SSE progress), inference (sync + SSE stream), training jobs (submit/list/get/cancel/logs), health check. All enterprise-gated via `licenseGuard('synapse')`.
-- **Synapse client** (`integrations/synapse/synapse-client.ts`): TypeScript REST client with `getStatus`, `submitTrainingJob`, `getJobStatus`, `streamJobLogs`, `pullModel`, `runInference`, `streamInference`, `isHealthy`.
+- **Ifran client** (`integrations/synapse/synapse-client.ts`): TypeScript REST client with `getStatus`, `submitTrainingJob`, `getJobStatus`, `streamJobLogs`, `pullModel`, `runInference`, `streamInference`, `isHealthy`.
 - **Registry & Manager** (`synapse-registry.ts`, `synapse-manager.ts`): Multi-instance registry with health tracking, heartbeat polling, best-GPU selection for training delegation.
 - **8 MCP tools** (`mcp/tools/synapse-tools.ts`): `synapse_status`, `synapse_list_models`, `synapse_pull_model`, `synapse_infer`, `synapse_submit_job`, `synapse_list_jobs`, `synapse_job_status`, `synapse_cancel_job`. Gated by `MCP_EXPOSE_SYNAPSE_TOOLS=true`.
 - **Database migration** (`008_synapse.sql`): `synapse` schema with `instances`, `delegated_jobs`, `registered_models` tables. Enterprise tier.
 - **License gating**: `synapse` added as enterprise-tier `LicensedFeature`.
-- **Service discovery**: Synapse registered as ecosystem service with health probing via `/health`.
-- **Docker Compose**: Synapse service added to `dev` (GHCR image) and `full-dev` (local build) profiles. Ports 8420 (REST) + 8421 (gRPC).
-- **Dashboard**: Synapse LLM toggle in PersonalityEditor MCP features (requires global enable). `SYNAPSE_API_URL` in service keys panel.
+- **Service discovery**: Ifran registered as ecosystem service with health probing via `/health`.
+- **Docker Compose**: Ifran service added to `dev` (GHCR image) and `full-dev` (local build) profiles. Ports 8420 (REST) + 8421 (gRPC).
+- **Dashboard**: Ifran LLM toggle in PersonalityEditor MCP features (requires global enable). `SYNAPSE_API_URL` in service keys panel.
 
 ## [2026.3.9]
 

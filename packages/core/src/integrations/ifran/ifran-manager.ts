@@ -1,60 +1,60 @@
 /**
- * Synapse Manager
+ * Ifran Manager
  *
- * High-level orchestrator for Synapse integration. Manages client lifecycle,
- * heartbeat polling, instance registry, and persistent DB state via SynapseStore.
- * Entry point for all Synapse operations including delegated job tracking.
+ * High-level orchestrator for Ifran integration. Manages client lifecycle,
+ * heartbeat polling, instance registry, and persistent DB state via IfranStore.
+ * Entry point for all Ifran operations including delegated job tracking.
  */
 
 import type { SecureLogger } from '../../logging/logger.js';
 import { toErrorMessage } from '../../utils/errors.js';
 import type {
-  SynapseConfig,
-  SynapseInstance,
-  SynapseTrainingJobRequest,
-  SynapseTrainingJobResponse,
-  SynapseHeartbeat,
-  SynapseModelRegistration,
+  IfranConfig,
+  IfranInstance,
+  IfranTrainingJobRequest,
+  IfranTrainingJobResponse,
+  IfranHeartbeat,
+  IfranModelRegistration,
 } from './types.js';
-import { SynapseClient } from './synapse-client.js';
-import { SynapseRegistry } from './synapse-registry.js';
-import type { SynapseStore, DelegatedJobRow } from './synapse-store.js';
-import type { YeomanBridgeServer, SynapseGrpcClient } from './grpc-bridge.js';
+import { IfranClient } from './ifran-client.js';
+import { IfranRegistry } from './ifran-registry.js';
+import type { IfranStore, DelegatedJobRow } from './ifran-store.js';
+import type { YeomanBridgeServer, IfranGrpcClient } from './grpc-bridge.js';
 
-export class SynapseManager {
-  private readonly config: SynapseConfig;
+export class IfranManager {
+  private readonly config: IfranConfig;
   private readonly logger: SecureLogger;
-  private client: SynapseClient | null = null;
-  private readonly registry: SynapseRegistry;
-  private readonly store: SynapseStore | null;
+  private client: IfranClient | null = null;
+  private readonly registry: IfranRegistry;
+  private readonly store: IfranStore | null;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private grpcServer: YeomanBridgeServer | null = null;
-  private grpcClient: SynapseGrpcClient | null = null;
+  private grpcClient: IfranGrpcClient | null = null;
 
-  constructor(config: SynapseConfig, logger: SecureLogger, store?: SynapseStore) {
+  constructor(config: IfranConfig, logger: SecureLogger, store?: IfranStore) {
     this.config = config;
-    this.logger = logger.child({ component: 'synapse-manager' });
-    this.registry = new SynapseRegistry(logger);
+    this.logger = logger.child({ component: 'ifran-manager' });
+    this.registry = new IfranRegistry(logger);
     this.store = store ?? null;
   }
 
   /**
-   * Connect to the configured Synapse instance, fetch its status,
+   * Connect to the configured Ifran instance, fetch its status,
    * and register it in the registry. Persists to DB if store available.
    * Starts heartbeat polling.
    */
   async init(): Promise<void> {
     if (!this.config.enabled) {
-      this.logger.info({}, 'Synapse integration disabled');
+      this.logger.info({}, 'Ifran integration disabled');
       return;
     }
 
-    this.logger.info({ apiUrl: this.config.apiUrl }, 'initializing Synapse connection');
+    this.logger.info({ apiUrl: this.config.apiUrl }, 'initializing Ifran connection');
 
     const client = this.getClient();
     try {
       const status = await client.getStatus();
-      const instance: SynapseInstance = {
+      const instance: IfranInstance = {
         ...status,
         status: 'connected',
         lastHeartbeat: Date.now(),
@@ -68,12 +68,12 @@ export class SynapseManager {
           version: instance.version,
           gpuCount: instance.capabilities.gpuCount,
         },
-        'Synapse instance connected'
+        'Ifran instance connected'
       );
       // Start gRPC bridge if store is available
       if (this.store && this.config.grpcUrl) {
         try {
-          const { YeomanBridgeServer, SynapseGrpcClient } = await import('./grpc-bridge.js');
+          const { YeomanBridgeServer, IfranGrpcClient } = await import('./grpc-bridge.js');
           const grpcPort = Number(new URL(this.config.grpcUrl).port || 8421);
 
           this.grpcServer = new YeomanBridgeServer(
@@ -84,7 +84,7 @@ export class SynapseManager {
           );
           await this.grpcServer.start();
 
-          this.grpcClient = new SynapseGrpcClient(this.config.grpcUrl, this.logger);
+          this.grpcClient = new IfranGrpcClient(this.config.grpcUrl, this.logger);
           this.grpcClient.connect();
         } catch (grpcErr) {
           this.logger.warn(
@@ -94,7 +94,7 @@ export class SynapseManager {
         }
       }
     } catch (err) {
-      this.logger.error({ error: toErrorMessage(err) }, 'failed to connect to Synapse');
+      this.logger.error({ error: toErrorMessage(err) }, 'failed to connect to Ifran');
       throw err;
     }
   }
@@ -112,21 +112,21 @@ export class SynapseManager {
       this.grpcClient.close();
       this.grpcClient = null;
     }
-    this.logger.info({}, 'Synapse manager shut down');
+    this.logger.info({}, 'Ifran manager shut down');
   }
 
-  getClient(): SynapseClient {
+  getClient(): IfranClient {
     if (!this.client) {
-      this.client = new SynapseClient(this.config, this.logger);
+      this.client = new IfranClient(this.config, this.logger);
     }
     return this.client;
   }
 
-  getRegistry(): SynapseRegistry {
+  getRegistry(): IfranRegistry {
     return this.registry;
   }
 
-  getStore(): SynapseStore | null {
+  getStore(): IfranStore | null {
     return this.store;
   }
 
@@ -134,33 +134,33 @@ export class SynapseManager {
     return this.registry.getHealthy().length > 0;
   }
 
-  getGrpcClient(): SynapseGrpcClient | null {
+  getGrpcClient(): IfranGrpcClient | null {
     return this.grpcClient;
   }
 
   /**
-   * Delegate a training job to the best available Synapse instance.
-   * Tracks the delegation in the DB via SynapseStore if available.
+   * Delegate a training job to the best available Ifran instance.
+   * Tracks the delegation in the DB via IfranStore if available.
    *
    * @param req - Training job specification
    * @param opts - Optional: preferredMethod for instance selection,
    *               syJobId/syJobType to link back to the SY-side job
-   * @returns The Synapse job response and optional delegated job record
+   * @returns The Ifran job response and optional delegated job record
    */
   async delegateTrainingJob(
-    req: SynapseTrainingJobRequest,
+    req: IfranTrainingJobRequest,
     opts?: { preferredMethod?: string; syJobId?: string; syJobType?: string }
-  ): Promise<{ response: SynapseTrainingJobResponse; delegatedJob?: DelegatedJobRow }> {
+  ): Promise<{ response: IfranTrainingJobResponse; delegatedJob?: DelegatedJobRow }> {
     const method = opts?.preferredMethod ?? req.method;
     const instance = this.registry.getBestForTraining(method);
 
     if (!instance) {
-      throw new Error(`No healthy Synapse instance available for training method "${method}"`);
+      throw new Error(`No healthy Ifran instance available for training method "${method}"`);
     }
 
     this.logger.info(
       { instanceId: instance.id, baseModel: req.baseModel, method },
-      'delegating training job to Synapse instance'
+      'delegating training job to Ifran instance'
     );
 
     const client = this.getClient();
@@ -182,7 +182,7 @@ export class SynapseManager {
   }
 
   /**
-   * Poll a delegated job's status from Synapse and update the local record.
+   * Poll a delegated job's status from Ifran and update the local record.
    */
   async syncDelegatedJobStatus(delegatedJobId: string): Promise<DelegatedJobRow | null> {
     if (!this.store) return null;
@@ -192,7 +192,7 @@ export class SynapseManager {
 
     try {
       const client = this.getClient();
-      const status = await client.getJobStatus(job.synapseJobId);
+      const status = await client.getJobStatus(job.ifranJobId);
       return await this.store.updateDelegatedJobStatus(delegatedJobId, {
         status: status.status,
         currentStep: status.step,
@@ -209,21 +209,21 @@ export class SynapseManager {
   }
 
   /**
-   * Register a model produced by a completed Synapse training job.
+   * Register a model produced by a completed Ifran training job.
    */
   async registerModel(
     instanceId: string,
-    reg: SynapseModelRegistration,
+    reg: IfranModelRegistration,
     jobId?: string
   ): Promise<void> {
     if (!this.store) {
-      this.logger.warn({}, 'cannot register model: no SynapseStore configured');
+      this.logger.warn({}, 'cannot register model: no IfranStore configured');
       return;
     }
     await this.store.registerModel(instanceId, reg, jobId);
   }
 
-  getStatus(): { instances: SynapseInstance[]; healthy: number; total: number } {
+  getStatus(): { instances: IfranInstance[]; healthy: number; total: number } {
     const instances = this.registry.list();
     const healthy = this.registry.getHealthy().length;
     return { instances, healthy, total: instances.length };
@@ -262,9 +262,9 @@ export class SynapseManager {
       if (wasDisconnected) {
         this.logger.info(
           { instanceId, version: status.version },
-          'Synapse instance reconnected after disconnect'
+          'Ifran instance reconnected after disconnect'
         );
-        const instance: SynapseInstance = {
+        const instance: IfranInstance = {
           ...status,
           status: 'connected',
           lastHeartbeat: Date.now(),
@@ -274,9 +274,9 @@ export class SynapseManager {
         return;
       }
 
-      // _gpuMemoryFreeMb is set by the client from Synapse GPU telemetry
-      const extStatus = status as SynapseInstance & { _gpuMemoryFreeMb?: number };
-      const heartbeat: SynapseHeartbeat = {
+      // _gpuMemoryFreeMb is set by the client from Ifran GPU telemetry
+      const extStatus = status as IfranInstance & { _gpuMemoryFreeMb?: number };
+      const heartbeat: IfranHeartbeat = {
         instanceId: status.id,
         timestamp: Date.now(),
         loadedModels: status.capabilities.loadedModels,
@@ -286,7 +286,7 @@ export class SynapseManager {
       this.registry.updateHeartbeat(instanceId, heartbeat);
       await this.store?.updateHeartbeat(instanceId, heartbeat);
     } catch (err) {
-      this.logger.warn({ instanceId, error: toErrorMessage(err) }, 'Synapse heartbeat poll failed');
+      this.logger.warn({ instanceId, error: toErrorMessage(err) }, 'Ifran heartbeat poll failed');
       this.registry.markDisconnected(instanceId);
       await this.store?.markDisconnected(instanceId);
     }

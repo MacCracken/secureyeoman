@@ -60,12 +60,12 @@ describe('ServiceDiscoveryManager', () => {
       expect(agnos!.displayName).toBe('AGNOS Runtime');
       expect(agnos!.requiredSecrets).toEqual(['AGNOS_GATEWAY_API_KEY', 'AGNOS_RUNTIME_API_KEY']);
 
-      const synapse = services.find((s) => s.id === 'synapse');
-      expect(synapse).toBeDefined();
-      expect(synapse!.status).toBe('disconnected');
-      expect(synapse!.enabled).toBe(false);
-      expect(synapse!.displayName).toBe('Synapse LLM Controller');
-      expect(synapse!.requiredSecrets).toEqual([]);
+      const ifran = services.find((s) => s.id === 'ifran');
+      expect(ifran).toBeDefined();
+      expect(ifran!.status).toBe('disconnected');
+      expect(ifran!.enabled).toBe(false);
+      expect(ifran!.displayName).toBe('Ifran LLM Controller');
+      expect(ifran!.requiredSecrets).toEqual([]);
 
       const delta = services.find((s) => s.id === 'delta');
       expect(delta).toBeDefined();

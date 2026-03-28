@@ -201,7 +201,7 @@ All integration code lives in SecureYeoman. External repos are read-only unless 
 | AGNOSTIC (agentic) | 8000 | `/api/v1/tasks`, `/api/v1/webhooks`, `/events` (SSE) |
 | AGNOS (runtime) | 8090/8088 | `/v1/policies/landlock`, `/v1/chat/completions`, `/health` |
 | BullShift (trading) | 8787 | `/api/portfolio`, `/api/orders`, `/api/market/:symbol` |
-| Synapse (LLM) | 8420/8421 | `/api/v1/models`, `/api/v1/inference`, `/api/v1/training/jobs` |
+| Ifran (LLM) | 8420/8421 | `/api/v1/models`, `/api/v1/inference`, `/api/v1/training/jobs` |
 | Delta (code forge) | 8070 | `/api/v1/repos`, `/api/v1/pulls`, `/api/v1/pipelines` |
 | Shruti (DAW) | 8050 | `/api/v1/session`, `/api/v1/tracks`, `/api/v1/transport` |
 | Rasa (image editor) | 8080 | MCP tools: `rasa_get_document`, `rasa_create_layer`, etc. |
@@ -217,7 +217,7 @@ All integration code lives in SecureYeoman. External repos are read-only unless 
 | `agnos_` | `exposeAgnosTools` | `agnos-tools.ts` |
 | `bullshift_` | always-on | `trading-tools.ts` |
 | `delta_` | `exposeDeltaTools` | `delta-tools.ts` |
-| `synapse_` | `exposeSynapseTools` | `synapse-tools.ts` |
+| `ifran_` | `exposeIfranTools` | `ifran-tools.ts` |
 | `shruti_` | `exposeShrutiTools` | `shruti-tools.ts` |
 | `edge_` | `exposeEdgeTools` | `edge-tools.ts` |
 | `voice_` | `exposeVoiceTools` | `voice-tools.ts` |

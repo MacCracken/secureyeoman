@@ -1,8 +1,8 @@
 /**
- * SynapseStore — Persistent storage for Synapse bridge state.
+ * IfranStore — Persistent storage for Ifran bridge state.
  *
- * CRUD for synapse.instances, synapse.delegated_jobs, and synapse.registered_models.
- * Backs the in-memory SynapseRegistry with durable Postgres state so bridge
+ * CRUD for ifran.instances, ifran.delegated_jobs, and ifran.registered_models.
+ * Backs the in-memory IfranRegistry with durable Postgres state so bridge
  * state survives restarts.
  */
 
@@ -10,20 +10,20 @@ import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../../logging/logger.js';
 import type {
-  SynapseInstance,
-  SynapseHeartbeat,
-  SynapseTrainingJobRequest,
-  SynapseModelRegistration,
-  SynapseInboundJobRequest,
-  SynapseCapabilities,
+  IfranInstance,
+  IfranHeartbeat,
+  IfranTrainingJobRequest,
+  IfranModelRegistration,
+  IfranInboundJobRequest,
+  IfranCapabilities,
 } from './types.js';
 
 // ── Row mappers ──────────────────────────────────────────────────────────────
 
 export interface DelegatedJobRow {
   id: string;
-  synapseInstanceId: string;
-  synapseJobId: string;
+  ifranInstanceId: string;
+  ifranJobId: string;
   syJobId: string | null;
   syJobType: string;
   baseModel: string;
@@ -44,7 +44,7 @@ export interface DelegatedJobRow {
 
 export interface RegisteredModelRow {
   id: string;
-  synapseInstanceId: string;
+  ifranInstanceId: string;
   modelName: string;
   modelPath: string;
   baseModel: string | null;
@@ -57,8 +57,8 @@ export interface RegisteredModelRow {
 function rowToDelegatedJob(row: Record<string, unknown>): DelegatedJobRow {
   return {
     id: row.id as string,
-    synapseInstanceId: row.synapse_instance_id as string,
-    synapseJobId: row.synapse_job_id as string,
+    ifranInstanceId: row.ifran_instance_id as string,
+    ifranJobId: row.ifran_job_id as string,
     syJobId: (row.sy_job_id as string | null) ?? null,
     syJobType: (row.sy_job_type as string) ?? 'finetune',
     baseModel: row.base_model as string,
@@ -80,8 +80,8 @@ function rowToDelegatedJob(row: Record<string, unknown>): DelegatedJobRow {
 
 export interface InboundJobRow {
   id: string;
-  synapseInstanceId: string;
-  synapseSourceJobId: string | null;
+  ifranInstanceId: string;
+  ifranSourceJobId: string | null;
   jobType: string;
   description: string | null;
   payload: Record<string, unknown>;
@@ -96,8 +96,8 @@ export interface InboundJobRow {
 function rowToInboundJob(row: Record<string, unknown>): InboundJobRow {
   return {
     id: row.id as string,
-    synapseInstanceId: row.synapse_instance_id as string,
-    synapseSourceJobId: (row.synapse_source_job_id as string | null) ?? null,
+    ifranInstanceId: row.ifran_instance_id as string,
+    ifranSourceJobId: (row.ifran_source_job_id as string | null) ?? null,
     jobType: (row.job_type as string) ?? 'custom',
     description: (row.description as string | null) ?? null,
     payload: (row.payload as Record<string, unknown>) ?? {},
@@ -113,7 +113,7 @@ function rowToInboundJob(row: Record<string, unknown>): InboundJobRow {
 function rowToRegisteredModel(row: Record<string, unknown>): RegisteredModelRow {
   return {
     id: row.id as string,
-    synapseInstanceId: row.synapse_instance_id as string,
+    ifranInstanceId: row.ifran_instance_id as string,
     modelName: row.model_name as string,
     modelPath: row.model_path as string,
     baseModel: (row.base_model as string | null) ?? null,
@@ -126,7 +126,7 @@ function rowToRegisteredModel(row: Record<string, unknown>): RegisteredModelRow 
 
 // ── Store ────────────────────────────────────────────────────────────────────
 
-export class SynapseStore {
+export class IfranStore {
   constructor(
     private readonly pool: Pool,
     private readonly logger: SecureLogger
@@ -134,9 +134,9 @@ export class SynapseStore {
 
   // ── Instances ────────────────────────────────────────────────────────────
 
-  async upsertInstance(instance: SynapseInstance): Promise<void> {
+  async upsertInstance(instance: IfranInstance): Promise<void> {
     await this.pool.query(
-      `INSERT INTO synapse.instances
+      `INSERT INTO ifran.instances
          (id, endpoint, version, gpu_count, total_gpu_memory_mb, gpu_memory_free_mb,
           supported_methods, loaded_models, status, last_heartbeat, registered_at, metadata)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
@@ -167,9 +167,9 @@ export class SynapseStore {
     );
   }
 
-  async updateHeartbeat(instanceId: string, heartbeat: SynapseHeartbeat): Promise<void> {
+  async updateHeartbeat(instanceId: string, heartbeat: IfranHeartbeat): Promise<void> {
     await this.pool.query(
-      `UPDATE synapse.instances
+      `UPDATE ifran.instances
        SET last_heartbeat = $1,
            gpu_memory_free_mb = $2,
            active_training_jobs = $3,
@@ -189,14 +189,14 @@ export class SynapseStore {
   }
 
   async markDisconnected(instanceId: string): Promise<void> {
-    await this.pool.query(`UPDATE synapse.instances SET status = 'disconnected' WHERE id = $1`, [
+    await this.pool.query(`UPDATE ifran.instances SET status = 'disconnected' WHERE id = $1`, [
       instanceId,
     ]);
   }
 
-  async listInstances(): Promise<SynapseInstance[]> {
+  async listInstances(): Promise<IfranInstance[]> {
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM synapse.instances ORDER BY registered_at DESC`
+      `SELECT * FROM ifran.instances ORDER BY registered_at DESC`
     );
     return rows.map((r) => {
       const meta = (r.metadata as Record<string, unknown>) ?? {};
@@ -211,14 +211,14 @@ export class SynapseStore {
           supportedMethods: (r.supported_methods as string[]) ?? [],
           loadedModels: loadedModelNames,
         },
-        status: (r.status as SynapseInstance['status']) ?? 'disconnected',
+        status: (r.status as IfranInstance['status']) ?? 'disconnected',
         lastHeartbeat: Number(r.last_heartbeat ?? 0),
       };
     });
   }
 
   async deleteInstance(instanceId: string): Promise<boolean> {
-    const { rowCount } = await this.pool.query(`DELETE FROM synapse.instances WHERE id = $1`, [
+    const { rowCount } = await this.pool.query(`DELETE FROM ifran.instances WHERE id = $1`, [
       instanceId,
     ]);
     return (rowCount ?? 0) > 0;
@@ -228,22 +228,22 @@ export class SynapseStore {
 
   async createDelegatedJob(
     instanceId: string,
-    synapseJobId: string,
-    req: SynapseTrainingJobRequest,
+    ifranJobId: string,
+    req: IfranTrainingJobRequest,
     syJobId?: string,
     syJobType = 'finetune'
   ): Promise<DelegatedJobRow> {
     const id = randomUUID();
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `INSERT INTO synapse.delegated_jobs
-         (id, synapse_instance_id, synapse_job_id, sy_job_id, sy_job_type,
+      `INSERT INTO ifran.delegated_jobs
+         (id, ifran_instance_id, ifran_job_id, sy_job_id, sy_job_type,
           base_model, dataset_path, method, config_json, status, created_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending',$10)
        RETURNING *`,
       [
         id,
         instanceId,
-        synapseJobId,
+        ifranJobId,
         syJobId ?? null,
         syJobType,
         req.baseModel,
@@ -254,7 +254,7 @@ export class SynapseStore {
       ]
     );
     this.logger.info(
-      { delegatedJobId: id, synapseJobId, instanceId },
+      { delegatedJobId: id, ifranJobId, instanceId },
       'created delegated job record'
     );
     return rowToDelegatedJob(rows[0]!);
@@ -317,7 +317,7 @@ export class SynapseStore {
 
     values.push(id);
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `UPDATE synapse.delegated_jobs SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
+      `UPDATE ifran.delegated_jobs SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
       values
     );
     return rows.length ? rowToDelegatedJob(rows[0]!) : null;
@@ -325,23 +325,23 @@ export class SynapseStore {
 
   async getDelegatedJob(id: string): Promise<DelegatedJobRow | null> {
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM synapse.delegated_jobs WHERE id = $1`,
+      `SELECT * FROM ifran.delegated_jobs WHERE id = $1`,
       [id]
     );
     return rows.length ? rowToDelegatedJob(rows[0]!) : null;
   }
 
-  async getDelegatedJobBySynapseId(synapseJobId: string): Promise<DelegatedJobRow | null> {
+  async getDelegatedJobByIfranId(ifranJobId: string): Promise<DelegatedJobRow | null> {
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM synapse.delegated_jobs WHERE synapse_job_id = $1`,
-      [synapseJobId]
+      `SELECT * FROM ifran.delegated_jobs WHERE ifran_job_id = $1`,
+      [ifranJobId]
     );
     return rows.length ? rowToDelegatedJob(rows[0]!) : null;
   }
 
   async getDelegatedJobBySyJobId(syJobId: string): Promise<DelegatedJobRow | null> {
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM synapse.delegated_jobs WHERE sy_job_id = $1`,
+      `SELECT * FROM ifran.delegated_jobs WHERE sy_job_id = $1`,
       [syJobId]
     );
     return rows.length ? rowToDelegatedJob(rows[0]!) : null;
@@ -361,7 +361,7 @@ export class SynapseStore {
       values.push(filters.status);
     }
     if (filters?.instanceId) {
-      conditions.push(`synapse_instance_id = $${idx++}`);
+      conditions.push(`ifran_instance_id = $${idx++}`);
       values.push(filters.instanceId);
     }
 
@@ -370,7 +370,7 @@ export class SynapseStore {
     values.push(limit);
 
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM synapse.delegated_jobs ${where} ORDER BY created_at DESC LIMIT $${idx}`,
+      `SELECT * FROM ifran.delegated_jobs ${where} ORDER BY created_at DESC LIMIT $${idx}`,
       values
     );
     return rows.map(rowToDelegatedJob);
@@ -380,13 +380,13 @@ export class SynapseStore {
 
   async registerModel(
     instanceId: string,
-    reg: SynapseModelRegistration,
+    reg: IfranModelRegistration,
     jobId?: string
   ): Promise<RegisteredModelRow> {
     const id = randomUUID();
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `INSERT INTO synapse.registered_models
-         (id, synapse_instance_id, model_name, model_path, base_model, training_method, job_id, registered_at)
+      `INSERT INTO ifran.registered_models
+         (id, ifran_instance_id, model_name, model_path, base_model, training_method, job_id, registered_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        RETURNING *`,
       [
@@ -402,7 +402,7 @@ export class SynapseStore {
     );
     this.logger.info(
       { modelId: id, modelName: reg.modelName, instanceId },
-      'registered Synapse model'
+      'registered Ifran model'
     );
     return rowToRegisteredModel(rows[0]!);
   }
@@ -410,20 +410,20 @@ export class SynapseStore {
   async listRegisteredModels(instanceId?: string): Promise<RegisteredModelRow[]> {
     if (instanceId) {
       const { rows } = await this.pool.query<Record<string, unknown>>(
-        `SELECT * FROM synapse.registered_models WHERE synapse_instance_id = $1 ORDER BY registered_at DESC`,
+        `SELECT * FROM ifran.registered_models WHERE ifran_instance_id = $1 ORDER BY registered_at DESC`,
         [instanceId]
       );
       return rows.map(rowToRegisteredModel);
     }
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM synapse.registered_models ORDER BY registered_at DESC LIMIT 200`
+      `SELECT * FROM ifran.registered_models ORDER BY registered_at DESC LIMIT 200`
     );
     return rows.map(rowToRegisteredModel);
   }
 
   async getRegisteredModel(id: string): Promise<RegisteredModelRow | null> {
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM synapse.registered_models WHERE id = $1`,
+      `SELECT * FROM ifran.registered_models WHERE id = $1`,
       [id]
     );
     return rows.length ? rowToRegisteredModel(rows[0]!) : null;
@@ -431,28 +431,25 @@ export class SynapseStore {
 
   async deleteRegisteredModel(id: string): Promise<boolean> {
     const { rowCount } = await this.pool.query(
-      `DELETE FROM synapse.registered_models WHERE id = $1`,
+      `DELETE FROM ifran.registered_models WHERE id = $1`,
       [id]
     );
     return (rowCount ?? 0) > 0;
   }
 
-  // ── Inbound Jobs (Synapse → SY) ─────────────────────────────────────
+  // ── Inbound Jobs (Ifran → SY) ─────────────────────────────────────
 
-  async createInboundJob(
-    instanceId: string,
-    req: SynapseInboundJobRequest
-  ): Promise<InboundJobRow> {
+  async createInboundJob(instanceId: string, req: IfranInboundJobRequest): Promise<InboundJobRow> {
     const id = randomUUID();
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `INSERT INTO synapse.inbound_jobs
-         (id, synapse_instance_id, synapse_source_job_id, job_type, description, payload, status, created_at)
+      `INSERT INTO ifran.inbound_jobs
+         (id, ifran_instance_id, ifran_source_job_id, job_type, description, payload, status, created_at)
        VALUES ($1,$2,$3,$4,$5,$6,'pending',$7)
        RETURNING *`,
       [
         id,
         instanceId,
-        req.synapseSourceJobId ?? null,
+        req.ifranSourceJobId ?? null,
         req.jobType,
         req.description ?? null,
         JSON.stringify(req.payload),
@@ -461,14 +458,14 @@ export class SynapseStore {
     );
     this.logger.info(
       { inboundJobId: id, jobType: req.jobType, instanceId },
-      'created inbound job from Synapse'
+      'created inbound job from Ifran'
     );
     return rowToInboundJob(rows[0]!);
   }
 
   async getInboundJob(id: string): Promise<InboundJobRow | null> {
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM synapse.inbound_jobs WHERE id = $1`,
+      `SELECT * FROM ifran.inbound_jobs WHERE id = $1`,
       [id]
     );
     return rows.length ? rowToInboundJob(rows[0]!) : null;
@@ -507,7 +504,7 @@ export class SynapseStore {
 
     values.push(id);
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `UPDATE synapse.inbound_jobs SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
+      `UPDATE ifran.inbound_jobs SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
       values
     );
     return rows.length ? rowToInboundJob(rows[0]!) : null;
@@ -527,7 +524,7 @@ export class SynapseStore {
       values.push(filters.status);
     }
     if (filters?.instanceId) {
-      conditions.push(`synapse_instance_id = $${idx++}`);
+      conditions.push(`ifran_instance_id = $${idx++}`);
       values.push(filters.instanceId);
     }
 
@@ -536,7 +533,7 @@ export class SynapseStore {
     values.push(limit);
 
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM synapse.inbound_jobs ${where} ORDER BY created_at DESC LIMIT $${idx}`,
+      `SELECT * FROM ifran.inbound_jobs ${where} ORDER BY created_at DESC LIMIT $${idx}`,
       values
     );
     return rows.map(rowToInboundJob);
@@ -546,11 +543,11 @@ export class SynapseStore {
 
   async recordCapabilityAnnouncement(
     instanceId: string,
-    capabilities: SynapseCapabilities
+    capabilities: IfranCapabilities
   ): Promise<void> {
     const id = randomUUID();
     await this.pool.query(
-      `INSERT INTO synapse.capability_announcements (id, synapse_instance_id, capabilities, announced_at)
+      `INSERT INTO ifran.capability_announcements (id, ifran_instance_id, capabilities, announced_at)
        VALUES ($1, $2, $3, $4)`,
       [id, instanceId, JSON.stringify(capabilities), Date.now()]
     );

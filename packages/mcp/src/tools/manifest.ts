@@ -2490,77 +2490,77 @@ export function getToolManifest(): ToolManifestEntry[] {
       category: 'google-workspace',
     },
 
-    // Synapse LLM controller tools
+    // Ifran LLM controller tools
     {
-      name: 'synapse_status',
+      name: 'ifran_status',
       description:
-        'Get the status and capabilities of the connected Synapse LLM controller, including GPU count, available memory, loaded models, and supported training methods',
-      category: 'synapse',
+        'Get the status and capabilities of the connected Ifran LLM controller, including GPU count, available memory, loaded models, and supported training methods',
+      category: 'ifran',
     },
     {
-      name: 'synapse_list_models',
+      name: 'ifran_list_models',
       description:
-        'List all models available on the Synapse instance, including their sizes, quantization formats, and whether they are currently loaded for inference',
-      category: 'synapse',
+        'List all models available on the Ifran instance, including their sizes, quantization formats, and whether they are currently loaded for inference',
+      category: 'ifran',
     },
     {
-      name: 'synapse_pull_model',
+      name: 'ifran_pull_model',
       description:
-        'Pull (download) a model from a remote Synapse marketplace node into the local instance',
-      category: 'synapse',
+        'Pull (download) a model from a remote Ifran marketplace node into the local instance',
+      category: 'ifran',
     },
     {
-      name: 'synapse_get_model',
-      description: 'Get details of a specific model by name or ID on the Synapse instance',
-      category: 'synapse',
+      name: 'ifran_get_model',
+      description: 'Get details of a specific model by name or ID on the Ifran instance',
+      category: 'ifran',
     },
     {
-      name: 'synapse_delete_model',
-      description: 'Delete a model from the Synapse instance catalog and disk',
-      category: 'synapse',
+      name: 'ifran_delete_model',
+      description: 'Delete a model from the Ifran instance catalog and disk',
+      category: 'ifran',
     },
     {
-      name: 'synapse_infer',
-      description: 'Run inference on a model loaded in Synapse. Returns the generated text',
-      category: 'synapse',
+      name: 'ifran_infer',
+      description: 'Run inference on a model loaded in Ifran. Returns the generated text',
+      category: 'ifran',
     },
     {
-      name: 'synapse_submit_job',
+      name: 'ifran_submit_job',
       description:
-        'Submit a training job to Synapse. Supports LoRA, QLoRA, full fine-tune, DPO, RLHF, and distillation',
-      category: 'synapse',
+        'Submit a training job to Ifran. Supports LoRA, QLoRA, full fine-tune, DPO, RLHF, and distillation',
+      category: 'ifran',
     },
     {
-      name: 'synapse_list_jobs',
+      name: 'ifran_list_jobs',
       description:
-        'List all training jobs on the Synapse instance, including status, progress, and timing',
-      category: 'synapse',
+        'List all training jobs on the Ifran instance, including status, progress, and timing',
+      category: 'ifran',
     },
     {
-      name: 'synapse_job_status',
+      name: 'ifran_job_status',
       description:
-        'Get detailed status of a specific Synapse training job, including current step, loss, epoch, and progress percent',
-      category: 'synapse',
+        'Get detailed status of a specific Ifran training job, including current step, loss, epoch, and progress percent',
+      category: 'ifran',
     },
     {
-      name: 'synapse_cancel_job',
-      description: 'Cancel a running training job on the Synapse instance',
-      category: 'synapse',
+      name: 'ifran_cancel_job',
+      description: 'Cancel a running training job on the Ifran instance',
+      category: 'ifran',
     },
     {
-      name: 'synapse_job_checkpoints',
-      description: 'List checkpoints saved during a Synapse training job',
-      category: 'synapse',
+      name: 'ifran_job_checkpoints',
+      description: 'List checkpoints saved during a Ifran training job',
+      category: 'ifran',
     },
     {
-      name: 'synapse_job_metrics',
-      description: 'Get training metrics summary for a specific Synapse job',
-      category: 'synapse',
+      name: 'ifran_job_metrics',
+      description: 'Get training metrics summary for a specific Ifran job',
+      category: 'ifran',
     },
     {
-      name: 'synapse_gpu_telemetry',
-      description: 'Get real-time GPU telemetry readings from the Synapse instance',
-      category: 'synapse',
+      name: 'ifran_gpu_telemetry',
+      description: 'Get real-time GPU telemetry readings from the Ifran instance',
+      category: 'ifran',
     },
 
     // Delta self-hosted Git forge tools

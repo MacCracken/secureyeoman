@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SynapseRegistry } from './synapse-registry.js';
-import type { SynapseInstance } from './types.js';
+import { IfranRegistry } from './ifran-registry.js';
+import type { IfranInstance } from './types.js';
 
 function createMockLogger() {
   const logger = {
@@ -13,7 +13,7 @@ function createMockLogger() {
   return logger as unknown as import('../../logging/logger.js').SecureLogger;
 }
 
-function makeInstance(overrides: Partial<SynapseInstance> = {}): SynapseInstance {
+function makeInstance(overrides: Partial<IfranInstance> = {}): IfranInstance {
   return {
     id: 'syn-1',
     endpoint: 'http://localhost:8420',
@@ -30,11 +30,11 @@ function makeInstance(overrides: Partial<SynapseInstance> = {}): SynapseInstance
   };
 }
 
-describe('SynapseRegistry', () => {
-  let registry: SynapseRegistry;
+describe('IfranRegistry', () => {
+  let registry: IfranRegistry;
 
   beforeEach(() => {
-    registry = new SynapseRegistry(createMockLogger());
+    registry = new IfranRegistry(createMockLogger());
   });
 
   it('should register and list instances', () => {

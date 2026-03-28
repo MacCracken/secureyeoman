@@ -363,7 +363,7 @@ export class SoulManager {
           exposeTerminal: false,
           exposeBullshift: false,
           exposePhotisnadi: false,
-          exposeSynapse: false,
+          exposeIfran: false,
           exposeDelta: false,
           exposeVoice: false,
           exposeEdge: false,

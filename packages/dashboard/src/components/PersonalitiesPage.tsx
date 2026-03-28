@@ -157,7 +157,7 @@ export function PersonalityEditor({
     exposeGithub: boolean;
     exposeDocker: boolean;
     exposeTerminal: boolean;
-    exposeSynapse: boolean;
+    exposeIfran: boolean;
     exposeDelta: boolean;
     exposeVoice: boolean;
     exposeEdge: boolean;
@@ -183,7 +183,7 @@ export function PersonalityEditor({
     exposeGithub: false,
     exposeDocker: false,
     exposeTerminal: false,
-    exposeSynapse: false,
+    exposeIfran: false,
     exposeDelta: false,
     exposeVoice: false,
     exposeEdge: false,
@@ -489,7 +489,7 @@ export function PersonalityEditor({
       exposeGithub: body.mcpFeatures?.exposeGithub ?? false,
       exposeDocker: body.mcpFeatures?.exposeDocker ?? false,
       exposeTerminal: body.mcpFeatures?.exposeTerminal ?? false,
-      exposeSynapse: body.mcpFeatures?.exposeSynapse ?? false,
+      exposeIfran: body.mcpFeatures?.exposeIfran ?? false,
       exposeDelta: body.mcpFeatures?.exposeDelta ?? false,
       exposeVoice: body.mcpFeatures?.exposeVoice ?? false,
       exposeEdge: body.mcpFeatures?.exposeEdge ?? false,
@@ -640,7 +640,7 @@ export function PersonalityEditor({
       exposeGithub: false,
       exposeDocker: false,
       exposeTerminal: false,
-      exposeSynapse: false,
+      exposeIfran: false,
       exposeDelta: false,
       exposeVoice: false,
       exposeEdge: false,

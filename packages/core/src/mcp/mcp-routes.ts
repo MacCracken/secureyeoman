@@ -52,7 +52,7 @@ const AGNOSTIC_TOOL_PREFIXES = ['agnostic_'];
 const AGNOS_TOOL_PREFIXES = ['agnos_'];
 const BULLSHIFT_TOOL_PREFIXES = ['bullshift_', 'trading_', 'market_'];
 const PHOTISNADI_TOOL_PREFIXES = ['photisnadi_'];
-const SYNAPSE_TOOL_PREFIXES = ['synapse_'];
+const IFRAN_TOOL_PREFIXES = ['ifran_'];
 const DELTA_TOOL_PREFIXES = ['delta_'];
 const EDGE_TOOL_PREFIXES = ['edge_'];
 const VOICE_TOOL_PREFIXES = ['voice_'];
@@ -278,10 +278,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           PHOTISNADI_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
         )
           return false;
-        if (
-          !config.exposeSynapseTools &&
-          SYNAPSE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
-        )
+        if (!config.exposeIfranTools && IFRAN_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
           return false;
         if (!config.exposeDeltaTools && DELTA_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
           return false;
@@ -457,7 +454,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           gitlabToken?: string;
           exposeNorthflank?: boolean;
           northflankApiKey?: string;
-          exposeSynapseTools?: boolean;
+          exposeIfranTools?: boolean;
           exposeDeltaTools?: boolean;
           exposeEdgeTools?: boolean;
           exposeVoiceTools?: boolean;

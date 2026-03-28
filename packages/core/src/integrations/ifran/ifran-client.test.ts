@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { SynapseClient } from './synapse-client.js';
-import type { SynapseConfig } from './types.js';
+import { IfranClient } from './ifran-client.js';
+import type { IfranConfig } from './types.js';
 
 function createMockLogger() {
   const logger = {
@@ -13,7 +13,7 @@ function createMockLogger() {
   return logger as unknown as import('../../logging/logger.js').SecureLogger;
 }
 
-const config: SynapseConfig = {
+const config: IfranConfig = {
   apiUrl: 'http://localhost:8420',
   grpcUrl: 'http://localhost:8421',
   enabled: true,
@@ -32,12 +32,12 @@ function getSentBody(fetchSpy: ReturnType<typeof vi.spyOn>, callIdx = 0): Record
   return JSON.parse(fetchSpy.mock.calls[callIdx]![1]?.body as string);
 }
 
-describe('SynapseClient', () => {
-  let client: SynapseClient;
+describe('IfranClient', () => {
+  let client: IfranClient;
   let fetchSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    client = new SynapseClient(config, createMockLogger());
+    client = new IfranClient(config, createMockLogger());
     fetchSpy = vi.spyOn(globalThis, 'fetch');
   });
 
@@ -48,7 +48,7 @@ describe('SynapseClient', () => {
   // ── getStatus ───────────────────────────────────────────────────────────
 
   describe('getStatus', () => {
-    it('should transform Synapse hardware status to SynapseInstance shape', async () => {
+    it('should transform Ifran hardware status to IfranInstance shape', async () => {
       fetchSpy.mockResolvedValueOnce(
         jsonResponse({
           version: '2026.3.18',
@@ -750,7 +750,7 @@ describe('SynapseClient', () => {
 
   describe('URL construction', () => {
     it('should strip trailing slashes from apiUrl', async () => {
-      const trailingSlashClient = new SynapseClient(
+      const trailingSlashClient = new IfranClient(
         { ...config, apiUrl: 'http://localhost:8420///' },
         createMockLogger()
       );

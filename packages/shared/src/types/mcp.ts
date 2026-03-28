@@ -234,8 +234,8 @@ export const McpServiceConfigSchema = z.object({
   exposeBullshiftTools: z.boolean().default(false),
   /** Enable Photisnadi task/ritual tools (photisnadi_*). Off by default. Set MCP_EXPOSE_PHOTISNADI_TOOLS=true. */
   exposePhotisnadiTools: z.boolean().default(false),
-  /** Enable Synapse LLM controller tools (synapse_*). Off by default. Set MCP_EXPOSE_SYNAPSE_TOOLS=true. */
-  exposeSynapseTools: z.boolean().default(false),
+  /** Enable Ifran LLM controller tools (ifran_*). Off by default. Set MCP_EXPOSE_IFRAN_TOOLS=true. */
+  exposeIfranTools: z.boolean().default(false),
   /** Enable Delta self-hosted Git forge tools (delta_*). Off by default. Set MCP_EXPOSE_DELTA_TOOLS=true. */
   exposeDeltaTools: z.boolean().default(false),
   /** Base URL for the Delta instance. Default: http://localhost:8070 */

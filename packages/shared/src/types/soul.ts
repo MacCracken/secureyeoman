@@ -124,8 +124,8 @@ export const McpFeaturesSchema = z
     exposeBullshift: z.boolean().default(false),
     /** Photisnadi task/ritual tools (photisnadi_*). Requires global exposePhotisnadiTools. */
     exposePhotisnadi: z.boolean().default(false),
-    /** Synapse LLM controller tools (synapse_*). Requires global exposeSynapseTools. */
-    exposeSynapse: z.boolean().default(false),
+    /** Ifran LLM controller tools (ifran_*). Requires global exposeIfranTools. */
+    exposeIfran: z.boolean().default(false),
     /** Delta Code Forge tools (delta_*). Requires global exposeDeltaTools. */
     exposeDelta: z.boolean().default(false),
     /** Voice & speech tools (voice_*). Requires global exposeVoiceTools. */

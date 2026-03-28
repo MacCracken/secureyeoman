@@ -57,7 +57,7 @@ export interface BodySectionProps {
     exposeGithub: boolean;
     exposeDocker: boolean;
     exposeTerminal: boolean;
-    exposeSynapse: boolean;
+    exposeIfran: boolean;
     exposeDelta: boolean;
     exposeVoice: boolean;
     exposeEdge: boolean;
@@ -84,7 +84,7 @@ export interface BodySectionProps {
     exposeGithub: boolean;
     exposeDocker: boolean;
     exposeTerminal: boolean;
-    exposeSynapse: boolean;
+    exposeIfran: boolean;
     exposeDelta: boolean;
     exposeVoice: boolean;
     exposeEdge: boolean;
@@ -1272,33 +1272,33 @@ export function BodySection({
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
-                              {/* Synapse LLM Controller */}
+                              {/* Ifran LLM Controller */}
                               <label
                                 className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
-                                  globalMcpConfig?.exposeSynapseTools
+                                  globalMcpConfig?.exposeIfranTools
                                     ? 'cursor-pointer hover:bg-muted/50'
                                     : 'opacity-50 cursor-not-allowed'
                                 }`}
                               >
                                 <Cpu className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                 <span className="text-xs flex-1">
-                                  Synapse LLM
-                                  {!globalMcpConfig?.exposeSynapseTools && (
+                                  Ifran LLM
+                                  {!globalMcpConfig?.exposeIfranTools && (
                                     <span className="text-[10px] text-muted-foreground ml-1">
-                                      — enable Synapse in Connections &gt; MCP first
+                                      — enable Ifran in Connections &gt; MCP first
                                     </span>
                                   )}
                                 </span>
                                 <input
                                   type="checkbox"
-                                  checked={mcpFeatures.exposeSynapse}
+                                  checked={mcpFeatures.exposeIfran}
                                   onChange={(e) => {
                                     onMcpFeaturesChange({
                                       ...mcpFeatures,
-                                      exposeSynapse: e.target.checked,
+                                      exposeIfran: e.target.checked,
                                     });
                                   }}
-                                  disabled={!globalMcpConfig?.exposeSynapseTools}
+                                  disabled={!globalMcpConfig?.exposeIfranTools}
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
