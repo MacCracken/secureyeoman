@@ -22,6 +22,7 @@ import { errorToString } from '../utils/errors.js';
 export type EcosystemServiceId =
   | 'agnostic'
   | 'agnos'
+  | 'daimon'
   | 'synapse'
   | 'delta'
   | 'bullshift'
@@ -89,6 +90,17 @@ const SERVICE_REGISTRY: readonly ServiceDefinition[] = [
     healthPath: '/v1/health',
     requiredSecrets: ['AGNOS_GATEWAY_API_KEY', 'AGNOS_RUNTIME_API_KEY'],
     mcpConfigKey: 'exposeAgnosTools',
+  },
+  {
+    id: 'daimon',
+    displayName: 'Daimon Agent Orchestrator',
+    description:
+      'Agent lifecycle management, per-agent memory, vector search, RAG pipeline, task scheduling, and federation',
+    urlEnv: 'DAIMON_URL',
+    defaultUrl: 'http://127.0.0.1:8090',
+    healthPath: '/v1/health',
+    requiredSecrets: [],
+    mcpConfigKey: 'exposeDaimonTools',
   },
   {
     id: 'synapse',

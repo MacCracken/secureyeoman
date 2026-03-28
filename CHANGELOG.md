@@ -51,6 +51,34 @@ Bridged all 5 remaining security crates to Node.js via sy-napi, closing the last
 - Named engines with persistent custom regex patterns (previously only stateless classify was exposed)
 - TS wrapper: `packages/core/src/native/privacy.ts` with full JS fallback (PII patterns, keywords, custom regex)
 
+### Phase 4 — Daimon Integration
+
+Integrated daimon 0.5.0 (agent orchestrator) as a brain/memory/vector backend via REST API.
+
+#### DaimonClient (`packages/core/src/integrations/daimon/daimon-client.ts`)
+
+- HTTP client for daimon REST API (port 8090)
+- **Memory**: `memorySet`, `memoryGet`, `memoryDelete`, `memoryListKeys`, `memoryListByTag`, `memoryClear` — per-agent key-value store
+- **Vector**: `vectorInsert`, `vectorSearch`, `vectorRemove`, `vectorCount` — cosine-similarity search
+- **RAG**: `ragIngest` (chunked text ingestion), `ragQuery` (retrieval-augmented context)
+- **MCP**: `mcpListTools`, `mcpCallTool` — tool registry and dispatch
+- **Health**: `health()` endpoint check
+- Error handling with `DaimonError` (status codes, body)
+
+#### DaimonVectorStore (`packages/core/src/brain/vector/daimon-store.ts`)
+
+- New `VectorStore` implementation backed by daimon REST API
+- Implements full interface: `insert`, `insertBatch`, `search`, `delete`, `count`, `close`
+- RAG methods: `ingestText`, `queryRag` — chunked text pipeline
+- Batch inserts chunked at 100 entries
+
+#### Configuration & Wiring
+
+- `VectorConfig.backend` now accepts `'daimon'` alongside `faiss | qdrant | chroma | agnos`
+- `VectorConfig.daimon` config: `url`, `apiKey`, `enableRag`
+- `createVectorStore()` factory handles `'daimon'` backend with auto-client creation
+- Daimon registered as ecosystem service (`daimon`, port 8090, `DAIMON_URL` env var)
+
 ### Code Quality
 
 - Fixed 154 `@typescript-eslint/no-unnecessary-type-arguments` lint errors across dashboard

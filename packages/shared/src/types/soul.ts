@@ -676,7 +676,7 @@ export const VectorConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
     provider: z.enum(['local', 'api', 'both']).default('local'),
-    backend: z.enum(['faiss', 'qdrant', 'chroma', 'agnos']).default('faiss'),
+    backend: z.enum(['faiss', 'qdrant', 'chroma', 'agnos', 'daimon']).default('faiss'),
     similarityThreshold: z.number().min(0).max(1).default(0.7),
     maxResults: z.number().int().positive().max(100).default(10),
     local: z
@@ -710,9 +710,19 @@ export const VectorConfigSchema = z
       .default({}),
     agnos: z
       .object({
-        /** AGNOS runtime URL (daimon). Default: http://127.0.0.1:8090. */
+        /** AGNOS runtime URL. Default: http://127.0.0.1:8090. */
         runtimeUrl: z.string().default('http://127.0.0.1:8090'),
         /** AGNOS runtime API key. */
+        apiKey: z.string().optional(),
+        /** Use RAG pipeline (chunked text) in addition to raw vector ops. */
+        enableRag: z.boolean().default(true),
+      })
+      .default({}),
+    daimon: z
+      .object({
+        /** Daimon REST API URL. Default: http://127.0.0.1:8090. */
+        url: z.string().default('http://127.0.0.1:8090'),
+        /** Daimon API key. */
         apiKey: z.string().optional(),
         /** Use RAG pipeline (chunked text) in addition to raw vector ops. */
         enableRag: z.boolean().default(true),
