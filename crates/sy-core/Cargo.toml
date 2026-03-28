@@ -26,6 +26,7 @@ tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip",
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+jsonwebtoken = "9"
 uuid = { version = "1", features = ["v7"] }
 chrono = "0.4"
 

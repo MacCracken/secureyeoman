@@ -13,11 +13,13 @@
 //! Unimplemented routes fall through to the Fastify reverse proxy.
 
 use axum::Router;
+use axum::middleware as axum_mw;
 use axum::routing::get;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 
+use crate::auth::middleware::require_auth;
 use crate::middleware::correlation_id::CorrelationIdLayer;
 use crate::middleware::security_headers::SecurityHeadersLayer;
 use crate::proxy::proxy_to_fastify;
@@ -38,7 +40,8 @@ pub fn build_router(state: AppState) -> Router {
     let app = api.fallback(proxy_to_fastify);
 
     // Middleware stack (outermost = first to execute)
-    app.layer(SecurityHeadersLayer)
+    app.layer(axum_mw::from_fn_with_state(state.clone(), require_auth))
+        .layer(SecurityHeadersLayer)
         .layer(CorrelationIdLayer)
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
         .layer(CompressionLayer::new())
@@ -72,14 +75,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn unknown_route_returns_404_without_fallback() {
-        // No fastify_fallback_port → 404
+    async fn unknown_route_returns_401_without_auth() {
+        // Non-public route without auth → 401
         let app = build_router(test_state());
         let resp = app
             .oneshot(Request::get("/api/v1/nonexistent").body(Body::empty()).unwrap())
             .await
             .unwrap();
-        assert_eq!(resp.status(), 404);
+        assert_eq!(resp.status(), 401);
     }
 
     #[tokio::test]
