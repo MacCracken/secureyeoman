@@ -341,6 +341,114 @@ export class SynapseClient {
     return this._fetch('/system/gpu/telemetry');
   }
 
+  // ── Evaluation ─────────────────────────────────────────────────────────
+
+  async createEvalRun(params: {
+    modelId: string;
+    benchmarks: string[];
+    datasetPath?: string;
+  }): Promise<unknown> {
+    return this._fetch('/eval/runs', {
+      method: 'POST',
+      body: {
+        model_id: params.modelId,
+        benchmarks: params.benchmarks,
+        dataset_path: params.datasetPath,
+      },
+    });
+  }
+
+  async listEvalRuns(): Promise<unknown[]> {
+    return this._fetch('/eval/runs') as Promise<unknown[]>;
+  }
+
+  async getEvalRun(runId: string): Promise<unknown> {
+    return this._fetch(`/eval/runs/${encodeURIComponent(runId)}`);
+  }
+
+  // ── Experiments (Hyperparameter Sweeps) ────────────────────────────────
+
+  async createExperiment(params: {
+    method: 'grid' | 'random' | 'bayesian';
+    baseModel: string;
+    datasetPath: string;
+    searchSpace: Record<string, unknown>;
+    maxTrials?: number;
+  }): Promise<unknown> {
+    return this._fetch('/experiment', {
+      method: 'POST',
+      body: {
+        method: params.method,
+        base_model: params.baseModel,
+        dataset_path: params.datasetPath,
+        search_space: params.searchSpace,
+        max_trials: params.maxTrials,
+      },
+    });
+  }
+
+  async getExperiment(experimentId: string): Promise<unknown> {
+    return this._fetch(`/experiment/${encodeURIComponent(experimentId)}`);
+  }
+
+  // ── Fleet ──────────────────────────────────────────────────────────────
+
+  async listFleetNodes(): Promise<unknown[]> {
+    return this._fetch('/fleet/nodes') as Promise<unknown[]>;
+  }
+
+  async getFleetNode(nodeId: string): Promise<unknown> {
+    return this._fetch(`/fleet/nodes/${encodeURIComponent(nodeId)}`);
+  }
+
+  // ── Marketplace ────────────────────────────────────────────────────────
+
+  async listMarketplaceModels(): Promise<unknown[]> {
+    return this._fetch('/marketplace/models') as Promise<unknown[]>;
+  }
+
+  async pullMarketplaceModel(modelId: string): Promise<unknown> {
+    return this._fetch(`/marketplace/models/${encodeURIComponent(modelId)}/pull`, {
+      method: 'POST',
+    });
+  }
+
+  // ── RLHF Annotation ───────────────────────────────────────────────────
+
+  async createRlhfSession(params: { modelId: string; name?: string }): Promise<unknown> {
+    return this._fetch('/rlhf/sessions', {
+      method: 'POST',
+      body: { model_id: params.modelId, name: params.name },
+    });
+  }
+
+  async getRlhfSession(sessionId: string): Promise<unknown> {
+    return this._fetch(`/rlhf/sessions/${encodeURIComponent(sessionId)}`);
+  }
+
+  async submitRlhfAnnotation(
+    sessionId: string,
+    params: { pairId: string; preferred: 'a' | 'b' }
+  ): Promise<unknown> {
+    return this._fetch(`/rlhf/sessions/${encodeURIComponent(sessionId)}/annotate`, {
+      method: 'POST',
+      body: { pair_id: params.pairId, preferred: params.preferred },
+    });
+  }
+
+  async exportRlhfForDpo(sessionId: string): Promise<unknown> {
+    return this._fetch(`/rlhf/sessions/${encodeURIComponent(sessionId)}/export-dpo`, {
+      method: 'POST',
+    });
+  }
+
+  // ── Lineage ────────────────────────────────────────────────────────────
+
+  async getModelLineage(modelId: string, maxDepth?: number): Promise<unknown> {
+    const qs = maxDepth ? `?max_depth=${maxDepth}` : '';
+    return this._fetch(`/lineage/${encodeURIComponent(modelId)}/ancestry${qs}`);
+  }
+
   async isHealthy(): Promise<boolean> {
     try {
       const response = await fetch(`${this.apiUrl}/health`, {

@@ -922,4 +922,244 @@ export function registerSynapseRoutes(app: FastifyInstance, opts?: SynapseRouteO
       }
     }
   );
+
+  // ── Evaluation ─────────────────────────────────────────────────────────
+
+  app.post(
+    '/api/v1/synapse/eval/runs',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Body: { modelId: string; benchmarks: string[]; datasetPath?: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const result = await client.createEvalRun(req.body);
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse eval create failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/synapse/eval/runs',
+    featureGuardOpts,
+    async (_req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const runs = await client.listEvalRuns();
+        return reply.send(runs);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse eval list failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/synapse/eval/runs/:runId',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { runId: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const run = await client.getEvalRun(req.params.runId);
+        return reply.send(run);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse eval get failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── Experiments (Hyperparameter Sweeps) ────────────────────────────────
+
+  app.post(
+    '/api/v1/synapse/experiments',
+    featureGuardOpts,
+    async (
+      req: FastifyRequest<{
+        Body: {
+          method: 'grid' | 'random' | 'bayesian';
+          baseModel: string;
+          datasetPath: string;
+          searchSpace: Record<string, unknown>;
+          maxTrials?: number;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const result = await client.createExperiment(req.body);
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse experiment create failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/synapse/experiments/:experimentId',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { experimentId: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const result = await client.getExperiment(req.params.experimentId);
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse experiment get failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── Marketplace ────────────────────────────────────────────────────────
+
+  app.get(
+    '/api/v1/synapse/marketplace/models',
+    featureGuardOpts,
+    async (_req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const models = await client.listMarketplaceModels();
+        return reply.send(models);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse marketplace list failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/synapse/marketplace/models/:modelId/pull',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { modelId: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const result = await client.pullMarketplaceModel(req.params.modelId);
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse marketplace pull failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── RLHF Annotation ───────────────────────────────────────────────────
+
+  app.post(
+    '/api/v1/synapse/rlhf/sessions',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Body: { modelId: string; name?: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const result = await client.createRlhfSession(req.body);
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse RLHF session create failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/synapse/rlhf/sessions/:sessionId',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { sessionId: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const result = await client.getRlhfSession(req.params.sessionId);
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse RLHF session get failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/synapse/rlhf/sessions/:sessionId/annotate',
+    featureGuardOpts,
+    async (
+      req: FastifyRequest<{ Params: { sessionId: string }; Body: { pairId: string; preferred: 'a' | 'b' } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const result = await client.submitRlhfAnnotation(req.params.sessionId, req.body);
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse RLHF annotate failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/synapse/rlhf/sessions/:sessionId/export-dpo',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { sessionId: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const result = await client.exportRlhfForDpo(req.params.sessionId);
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse RLHF export failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── Lineage ────────────────────────────────────────────────────────────
+
+  app.get(
+    '/api/v1/synapse/lineage/:modelId/ancestry',
+    featureGuardOpts,
+    async (
+      req: FastifyRequest<{ Params: { modelId: string }; Querystring: { maxDepth?: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const maxDepth = req.query.maxDepth ? Number(req.query.maxDepth) : undefined;
+        const lineage = await client.getModelLineage(req.params.modelId, maxDepth);
+        return reply.send(lineage);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse lineage get failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // ── Fleet ──────────────────────────────────────────────────────────────
+
+  app.get(
+    '/api/v1/synapse/fleet/nodes',
+    featureGuardOpts,
+    async (_req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const nodes = await client.listFleetNodes();
+        return reply.send(nodes);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse fleet list failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/synapse/fleet/nodes/:nodeId',
+    featureGuardOpts,
+    async (req: FastifyRequest<{ Params: { nodeId: string } }>, reply: FastifyReply) => {
+      try {
+        const client = getClient(opts);
+        if (!client) return sendError(reply, 503, 'Synapse not connected');
+        const node = await client.getFleetNode(req.params.nodeId);
+        return reply.send(node);
+      } catch (err) {
+        return sendError(reply, 502, `Synapse fleet node get failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
 }
