@@ -45,7 +45,20 @@ pub fn build_router(state: AppState) -> Router {
         .merge(crate::routes::mcp::router())
         .merge(crate::routes::notifications::router())
         .merge(crate::routes::workspace::router())
-        .merge(crate::routes::gateway::router());
+        .merge(crate::routes::gateway::router())
+        .merge(crate::routes::a2a::router())
+        .merge(crate::routes::training::router())
+        .merge(crate::routes::edge::router())
+        .merge(crate::routes::security::router())
+        .merge(crate::routes::analytics::router())
+        .merge(crate::routes::risk::router())
+        .merge(crate::routes::federation::router())
+        .merge(crate::routes::backup::router())
+        .merge(crate::routes::tenants::router())
+        .merge(crate::routes::execution::router())
+        .merge(crate::routes::proactive::router())
+        .merge(crate::routes::extensions::router())
+        .merge(crate::routes::experiments::router());
 
     // Fallback: proxy everything else to Fastify
     let app = api.fallback(proxy_to_fastify);
