@@ -26,25 +26,44 @@ The Rust axum binary that will replace the TypeScript server. Incremental via re
 - **Auth middleware** — Tower Layer: public route bypass (16 routes), Bearer JWT validation, API key stub, avatar bypass
 - **RBAC** — Convention-based prefix→resource resolution (49 mappings, 6 overrides), 8 role definitions with wildcard + prefix matching (9 tests)
 
-#### Phase 7.2 — Core CRUD Domains (46 routes)
+#### Phase 7.2 — Core CRUD Domains (85 routes, 30 modules, 4,805 LoC)
 
-Database layer via sqlx + 11 domain route modules:
+Database layer via sqlx with 27 DB modules + 30 route modules covering every PostgreSQL schema in the project. All routes behind auth middleware with graceful 503 when DATABASE_URL is not set.
 
-| Domain | Routes | DB Functions | Tables |
-|--------|--------|-------------|--------|
-| brain | 8 | 7 | brain.memories, brain.knowledge |
-| soul | 6 | 5 | soul.personalities |
-| chat | 4 | 4 | chat.conversations, chat.messages |
-| agents | 6 | 5 | agents.profiles, agents.delegations |
-| workflow | 6 | 6 | workflow.definitions, workflow.runs |
-| spirit | 3 | 3 | spirit.passions, spirit.inspirations, spirit.pains |
-| audit | 3 | 3 | audit.entries |
-| marketplace | 2 | 2 | marketplace.skills |
-| integrations | 3 | 3 | integration.integrations |
-| tasks | 2 | 2 | task.tasks |
-| alerts | 2 | 2 | telemetry.alert_rules |
+| Domain | Routes | Operations |
+|--------|--------|-----------|
+| auth | 4 | login, refresh, logout, /me |
+| brain | 8 | memory CRUD, knowledge CRUD, stats |
+| soul | 6 | personality CRUD, activate |
+| chat | 5 | conversation CRUD, messages list |
+| agents | 6 | profile CRUD, delegation list/get |
+| workflow | 7 | definition CRUD, run create/list/get |
+| spirit | 3 | passions, inspirations, pains |
+| audit | 3 | entries list/get, stats |
+| marketplace | 2 | skills list/detail |
+| integrations | 5 | CRUD, status update |
+| tasks | 2 | list, get |
+| alerts | 2 | rules list/get |
+| mcp | 3 | servers list/get, tools list |
+| notifications | 3 | list, mark read, mark all read |
+| workspace | 2 | list, get |
+| gateway | 3 | info, version, ecosystem services |
+| a2a | 2 | peers list/get |
+| training | 2 | distillation jobs, finetune jobs |
+| edge | 3 | nodes list/get, register |
+| security | 2 | DLP policies, SRA assessments |
+| analytics | 2 | summaries, sentiments |
+| risk | 2 | assessments, departments |
+| federation | 1 | peers list |
+| backup | 1 | backups list |
+| tenants | 1 | list |
+| execution | 1 | history list |
+| proactive | 1 | heartbeat log |
+| extensions | 1 | manifests list |
+| experiments | 1 | list |
+| health | 1 | health check |
 
-All routes behind auth middleware. Graceful 503 when DATABASE_URL not set. 22 tests passing.
+22 Rust tests passing. Clippy clean.
 
 ### Ifran/Synapse Rename
 
