@@ -3,6 +3,9 @@
 //! Each domain module (auth, brain, soul, etc.) will get its own submodule
 //! as routes are migrated from TypeScript.
 
+pub mod agents;
 pub mod brain;
+pub mod chat;
 pub mod health;
 pub mod soul;
+pub mod workflow;

@@ -32,7 +32,10 @@ pub fn build_router(state: AppState) -> Router {
     let api = Router::new()
         .route("/health", get(health::health))
         .merge(crate::routes::brain::router())
-        .merge(crate::routes::soul::router());
+        .merge(crate::routes::soul::router())
+        .merge(crate::routes::chat::router())
+        .merge(crate::routes::agents::router())
+        .merge(crate::routes::workflow::router());
 
     // Fallback: proxy everything else to Fastify
     let app = api.fallback(proxy_to_fastify);
