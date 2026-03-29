@@ -10,14 +10,41 @@ All notable changes to SecureYeoman are documented in this file. Versions corres
 
 *Consolidated release — includes all work since 2026.3.18-1.*
 
-### Phase 7.0 — Core Engine Foundation
+### Phase 7 — Core Engine Migration (Bun/Fastify → axum)
 
-Scaffolded the Rust axum binary that will replace the Bun/Fastify TypeScript server.
+The Rust axum binary that will replace the TypeScript server. Incremental via reverse proxy.
 
-- **sy-core** — New axum binary crate (`crates/sy-core/`) with health endpoint, middleware skeleton (correlation ID, security headers, CORS, compression, tracing), and reverse proxy fallback to Fastify for unmigrated routes
-- **sy-types** — New shared types crate (`crates/sy-types/`) with initial type ports: `HealthResponse`, `ApiError`, `PaginatedResponse`, `AuthUser`, `Permission`, `CoreConfig`, `Memory`, `KnowledgeEntry`, `MemoryType`
-- **Reverse proxy** — `proxy_to_fastify` handler forwards unimplemented routes to `localhost:$FASTIFY_PORT` during migration. 404 when no fallback configured
-- **5 tests** — health endpoint, unknown route 404, correlation ID propagation, security headers
+#### Phase 7.0 — Foundation
+
+- **sy-core** — New axum binary crate (`crates/sy-core/`) with health endpoint, Tower middleware stack (tracing, compression, CORS, correlation ID, security headers, auth), and reverse proxy fallback to Fastify
+- **sy-types** — New shared types crate (`crates/sy-types/`) with core types: `HealthResponse`, `ApiError`, `PaginatedResponse`, `AuthUser`, `Permission`, `CoreConfig`, `Memory`, `KnowledgeEntry`, `MemoryType`
+- **Reverse proxy** — `proxy_to_fastify` handler forwards unimplemented routes to `localhost:$FASTIFY_PORT` during migration
+
+#### Phase 7.1 — Auth & Security
+
+- **JWT** — HS256 token issuance (access + refresh), validation with secret rotation grace period, backward compatibility fallback (6 tests)
+- **Auth middleware** — Tower Layer: public route bypass (16 routes), Bearer JWT validation, API key stub, avatar bypass
+- **RBAC** — Convention-based prefix→resource resolution (49 mappings, 6 overrides), 8 role definitions with wildcard + prefix matching (9 tests)
+
+#### Phase 7.2 — Core CRUD Domains (46 routes)
+
+Database layer via sqlx + 11 domain route modules:
+
+| Domain | Routes | DB Functions | Tables |
+|--------|--------|-------------|--------|
+| brain | 8 | 7 | brain.memories, brain.knowledge |
+| soul | 6 | 5 | soul.personalities |
+| chat | 4 | 4 | chat.conversations, chat.messages |
+| agents | 6 | 5 | agents.profiles, agents.delegations |
+| workflow | 6 | 6 | workflow.definitions, workflow.runs |
+| spirit | 3 | 3 | spirit.passions, spirit.inspirations, spirit.pains |
+| audit | 3 | 3 | audit.entries |
+| marketplace | 2 | 2 | marketplace.skills |
+| integrations | 3 | 3 | integration.integrations |
+| tasks | 2 | 2 | task.tasks |
+| alerts | 2 | 2 | telemetry.alert_rules |
+
+All routes behind auth middleware. Graceful 503 when DATABASE_URL not set. 22 tests passing.
 
 ### Ifran/Synapse Rename
 
