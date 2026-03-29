@@ -17,6 +17,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/v1/workflows/{id}", get(get_workflow))
         .route("/api/v1/workflows/{id}", delete(delete_workflow))
         .route("/api/v1/workflows/runs", get(list_runs))
+        .route("/api/v1/workflows/runs", post(create_run))
         .route("/api/v1/workflows/runs/{id}", get(get_run))
 }
 
@@ -101,6 +102,30 @@ async fn list_runs(
     };
     match workflow::list_runs(pool, q.workflow_id, q.limit.min(100), q.offset).await {
         Ok(rows) => Json(serde_json::to_value(rows).unwrap()).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"error": e.to_string()}))).into_response(),
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateRunRequest {
+    workflow_id: uuid::Uuid,
+    workflow_name: String,
+    input: Option<serde_json::Value>,
+    #[serde(default = "manual_trigger")]
+    triggered_by: String,
+}
+fn manual_trigger() -> String { "manual".to_string() }
+
+async fn create_run(
+    State(state): State<AppState>,
+    Json(body): Json<CreateRunRequest>,
+) -> impl IntoResponse {
+    let Some(pool) = state.db() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, Json(serde_json::json!({"error": "Database not available"}))).into_response();
+    };
+    match workflow::create_run(pool, body.workflow_id, &body.workflow_name, body.input.as_ref(), &body.triggered_by).await {
+        Ok(row) => (StatusCode::CREATED, Json(serde_json::to_value(row).unwrap())).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"error": e.to_string()}))).into_response(),
     }
 }

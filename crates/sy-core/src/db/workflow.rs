@@ -112,6 +112,21 @@ pub async fn list_runs(
     }
 }
 
+pub async fn create_run(
+    pool: &PgPool,
+    workflow_id: uuid::Uuid,
+    workflow_name: &str,
+    input_json: Option<&serde_json::Value>,
+    triggered_by: &str,
+) -> Result<WorkflowRunRow, sqlx::Error> {
+    let now = now_ms();
+    sqlx::query_as::<_, WorkflowRunRow>(
+        "INSERT INTO workflow.runs (workflow_id, workflow_name, input_json, triggered_by, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+    )
+    .bind(workflow_id).bind(workflow_name).bind(input_json).bind(triggered_by).bind(now)
+    .fetch_one(pool).await
+}
+
 pub async fn get_run(pool: &PgPool, id: uuid::Uuid) -> Result<Option<WorkflowRunRow>, sqlx::Error> {
     sqlx::query_as::<_, WorkflowRunRow>("SELECT * FROM workflow.runs WHERE id = $1")
         .bind(id)

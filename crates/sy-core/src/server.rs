@@ -31,6 +31,7 @@ pub fn build_router(state: AppState) -> Router {
     // Routes implemented in Rust
     let api = Router::new()
         .route("/health", get(health::health))
+        .merge(crate::routes::auth::router())
         .merge(crate::routes::brain::router())
         .merge(crate::routes::soul::router())
         .merge(crate::routes::chat::router())

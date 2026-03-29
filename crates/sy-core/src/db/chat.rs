@@ -39,6 +39,21 @@ pub struct MessageRow {
     pub grounding_score: Option<f32>,
 }
 
+pub async fn create_conversation(
+    pool: &PgPool,
+    id: &str,
+    title: &str,
+    personality_id: Option<&str>,
+    tenant_id: &str,
+) -> Result<ConversationRow, sqlx::Error> {
+    let now = now_ms();
+    sqlx::query_as::<_, ConversationRow>(
+        "INSERT INTO chat.conversations (id, title, personality_id, created_at, updated_at, tenant_id) VALUES ($1, $2, $3, $4, $4, $5) RETURNING *",
+    )
+    .bind(id).bind(title).bind(personality_id).bind(now).bind(tenant_id)
+    .fetch_one(pool).await
+}
+
 pub async fn list_conversations(
     pool: &PgPool,
     tenant_id: &str,
@@ -81,6 +96,10 @@ pub async fn delete_conversation(pool: &PgPool, id: &str, tenant_id: &str) -> Re
         .execute(pool)
         .await?;
     Ok(result.rows_affected() > 0)
+}
+
+fn now_ms() -> i64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis() as i64
 }
 
 pub async fn list_messages(
