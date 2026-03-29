@@ -35,7 +35,10 @@ pub fn build_router(state: AppState) -> Router {
         .merge(crate::routes::soul::router())
         .merge(crate::routes::chat::router())
         .merge(crate::routes::agents::router())
-        .merge(crate::routes::workflow::router());
+        .merge(crate::routes::workflow::router())
+        .merge(crate::routes::spirit::router())
+        .merge(crate::routes::audit::router())
+        .merge(crate::routes::marketplace::router());
 
     // Fallback: proxy everything else to Fastify
     let app = api.fallback(proxy_to_fastify);
