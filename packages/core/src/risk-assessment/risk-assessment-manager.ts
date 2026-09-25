@@ -507,7 +507,7 @@ export class RiskAssessmentManager {
     };
   }
 
-  private async scoreGovernance(windowDays: number): Promise<DomainResult> {
+  private async scoreGovernance(_windowDays: number): Promise<DomainResult> {
     const findings: RiskFinding[] = [];
     const since30d = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
@@ -584,7 +584,6 @@ export class RiskAssessmentManager {
       );
     }
 
-    void windowDays; // parameter used for context
     return {
       score,
       riskLevel: scoreToLevel(score),

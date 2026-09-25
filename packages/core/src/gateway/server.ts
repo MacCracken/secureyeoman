@@ -2037,12 +2037,7 @@ export class GatewayServer {
                 registryManager.updateExperiment(id, {
                   ...updates,
                   status: updates.status as
-                    | 'draft'
-                    | 'running'
-                    | 'completed'
-                    | 'failed'
-                    | 'archived'
-                    | undefined,
+                    'draft' | 'running' | 'completed' | 'failed' | 'archived' | undefined,
                 }),
               linkEvalRun: (expId, evalRunId, metrics) =>
                 registryManager.linkEvalRun(expId, evalRunId, metrics),
@@ -2161,9 +2156,9 @@ export class GatewayServer {
 
       // Audit chain count
       try {
-        const auditChain = this.secureYeoman.getAuditChain();
+        // Called for its side effect: getAuditChain() throws when uninitialized.
+        this.secureYeoman.getAuditChain();
         components.auditChain = { ok: true, detail: 'initialized' };
-        void auditChain; // satisfy no-unused
       } catch (err) {
         components.auditChain = {
           ok: false,

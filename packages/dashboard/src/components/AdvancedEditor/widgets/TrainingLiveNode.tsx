@@ -28,7 +28,7 @@ export function TrainingLiveNode() {
   const esRef = useRef<EventSource | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: qualityData } = useQuery({
+  const { data: _qualityData } = useQuery({
     queryKey: ['training-quality'],
     queryFn: () => fetchQualityScores(20),
     staleTime: 30_000,
@@ -58,9 +58,6 @@ export function TrainingLiveNode() {
       es.close();
     };
   }, []);
-
-  // Suppress unused variable warning for qualityData
-  void qualityData;
 
   return (
     <div className="p-3 space-y-3 text-sm h-full overflow-auto">

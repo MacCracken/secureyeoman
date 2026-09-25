@@ -158,14 +158,10 @@ export class ToolOutputScanner {
       current = current.replace(pattern, replacement);
 
       if (current !== before) {
-        // Count the number of replacements by comparing lengths
-        const removed = before.length - current.length + replacement.length;
         // Simple occurrence count: count how many times the replacement appears
         // after substitution minus how many existed before.
         const occurrences = (current.match(new RegExp(escapeRegex(replacement), 'g')) ?? []).length;
         redactionMap.set(type, (redactionMap.get(type) ?? 0) + occurrences);
-        // Suppress unused variable lint warning
-        void removed;
       }
     }
 

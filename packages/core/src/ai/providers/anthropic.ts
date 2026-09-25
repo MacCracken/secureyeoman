@@ -129,7 +129,7 @@ export class AnthropicProvider extends BaseProvider {
       let currentToolId = '';
       let currentToolName = '';
       let _currentToolArgs = '';
-      let inThinkingBlock = false;
+      let _inThinkingBlock = false;
 
       try {
         for await (const event of stream) {
@@ -139,18 +139,18 @@ export class AnthropicProvider extends BaseProvider {
               currentToolId = block.id as string;
               currentToolName = block.name as string;
               _currentToolArgs = '';
-              inThinkingBlock = false;
+              _inThinkingBlock = false;
             } else if (block.type === 'thinking') {
-              inThinkingBlock = true;
+              _inThinkingBlock = true;
             } else {
-              inThinkingBlock = false;
+              _inThinkingBlock = false;
             }
           } else if (event.type === 'content_block_delta') {
             const delta = event.delta as unknown as Record<string, unknown>;
             if (delta.type === 'thinking_delta') {
               yield { type: 'thinking_delta', thinking: (delta.thinking as string) ?? '' };
             } else if (delta.type === 'text_delta') {
-              inThinkingBlock = false;
+              _inThinkingBlock = false;
               yield { type: 'content_delta', content: (delta.text as string) ?? '' };
             } else if (delta.type === 'input_json_delta') {
               _currentToolArgs += (delta.partial_json as string) ?? '';
@@ -160,7 +160,7 @@ export class AnthropicProvider extends BaseProvider {
               };
             }
           } else if (event.type === 'content_block_stop') {
-            inThinkingBlock = false;
+            _inThinkingBlock = false;
           } else if (event.type === 'message_delta') {
             const finalMessage = await stream.finalMessage();
             const usage = this.mapUsage(finalMessage.usage);
@@ -196,7 +196,6 @@ export class AnthropicProvider extends BaseProvider {
         // Cleanup: abort the Anthropic SDK stream if the consumer stopped iterating early
         if (typeof stream.abort === 'function') stream.abort();
       }
-      void inThinkingBlock; // suppress unused warning
     } catch (error) {
       throw this.mapError(error);
     }

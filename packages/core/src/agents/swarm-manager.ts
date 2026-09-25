@@ -541,10 +541,11 @@ export class SwarmManager {
     }
   }
 
-  private async collectTokenTotals(runId: string): Promise<{ prompt: number; completion: number }> {
+  private async collectTokenTotals(
+    _runId: string
+  ): Promise<{ prompt: number; completion: number }> {
     // Token totals are tracked per delegation; for now we keep it simple
     // and return zero (delegations track their own usage separately).
-    void runId;
     return { prompt: 0, completion: 0 };
   }
 }

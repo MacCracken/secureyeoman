@@ -52,9 +52,8 @@ export function registerBatchInferenceRoutes(
         });
 
         // Execute in background
-        batchManager.executeJob(job.id).catch((err: unknown) => {
+        batchManager.executeJob(job.id).catch((_err: unknown) => {
           // Error already recorded in DB
-          void err;
         });
 
         return reply.code(202).send(job);

@@ -73,22 +73,23 @@ export function SoulSystemTab() {
     queryFn: fetchPersonalities,
   });
 
-  const enableMut = useMutation({
+  // Not wired into this tab's UI yet — kept for upcoming personality controls.
+  const _enableMut = useMutation({
     mutationFn: (id: string) => enablePersonality(id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
   });
 
-  const disableMut = useMutation({
+  const _disableMut = useMutation({
     mutationFn: (id: string) => disablePersonality(id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
   });
 
-  const setDefaultMut = useMutation({
+  const _setDefaultMut = useMutation({
     mutationFn: (id: string) => setDefaultPersonality(id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
   });
 
-  const clearDefaultMut = useMutation({
+  const _clearDefaultMut = useMutation({
     mutationFn: () => clearDefaultPersonality(),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
   });
@@ -96,12 +97,6 @@ export function SoulSystemTab() {
   const personalities = personalitiesData?.personalities ?? [];
   const activePersonalities = personalities.filter((p) => p.isActive);
   const globalMaxPromptTokens = soulConfig?.maxPromptTokens ?? 16000;
-
-  // Suppress unused-variable lint for mutations that may be used in future UI
-  void enableMut;
-  void disableMut;
-  void setDefaultMut;
-  void clearDefaultMut;
 
   return (
     <>

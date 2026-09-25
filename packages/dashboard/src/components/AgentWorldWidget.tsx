@@ -629,7 +629,8 @@ export function AgentWorldWidget({
 }: AgentWorldWidgetProps) {
   // Per-personality frame counters — staggered so agents animate out of phase
   const framesRef = useRef(new Map<string, number>());
-  const [tick, setTick] = useState(0);
+  // Only the setter is used: bumping it triggers a re-render.
+  const [, setTick] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // IntersectionObserver — pause animation and polling when off-screen
@@ -715,8 +716,6 @@ export function AgentWorldWidget({
       clearInterval(timer);
     };
   }, [isVisible]);
-
-  void tick; // used only to trigger re-render
 
   const personalities = (resolvedPersonalitiesData?.personalities ?? []).slice(0, maxAgents);
   const tasks: Task[] = resolvedTasksData?.tasks ?? [];

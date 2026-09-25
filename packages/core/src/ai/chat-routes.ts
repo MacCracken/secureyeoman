@@ -2420,10 +2420,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           ? personality.body.reasoningConfig.effort
           : undefined;
 
-        const personalityFallbacks = personality?.modelFallbacks?.length
+        // Not applied: the streaming path uses the default provider.
+        const _personalityFallbacks = personality?.modelFallbacks?.length
           ? resolvePersonalityFallbacks(personality.modelFallbacks)
           : undefined;
-        void personalityFallbacks; // streaming path uses default provider
 
         const aiRequest: AIRequest = {
           messages,

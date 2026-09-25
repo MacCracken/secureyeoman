@@ -1032,15 +1032,14 @@ Options:
     const { value: sizeStr, rest: argv4 } = extractFlag(argv, 'size');
     argv = argv4;
 
-    const { value: speedStr, rest: argv5 } = extractFlag(argv, 'speed');
-    argv = argv5;
-    void argv; // consumed
+    const { value: speedStr } = extractFlag(argv, 'speed');
 
     const size: WorldSize = ['compact', 'normal', 'large'].includes(sizeStr ?? '')
       ? (sizeStr as WorldSize)
       : 'normal';
 
-    const speedOverride: number | null =
+    // Parsed but not applied yet: the render interval is fixed by --fps.
+    const _speedOverride: number | null =
       speedStr === 'slow' ? 2 : speedStr === 'fast' ? 8 : speedStr === 'normal' ? 4 : null;
 
     const fps = Math.min(16, Math.max(1, parseInt(fpsStr ?? '4', 10) || 4));
@@ -1274,7 +1273,7 @@ Options:
 
         // Mood drives animation speed unless user set --speed
         currentMood = computeMood(tasks, recentAuditEntries, celebrationUntil, now);
-        const moodFps =
+        const _moodFps =
           currentMood === 'celebration'
             ? 8
             : currentMood === 'busy'
@@ -1282,8 +1281,6 @@ Options:
               : currentMood === 'productive'
                 ? 4
                 : 2;
-        void moodFps; // fps override is informational; interval already set
-        void speedOverride; // consumed above
 
         const activeTask = tasks.find((t) => t.status === 'running');
         const activeTaskName = activeTask?.title ?? activeTask?.name ?? '';

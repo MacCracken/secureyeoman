@@ -470,7 +470,6 @@ export class RiskAssessmentStorage extends PgBaseStorage {
     userId?: string
   ): Promise<ExternalFinding | null> {
     const now = Date.now();
-    const extra = '';
     const params: unknown[] = [status, id];
 
     if (status === 'acknowledged') {
@@ -499,7 +498,6 @@ export class RiskAssessmentStorage extends PgBaseStorage {
     }
 
     // generic status update
-    void extra;
     const row = await this.queryOne<FindingRow>(
       `UPDATE risk.external_findings SET status = $1 WHERE id = $2 RETURNING *`,
       [status, id]

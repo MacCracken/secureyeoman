@@ -1445,7 +1445,6 @@ export function PersonalityView() {
 
   const {
     deleteMut,
-    activateMut,
     enableMut,
     disableMut,
     setDefaultMut,
@@ -1472,8 +1471,6 @@ export function PersonalityView() {
       setDeleteTarget(null);
     }
   }, [deleteTarget, deleteMut]);
-
-  void activateMut;
 
   return (
     <div className="space-y-6 overflow-x-hidden">

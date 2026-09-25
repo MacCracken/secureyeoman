@@ -354,8 +354,8 @@ export class FederationManager {
     }
 
     // Bulk-insert knowledge entries
-    // (In a real implementation, this would call brainManager.createKnowledgeEntry for each)
-    void knowledgeEntries; // acknowledged but not fully wired (brain CRUD is complex)
+    // (In a real implementation, this would call brainManager.createKnowledgeEntry for each;
+    // acknowledged but not fully wired — brain CRUD is complex.)
 
     await this.storage
       .logSync({
