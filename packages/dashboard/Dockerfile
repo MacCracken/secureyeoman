@@ -1,7 +1,7 @@
 # Stage 1: Build the dashboard SPA
-# Pin: update digest with: docker manifest inspect node:22-alpine | jq -r '.manifests[0].digest'
+# Pin: update digest with: docker manifest inspect node:24-alpine | jq -r '.manifests[0].digest'
 # Last verified: 2026-03-12
-ARG NODE_IMAGE=node:22-alpine
+ARG NODE_IMAGE=node:24-alpine
 FROM ${NODE_IMAGE} AS builder
 
 WORKDIR /app

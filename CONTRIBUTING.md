@@ -35,7 +35,7 @@ For questions about the CLA or commercial licensing, open an issue or contact th
 
 ### Prerequisites
 
-- Node.js 22 LTS or later
+- Node.js 22 LTS or later (24 LTS is the default — see `.nvmrc`)
 - npm (project uses npm workspaces)
 - Docker & Docker Compose (for PostgreSQL; or use a local Postgres installation)
 - Git

@@ -9,7 +9,7 @@
 # Used by docker-compose.yml for local docker compose up.
 
 # Build args (must be before FROM to be usable in FROM lines)
-ARG NODE_IMAGE=node:22-alpine
+ARG NODE_IMAGE=node:24-alpine
 
 # ---- rust builder ----
 FROM rust:1.91 AS rust-builder

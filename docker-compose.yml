@@ -759,8 +759,8 @@ services:
   # This separate service is for local development only (Vite HMR).
   sy-dashboard-dev:
     # PRODUCTION: Pin to SHA256 digest in .env — e.g. NODE_IMAGE=node@sha256:<digest>
-    # Get digest: docker manifest inspect node:22-alpine | jq -r '.manifests[0].digest'
-    image: ${NODE_IMAGE:-node:22-alpine}
+    # Get digest: docker manifest inspect node:24-alpine | jq -r '.manifests[0].digest'
+    image: ${NODE_IMAGE:-node:24-alpine}
     working_dir: /app
     command: sh -c "npm install --ignore-scripts && npm run dev:dashboard"
     ports:
