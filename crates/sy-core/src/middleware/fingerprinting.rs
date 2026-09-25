@@ -153,6 +153,9 @@ pub async fn check_fingerprint(
     req: Request<Body>,
     next: Next,
 ) -> Response<Body> {
+    if !state.fingerprint_enabled() {
+        return next.run(req).await;
+    }
     let ip = crate::middleware::client_ip::client_ip(&req, state.trust_proxy_headers());
     let fp_state = state.fingerprint();
     let score = compute_bot_score(&req, &ip, fp_state);

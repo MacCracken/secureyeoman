@@ -9,13 +9,20 @@ use sqlx::PgPool;
 pub struct ApiKeyRow {
     pub id: String,
     pub name: String,
+    #[serde(skip_serializing)]
     pub key_hash: String,
     pub key_prefix: String,
-    pub permissions: serde_json::Value,
-    pub expires_at: Option<i64>,
+    pub role: String,
+    pub user_id: String,
     pub created_at: i64,
+    pub expires_at: Option<i64>,
+    pub revoked_at: Option<i64>,
     pub last_used_at: Option<i64>,
     pub tenant_id: String,
+    pub personality_id: Option<String>,
+    pub rate_limit_rpm: Option<i32>,
+    pub rate_limit_tpd: Option<i32>,
+    pub is_gateway_key: bool,
 }
 
 /// User row from auth.users table.
@@ -31,16 +38,32 @@ pub struct UserRow {
     pub tenant_id: String,
 }
 
-/// API key usage statistics row.
+/// One recorded API key request (auth.api_key_usage).
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiKeyUsageRow {
-    pub api_key_id: String,
-    pub request_count: i64,
-    pub last_used_at: Option<i64>,
-    pub last_endpoint: Option<String>,
-    pub last_status_code: Option<i32>,
-    pub created_at: i64,
+    pub id: String,
+    pub key_id: String,
+    pub timestamp: i64,
+    pub tokens_used: i32,
+    pub latency_ms: Option<i32>,
+    pub personality_id: Option<String>,
+    pub status_code: i32,
+    pub error_message: Option<String>,
+}
+
+/// Per-key usage aggregated over the last 24 hours.
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiKeyUsageSummaryRow {
+    pub key_id: String,
+    pub key_prefix: String,
+    pub personality_id: Option<String>,
+    pub requests24h: i64,
+    pub tokens24h: i64,
+    pub errors24h: i64,
+    pub p50_latency_ms: i64,
+    pub p95_latency_ms: i64,
 }
 
 /// Role row from auth.roles table.
@@ -122,10 +145,10 @@ pub struct WebAuthnCredentialRow {
 
 // ── API Keys ─────────────────────────────────────────────────────────────
 
-/// List all API keys.
+/// List a tenant's active (unrevoked) API keys.
 pub async fn list_api_keys(pool: &PgPool, tenant_id: &str) -> Result<Vec<ApiKeyRow>, sqlx::Error> {
     sqlx::query_as::<_, ApiKeyRow>(
-        "SELECT * FROM auth.api_keys WHERE tenant_id = $1 ORDER BY created_at DESC",
+        "SELECT * FROM auth.api_keys WHERE tenant_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC",
     )
     .bind(tenant_id)
     .fetch_all(pool)
@@ -133,14 +156,15 @@ pub async fn list_api_keys(pool: &PgPool, tenant_id: &str) -> Result<Vec<ApiKeyR
 }
 
 /// Find an API key by its SHA-256 hash (for validation).
-/// Returns None if not found, expired, or deleted.
+/// Returns None if not found, revoked, or expired.
 pub async fn find_api_key_by_hash(
     pool: &PgPool,
     key_hash: &str,
 ) -> Result<Option<ApiKeyRow>, sqlx::Error> {
     let now = now_ms();
     sqlx::query_as::<_, ApiKeyRow>(
-        "SELECT * FROM auth.api_keys WHERE key_hash = $1 AND (expires_at IS NULL OR expires_at > $2)",
+        "SELECT * FROM auth.api_keys
+         WHERE key_hash = $1 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > $2)",
     )
     .bind(key_hash)
     .bind(now)
@@ -158,73 +182,98 @@ pub async fn touch_api_key(pool: &PgPool, id: &str) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
+/// A new API key to store. Only the hash of the secret is persisted.
+pub struct NewApiKey<'a> {
+    pub id: &'a str,
+    pub name: &'a str,
+    pub key_hash: &'a str,
+    pub key_prefix: &'a str,
+    pub role: &'a str,
+    pub user_id: &'a str,
+    pub expires_at: Option<i64>,
+    pub tenant_id: &'a str,
+}
+
 /// Create an API key.
-#[allow(clippy::too_many_arguments)]
-pub async fn create_api_key(
-    pool: &PgPool,
-    id: &str,
-    name: &str,
-    key_hash: &str,
-    key_prefix: &str,
-    permissions: &serde_json::Value,
-    expires_at: Option<i64>,
-    tenant_id: &str,
-) -> Result<ApiKeyRow, sqlx::Error> {
-    let now = now_ms();
+pub async fn create_api_key(pool: &PgPool, key: &NewApiKey<'_>) -> Result<ApiKeyRow, sqlx::Error> {
     sqlx::query_as::<_, ApiKeyRow>(
-        "INSERT INTO auth.api_keys (id, name, key_hash, key_prefix, permissions, expires_at, created_at, tenant_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        "INSERT INTO auth.api_keys (id, name, key_hash, key_prefix, role, user_id, created_at, expires_at, tenant_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *",
     )
-    .bind(id)
-    .bind(name)
-    .bind(key_hash)
-    .bind(key_prefix)
-    .bind(permissions)
-    .bind(expires_at)
-    .bind(now)
-    .bind(tenant_id)
+    .bind(key.id)
+    .bind(key.name)
+    .bind(key.key_hash)
+    .bind(key.key_prefix)
+    .bind(key.role)
+    .bind(key.user_id)
+    .bind(now_ms())
+    .bind(key.expires_at)
+    .bind(key.tenant_id)
     .fetch_one(pool)
     .await
 }
 
-/// Delete (revoke) an API key by ID.
-pub async fn delete_api_key(pool: &PgPool, id: &str, tenant_id: &str) -> Result<bool, sqlx::Error> {
-    let result = sqlx::query("DELETE FROM auth.api_keys WHERE id = $1 AND tenant_id = $2")
-        .bind(id)
-        .bind(tenant_id)
-        .execute(pool)
-        .await?;
+/// Revoke an API key by ID. The row is kept (revoked_at set) so its usage
+/// history stays attributable. Returns false if it is unknown or already revoked.
+pub async fn revoke_api_key(pool: &PgPool, id: &str, tenant_id: &str) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query(
+        "UPDATE auth.api_keys SET revoked_at = $1
+         WHERE id = $2 AND tenant_id = $3 AND revoked_at IS NULL",
+    )
+    .bind(now_ms())
+    .bind(id)
+    .bind(tenant_id)
+    .execute(pool)
+    .await?;
     Ok(result.rows_affected() > 0)
 }
 
-/// Get usage stats for a specific API key.
+/// Recorded requests for one API key, newest first (at most 1000), optionally
+/// bounded by a `[from, to]` millisecond window.
 pub async fn get_api_key_usage(
     pool: &PgPool,
-    api_key_id: &str,
+    key_id: &str,
     tenant_id: &str,
-) -> Result<Option<ApiKeyUsageRow>, sqlx::Error> {
+    from: Option<i64>,
+    to: Option<i64>,
+) -> Result<Vec<ApiKeyUsageRow>, sqlx::Error> {
     sqlx::query_as::<_, ApiKeyUsageRow>(
-        "SELECT * FROM auth.api_key_usage WHERE api_key_id = $1
-         AND api_key_id IN (SELECT id FROM auth.api_keys WHERE tenant_id = $2)",
+        "SELECT * FROM auth.api_key_usage
+         WHERE key_id = $1
+           AND key_id IN (SELECT id FROM auth.api_keys WHERE tenant_id = $2)
+           AND ($3::bigint IS NULL OR timestamp >= $3)
+           AND ($4::bigint IS NULL OR timestamp <= $4)
+         ORDER BY timestamp DESC
+         LIMIT 1000",
     )
-    .bind(api_key_id)
+    .bind(key_id)
     .bind(tenant_id)
-    .fetch_optional(pool)
+    .bind(from)
+    .bind(to)
+    .fetch_all(pool)
     .await
 }
 
-/// Get aggregate usage summary across all API keys for a tenant.
+/// Per-key usage over the last 24 hours for a tenant.
 pub async fn get_usage_summary(
     pool: &PgPool,
     tenant_id: &str,
-) -> Result<Vec<ApiKeyUsageRow>, sqlx::Error> {
-    sqlx::query_as::<_, ApiKeyUsageRow>(
-        "SELECT u.* FROM auth.api_key_usage u
-         JOIN auth.api_keys k ON k.id = u.api_key_id
-         WHERE k.tenant_id = $1
-         ORDER BY u.request_count DESC",
+) -> Result<Vec<ApiKeyUsageSummaryRow>, sqlx::Error> {
+    sqlx::query_as::<_, ApiKeyUsageSummaryRow>(
+        "SELECT u.key_id, k.key_prefix, k.personality_id,
+                COUNT(*) AS requests24h,
+                COALESCE(SUM(u.tokens_used), 0)::bigint AS tokens24h,
+                COUNT(*) FILTER (WHERE u.status_code >= 400) AS errors24h,
+                COALESCE(ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY u.latency_ms)), 0)::bigint AS p50_latency_ms,
+                COALESCE(ROUND(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY u.latency_ms)), 0)::bigint AS p95_latency_ms
+         FROM auth.api_key_usage u
+         JOIN auth.api_keys k ON k.id = u.key_id
+         WHERE u.timestamp >= $1 AND k.tenant_id = $2
+         GROUP BY u.key_id, k.key_prefix, k.personality_id
+         ORDER BY requests24h DESC",
     )
+    .bind(now_ms() - 86_400_000)
     .bind(tenant_id)
     .fetch_all(pool)
     .await
@@ -898,14 +947,37 @@ pub async fn revoke_token(
     Ok(())
 }
 
-/// Check if a token JTI has been revoked.
-pub async fn is_token_revoked(pool: &PgPool, jti: &str) -> Result<bool, sqlx::Error> {
-    let row: Option<(String,)> =
-        sqlx::query_as("SELECT jti FROM auth.revoked_tokens WHERE jti = $1")
+/// Revoke a token JTI unless it already is; `true` only for the call that
+/// revoked it (atomic, so two concurrent redemptions cannot both succeed).
+pub async fn revoke_token_once(
+    pool: &PgPool,
+    jti: &str,
+    user_id: &str,
+    expires_at: i64,
+) -> Result<bool, sqlx::Error> {
+    let row: Option<(String,)> = sqlx::query_as(
+        "INSERT INTO auth.revoked_tokens (jti, user_id, revoked_at, expires_at)
+         VALUES ($1, $2, $3, $4) ON CONFLICT (jti) DO NOTHING
+         RETURNING jti",
+    )
+    .bind(jti)
+    .bind(user_id)
+    .bind(now_ms())
+    .bind(expires_at)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.is_some())
+}
+
+/// If a token JTI has been revoked, when the revocation lapses (the token's own
+/// expiry, Unix ms).
+pub async fn token_revocation_expiry(pool: &PgPool, jti: &str) -> Result<Option<i64>, sqlx::Error> {
+    let row: Option<(i64,)> =
+        sqlx::query_as("SELECT expires_at FROM auth.revoked_tokens WHERE jti = $1")
             .bind(jti)
             .fetch_optional(pool)
             .await?;
-    Ok(row.is_some())
+    Ok(row.map(|(exp,)| exp))
 }
 
 /// Clean up expired revocation entries (tokens that have already expired).

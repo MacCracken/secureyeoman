@@ -120,11 +120,17 @@ pub fn router() -> Router<AppState> {
 // ── Core auth handlers ───────────────────────────────────────────────────
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct LoginRequest {
     password: String,
-    #[serde(default)]
+    #[serde(default, alias = "remember_me")]
     remember_me: bool,
 }
+
+/// "Remember me" keeps access tokens short-lived (1 h) and extends only the
+/// refresh token (30 days) — the TS gateway's policy.
+const REMEMBER_ME_ACCESS_SECS: u64 = 3600;
+const REMEMBER_ME_REFRESH_SECS: u64 = 30 * 86_400;
 
 /// Whether any admin credential is configured (an Argon2 hash, or a plaintext
 /// password as a discouraged fallback).
@@ -182,7 +188,15 @@ async fn login(State(state): State<AppState>, Json(body): Json<LoginRequest>) ->
             .into_response();
     }
 
-    let jwt_config = state.jwt_config();
+    let jwt_config = if body.remember_me {
+        &crate::auth::jwt::JwtConfig {
+            access_token_expiry_secs: REMEMBER_ME_ACCESS_SECS,
+            refresh_token_expiry_secs: REMEMBER_ME_REFRESH_SECS,
+            ..state.jwt_config().clone()
+        }
+    } else {
+        state.jwt_config()
+    };
     let permissions = vec!["*:*".to_string()];
 
     let access_token = match issue_access_token(jwt_config, "admin", "admin", &permissions) {
@@ -207,11 +221,7 @@ async fn login(State(state): State<AppState>, Json(body): Json<LoginRequest>) ->
         }
     };
 
-    let expires_in = if body.remember_me {
-        3600 // 1 hour
-    } else {
-        jwt_config.access_token_expiry_secs
-    };
+    let expires_in = jwt_config.access_token_expiry_secs;
 
     // Record login audit event
     if let Some(pool) = state.db() {
@@ -239,10 +249,15 @@ async fn login(State(state): State<AppState>, Json(body): Json<LoginRequest>) ->
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct RefreshRequest {
+    #[serde(alias = "refresh_token")]
     refresh_token: String,
 }
 
+/// Exchange a refresh token for a new access + refresh token pair. Refresh
+/// tokens are single-use: the presented one is revoked as it is redeemed, so a
+/// stolen-and-replayed or logged-out refresh token is refused.
 async fn refresh(
     State(state): State<AppState>,
     Json(body): Json<RefreshRequest>,
@@ -259,41 +274,78 @@ async fn refresh(
         }
     };
 
-    let permissions = claims.permissions;
-    let access_token = match issue_access_token(jwt_config, &claims.sub, &claims.role, &permissions)
+    let expires_at_ms = (claims.exp as i64).saturating_mul(1000);
+    if !state
+        .consume_token(&claims.jti, &claims.sub, expires_at_ms)
+        .await
     {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({"error": "Refresh token has been revoked"})),
+        )
+            .into_response();
+    }
+
+    let token_error = |e: String| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": format!("Token generation failed: {e}")})),
+        )
+            .into_response()
+    };
+    let access_token =
+        match issue_access_token(jwt_config, &claims.sub, &claims.role, &claims.permissions) {
+            Ok(t) => t,
+            Err(e) => return token_error(e),
+        };
+    let refresh_token = match issue_refresh_token(jwt_config, &claims.sub, &claims.role) {
         Ok(t) => t,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": format!("Token generation failed: {e}")})),
-            )
-                .into_response();
-        }
+        Err(e) => return token_error(e),
     };
 
     Json(serde_json::json!({
         "accessToken": access_token,
+        "refreshToken": refresh_token,
         "expiresIn": jwt_config.access_token_expiry_secs,
         "tokenType": "Bearer",
     }))
     .into_response()
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LogoutRequest {
+    #[serde(default, alias = "refresh_token")]
+    refresh_token: Option<String>,
+}
+
+/// End the caller's session: revoke the presenting access token and, when the
+/// client hands it over, the session's refresh token (which would otherwise
+/// keep minting access tokens until it expires).
 async fn logout(
     State(state): State<AppState>,
     auth: Option<axum::Extension<crate::auth::middleware::AuthContext>>,
+    // Lenient: a missing or malformed body must never block a logout.
+    body: Result<Json<LogoutRequest>, axum::extract::rejection::JsonRejection>,
 ) -> impl IntoResponse {
-    if let Some(axum::Extension(ctx)) = auth
-        && let Some(jti) = &ctx.jti
+    let Some(axum::Extension(ctx)) = auth else {
+        return StatusCode::NO_CONTENT;
+    };
+    if let (Some(jti), Some(exp)) = (&ctx.jti, ctx.exp) {
+        let expires_at_ms = (exp as i64).saturating_mul(1000);
+        state.revoke_token(jti, &ctx.user_id, expires_at_ms).await;
+    }
+    let refresh = body.ok().and_then(|Json(b)| b.refresh_token);
+    if let Some(refresh) = refresh
+        && let Ok(claims) = validate_token(state.jwt_config(), &refresh)
+        // Only the caller's own refresh token can be revoked this way.
+        && claims.token_type == "refresh"
+        && claims.sub == ctx.user_id
     {
-        // Revoke with 15-minute expiry (access token TTL)
-        let expires_at = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64
-            + 900_000; // 15 min
-        state.revoke_token(jti, &ctx.user_id, expires_at).await;
+        let expires_at_ms = (claims.exp as i64).saturating_mul(1000);
+        state
+            .revoke_token(&claims.jti, &claims.sub, expires_at_ms)
+            .await;
     }
     StatusCode::NO_CONTENT
 }
@@ -445,6 +497,38 @@ async fn break_glass(
 
 // ── API key handlers ─────────────────────────────────────────────────────
 
+/// Raw API keys are `sck_` + 32 random bytes (base64url); only the SHA-256 hash
+/// is stored, and the raw key is returned exactly once, at creation.
+const API_KEY_PREFIX: &str = "sck_";
+
+/// Milliseconds since the epoch → ISO-8601 (`2026-01-01T00:00:00.000Z`), the
+/// shape the dashboard and the TS gateway used for key timestamps.
+fn iso_ms(ms: i64) -> Option<String> {
+    chrono::DateTime::from_timestamp_millis(ms)
+        .map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Millis, true))
+}
+
+/// Public view of a key — never includes the hash.
+fn api_key_json(row: &auth::ApiKeyRow) -> serde_json::Value {
+    serde_json::json!({
+        "id": row.id,
+        "name": row.name,
+        "prefix": row.key_prefix,
+        "role": row.role,
+        "createdAt": iso_ms(row.created_at),
+        "expiresAt": row.expires_at.and_then(iso_ms),
+        "lastUsedAt": row.last_used_at.and_then(iso_ms),
+    })
+}
+
+/// Whether `caller_role` may mint a key carrying `requested_role`: the role
+/// must exist, and a key can never hold more than its creator (admin may issue
+/// any role; everyone else only their own).
+fn may_issue_key_role(caller_role: &str, requested_role: &str) -> bool {
+    let known = !crate::auth::permissions::role_permissions(requested_role).is_empty();
+    known && (caller_role == "admin" || caller_role == requested_role)
+}
+
 async fn list_api_keys(State(state): State<AppState>) -> impl IntoResponse {
     let Some(pool) = state.db() else {
         return (
@@ -454,7 +538,10 @@ async fn list_api_keys(State(state): State<AppState>) -> impl IntoResponse {
             .into_response();
     };
     match auth::list_api_keys(pool, "default").await {
-        Ok(rows) => Json(serde_json::json!({"keys": rows})).into_response(),
+        Ok(rows) => {
+            let keys: Vec<_> = rows.iter().map(api_key_json).collect();
+            Json(serde_json::json!({ "keys": keys })).into_response()
+        }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": e.to_string()})),
@@ -467,21 +554,43 @@ async fn list_api_keys(State(state): State<AppState>) -> impl IntoResponse {
 #[serde(rename_all = "camelCase")]
 struct CreateApiKeyRequest {
     name: String,
-    key_hash: String,
-    key_prefix: String,
-    #[serde(default = "default_permissions")]
-    permissions: serde_json::Value,
-    expires_at: Option<i64>,
-}
-
-fn default_permissions() -> serde_json::Value {
-    serde_json::json!(["*:*"])
+    role: String,
+    #[serde(default)]
+    expires_in_days: Option<f64>,
 }
 
 async fn create_api_key(
     State(state): State<AppState>,
+    axum::Extension(auth_ctx): axum::Extension<crate::auth::middleware::AuthContext>,
     Json(body): Json<CreateApiKeyRequest>,
 ) -> impl IntoResponse {
+    let bad_request = |msg: &str| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": msg})),
+        )
+            .into_response()
+    };
+    let name = body.name.trim();
+    if name.is_empty() || name.len() > 200 {
+        return bad_request("name must be 1-200 characters");
+    }
+    if !may_issue_key_role(&auth_ctx.role, &body.role) {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "error": format!("Cannot create API key with role '{}': unknown role or exceeds your permission level", body.role),
+            })),
+        )
+            .into_response();
+    }
+    let expires_at = match body.expires_in_days {
+        None => None,
+        Some(d) if d.is_finite() && d > 0.0 && d <= 3650.0 => {
+            Some(now_ms() + (d * 86_400_000.0) as i64)
+        }
+        Some(_) => return bad_request("expiresInDays must be between 0 and 3650"),
+    };
     let Some(pool) = state.db() else {
         return (
             StatusCode::SERVICE_UNAVAILABLE,
@@ -489,24 +598,30 @@ async fn create_api_key(
         )
             .into_response();
     };
+
+    let raw_key = format!(
+        "{API_KEY_PREFIX}{}",
+        b64url(&crate::crypto::random_bytes(32))
+    );
+    let key_hash = crate::crypto::sha256(raw_key.as_bytes());
     let id = uuid::Uuid::now_v7().to_string();
-    match auth::create_api_key(
-        pool,
-        &id,
-        &body.name,
-        &body.key_hash,
-        &body.key_prefix,
-        &body.permissions,
-        body.expires_at,
-        "default",
-    )
-    .await
-    {
-        Ok(row) => (
-            StatusCode::CREATED,
-            Json(serde_json::to_value(row).unwrap()),
-        )
-            .into_response(),
+    let new_key = auth::NewApiKey {
+        id: &id,
+        name,
+        key_hash: &key_hash,
+        key_prefix: &raw_key[..8],
+        role: &body.role,
+        user_id: &auth_ctx.user_id,
+        expires_at,
+        tenant_id: "default",
+    };
+    match auth::create_api_key(pool, &new_key).await {
+        Ok(row) => {
+            let mut out = api_key_json(&row);
+            out["key"] = serde_json::Value::String(raw_key.clone());
+            out["rawKey"] = serde_json::Value::String(raw_key);
+            (StatusCode::CREATED, Json(out)).into_response()
+        }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": e.to_string()})),
@@ -522,11 +637,11 @@ async fn revoke_api_key(
     let Some(pool) = state.db() else {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     };
-    match auth::delete_api_key(pool, &id, "default").await {
+    match auth::revoke_api_key(pool, &id, "default").await {
         Ok(true) => StatusCode::NO_CONTENT.into_response(),
         Ok(false) => (
             StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": "API key not found"})),
+            Json(serde_json::json!({"error": "API key not found or already revoked"})),
         )
             .into_response(),
         Err(e) => (
@@ -537,9 +652,16 @@ async fn revoke_api_key(
     }
 }
 
+#[derive(Deserialize)]
+struct UsageWindow {
+    from: Option<i64>,
+    to: Option<i64>,
+}
+
 async fn get_api_key_usage(
     State(state): State<AppState>,
     Path(id): Path<String>,
+    axum::extract::Query(window): axum::extract::Query<UsageWindow>,
 ) -> impl IntoResponse {
     let Some(pool) = state.db() else {
         return (
@@ -548,13 +670,8 @@ async fn get_api_key_usage(
         )
             .into_response();
     };
-    match auth::get_api_key_usage(pool, &id, "default").await {
-        Ok(Some(row)) => Json(serde_json::to_value(row).unwrap()).into_response(),
-        Ok(None) => (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": "No usage data for this API key"})),
-        )
-            .into_response(),
+    match auth::get_api_key_usage(pool, &id, "default", window.from, window.to).await {
+        Ok(rows) => Json(serde_json::json!({ "usage": rows })).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": e.to_string()})),
@@ -572,15 +689,7 @@ async fn get_usage_summary(State(state): State<AppState>) -> impl IntoResponse {
             .into_response();
     };
     match auth::get_usage_summary(pool, "default").await {
-        Ok(rows) => {
-            let total_requests: i64 = rows.iter().map(|r| r.request_count).sum();
-            Json(serde_json::json!({
-                "totalKeys": rows.len(),
-                "totalRequests": total_requests,
-                "keys": serde_json::to_value(rows).unwrap(),
-            }))
-            .into_response()
-        }
+        Ok(rows) => Json(serde_json::json!({ "summary": rows })).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": e.to_string()})),
@@ -733,8 +842,13 @@ struct CreateRoleRequest {
     name: String,
     #[serde(default)]
     description: String,
-    #[serde(default = "default_permissions")]
+    #[serde(default = "default_role_permissions")]
     permissions: serde_json::Value,
+}
+
+/// A role created without an explicit permission list grants nothing.
+fn default_role_permissions() -> serde_json::Value {
+    serde_json::json!([])
 }
 
 async fn create_role(
@@ -1707,7 +1821,25 @@ async fn sso_exchange(
     .into_response()
 }
 
+/// Provider ids are interpolated into XML attributes and URLs, so they are
+/// restricted to a plain identifier alphabet (UUIDs and slugs fit).
+fn is_safe_provider_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 64
+        && id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+}
+
 async fn saml_metadata(Path(id): Path<String>) -> impl IntoResponse {
+    // This route is public: never reflect an unvetted path segment into XML.
+    if !is_safe_provider_id(&id) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "Invalid provider id"})),
+        )
+            .into_response();
+    }
     // Return minimal SAML SP metadata XML
     let entity_id = format!("urn:secureyeoman:sp:{id}");
     let acs_url = format!("http://localhost:3000/api/v1/auth/sso/saml/{id}/acs");
@@ -2095,6 +2227,44 @@ mod tests {
         assert_ne!(stable_user_uuid("alice"), stable_user_uuid("bob"));
         // Non-nil and version-5.
         assert!(!stable_user_uuid("alice").is_nil());
+    }
+
+    #[test]
+    fn auth_bodies_accept_camel_and_snake_case() {
+        let l: LoginRequest =
+            serde_json::from_str(r#"{"password":"x","rememberMe":true}"#).unwrap();
+        assert!(l.remember_me);
+        let l: LoginRequest =
+            serde_json::from_str(r#"{"password":"x","remember_me":true}"#).unwrap();
+        assert!(l.remember_me);
+        let r: RefreshRequest = serde_json::from_str(r#"{"refreshToken":"t"}"#).unwrap();
+        assert_eq!(r.refresh_token, "t");
+        let r: RefreshRequest = serde_json::from_str(r#"{"refresh_token":"t"}"#).unwrap();
+        assert_eq!(r.refresh_token, "t");
+    }
+
+    #[test]
+    fn key_roles_never_exceed_their_creator() {
+        assert!(may_issue_key_role("admin", "operator"));
+        assert!(may_issue_key_role("admin", "admin"));
+        assert!(may_issue_key_role("operator", "operator"));
+        assert!(!may_issue_key_role("operator", "admin"));
+        assert!(!may_issue_key_role("viewer", "service"));
+        assert!(!may_issue_key_role("admin", "superuser")); // unknown role
+    }
+
+    #[test]
+    fn provider_ids_are_plain_identifiers() {
+        assert!(is_safe_provider_id("okta-prod_1"));
+        assert!(is_safe_provider_id("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"));
+        assert!(!is_safe_provider_id(""));
+        assert!(!is_safe_provider_id("x\"><md:Evil/>"));
+        assert!(!is_safe_provider_id(&"a".repeat(65)));
+    }
+
+    #[test]
+    fn iso_ms_matches_js_to_iso_string() {
+        assert_eq!(iso_ms(0).as_deref(), Some("1970-01-01T00:00:00.000Z"));
     }
 
     #[test]

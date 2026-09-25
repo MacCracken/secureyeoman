@@ -7,7 +7,7 @@
 //! 4. Fail → 401
 
 use axum::body::Body;
-use axum::extract::State;
+use axum::extract::{MatchedPath, State};
 use axum::http::{Request, Response, StatusCode};
 use axum::middleware::Next;
 use axum::response::IntoResponse;
@@ -26,6 +26,9 @@ const PUBLIC_ROUTES: &[&str] = &[
     "/metrics",
     "/prom/metrics",
     "/api/v1/auth/login",
+    // Authenticated by the refresh token in the body: the caller's access token
+    // has typically already expired, which is why it is refreshing.
+    "/api/v1/auth/refresh",
     "/api/v1/auth/oauth/config",
     "/api/v1/auth/oauth/claim",
     "/api/v1/auth/sso/exchange", // OIDC login completion (pre-auth)
@@ -34,15 +37,26 @@ const PUBLIC_ROUTES: &[&str] = &[
     "/api/v1/internal/mcp-bootstrap",
 ];
 
-/// Prefixes that bypass auth (dynamic paths like /oauth/:provider).
+/// Parameterised routes that bypass auth, matched on the route *template*
+/// (axum's `MatchedPath`) as the TS gateway did. A path prefix would also make
+/// static siblings such as `/api/v1/auth/oauth/tokens` public.
+const PUBLIC_TEMPLATES: &[&str] = &[
+    "/api/v1/auth/oauth/{provider}",
+    "/api/v1/auth/oauth/{provider}/callback",
+];
+
+/// Prefixes that bypass auth (dynamic pre-auth paths).
 const PUBLIC_PREFIXES: &[&str] = &[
-    "/api/v1/auth/oauth/",
     "/api/v1/auth/sso/authorize/", // OIDC login initiation (pre-auth)
     "/api/v1/auth/sso/callback/",
     "/api/v1/auth/sso/saml/",
     "/api/v1/federation/marketplace/",
     "/ws/", // WebSocket auth is handled by the WS handler (token in Sec-WebSocket-Protocol)
 ];
+
+/// Authenticated routes that only touch the caller's own session, so any valid
+/// principal may use them regardless of role (TS `TOKEN_ONLY_ROUTES`).
+const SELF_SERVICE_ROUTES: &[&str] = &["/api/v1/auth/me", "/api/v1/auth/logout"];
 
 /// Authenticated user context — injected into request extensions.
 #[derive(Debug, Clone)]
@@ -52,6 +66,8 @@ pub struct AuthContext {
     pub permissions: Vec<String>,
     pub auth_method: AuthMethod,
     pub jti: Option<String>,
+    /// Token expiry (Unix seconds) for JWT principals; `None` for API keys.
+    pub exp: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,14 +84,19 @@ pub async fn require_auth(
     next: Next,
 ) -> Response<Body> {
     let path = req.uri().path();
+    let template = req
+        .extensions()
+        .get::<MatchedPath>()
+        .map(MatchedPath::as_str);
 
     // 1. Public routes bypass
-    if is_public(path) {
+    if is_public(path) || template.is_some_and(|t| PUBLIC_TEMPLATES.contains(&t)) {
         return next.run(req).await;
     }
 
-    // 2. Avatar GET bypass (personality avatar images)
-    if req.method() == "GET" && path.contains("/personalities/") && path.ends_with("/avatar") {
+    // 2. Avatar GET bypass: browsers load personality avatars as <img src>,
+    //    which cannot carry a bearer token.
+    if req.method() == "GET" && template.is_some_and(is_avatar_template) {
         return next.run(req).await;
     }
 
@@ -98,6 +119,7 @@ pub async fn require_auth(
                     permissions: claims.permissions,
                     auth_method: AuthMethod::Jwt,
                     jti: Some(claims.jti),
+                    exp: Some(claims.exp),
                 });
                 return next.run(req).await;
             }
@@ -130,6 +152,12 @@ fn is_public(path: &str) -> bool {
         .any(|prefix| path.starts_with(prefix))
 }
 
+/// `GET /api/v1/soul/personalities/{id}/avatar` — matched on the route template
+/// so no other path that merely ends in `/avatar` slips through.
+fn is_avatar_template(template: &str) -> bool {
+    template.starts_with("/api/v1/soul/personalities/") && template.ends_with("/avatar")
+}
+
 fn extract_bearer(headers: &axum::http::HeaderMap) -> Option<&str> {
     headers
         .get("authorization")
@@ -154,6 +182,10 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
 
     let method = req.method().clone();
     let path = req.uri().path().to_string();
+
+    if SELF_SERVICE_ROUTES.contains(&path.as_str()) {
+        return next.run(req).await;
+    }
 
     match resolve_permission(&method, &path) {
         Some(perm) => {
@@ -217,10 +249,23 @@ mod tests {
         assert!(is_public("/health"));
         assert!(is_public("/health/live"));
         assert!(is_public("/api/v1/auth/login"));
-        assert!(is_public("/api/v1/auth/oauth/google"));
-        assert!(is_public("/api/v1/auth/oauth/google/callback"));
+        assert!(is_public("/api/v1/auth/refresh"));
         assert!(!is_public("/api/v1/brain/memories"));
         assert!(!is_public("/api/v1/chat"));
+        // OAuth provider routes are public by route template only (see
+        // PUBLIC_TEMPLATES); no /oauth/ path is public by prefix.
+        assert!(!is_public("/api/v1/auth/oauth/google"));
+        assert!(!is_public("/api/v1/auth/oauth/tokens"));
+        assert!(!is_public("/api/v1/auth/oauth/tokens/some-id"));
+    }
+
+    #[test]
+    fn avatar_bypass_matches_only_the_soul_avatar_template() {
+        assert!(is_avatar_template("/api/v1/soul/personalities/{id}/avatar"));
+        assert!(!is_avatar_template(
+            "/api/v1/marketplace/community/personalities/avatar/{path}"
+        ));
+        assert!(!is_avatar_template("/api/v1/soul/personalities/{id}"));
     }
 
     #[test]

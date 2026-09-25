@@ -1,6 +1,7 @@
 //! WebSocket metrics route — real-time metrics broadcast to subscribed clients.
 //!
-//! GET /ws/metrics — WebSocket upgrade with JWT auth via Sec-WebSocket-Protocol.
+//! GET /ws/metrics — WebSocket upgrade with JWT auth via Sec-WebSocket-Protocol
+//! (see `ws_auth`); gated channels need their RBAC permission.
 //!
 //! Protocol:
 //!   Client → Server: { "type": "subscribe",   "payload": { "channels": ["metrics", "audit"] } }
@@ -12,55 +13,46 @@ use axum::Router;
 use axum::extract::State;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::http::HeaderMap;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use futures::{SinkExt, StreamExt};
 use std::collections::HashSet;
 use tokio::sync::broadcast;
 use tracing::{debug, warn};
 
-use crate::auth::jwt;
+use crate::routes::ws_auth::{self, WsPrincipal};
 use crate::state::AppState;
 
-/// Channel → required RBAC resource:action.
+/// Channel → required RBAC resource:action (the resource names the REST RBAC
+/// uses, so a channel is visible exactly to those who may read its REST twin).
 /// Channels not listed here are open to any authenticated user.
 const CHANNEL_PERMISSIONS: &[(&str, &str, &str)] = &[
-    ("metrics", "metrics", "read"),
+    ("metrics", "telemetry", "read"),
     ("audit", "audit", "read"),
     ("tasks", "tasks", "read"),
-    ("security", "security_events", "read"),
+    ("security", "security", "read"),
     ("proactive", "proactive", "read"),
     ("workflows", "workflows", "read"),
     ("soul", "soul", "read"),
     ("group_chat", "integrations", "read"),
     ("notifications", "notifications", "read"),
-    ("video_stream", "capture", "read"),
+    ("video_stream", "capture.video", "read"),
 ];
 
-fn channel_permission(channel: &str) -> Option<(&str, &str)> {
+fn channel_permission(channel: &str) -> Option<(&'static str, &'static str)> {
     CHANNEL_PERMISSIONS
         .iter()
         .find(|(ch, _, _)| *ch == channel)
         .map(|(_, resource, action)| (*resource, *action))
 }
 
-pub fn router() -> Router<AppState> {
-    Router::new().route("/ws/metrics", get(ws_metrics_upgrade))
+/// Whether `principal` may subscribe to `channel`.
+fn may_subscribe(principal: &WsPrincipal, channel: &str) -> bool {
+    channel_permission(channel).is_none_or(|(resource, action)| principal.can(resource, action))
 }
 
-/// Extract JWT token from Sec-WebSocket-Protocol header.
-/// Format: "token.<jwt>" as one of the subprotocols.
-fn extract_ws_token(headers: &HeaderMap) -> Option<String> {
-    headers
-        .get("sec-websocket-protocol")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|protocols| {
-            protocols
-                .split(',')
-                .map(|p| p.trim())
-                .find(|p| p.starts_with("token."))
-                .map(|p| p[6..].to_string())
-        })
+pub fn router() -> Router<AppState> {
+    Router::new().route("/ws/metrics", get(ws_metrics_upgrade))
 }
 
 /// GET /ws/metrics — WebSocket upgrade handler.
@@ -68,51 +60,33 @@ async fn ws_metrics_upgrade(
     State(state): State<AppState>,
     headers: HeaderMap,
     ws: WebSocketUpgrade,
-) -> impl IntoResponse {
-    // Authenticate via Sec-WebSocket-Protocol header
-    let token = match extract_ws_token(&headers) {
-        Some(t) => t,
-        None => {
-            return ws
-                .on_upgrade(|mut socket| async move {
-                    let _ = socket.close().await;
-                })
-                .into_response();
+) -> Response {
+    let principal = match ws_auth::authenticate(&state, &headers).await {
+        Ok(p) => p,
+        Err(reason) => {
+            return ws_auth::refuse(ws, &headers, ws_auth::CLOSE_UNAUTHENTICATED, reason);
         }
     };
-
-    let claims = match jwt::validate_token(state.jwt_config(), &token) {
-        Ok(c) => c,
-        Err(_) => {
-            return ws
-                .on_upgrade(|mut socket| async move {
-                    let _ = socket.close().await;
-                })
-                .into_response();
-        }
-    };
-
-    let role = claims.role.clone();
 
     // Subscribe to the metrics broadcast channel
     let rx = state.bridge_subscribe();
 
-    ws.protocols(["token"])
-        .on_upgrade(move |socket| handle_ws_client(socket, role, rx))
+    ws.protocols([principal.protocol.clone()])
+        .on_upgrade(move |socket| handle_ws_client(socket, principal, rx))
         .into_response()
 }
 
 /// Handle a connected WebSocket client.
 async fn handle_ws_client(
     socket: WebSocket,
-    role: String,
+    principal: WsPrincipal,
     mut rx: broadcast::Receiver<crate::state::BridgeEvent>,
 ) {
     let (mut sender, mut receiver) = socket.split();
     let client_id = uuid::Uuid::now_v7().to_string();
     let mut subscribed_channels: HashSet<String> = HashSet::new();
 
-    debug!(client_id = %client_id, role = %role, "WebSocket client connected");
+    debug!(client_id = %client_id, role = %principal.role, "WebSocket client connected");
 
     loop {
         tokio::select! {
@@ -132,11 +106,10 @@ async fn handle_ws_client(
                                 "subscribe" => {
                                     let mut accepted = Vec::new();
                                     for ch in channels.iter().take(50) {
-                                        // Check RBAC permission for gated channels
-                                        if let Some((_resource, _action)) = channel_permission(ch) {
-                                            // For now, all authenticated users can subscribe.
-                                            // Full RBAC check will be wired when permissions
-                                            // module supports role → resource:action lookup.
+                                        // Gated channels need their RBAC permission;
+                                        // refused ones are simply left out of the ack.
+                                        if !may_subscribe(&principal, ch) {
+                                            continue;
                                         }
                                         subscribed_channels.insert(ch.clone());
                                         accepted.push(ch.as_str());
@@ -207,4 +180,31 @@ fn now_ms() -> u64 {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis() as u64
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn principal(role: &str) -> WsPrincipal {
+        WsPrincipal {
+            user_id: "u".into(),
+            role: role.into(),
+            permissions: vec![],
+            protocol: String::new(),
+        }
+    }
+
+    #[test]
+    fn gated_channels_follow_rbac() {
+        let viewer = principal("viewer");
+        assert!(may_subscribe(&viewer, "tasks"));
+        assert!(may_subscribe(&viewer, "excalidraw")); // ungated
+        assert!(!may_subscribe(&viewer, "audit"));
+        assert!(!may_subscribe(&viewer, "video_stream"));
+        let auditor = principal("auditor");
+        assert!(may_subscribe(&auditor, "audit"));
+        assert!(may_subscribe(&auditor, "security"));
+        assert!(may_subscribe(&principal("admin"), "video_stream"));
+    }
 }

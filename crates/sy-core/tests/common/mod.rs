@@ -6,7 +6,7 @@ use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
-use sy_core::auth::jwt::{JwtConfig, issue_access_token};
+use sy_core::auth::jwt::{JwtConfig, issue_access_token, issue_refresh_token};
 use sy_core::server::build_router;
 use sy_core::state::AppState;
 
@@ -43,6 +43,11 @@ pub fn test_token(role: &str) -> String {
 /// Issue a JWT access token for a specific user and role.
 pub fn test_token_for(user_id: &str, role: &str) -> String {
     issue_access_token(&test_jwt_config(), user_id, role, &[]).unwrap()
+}
+
+/// Issue a JWT refresh token for a specific user and role.
+pub fn test_refresh_token_for(user_id: &str, role: &str) -> String {
+    issue_refresh_token(&test_jwt_config(), user_id, role).unwrap()
 }
 
 /// Issue a token for a role with an explicit least-privilege permission scope

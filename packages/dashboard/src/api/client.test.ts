@@ -308,6 +308,17 @@ describe('logout', () => {
     expect(getAccessToken()).toBeNull();
   });
 
+  it('hands the refresh token to the server so it is revoked too', async () => {
+    setAuthTokens('a', 'r');
+    mockFetch.mockReturnValueOnce(jsonResponse({ message: 'ok' }));
+    await logout();
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toBe('/api/v1/auth/logout');
+    expect(opts.method).toBe('POST');
+    expect(JSON.parse(opts.body)).toEqual({ refreshToken: 'r' });
+    expect(opts.headers.Authorization).toBe('Bearer a');
+  });
+
   it('clears tokens even if server request fails', async () => {
     setAuthTokens('a', 'r');
     mockFetch.mockReturnValueOnce(errorResponse('Server error', 500));

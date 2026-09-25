@@ -65,6 +65,7 @@ mod tests {
             permissions: vec![],
             auth_method: AuthMethod::Jwt,
             jti: None,
+            exp: None,
         }
     }
 

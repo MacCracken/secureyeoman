@@ -1,6 +1,7 @@
 //! Video streaming WebSocket — real-time video frame relay.
 //!
-//! GET /ws/video/{sessionId} — WebSocket upgrade with JWT auth via Sec-WebSocket-Protocol.
+//! GET /ws/video/{sessionId} — WebSocket upgrade with JWT auth via Sec-WebSocket-Protocol
+//! (see `ws_auth`); requires `capture.video:read`.
 //!
 //! Protocol:
 //!   Server → Client: { "type": "session_started", "session": {...} }
@@ -13,31 +14,17 @@ use axum::Router;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Path, State};
 use axum::http::HeaderMap;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use futures::{SinkExt, StreamExt};
 use tokio::sync::broadcast;
 use tracing::debug;
 
-use crate::auth::jwt;
+use crate::routes::ws_auth;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/ws/video/{sessionId}", get(ws_video_upgrade))
-}
-
-/// Extract JWT token from Sec-WebSocket-Protocol header.
-fn extract_ws_token(headers: &HeaderMap) -> Option<String> {
-    headers
-        .get("sec-websocket-protocol")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|protocols| {
-            protocols
-                .split(',')
-                .map(|p| p.trim())
-                .find(|p| p.starts_with("token."))
-                .map(|p| p[6..].to_string())
-        })
 }
 
 async fn ws_video_upgrade(
@@ -45,25 +32,22 @@ async fn ws_video_upgrade(
     Path(session_id): Path<String>,
     headers: HeaderMap,
     ws: WebSocketUpgrade,
-) -> impl IntoResponse {
-    // Auth
-    let token = match extract_ws_token(&headers) {
-        Some(t) => t,
-        None => {
-            return ws
-                .on_upgrade(|mut socket| async move {
-                    let _ = socket.close().await;
-                })
-                .into_response();
+) -> Response {
+    let principal = match ws_auth::authenticate(&state, &headers).await {
+        Ok(p) => p,
+        Err(reason) => {
+            return ws_auth::refuse(ws, &headers, ws_auth::CLOSE_UNAUTHENTICATED, reason);
         }
     };
-
-    if jwt::validate_token(state.jwt_config(), &token).is_err() {
-        return ws
-            .on_upgrade(|mut socket| async move {
-                let _ = socket.close().await;
-            })
-            .into_response();
+    // Watching a capture stream takes the same permission as the REST
+    // `/api/v1/video` routes.
+    if !principal.can("capture.video", "read") {
+        return ws_auth::refuse(
+            ws,
+            &headers,
+            ws_auth::CLOSE_FORBIDDEN,
+            "Insufficient permissions",
+        );
     }
 
     // Video streaming security check — delegated to config flags.
@@ -73,7 +57,7 @@ async fn ws_video_upgrade(
 
     let rx = state.bridge_subscribe();
 
-    ws.protocols(["token"])
+    ws.protocols([principal.protocol])
         .on_upgrade(move |socket| handle_video_client(socket, session_id, rx))
         .into_response()
 }

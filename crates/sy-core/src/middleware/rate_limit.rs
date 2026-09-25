@@ -1,7 +1,7 @@
 //! Rate limiting middleware — per-IP sliding window with tiered limits.
 //!
 //! Tiers:
-//! - auth: 5 req/min (login, register, token endpoints)
+//! - auth: 5 req/min (credential endpoints: login, refresh, token exchange)
 //! - chat: 30 req/min (chat and streaming endpoints)
 //! - general: 120 req/min (everything else)
 //!
@@ -126,7 +126,7 @@ impl RateLimitState {
 
     /// Classify a path into a rate limit tier.
     fn classify(&self, path: &str) -> (&str, &RateTier) {
-        if path.starts_with("/api/v1/auth/") {
+        if is_credential_endpoint(path) {
             ("auth", &self.auth_tier)
         } else if path.starts_with("/api/v1/chat") {
             ("chat", &self.chat_tier)
@@ -142,6 +142,30 @@ impl RateLimitState {
             now.duration_since(counter.window_start) < counter.window_duration * 2
         });
     }
+}
+
+/// Endpoints that accept or mint credentials — the brute-force and
+/// token-stuffing targets — get the strict tier. The rest of `/api/v1/auth`
+/// (session info, API key / user / role management) is ordinary API traffic:
+/// 5 req/min there throttled the dashboard's own settings pages.
+fn is_credential_endpoint(path: &str) -> bool {
+    const EXACT: &[&str] = &[
+        "/api/v1/auth/login",
+        "/api/v1/auth/refresh",
+        "/api/v1/auth/reset-password",
+        "/api/v1/auth/verify",
+        "/api/v1/auth/break-glass",
+        "/api/v1/auth/federation/token",
+        "/api/v1/auth/oauth/claim",
+        "/api/v1/auth/sso/exchange",
+    ];
+    const PREFIXES: &[&str] = &[
+        "/api/v1/auth/webauthn/authenticate/",
+        "/api/v1/auth/sso/authorize/",
+        "/api/v1/auth/sso/callback/",
+        "/api/v1/auth/sso/saml/",
+    ];
+    EXACT.contains(&path) || PREFIXES.iter().any(|p| path.starts_with(p))
 }
 
 // --- Tower Layer ---
@@ -259,7 +283,28 @@ mod tests {
     fn classify_auth_routes() {
         let state = RateLimitState::new();
         assert_eq!(state.classify("/api/v1/auth/login").0, "auth");
-        assert_eq!(state.classify("/api/v1/auth/register").0, "auth");
+        assert_eq!(state.classify("/api/v1/auth/refresh").0, "auth");
+        assert_eq!(state.classify("/api/v1/auth/sso/exchange").0, "auth");
+        assert_eq!(
+            state
+                .classify("/api/v1/auth/webauthn/authenticate/verify")
+                .0,
+            "auth"
+        );
+    }
+
+    #[test]
+    fn auth_management_routes_are_general_traffic() {
+        let state = RateLimitState::new();
+        for path in [
+            "/api/v1/auth/me",
+            "/api/v1/auth/logout",
+            "/api/v1/auth/api-keys",
+            "/api/v1/auth/users",
+            "/api/v1/auth/webauthn/credentials",
+        ] {
+            assert_eq!(state.classify(path).0, "general", "{path}");
+        }
     }
 
     #[test]

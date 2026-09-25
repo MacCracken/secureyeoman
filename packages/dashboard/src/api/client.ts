@@ -298,7 +298,13 @@ export async function login(
 
 export async function logout(): Promise<void> {
   try {
-    await request<{ message: string }>('/auth/logout', { method: 'POST' });
+    // Hand over the refresh token so the server revokes it along with the
+    // access token; otherwise it could keep minting sessions until it expires.
+    const refreshToken = getRefreshToken();
+    await request<{ message: string }>('/auth/logout', {
+      method: 'POST',
+      ...(refreshToken ? { body: JSON.stringify({ refreshToken }) } : {}),
+    });
   } catch {
     // Logout should clear local state regardless of server response
   }

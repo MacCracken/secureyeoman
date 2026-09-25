@@ -48,6 +48,7 @@ pub mod training;
 pub mod twitter;
 pub mod workflow;
 pub mod workspace;
+pub mod ws_auth;
 pub mod ws_collab;
 pub mod ws_metrics;
 pub mod ws_video;

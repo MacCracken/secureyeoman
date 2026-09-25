@@ -1,6 +1,7 @@
 //! Collaborative editing WebSocket — real-time CRDT document sync.
 //!
-//! GET /ws/collab/{docId} — WebSocket upgrade with JWT auth via Sec-WebSocket-Protocol.
+//! GET /ws/collab/{docId} — WebSocket upgrade with JWT auth via Sec-WebSocket-Protocol
+//! (see `ws_auth`); joining requires write access to the document.
 //!
 //! docId format: `personality:<uuid>` | `skill:<uuid>`
 //!
@@ -11,7 +12,7 @@ use axum::Router;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Path, State};
 use axum::http::HeaderMap;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use futures::{SinkExt, StreamExt};
 use std::collections::HashMap;
@@ -19,7 +20,7 @@ use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast};
 use tracing::{debug, warn};
 
-use crate::auth::jwt;
+use crate::routes::ws_auth;
 use crate::state::AppState;
 
 /// Shared collab room state — maps docId → broadcast sender for binary CRDT ops.
@@ -37,34 +38,18 @@ pub fn router() -> Router<AppState> {
     Router::new().route("/ws/collab/{docId}", get(ws_collab_upgrade))
 }
 
-/// Extract JWT token from Sec-WebSocket-Protocol header.
-fn extract_ws_token(headers: &HeaderMap) -> Option<String> {
-    headers
-        .get("sec-websocket-protocol")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|protocols| {
-            protocols
-                .split(',')
-                .map(|p| p.trim())
-                .find(|p| p.starts_with("token."))
-                .map(|p| p[6..].to_string())
-        })
-}
-
-/// Validate docId format: "personality:<uuid>" or "skill:<uuid>"
-fn is_valid_doc_id(doc_id: &str) -> bool {
-    let re_like = |s: &str| -> bool {
-        if let Some(id) = s
-            .strip_prefix("personality:")
-            .or_else(|| s.strip_prefix("skill:"))
-        {
-            // Simple UUID check: 36 chars, hex + dashes
-            id.len() == 36 && id.chars().all(|c| c.is_ascii_hexdigit() || c == '-')
-        } else {
-            false
-        }
+/// The RBAC resource a collab document belongs to, if `doc_id` is well formed:
+/// `personality:<uuid>` or `skill:<uuid>` (skills are managed under
+/// `/api/v1/soul`, i.e. the `soul` resource).
+fn doc_resource(doc_id: &str) -> Option<&'static str> {
+    let (resource, id) = match doc_id.split_once(':')? {
+        ("personality", id) => ("personality", id),
+        ("skill", id) => ("soul", id),
+        _ => return None,
     };
-    re_like(doc_id)
+    // Simple UUID check: 36 chars, hex + dashes
+    let is_uuid = id.len() == 36 && id.chars().all(|c| c.is_ascii_hexdigit() || c == '-');
+    is_uuid.then_some(resource)
 }
 
 async fn ws_collab_upgrade(
@@ -72,37 +57,28 @@ async fn ws_collab_upgrade(
     Path(doc_id): Path<String>,
     headers: HeaderMap,
     ws: WebSocketUpgrade,
-) -> impl IntoResponse {
-    // Auth
-    let token = match extract_ws_token(&headers) {
-        Some(t) => t,
-        None => {
-            return ws
-                .on_upgrade(|mut socket| async move {
-                    let _ = socket.close().await;
-                })
-                .into_response();
+) -> Response {
+    let principal = match ws_auth::authenticate(&state, &headers).await {
+        Ok(p) => p,
+        Err(reason) => {
+            return ws_auth::refuse(ws, &headers, ws_auth::CLOSE_UNAUTHENTICATED, reason);
         }
     };
-
-    if jwt::validate_token(state.jwt_config(), &token).is_err() {
-        return ws
-            .on_upgrade(|mut socket| async move {
-                let _ = socket.close().await;
-            })
-            .into_response();
+    let Some(resource) = doc_resource(&doc_id) else {
+        return ws_auth::refuse(ws, &headers, 1008, "Invalid document id");
+    };
+    // Joining a room means sending edits, so it takes write access to the
+    // document — the same permission its REST update route requires.
+    if !principal.can(resource, "write") {
+        return ws_auth::refuse(
+            ws,
+            &headers,
+            ws_auth::CLOSE_FORBIDDEN,
+            "Insufficient permissions",
+        );
     }
 
-    // Validate docId
-    if !is_valid_doc_id(&doc_id) {
-        return ws
-            .on_upgrade(|mut socket| async move {
-                let _ = socket.close().await;
-            })
-            .into_response();
-    }
-
-    ws.protocols(["token"])
+    ws.protocols([principal.protocol])
         .on_upgrade(move |socket| handle_collab_client(socket, doc_id))
         .into_response()
 }
@@ -156,14 +132,34 @@ async fn handle_collab_client(socket: WebSocket, doc_id: String) {
 
     debug!(client_id = %client_id, doc_id = %doc_id, "Collab client disconnected");
 
-    // Clean up empty rooms
-    let should_remove = {
-        let room_map = rooms().read().await;
-        room_map
-            .get(&doc_id)
-            .is_some_and(|tx| tx.receiver_count() == 0)
-    };
-    if should_remove {
-        rooms().write().await.remove(&doc_id);
+    // Clean up the room once its last client has left. Drop our own receiver
+    // first (or the count never reaches zero and every room — with its buffered
+    // ops — lives forever), and check-and-remove under one write lock so a
+    // client joining in between keeps the room.
+    drop(rx);
+    let mut room_map = rooms().write().await;
+    if room_map
+        .get(&doc_id)
+        .is_some_and(|tx| tx.receiver_count() == 0)
+    {
+        room_map.remove(&doc_id);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn doc_ids_map_to_their_rbac_resource() {
+        let id = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
+        assert_eq!(
+            doc_resource(&format!("personality:{id}")),
+            Some("personality")
+        );
+        assert_eq!(doc_resource(&format!("skill:{id}")), Some("soul"));
+        assert_eq!(doc_resource(&format!("workflow:{id}")), None);
+        assert_eq!(doc_resource("personality:not-a-uuid"), None);
+        assert_eq!(doc_resource("personality:"), None);
     }
 }

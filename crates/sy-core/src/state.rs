@@ -109,9 +109,14 @@ struct AppStateInner {
     /// otherwise the header is attacker-controlled and must be ignored (default).
     pub trust_proxy_headers: bool,
     pub backpressure: BackpressureState,
-    /// In-memory cache of revoked JTIs (avoids DB hit per request).
-    pub revoked_tokens: Arc<dashmap::DashMap<String, Instant>>,
+    /// In-memory cache of revoked JTIs (avoids a DB hit per request), each mapped
+    /// to the token's own expiry in Unix ms — past that the token is dead anyway,
+    /// so the entry can be pruned.
+    pub revoked_tokens: Arc<dashmap::DashMap<String, i64>>,
     pub fingerprint: FingerprintState,
+    /// Heuristic bot scoring (feeds IP reputation). Opt-in: it scores every
+    /// non-browser client — API-key scripts, MCP, sy-edge — as a bot.
+    pub fingerprint_enabled: bool,
     pub ip_reputation: Option<IpReputationState>,
     /// DLP/PII classification engine — compiled once (regexes are not cheap).
     pub pii_engine: Arc<ClassificationEngine>,
@@ -309,6 +314,9 @@ impl AppState {
                 backpressure: BackpressureState::new(),
                 revoked_tokens: Arc::new(dashmap::DashMap::new()),
                 fingerprint: FingerprintState::new(),
+                fingerprint_enabled: std::env::var("SECUREYEOMAN_FINGERPRINT_ENABLED")
+                    .ok()
+                    .is_some_and(|v| v == "true" || v == "1"),
                 ip_reputation: Some(IpReputationState::default()),
                 pii_engine: Arc::new(ClassificationEngine::new()),
                 webauthn: Arc::new(build_webauthn()),
@@ -374,6 +382,11 @@ impl AppState {
         &self.inner.fingerprint
     }
 
+    /// Whether heuristic bot fingerprinting is on (`SECUREYEOMAN_FINGERPRINT_ENABLED`).
+    pub fn fingerprint_enabled(&self) -> bool {
+        self.inner.fingerprint_enabled
+    }
+
     pub fn ip_reputation(&self) -> Option<&IpReputationState> {
         self.inner.ip_reputation.as_ref()
     }
@@ -412,26 +425,67 @@ impl AppState {
 
         // Fallback to DB
         if let Some(pool) = self.db()
-            && let Ok(revoked) = crate::db::auth::is_token_revoked(pool, jti).await
-            && revoked
+            && let Ok(Some(expires_at)) = crate::db::auth::token_revocation_expiry(pool, jti).await
         {
             // Populate cache
-            self.inner
-                .revoked_tokens
-                .insert(jti.to_string(), Instant::now());
+            self.cache_revocation(jti, expires_at);
             return true;
         }
 
         false
     }
 
-    /// Revoke a token by JTI (adds to cache + DB).
+    /// Revoke a token by JTI until `expires_at` (Unix ms — the token's own
+    /// expiry), in the cache and the DB.
     pub async fn revoke_token(&self, jti: &str, user_id: &str, expires_at: i64) {
-        self.inner
-            .revoked_tokens
-            .insert(jti.to_string(), Instant::now());
+        self.cache_revocation(jti, expires_at);
         if let Some(pool) = self.db() {
             let _ = crate::db::auth::revoke_token(pool, jti, user_id, expires_at).await;
+        }
+    }
+
+    /// Single-use redemption: atomically revoke `jti` and report whether *this*
+    /// call did so. `false` means it was already revoked (a replay, or a token
+    /// ended by logout) — or, fail-closed, that the DB could not record it.
+    pub async fn consume_token(&self, jti: &str, user_id: &str, expires_at: i64) -> bool {
+        use dashmap::mapref::entry::Entry;
+        let first_use = match self.inner.revoked_tokens.entry(jti.to_string()) {
+            Entry::Occupied(_) => false,
+            Entry::Vacant(v) => {
+                v.insert(expires_at);
+                true
+            }
+        };
+        if !first_use {
+            return false;
+        }
+        match self.db() {
+            // The DB is authoritative across instances and restarts.
+            Some(pool) => {
+                match crate::db::auth::revoke_token_once(pool, jti, user_id, expires_at).await {
+                    Ok(first) => first,
+                    Err(_) => {
+                        // Could not record the redemption: refuse it, but don't
+                        // burn the token so a retry can succeed once the DB is back.
+                        self.inner.revoked_tokens.remove(jti);
+                        false
+                    }
+                }
+            }
+            None => true,
+        }
+    }
+
+    fn cache_revocation(&self, jti: &str, expires_at: i64) {
+        let cache = &self.inner.revoked_tokens;
+        cache.insert(jti.to_string(), expires_at);
+        // Amortised pruning: tokens past their expiry fail validation anyway.
+        if cache.len() > 1024 && cache.len().is_power_of_two() {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as i64;
+            cache.retain(|_, exp| *exp > now);
         }
     }
 
@@ -439,6 +493,13 @@ impl AppState {
     pub fn with_allow_remote_access(mut self, allow: bool) -> Self {
         let inner = Arc::get_mut(&mut self.inner).unwrap();
         inner.allow_remote_access = allow;
+        self
+    }
+
+    /// Override the fingerprinting opt-in (useful for testing).
+    pub fn with_fingerprint_enabled(mut self, enabled: bool) -> Self {
+        let inner = Arc::get_mut(&mut self.inner).unwrap();
+        inner.fingerprint_enabled = enabled;
         self
     }
 
@@ -584,27 +645,10 @@ impl AppState {
             .await
             .ok()??;
 
-        // Determine role from permissions (default to "service")
-        let role = row
-            .permissions
-            .get("role")
-            .and_then(|r| r.as_str())
-            .unwrap_or("service")
-            .to_string();
-
-        // Optional least-privilege scope: a `permissions` array of
-        // "resource:action" strings in the key's config further restricts it
-        // below its role. Absent => inherit the role (backward compatible).
-        let permissions = row
-            .permissions
-            .get("permissions")
-            .and_then(|p| p.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str().map(str::to_string))
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
+        // The key acts as its owner, with the role it was minted for. Keys carry
+        // no narrower permission scope of their own, so they inherit the role.
+        let role = row.role.clone();
+        let permissions = Vec::new();
 
         // Update last_used_at in background (don't block auth)
         let pool_clone = pool.clone();
@@ -614,11 +658,12 @@ impl AppState {
         });
 
         Some(AuthContext {
-            user_id: row.name.clone(),
+            user_id: row.user_id,
             role,
             permissions,
             auth_method: AuthMethod::ApiKey,
             jti: None,
+            exp: None,
         })
     }
 }
