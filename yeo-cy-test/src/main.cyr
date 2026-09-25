@@ -150,11 +150,11 @@ fn handle_create_note(ctx, conn, buf, blen, params): i64 {
     # module verifies the Bearer JWT; 0 → no/invalid/expired token → 401. Reads stay
     # public; writes are gated. (See src/auth.cyr auth_req_claims.)
     if (auth_req_claims(buf, blen) == 0) { return resp_json_err(conn, "401 Unauthorized", "authentication required"); }
-    var bptr = http_body_ptr(buf, blen);
-    var bln = http_body_len(buf, blen);
+    var bptr = req_body_ptr(buf, blen);
+    var bln = req_body_len(buf, blen);
     if (bptr == 0 || bln <= 0) { return resp_json_err(conn, "400 Bad Request", "missing request body"); }
 
-    var v = json_v_parse_str(bptr, bln);
+    var v = json_v_parse_buf(bptr, bln);
     if (v == 0) { return resp_json_err(conn, "400 Bad Request", "invalid JSON"); }
 
     var bstr = json_v_str(json_v_obj_get(v, "body"));
@@ -236,10 +236,10 @@ fn handle_update_note(ctx, conn, buf, blen, params): i64 {
     if (auth_req_claims(buf, blen) == 0) { return resp_json_err(conn, "401 Unauthorized", "authentication required"); }
     var id = sandhi_route_param_int(params, 0);
     if (id < 0) { return resp_json_err(conn, "400 Bad Request", "invalid id"); }
-    var bptr = http_body_ptr(buf, blen);
-    var bln = http_body_len(buf, blen);
+    var bptr = req_body_ptr(buf, blen);
+    var bln = req_body_len(buf, blen);
     if (bptr == 0 || bln <= 0) { return resp_json_err(conn, "400 Bad Request", "missing request body"); }
-    var v = json_v_parse_str(bptr, bln);
+    var v = json_v_parse_buf(bptr, bln);
     if (v == 0) { return resp_json_err(conn, "400 Bad Request", "invalid JSON"); }
     var bstr = json_v_str(json_v_obj_get(v, "body"));
     if (bstr == 0) { return resp_json_err(conn, "400 Bad Request", "missing string field 'body'"); }

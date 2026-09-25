@@ -267,7 +267,7 @@ fn auth_verify_claims(token): i64 {
     var plen = d2 - d1 - 1;
     var raw = _b64u_decode(token + d1 + 1, plen);
     if (raw == 0) { return 0; }
-    var v = json_v_parse_str(raw, _b64u_declen(plen));
+    var v = json_v_parse_buf(raw, _b64u_declen(plen));
     if (v == 0) { return 0; }
     if (json_v_int(json_v_obj_get(v, "exp")) <= clock_epoch_secs()) { return 0; }
     return v;
@@ -453,10 +453,10 @@ fn handle_login(ctx, conn, buf, blen, params): i64 {
 }
 
 fn _handle_login_inner(ctx, conn, buf, blen, params): i64 {
-    var bptr = http_body_ptr(buf, blen);
-    var bln = http_body_len(buf, blen);
+    var bptr = req_body_ptr(buf, blen);
+    var bln = req_body_len(buf, blen);
     if (bptr == 0 || bln <= 0) { return resp_json_err(conn, "400 Bad Request", "missing request body"); }
-    var v = json_v_parse_str(bptr, bln);
+    var v = json_v_parse_buf(bptr, bln);
     if (v == 0) { return resp_json_err(conn, "400 Bad Request", "invalid JSON"); }
     var pw = json_v_str(json_v_obj_get(v, "password"));
     if (pw == 0) { return resp_json_err(conn, "400 Bad Request", "missing string field 'password'"); }

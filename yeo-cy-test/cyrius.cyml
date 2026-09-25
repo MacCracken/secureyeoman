@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "yeo-cy-test — Cyrius full-stack viability probe for the SecureYeoman port"
 license = "AGPL-3.0-only"
 language = "cyrius"
-cyrius = "6.4.64"
+cyrius = "6.6.6"
 
 [build]
 entry = "src/main.cyr"
@@ -30,17 +30,17 @@ stdlib = ["string", "fmt", "alloc", "io", "vec", "str", "syscalls", "assert", "b
 # split" this probe filed, now dogfooded as sandhi's first profile-bundle consumer.
 [deps.sandhi]
 git = "https://github.com/MacCracken/sandhi.git"
-tag = "1.9.0"
+tag = "1.10.0"
 modules = ["dist/sandhi-server.cyr"]
 
 [deps.sakshi]
 git = "https://github.com/MacCracken/sakshi.git"
-tag = "2.4.6"
+tag = "2.5.5"
 modules = ["dist/sakshi.cyr"]
 
 [deps.patra]
 git = "https://github.com/MacCracken/patra.git"
-tag = "1.12.10"
+tag = "1.15.0"
 modules = ["dist/patra.cyr"]
 
 # libro — cryptographic audit chain (SHA-256 hash-linked, tamper-evident). The
@@ -52,7 +52,7 @@ modules = ["dist/patra.cyr"]
 # pattern.
 [deps.libro]
 git = "https://github.com/MacCracken/libro.git"
-tag = "2.8.1"
+tag = "2.10.3"
 modules = ["dist/libro.cyr"]
 
 # ai-hwaccel — hardware accelerator detection (GPU/TPU/NPU/AI-ASIC) + planning.
@@ -62,5 +62,5 @@ modules = ["dist/libro.cyr"]
 # serves the cached summary JSON at GET /api/hwinfo.
 [deps.ai-hwaccel]
 git = "https://github.com/MacCracken/ai-hwaccel.git"
-tag = "2.3.14"
+tag = "2.4.0"
 modules = ["dist/ai-hwaccel.cyr"]

@@ -160,9 +160,9 @@ FINDINGS.md      — Cyrius / patra / sandhi viability findings (the real delive
 ## Status
 
 Backend, storage, **and frontend build** are viable on Cyrius today (re-run on
-**cyrius 6.4.64 / patra 1.12.10 / libro 2.8.1 / sandhi 1.9.0 (thin `server` profile
-bundle) / sigil 3.12.0 / sakshi 2.4.6**; regenerate `lib/` with `cyrius lib sync
---full` + `cyrius deps`). Both original blockers — TS/TSX→JS emit and patra SQL string safety — are
+**cyrius 6.6.6 / patra 1.15.0 / libro 2.10.3 / sandhi 1.10.0 (thin `server` profile
+bundle) / sigil 3.12.18 / sakshi 2.5.5 / ai-hwaccel 2.4.0**, 2026-09-25; regenerate `lib/`
+with `cyrius lib sync --full` + `cyrius deps`). Both original blockers — TS/TSX→JS emit and patra SQL string safety — are
 closed, and the probe is a thin sandhi + patra composition (server-side TLS + ALPN,
 retired hand-rolled HTTPS stack).
 

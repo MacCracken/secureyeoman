@@ -5,10 +5,12 @@
 
 ## Version
 
-**0.1.0** — full-stack slice working end to end. Re-run on **cyrius 6.4.64 /
-patra 1.12.10 / libro 2.8.1 / sandhi 1.9.0 (thin `server` profile bundle) / sigil
-3.12.0 (via cyrius) / sakshi 2.4.6** (2026-07-14; regenerate `lib/` with `cyrius lib sync
---full` + `cyrius deps` — see Toolchain note). Serves **HTTP (:8080) and HTTPS
+**0.1.0** — full-stack slice working end to end. Re-run on **cyrius 6.6.6 /
+patra 1.15.0 / libro 2.10.3 / sandhi 1.10.0 (thin `server` profile bundle) / sigil
+3.12.18 (toolchain fold and libro's pin now agree) / sakshi 2.5.5 / ai-hwaccel 2.4.0**
+(2026-09-25; regenerate `lib/` with `cyrius lib sync --full` + `cyrius deps` — see
+Toolchain note). The 6.4.64 → 6.6.6 bump needed two source renames (`json_v_parse_buf`,
+`req_body_*`); see FINDINGS 2026-09-25. Serves **HTTP (:8080) and HTTPS
 (:8443, TLS 1.3 + Ed25519)** off one sandhi router + handler set over the patra
 backend, both at **`max_conns=4`**. Both original 🔴 blockers (TS/TSX→JS emit,
 patra string safety) stay closed.
@@ -232,12 +234,17 @@ new lib gap** — used only existing auth primitives (the stack was already suff
 
 ## Toolchain
 
-- **Cyrius pin**: `6.4.64` (in `cyrius.cyml [package].cyrius`); folds sigil **3.12.0**
-  (the native Argon2id this probe drove). NB `lib/` had silently drifted to sigil 3.9.8
+- **Cyrius pin**: `6.6.6` (in `cyrius.cyml [package].cyrius`); folds sigil **3.12.18**,
+  the same release libro 2.10.3 pins (at 6.4.64 they disagreed — 3.12.0 vs libro's 3.11.1
+  — and last-definition-wins silently took 3.11.1 for 226 fns; see FINDINGS 2026-09-25).
+  NB `lib/` had silently drifted to sigil 3.9.8
   (pre the 3.9.9 slot-0 fix, colliding with patra's thread-local slot 0) until re-synced
   2026-07-14; 6.4.63's shadow-lib **warning** now names any such skew — see FINDINGS.
-  patra `1.12.9`, **sandhi `1.8.2`** (the thin `dist/sandhi-server.cyr` **profile
-  bundle**, no longer the folded stdlib), and sakshi `2.4.6` pinned via `[deps.*]`.
+  patra `1.15.0`, **sandhi `1.10.0`** (the thin `dist/sandhi-server.cyr` **profile
+  bundle**, no longer the folded stdlib), libro `2.10.3`, ai-hwaccel `2.4.0` and sakshi
+  `2.5.5` pinned via `[deps.*]`. Since sandhi 1.10.0 the bundle ships a `.deps` sidecar
+  that `cyrius deps` honours — it pulls stdlib `http` (among others) into scope, which is
+  why the probe's body accessors are `req_body_*`, not `http_body_*`.
   Because the thin bundle carries only session_cache + conn + server/mod, the deps it
   used to pull transitively are now **declared explicitly** in `[deps].stdlib`:
   **`bayan`** (the probe's `json_v_*` build/parse — NOT `json`, which collides with
@@ -252,7 +259,7 @@ new lib gap** — used only existing auth primitives (the stack was already suff
   bit the probe: a bare sync left `lib/sigil.cyr` at 3.9.4 (the pre-fix opt-in
   banking) while cyrius 6.3.12 actually bundles sigil 3.9.7 — so the probe built
   against the old crypto race and the TLS pool appeared to still crash. `--full`
-  pulls the whole snapshot (current sigil 3.12.0). See FINDINGS.
+  pulls the whole snapshot (current sigil 3.12.18). See FINDINGS.
 
 ## Source
 
@@ -433,21 +440,22 @@ Direct (declared in `cyrius.cyml`):
   `keccak`, `thread_local`, `slice`** were added for **libro** (its `dist/libro.deps`
   sidecar lists them); **`args`** (argc/argv) for **ai-hwaccel** (its CLI helpers
   reference them; unused on the probe's no-exec detection path).
-- **sandhi** `1.8.2` — the HTTP services lib, pulled as the thin `server` **profile
+- **sandhi** `1.10.0` — the HTTP services lib, pulled as the thin `server` **profile
   bundle** (`[deps.sandhi]`, `modules = ["dist/sandhi-server.cyr"]`; 141 KB vs the
   590 KB full folded bundle). Server-side TLS + Conn-aware router + `run_pooled`/
   `run_pooled_tls`.
-- **libro** `2.8.1` — cryptographic audit chain (SHA-256 hash-linked, tamper-
+- **libro** `2.10.3` — cryptographic audit chain (SHA-256 hash-linked, tamper-
   evident) + patra-backed `patrastore`; the Cyrius target for `sy-core`'s `audit`
   module (`[deps.libro]`). GPL-3.0-only (compatible with this project's AGPL-3.0-only).
   2.8.1 fixed the raw-SQL quote-drop in `patrastore_append` (bound INSERT) — the P1
   this probe filed.
-- **ai-hwaccel** `2.3.14` — hardware-accelerator detection (GPU/TPU/NPU/AI-ASIC);
+- **ai-hwaccel** `2.4.0` — hardware-accelerator detection (GPU/TPU/NPU/AI-ASIC);
   the Cyrius target for `sy-core`'s `hwprobe` module (`[deps.ai-hwaccel]`). Already
   a Cyrius lib. Detection is read-only (`registry_detect_no_exec`, no subprocess).
-- **patra** `1.12.10` — SQL persistence (`[deps.patra]`). 1.12.10 added standard
-  `''` escaping + `patra_quote_str` (the P1 quote fix this probe drove).
-- **sakshi** `2.4.6` — required transitively by patra (`[deps.sakshi]`)
+- **patra** `1.15.0` — SQL persistence (`[deps.patra]`). 1.12.10 added standard
+  `''` escaping + `patra_quote_str` (the P1 quote fix this probe drove); 1.13–1.15 add
+  per-database WAL state and fix a B+ tree split that silently lost indexed rows.
+- **sakshi** `2.5.5` — required transitively by patra (`[deps.sakshi]`)
 
 ## Consumers
 

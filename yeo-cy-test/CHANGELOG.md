@@ -4,6 +4,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — toolchain + deps refresh: cyrius 6.4.64 → 6.6.6 (two source fixes, both caught at build)
+- **Pins** (2026-09-25): cyrius **6.4.64 → 6.6.6**; sandhi **1.9.0 → 1.10.0**, sakshi
+  **2.4.6 → 2.5.5**, patra **1.12.10 → 1.15.0**, libro **2.8.1 → 2.10.3**, ai-hwaccel
+  **2.3.14 → 2.4.0**. Every one of those releases pins cyrius 6.6.6, so they move together.
+- **`json_v_parse_str` → `json_v_parse_buf`** (4 call sites). bayan 1.3.0 (cyrius 6.5.0)
+  renamed the `(ptr, len)` JSON parse entry point; 6.6.6 refuses to emit a binary with a
+  reachable undefined fn (6.5.x only warned and lowered the call to `ud2` — a runtime
+  SIGILL). Bodies are byte-identical upstream — a pure rename.
+- **`http_body_ptr` / `http_body_len` → `req_body_ptr` / `req_body_len`.** sandhi 1.10.0's
+  `sandhi-server.deps` sidecar brings stdlib `http` into scope, whose 1-arg
+  `http_body_len(resp)` collided with the probe's 2-arg request accessor; cyrius 6.6 makes a
+  same-name/different-arity duplicate a hard error (it used to be last-definition-wins).
+- **What the bump buys:** patra's S0 data-integrity fixes (a B+ tree split that silently
+  lost indexed rows; `patra_begin` now reports a WAL-open failure instead of running a
+  transaction with no undo log; per-database WAL state); cyrius 6.6.0's zero-allocation
+  value-form `Result`; and **one sigil everywhere** — see FINDINGS (2026-09-25): at 6.4.64,
+  libro's sigil 3.11.1 thin bundles silently replaced 226 functions of the toolchain's sigil
+  3.12.0 (incl. `ed25519_*`/SHA-256); both now resolve to sigil **3.12.18**.
+- Frontend emit unchanged (`web/app.js` byte-identical under the 6.6.6 emitter). Suite:
+  **9 unit + 48 backend + 13 full-stack UI**, green on both the 6.4.64 baseline and 6.6.6.
+
 ### Changed — honest port-standing assessment; the probe's own overclaims retracted
 - **Measured the gap instead of narrating it** (2026-07-14). The probe is **~879 LOC of
   module code against sy-core's 60,425** (243 `.rs`, 22 module dirs) — **~1.5% written**.

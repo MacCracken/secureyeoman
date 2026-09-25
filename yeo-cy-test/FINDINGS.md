@@ -7,6 +7,50 @@ was on **Cyrius 6.0.3**; see the dated re-run sections below for newer toolchain
 
 Severity: 🔴 blocker · 🟡 friction · 🔵 note/nice-to-have
 
+## Update — re-run on cyrius 6.6.6 + dep refresh: two consumer breaks, both caught at build; a silent sigil skew gone (2026-09-25)
+
+Pins: cyrius 6.4.64 → **6.6.6**, sandhi 1.9.0 → **1.10.0**, sakshi 2.4.6 → **2.5.5**, patra
+1.12.10 → **1.15.0**, libro 2.8.1 → **2.10.3**, ai-hwaccel 2.3.14 → **2.4.0** (each pins
+cyrius 6.6.6). Two source edits, then **9 unit + 48 backend + 13 UI green** — same as the
+6.4.64 baseline measured first on the same machine.
+
+- ✅ **Both breaks were refused at build time, not shipped as runtime faults.** That is the
+  6.5/6.6 diagnostics doing their job:
+  - `json_v_parse_str` (renamed `json_v_parse_buf` in bayan 1.3.0 / cyrius 6.5.0) → *"refusing
+    to emit binary with 1 reachable undefined function"*. Per ai-hwaccel's 2.3.x changelog,
+    6.5.x only warned and lowered such a call to `ud2` — here that would have been a SIGILL on
+    the first login.
+  - The probe's 2-arg `http_body_len(buf, blen)` vs stdlib `lib/http.cyr`'s 1-arg
+    `http_body_len(resp)` → *"duplicate fn … disagrees about arity"* (hard error). Renamed to
+    `req_body_*`.
+- 🟡 **NEW class of break: a dependency's sidecar widens the consumer's namespace.** The
+  probe never asked for stdlib `http`. sandhi 1.10.0 ships `dist/sandhi-server.deps` (1.9.0 had
+  none), which lists `http` among its required stdlib leaves; `cyrius deps` pulls it into the
+  one flat symbol table, so a name the probe had used for months collided on a *dependency*
+  bump. With same arity it would have been a silent last-definition-wins rebind. **Ask (to
+  file — cyrius):** report which dep's sidecar brought a colliding module into scope, and warn
+  on consumer-`src/` ↔ `lib/` same-arity duplicates too — not only different-arity ones.
+- 🟠 **Found in the baseline, gone after the bump: two sigil releases were mixed in one
+  binary.** At 6.4.64, libro 2.8.1 pinned sigil **3.11.1** thin bundles (`sigil-mldsa`,
+  `sha256`, `sha_ni`, `hex`) while the toolchain folded sigil **3.12.0**. **226 functions**
+  were defined twice, same arity, and last-definition-wins resolved them to **3.11.1** —
+  including `ed25519_sign/verify/keypair`, the `ge_*`/`fp_*` curve arithmetic and SHA-256. The
+  probe's docs said "sigil 3.12.0"; for the Ed25519/SHA-256 surface that was not true. The only
+  signal was a wall of `duplicate fn … (last definition wins)` warnings. At 6.6.6 both sides are
+  **3.12.18**, so the duplicates are byte-identical and harmless — but that is **version
+  alignment, not a mechanism**: the next time libro's sigil pin and cyrius's sigil fold diverge,
+  it recurs silently. (libro's own `cyrius.cyml` already warns about exactly this for its
+  `sigil` / `sigil_tpm` pair — the cross-package case has no such guard.) **Ask (to file —
+  cyrius):** extend the 6.4.63 stale-`lib/` skew warning to a dep-bundle ↔ stdlib-fold version
+  mismatch for the same library.
+- 🔵 **Test-harness note:** a `verify.py` run that dies mid-suite (here: the container's
+  system `python3` ships a broken `cryptography`, whose pyo3 panic is a `BaseException` the
+  import guard doesn't catch) leaves its server running on :8080/:8443. Every later run's
+  `start_server()` then gets a "ready" health check from the **stale** server while its own
+  child dies on bind — so scenarios 12a–c and 21 failed against the wrong process, which reads
+  like a real regression. Clean machine → green. (Worth hardening: kill the server on any exit,
+  and assert the spawned child is alive after `wait_ready()`.)
+
 ## Update — `tee` → AES-256-GCM key sealing works; 🟡 sigil's return conventions are inconsistent (a consumer footgun I tripped on) (2026-07-13)
 
 Fifth `sy-core` module ported (`src/tee.cyr`): seal the persisted key material at rest

@@ -78,12 +78,15 @@ fn resp_file(conn, path, ctype): i64 {
 }
 
 # ── Request body accessors (over sandhi; bytes after "\r\n\r\n") ──
-fn http_body_ptr(buf, blen): i64 {
+# Not `http_body_*`: stdlib lib/http.cyr (in scope via sandhi's dep sidecar since
+# sandhi 1.10.0) defines a 1-arg `http_body_len(resp)`, and cyrius 6.6 refuses a
+# same-name fn with a different arity (one flat symbol table, last def wins).
+fn req_body_ptr(buf, blen): i64 {
     var bo = sandhi_server_body_offset(buf, blen);
     if (bo < 0) { return 0; }
     return buf + bo;
 }
-fn http_body_len(buf, blen): i64 {
+fn req_body_len(buf, blen): i64 {
     var bo = sandhi_server_body_offset(buf, blen);
     if (bo < 0) { return 0; }
     return blen - bo;
