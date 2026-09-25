@@ -4,6 +4,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — test harnesses can no longer test a stale server
+- **`tests/verify.py`** tracks every server it starts and reaps them on *any* exit
+  (`atexit`, plus SIGTERM → normal exit), refuses to start when :8080/:8443 are already
+  bound, and asserts its own child is still alive after `wait_ready()`. Before, a run that
+  died mid-suite left its server running; the next run's health check was answered by that
+  stale process while the new child died on bind, so scenarios 12a–c and 21 failed against
+  the wrong server and read like regressions (seen during the 6.6.6 refresh — FINDINGS
+  2026-09-25).
+- **`tests/ui_check.mjs`** applies the same busy-port refusal, kills its server on any
+  process exit, and awaits the server's exit instead of racing it with `process.exit()`.
+  **`tests/concurrency_repro.sh`** gains the port check and an `EXIT` trap.
+- Verified: full suite green (9 + 48 + 13) with nothing left running afterwards; a run that
+  crashes mid-suite now reaps its server; with a stale server bound, both harnesses exit 1
+  in ~65 ms naming the cause, and leave the stale process untouched.
+
 ### Changed — toolchain + deps refresh: cyrius 6.4.64 → 6.6.6 (two source fixes, both caught at build)
 - **Pins** (2026-09-25): cyrius **6.4.64 → 6.6.6**; sandhi **1.9.0 → 1.10.0**, sakshi
   **2.4.6 → 2.5.5**, patra **1.12.10 → 1.15.0**, libro **2.8.1 → 2.10.3**, ai-hwaccel

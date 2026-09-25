@@ -27,9 +27,14 @@ N="${1:-300}"
 BIN=./build/yeo-cy-test
 [ -x "$BIN" ] || { echo "build first: ./build.sh"; exit 2; }
 
+if (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null; then
+  echo "port 8080 already in use — a stale yeo-cy-test? (pkill -x yeo-cy-test)"; exit 2
+fi
 rm -f yeo.patra
 "$BIN" >/dev/null 2>&1 &
 SRV=$!
+# Reap the server however this script ends (Ctrl-C, error), not only on the happy path.
+trap 'kill "$SRV" 2>/dev/null; wait "$SRV" 2>/dev/null' EXIT
 # wait for :8080
 for _ in $(seq 1 50); do
   if (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null; then exec 3>&- 3<&-; break; fi

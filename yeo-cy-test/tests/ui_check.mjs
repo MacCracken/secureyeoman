@@ -10,6 +10,7 @@
 // Run from the project root (after ./build.sh):  node tests/ui_check.mjs
 import { readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
+import { createConnection } from "node:net";
 
 const BASE = "http://127.0.0.1:8080";
 const pass = [], fail = [];
@@ -71,8 +72,24 @@ async function waitReady(t = 10000) {
   return false;
 }
 
+// A listener already on :8080/:8443 means a stale server from an earlier run; testing it
+// instead of the one spawned below would pass or fail for the wrong reasons.
+const portInUse = (port) => new Promise((resolve) => {
+  const s = createConnection({ host: "127.0.0.1", port });
+  s.once("connect", () => { s.destroy(); resolve(true); });
+  s.once("error", () => resolve(false));
+});
+
 // ── run ──
+for (const port of [8080, 8443]) {
+  if (await portInUse(port)) {
+    console.error(`port ${port} already in use — a stale yeo-cy-test from an earlier run? (pkill -x yeo-cy-test)`);
+    process.exit(1);
+  }
+}
 const srv = spawn("./build/yeo-cy-test", { stdio: "ignore" });
+// Never outlive the harness, whatever path ends it (kill() is synchronous, so safe in 'exit').
+process.on("exit", () => { if (srv.exitCode === null && srv.signalCode === null) srv.kill(); });
 let code = 1;
 try {
   if (!await waitReady()) throw new Error("server not ready on :8080");
@@ -188,7 +205,12 @@ try {
 } catch (e) {
   bad("harness", String(e && e.message || e));
 } finally {
-  srv.kill();
+  // Wait for the server to actually exit so a follow-on run never races its shutdown.
+  if (srv.pid !== undefined && srv.exitCode === null && srv.signalCode === null) {
+    const exited = new Promise((r) => srv.once("exit", r));
+    srv.kill();
+    await exited;
+  }
 }
 
 console.log(`\n=== ${pass.length} passed, ${fail.length} failed ===`);

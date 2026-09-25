@@ -31,7 +31,7 @@ Note writes are RBAC-gated, so req()/https_req() auto-attach an admin Bearer tok
 scenario 0); pass token=None for the unauthenticated negative cases.
 Requires cert.pem/key.pem (./gen-certs.sh — build.sh mints them if absent).
 """
-import socket, subprocess, sys, time, json, os, threading, ssl, random, urllib.request, urllib.error, http.client
+import atexit, signal, socket, subprocess, sys, time, json, os, threading, ssl, random, urllib.request, urllib.error, http.client
 
 HOST, PORT = "127.0.0.1", 8080
 HTTPS_HOST, HTTPS_PORT = "localhost", 8443   # cert SAN: DNS:localhost, IP:127.0.0.1
@@ -65,22 +65,57 @@ def wait_ready(timeout=10):
             time.sleep(0.05)
     return False
 
+# ── server lifecycle ──
+# Every server this harness starts is tracked and reaped on ANY exit. A run that died
+# mid-suite used to leave its server bound to :8080/:8443; the next run's start_server()
+# then got a "ready" health check from that STALE process while its own child died on
+# bind, so the suite silently tested the wrong server (scenarios 12a–c and 21 failed like
+# real regressions). Now: reap on exit, refuse busy ports, and require our child alive.
+_SERVERS = []
+
+def _reap_servers():
+    for p in _SERVERS:
+        if p.poll() is None:
+            p.terminate()
+            try: p.wait(timeout=5)
+            except subprocess.TimeoutExpired: p.kill(); p.wait()
+    _SERVERS.clear()
+
+atexit.register(_reap_servers)
+# SIGTERM (e.g. a CI step timeout) → a normal exit, so the atexit reaper still runs.
+signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
+
+def _port_in_use(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
 def start_server(login_burst=1000, refill_ms=None):
     # /api/login is per-IP rate limited (scenario 21). The whole suite drives ~50 logins
     # from one source (127.0.0.1), so it would rate-limit ITSELF at the production default
     # (5/min). Start with a permissive burst; scenario 21 restarts with a tiny one to prove
     # the limiter actually limits.
+    busy = [port for port in (PORT, HTTPS_PORT) if _port_in_use(port)]
+    if busy:
+        raise SystemExit(f"port(s) {busy} already in use — a stale yeo-cy-test from an earlier "
+                         "run? (`pkill -x yeo-cy-test`). Refusing to test a server this run "
+                         "did not start.")
     env = dict(os.environ, SY_LOGIN_BURST=str(login_burst))
     if refill_ms is not None: env["SY_LOGIN_REFILL_MS"] = str(refill_ms)
     p = subprocess.Popen([BIN], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
+    _SERVERS.append(p)
     if not wait_ready():
-        p.kill(); raise SystemExit("server failed to become ready")
+        raise SystemExit("server failed to become ready")   # reaped by the atexit hook
+    if p.poll() is not None:
+        raise SystemExit(f"server exited during startup (rc={p.returncode}) — "
+                         "something else answered /api/health")
     return p
 
 def stop_server(p):
     p.terminate()
     try: p.wait(timeout=5)
-    except subprocess.TimeoutExpired: p.kill()
+    except subprocess.TimeoutExpired: p.kill(); p.wait()
+    if p in _SERVERS: _SERVERS.remove(p)
 
 def req(method, path, body=None, timeout=5, token=_USE_GLOBAL):
     data = body.encode() if isinstance(body, str) else body

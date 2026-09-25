@@ -48,8 +48,9 @@ cyrius 6.6.6). Two source edits, then **9 unit + 48 backend + 13 UI green** — 
   import guard doesn't catch) leaves its server running on :8080/:8443. Every later run's
   `start_server()` then gets a "ready" health check from the **stale** server while its own
   child dies on bind — so scenarios 12a–c and 21 failed against the wrong process, which reads
-  like a real regression. Clean machine → green. (Worth hardening: kill the server on any exit,
-  and assert the spawned child is alive after `wait_ready()`.)
+  like a real regression. Clean machine → green. **Fixed in the harness (same day):** servers
+  are reaped on any exit, busy ports are refused, and the spawned child must be alive after
+  `wait_ready()` — see CHANGELOG.
 
 ## Update — `tee` → AES-256-GCM key sealing works; 🟡 sigil's return conventions are inconsistent (a consumer footgun I tripped on) (2026-07-13)
 
