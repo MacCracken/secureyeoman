@@ -246,14 +246,41 @@ fn format_syslog(row: &audit::AuditEntryRow, hostname: &str) -> String {
     let ts = chrono::DateTime::from_timestamp(row.timestamp, 0)
         .map(|dt| dt.to_rfc3339())
         .unwrap_or_default();
-    let msgid = row.event.replace(' ', "_");
-    let msgid = &msgid[..msgid.len().min(32)];
-    let uid = row.user_id.as_deref().unwrap_or("-");
-    let tid = row.task_id.as_deref().unwrap_or("-");
+    // RFC 5424 MSGID: 1-32 printable US-ASCII characters. Built per char, as a
+    // byte slice of a non-ASCII event name would panic (fatal under panic=abort).
+    let msgid: String = row
+        .event
+        .chars()
+        .map(|c| if c == ' ' { '_' } else { c })
+        .filter(char::is_ascii_graphic)
+        .take(32)
+        .collect();
+    let msgid = if msgid.is_empty() {
+        "-".to_string()
+    } else {
+        msgid
+    };
+    let uid = sd_param_value(row.user_id.as_deref().unwrap_or("-"));
+    let tid = sd_param_value(row.task_id.as_deref().unwrap_or("-"));
+    // One entry per line: a newline in the message would forge a second record.
+    let message = row.message.replace(['\r', '\n'], " ");
     format!(
-        "<{pri}>1 {ts} {hostname} secureyeoman - {msgid} [secureyeoman@31337 user=\"{uid}\" taskId=\"{tid}\"] {}\n",
-        row.message
+        "<{pri}>1 {ts} {hostname} secureyeoman - {msgid} [secureyeoman@31337 user=\"{uid}\" taskId=\"{tid}\"] {message}\n"
     )
+}
+
+/// Escape an RFC 5424 SD-PARAM value (`"`, `\` and `]` must be backslashed).
+fn sd_param_value(v: &str) -> String {
+    let mut out = String::with_capacity(v.len());
+    for c in v.chars() {
+        if matches!(c, '"' | '\\' | ']') {
+            out.push('\\');
+        }
+        if c != '\r' && c != '\n' {
+            out.push(c);
+        }
+    }
+    out
 }
 
 /// POST /api/v1/audit/export — stream audit entries as JSONL, CSV, or syslog.
@@ -329,4 +356,45 @@ async fn export_entries(
     Sse::new(event_stream)
         .keep_alive(KeepAlive::default())
         .into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn row(event: &str, message: &str, user: &str) -> audit::AuditEntryRow {
+        audit::AuditEntryRow {
+            id: "1".into(),
+            correlation_id: None,
+            event: event.into(),
+            level: "info".into(),
+            message: message.into(),
+            user_id: Some(user.into()),
+            task_id: None,
+            metadata: None,
+            timestamp: 0,
+            integrity_version: String::new(),
+            integrity_signature: String::new(),
+            integrity_previous_hash: String::new(),
+            tenant_id: "default".into(),
+        }
+    }
+
+    #[test]
+    fn syslog_msgid_is_ascii_and_capped_even_for_multibyte_events() {
+        // 31 ASCII bytes then a multi-byte char straddling byte 32: a byte
+        // slice at 32 used to panic here.
+        let event = format!("{}é suffix", "a".repeat(31));
+        let line = format_syslog(&row(&event, "m", "u"), "h");
+        let msgid = line.split(' ').nth(5).unwrap();
+        assert_eq!(msgid, format!("{}_", "a".repeat(31)));
+    }
+
+    #[test]
+    fn syslog_escapes_structured_data_and_keeps_one_line_per_entry() {
+        let line = format_syslog(&row("auth.login", "a\nforged", "x\"] y"), "h");
+        assert_eq!(line.matches('\n').count(), 1);
+        assert!(line.ends_with("a forged\n"));
+        assert!(line.contains(r#"user="x\"\] y""#), "{line}");
+    }
 }
