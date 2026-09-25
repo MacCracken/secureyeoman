@@ -29,7 +29,7 @@ impl HooshDelegate {
         let default_model = std::env::var("DEFAULT_MODEL").unwrap_or_else(|_| "gpt-4o".to_string());
 
         Self {
-            client: reqwest::Client::new(),
+            client: crate::net::client(),
             base_url,
             api_key,
             default_model,
@@ -38,7 +38,7 @@ impl HooshDelegate {
 
     pub fn new(base_url: String, api_key: Option<String>, default_model: String) -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: crate::net::client(),
             base_url,
             api_key,
             default_model,

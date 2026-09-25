@@ -48,7 +48,7 @@ async fn resolve_auth(state: &AppState) -> Result<AuthMode, (StatusCode, Json<se
 /// We use a custom fetch here since proxy_post doesn't add extra headers.
 async fn notion_post(auth: &AuthMode, path: &str, body: &serde_json::Value) -> impl IntoResponse {
     let url = format!("{NOTION_API}{path}");
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let mut req = client
         .post(&url)
         .header("Notion-Version", NOTION_VERSION)
@@ -84,7 +84,7 @@ async fn notion_post(auth: &AuthMode, path: &str, body: &serde_json::Value) -> i
 /// Notion GET with Notion-Version header.
 async fn notion_get(auth: &AuthMode, path: &str) -> impl IntoResponse {
     let url = format!("{NOTION_API}{path}");
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let mut req = client.get(&url).header("Notion-Version", NOTION_VERSION);
 
     req = match auth {

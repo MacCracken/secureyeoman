@@ -29,7 +29,7 @@ async fn supabase_query(
     params: &str,
 ) -> Result<serde_json::Value, String> {
     let url = format!("{base_url}/rest/v1/{table}?{params}");
-    let res = reqwest::Client::new()
+    let res = crate::net::client()
         .get(&url)
         .header("apikey", key)
         .header("Authorization", format!("Bearer {key}"))

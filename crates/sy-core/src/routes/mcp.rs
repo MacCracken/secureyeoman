@@ -648,7 +648,7 @@ async fn check_server_health(
         Ok(Some(server)) => {
             // Try to reach the server's URL if it has one
             let reachable = if let Some(ref url) = server.url {
-                reqwest::Client::new()
+                crate::net::client()
                     .get(format!("{url}/health"))
                     .timeout(std::time::Duration::from_secs(5))
                     .send()

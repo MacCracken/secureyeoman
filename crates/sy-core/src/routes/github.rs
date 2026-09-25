@@ -368,7 +368,7 @@ async fn delete_ssh_key(
         Err(e) => return e.into_response(),
     };
     let url = format!("{GITHUB_API}/user/keys/{key_id}");
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let mut req = client.delete(&url);
     if let AuthMode::Bearer(ref token) = auth {
         req = req.bearer_auth(token);

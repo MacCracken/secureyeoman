@@ -158,7 +158,7 @@ async fn proxy_post_handler(
         .unwrap_or(uri.path());
     let url = format!("{}/api/v1{ifran_path}", ifran_url());
 
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client.post(&url).json(&body).send().await {
         Ok(res) if res.status().is_success() => {
             let s = res.status().as_u16();
@@ -198,7 +198,7 @@ async fn proxy_post_with_id(
     let url = format!("{}/api/v1{ifran_path}", ifran_url());
     let payload = body.map(|b| b.0).unwrap_or(serde_json::json!({}));
 
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client.post(&url).json(&payload).send().await {
         Ok(res) if res.status().is_success() => {
             let s = res.status().as_u16();
@@ -236,7 +236,7 @@ async fn proxy_delete_with_id(
         .unwrap_or(uri.path());
     let url = format!("{}/api/v1{ifran_path}", ifran_url());
 
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client.delete(&url).send().await {
         Ok(res) if res.status().is_success() => StatusCode::NO_CONTENT.into_response(),
         Ok(res) => {
@@ -276,7 +276,7 @@ async fn training_stream(
 
 async fn sse_relay(path: &str, body: Option<&serde_json::Value>) -> axum::response::Response {
     let url = format!("{}{path}", ifran_url());
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
 
     let req = if let Some(b) = body {
         client

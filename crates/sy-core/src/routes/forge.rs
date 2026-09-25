@@ -236,7 +236,7 @@ async fn trigger_pipeline(
         "{}/api/v1/repos/{owner}/{name}/pipelines/trigger",
         conn.base_url
     );
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client
         .post(&url)
         .bearer_auth(&conn.token)
@@ -280,7 +280,7 @@ async fn cancel_pipeline(
         "{}/api/v1/repos/{owner}/{name}/pipelines/{id}/cancel",
         conn.base_url
     );
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client
         .post(&url)
         .bearer_auth(&conn.token)

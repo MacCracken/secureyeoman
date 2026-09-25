@@ -248,7 +248,7 @@ async fn delete_event(
     };
     // Delete needs a custom call — proxy_get doesn't support DELETE
     let url = format!("{GCAL_API}/calendars/primary/events/{event_id}");
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let mut req = client.delete(&url);
     if let AuthMode::Bearer(ref token) = auth {
         req = req.bearer_auth(token);

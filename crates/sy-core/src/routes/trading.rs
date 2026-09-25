@@ -45,7 +45,7 @@ async fn market_fetch(
     provider: &MarketProvider,
     params: &[(&str, &str)],
 ) -> Result<serde_json::Value, String> {
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let req = match provider {
         MarketProvider::AlphaVantage(key) => {
             let mut url = reqwest::Url::parse("https://www.alphavantage.co/query").unwrap();

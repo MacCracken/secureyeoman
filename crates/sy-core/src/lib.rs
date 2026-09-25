@@ -12,6 +12,7 @@ pub mod ecosystem;
 pub mod hwprobe;
 pub mod integrations;
 pub mod middleware;
+pub mod net;
 pub mod orchestration;
 pub mod privacy;
 pub mod routes;

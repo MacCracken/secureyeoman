@@ -21,7 +21,7 @@ fn shruti_url() -> String {
 
 async fn proxy_to_shruti(path: &str, body: serde_json::Value) -> axum::response::Response {
     let url = format!("{}{path}", shruti_url());
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client.post(&url).json(&body).send().await {
         Ok(res) if res.status().is_success() => {
             let data: serde_json::Value = res.json().await.unwrap_or(serde_json::json!(null));

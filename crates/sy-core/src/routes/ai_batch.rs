@@ -222,7 +222,7 @@ async fn inline_complete(
         req_body["suffix"] = serde_json::Value::String(suffix.clone());
     }
 
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client.post(&url).json(&req_body).send().await {
         Ok(r) if r.status().is_success() => {
             let oai: serde_json::Value = match r.json().await {

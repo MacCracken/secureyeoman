@@ -142,7 +142,7 @@ impl JiraClient {
         api_token: impl Into<String>,
     ) -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: crate::net::client(),
             base_url: base_url.into().trim_end_matches('/').to_string(),
             email: email.into(),
             api_token: api_token.into(),

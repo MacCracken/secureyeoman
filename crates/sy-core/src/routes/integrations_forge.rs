@@ -132,7 +132,7 @@ async fn forge_get(path: &str) -> axum::response::Response {
             .into_response();
     };
     let url = format!("{}{path}", conn.base_url);
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client.get(&url).bearer_auth(&conn.token).send().await {
         Ok(res) if res.status().is_success() => {
             let body: serde_json::Value = res.json().await.unwrap_or(serde_json::json!(null));
@@ -165,7 +165,7 @@ async fn forge_post(path: &str, body: &serde_json::Value) -> axum::response::Res
             .into_response();
     };
     let url = format!("{}{path}", conn.base_url);
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client
         .post(&url)
         .bearer_auth(&conn.token)
@@ -204,7 +204,7 @@ async fn forge_delete(path: &str) -> axum::response::Response {
             .into_response();
     };
     let url = format!("{}{path}", conn.base_url);
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client.delete(&url).bearer_auth(&conn.token).send().await {
         Ok(res) if res.status().is_success() => StatusCode::NO_CONTENT.into_response(),
         Ok(res) => {

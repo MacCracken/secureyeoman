@@ -330,7 +330,7 @@ async fn chat_stream(
     let is_anthropic =
         model.contains("claude") || model.contains("anthropic") || (has_anthropic && !has_openai);
 
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let response = if is_anthropic {
         let key = match &anthropic_key {
             Some(k) => k,
@@ -675,7 +675,7 @@ async fn chat_complete(
         "stream": false,
     });
 
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client.post(&url).json(&oai_body).send().await {
         Ok(r) if r.status().is_success() => {
             let oai: serde_json::Value = match r.json().await {

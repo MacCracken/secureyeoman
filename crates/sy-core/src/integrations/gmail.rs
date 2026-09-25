@@ -134,7 +134,7 @@ impl GmailClient {
     /// Create a client from an OAuth access token.
     pub fn new(token: impl Into<String>) -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: crate::net::client(),
             token: token.into(),
         }
     }

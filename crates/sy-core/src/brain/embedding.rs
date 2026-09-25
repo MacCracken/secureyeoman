@@ -94,7 +94,7 @@ pub struct OpenAiEmbeddingProvider {
 impl OpenAiEmbeddingProvider {
     pub fn new(config: OpenAiEmbeddingConfig) -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: crate::net::client(),
             config,
         }
     }
@@ -230,7 +230,7 @@ pub struct OllamaEmbeddingProvider {
 impl OllamaEmbeddingProvider {
     pub fn new(config: OllamaEmbeddingConfig) -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: crate::net::client(),
             config,
         }
     }

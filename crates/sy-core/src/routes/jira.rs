@@ -149,7 +149,7 @@ async fn update_issue(
         Err(e) => return e.into_response(),
     };
     let url = format!("{base_url}/rest/api/3/issue/{key}");
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let mut req = client.put(&url).json(&body);
     if let AuthMode::Basic(ref encoded) = auth {
         req = req.header("Authorization", format!("Basic {encoded}"));

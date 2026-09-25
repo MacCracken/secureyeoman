@@ -106,7 +106,7 @@ impl TodoistClient {
     /// Create a client from an API token.
     pub fn new(token: impl Into<String>) -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: crate::net::client(),
             token: token.into(),
         }
     }

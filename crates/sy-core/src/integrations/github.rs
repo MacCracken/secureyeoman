@@ -157,7 +157,7 @@ impl GitHubClient {
     /// Create a client from a personal access token or OAuth token.
     pub fn new(token: impl Into<String>) -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: crate::net::client(),
             token: token.into(),
             base_url: base_url(),
         }

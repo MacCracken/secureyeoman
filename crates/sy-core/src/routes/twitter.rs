@@ -109,7 +109,7 @@ async fn timeline(
         Err(e) => return e.into_response(),
     };
     // Need user ID for timeline — get from /users/me first
-    let me_res = reqwest::Client::new()
+    let me_res = crate::net::client()
         .get(format!("{TWITTER_V2}/users/me"))
         .bearer_auth(match &auth {
             AuthMode::Bearer(t) => t.as_str(),
@@ -159,7 +159,7 @@ async fn mentions(
         Ok(a) => a,
         Err(e) => return e.into_response(),
     };
-    let me_res = reqwest::Client::new()
+    let me_res = crate::net::client()
         .get(format!("{TWITTER_V2}/users/me"))
         .bearer_auth(match &auth {
             AuthMode::Bearer(t) => t.as_str(),
@@ -325,7 +325,7 @@ async fn like_tweet(
         Err(e) => return e.into_response(),
     };
     // Need user ID for likes endpoint
-    let me_res = reqwest::Client::new()
+    let me_res = crate::net::client()
         .get(format!("{TWITTER_V2}/users/me"))
         .bearer_auth(match &auth {
             AuthMode::Bearer(t) => t.as_str(),
@@ -368,7 +368,7 @@ async fn retweet_tweet(
         Ok(a) => a,
         Err(e) => return e.into_response(),
     };
-    let me_res = reqwest::Client::new()
+    let me_res = crate::net::client()
         .get(format!("{TWITTER_V2}/users/me"))
         .bearer_auth(match &auth {
             AuthMode::Bearer(t) => t.as_str(),

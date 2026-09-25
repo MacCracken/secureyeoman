@@ -89,7 +89,7 @@ pub async fn proxy_get(
         _ => format!("{base_url}{path}"),
     };
 
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let mut req = client.get(&url);
     req = apply_auth(req, auth);
 
@@ -124,7 +124,7 @@ pub async fn proxy_post(
 ) -> impl IntoResponse {
     let url = format!("{base_url}{path}");
 
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let mut req = client.post(&url).json(body);
     req = apply_auth(req, auth);
 

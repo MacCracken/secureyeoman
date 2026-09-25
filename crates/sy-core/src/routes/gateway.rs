@@ -36,7 +36,7 @@ struct GatewayProxyRequest {
 async fn gateway_proxy(Json(body): Json<GatewayProxyRequest>) -> impl IntoResponse {
     let model = body.model.clone().unwrap_or_else(|| "default".to_string());
 
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
 
     // Route to the appropriate provider based on model name or available keys
     let anthropic_key = std::env::var("ANTHROPIC_API_KEY")

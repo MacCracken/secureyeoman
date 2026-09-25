@@ -83,7 +83,7 @@ impl TwitterClient {
     /// Create a client from a bearer token.
     pub fn new(bearer_token: impl Into<String>) -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: crate::net::client(),
             bearer_token: bearer_token.into(),
         }
     }

@@ -100,7 +100,7 @@ impl LinearClient {
     /// Create a client from an API key.
     pub fn new(api_key: impl Into<String>) -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: crate::net::client(),
             api_key: api_key.into(),
         }
     }

@@ -129,7 +129,7 @@ async fn gpu_status() -> impl IntoResponse {
 /// GET /api/v1/system/local-models — list locally available models.
 async fn local_models() -> impl IntoResponse {
     // Check Ollama for local models
-    let models = match reqwest::Client::new()
+    let models = match crate::net::client()
         .get(format!(
             "{}/api/tags",
             std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into())

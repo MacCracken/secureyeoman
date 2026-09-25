@@ -106,7 +106,7 @@ async fn ollama_pull(
     let model = body.model;
 
     // Start the pull request to Ollama
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let response = match client
         .post(&url)
         .json(&serde_json::json!({ "model": model, "stream": true }))
@@ -192,7 +192,7 @@ async fn get_model_info(State(state): State<AppState>) -> impl IntoResponse {
     }
 
     // Query actual providers for available models
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let mut available: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
 
     // Anthropic — fetch models from API
@@ -597,7 +597,7 @@ async fn list_providers(State(_state): State<AppState>) -> impl IntoResponse {
 async fn ollama_list(State(_state): State<AppState>) -> impl IntoResponse {
     let base_url = ollama_base_url();
     let url = format!("{base_url}/api/tags");
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client.get(&url).send().await {
         Ok(r) if r.status().is_success() => {
             let body: serde_json::Value = match r.json().await {
@@ -636,7 +636,7 @@ async fn ollama_delete(
 ) -> impl IntoResponse {
     let base_url = ollama_base_url();
     let url = format!("{base_url}/api/delete");
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     match client
         .delete(&url)
         .json(&serde_json::json!({ "model": name }))
@@ -667,7 +667,7 @@ async fn ollama_delete(
 async fn model_health(State(_state): State<AppState>) -> impl IntoResponse {
     let base_url = ollama_base_url();
     let url = format!("{base_url}/api/tags");
-    let client = reqwest::Client::new();
+    let client = crate::net::client();
     let ollama_ok = client
         .get(&url)
         .send()
