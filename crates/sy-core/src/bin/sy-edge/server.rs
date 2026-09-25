@@ -296,6 +296,7 @@ async fn exec_command(
             "stdout": output.stdout,
             "stderr": output.stderr,
             "exit_code": output.exit_code,
+            "truncated": output.truncated,
         }))
         .into_response(),
         Err(e) => (

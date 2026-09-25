@@ -2,6 +2,7 @@
 
 use std::process::Stdio;
 use std::time::Duration;
+use tokio::io::{AsyncRead, AsyncReadExt};
 use tokio::process::Command;
 use tokio::time::timeout;
 
@@ -14,6 +15,8 @@ pub struct ExecOutput {
     pub stdout: String,
     pub stderr: String,
     pub exit_code: i32,
+    /// Whether stdout or stderr hit `MAX_OUTPUT` and was cut short.
+    pub truncated: bool,
 }
 
 // Read-only system-inspection commands only. Network-egress tools (curl, wget,
@@ -36,6 +39,16 @@ const BLOCKED: &[&str] = &[
 
 const MAX_OUTPUT: usize = 1_048_576; // 1 MB
 
+/// Read `r` to EOF, keeping at most `cap` bytes; the flag reports whether more
+/// was available. Stops reading (and drops `r`) as soon as the cap is exceeded.
+async fn read_capped<R: AsyncRead + Unpin>(r: R, cap: usize) -> std::io::Result<(Vec<u8>, bool)> {
+    let mut buf = Vec::new();
+    r.take(cap as u64 + 1).read_to_end(&mut buf).await?;
+    let cut = buf.len() > cap;
+    buf.truncate(cap);
+    Ok((buf, cut))
+}
+
 pub struct SandboxManager {
     allowed: Vec<String>,
 }
@@ -54,15 +67,25 @@ impl SandboxManager {
         workspace: Option<&str>,
         timeout_secs: u64,
     ) -> Result<ExecOutput, String> {
+        // The lists name programs, resolved on PATH. A caller-supplied path is
+        // refused outright: `/tmp/x/ls` has an allowed basename but would run
+        // whatever binary sits at that path.
+        if command.is_empty()
+            || !command
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+        {
+            return Err("Command must be a bare program name (no path)".into());
+        }
+
         // Check against blocklist
-        let cmd_base = command.split('/').next_back().unwrap_or(command);
-        if BLOCKED.contains(&cmd_base) {
-            return Err(format!("Command blocked: {cmd_base}"));
+        if BLOCKED.contains(&command) {
+            return Err(format!("Command blocked: {command}"));
         }
 
         // Check allowlist
-        if !self.allowed.iter().any(|a| a == cmd_base) {
-            return Err(format!("Command not allowed: {cmd_base}"));
+        if !self.allowed.iter().any(|a| a == command) {
+            return Err(format!("Command not allowed: {command}"));
         }
 
         // Validate workspace path (prevent traversal); use the *canonical* path as
@@ -108,29 +131,41 @@ impl SandboxManager {
             cmd.current_dir(dir);
         }
 
-        let child = cmd.spawn().map_err(|e| format!("Execution failed: {e}"))?;
+        let mut child = cmd.spawn().map_err(|e| format!("Execution failed: {e}"))?;
+        let (Some(stdout), Some(stderr)) = (child.stdout.take(), child.stderr.take()) else {
+            return Err("Execution failed: output pipes unavailable".into());
+        };
 
-        // Enforce the timeout: on expiry the child future is dropped and, thanks to
-        // kill_on_drop, the process (and we await its reap below) is killed —
-        // preventing an unbounded blocking command (e.g. `tail -f`) from hanging.
-        let output =
-            match timeout(Duration::from_secs(timeout_secs), child.wait_with_output()).await {
-                Ok(Ok(output)) => output,
-                Ok(Err(e)) => return Err(format!("Execution failed: {e}")),
-                Err(_) => return Err(format!("Command timed out after {timeout_secs}s")),
-            };
-
-        let mut stdout = String::from_utf8_lossy(&output.stdout).to_string();
-        let mut stderr = String::from_utf8_lossy(&output.stderr).to_string();
-
-        // Truncate to max output
-        stdout.truncate(MAX_OUTPUT);
-        stderr.truncate(MAX_OUTPUT);
+        // Read at most MAX_OUTPUT bytes of each stream. A reader that hits the
+        // cap returns and drops its pipe, so a runaway writer (`cat /dev/zero`)
+        // dies of SIGPIPE instead of growing our buffer until the edge device
+        // runs out of memory. The timeout bounds the rest: on expiry the future
+        // is dropped and kill_on_drop kills the process — preventing an
+        // unbounded blocking command (e.g. `tail -f`) from hanging.
+        let run = async {
+            let (out, err) = tokio::join!(
+                read_capped(stdout, MAX_OUTPUT),
+                read_capped(stderr, MAX_OUTPUT)
+            );
+            let status = child.wait().await;
+            (out, err, status)
+        };
+        let (out, err, status) = match timeout(Duration::from_secs(timeout_secs), run).await {
+            Ok(done) => done,
+            Err(_) => return Err(format!("Command timed out after {timeout_secs}s")),
+        };
+        let (stdout, stdout_cut) = out.map_err(|e| format!("Execution failed: {e}"))?;
+        let (stderr, stderr_cut) = err.map_err(|e| format!("Execution failed: {e}"))?;
+        let status = status.map_err(|e| format!("Execution failed: {e}"))?;
 
         Ok(ExecOutput {
-            stdout,
-            stderr,
-            exit_code: output.status.code().unwrap_or(-1),
+            // Lossy decoding copes with a multi-byte character cut at the cap
+            // (the old `String::truncate` panicked there — fatal under
+            // panic = "abort").
+            stdout: String::from_utf8_lossy(&stdout).into_owned(),
+            stderr: String::from_utf8_lossy(&stderr).into_owned(),
+            exit_code: status.code().unwrap_or(-1),
+            truncated: stdout_cut || stderr_cut,
         })
     }
 
@@ -218,12 +253,39 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn command_with_full_path_uses_basename() {
+    async fn command_paths_rejected() {
         let sm = SandboxManager::new();
-        // /usr/bin/rm has basename "rm" which is blocked
-        let result = sm.execute("/usr/bin/rm", &[], None, 30).await;
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("blocked"));
+        // A path is never resolved against the lists: `/tmp/x/ls` has an
+        // allowed basename but would run an arbitrary binary.
+        for cmd in ["/usr/bin/rm", "/tmp/x/ls", "./ls", "../bin/ls", "ls ", ""] {
+            let err = sm.execute(cmd, &[], None, 30).await.unwrap_err();
+            assert!(err.contains("bare program name"), "{cmd:?}: {err}");
+        }
+    }
+
+    #[tokio::test]
+    async fn runaway_output_is_capped_without_buffering_it_all() {
+        let sm = SandboxManager::new();
+        // `cat /dev/zero` never ends on its own; the capped reader must cut it
+        // off (SIGPIPE) well before the timeout rather than buffer forever.
+        let started = std::time::Instant::now();
+        let out = sm
+            .execute("cat", &["/dev/zero".to_string()], None, 30)
+            .await
+            .unwrap();
+        assert!(out.truncated);
+        assert_eq!(out.stdout.len(), MAX_OUTPUT);
+        assert!(started.elapsed() < Duration::from_secs(20));
+    }
+
+    #[tokio::test]
+    async fn cap_inside_a_multibyte_character_does_not_panic() {
+        // 0xE2 0x82 0xAC = '€'; cap after the first byte of the second one.
+        let data = "€€".as_bytes();
+        let (buf, cut) = read_capped(data, 4).await.unwrap();
+        assert!(cut);
+        assert_eq!(buf, &data[..4]);
+        assert_eq!(String::from_utf8_lossy(&buf), "€\u{FFFD}");
     }
 
     #[tokio::test]
