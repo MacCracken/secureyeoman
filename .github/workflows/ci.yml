@@ -228,6 +228,62 @@ jobs:
       - name: Template dry-run
         run: helm template secureyeoman deploy/helm/secureyeoman -f deploy/helm/secureyeoman/values-production.yaml
 
+  test-rust:
+    name: Rust (fmt, clippy, tests)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: secureyeoman
+          POSTGRES_PASSWORD: secureyeoman_dev
+          POSTGRES_DB: sy_rust_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U secureyeoman"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends protobuf-compiler
+
+      # Pinned to the MSRV so a new stable clippy lint cannot break CI unannounced.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.91"
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates
+
+      # The database-backed tests (tests/db_auth.rs) run against the schema the
+      # server actually ships with.
+      - name: Apply the shipped migrations
+        run: |
+          for f in packages/core/src/storage/migrations/*.sql; do
+            PGPASSWORD=secureyeoman_dev psql -h localhost -U secureyeoman -d sy_rust_test \
+              -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+
+      - name: Format
+        run: cargo fmt --check
+        working-directory: crates
+
+      - name: Clippy
+        run: cargo clippy --locked --all-features --all-targets -- -D warnings
+        working-directory: crates
+
+      - name: Tests
+        run: cargo test --locked
+        working-directory: crates
+        env:
+          SY_TEST_DATABASE_URL: postgres://secureyeoman:secureyeoman_dev@localhost:5432/sy_rust_test
+
   test-edge:
     name: Edge Binary Tests (Rust)
     runs-on: ubuntu-latest
