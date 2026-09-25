@@ -18,7 +18,7 @@
   "devDependencies": {
     "@capacitor/cli": "^8",
     "typescript": "^5",
-    "vite": "^6.2.0",
-    "vitest": "^4.1.8"
+    "vite": "^6.4.3",
+    "vitest": "^4.1.11"
   }
 }

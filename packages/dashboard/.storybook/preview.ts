@@ -1,15 +1,19 @@
 import '../src/index.css';
 import type { Preview } from '@storybook/react';
 
+// Storybook 9+ backgrounds API: `options` map + `initialGlobals` (the pre-9
+// `values` array / `default` keys are ignored by the v10 runtime).
 const preview: Preview = {
   parameters: {
     backgrounds: {
-      default: 'dark',
-      values: [
-        { name: 'dark', value: '#0a0a0a' },
-        { name: 'light', value: '#ffffff' },
-      ],
+      options: {
+        dark: { name: 'dark', value: '#0a0a0a' },
+        light: { name: 'light', value: '#ffffff' },
+      },
     },
+  },
+  initialGlobals: {
+    backgrounds: { value: 'dark' },
   },
 };
 
