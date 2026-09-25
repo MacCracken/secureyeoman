@@ -112,13 +112,11 @@ These shipped on `main` ahead of the 0.5.1 tag. Tests still green: 462 Rust + 41
   - 3× `react-hooks/immutability`, 3× `react-hooks/exhaustive-deps`
   - 2× `react-hooks/purity`, 1× `preserve-manual-memoization`, 1× `incompatible-library`
   - Hot files: `AgentWorldWidget.tsx` (20), `EditorPage.tsx` (12), `ExcalidrawWidget.tsx` (7), `AdvancedEditorPage.tsx` (4), `PersonalTab.tsx` (4). Refactor to refs-via-callback / state-via-ref-update or move side effects to event handlers per the React 19 guidance the rule cites.
-- [ ] **Major Rust dep bumps deferred during checkpoint** — these need ecosystem coordination:
-  - `bote 0.50 → 0.92` (two duplicate transitive copies of bote already in the lock graph at 0.91/0.92; resolve by bumping our spec)
-  - `shabda 1.0 → 2.0`, `shabdakosh 1.0 → 2.0`, `svara 1.1 → 2.0` (dhvani G2P/TTS family — coordinate with dhvani own bump; current `dhvani 1.1` still pulls 1.x of these via lockfile)
-  - `jni 0.21 → 0.22` (Android FFI; not on a current code path in `sy-core` but appears via wasmtime tree)
-  - `tokio-tungstenite 0.28 → 0.29` blocked while we're on `axum 0.8.x`
-- [ ] **`cargo deny` advisories DB lag** — `deny.toml` ignores `RUSTSEC-2023-0071` but cargo-deny's bundled advisory DB hasn't seen the advisory yet, so it warns `advisory-not-detected`. Cosmetic; revisit when deny refreshes.
-- [ ] **`packages/dashboard/package.json` and `packages/mobile/package.json` vitest spec drift** — root specifies `vitest@^4.1.5`, dashboard spec is `^4.0.18`, mobile is `^3`. Lockfile resolves correctly today; align the specs to avoid surprise on the next install.
+  - Lint total is 70 warnings / 0 errors as of 2026-09-25: the above plus 1 `react-refresh/only-export-components` in `knowledge/KnowledgeBaseContext.tsx` (context export next to its provider), newly detected by `eslint-plugin-react-refresh` 0.5.7.
+- [ ] **Major Rust dep bumps still deferred** (the 2026-09-25 refresh took `bote 0.92`, `toml 1`, `tower-http 0.7`, `jsonwebtoken 11`, `base64 0.23`, `sysinfo 0.38`; `jni 0.22` and `tokio-tungstenite 0.29` arrived transitively — see CHANGELOG):
+  - **RustCrypto majors** — `aes-gcm 0.11`, `sha2 0.11`, `hmac`/`hkdf 0.13`, `md-5 0.11`, `x25519-dalek`/`ed25519-dalek 3`, `rand 0.10`, `argon2 0.6`. No advisory; `openidconnect 4`, `oauth2 5`, `sqlx 0.8`, `rsa`, `p256`/`p384` still pin the `sha2 0.10`/`rand 0.8` stack, so bumping ours today adds a second copy of every crate. Revisit when those move (it's a focused change in `crypto/mod.rs`, `tee`, `routes/auth.rs`).
+  - **MSRV-gated** — `sqlx 0.9` needs Rust 1.94 (and touches 96 files), `sysinfo 0.39` needs 1.95. MSRV stays **1.91** (verified: build + 498 tests); raising it is a deliberate decision that unlocks both.
+  - `shabda`/`shabdakosh`/`svara 2.0` (dhvani G2P/TTS family) — only relevant once `dhvani` is re-enabled (commented out; not in the lock graph).
 
 ---
 
@@ -157,7 +155,7 @@ Every dashboard component test mocks fully-populated happy-path data. No test in
 ### Dependency cleanup
 
 - [ ] **zod 4 migration** — Root `overrides` pin `zod: 3.25.76` because zod 4's inference OOMs `tsc` even at 18 GB heap. Revisit once upstream type-perf work lands. Consumers currently forced to v3: `@anthropic-ai/sdk@0.90`, `openai@6.34`, `@modelcontextprotocol/sdk@1.29`, `eslint-plugin-react-hooks@7.1`. See the [dependency watch](./dependency-watch.md) entry.
-- [ ] **Mermaid XSS residual** — Three moderate audit findings all trace to `@excalidraw/mermaid-to-excalidraw` hard-pinning `mermaid: 10.9.3` (vulnerable to GHSA-7rqq-prvp-x9jh). Tracked in `dependency-watch.md`. Re-check when excalidraw/mermaid-to-excalidraw releases.
+- [ ] **Frontend/tooling majors deferred** — each is its own bite: TypeScript 7 (native compiler), React 19 (+ `@types/react` 19), Vite 8 + `@vitejs/plugin-react` 6 + `vite-plugin-pwa` 1, Vitest 5, Tailwind 4 + `tailwind-merge` 3, `recharts` 3, `sigma` 3 / `@react-sigma` 5, `jsdom` 30, `@testing-library/jest-dom` 7. The `packages/core`-only majors (`openai` 7, `@anthropic-ai/sdk` 0.128, `@slack/bolt` 5, `better-sqlite3` 13, `ioredis` 6, `imapflow` 2, `pdf-parse` 2, `@fastify/compress` 9, `@fastify/multipart` 10) are better retired with `packages/core` than migrated.
 - [ ] **typescript-eslint `projectService: true`** — Current config uses `parserOptions.project: [...]` array (loads full TS programs for type-aware lint). `projectService` reuses the TS language service and uses materially less memory. Would let `lint`/`typecheck` scripts drop back toward default heap.
 
 ### Rust platform expansion
@@ -166,6 +164,7 @@ Every dashboard component test mocks fully-populated happy-path data. No test in
 
 ### Release pipeline cleanup
 
+- [ ] **`release-binary.yml` action pins are a major or two behind** — `ci.yml` moved to checkout/setup-node/upload-artifact v7 + setup-helm v5 on 2026-09-25, but the SHA-pinned release workflow still uses checkout/setup-node/upload-artifact v4, download-artifact v4, cosign-installer v3, attest-build-provenance v2, action-gh-release v2 and docker/* v3 (latest: v7/v7/v7, v8, v4 = cosign 3, v4, v3, v4). The cosign 3 and attestation majors change signing defaults — bump with a tag dry-run, not blind.
 - [ ] **`DT=` local vars in `release-binary.yml`** — The sign-blob and release-notes steps still set `DT="${{ steps.version.outputs.version }}"` for inline use. Works, but redundant since the CalVer→compact transform is gone. Cosmetic.
 - [ ] **Orphan TS edge runtime** — `packages/core/src/edge/` is a Bun-compiled edge runtime replaced by Rust `sy-edge`. The `compile_edge_binary` function in `build-binary.sh` that called it was already removed. The directory itself is a delete candidate once we confirm no TS package still imports from it.
 

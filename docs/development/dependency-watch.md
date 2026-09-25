@@ -8,7 +8,6 @@ Check these whenever running `npm update` or when the relevant packages release 
 
 | Dependency | Severity | Advisory | Issue | Blocked By | Check When |
 |---|---|---|---|---|---|
-| `mermaid` 10.9.0-rc.1 – 10.9.3 (via `@excalidraw/mermaid-to-excalidraw` → `@excalidraw/excalidraw`) | MODERATE | GHSA-7rqq-prvp-x9jh | Mermaid improperly sanitizes sequence diagram labels leading to XSS. `@excalidraw/mermaid-to-excalidraw` **hard-pins** `mermaid: 10.9.3` (exact, not a range), so npm's nested-override feature (`"@excalidraw/mermaid-to-excalidraw": { "mermaid": "..." }`) is ignored at install time — verified across three override syntaxes. Top-level `mermaid` override can't be used: the dashboard itself directly depends on `mermaid@^11.12.3`. Attack surface is user-supplied diagram content inside the Excalidraw widget. | `@excalidraw/mermaid-to-excalidraw` releasing with `mermaid: >=10.9.5` (or `@excalidraw/excalidraw` bumping to a version of `mermaid-to-excalidraw` that uses patched mermaid) | Any `@excalidraw/excalidraw` or `@excalidraw/mermaid-to-excalidraw` release |
 | `yauzl` <3.2.1 (via `@capacitor/cli` → `native-run`) | MODERATE | GHSA-gmq8-994r-jv83 | Off-by-one error in ZIP parsing. Only affects Capacitor CLI (mobile build tooling), not production runtime. `npm audit fix --force` would downgrade `@capacitor/cli` to v2 (breaking). Not surfaced by `npm audit` (nested optional dev dep), but still present at `node_modules/yauzl@2.10.0`. | `native-run` releasing with `yauzl@>=3.2.1` | Any `@capacitor/cli` or `native-run` release |
 
 ---
@@ -21,31 +20,20 @@ Check these whenever running `npm update` or when the relevant packages release 
 
 ---
 
-## npm audit Summary (2026-04-18)
+## npm audit Summary (2026-09-25)
 
-`npm audit` reports 3 vulnerabilities, all moderate, all from the single mermaid XSS chain tracked above.
+`npm audit` reports **0 vulnerabilities** (was 50 before this refresh: 1 critical, 20 high, 26 moderate, 3 low — accumulated since the 0.5.1 clean slate).
 
-| Severity | Count | Source |
-|----------|-------|--------|
-| Critical | 0 | — |
-| High | 0 | — |
-| Moderate | 3 | `@excalidraw/excalidraw`, `@excalidraw/mermaid-to-excalidraw`, `mermaid` (same upstream GHSA-7rqq-prvp-x9jh) |
-| Low | 0 | — |
+**Fixes applied in the 2026-09-25 refresh:**
 
-**Recent fixes applied in the 0.5.0 audit (35 → 3 vulns):**
+- In-range `npm update` across all workspaces (286 packages) — cleared the `tar` critical and most highs (`axios`, `vite`, `postcss`, `react-router`, `fastify`/`find-my-way`, `hono`, `form-data`, `fast-uri`, `@xmldom/xmldom`, `brace-expansion`, `immutable`, `ip-address`, `imapflow`).
+- Root override pins that had themselves become the vulnerable versions were raised: `undici` 6.25.0 → 6.29.0 (discord.js subtrees), `dompurify` 3.4.0 → 3.4.16, `nanoid` 5.1.9 → 5.1.16, `protobufjs` 8.6.1 → 8.8.0; `serialize-javascript` 7.0.5 → 7.1.2.
+- New scoped override `xcode` → `uuid` 11.1.1 (`@capacitor/cli` → `xcode` 3.0.1 pinned `uuid@7`, GHSA-w5hq-g745-h8pq). `xcode` calls only `uuid.v4()`, which uuid 11 still exports for CommonJS; verified with `generateUuid()`.
+- Majors in `packages/core`, each checked against its changelog: `@fastify/static` 9 → 10 (only `setHeaders` precedence + content-disposition 2 changed; unused here), `nodemailer` 8 → 10 (TLS verification on remote-content fetch by default; Node ≥ 20; ships its own types, so `@types/nodemailer` was dropped), `@opentelemetry/exporter-trace-otlp-grpc` 0.214 → 0.222 (dev).
+- **Resolved upstream:** the mermaid XSS chain (GHSA-7rqq-prvp-x9jh) tracked here since 0.5.0 — `@excalidraw/mermaid-to-excalidraw` 2.2.2 now depends on `mermaid ^11.12.1`, so the tree carries a single `mermaid` 11.17.2.
 
-- `@anthropic-ai/sdk` 0.80→0.90 — patches memory-tool path-traversal (direct bump)
-- `dompurify` 3.3.3→3.4.0 — seven XSS / prototype pollution / ADD_ATTR advisories
-- `protobufjs` <7.5.5 → 8.0.1 override — fixes the critical `baileys` / `@whiskeysockets/libsignal-node` RCE chain
-- `serialize-javascript` 6.0.2 → 7.0.5 override — RCE via `RegExp.flags` / `Date.prototype.toISOString`, CPU exhaustion
-- `undici` 6.23.0 → 6.25.0 override (in `@discordjs/rest` + `discord.js` subtrees) — resolved all five undici advisories without waiting on `discord.js@15` stable
-- `nanoid` 3.3.3 → 5.1.9 override — predictable results with non-integer values
-- `lodash-es` 4.17.23 → 4.18.1 override — prototype pollution, code injection via `_.template`
-
-Transitive cleanup via `npm audit fix` (non-breaking) dedup'd `@fastify/static`, `fastify`, `hono`, `@hono/node-server`, `axios`, `@xmldom/xmldom`, `follow-redirects`, `imapflow`, `nodemailer`, `brace-expansion`, `vite`, `chevrotain` family, `langium`, `lodash`.
-
-**No actionable fixes available** for the remaining 3 without either (a) downgrading `@excalidraw/excalidraw` from 0.18.x to 0.17.6 (breaking major downgrade of a visible editor dep) or (b) upstream `@excalidraw/mermaid-to-excalidraw` bumping its hard-pinned mermaid.
+Rust side for the same date: `cargo audit` 0 advisories (was 2: RUSTSEC-2026-0185 `quinn-proto`, RUSTSEC-2026-0285 `rustls`) and `cargo deny check` green (was failing on the `rustls` advisory + yanked `spin` 0.9.8).
 
 ---
 
-*Last updated: 2026-04-18 — 2 active items (4 vulns: 3 moderate production, 1 moderate dev-only). Previous undici/discord.js entry resolved via override bump to 6.25.0 (no longer waiting on `discord.js@15` stable). mermaid XSS added as new tracked item after the 0.5.0 audit pass.*
+*Last updated: 2026-09-25 — 1 active item (`yauzl` via `@capacitor/cli` → `native-run`, dev-only, not surfaced by `npm audit`). The mermaid XSS chain was resolved upstream.*

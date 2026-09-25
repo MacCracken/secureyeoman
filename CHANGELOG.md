@@ -6,6 +6,44 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased]
+
+*Toolchain + dependency refresh (2026-09-25). Rust, npm and the Cyrius probe were each baselined first, then updated and re-verified. Security debt accumulated since 0.5.1 is cleared: `npm audit` 50 → 0, `cargo audit` 2 → 0, `cargo deny` red → green.*
+
+### Security
+
+- **Rust:** `cargo update` (169 packages, semver-compatible) fixes **RUSTSEC-2026-0185** (`quinn-proto` 0.11.14 → 0.11.18, remote memory exhaustion, high) and **RUSTSEC-2026-0285** (`rustls` 0.23.40 → 0.23.45, TLS 1.3 handshake messages accepted across encryption levels), and replaces the yanked `spin` 0.9.8.
+- **npm:** 50 advisories (1 critical, 20 high) → **0**. In-range updates across all workspaces; root `overrides` raised where the pin had itself become the vulnerable version (`undici` 6.29.0, `dompurify` 3.4.16, `nanoid` 5.1.16, `protobufjs` 8.8.0) plus a scoped `xcode → uuid` 11.1.1 override; `@fastify/static` 9 → 10, `nodemailer` 8 → 10 and `@opentelemetry/exporter-trace-otlp-grpc` 0.214 → 0.222 in `packages/core` (each checked against its changelog — no API we use changed). The mermaid XSS chain tracked since 0.5.0 is resolved upstream. Details in [dependency-watch.md](docs/development/dependency-watch.md).
+
+### Changed — Rust (`sy-core`)
+
+- Major bumps: `toml` 0.8 → 1, `base64` 0.22 → 0.23, `tower-http` 0.6 → 0.7, `jsonwebtoken` 10 → 11, `bote` 0.50 → 0.92 (drops the duplicate `bote` copy that `szal` already pulled), `sysinfo` 0.35 → 0.38. Behaviour note: tower-http 0.7's compression layer answers `406` to a request whose `Accept-Encoding` refuses every encoding (RFC 9110).
+- AES-256-GCM now builds its nonce from a checked `[u8; 12]` instead of the panicking `Nonce::from_slice`, which generic-array 0.14.8+ deprecates (a fresh `cargo update` would otherwise fail `clippy -D warnings`); new test for the decrypt-side bad-IV path.
+- `auth::jwt` builds its relaxed `Validation` with struct-update syntax (jsonwebtoken 11 made every field public, which trips `clippy::field_reassign_with_default`).
+- **MSRV stays 1.91** and is verified (build + tests); the tree is also clean on the latest stable, **1.98.1**. Deferred with reasons in the roadmap: the RustCrypto majors, `sqlx` 0.9 (needs 1.94) and `sysinfo` 0.39 (needs 1.95).
+
+### Changed — Node / TypeScript
+
+- **Node 24 LTS is the default** (`.nvmrc`, and the `node:24-alpine` dashboard builders in `Dockerfile.dev`, `packages/dashboard/Dockerfile`, `docker-compose.yml`). `engines` stays `>=22` and CI keeps its 22/24 matrix.
+- **Prettier 3.9** — its new union-type layout reformatted 39 files (formatting only).
+- **typescript-eslint 8.70** — `no-meaningless-void-operator` now rejects `void x;`. The 19 such "silence unused" statements were replaced: unused parameters and bindings take the `_` prefix the lint config already ignores, dead computations were removed, and `getAuditChain()` is called for its throw-if-uninitialized side effect directly.
+- **Storybook fixed** — the dashboard had paired the `storybook` 8 CLI with `@storybook/react(-vite)` 10 and listed the non-existent `addon-essentials`, so `build-storybook` crashed. All three are now 10.6 (essentials are built into core since v9), and `preview.ts` moved to the v9+ backgrounds API.
+- The dashboard's exact-pinned ESLint 10.0.1 now shares the root's 10.11; `vitest` ranges are aligned at `^4.1.11` across workspaces.
+
+### Changed — CI
+
+- `ci.yml`: `actions/checkout` / `setup-node` / `upload-artifact` v4 → v7 and `azure/setup-helm` v4 → v5 (Node 24 action runtimes; changelogs checked against our usage). The SHA-pinned `release-binary.yml` is unchanged — its cosign/attestation majors need a tag dry-run (see roadmap).
+
+### Changed — Cyrius probe (`yeo-cy-test`)
+
+- `cyrius` 6.4.64 → **6.6.6**, `sandhi` 1.10.0, `sakshi` 2.5.5, `patra` 1.15.0, `libro` 2.10.3, `ai-hwaccel` 2.4.0; two renames were needed. See [yeo-cy-test/CHANGELOG.md](yeo-cy-test/CHANGELOG.md) and its FINDINGS.
+
+### Verification
+
+Rust: fmt, `clippy -D warnings`, 498 tests and rustdoc on 1.98.1, build + tests on 1.91, `cargo audit` / `cargo deny`, and the CI `sy-edge` release smoke test. npm, from a fresh `npm ci` on **both Node 22 and 24**: audit, format, typecheck, lint (0 errors), build, and every unit suite with baseline-identical counts (shared 24, core 17,461, mcp 1,240, dashboard 4,140). Cyrius probe: 9 unit + 48 backend + 13 UI. **Not run here:** `core:db` / `core:e2e` (need PostgreSQL + pgvector — CI), dashboard Playwright e2e, Docker image builds.
+
+---
+
 ## [0.5.3] — 2026-06-07
 
 *Real OIDC SSO — the failed-closed SSO stub is replaced with a complete OpenID Connect Authorization Code + PKCE flow.*
