@@ -132,8 +132,7 @@ export class LinearIntegration implements WebhookIntegration {
       const identifier = (data.identifier as string | undefined) ?? '';
       const state = (data.state as Record<string, unknown> | undefined)?.name as string | undefined;
       const assignee = (data.assignee as Record<string, unknown> | undefined)?.name as
-        | string
-        | undefined;
+        string | undefined;
       const commentBody = (data.body as string | undefined) ?? '';
       const userId = (data.userId as string | undefined) ?? event.organizationId ?? 'linear';
 

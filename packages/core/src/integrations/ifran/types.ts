@@ -48,13 +48,7 @@ export interface IfranTrainingJobResponse {
 
 export interface IfranJobStatus {
   readonly status:
-    | 'queued'
-    | 'preparing'
-    | 'running'
-    | 'paused'
-    | 'completed'
-    | 'failed'
-    | 'cancelled';
+    'queued' | 'preparing' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
   readonly step: number;
   readonly totalSteps: number;
   readonly loss: number | null;

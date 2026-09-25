@@ -23,13 +23,7 @@ import { uuidv7 } from '../utils/crypto.js';
 // ── Types ───────────────────────────────────────────────────────────
 
 export type ExperimentStatus =
-  | 'pending'
-  | 'running'
-  | 'evaluating'
-  | 'completed'
-  | 'failed'
-  | 'retained'
-  | 'discarded';
+  'pending' | 'running' | 'evaluating' | 'completed' | 'failed' | 'retained' | 'discarded';
 
 export interface ExperimentBudget {
   /** Maximum wall-clock time per experiment in ms (default: 300_000 = 5 min) */

@@ -528,12 +528,7 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
         Body: {
           pdfBase64: string;
           analysisType:
-            | 'summary'
-            | 'key_findings'
-            | 'entities'
-            | 'risks'
-            | 'action_items'
-            | 'custom';
+            'summary' | 'key_findings' | 'entities' | 'risks' | 'action_items' | 'custom';
           customPrompt?: string;
           maxLength?: number;
         };

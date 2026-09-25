@@ -313,16 +313,14 @@ describe('TeeAttestationVerifier', () => {
     ): RemoteAttestationProvider {
       return {
         name: 'mock-remote',
-        verifyAsync: vi.fn(
-          async (provider: string): Promise<ProviderAttestationResult> => ({
-            provider,
-            verified,
-            technology: 'sgx',
-            attestationTime: Date.now(),
-            expiresAt: Date.now() + 3_600_000,
-            details: details ?? 'Remote attestation result',
-          })
-        ),
+        verifyAsync: vi.fn(async (provider: string): Promise<ProviderAttestationResult> => ({
+          provider,
+          verified,
+          technology: 'sgx',
+          attestationTime: Date.now(),
+          expiresAt: Date.now() + 3_600_000,
+          details: details ?? 'Remote attestation result',
+        })),
       };
     }
 

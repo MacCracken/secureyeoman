@@ -147,8 +147,7 @@ export async function cacheApiResponse(url: string, data: unknown, ttlMs = 300_0
 export async function getCachedApiResponse(url: string): Promise<unknown> {
   const db = await getDb();
   const entry = (await wrap(db.transaction('apiCache').objectStore('apiCache').get(url))) as
-    | { data: unknown; cachedAt: number; ttlMs: number }
-    | undefined;
+    { data: unknown; cachedAt: number; ttlMs: number } | undefined;
   if (!entry) return null;
   if (Date.now() - entry.cachedAt > entry.ttlMs) {
     const tx = db.transaction('apiCache', 'readwrite');

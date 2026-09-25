@@ -691,13 +691,7 @@ async function searchSearxng(
 // ─── Multi-Search Aggregation ───────────────────────────────
 
 type SearchProviderName =
-  | 'duckduckgo'
-  | 'serpapi'
-  | 'tavily'
-  | 'brave'
-  | 'bing'
-  | 'exa'
-  | 'searxng';
+  'duckduckgo' | 'serpapi' | 'tavily' | 'brave' | 'bing' | 'exa' | 'searxng';
 
 interface MultiSearchResultItem extends SearchResult {
   sources: SearchProviderName[];
@@ -804,8 +798,7 @@ async function searchViaMcpServer(
     if (!text) return [];
     try {
       const parsed = JSON.parse(text) as
-        | SearchResult[]
-        | { results?: SearchResult[]; web?: { results?: SearchResult[] } };
+        SearchResult[] | { results?: SearchResult[]; web?: { results?: SearchResult[] } };
       if (Array.isArray(parsed)) {
         return parsed.slice(0, maxResults).map((r) => ({
           title: r.title ?? '',

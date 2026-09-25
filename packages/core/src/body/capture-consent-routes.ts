@@ -27,8 +27,7 @@ export function registerCaptureConsentRoutes(
 
   function getAuthUser(request: FastifyRequest): { userId: string } {
     const authUser = (request as unknown as Record<string, unknown>).authUser as
-      | { id?: string; userId?: string }
-      | undefined;
+      { id?: string; userId?: string } | undefined;
     return { userId: authUser?.id ?? authUser?.userId ?? 'anonymous' };
   }
 

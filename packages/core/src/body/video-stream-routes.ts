@@ -64,8 +64,7 @@ export function registerVideoStreamRoutes(app: FastifyInstance, opts: VideoStrea
 
   function getUserId(request: FastifyRequest): string {
     const authUser = (request as unknown as Record<string, unknown>).authUser as
-      | { id?: string; userId?: string }
-      | undefined;
+      { id?: string; userId?: string } | undefined;
     return authUser?.id ?? authUser?.userId ?? 'anonymous';
   }
 

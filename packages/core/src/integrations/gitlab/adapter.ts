@@ -76,10 +76,7 @@ interface GitLabIssuePayload {
 }
 
 type GitLabWebhookPayload =
-  | GitLabPushPayload
-  | GitLabMergeRequestPayload
-  | GitLabNotePayload
-  | GitLabIssuePayload;
+  GitLabPushPayload | GitLabMergeRequestPayload | GitLabNotePayload | GitLabIssuePayload;
 
 const DEFAULT_GITLAB_URL = 'https://gitlab.com';
 

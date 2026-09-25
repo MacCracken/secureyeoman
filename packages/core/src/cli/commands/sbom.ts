@@ -121,8 +121,7 @@ async function runCompliance(ctx: CommandContext, argv: string[]): Promise<numbe
   const jsonResult = extractBoolFlag(argv, 'json');
 
   const framework = frameworkResult.value as
-    | import('../../supply-chain/compliance-mapping.js').ComplianceFramework
-    | undefined;
+    import('../../supply-chain/compliance-mapping.js').ComplianceFramework | undefined;
   const format = formatResult.value ?? (jsonResult.value ? 'json' : 'md');
 
   if (framework && !ALL_FRAMEWORKS.includes(framework)) {

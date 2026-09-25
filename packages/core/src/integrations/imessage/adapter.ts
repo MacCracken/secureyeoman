@@ -101,8 +101,7 @@ export class IMessageIntegration implements Integration {
       const Sqlite = await loadSqlite();
       const db = new Sqlite(this.chatDbPath, { readonly: true });
       const row = db.prepare('SELECT MAX(ROWID) as maxId FROM message').get() as
-        | { maxId: number | null }
-        | undefined;
+        { maxId: number | null } | undefined;
       this.lastRowId = row?.maxId ?? 0;
       db.close();
     } catch (err) {
@@ -196,8 +195,7 @@ export class IMessageIntegration implements Integration {
       const handles = new Map<number, string>();
       for (const hid of handleIds) {
         const h = db.prepare('SELECT rowid, id FROM handle WHERE rowid = ?').get(hid) as
-          | HandleRow
-          | undefined;
+          HandleRow | undefined;
         if (h) handles.set(h.rowid, h.id);
       }
 

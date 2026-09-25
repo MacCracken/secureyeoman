@@ -56,8 +56,7 @@ export function registerWebAuthnRoutes(app: FastifyInstance, opts: WebAuthnRoute
 
       try {
         const body = request.body as
-          | { displayName?: string; existingCredentialIds?: string[] }
-          | undefined;
+          { displayName?: string; existingCredentialIds?: string[] } | undefined;
         const options = await mgr.generateRegistrationOptions(
           user.userId,
           body?.displayName ?? user.userName,

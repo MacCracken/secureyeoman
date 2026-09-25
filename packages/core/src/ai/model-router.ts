@@ -20,14 +20,7 @@ import { countTokens } from '../chat/compression/token-counter.js';
 export type TaskComplexity = 'simple' | 'moderate' | 'complex';
 
 export type TaskType =
-  | 'summarize'
-  | 'classify'
-  | 'extract'
-  | 'qa'
-  | 'code'
-  | 'reason'
-  | 'plan'
-  | 'general';
+  'summarize' | 'classify' | 'extract' | 'qa' | 'code' | 'reason' | 'plan' | 'general';
 
 export interface TaskProfile {
   complexity: TaskComplexity;

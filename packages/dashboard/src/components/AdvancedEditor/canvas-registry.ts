@@ -26,13 +26,7 @@ export interface CanvasWidgetDef {
   label: string;
   description: string;
   category:
-    | 'development'
-    | 'ai-agents'
-    | 'monitoring'
-    | 'pipelines'
-    | 'finance'
-    | 'security'
-    | 'analytics';
+    'development' | 'ai-agents' | 'monitoring' | 'pipelines' | 'finance' | 'security' | 'analytics';
   defaultWidth: number;
   defaultHeight: number;
   singleton?: boolean;

@@ -17,12 +17,7 @@ import {
 // ── Types ─────────────────────────────────────────────────────────
 
 export type PlanStepStatus =
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'skipped'
-  | 'awaiting_approval';
+  'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'awaiting_approval';
 
 export interface PlanStep {
   id: string;

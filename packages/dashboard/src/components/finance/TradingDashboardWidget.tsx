@@ -45,8 +45,7 @@ function parseHistorical(res: MarketHistoricalResponse): OhlcvPoint[] | null {
 
   // AlphaVantage TIME_SERIES_DAILY format
   const timeSeries = (d['Time Series (Daily)'] ?? d['Time Series (Daily)']) as
-    | Record<string, Record<string, string>>
-    | undefined;
+    Record<string, Record<string, string>> | undefined;
   if (timeSeries) {
     return Object.entries(timeSeries)
       .slice(0, 60)

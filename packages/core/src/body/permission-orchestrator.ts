@@ -17,10 +17,7 @@ import type {
 import { getPlatformPermissionManager } from './platform-permissions.js';
 
 export type PermissionDeniedReason =
-  | 'RBAC_DENIED'
-  | 'PLATFORM_DENIED'
-  | 'USER_DENIED'
-  | 'NOT_DETERMINED';
+  'RBAC_DENIED' | 'PLATFORM_DENIED' | 'USER_DENIED' | 'NOT_DETERMINED';
 
 export interface CaptureContext {
   userId: string;

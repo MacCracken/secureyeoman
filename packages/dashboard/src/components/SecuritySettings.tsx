@@ -428,9 +428,7 @@ export function SecuritySettings() {
                     onChange={(e) => {
                       policyMutation.mutate({
                         contentGuardrailsPiiMode: e.target.value as
-                          | 'disabled'
-                          | 'detect_only'
-                          | 'redact',
+                          'disabled' | 'detect_only' | 'redact',
                       });
                     }}
                     disabled={policyMutation.isPending}
@@ -464,9 +462,7 @@ export function SecuritySettings() {
                           onChange={(e) => {
                             policyMutation.mutate({
                               contentGuardrailsToxicityMode: e.target.value as
-                                | 'block'
-                                | 'warn'
-                                | 'audit_only',
+                                'block' | 'warn' | 'audit_only',
                             });
                           }}
                           disabled={policyMutation.isPending}

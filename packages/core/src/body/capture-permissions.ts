@@ -156,8 +156,7 @@ export async function checkCapturePermission(
     )?.value as number | undefined,
     allowedActions: result.granted
       ? (rbac.getRole(roleId)?.permissions.find((p) => p.resource === resource)?.actions as
-          | CaptureAction[]
-          | undefined)
+          CaptureAction[] | undefined)
       : undefined,
   };
 

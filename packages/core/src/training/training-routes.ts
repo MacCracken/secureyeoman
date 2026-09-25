@@ -1310,12 +1310,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const { limit } = parsePagination(request.query);
       const experiments = await manager.listExperiments({
         status: request.query.status as
-          | 'draft'
-          | 'running'
-          | 'completed'
-          | 'failed'
-          | 'archived'
-          | undefined,
+          'draft' | 'running' | 'completed' | 'failed' | 'archived' | undefined,
         limit,
       });
       return { experiments };
@@ -1350,12 +1345,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const experiment = await manager.updateExperiment(request.params.id, {
         ...body,
         status: body.status as
-          | 'draft'
-          | 'running'
-          | 'completed'
-          | 'failed'
-          | 'archived'
-          | undefined,
+          'draft' | 'running' | 'completed' | 'failed' | 'archived' | undefined,
       });
       if (!experiment) return sendError(reply, 404, 'Experiment not found');
       return experiment;
@@ -1674,11 +1664,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const count = await prefManager.exportAsJsonlFile(body.path, {
         personalityId: body.personalityId,
         source: body.source as
-          | 'annotation'
-          | 'comparison'
-          | 'multi_turn'
-          | 'constitutional'
-          | undefined,
+          'annotation' | 'comparison' | 'multi_turn' | 'constitutional' | undefined,
       });
       return { path: body.path, count };
     }

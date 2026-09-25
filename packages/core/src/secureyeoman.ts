@@ -226,8 +226,7 @@ export class SecureYeoman {
   private a2aStorage: A2AStorage | null = null;
   private a2aManager: A2AManager | null = null;
   private videoStreamManager:
-    | import('./body/capture/video-stream-manager.js').VideoStreamManager
-    | null = null;
+    import('./body/capture/video-stream-manager.js').VideoStreamManager | null = null;
   private ifranManager: import('./integrations/ifran/ifran-manager.js').IfranManager | null = null;
   private edgeStore: import('./edge/edge-store.js').EdgeStore | null = null;
 
@@ -1622,8 +1621,7 @@ export class SecureYeoman {
     return this.platformMod?.getEventDispatcher() ?? null;
   }
   getEventSubscriptionStore():
-    | import('./events/event-subscription-store.js').EventSubscriptionStore
-    | null {
+    import('./events/event-subscription-store.js').EventSubscriptionStore | null {
     this.ensureInitialized();
     return this.platformMod?.getEventSubscriptionStore() ?? null;
   }
@@ -2147,9 +2145,7 @@ export class SecureYeoman {
         },
         jailbreakAction: (v) => {
           this.config!.security.inputValidation.jailbreakAction = v as
-            | 'block'
-            | 'warn'
-            | 'audit_only';
+            'block' | 'warn' | 'audit_only';
         },
         abuseDetectionEnabled: (v) => {
           this.config!.security.abuseDetection.enabled = v as boolean;

@@ -24,13 +24,7 @@ import { LinuxCaptureSandbox } from '../sandbox/linux-capture-sandbox.js';
 import { DarwinCaptureSandbox } from '../sandbox/darwin-capture-sandbox.js';
 
 export type CaptureProcessStatus =
-  | 'created'
-  | 'starting'
-  | 'running'
-  | 'capturing'
-  | 'stopping'
-  | 'terminated'
-  | 'failed';
+  'created' | 'starting' | 'running' | 'capturing' | 'stopping' | 'terminated' | 'failed';
 
 export interface CaptureProcessConfig {
   scope: CaptureScope;

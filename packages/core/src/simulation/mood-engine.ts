@@ -362,11 +362,7 @@ export class MoodEngine {
     personalityId: string,
     traits: Record<string, string>,
     chronotype:
-      | 'early bird'
-      | 'morning-leaning'
-      | 'neutral'
-      | 'evening-leaning'
-      | 'night owl' = 'neutral'
+      'early bird' | 'morning-leaning' | 'neutral' | 'evening-leaning' | 'night owl' = 'neutral'
   ): Promise<void> {
     const stateJson = bhava.createEmotionalStateWithBaseline(traits);
     const stressJson = bhava.createStressState(traits);

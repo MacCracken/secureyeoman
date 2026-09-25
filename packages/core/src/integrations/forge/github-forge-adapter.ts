@@ -292,15 +292,13 @@ function toForgeRelease(r: GHRelease): ForgeRelease {
     draft: r.draft,
     prerelease: r.prerelease,
     createdAt: r.created_at,
-    assets: r.assets.map(
-      (a): ForgeArtifact => ({
-        id: String(a.id),
-        name: a.name,
-        sizeBytes: a.size,
-        downloadUrl: a.browser_download_url,
-        createdAt: a.created_at,
-      })
-    ),
+    assets: r.assets.map((a): ForgeArtifact => ({
+      id: String(a.id),
+      name: a.name,
+      sizeBytes: a.size,
+      downloadUrl: a.browser_download_url,
+      createdAt: a.created_at,
+    })),
   };
 }
 

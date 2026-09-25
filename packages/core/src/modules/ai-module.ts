@@ -430,8 +430,7 @@ export class AIModule extends BaseModule {
 
   // Phase 132 stubs — initialized lazily to avoid dependency on pool
   private batchInferenceManager:
-    | import('../ai/batch-inference-manager.js').BatchInferenceManager
-    | null = null;
+    import('../ai/batch-inference-manager.js').BatchInferenceManager | null = null;
   private semanticCache: import('../ai/semantic-cache.js').SemanticCache | null = null;
   private kvCacheWarmer: import('../ai/kv-cache-warmer.js').KvCacheWarmer | null = null;
 

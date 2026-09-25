@@ -198,8 +198,7 @@ export function registerScanningRoutes(app: FastifyInstance, opts: ScanningRoute
   app.post('/api/v1/sandbox/scan', async (req, reply) => {
     if (!pipeline) return sendError(reply, 503, 'Scanning pipeline not available');
     const body = req.body as
-      | { content?: string; type?: string; sourceContext?: string }
-      | undefined;
+      { content?: string; type?: string; sourceContext?: string } | undefined;
     if (!body?.content) {
       return sendError(reply, 400, 'content is required');
     }

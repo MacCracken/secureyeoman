@@ -62,11 +62,7 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
           await classificationStore.create({
             contentId,
             contentType: contentType as
-              | 'conversation'
-              | 'document'
-              | 'memory'
-              | 'knowledge'
-              | 'message',
+              'conversation' | 'document' | 'memory' | 'knowledge' | 'message',
             classificationLevel: result.level,
             autoLevel: result.autoLevel,
             manualOverride: false,
@@ -400,9 +396,9 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
           }
 
           const engine = algorithm
-            ? new (watermarkEngine.constructor as new (
-                algo: WatermarkAlgorithm
-              ) => WatermarkEngine)(algorithm)
+            ? new (
+                watermarkEngine.constructor as new (algo: WatermarkAlgorithm) => WatermarkEngine
+              )(algorithm)
             : watermarkEngine;
 
           const payload = engine.extract(text);
@@ -424,9 +420,9 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
           }
 
           const engine = algorithm
-            ? new (watermarkEngine.constructor as new (
-                algo: WatermarkAlgorithm
-              ) => WatermarkEngine)(algorithm)
+            ? new (
+                watermarkEngine.constructor as new (algo: WatermarkAlgorithm) => WatermarkEngine
+              )(algorithm)
             : watermarkEngine;
 
           const detected = engine.detect(text);

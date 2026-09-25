@@ -74,14 +74,7 @@ import { RateLimitingTab } from './RateLimitingTab';
 import { KeyRotationCard } from './KeyRotationCard';
 
 type TabType =
-  | 'general'
-  | 'appearance'
-  | 'security'
-  | 'keys'
-  | 'roles'
-  | 'souls'
-  | 'notifications'
-  | 'backup';
+  'general' | 'appearance' | 'security' | 'keys' | 'roles' | 'souls' | 'notifications' | 'backup';
 
 function getTabFromPath(path: string): TabType {
   if (path.includes('/security-settings')) return 'security';

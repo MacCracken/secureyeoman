@@ -117,14 +117,12 @@ export class AIClient {
   private readonly responseCache: ResponseCache | null;
   private soulManager: SoulManager | null;
   private readonly providerAccountManager:
-    | import('./provider-account-manager.js').ProviderAccountManager
-    | null;
+    import('./provider-account-manager.js').ProviderAccountManager | null;
   private readonly healthTracker: ProviderHealthTracker | null;
   private readonly teeVerifier: TeeAttestationVerifier | null;
   private readonly circuitBreakers: CircuitBreakerRegistry | null;
   private readonly classificationEngine:
-    | import('../security/dlp/classification-engine.js').ClassificationEngine
-    | null;
+    import('../security/dlp/classification-engine.js').ClassificationEngine | null;
   private readonly routingPolicy: RoutingPolicy;
   private resolvedAccountId: string | null = null;
   private initPromise: Promise<void> | null = null;

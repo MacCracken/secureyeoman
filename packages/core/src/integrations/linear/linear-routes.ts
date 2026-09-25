@@ -301,8 +301,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
       }
 
       const createResult = result.data?.issueCreate as
-        | { success: boolean; issue: Record<string, unknown> }
-        | undefined;
+        { success: boolean; issue: Record<string, unknown> } | undefined;
 
       if (!createResult?.success) {
         return sendError(reply, 502, 'Linear issueCreate reported failure.');
@@ -369,8 +368,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
       }
 
       const updateResult = result.data?.issueUpdate as
-        | { success: boolean; issue: Record<string, unknown> }
-        | undefined;
+        { success: boolean; issue: Record<string, unknown> } | undefined;
 
       if (!updateResult?.success) {
         return sendError(reply, 502, 'Linear issueUpdate reported failure.');
@@ -421,8 +419,7 @@ export function registerLinearRoutes(app: FastifyInstance, opts: LinearRoutesOpt
       }
 
       const createResult = result.data?.commentCreate as
-        | { success: boolean; comment: Record<string, unknown> }
-        | undefined;
+        { success: boolean; comment: Record<string, unknown> } | undefined;
 
       if (!createResult?.success) {
         return sendError(reply, 502, 'Linear commentCreate reported failure.');

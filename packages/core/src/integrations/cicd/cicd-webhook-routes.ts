@@ -31,14 +31,7 @@ import type { WebhookEventStore } from './webhook-event-store.js';
 
 export interface CiEvent {
   provider:
-    | 'github'
-    | 'jenkins'
-    | 'gitlab'
-    | 'northflank'
-    | 'delta'
-    | 'travis'
-    | 'bitbucket'
-    | 'gitea';
+    'github' | 'jenkins' | 'gitlab' | 'northflank' | 'delta' | 'travis' | 'bitbucket' | 'gitea';
   event: string; // e.g. 'workflow_run.completed', 'build.failed'
   ref: string; // branch/tag
   conclusion: string; // success | failure | cancelled | unknown
@@ -275,16 +268,14 @@ function normalizeTravis(body: Record<string, unknown>): CiEvent {
 function normalizeBitbucket(eventHeader: string, body: Record<string, unknown>): CiEvent {
   const event = eventHeader.replace(/:/g, '.'); // e.g. repo:push → repo.push
   const changes = (body.push as Record<string, unknown>)?.changes as
-    | Record<string, unknown>[]
-    | undefined;
+    Record<string, unknown>[] | undefined;
   const refChanges = body.refChanges as Record<string, unknown>[] | undefined;
   const ref = changes?.[0]?.new
     ? String((changes[0].new as Record<string, unknown>).name ?? '')
     : String(refChanges?.[0]?.refId ?? '');
   const buildStatus = body.commit_status as Record<string, unknown> | undefined;
   const pipelineState = (body.pipeline as Record<string, unknown>)?.state as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   const stateResult = pipelineState?.result as Record<string, unknown> | undefined;
   const stateName = String(
     stateResult?.name ?? pipelineState?.name ?? buildStatus?.state ?? 'unknown'

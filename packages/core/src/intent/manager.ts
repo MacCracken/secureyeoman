@@ -103,8 +103,7 @@ export class IntentManager {
   private readonly signalRefreshIntervalMs: number;
   private readonly opa: OpaClient | null;
   private readonly callMcpTool:
-    | ((toolName: string, input?: Record<string, unknown>) => Promise<number | null>)
-    | null;
+    ((toolName: string, input?: Record<string, unknown>) => Promise<number | null>) | null;
   private readonly getDepartmentRiskManager: IntentManagerDeps['getDepartmentRiskManager'];
 
   private activeIntent: OrgIntentRecord | null = null;

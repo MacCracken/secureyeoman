@@ -44,8 +44,7 @@ function sanitizeError(error: unknown): string {
  */
 function getAuthContext(request: FastifyRequest): { userId: string; roleId: string } {
   const authUser = (request as unknown as Record<string, unknown>).authUser as
-    | { id?: string; userId?: string; role?: string; roleId?: string }
-    | undefined;
+    { id?: string; userId?: string; role?: string; roleId?: string } | undefined;
   return {
     userId: authUser?.id ?? authUser?.userId ?? 'anonymous',
     roleId: authUser?.role ?? authUser?.roleId ?? 'default',

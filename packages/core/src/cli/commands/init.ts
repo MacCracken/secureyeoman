@@ -315,8 +315,7 @@ Options:
 
         const dbChoices = ['sqlite', 'postgresql'];
         dbBackend = (await promptChoice(rl, '  Database backend?', dbChoices, 0)) as
-          | 'sqlite'
-          | 'postgresql';
+          'sqlite' | 'postgresql';
 
         if (dbBackend === 'postgresql') {
           databaseUrl = await prompt(

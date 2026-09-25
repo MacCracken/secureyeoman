@@ -106,11 +106,7 @@ export interface ErrorStep extends TraceStepBase {
 }
 
 export type TraceStep =
-  | LlmCallStep
-  | ToolCallStep
-  | GuardCheckStep
-  | BrainRetrievalStep
-  | ErrorStep;
+  LlmCallStep | ToolCallStep | GuardCheckStep | BrainRetrievalStep | ErrorStep;
 
 // ── Execution Trace ──────────────────────────────────────────────────
 
