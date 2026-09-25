@@ -1,6 +1,6 @@
 {
   "name": "@secureyeoman/desktop",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "SecureYeoman desktop app — Tauri v2 shell",
   "private": true,
   "scripts": {

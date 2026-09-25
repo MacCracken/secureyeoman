@@ -8,6 +8,8 @@
 
 **Status**: **0.5.0 — Rust-native, migration repair complete.** All 16 repair phases done. Node.js eliminated. sy-core is the sole application binary (971+ routes, 85 modules). Full middleware stack (13 layers including fingerprinting), true SSE chat streaming, RBAC enforcement, ownership guards, API key validation, JTI token revocation, persistent vector store (pgvector), dashboard endpoint gap-fill (27 endpoints), response shape alignment. 170 tests passing. See **[Migration Findings](migration-finds.md)** for the full audit and repair log.
 
+> **Correction (0.5.4 review, 2026-09-25):** checked against the schema the server ships with, much of the Rust DB layer does not work — API key validation did not (fixed in 0.5.4), and the pgvector store queries a `brain.vectors` table no migration creates. See [Rust DB layer vs. the shipped schema](#rust-db-layer-vs-the-shipped-schema-p0).
+
 See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hardware test plan, and per-platform verification checklist.
 
 Phase 10 flatten complete — all domain libraries live inside `sy-core` as modules, and the workspace is a single crate with two binary targets.
@@ -35,6 +37,40 @@ As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Ifran, Shruti, Ta
 | `sy-sandbox-core` | `crates/sy-sandbox` | Landlock/seccomp policy engine shared with AGNOS runtime | SY, AGNOS, Agnosticos |
 
 **Not candidates** (too SY-specific): `sy-edge` (SY binary), `sy-hwprobe` (already delegates to `ai-hwaccel`).
+
+---
+
+## 0.5.4 — Security & correctness review (shipped 2026-09-25)
+
+A review of the Rust server's auth surface, WebSockets, the sy-edge exec sandbox, outbound HTTP and its SQL, plus the toolchain/dependency refresh. See the [CHANGELOG](../../CHANGELOG.md#054--2026-09-25). Rust CI now runs fmt, clippy and the full test suite, including DB-backed tests against the shipped migrations; before 0.5.4 CI only built `sy-edge`.
+
+### Rust DB layer vs. the shipped schema (P0)
+
+sy-core builds its SQL as runtime strings, so nothing checks it against the schema, and CI never ran the Rust tests against a database. [`scripts/check-sql-drift.py`](../../scripts/check-sql-drift.py) has PostgreSQL parse and describe every literal statement, then checks the result columns against the `FromRow` struct they decode into. Against the shipped migrations (`packages/core/src/storage/migrations/`), at 0.5.4:
+
+| of 657 statements | |
+|---|---|
+| work | 213 |
+| fail to parse (missing table/column, type mismatch) | 362 |
+| parse but cannot decode into their row struct | 61 |
+| decode only until the first `NULL` (non-`Option` field, nullable column) | 19 |
+
+Whole modules are affected. Worst first, as failing/checked: `db/training.rs` 64/72, `db/security.rs` 42/54, `db/agents.rs` 31/47 (swarms, councils, teams), `db/auth.rs` 25/41 (users, roles, assignments, OAuth tokens, SSO providers, password resets, break-glass), `db/responsible_ai.rs` 22/22, `db/federation.rs` 17/19, `db/extensions.rs` 12/16, `db/edge.rs` 9/9, `db/proactive.rs` 9/9, `db/tenants.rs` 8/9, `db/simulation.rs` 7/7, `brain/pg_vector.rs` 5/5 (`brain.vectors` is absent). Core daily-use modules are mostly fine, but still have gaps: the soul skills CRUD (`/api/v1/soul/skills`), `soul.config`, chat feedback/memories, workflow versions, personality mood, and user profiles/notification prefs. Most gaps are model ports, not renames: the Rust structs were written for a different table shape than the TS schema. Examples are `auth.roles` vs `rbac.role_definitions`, and `bigint` epoch-ms columns decoded as `DateTime`.
+
+- [ ] Port module by module. Each port gets a DB-backed test in `crates/sy-core/tests/db_*.rs`; these are skipped unless `SY_TEST_DATABASE_URL` is set, and CI sets it. Burn the report down to zero, then make `check-sql-drift.py` a blocking CI step.
+- [ ] Decide per module whether the TS table is the model to keep, or the Rust shape plus a new migration. The server applies `packages/core/src/storage/migrations/*.sql` at boot; there is no Rust-side copy yet.
+
+### RBAC role parity (P1)
+
+`auth::permissions::role_permissions` is a thinner port of the TS `DEFAULT_ROLES`. The Rust `operator` lacks `metrics`, `logs`, `reports`, `dashboards`, `workspaces`, `experiments`, `extensions`, `comms` and `responsible_ai`, and some resource names differ (`dashboard` vs `dashboards`, `workspace` vs `workspaces`). The failure mode is closed: non-admin principals (SSO users, non-admin API keys) get 403s in those dashboard areas.
+
+- [ ] Reconcile the role table and the `PREFIX_MAP` resource names with TS, and add a per-role route matrix test.
+
+### Smaller follow-ups
+
+- [ ] `POST /api/v1/marketplace/community/sync` accepts a `file://` repo URL from any `marketplace:write` principal (operators included), which lets them clone a local repository into the community path. Restrict `file://` to admins, or to an allowlisted path.
+- [ ] Fingerprinting is opt-in as of 0.5.4 (`SECUREYEOMAN_FINGERPRINT_ENABLED`). If it is made a default again, it must exempt authenticated API clients; the score treats every non-browser client as a bot.
+- [ ] Collab room fan-out echoes a client's own CRDT updates back to it. Yjs de-duplicates them, so this only wastes bandwidth.
 
 ---
 
@@ -93,7 +129,7 @@ These shipped on `main` ahead of the 0.5.1 tag. Tests still green: 462 Rust + 41
 ### Remaining P0 — must close before 0.5.1 tag
 
 - [ ] **Delete legacy `packages/core/`** — 113 MB of orphan TS source. No package imports `@secureyeoman/core` (verified). *Active references that block a naive `rm -rf`:*
-  - `Dockerfile.dev:96` and `scripts/build-binary.sh:112` still copy `packages/core/src/storage/migrations/*.sql` into the runtime image / binary. Rust `sy-core` has its own migrations under `crates/sy-core/src/db/migrations/` — relocate the SQL or fold it in, then update the COPY paths.
+  - `Dockerfile.dev:96` and `scripts/build-binary.sh:112` still copy `packages/core/src/storage/migrations/*.sql` into the runtime image / binary — and those files *are* the schema sy-core applies at boot (there is no Rust-side copy yet). Move them under `crates/sy-core/` first, then update the COPY paths and the Rust CI job.
   - `scripts/build-binary.sh:138, 161` reference `packages/core/src/cli.ts` and `packages/core/src/agent/cli.ts` for the legacy Bun-compiled paths (lines around them are commented out, but the file still references them). Verify and remove.
   - `.github/workflows/release-binary.yml:133` uses `packages/core/dist/cli.js` for SBOM generation — port to a Rust equivalent or invoke from the live binary.
   - `.github/workflows/ci.yml:74` uploads `packages/core/coverage/lcov.info` — remove the step.
