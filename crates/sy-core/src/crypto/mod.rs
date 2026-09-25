@@ -65,14 +65,16 @@ pub fn aes_256_gcm_encrypt(plaintext: &[u8], key: &[u8], iv: &[u8]) -> Result<Ve
             key.len()
         ));
     }
-    if iv.len() != 12 {
-        return Err(format!("AES-256-GCM IV must be 12 bytes, got {}", iv.len()));
-    }
+    let iv: [u8; 12] = iv
+        .try_into()
+        .map_err(|_| format!("AES-256-GCM IV must be 12 bytes, got {}", iv.len()))?;
 
     let cipher = Aes256Gcm::new_from_slice(key).map_err(|e| e.to_string())?;
-    let nonce = Nonce::from_slice(iv);
+    // `Nonce::from([u8; 12])`, not the panicking `Nonce::from_slice` — deprecated in
+    // generic-array 0.14.8+ and in hybrid-array (aes-gcm 0.11), which both point to TryFrom.
+    let nonce = Nonce::from(iv);
     cipher
-        .encrypt(nonce, plaintext)
+        .encrypt(&nonce, plaintext)
         .map_err(|e| format!("AES-256-GCM encryption failed: {e}"))
 }
 
@@ -87,14 +89,14 @@ pub fn aes_256_gcm_decrypt(ciphertext: &[u8], key: &[u8], iv: &[u8]) -> Result<V
             key.len()
         ));
     }
-    if iv.len() != 12 {
-        return Err(format!("AES-256-GCM IV must be 12 bytes, got {}", iv.len()));
-    }
+    let iv: [u8; 12] = iv
+        .try_into()
+        .map_err(|_| format!("AES-256-GCM IV must be 12 bytes, got {}", iv.len()))?;
 
     let cipher = Aes256Gcm::new_from_slice(key).map_err(|e| e.to_string())?;
-    let nonce = Nonce::from_slice(iv);
+    let nonce = Nonce::from(iv);
     cipher
-        .decrypt(nonce, ciphertext)
+        .decrypt(&nonce, ciphertext)
         .map_err(|e| format!("AES-256-GCM decryption failed: {e}"))
 }
 
@@ -425,6 +427,14 @@ mod tests {
         let result = aes_256_gcm_encrypt(b"data", &[0u8; 32], &[0u8; 8]);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("IV must be 12 bytes"));
+    }
+
+    #[test]
+    fn test_aes_256_gcm_decrypt_bad_iv_length() {
+        for bad in [&[0u8; 0][..], &[0u8; 11], &[0u8; 13]] {
+            let err = aes_256_gcm_decrypt(&[0u8; 32], &[0u8; 32], bad).unwrap_err();
+            assert!(err.contains("IV must be 12 bytes"), "{err}");
+        }
     }
 
     #[test]

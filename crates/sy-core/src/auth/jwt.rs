@@ -158,8 +158,10 @@ fn try_validate_relaxed(
     token: &str,
     secret: &str,
 ) -> Result<TokenClaims, jsonwebtoken::errors::Error> {
-    let mut validation = Validation::default();
-    validation.validate_aud = false;
+    let validation = Validation {
+        validate_aud: false,
+        ..Validation::default()
+    };
     let data = decode::<TokenClaims>(
         token,
         &DecodingKey::from_secret(secret.as_bytes()),
