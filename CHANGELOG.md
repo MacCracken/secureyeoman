@@ -6,9 +6,9 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## [Unreleased]
+## [0.5.4] — 2026-09-26
 
-*Two follow-ups from the 0.5.4 review. First, the core DB modules are ported to the schema the server ships with, in the TS gateway's wire shapes, and each ported module has DB-backed tests. The ported modules are soul skills and config, chat feedback and memories, workflow versions, personality mood, users and notification preferences, the marketplace community sync, brain documents and the pgvector store, events, voice, risk and MCP. Second, RBAC is reconciled with the TS gateway's roles and route permissions; a route matrix test pins the result. The SQL drift report moved from 213 working statements of 657 to 296 of 677; the count grew because the ports added statements. The ported modules now report zero failures. Rust tests: 535 → 580.*
+*A security and correctness review of the Rust server covered auth and sessions, WebSockets, the sy-edge exec sandbox, outbound HTTP and SQL. It shipped alongside a toolchain and dependency refresh. The review also added what would have caught these bugs earlier. CI now runs the Rust test suite, including DB-backed tests against the shipped migrations; before, it only built `sy-edge`. A SQL drift checker runs every statement against those migrations. The core DB modules it flagged are ported to that schema, and RBAC is reconciled with the TS gateway's roles; both are **Breaking** for some scoped keys and role grants. The drift report went from 213 working statements of 657 to 296 of 677; the rest are under Known issues. Dependency security debt since 0.5.1 is cleared: `npm audit` went 50 → 0, `cargo audit` 2 → 0, and `cargo deny` red → green.*
 
 ### Breaking
 
@@ -51,13 +51,48 @@ All notable changes to SecureYeoman are documented in this file.
   - `GET /api/v1/risk/dashboard` and `POST /api/v1/risk/assessments/{id}/score`.
   - `POST /api/v1/brain/documents`: use `POST /api/v1/brain/documents/ingest-text`.
 
-### Security
+### Security — review fixes
 
+- **OAuth token management was unauthenticated.** `/api/v1/auth/oauth/` was a public path *prefix*, so the routes beneath it needed no credentials: the OAuth token list, get, delete and refresh routes, plus `oauth/reload` and `oauth/disconnect`. Public OAuth routes are now matched by route template (`/oauth/{provider}` and `/oauth/{provider}/callback`), as the TS gateway did.
+- **Refresh tokens were never revoked.** A refresh token stayed valid for its full 7 days after logout, and could be redeemed any number of times. Now:
+  - Refresh is **single-use with rotation**: each redemption atomically revokes the presented token, in the DB and across instances, and returns a new pair.
+  - `logout` revokes the refresh token the client hands over (the dashboard now sends it).
+  - Logout revokes the access token until its real `exp`, instead of a fixed 15 minutes, which had let a 1-hour "remember me" token revive after a restart.
+- **WebSockets skipped most of the auth checks.** `/ws/metrics`, `/ws/collab/{docId}` and `/ws/video/{sessionId}` accepted refresh tokens and logged-out (revoked) tokens, and checked no permissions at all. Any viewer could watch capture video, which REST gates behind `capture.video`. They could also join a collab room and edit a personality or skill, and subscribe to audit and security events. A shared `routes::ws_auth` now requires a valid, unrevoked access token and enforces the same RBAC as REST:
+  - video needs `capture.video:read`;
+  - collab needs write access to the document;
+  - gated `/ws/metrics` channels need their resource's read permission.
+
+  Refusals close with `4401`/`4403`, as the TS gateway did.
+- **sy-edge exec allowlist bypass.** The allowlist checked the command's basename but executed the caller's path, so `/tmp/x/ls` ran any binary named `ls`. Commands must now be bare program names resolved on `PATH`.
+- **sy-edge exec could be crashed or exhausted.** Both paths are fixed:
+  - The output cap used `String::truncate` at a byte offset. That panics mid-character, and `panic = "abort"` turns the panic into a process kill.
+  - Output was fully buffered before the cap applied, so `cat /dev/zero` grew memory until the timeout. Reads are now capped as they stream; a runaway writer is cut off by SIGPIPE at 1 MB. The response gains a `truncated` flag.
+- **SAML metadata reflected the path into XML.** The public `/api/v1/auth/sso/saml/{id}/metadata` route interpolated `{id}` unescaped. Provider ids are now restricted to `[A-Za-z0-9_-]{1,64}`.
+- **API-key auth never worked against the real schema.** Every key lookup errored, because the Rust row expected a `permissions` column that `auth.api_keys` does not have. The revocation column was also ignored, and create demanded a client-computed hash, which answered the dashboard with a 422. API keys are now ported to the shipped schema and the TS contract:
+  - Keys are generated server-side (`sck_…`) and only the hash is stored.
+  - Revocation is soft (`revoked_at`); a revoked or expired key stops working immediately.
+  - A key authenticates as its creator, with its own role, and a key can never carry more than its creator's role.
+  - List and usage responses use the dashboard's shape, and never include the hash.
 - `/api/v1/users/me/notification-prefs` took the user from a `userId` query or body field, so any caller could name any user. The queries targeted tables that do not exist, so they failed rather than leaked. Preferences are now always the authenticated caller's. They are self-service for every role; TS put them under `auth`, which only admins held.
 - `POST /api/v1/marketplace/community/sync` cloned any `https://` or `file://` URL given in the request body, for any `marketplace:write` principal. A request-supplied `repoUrl` now needs the security policy's `allowCommunityGitFetch`, as in TS, and a `file://` URL additionally needs the admin role. The configured `COMMUNITY_GIT_URL` and the default repository are unaffected.
 - Event subscriptions no longer return their HMAC signing secret (TS did); responses carry `hasSecret` instead.
 - User listings select explicit columns, so password hashes are never read.
 - Knowledge-base documents apply the TS ownership rule to get and delete: admin, operator and service only. Deleting a document removes its knowledge chunks in the same transaction, matched by prefix rather than `LIKE`, so an id cannot act as a pattern.
+
+### Fixed
+
+- `GET /api/v1/auth/me` and `POST /api/v1/auth/logout` returned 403 to every non-admin role. They are self-service, so RBAC no longer applies (TS `TOKEN_ONLY_ROUTES`).
+- `POST /api/v1/auth/refresh` could not succeed for the dashboard. It required an access token, which is usually expired by the time a client refreshes, and it only accepted a snake_case body. It is now public (the refresh token authenticates it) and takes `{ "refreshToken" }`.
+- `rememberMe` (camelCase, as the dashboard sends it) was ignored, and `expiresIn` then misreported the token lifetime. It now issues a 1 h access token and a 30-day refresh token, as the TS gateway did.
+- **Browsers could not open any WebSocket.** Clients offer `token.<jwt>` as the subprotocol, but the handlers only selected a literal `token`, so the handshake response carried no `Sec-WebSocket-Protocol` and Chrome aborts that handshake. The offered protocol is now echoed.
+- The strict rate-limit tier (5 req/min per IP) covered all of `/api/v1/auth/*`, which throttled the dashboard's own API key, user, role and SSO pages. It now covers only the credential endpoints: login, refresh, token exchange, WebAuthn authentication and break-glass.
+- **Fingerprinting blocked API clients.** Heuristic bot fingerprinting was documented as opt-in but ran unconditionally. It scores any non-browser client as a bot, so API-key scripts, MCP and sy-edge were locked out after a few requests. Behind a proxy that does not pass the client IP, the block could hit every user at once. It is now opt-in, as documented: `SECUREYEOMAN_FINGERPRINT_ENABLED=true`.
+- Outbound HTTP had no timeouts: 46 `reqwest::Client::new()` call sites could wait on a silent upstream forever. They now share one pooled client with a 10 s connect timeout and a 300 s read-inactivity timeout. There is no total timeout, so SSE relays and slow model calls still work; per-request timeouts still apply.
+- Collab rooms, and their buffered edits, were never freed: the empty-room check counted the leaving client's own receiver.
+- Syslog audit export byte-sliced the event name, which panics on multi-byte input. It also left RFC 5424 SD-PARAM values unescaped, and a newline in a message could forge a record.
+- The revoked-token cache grew without bound; entries are now pruned once the token has expired anyway.
+- A custom role created without a permission list defaulted to `*:*`; it now grants nothing.
 
 ### Fixed — ported to the shipped schema
 
@@ -91,68 +126,15 @@ All notable changes to SecureYeoman are documented in this file.
 
 ### Added
 
-- DB-backed tests, one file per ported module: `tests/db_soul.rs`, `db_chat.rs`, `db_workflow.rs`, `db_mood.rs`, `db_users.rs`, `db_marketplace.rs`, `db_brain.rs`, `db_events.rs`, `db_voice.rs`, `db_risk.rs` and `db_mcp.rs`.
-- `tests/rbac_matrix.rs` covers:
-  - route resolution;
-  - each role's grants, and every difference from TS;
-  - enforcement on real routes;
-  - scoped keys on unmapped routes;
-  - that WebSocket channels and role grants only name resources the REST RBAC uses.
-- `check-sql-drift.py` treats `COALESCE(…) AS column` as non-null.
-
----
-
-## [0.5.4] — 2026-09-25
-
-*A security and correctness review of the Rust server covered auth and sessions, WebSockets, the sy-edge exec sandbox, outbound HTTP and SQL. It shipped alongside a toolchain and dependency refresh. The review also added what would have caught these bugs earlier. CI now runs the Rust test suite; before, it only built `sy-edge`. The suite includes DB-backed tests against the shipped migrations. A new SQL drift checker also runs against those migrations; its findings are under Known issues. Dependency security debt since 0.5.1 is cleared: `npm audit` went 50 → 0, `cargo audit` 2 → 0, and `cargo deny` red → green.*
-
-### Security — review fixes
-
-- **OAuth token management was unauthenticated.** `/api/v1/auth/oauth/` was a public path *prefix*, so the routes beneath it needed no credentials: the OAuth token list, get, delete and refresh routes, plus `oauth/reload` and `oauth/disconnect`. Public OAuth routes are now matched by route template (`/oauth/{provider}` and `/oauth/{provider}/callback`), as the TS gateway did.
-- **Refresh tokens were never revoked.** A refresh token stayed valid for its full 7 days after logout, and could be redeemed any number of times. Now:
-  - Refresh is **single-use with rotation**: each redemption atomically revokes the presented token, in the DB and across instances, and returns a new pair.
-  - `logout` revokes the refresh token the client hands over (the dashboard now sends it).
-  - Logout revokes the access token until its real `exp`, instead of a fixed 15 minutes, which had let a 1-hour "remember me" token revive after a restart.
-- **WebSockets skipped most of the auth checks.** `/ws/metrics`, `/ws/collab/{docId}` and `/ws/video/{sessionId}` accepted refresh tokens and logged-out (revoked) tokens, and checked no permissions at all. Any viewer could watch capture video, which REST gates behind `capture.video`. They could also join a collab room and edit a personality or skill, and subscribe to audit and security events. A shared `routes::ws_auth` now requires a valid, unrevoked access token and enforces the same RBAC as REST:
-  - video needs `capture.video:read`;
-  - collab needs write access to the document;
-  - gated `/ws/metrics` channels need their resource's read permission.
-
-  Refusals close with `4401`/`4403`, as the TS gateway did.
-- **sy-edge exec allowlist bypass.** The allowlist checked the command's basename but executed the caller's path, so `/tmp/x/ls` ran any binary named `ls`. Commands must now be bare program names resolved on `PATH`.
-- **sy-edge exec could be crashed or exhausted.** Both paths are fixed:
-  - The output cap used `String::truncate` at a byte offset. That panics mid-character, and `panic = "abort"` turns the panic into a process kill.
-  - Output was fully buffered before the cap applied, so `cat /dev/zero` grew memory until the timeout. Reads are now capped as they stream; a runaway writer is cut off by SIGPIPE at 1 MB. The response gains a `truncated` flag.
-- **SAML metadata reflected the path into XML.** The public `/api/v1/auth/sso/saml/{id}/metadata` route interpolated `{id}` unescaped. Provider ids are now restricted to `[A-Za-z0-9_-]{1,64}`.
-- **API-key auth never worked against the real schema.** Every key lookup errored, because the Rust row expected a `permissions` column that `auth.api_keys` does not have. The revocation column was also ignored, and create demanded a client-computed hash, which answered the dashboard with a 422. API keys are now ported to the shipped schema and the TS contract:
-  - Keys are generated server-side (`sck_…`) and only the hash is stored.
-  - Revocation is soft (`revoked_at`); a revoked or expired key stops working immediately.
-  - A key authenticates as its creator, with its own role, and a key can never carry more than its creator's role.
-  - List and usage responses use the dashboard's shape, and never include the hash.
-
-### Fixed
-
-- `GET /api/v1/auth/me` and `POST /api/v1/auth/logout` returned 403 to every non-admin role. They are self-service, so RBAC no longer applies (TS `TOKEN_ONLY_ROUTES`).
-- `POST /api/v1/auth/refresh` could not succeed for the dashboard. It required an access token, which is usually expired by the time a client refreshes, and it only accepted a snake_case body. It is now public (the refresh token authenticates it) and takes `{ "refreshToken" }`.
-- `rememberMe` (camelCase, as the dashboard sends it) was ignored, and `expiresIn` then misreported the token lifetime. It now issues a 1 h access token and a 30-day refresh token, as the TS gateway did.
-- **Browsers could not open any WebSocket.** Clients offer `token.<jwt>` as the subprotocol, but the handlers only selected a literal `token`, so the handshake response carried no `Sec-WebSocket-Protocol` and Chrome aborts that handshake. The offered protocol is now echoed.
-- The strict rate-limit tier (5 req/min per IP) covered all of `/api/v1/auth/*`, which throttled the dashboard's own API key, user, role and SSO pages. It now covers only the credential endpoints: login, refresh, token exchange, WebAuthn authentication and break-glass.
-- **Fingerprinting blocked API clients.** Heuristic bot fingerprinting was documented as opt-in but ran unconditionally. It scores any non-browser client as a bot, so API-key scripts, MCP and sy-edge were locked out after a few requests. Behind a proxy that does not pass the client IP, the block could hit every user at once. It is now opt-in, as documented: `SECUREYEOMAN_FINGERPRINT_ENABLED=true`.
-- Outbound HTTP had no timeouts: 46 `reqwest::Client::new()` call sites could wait on a silent upstream forever. They now share one pooled client with a 10 s connect timeout and a 300 s read-inactivity timeout. There is no total timeout, so SSE relays and slow model calls still work; per-request timeouts still apply.
-- Collab rooms, and their buffered edits, were never freed: the empty-room check counted the leaving client's own receiver.
-- Syslog audit export byte-sliced the event name, which panics on multi-byte input. It also left RFC 5424 SD-PARAM values unescaped, and a newline in a message could forge a record.
-- The revoked-token cache grew without bound; entries are now pruned once the token has expired anyway.
-- A custom role created without a permission list defaulted to `*:*`; it now grants nothing.
-
-### Added
-
 - CI job **Rust (fmt, clippy, tests)**. It runs on the MSRV against a pgvector service with the shipped migrations applied.
-- `scripts/check-sql-drift.py` checks every literal `sqlx` statement against a migrated database. PostgreSQL parses and describes each statement, and the result columns are compared with the `FromRow` struct they decode into.
-- Tests (498 → 535 Rust):
+- `scripts/check-sql-drift.py` checks every literal `sqlx` statement against a migrated database. PostgreSQL parses and describes each statement, and the result columns are compared with the `FromRow` struct they decode into. It treats `COALESCE(…) AS column` as non-null.
+- Tests (498 → 580 Rust):
   - `tests/auth_session.rs`: refresh, logout, self-service routes, public routes, API-key validation.
   - `tests/ws_auth.rs`: real-socket handshakes, the subprotocol echo, and 4401/4403 refusals.
   - `tests/db_auth.rs`: API-key lifecycle, cross-instance refresh single-use and logout persistence, against PostgreSQL.
   - `tests/fingerprint.rs`, plus unit tests for each fix.
+  - One DB-backed test file per ported module: `tests/db_soul.rs`, `db_chat.rs`, `db_workflow.rs`, `db_mood.rs`, `db_users.rs`, `db_marketplace.rs`, `db_brain.rs`, `db_events.rs`, `db_voice.rs`, `db_risk.rs` and `db_mcp.rs`.
+  - `tests/rbac_matrix.rs`: route resolution, each role's grants and every difference from TS, enforcement on real routes, scoped keys on unmapped routes, and that WebSocket channels and role grants only name resources the REST RBAC uses.
 
   The auth and WS integration tests fail on the pre-review code.
 
@@ -162,8 +144,10 @@ All notable changes to SecureYeoman are documented in this file.
 
 ### Known issues
 
-- **Much of the Rust DB layer still does not match the shipped schema.** Of 657 statements, 362 fail to parse and 61 more cannot decode into their row type. Examples: training, security, swarms/councils/teams, users/roles/SSO providers, responsible AI, federation, the pgvector store (`brain.vectors` is absent), and soul skills CRUD. Those endpoints return 500. The inventory and plan are in the [roadmap](docs/development/roadmap.md#rust-db-layer-vs-the-shipped-schema-p0).
-- The Rust RBAC role table is thinner than the TS one; non-admin roles fail closed in some dashboard areas (see the [roadmap](docs/development/roadmap.md#rbac-role-parity-p1)).
+- **Part of the Rust DB layer still does not match the shipped schema.** Of 677 statements, 322 fail to parse and 54 more cannot decode into their row type: training, security, swarms/councils/teams, identity administration (users, roles, SSO providers), responsible AI, federation, extensions, edge, proactive, tenants and a few more. Those endpoints return 500. The inventory and plan are in the [roadmap](docs/development/roadmap.md#rust-db-layer-vs-the-shipped-schema-p0).
+- Features the ported modules cannot back yet answer 501: running a risk assessment, voice preview and cloning, URL ingestion, webhook delivery of events, and MCP client resources.
+- The schema's embedding columns are `vector(384)`, so OpenAI (1536) and `nomic-embed-text` (768) embeddings cannot be indexed; recall falls back to full-text search.
+- Operators hold no screen or camera capture grants until the capture routes enforce the duration limits TS attached to them; no default role holds `notifications`, as in TS. See the [roadmap](docs/development/roadmap.md#rbac-follow-ups).
 
 ### Security — dependencies
 
@@ -205,6 +189,12 @@ All notable changes to SecureYeoman are documented in this file.
 - `tests/db_auth.rs` ran against PostgreSQL 16 with the shipped migrations applied. pgvector was unavailable locally, so its four ANN indexes were skipped.
 - The auth-session and WebSocket integration tests were also run against the pre-review source: 15 of 18 fail there. The other three guard behaviour that was already correct.
 - Dashboard: lint, format, typecheck, **4,141 tests**.
+
+**Schema ports and RBAC.**
+- Rust: fmt and `clippy -D warnings` on 1.98.1 and the 1.91 MSRV; **580 tests** on both, with every DB-backed test run against PostgreSQL 16 with the shipped migrations applied; rustdoc `-D warnings`; `cargo audit` (advisories; the yanked-crate lookup got a 503 from crates.io) and `cargo deny`.
+- pgvector was unavailable locally, so the vector store's SQL ran against a stand-in `vector` type and cosine operator. CI's pgvector service is its first run against the real extension.
+- Mutation checks: removing the mood row lock loses 6 of 8 concurrent events, and resolving RBAC by path instead of route template fails the matrix.
+- Dashboard: lint, format, typecheck, and the simulation panel tests.
 
 **Not run here:** `core:db` / `core:e2e` (they need PostgreSQL with pgvector; CI runs them), dashboard Playwright e2e, Docker image builds.
 

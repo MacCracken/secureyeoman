@@ -8,7 +8,7 @@
 
 **Status**: **0.5.0 — Rust-native, migration repair complete.** All 16 repair phases done. Node.js eliminated. sy-core is the sole application binary (971+ routes, 85 modules). Full middleware stack (13 layers including fingerprinting), true SSE chat streaming, RBAC enforcement, ownership guards, API key validation, JTI token revocation, persistent vector store (pgvector), dashboard endpoint gap-fill (27 endpoints), response shape alignment. 170 tests passing. See **[Migration Findings](migration-finds.md)** for the full audit and repair log.
 
-> **Correction (0.5.4 review, 2026-09-25):** checked against the schema the server ships with, much of the Rust DB layer does not work — API key validation did not (fixed in 0.5.4), and the pgvector store queried a `brain.vectors` table no migration creates (ported since 0.5.4). See [Rust DB layer vs. the shipped schema](#rust-db-layer-vs-the-shipped-schema-p0).
+> **Correction (0.5.4 review, 2026-09-25):** checked against the schema the server ships with, much of the Rust DB layer does not work — API key validation did not (fixed in 0.5.4), and the pgvector store queried a `brain.vectors` table no migration creates (ported in 0.5.4). See [Rust DB layer vs. the shipped schema](#rust-db-layer-vs-the-shipped-schema-p0).
 
 See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hardware test plan, and per-platform verification checklist.
 
@@ -40,13 +40,13 @@ As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Ifran, Shruti, Ta
 
 ---
 
-## 0.5.4 — Security & correctness review (shipped 2026-09-25)
+## 0.5.4 — Security & correctness review (shipped 2026-09-26)
 
-A review of the Rust server's auth surface, WebSockets, the sy-edge exec sandbox, outbound HTTP and its SQL, plus the toolchain/dependency refresh. See the [CHANGELOG](../../CHANGELOG.md#054--2026-09-25). Rust CI now runs fmt, clippy and the full test suite, including DB-backed tests against the shipped migrations; before 0.5.4 CI only built `sy-edge`.
+A review of the Rust server's auth surface, WebSockets, the sy-edge exec sandbox, outbound HTTP and its SQL, plus the toolchain/dependency refresh. See the [CHANGELOG](../../CHANGELOG.md#054--2026-09-26). Rust CI now runs fmt, clippy and the full test suite, including DB-backed tests against the shipped migrations; before 0.5.4 CI only built `sy-edge`.
 
 ### Rust DB layer vs. the shipped schema (P0)
 
-sy-core builds its SQL as runtime strings, so nothing checks it against the schema, and CI never ran the Rust tests against a database. [`scripts/check-sql-drift.py`](../../scripts/check-sql-drift.py) has PostgreSQL parse and describe every literal statement, then checks the result columns against the `FromRow` struct they decode into. Against the shipped migrations (`packages/core/src/storage/migrations/`), at 0.5.4:
+sy-core builds its SQL as runtime strings, so nothing checks it against the schema, and CI never ran the Rust tests against a database. [`scripts/check-sql-drift.py`](../../scripts/check-sql-drift.py) has PostgreSQL parse and describe every literal statement, then checks the result columns against the `FromRow` struct they decode into. Against the shipped migrations (`packages/core/src/storage/migrations/`), at the start of the 0.5.4 review:
 
 | of 657 statements | |
 |---|---|
@@ -55,7 +55,7 @@ sy-core builds its SQL as runtime strings, so nothing checks it against the sche
 | parse but cannot decode into their row struct | 61 |
 | decode only until the first `NULL` (non-`Option` field, nullable column) | 19 |
 
-Since 0.5.4 (see the CHANGELOG's Unreleased section), the core daily-use modules are ported, each with a DB-backed test: soul skills and config, chat feedback and memories, workflow versions, personality mood, users and notification preferences, the marketplace community sync, brain documents and the pgvector store, events, voice, risk and MCP. The report now stands at 296 working statements of 677, with 322 failing to parse, 54 failing to decode, and 3 that decode only until the first `NULL`.
+By the 0.5.4 release the core daily-use modules are ported, each with a DB-backed test: soul skills and config, chat feedback and memories, workflow versions, personality mood, users and notification preferences, the marketplace community sync, brain documents and the pgvector store, events, voice, risk and MCP. The report now stands at 296 working statements of 677, with 322 failing to parse, 54 failing to decode, and 3 that decode only until the first `NULL`.
 
 What remains, worst first, as failing/checked:
 - `db/training.rs` 64/72
