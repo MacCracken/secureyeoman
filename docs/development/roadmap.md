@@ -8,7 +8,7 @@
 
 **Status**: **0.5.0 — Rust-native, migration repair complete.** All 16 repair phases done. Node.js eliminated. sy-core is the sole application binary (971+ routes, 85 modules). Full middleware stack (13 layers including fingerprinting), true SSE chat streaming, RBAC enforcement, ownership guards, API key validation, JTI token revocation, persistent vector store (pgvector), dashboard endpoint gap-fill (27 endpoints), response shape alignment. 170 tests passing. See **[Migration Findings](migration-finds.md)** for the full audit and repair log.
 
-> **Correction (0.5.4 review, 2026-09-25):** checked against the schema the server ships with, much of the Rust DB layer does not work — API key validation did not (fixed in 0.5.4), and the pgvector store queries a `brain.vectors` table no migration creates. See [Rust DB layer vs. the shipped schema](#rust-db-layer-vs-the-shipped-schema-p0).
+> **Correction (0.5.4 review, 2026-09-25):** checked against the schema the server ships with, much of the Rust DB layer does not work — API key validation did not (fixed in 0.5.4), and the pgvector store queried a `brain.vectors` table no migration creates (ported since 0.5.4). See [Rust DB layer vs. the shipped schema](#rust-db-layer-vs-the-shipped-schema-p0).
 
 See **[Rust Testing Matrix](rust-testing-matrix.md)** for coverage targets, hardware test plan, and per-platform verification checklist.
 
@@ -55,20 +55,45 @@ sy-core builds its SQL as runtime strings, so nothing checks it against the sche
 | parse but cannot decode into their row struct | 61 |
 | decode only until the first `NULL` (non-`Option` field, nullable column) | 19 |
 
-Whole modules are affected. Worst first, as failing/checked: `db/training.rs` 64/72, `db/security.rs` 42/54, `db/agents.rs` 31/47 (swarms, councils, teams), `db/auth.rs` 25/41 (users, roles, assignments, OAuth tokens, SSO providers, password resets, break-glass), `db/responsible_ai.rs` 22/22, `db/federation.rs` 17/19, `db/extensions.rs` 12/16, `db/edge.rs` 9/9, `db/proactive.rs` 9/9, `db/tenants.rs` 8/9, `db/simulation.rs` 7/7, `brain/pg_vector.rs` 5/5 (`brain.vectors` is absent). Core daily-use modules are mostly fine, but still have gaps: the soul skills CRUD (`/api/v1/soul/skills`), `soul.config`, chat feedback/memories, workflow versions, personality mood, and user profiles/notification prefs. Most gaps are model ports, not renames: the Rust structs were written for a different table shape than the TS schema. Examples are `auth.roles` vs `rbac.role_definitions`, and `bigint` epoch-ms columns decoded as `DateTime`.
+Since 0.5.4 (see the CHANGELOG's Unreleased section), the core daily-use modules are ported, each with a DB-backed test: soul skills and config, chat feedback and memories, workflow versions, personality mood, users and notification preferences, the marketplace community sync, brain documents and the pgvector store, events, voice, risk and MCP. The report now stands at 296 working statements of 677, with 322 failing to parse, 54 failing to decode, and 3 that decode only until the first `NULL`.
+
+What remains, worst first, as failing/checked:
+- `db/training.rs` 64/72
+- `db/security.rs` 42/54
+- `db/agents.rs` 31/47 (swarms, councils, teams)
+- `db/auth.rs` 24/43 (users, roles, assignments, OAuth tokens, SSO providers, password resets, break-glass)
+- `db/responsible_ai.rs` 22/22
+- `db/federation.rs` 17/19
+- `db/extensions.rs` 12/16
+- `db/eval.rs` 7/12
+- `db/edge.rs` 9/9
+- `db/proactive.rs` 9/9
+- `db/tenants.rs` 8/9
+- `db/simulation.rs` 7/7 (scenarios, runs)
+- `db/chaos.rs` 6/7
+- `db/execution.rs` 6/8
+
+Most gaps are model ports, not renames: the Rust structs were written for a different table shape than the TS schema. Examples are `auth.roles` vs `rbac.role_definitions`, and `bigint` epoch-ms columns decoded as `DateTime`.
 
 - [ ] Port module by module. Each port gets a DB-backed test in `crates/sy-core/tests/db_*.rs`; these are skipped unless `SY_TEST_DATABASE_URL` is set, and CI sets it. Burn the report down to zero, then make `check-sql-drift.py` a blocking CI step.
 - [ ] Decide per module whether the TS table is the model to keep, or the Rust shape plus a new migration. The server applies `packages/core/src/storage/migrations/*.sql` at boot; there is no Rust-side copy yet.
+- [ ] The ports answer 501 where the TS behaviour needs an engine the Rust core lacks:
+  - running a risk assessment;
+  - voice preview (text-to-speech) and ElevenLabs cloning;
+  - URL ingestion into the knowledge base;
+  - webhook delivery of events (the test-send);
+  - MCP client connections (`/api/v1/mcp/resources` lists none).
+- [ ] The schema's embedding columns are `vector(384)`. The OpenAI (1536) and `nomic-embed-text` (768) providers cannot index into them, so recall falls back to full-text search. Either request 384-dimension embeddings, or migrate the columns.
 
-### RBAC role parity (P1)
+### RBAC follow-ups
 
-`auth::permissions::role_permissions` is a thinner port of the TS `DEFAULT_ROLES`. The Rust `operator` lacks `metrics`, `logs`, `reports`, `dashboards`, `workspaces`, `experiments`, `extensions`, `comms` and `responsible_ai`, and some resource names differ (`dashboard` vs `dashboards`, `workspace` vs `workspaces`). The failure mode is closed: non-admin principals (SSO users, non-admin API keys) get 403s in those dashboard areas.
+The role table follows TS `DEFAULT_ROLES`; the deliberate differences are commented in `auth::permissions` and pinned by `tests/rbac_matrix.rs`.
 
-- [ ] Reconcile the role table and the `PREFIX_MAP` resource names with TS, and add a per-role route matrix test.
+- [ ] Operators hold no screen or camera capture grants. TS granted them only under duration limits (5 min screen, 1 min camera), which this RBAC cannot express. Enforce the limits in the capture and recording routes, then restore the grants.
+- [ ] No default role holds `notifications`, so in-app notifications and alert rules are admin-only (as in TS). Decide whether they should be self-service.
 
 ### Smaller follow-ups
 
-- [ ] `POST /api/v1/marketplace/community/sync` accepts a `file://` repo URL from any `marketplace:write` principal (operators included), which lets them clone a local repository into the community path. Restrict `file://` to admins, or to an allowlisted path.
 - [ ] Fingerprinting is opt-in as of 0.5.4 (`SECUREYEOMAN_FINGERPRINT_ENABLED`). If it is made a default again, it must exempt authenticated API clients; the score treats every non-browser client as a bot.
 - [ ] Collab room fan-out echoes a client's own CRDT updates back to it. Yjs de-duplicates them, so this only wastes bandwidth.
 

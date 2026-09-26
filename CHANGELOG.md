@@ -6,6 +6,102 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased]
+
+*Two follow-ups from the 0.5.4 review. First, the core DB modules are ported to the schema the server ships with, in the TS gateway's wire shapes, and each ported module has DB-backed tests. The ported modules are soul skills and config, chat feedback and memories, workflow versions, personality mood, users and notification preferences, the marketplace community sync, brain documents and the pgvector store, events, voice, risk and MCP. Second, RBAC is reconciled with the TS gateway's roles and route permissions; a route matrix test pins the result. The SQL drift report moved from 213 working statements of 657 to 296 of 677; the count grew because the ports added statements. The ported modules now report zero failures. Rust tests: 535 → 580.*
+
+### Breaking
+
+- **RBAC resource names now match the TS gateway**, so TS-era roles and scoped keys mean the same thing again. Routes that resolved to a Rust-only name now resolve to the TS one:
+
+  | route prefix | was | now |
+  |---|---|---|
+  | `/api/v1/conversations`, `/api/v1/gateway` | `conversations`, `gateway` | `chat` |
+  | `/api/v1/a2a` | `a2a` | `agents` |
+  | `/api/v1/alerts` | `alerts` | `notifications` |
+  | `/api/v1/provider-accounts` | `providers` | `ai` |
+  | `/api/v1/voice` | `voice` | `multimodal` |
+  | `/api/v1/soul/personalities` | `personality` | `soul` |
+  | `/api/v1/brain/documents` | `documents` | `brain` |
+  | `/api/v1/auth/sso` | `sso` | `auth` |
+  | `/api/v1/dashboards`, `/api/v1/workspaces`, `/api/v1/model` | `dashboard`, `workspace`, unmapped | `dashboards`, `workspaces`, `model` |
+  | `/api/v1/browser` | `execution` | `browser` |
+  | `/api/v1/video/stream` | `capture.video` | `capture.screen` |
+
+  Prefixes now match whole path segments (`/api/v1/ai` no longer covers `/api/v1/aim`). Routes are resolved by their route template, so the TS per-route overrides for parameterised routes apply: mood → `simulation`, capture → `capture`/`configure`/`stream`, voice preview and clone → `multimodal:execute`.
+
+  The WebSocket channels follow the REST names: `metrics` needs `metrics:read` (was `telemetry:read`), `security` needs `security_events:read`, and `video_stream` and `/ws/video` need `capture.screen:capture`. Collab rooms for personalities need `soul:write`.
+
+  **Migration:** re-scope any key or token whose permission strings use the old names.
+- **The default roles follow TS `DEFAULT_ROLES`.** Each place they differ is commented in `auth/permissions.rs` and asserted in `tests/rbac_matrix.rs`:
+  - `operator`
+    - Gains `metrics`, `logs`, `reports`, `dashboards`, `workspaces`, `experiments`, `extensions`, `comms` and `responsible_ai`, plus write on `model`, `execution` and `browser`.
+    - Keeps `workflows` read/write. TS left workflows admin-only, but they add no reach beyond `execution:execute`.
+    - Loses `providers:read`: provider accounts are `ai`, admin-only as in TS.
+    - Does **not** get the TS `auth:read`. `auth` is identity administration: users, API keys, roles, SSO, OAuth tokens and SCIM.
+    - Does **not** get the TS screen/camera capture grants either. TS attached duration limits to them, which this RBAC cannot express and the capture routes do not enforce.
+  - `viewer` gains read on `spirit`, `marketplace`, `workspaces`, `reports`, `metrics` and `chat`. It does **not** get the TS `mcp:read`, because MCP server listings carry each server's `env` credentials.
+  - `auditor` gains `security_events`, `metrics`, `tasks`, `execution`, `agents`, `proactive`, `browser` and `responsible_ai` read, `audit` export and verify, and `reports` read/write, as TS had. It keeps `risk:read`. It loses `security:read` (DLP, TEE and policy configuration) and `analytics:read`, which TS never granted.
+  - `service` gains `integrations:write`, `mcp:execute` for `POST /api/v1/mcp/tools/call`, and `auth:verify`. `POST /api/v1/auth/verify` now resolves to that action, which is all the MCP service calls; TS granted the broader `auth:read`, which also reads users, API keys and roles.
+  - A scoped key narrower than `*:*` no longer reaches unmapped (admin-only) routes. A scope cannot name those routes, so they were outside any scope's intent.
+
+  **Migration:** a principal that relied on a dropped grant needs a custom role or a direct assignment.
+- **Removed routes.** None of these worked against the shipped schema:
+  - `/api/v1/risk-assessment/assessments` and `/api/v1/risk-assessment/departments`: use `/api/v1/risk/assessments` and `/api/v1/risk/departments`.
+  - `GET /api/v1/risk/dashboard` and `POST /api/v1/risk/assessments/{id}/score`.
+  - `POST /api/v1/brain/documents`: use `POST /api/v1/brain/documents/ingest-text`.
+
+### Security
+
+- `/api/v1/users/me/notification-prefs` took the user from a `userId` query or body field, so any caller could name any user. The queries targeted tables that do not exist, so they failed rather than leaked. Preferences are now always the authenticated caller's. They are self-service for every role; TS put them under `auth`, which only admins held.
+- `POST /api/v1/marketplace/community/sync` cloned any `https://` or `file://` URL given in the request body, for any `marketplace:write` principal. A request-supplied `repoUrl` now needs the security policy's `allowCommunityGitFetch`, as in TS, and a `file://` URL additionally needs the admin role. The configured `COMMUNITY_GIT_URL` and the default repository are unaffected.
+- Event subscriptions no longer return their HMAC signing secret (TS did); responses carry `hasSecret` instead.
+- User listings select explicit columns, so password hashes are never read.
+- Knowledge-base documents apply the TS ownership rule to get and delete: admin, operator and service only. Deleting a document removes its knowledge chunks in the same transaction, matched by prefix rather than `LIKE`, so an id cannot act as a pattern.
+
+### Fixed — ported to the shipped schema
+
+- **Soul:**
+  - Skills CRUD (`/api/v1/soul/skills`) on `brain.skills`, including approve/reject and personality names.
+  - `soul.config` and the agent name, stored in `soul.meta`.
+  - Personality activate, enable/disable and default, using `is_default`.
+- **Chat:** "remember this" and response feedback are stored as brain memories, as the TS `PreferenceLearner` did.
+- **Workflows:**
+  - Definitions, runs (cancel included) and import/export follow the dashboard contract.
+  - Every edit is versioned, with a TS-compatible LCS diff, `Y.M.D[-n]` auto tags, rollback and drift.
+  - A duplicate name is a 409.
+- **Personality mood:** the valence/arousal/dominance model on `simulation.mood_states`/`mood_events`. Events apply under a row lock; without it, concurrent events lost updates (a test sends 8 at once).
+- **Users:** the user list and `{ user }` from `auth.users`. Notification preferences live on `auth.user_notification_prefs` with the TS validation. A write that hits a missing account, or collides with an existing preference, is a 409.
+- **Brain:**
+  - Documents use the real `brain.documents` model.
+  - `ingest-text` records the document, learns its chunks as `document:{id}:chunk{n}` knowledge, and marks it `ready`, or `error` if no chunk stored. Pieces are split at 3,200 bytes on character boundaries, so multi-byte text is not dropped.
+  - `ingest-url` answers 501 instead of claiming to queue.
+- **pgvector:** the store no longer targets the missing `brain.vectors` table. It writes and searches the `embedding vector(384)` columns of `brain.memories` and `brain.knowledge`, as the TS storage did. It checks the width. Zero vectors are neither stored nor searched: the default no-op embedder produces them, and their NaN scores would otherwise outrank every real match.
+- **Marketplace:**
+  - NULL `tags`/`tools` read as `[]`.
+  - Community status is derived from the synced rows (`skillCount`, `lastSyncedAt`); the sync no longer writes to a missing table.
+  - Community personalities are listed from what the sync stored, with the TS frontmatter and traits parsing, and install into the soul (`{ filename }` → 201 `{ personality }`).
+  - Avatars answer 404; the old response was a JSON placeholder with a 200.
+- **Events:** subscriptions and deliveries use uuid ids and the TS shapes. The test-send answers 501 instead of claiming a dispatch.
+- **Voice:** profile CRUD on `voice.profiles` in the TS shapes. Preview (text-to-speech) and ElevenLabs cloning validate their input, then answer 501.
+- **Risk:** assessments and departments are served at the TS paths and shapes. The two overlapping risk modules are merged into one. Running an assessment answers 501.
+- **MCP:** NULL server `args`/`env` read as `[]`/`{}`. `/api/v1/mcp/resources` no longer queries a table that does not exist. Resources come from live MCP connections, which the Rust core does not hold yet, so the list is empty.
+- The dashboard simulation panel read `{ events }`, `{ entities }` and similar keys, but the server answers `{ items }`, so every list crashed on its first entry.
+- A skills page past the end reported a total of 0.
+
+### Added
+
+- DB-backed tests, one file per ported module: `tests/db_soul.rs`, `db_chat.rs`, `db_workflow.rs`, `db_mood.rs`, `db_users.rs`, `db_marketplace.rs`, `db_brain.rs`, `db_events.rs`, `db_voice.rs`, `db_risk.rs` and `db_mcp.rs`.
+- `tests/rbac_matrix.rs` covers:
+  - route resolution;
+  - each role's grants, and every difference from TS;
+  - enforcement on real routes;
+  - scoped keys on unmapped routes;
+  - that WebSocket channels and role grants only name resources the REST RBAC uses.
+- `check-sql-drift.py` treats `COALESCE(…) AS column` as non-null.
+
+---
+
 ## [0.5.4] — 2026-09-25
 
 *A security and correctness review of the Rust server covered auth and sessions, WebSockets, the sy-edge exec sandbox, outbound HTTP and SQL. It shipped alongside a toolchain and dependency refresh. The review also added what would have caught these bugs earlier. CI now runs the Rust test suite; before, it only built `sy-edge`. The suite includes DB-backed tests against the shipped migrations. A new SQL drift checker also runs against those migrations; its findings are under Known issues. Dependency security debt since 0.5.1 is cleared: `npm audit` went 50 → 0, `cargo audit` 2 → 0, and `cargo deny` red → green.*

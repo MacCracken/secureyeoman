@@ -261,7 +261,7 @@ jobs:
         with:
           workspaces: crates
 
-      # The database-backed tests (tests/db_auth.rs) run against the schema the
+      # The database-backed tests (tests/db_*.rs) run against the schema the
       # server actually ships with.
       - name: Apply the shipped migrations
         run: |
