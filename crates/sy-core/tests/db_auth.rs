@@ -9,18 +9,6 @@ mod common;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use sy_core::server::build_router;
-use sy_core::state::AppState;
-
-async fn db_state() -> Option<AppState> {
-    let Ok(url) = std::env::var("SY_TEST_DATABASE_URL") else {
-        eprintln!("skipped: set SY_TEST_DATABASE_URL to run database-backed tests");
-        return None;
-    };
-    let pool = sqlx::PgPool::connect(&url)
-        .await
-        .expect("SY_TEST_DATABASE_URL is set but unreachable");
-    Some(common::test_state().with_db(pool))
-}
 
 fn with_api_key(path: &str, key: &str) -> Request<Body> {
     Request::get(path)
@@ -35,7 +23,7 @@ fn json(body: &[u8]) -> serde_json::Value {
 
 #[tokio::test]
 async fn api_key_lifecycle_against_the_shipped_schema() {
-    let Some(state) = db_state().await else {
+    let Some(state) = common::db_state().await else {
         return;
     };
     let app = build_router(state);
@@ -131,7 +119,7 @@ async fn api_key_lifecycle_against_the_shipped_schema() {
 async fn refresh_tokens_are_single_use_across_instances() {
     // Two app instances share only the database (fresh in-memory caches), as
     // behind a load balancer: a token redeemed on one is refused by the other.
-    let (Some(a), Some(b)) = (db_state().await, db_state().await) else {
+    let (Some(a), Some(b)) = (common::db_state().await, common::db_state().await) else {
         return;
     };
     let body = format!(
@@ -152,7 +140,9 @@ async fn refresh_tokens_are_single_use_across_instances() {
 
 #[tokio::test]
 async fn logout_survives_a_restart() {
-    let Some(a) = db_state().await else { return };
+    let Some(a) = common::db_state().await else {
+        return;
+    };
     let token = common::test_token_for("u-restart", "viewer");
     let (status, _) = common::send(
         build_router(a),
@@ -161,7 +151,7 @@ async fn logout_survives_a_restart() {
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     // A fresh instance (empty cache) still refuses it, from the DB record.
-    let b = db_state().await.unwrap();
+    let b = common::db_state().await.unwrap();
     let (status, _) = common::send(
         build_router(b),
         common::authed_get("/api/v1/auth/me", &token),

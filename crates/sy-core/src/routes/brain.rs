@@ -6,9 +6,10 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, post, put};
-use axum::{Json, Router};
+use axum::{Extension, Json, Router};
 use serde::Deserialize;
 
+use crate::auth::middleware::AuthContext;
 use crate::db::brain;
 use crate::state::AppState;
 
@@ -28,8 +29,10 @@ pub fn router() -> Router<AppState> {
         .route("/api/v1/brain/knowledge/{id}", delete(delete_knowledge))
         // Documents
         .route("/api/v1/brain/documents", get(list_documents))
-        .route("/api/v1/brain/documents", post(create_document))
-        .route("/api/v1/brain/documents/{id}", delete(delete_document))
+        .route(
+            "/api/v1/brain/documents/{id}",
+            get(get_document).delete(delete_document),
+        )
         // Stats
         .route("/api/v1/brain/stats", get(get_stats))
         .route("/api/v1/brain/cognitive-stats", get(get_cognitive_stats))
@@ -113,70 +116,80 @@ fn default_importance() -> f64 {
     0.5
 }
 
+/// Store a memory through the brain manager (embedding + vector index) when
+/// one is running, else straight into `brain.memories`. `None` when there is no
+/// database either.
+pub(crate) async fn store_memory(
+    state: &AppState,
+    memory_type: &str,
+    content: &str,
+    source: &str,
+    context: &serde_json::Value,
+    importance: f64,
+    personality_id: Option<&str>,
+) -> Option<Result<brain::MemoryRow, String>> {
+    if let Some(brain_mgr) = state.brain() {
+        return Some(
+            brain_mgr
+                .remember(
+                    memory_type,
+                    content,
+                    source,
+                    context,
+                    importance,
+                    personality_id,
+                )
+                .await
+                .map_err(|e| e.to_string()),
+        );
+    }
+    let pool = state.db()?;
+    let id = uuid::Uuid::now_v7().to_string();
+    Some(
+        brain::insert_memory(
+            pool,
+            &id,
+            memory_type,
+            content,
+            source,
+            context,
+            importance,
+            personality_id,
+            "default",
+        )
+        .await
+        .map_err(|e| e.to_string()),
+    )
+}
+
 async fn create_memory(
     State(state): State<AppState>,
     Json(body): Json<CreateMemoryRequest>,
 ) -> impl IntoResponse {
-    // Use BrainManager for vector indexing + storage
-    if let Some(brain_mgr) = state.brain() {
-        match brain_mgr
-            .remember(
-                &body.r#type,
-                &body.content,
-                &body.source,
-                &body.context,
-                body.importance,
-                body.personality_id.as_deref(),
-            )
-            .await
-        {
-            Ok(row) => {
-                return (
-                    StatusCode::CREATED,
-                    Json(serde_json::to_value(row).unwrap()),
-                )
-                    .into_response();
-            }
-            Err(e) => {
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(serde_json::json!({"error": e.to_string()})),
-                )
-                    .into_response();
-            }
-        }
-    }
-
-    // Fallback: direct DB insert (no vector indexing)
-    let Some(pool) = state.db() else {
-        return (
-            StatusCode::SERVICE_UNAVAILABLE,
-            Json(serde_json::json!({"error": "Database not available"})),
-        )
-            .into_response();
-    };
-    let id = uuid::Uuid::now_v7().to_string();
-    match brain::insert_memory(
-        pool,
-        &id,
+    let stored = store_memory(
+        &state,
         &body.r#type,
         &body.content,
         &body.source,
         &body.context,
         body.importance,
         body.personality_id.as_deref(),
-        "default",
     )
-    .await
-    {
-        Ok(row) => (
+    .await;
+    match stored {
+        Some(Ok(row)) => (
             StatusCode::CREATED,
             Json(serde_json::to_value(row).unwrap()),
         )
             .into_response(),
-        Err(e) => (
+        Some(Err(e)) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
+            Json(serde_json::json!({"error": e})),
+        )
+            .into_response(),
+        None => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "Database not available"})),
         )
             .into_response(),
     }
@@ -537,108 +550,104 @@ async fn delete_knowledge(
     }
 }
 
-// ── Document handlers ─────────────────────────────────────────────────────
+// ── Documents (the TS `document-routes.ts` contract) ──────────────────────
+
+/// Roles that may read or delete any document: the TS ownership bypass
+/// (`ADMIN_ROLES`). Documents record no owner, so other roles may not.
+const DOCUMENT_ADMIN_ROLES: &[&str] = &["admin", "operator", "service"];
+
+/// Most documents one list returns.
+const MAX_DOCUMENTS: i64 = 1000;
+
+fn can_access_documents(auth: Option<&Extension<AuthContext>>) -> bool {
+    auth.is_some_and(|Extension(a)| DOCUMENT_ADMIN_ROLES.contains(&a.role.as_str()))
+}
+
+fn document_error(status: StatusCode, message: &str) -> axum::response::Response {
+    (status, Json(serde_json::json!({ "error": message }))).into_response()
+}
+
+fn document_query_failed(e: sqlx::Error) -> axum::response::Response {
+    tracing::error!(error = %e, "document query failed");
+    document_error(StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
+}
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ListDocumentsQuery {
-    #[serde(default = "default_limit")]
-    limit: i64,
-    #[serde(default)]
-    offset: i64,
+    personality_id: Option<String>,
+    visibility: Option<String>,
+    limit: Option<i64>,
+    offset: Option<i64>,
 }
 
+/// GET /api/v1/brain/documents — newest first; `?personalityId=` narrows to
+/// that personality's documents and the global ones, `?visibility=` filters;
+/// `{ documents, total }`.
 async fn list_documents(
     State(state): State<AppState>,
     Query(q): Query<ListDocumentsQuery>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
     let Some(pool) = state.db() else {
-        return (
-            StatusCode::SERVICE_UNAVAILABLE,
-            Json(serde_json::json!({"error": "Database not available"})),
-        )
-            .into_response();
+        return document_error(StatusCode::SERVICE_UNAVAILABLE, "Database not available");
     };
-    match brain::list_documents(pool, "default", q.limit.min(1000), q.offset).await {
-        Ok(rows) => Json(serde_json::to_value(rows).unwrap()).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
+    let limit = q
+        .limit
+        .filter(|l| *l >= 1)
+        .map_or(MAX_DOCUMENTS, |l| l.min(MAX_DOCUMENTS));
+    let offset = q.offset.unwrap_or(0).max(0);
+    let personality = q.personality_id.as_deref().filter(|p| !p.is_empty());
+    let visibility = q.visibility.as_deref().filter(|v| !v.is_empty());
+    match brain::list_documents(pool, personality, visibility, limit, offset).await {
+        Ok((rows, total)) => {
+            let documents: Vec<_> = rows.iter().map(brain::DocumentRow::to_json).collect();
+            Json(serde_json::json!({ "documents": documents, "total": total })).into_response()
+        }
+        Err(e) => document_query_failed(e),
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CreateDocumentRequest {
-    title: String,
-    content: String,
-    #[serde(default)]
-    source: String,
-    #[serde(default = "default_doc_type")]
-    doc_type: String,
-}
-
-fn default_doc_type() -> String {
-    "text".to_string()
-}
-
-async fn create_document(
+/// GET /api/v1/brain/documents/{id} — `{ document }`.
+async fn get_document(
     State(state): State<AppState>,
-    Json(body): Json<CreateDocumentRequest>,
-) -> impl IntoResponse {
+    auth: Option<Extension<AuthContext>>,
+    Path(id): Path<String>,
+) -> axum::response::Response {
     let Some(pool) = state.db() else {
-        return (
-            StatusCode::SERVICE_UNAVAILABLE,
-            Json(serde_json::json!({"error": "Database not available"})),
-        )
-            .into_response();
+        return document_error(StatusCode::SERVICE_UNAVAILABLE, "Database not available");
     };
-    let id = uuid::Uuid::now_v7().to_string();
-    match brain::create_document(
-        pool,
-        &id,
-        &body.title,
-        &body.content,
-        &body.source,
-        &body.doc_type,
-        "default",
-    )
-    .await
-    {
-        Ok(row) => (
-            StatusCode::CREATED,
-            Json(serde_json::to_value(row).unwrap()),
-        )
-            .into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
+    match brain::get_document(pool, &id).await {
+        Ok(Some(_)) if !can_access_documents(auth.as_ref()) => {
+            document_error(StatusCode::FORBIDDEN, "Access denied")
+        }
+        Ok(Some(doc)) => Json(serde_json::json!({ "document": doc.to_json() })).into_response(),
+        Ok(None) => document_error(StatusCode::NOT_FOUND, "Document not found"),
+        Err(e) => document_query_failed(e),
     }
 }
 
+/// DELETE /api/v1/brain/documents/{id} — the document and the knowledge
+/// chunks learned from it; 204.
 async fn delete_document(
     State(state): State<AppState>,
+    auth: Option<Extension<AuthContext>>,
     Path(id): Path<String>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
     let Some(pool) = state.db() else {
-        return StatusCode::SERVICE_UNAVAILABLE.into_response();
+        return document_error(StatusCode::SERVICE_UNAVAILABLE, "Database not available");
     };
-    match brain::delete_document(pool, &id, "default").await {
+    match brain::get_document(pool, &id).await {
+        Ok(Some(_)) if !can_access_documents(auth.as_ref()) => {
+            return document_error(StatusCode::FORBIDDEN, "Access denied");
+        }
+        Ok(Some(_)) => {}
+        Ok(None) => return document_error(StatusCode::NOT_FOUND, "Document not found"),
+        Err(e) => return document_query_failed(e),
+    }
+    match brain::delete_document(pool, &id).await {
         Ok(true) => StatusCode::NO_CONTENT.into_response(),
-        Ok(false) => (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": "Document not found"})),
-        )
-            .into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
+        Ok(false) => document_error(StatusCode::NOT_FOUND, "Document not found"),
+        Err(e) => document_query_failed(e),
     }
 }
 
@@ -690,67 +699,100 @@ async fn run_consolidation(State(state): State<AppState>) -> impl IntoResponse {
 
 // ── Document Ingestion ─────────────────────────────────────────────────
 
+/// Longest document title accepted.
+const MAX_TITLE_CHARS: usize = 500;
+
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct IngestTextRequest {
+    #[serde(default)]
     text: String,
     #[serde(default)]
-    title: Option<String>,
-    #[serde(default, rename = "personalityId")]
+    title: String,
     personality_id: Option<String>,
+    visibility: Option<String>,
 }
 
+/// POST /api/v1/brain/documents/ingest-text — record the document, learn its
+/// text as knowledge chunks, and mark it `ready` (`error` when no chunk could
+/// be stored); 201 `{ document }`.
 async fn ingest_text(
     State(state): State<AppState>,
     Json(body): Json<IngestTextRequest>,
-) -> impl IntoResponse {
-    let Some(brain) = state.brain() else {
-        return (
-            StatusCode::SERVICE_UNAVAILABLE,
-            Json(serde_json::json!({"error": "Brain not available"})),
-        )
-            .into_response();
+) -> axum::response::Response {
+    if body.text.trim().is_empty() {
+        return document_error(StatusCode::BAD_REQUEST, "text is required");
+    }
+    let title = body.title.trim();
+    if title.is_empty() {
+        return document_error(StatusCode::BAD_REQUEST, "title is required");
+    }
+    if title.chars().count() > MAX_TITLE_CHARS {
+        return document_error(
+            StatusCode::BAD_REQUEST,
+            "title must be at most 500 characters",
+        );
+    }
+    let (Some(pool), Some(manager)) = (state.db(), state.brain()) else {
+        return document_error(StatusCode::SERVICE_UNAVAILABLE, "Brain not available");
     };
-    let title = body.title.as_deref().unwrap_or("Untitled");
-    match brain
-        .ingest_text(
-            title,
-            &body.text,
-            "user_upload",
-            body.personality_id.as_deref(),
-        )
-        .await
-    {
-        Ok(count) => Json(serde_json::json!({
-            "status": "ingested",
-            "chunksCreated": count,
-            "title": title,
-        }))
-        .into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
+    let personality = body.personality_id.as_deref().filter(|p| !p.is_empty());
+    let visibility = if body.visibility.as_deref() == Some("shared") {
+        "shared"
+    } else {
+        "private"
+    };
+    let new = brain::NewDocument {
+        personality_id: personality,
+        title,
+        format: "txt",
+        visibility,
+    };
+    let doc = match brain::create_document(pool, &new).await {
+        Ok(doc) => doc,
+        Err(sqlx::Error::Database(db)) if db.is_foreign_key_violation() => {
+            return document_error(StatusCode::BAD_REQUEST, "Unknown personalityId");
+        }
+        Err(e) => return document_query_failed(e),
+    };
+
+    let learned = manager
+        .learn_document(&doc.id, title, &body.text, personality)
+        .await;
+    let outcome = if learned.pieces > 0 && learned.failed == learned.pieces {
+        Err("No chunk of the document could be stored")
+    } else {
+        Ok(learned.chunks.max(1) as i32)
+    };
+    match brain::finish_document(pool, &doc.id, outcome).await {
+        Ok(Some(doc)) => (
+            StatusCode::CREATED,
+            Json(serde_json::json!({ "document": doc.to_json() })),
         )
             .into_response(),
+        Ok(None) => document_error(StatusCode::NOT_FOUND, "Document not found"),
+        Err(e) => document_query_failed(e),
     }
 }
 
 #[derive(Deserialize)]
 struct IngestUrlRequest {
+    #[serde(default)]
     url: String,
-    #[serde(default, rename = "personalityId")]
-    personality_id: Option<String>,
 }
 
-async fn ingest_url(
-    State(_state): State<AppState>,
-    Json(body): Json<IngestUrlRequest>,
-) -> impl IntoResponse {
-    // URL ingestion: fetch content then ingest — stubbed until HTTP fetch + parser is wired
-    Json(serde_json::json!({
-        "status": "queued",
-        "url": body.url,
-        "message": "URL ingestion queued for processing",
-    }))
+/// POST /api/v1/brain/documents/ingest-url — fetching and parsing a page is
+/// not ported yet: 400 for a URL that is not http(s), otherwise 501.
+async fn ingest_url(Json(body): Json<IngestUrlRequest>) -> axum::response::Response {
+    let valid =
+        reqwest::Url::parse(&body.url).is_ok_and(|u| matches!(u.scheme(), "http" | "https"));
+    if !valid {
+        return document_error(StatusCode::BAD_REQUEST, "url must be an http(s) URL");
+    }
+    document_error(
+        StatusCode::NOT_IMPLEMENTED,
+        "URL ingestion is not yet supported in Rust",
+    )
 }
 
 // ── Reindex & Sync ─────────────────────────────────────────────────────

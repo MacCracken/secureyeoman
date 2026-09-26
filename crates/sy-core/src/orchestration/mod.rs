@@ -13,3 +13,4 @@ pub mod hoosh;
 pub mod swarm;
 pub mod team;
 pub mod workflow;
+pub mod workflow_versions;

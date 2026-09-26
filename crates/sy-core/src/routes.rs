@@ -39,6 +39,7 @@ pub mod risk;
 pub mod sandbox;
 pub mod security;
 pub mod soul;
+pub mod soul_skills;
 pub mod spirit;
 pub mod tasks;
 pub mod tenants;
@@ -63,7 +64,6 @@ pub mod observability;
 pub mod outbound_webhooks;
 pub mod provider_accounts;
 pub mod responsible_ai;
-pub mod risk_assessment;
 pub mod scim;
 pub mod shruti;
 pub mod simulation;
@@ -97,3 +97,25 @@ pub mod compliance;
 pub mod integrations_forge;
 pub mod reports;
 pub mod video_stream;
+
+/// `?limit=&offset=` under the TS `parsePagination` rules: a missing or
+/// non-positive limit takes the endpoint's default, anything over 100 is
+/// clamped, and a negative offset reads as 0.
+#[derive(Debug, Default, serde::Deserialize)]
+pub(crate) struct Page {
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
+impl Page {
+    pub(crate) fn limit(&self, default: i64) -> i64 {
+        match self.limit {
+            Some(l) if l >= 1 => l.min(100),
+            _ => default,
+        }
+    }
+
+    pub(crate) fn offset(&self) -> i64 {
+        self.offset.unwrap_or(0).max(0)
+    }
+}

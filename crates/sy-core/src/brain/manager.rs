@@ -323,37 +323,60 @@ impl<E: EmbeddingProvider, V: VectorStore> BrainManager<E, V> {
         Ok(deleted)
     }
 
-    /// Ingest text by chunking and learning each chunk as a knowledge entry.
-    pub async fn ingest_text(
+    /// Learn a document's text as knowledge chunks (the TS `chunkAndLearn`):
+    /// each chunk's topic is `{title} [chunk n]` and its source
+    /// `document:{document_id}:chunk{i}`, so deleting the document finds them.
+    /// A piece that fails to store is logged and skipped.
+    pub async fn learn_document(
         &self,
+        document_id: &str,
         title: &str,
-        content: &str,
-        source: &str,
+        text: &str,
         personality_id: Option<&str>,
-    ) -> Result<usize, BrainError> {
+    ) -> LearnedDocument {
+        // Pieces stay well inside the content limit even for multi-byte text.
+        let max_piece = DOCUMENT_PIECE_BYTES.min(self.config.max_content_length);
         let chunks = chunker::chunk(
-            content,
+            text,
             Some(ChunkOptions {
                 max_tokens: self.config.chunk_options.max_tokens,
                 overlap_fraction: self.config.chunk_options.overlap_fraction,
             }),
         );
+        let texts: Vec<&str> = if chunks.is_empty() {
+            vec![text]
+        } else {
+            chunks.iter().map(|c| c.text.as_str()).collect()
+        };
 
-        let mut ingested = 0;
-        for chunk in &chunks {
-            let topic = if chunks.len() == 1 {
-                title.to_string()
-            } else {
-                format!("{title} (chunk {}/{})", chunk.index + 1, chunks.len())
-            };
-
-            self.learn(&topic, &chunk.text, source, 0.8, personality_id)
-                .await?;
-            ingested += 1;
+        let mut learned = LearnedDocument {
+            chunks: chunks.len(),
+            pieces: 0,
+            failed: 0,
+        };
+        for piece in texts
+            .iter()
+            .flat_map(|t| split_at_char_boundaries(t, max_piece))
+        {
+            let index = learned.pieces;
+            learned.pieces += 1;
+            let topic = format!("{title} [chunk {}]", index + 1);
+            let source = format!("document:{document_id}:chunk{index}");
+            if let Err(e) = self
+                .learn(&topic, piece, &source, 0.9, personality_id)
+                .await
+            {
+                learned.failed += 1;
+                warn!(document_id, chunk = index, error = %e, "failed to learn document chunk");
+            }
         }
-
-        debug!(title, chunks = ingested, "text ingested");
-        Ok(ingested)
+        debug!(
+            document_id,
+            chunks = learned.chunks,
+            pieces = learned.pieces,
+            "document learned"
+        );
+        learned
     }
 
     /// Get brain statistics.
@@ -415,6 +438,41 @@ impl<E: EmbeddingProvider, V: VectorStore> BrainManager<E, V> {
     }
 }
 
+/// How learning a document's text went.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LearnedDocument {
+    /// Chunks the text split into (the document's `chunkCount`).
+    pub chunks: usize,
+    /// Knowledge entries attempted: chunks, split further to fit the limit.
+    pub pieces: usize,
+    /// Pieces that could not be stored.
+    pub failed: usize,
+}
+
+/// Largest document piece stored as one knowledge entry (the TS gateway
+/// capped pieces at 3,200 characters; bytes are the stricter bound here).
+const DOCUMENT_PIECE_BYTES: usize = 3_200;
+
+/// Split `text` into pieces of at most `max_bytes`, never inside a character.
+fn split_at_char_boundaries(text: &str, max_bytes: usize) -> Vec<&str> {
+    // A character is at most four bytes, so every cut makes progress.
+    let max_bytes = max_bytes.max(4);
+    let mut pieces = Vec::new();
+    let mut rest = text;
+    while rest.len() > max_bytes {
+        let mut cut = max_bytes;
+        while !rest.is_char_boundary(cut) {
+            cut -= 1;
+        }
+        pieces.push(&rest[..cut]);
+        rest = &rest[cut..];
+    }
+    if !rest.is_empty() {
+        pieces.push(rest);
+    }
+    pieces
+}
+
 /// A memory with its composite relevance score.
 #[derive(Debug, Clone)]
 pub struct ScoredMemory {
@@ -452,4 +510,22 @@ fn age_in_days(created_at_ms: i64) -> f64 {
         .as_millis() as i64;
     let elapsed_ms = (now_ms - created_at_ms).max(0);
     elapsed_ms as f64 / (1000.0 * 60.0 * 60.0 * 24.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::split_at_char_boundaries;
+
+    #[test]
+    fn pieces_respect_the_limit_and_character_boundaries() {
+        assert_eq!(split_at_char_boundaries("abcdef", 4), vec!["abcd", "ef"]);
+        assert_eq!(split_at_char_boundaries("", 4), Vec::<&str>::new());
+        // "é" is two bytes: never split inside it.
+        let text = "aé".repeat(3);
+        let pieces = split_at_char_boundaries(&text, 4);
+        assert!(pieces.iter().all(|p| p.len() <= 4));
+        assert_eq!(pieces.concat(), text);
+        // A zero limit still makes progress.
+        assert_eq!(split_at_char_boundaries("xyz", 0), vec!["xyz"]);
+    }
 }

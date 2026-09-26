@@ -65,6 +65,41 @@ pub async fn send(app: Router, req: Request<Body>) -> (StatusCode, bytes::Bytes)
     (status, body)
 }
 
+/// An AppState backed by the database in `SY_TEST_DATABASE_URL` (PostgreSQL
+/// with the shipped migrations applied), or `None` when it is unset — callers
+/// then skip, so the suite still runs without a database.
+pub async fn db_state() -> Option<AppState> {
+    let Ok(url) = std::env::var("SY_TEST_DATABASE_URL") else {
+        eprintln!("skipped: set SY_TEST_DATABASE_URL to run database-backed tests");
+        return None;
+    };
+    let pool = sqlx::PgPool::connect(&url)
+        .await
+        .expect("SY_TEST_DATABASE_URL is set but unreachable");
+    Some(test_state().with_db(pool))
+}
+
+/// Build a request with Bearer auth and an optional JSON body.
+pub fn authed_request(method: &str, path: &str, token: &str, body: Option<&str>) -> Request<Body> {
+    let builder = Request::builder()
+        .method(method)
+        .uri(path)
+        .header("authorization", format!("Bearer {token}"));
+    match body {
+        Some(json) => builder
+            .header("content-type", "application/json")
+            .body(Body::from(json.to_string())),
+        None => builder.body(Body::empty()),
+    }
+    .unwrap()
+}
+
+/// Parse a response body as JSON.
+pub fn json(body: &[u8]) -> serde_json::Value {
+    serde_json::from_slice(body)
+        .unwrap_or_else(|e| panic!("not JSON ({e}): {}", String::from_utf8_lossy(body)))
+}
+
 /// Build a GET request with Bearer auth.
 pub fn authed_get(path: &str, token: &str) -> Request<Body> {
     Request::get(path)

@@ -177,6 +177,12 @@ def table_nullability(db):
     return tables
 
 
+def coalesced(sql, name):
+    """Whether the statement selects `COALESCE(...) AS name`, so a nullable
+    source column cannot yield NULL under that name."""
+    return re.search(r'COALESCE\((?:(?!\bAS\b).)*?\)\s+AS\s+' + re.escape(name) + r'\b', sql, re.I | re.S) is not None
+
+
 def decode_problems(query, cols, structs, tables):
     fields = structs.get(query['row'] or '')
     if not fields or not cols:
@@ -197,7 +203,7 @@ def decode_problems(query, cols, structs, tables):
         ok = {'json', 'jsonb'} if base.startswith(('sqlx::types::Json', 'Json<')) else COMPAT.get(base)
         if ok is not None and got[f['name']] not in ok:
             problems.append(f"{query['row']}.{f['name']}: Rust {f['ty']} cannot decode {got[f['name']]}")
-        elif ok is not None and not opt and table.get(f['name']):
+        elif ok is not None and not opt and table.get(f['name']) and not coalesced(query['sql'], f['name']):
             problems.append(f"{query['row']}.{f['name']}: nullable column into non-Option {f['ty']} "
                             "(fails on the first NULL)")
     return problems

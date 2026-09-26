@@ -12,15 +12,29 @@ pub struct MarketplaceSkillRow {
     pub version: Option<String>,
     pub author: Option<String>,
     pub category: Option<String>,
-    pub tags: serde_json::Value,
+    #[serde(serialize_with = "empty_if_null")]
+    pub tags: Option<serde_json::Value>,
     pub download_count: Option<i32>,
     pub rating: Option<f64>,
     pub instructions: Option<String>,
-    pub tools: serde_json::Value,
+    #[serde(serialize_with = "empty_if_null")]
+    pub tools: Option<serde_json::Value>,
     pub installed: Option<bool>,
     pub published_at: i64,
     pub updated_at: i64,
     pub source: String,
+}
+
+/// A NULL `tags` or `tools` column reads as an empty list, as the TS storage
+/// mapped it.
+fn empty_if_null<S: serde::Serializer>(
+    value: &Option<serde_json::Value>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    match value {
+        Some(value) => value.serialize(serializer),
+        None => [(); 0].serialize(serializer),
+    }
 }
 
 pub async fn list_skills(
@@ -152,61 +166,55 @@ pub async fn publish_item(
     .fetch_one(pool).await
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
-#[serde(rename_all = "camelCase")]
-pub struct CommunitySyncStatusRow {
-    pub last_sync_at: Option<i64>,
-    pub total_items: Option<i64>,
-    pub status: String,
-}
-
-pub async fn get_community_sync_status(
-    pool: &PgPool,
-) -> Result<Option<CommunitySyncStatusRow>, sqlx::Error> {
-    sqlx::query_as::<_, CommunitySyncStatusRow>(
-        "SELECT last_sync_at, total_items, status FROM marketplace.community_sync ORDER BY last_sync_at DESC LIMIT 1",
+/// Community skills synced into the marketplace (themes and personalities
+/// excluded), and when a sync last ran: every sync rewrites the community
+/// rows' `updated_at`, so the newest one is that time.
+pub async fn community_status(pool: &PgPool) -> Result<(i64, Option<i64>), sqlx::Error> {
+    sqlx::query_as(
+        "SELECT COUNT(*) FILTER (WHERE category IS DISTINCT FROM 'theme'
+                                 AND NOT starts_with(COALESCE(category, ''), 'personality:')),
+                MAX(updated_at)
+         FROM marketplace.skills WHERE source = 'community'",
     )
-    .fetch_optional(pool)
-    .await
-}
-
-pub async fn trigger_community_sync(pool: &PgPool) -> Result<CommunitySyncStatusRow, sqlx::Error> {
-    let now = now_ms();
-    sqlx::query_as::<_, CommunitySyncStatusRow>(
-        "INSERT INTO marketplace.community_sync (last_sync_at, total_items, status) VALUES ($1, 0, 'syncing') RETURNING last_sync_at, total_items, status",
-    )
-    .bind(now)
     .fetch_one(pool)
     .await
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
-#[serde(rename_all = "camelCase")]
+/// A community personality as the sync stored it: a community row whose
+/// category is `personality:{category}` and whose instructions hold the
+/// personality's markdown (frontmatter and system prompt).
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct CommunityPersonalityRow {
     pub id: String,
     pub name: String,
     pub description: Option<String>,
     pub author: Option<String>,
-    pub installed: Option<bool>,
-    pub published_at: i64,
+    pub version: Option<String>,
+    pub category: Option<String>,
+    pub instructions: Option<String>,
 }
 
 pub async fn list_community_personalities(
     pool: &PgPool,
 ) -> Result<Vec<CommunityPersonalityRow>, sqlx::Error> {
     sqlx::query_as::<_, CommunityPersonalityRow>(
-        "SELECT id, name, description, author, installed, published_at FROM marketplace.community_personalities ORDER BY name ASC",
+        "SELECT id, name, description, author, version, category, instructions
+         FROM marketplace.skills
+         WHERE source = 'community' AND starts_with(category, 'personality:')
+         ORDER BY category, name",
     )
     .fetch_all(pool)
     .await
 }
 
-pub async fn install_community_personality(
+pub async fn get_community_personality(
     pool: &PgPool,
     id: &str,
 ) -> Result<Option<CommunityPersonalityRow>, sqlx::Error> {
     sqlx::query_as::<_, CommunityPersonalityRow>(
-        "UPDATE marketplace.community_personalities SET installed = true WHERE id = $1 RETURNING *",
+        "SELECT id, name, description, author, version, category, instructions
+         FROM marketplace.skills
+         WHERE id = $1 AND source = 'community' AND starts_with(category, 'personality:')",
     )
     .bind(id)
     .fetch_optional(pool)

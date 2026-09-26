@@ -1,4 +1,4 @@
-//! Marketplace routes — community skill browsing.
+//! Marketplace routes — skill browsing, publishing, and the community repo sync.
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
@@ -242,6 +242,14 @@ async fn publish_item(
     }
 }
 
+/// Where the community repository is checked out.
+fn community_repo_path() -> String {
+    std::env::var("COMMUNITY_REPO_PATH")
+        .unwrap_or_else(|_| "/usr/share/secureyeoman/community-repo".to_string())
+}
+
+/// GET /api/v1/marketplace/community/status — the TS shape:
+/// `{ communityRepoPath, skillCount, lastSyncedAt }`.
 async fn community_status(State(state): State<AppState>) -> impl IntoResponse {
     let Some(pool) = state.db() else {
         return (
@@ -250,14 +258,21 @@ async fn community_status(State(state): State<AppState>) -> impl IntoResponse {
         )
             .into_response();
     };
-    match marketplace::get_community_sync_status(pool).await {
-        Ok(Some(row)) => Json(serde_json::to_value(row).unwrap()).into_response(),
-        Ok(None) => Json(serde_json::json!({"status": "never_synced"})).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
+    match marketplace::community_status(pool).await {
+        Ok((skill_count, last_synced_at)) => Json(serde_json::json!({
+            "communityRepoPath": community_repo_path(),
+            "skillCount": skill_count,
+            "lastSyncedAt": last_synced_at,
+        }))
+        .into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "community status query failed");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Internal server error"})),
+            )
+                .into_response()
+        }
     }
 }
 
@@ -299,6 +314,109 @@ async fn list_marketplace(
     }
 }
 
+/// Personality sexes the soul accepts (the TS `PersonalitySchema`).
+const PERSONALITY_SEXES: &[&str] = &["male", "female", "non-binary", "unspecified"];
+
+/// Split a personality markdown file into its frontmatter and body.
+fn split_frontmatter(content: &str) -> Option<(&str, &str)> {
+    let rest = content.strip_prefix("---")?;
+    let rest = rest
+        .strip_prefix("\r\n")
+        .or_else(|| rest.strip_prefix('\n'))?;
+    let end = rest.find("\n---")?;
+    let frontmatter = rest[..end].trim_end_matches('\r');
+    let after = &rest[end + "\n---".len()..];
+    let body = after.split_once('\n').map_or("", |(_, body)| body);
+    Some((frontmatter, body))
+}
+
+/// A frontmatter value, unquoted (the TS `parseFrontmatter` for one key).
+fn frontmatter_value<'a>(frontmatter: &'a str, key: &str) -> Option<&'a str> {
+    frontmatter.lines().find_map(|line| {
+        let line = line.trim();
+        if line.starts_with('#') {
+            return None;
+        }
+        let (k, v) = line.split_once(':')?;
+        (k.trim() == key).then(|| unquote(v.trim()))
+    })
+}
+
+fn unquote(value: &str) -> &str {
+    ['"', '\'']
+        .iter()
+        .find_map(|q| value.strip_prefix(*q)?.strip_suffix(*q))
+        .unwrap_or(value)
+}
+
+/// Traits as the TS `parseTraits` read them: `- **Key**: value` lines, then
+/// any frontmatter `traits` keys without a value, mapped to themselves.
+fn community_traits(
+    content: &str,
+    frontmatter: &str,
+) -> serde_json::Map<String, serde_json::Value> {
+    let mut traits = serde_json::Map::new();
+    for line in content.lines() {
+        let Some(rest) = line.strip_prefix('-') else {
+            continue;
+        };
+        if !rest.starts_with(char::is_whitespace) {
+            continue;
+        }
+        let Some((key, value)) = rest
+            .trim_start()
+            .strip_prefix("**")
+            .and_then(|r| r.split_once("**:"))
+        else {
+            continue;
+        };
+        let value = value.trim();
+        if key.is_empty() || key.contains('*') || value.is_empty() {
+            continue;
+        }
+        traits.insert(
+            key.trim().to_string(),
+            serde_json::Value::String(value.to_string()),
+        );
+    }
+    let keys = frontmatter_value(frontmatter, "traits").unwrap_or_default();
+    let keys = keys.trim_start_matches('[').trim_end_matches(']');
+    for key in keys
+        .split(',')
+        .map(|k| unquote(k.trim()))
+        .filter(|k| !k.is_empty())
+    {
+        traits
+            .entry(key.to_string())
+            .or_insert_with(|| serde_json::Value::String(key.to_string()));
+    }
+    traits
+}
+
+/// A synced personality in the dashboard's `CommunityPersonality` shape; its
+/// `filename` is the opaque id the install endpoint takes back.
+fn community_personality_json(row: &marketplace::CommunityPersonalityRow) -> serde_json::Value {
+    let content = row.instructions.as_deref().unwrap_or_default();
+    let (frontmatter, body) = split_frontmatter(content).unwrap_or(("", content));
+    let category = row.category.as_deref().unwrap_or_default();
+    let mut personality = serde_json::json!({
+        "name": row.name,
+        "description": row.description.as_deref().unwrap_or_default(),
+        "category": category.strip_prefix("personality:").unwrap_or(category),
+        "author": row.author.as_deref().unwrap_or_default(),
+        "version": row.version.as_deref().unwrap_or_default(),
+        "traits": community_traits(content, frontmatter),
+        "filename": row.id,
+        "systemPrompt": body.trim(),
+    });
+    if let Some(sex) = frontmatter_value(frontmatter, "sex") {
+        personality["sex"] = serde_json::Value::String(sex.to_string());
+    }
+    personality
+}
+
+/// GET /api/v1/marketplace/community/personalities — the personalities the
+/// community sync stored; `{ personalities }`.
 async fn list_community_personalities(State(state): State<AppState>) -> impl IntoResponse {
     let Some(pool) = state.db() else {
         return (
@@ -309,26 +427,39 @@ async fn list_community_personalities(State(state): State<AppState>) -> impl Int
     };
     match marketplace::list_community_personalities(pool).await {
         Ok(rows) => {
-            Json(serde_json::json!({"personalities": rows, "total": rows.len()})).into_response()
+            let personalities: Vec<_> = rows.iter().map(community_personality_json).collect();
+            Json(serde_json::json!({ "personalities": personalities })).into_response()
         }
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "community personalities query failed");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Internal server error"})),
+            )
+                .into_response()
+        }
     }
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct InstallPersonalityRequest {
-    personality_id: String,
+    #[serde(default)]
+    filename: String,
 }
 
+/// POST /api/v1/marketplace/community/personalities/install — create a soul
+/// personality from a synced community one; 201 `{ personality }`.
 async fn install_community_personality(
     State(state): State<AppState>,
     Json(body): Json<InstallPersonalityRequest>,
 ) -> impl IntoResponse {
+    if body.filename.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "filename is required"})),
+        )
+            .into_response();
+    }
     let Some(pool) = state.db() else {
         return (
             StatusCode::SERVICE_UNAVAILABLE,
@@ -336,32 +467,62 @@ async fn install_community_personality(
         )
             .into_response();
     };
-    match marketplace::install_community_personality(pool, &body.personality_id).await {
-        Ok(Some(row)) => Json(serde_json::to_value(row).unwrap()).into_response(),
-        Ok(None) => (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": "Personality not found"})),
-        )
-            .into_response(),
-        Err(e) => (
+    let internal = |e: sqlx::Error| {
+        tracing::error!(error = %e, "community personality install failed");
+        (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
+            Json(serde_json::json!({"error": "Internal server error"})),
+        )
+            .into_response()
+    };
+    let row = match marketplace::get_community_personality(pool, &body.filename).await {
+        Ok(Some(row)) => row,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({"error": "Community personality not found"})),
+            )
+                .into_response();
+        }
+        Err(e) => return internal(e),
+    };
+    let community = community_personality_json(&row);
+    let sex = community["sex"]
+        .as_str()
+        .filter(|s| PERSONALITY_SEXES.contains(s))
+        .unwrap_or("unspecified");
+    let description = format!(
+        "[community:{}] {}",
+        community["category"].as_str().unwrap_or_default(),
+        community["description"].as_str().unwrap_or_default()
+    );
+    match crate::db::soul::create_personality(
+        pool,
+        &uuid::Uuid::now_v7().to_string(),
+        &row.name,
+        &description,
+        community["systemPrompt"].as_str().unwrap_or_default(),
+        &community["traits"],
+        sex,
+        "default",
+    )
+    .await
+    {
+        Ok(personality) => (
+            StatusCode::CREATED,
+            Json(serde_json::json!({ "personality": personality })),
         )
             .into_response(),
+        Err(e) => internal(e),
     }
 }
 
-/// GET /api/v1/marketplace/community/personalities/avatar/{path} — serve personality avatar.
-async fn community_personality_avatar(Path(path): Path<String>) -> impl IntoResponse {
-    // In production this would serve the avatar file from storage.
-    // For now return a placeholder response.
+/// GET /api/v1/marketplace/community/personalities/avatar/{path} — the sync
+/// stores no avatars, so there are none to serve.
+async fn community_personality_avatar(Path(_path): Path<String>) -> impl IntoResponse {
     (
-        StatusCode::OK,
-        Json(serde_json::json!({
-            "path": path,
-            "contentType": "image/png",
-            "message": "Avatar storage not yet connected",
-        })),
+        StatusCode::NOT_FOUND,
+        Json(serde_json::json!({"error": "Avatar not found"})),
     )
         .into_response()
 }
@@ -375,6 +536,7 @@ struct SyncRequest {
 
 async fn community_sync(
     State(state): State<AppState>,
+    auth: Option<axum::Extension<crate::auth::middleware::AuthContext>>,
     body: Option<Json<SyncRequest>>,
 ) -> impl IntoResponse {
     let Some(pool) = state.db() else {
@@ -385,14 +547,40 @@ async fn community_sync(
             .into_response();
     };
 
-    let repo_path = std::env::var("COMMUNITY_REPO_PATH")
-        .unwrap_or_else(|_| "/usr/share/secureyeoman/community-repo".to_string());
+    // A caller-chosen repository makes the server fetch arbitrary git URLs:
+    // only when the security policy allows it (as in the TS gateway).
+    let requested_url = body.as_ref().and_then(|b| b.repo_url.clone());
+    if requested_url.is_some()
+        && !crate::routes::security::policy_allows(pool, "allowCommunityGitFetch").await
+    {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(
+                serde_json::json!({"error": "Community git fetch is disabled by security policy"}),
+            ),
+        )
+            .into_response();
+    }
+    // A local repository is the server's own filesystem: admins only.
+    let is_admin = auth.is_some_and(|axum::Extension(a)| a.role == "admin");
+    if requested_url
+        .as_deref()
+        .is_some_and(|url| url.starts_with("file://"))
+        && !is_admin
+    {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({"error": "Only admins may sync from a local repository"})),
+        )
+            .into_response();
+    }
+
+    let repo_path = community_repo_path();
 
     const DEFAULT_COMMUNITY_GIT_URL: &str =
         "https://github.com/MacCracken/secureyeoman-community-repo";
 
-    let repo_url = body
-        .and_then(|b| b.repo_url.clone())
+    let repo_url = requested_url
         .or_else(|| {
             std::env::var("COMMUNITY_GIT_URL")
                 .ok()
@@ -897,22 +1085,6 @@ async fn community_sync(
         }
     }
 
-    // Update sync status
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis() as i64;
-    let _ = sqlx::query(
-        "INSERT INTO marketplace.community_sync_status (id, last_synced_at, skills_synced, errors)
-         VALUES ('default', $1, $2, $3)
-         ON CONFLICT (id) DO UPDATE SET last_synced_at = $1, skills_synced = $2, errors = $3",
-    )
-    .bind(now)
-    .bind(added + updated)
-    .bind(serde_json::json!(errors).to_string())
-    .execute(pool)
-    .await;
-
     result["added"] = serde_json::json!(added);
     result["updated"] = serde_json::json!(updated);
     result["skipped"] = serde_json::json!(skipped);
@@ -929,4 +1101,34 @@ async fn community_sync(
     result["personalitiesUpdated"] = serde_json::json!(personalities_updated);
 
     Json(result).into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{community_traits, frontmatter_value, split_frontmatter};
+
+    const PERSONALITY: &str = "---\nname: \"Ares\"\ntraits: [warm, \"direct\"]\nsex: female\n# a comment: ignored\n---\nYou are Ares.\n\n- **humor**: dry\n- **warm**: very\n-**bad**: no space\n";
+
+    #[test]
+    fn frontmatter_splits_from_the_system_prompt() {
+        let (frontmatter, body) = split_frontmatter(PERSONALITY).unwrap();
+        assert_eq!(frontmatter_value(frontmatter, "name"), Some("Ares"));
+        assert_eq!(frontmatter_value(frontmatter, "sex"), Some("female"));
+        assert_eq!(frontmatter_value(frontmatter, "a comment"), None);
+        assert!(body.starts_with("You are Ares."));
+        let crlf = PERSONALITY.replace('\n', "\r\n");
+        let (frontmatter, _) = split_frontmatter(&crlf).unwrap();
+        assert_eq!(frontmatter_value(frontmatter, "sex"), Some("female"));
+        assert!(split_frontmatter("no frontmatter").is_none());
+    }
+
+    #[test]
+    fn traits_come_from_the_body_then_the_frontmatter() {
+        let (frontmatter, _) = split_frontmatter(PERSONALITY).unwrap();
+        let traits = community_traits(PERSONALITY, frontmatter);
+        assert_eq!(traits["humor"], "dry");
+        assert_eq!(traits["warm"], "very", "a body value wins");
+        assert_eq!(traits["direct"], "direct", "a bare key maps to itself");
+        assert!(!traits.contains_key("bad"));
+    }
 }

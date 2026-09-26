@@ -137,7 +137,7 @@ async fn server_health(State(state): State<AppState>, Path(id): Path<String>) ->
         )
             .into_response();
     };
-    match mcp::get_mcp_server(pool, &id).await {
+    match mcp::get_server(pool, &id).await {
         Ok(Some(row)) => Json(serde_json::json!({
             "serverId": row.id,
             "name": row.name,
@@ -425,7 +425,7 @@ async fn trigger_server_health_check(
         )
             .into_response();
     };
-    match mcp::get_mcp_server(pool, &id).await {
+    match mcp::get_server(pool, &id).await {
         Ok(Some(row)) => {
             // Trigger a health check — in production this would ping the actual
             // server transport.  For now return a status based on enabled flag.
@@ -451,22 +451,11 @@ async fn trigger_server_health_check(
     }
 }
 
-async fn list_resources(State(state): State<AppState>) -> impl IntoResponse {
-    let Some(pool) = state.db() else {
-        return (
-            StatusCode::SERVICE_UNAVAILABLE,
-            Json(serde_json::json!({"error": "Database not available"})),
-        )
-            .into_response();
-    };
-    match mcp::list_resources(pool).await {
-        Ok(rows) => Json(serde_json::json!({"resources": rows})).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
-    }
+/// GET /api/v1/mcp/resources — `{ resources, total }`. Resources are what
+/// live MCP client connections discover (the TS `McpClient`), never stored;
+/// the Rust core holds no MCP client connections yet, so there are none.
+async fn list_resources() -> impl IntoResponse {
+    Json(serde_json::json!({ "resources": [], "total": 0 }))
 }
 
 // ── Server CRUD (upsert, patch, delete) ──────────────────────────────────────

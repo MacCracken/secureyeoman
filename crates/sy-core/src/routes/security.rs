@@ -948,6 +948,20 @@ async fn get_security_policy(State(s): State<AppState>) -> impl IntoResponse {
     }
 }
 
+/// Whether the stored security policy turns `flag` on. Flags default to off,
+/// as in `default_security_policy`, including when the policy is unreadable.
+pub(crate) async fn policy_allows(pool: &sqlx::PgPool, flag: &str) -> bool {
+    let stored: Option<(String,)> =
+        sqlx::query_as("SELECT value FROM security.policy WHERE key = 'security_policy'")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
+    stored
+        .and_then(|(json,)| serde_json::from_str::<serde_json::Value>(&json).ok())
+        .and_then(|policy| policy.get(flag).and_then(serde_json::Value::as_bool))
+        .unwrap_or(false)
+}
+
 fn default_security_policy() -> serde_json::Value {
     serde_json::json!({
         "allowSubAgents": false,

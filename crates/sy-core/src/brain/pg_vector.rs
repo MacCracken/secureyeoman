@@ -1,26 +1,23 @@
-//! PostgreSQL-backed vector store using pgvector extension.
+//! pgvector-backed vector store over the shipped schema.
 //!
-//! Stores embeddings in a `brain.vectors` table with cosine similarity search.
-//! Requires the `pgvector` extension to be installed in the database.
+//! Embeddings live in the `embedding vector(384)` column of the row they
+//! index — a memory (`brain.memories`) or a knowledge entry
+//! (`brain.knowledge`) — as the TS storage kept them; there is no separate
+//! vector table. An id is a memory or knowledge id, so the entry must exist
+//! before it is indexed, and deleting the entry drops its vector with it.
 //!
-//! Migration SQL:
-//! ```sql
-//! CREATE EXTENSION IF NOT EXISTS vector;
-//! CREATE TABLE IF NOT EXISTS brain.vectors (
-//!     id TEXT PRIMARY KEY,
-//!     embedding vector(1536),
-//!     metadata JSONB NOT NULL DEFAULT '{}',
-//!     tenant_id TEXT NOT NULL DEFAULT 'default',
-//!     created_at BIGINT NOT NULL
-//! );
-//! CREATE INDEX IF NOT EXISTS idx_vectors_tenant ON brain.vectors (tenant_id);
-//! ```
+//! The columns are fixed-width: a vector must have [`EMBEDDING_DIMENSIONS`]
+//! components. An embedding provider of another width cannot index, and
+//! recall then falls back to full-text search.
 
 use sqlx::PgPool;
 
 use super::vector::{VectorError, VectorResult, VectorStore, VectorStoreResult};
 
-/// PostgreSQL vector store backed by pgvector extension.
+/// Width of the schema's `embedding vector(384)` columns.
+pub const EMBEDDING_DIMENSIONS: usize = 384;
+
+/// PostgreSQL vector store backed by the pgvector columns of the brain tables.
 pub struct PgVectorStore {
     pool: PgPool,
     tenant_id: String,
@@ -32,10 +29,54 @@ impl PgVectorStore {
     }
 }
 
-/// Convert a float slice to a pgvector-compatible string: "[0.1,0.2,0.3]"
-fn vec_to_pg(v: &[f32]) -> String {
-    let inner: Vec<String> = v.iter().map(|f| format!("{f}")).collect();
-    format!("[{}]", inner.join(","))
+fn check_dimensions(vector: &[f32]) -> VectorStoreResult<()> {
+    if vector.len() == EMBEDDING_DIMENSIONS {
+        Ok(())
+    } else {
+        Err(VectorError::DimensionMismatch {
+            expected: EMBEDDING_DIMENSIONS,
+            got: vector.len(),
+        })
+    }
+}
+
+/// A zero vector carries no meaning (the no-op embedding provider returns
+/// them) and has no cosine similarity: it is never stored or searched.
+fn is_zero(vector: &[f32]) -> bool {
+    vector.iter().all(|x| *x == 0.0)
+}
+
+fn store_error(e: sqlx::Error) -> VectorError {
+    VectorError::Store(e.to_string())
+}
+
+/// Set the embedding of memory or knowledge entry `id`; false when neither
+/// exists. The `real[]` parameter is cast to `vector` (pgvector's cast).
+async fn set_embedding<'c, E>(
+    executor: E,
+    id: &str,
+    tenant_id: &str,
+    vector: &[f32],
+) -> Result<bool, sqlx::Error>
+where
+    E: sqlx::Executor<'c, Database = sqlx::Postgres>,
+{
+    let updated: i64 = sqlx::query_scalar(
+        "WITH memory AS (
+           UPDATE brain.memories SET embedding = $2::vector
+           WHERE id = $1 AND tenant_id = $3 RETURNING 1
+         ), knowledge AS (
+           UPDATE brain.knowledge SET embedding = $2::vector
+           WHERE id = $1 AND tenant_id = $3 RETURNING 1
+         )
+         SELECT (SELECT COUNT(*) FROM memory) + (SELECT COUNT(*) FROM knowledge)",
+    )
+    .bind(id)
+    .bind(vector)
+    .bind(tenant_id)
+    .fetch_one(executor)
+    .await?;
+    Ok(updated > 0)
 }
 
 impl VectorStore for PgVectorStore {
@@ -43,68 +84,43 @@ impl VectorStore for PgVectorStore {
         &self,
         id: &str,
         vector: &[f32],
-        metadata: serde_json::Value,
+        _metadata: serde_json::Value,
     ) -> VectorStoreResult<()> {
-        let pg_vec = vec_to_pg(vector);
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64;
-
-        sqlx::query(
-            "INSERT INTO brain.vectors (id, embedding, metadata, tenant_id, created_at)
-             VALUES ($1, $2::vector, $3, $4, $5)
-             ON CONFLICT (id) DO UPDATE SET embedding = $2::vector, metadata = $3",
-        )
-        .bind(id)
-        .bind(&pg_vec)
-        .bind(&metadata)
-        .bind(&self.tenant_id)
-        .bind(now)
-        .execute(&self.pool)
-        .await
-        .map_err(|e| VectorError::Store(e.to_string()))?;
-
-        Ok(())
+        check_dimensions(vector)?;
+        if is_zero(vector) {
+            return Ok(());
+        }
+        if set_embedding(&self.pool, id, &self.tenant_id, vector)
+            .await
+            .map_err(store_error)?
+        {
+            Ok(())
+        } else {
+            Err(VectorError::Store(format!(
+                "no memory or knowledge entry {id} to index"
+            )))
+        }
     }
 
     async fn insert_batch(
         &self,
         items: &[(String, Vec<f32>, serde_json::Value)],
     ) -> VectorStoreResult<()> {
-        // Use a transaction for batch inserts
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| VectorError::Store(e.to_string()))?;
-
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64;
-
-        for (id, vector, metadata) in items {
-            let pg_vec = vec_to_pg(vector);
-            sqlx::query(
-                "INSERT INTO brain.vectors (id, embedding, metadata, tenant_id, created_at)
-                 VALUES ($1, $2::vector, $3, $4, $5)
-                 ON CONFLICT (id) DO UPDATE SET embedding = $2::vector, metadata = $3",
-            )
-            .bind(id)
-            .bind(&pg_vec)
-            .bind(metadata)
-            .bind(&self.tenant_id)
-            .bind(now)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| VectorError::Store(e.to_string()))?;
+        for (_, vector, _) in items {
+            check_dimensions(vector)?;
         }
-
-        tx.commit()
-            .await
-            .map_err(|e| VectorError::Store(e.to_string()))?;
-        Ok(())
+        let mut tx = self.pool.begin().await.map_err(store_error)?;
+        for (id, vector, _) in items.iter().filter(|(_, v, _)| !is_zero(v)) {
+            if !set_embedding(&mut *tx, id, &self.tenant_id, vector)
+                .await
+                .map_err(store_error)?
+            {
+                return Err(VectorError::Store(format!(
+                    "no memory or knowledge entry {id} to index"
+                )));
+            }
+        }
+        tx.commit().await.map_err(store_error)
     }
 
     async fn search(
@@ -113,51 +129,80 @@ impl VectorStore for PgVectorStore {
         limit: usize,
         threshold: f32,
     ) -> VectorStoreResult<Vec<VectorResult>> {
-        let pg_vec = vec_to_pg(vector);
-
-        // pgvector cosine distance: <=> returns distance [0, 2], convert to similarity [0, 1]
-        let rows: Vec<(String, f64, serde_json::Value)> = sqlx::query_as(
-            "SELECT id, 1 - (embedding <=> $1::vector) AS score, metadata
-             FROM brain.vectors
-             WHERE tenant_id = $2 AND 1 - (embedding <=> $1::vector) >= $3
-             ORDER BY embedding <=> $1::vector
+        check_dimensions(vector)?;
+        if is_zero(vector) {
+            return Ok(Vec::new());
+        }
+        // pgvector's `<=>` is cosine distance in [0, 2]; similarity = 1 - distance.
+        // Each table takes its nearest `limit` by distance, the shape its HNSW
+        // index serves; the threshold then applies to the merged hits.
+        // A zero vector stored earlier scores NaN, which sorts above every
+        // number in PostgreSQL, so NaN is excluded explicitly.
+        let rows: Vec<(String, f64, String, Option<String>)> = sqlx::query_as(
+            "SELECT id, score, kind, personality_id FROM (
+               (SELECT id, 1 - (embedding <=> $1::vector) AS score, 'memory' AS kind, personality_id
+                FROM brain.memories WHERE tenant_id = $2 AND embedding IS NOT NULL
+                ORDER BY embedding <=> $1::vector LIMIT $4)
+               UNION ALL
+               (SELECT id, 1 - (embedding <=> $1::vector) AS score, 'knowledge' AS kind, personality_id
+                FROM brain.knowledge WHERE tenant_id = $2 AND embedding IS NOT NULL
+                ORDER BY embedding <=> $1::vector LIMIT $4)
+             ) hits
+             WHERE score >= $3 AND score <> 'NaN'::float8
+             ORDER BY score DESC, id
              LIMIT $4",
         )
-        .bind(&pg_vec)
+        .bind(vector)
         .bind(&self.tenant_id)
-        .bind(threshold as f64)
-        .bind(limit as i64)
+        .bind(f64::from(threshold))
+        .bind(i64::try_from(limit).unwrap_or(i64::MAX))
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| VectorError::Store(e.to_string()))?;
+        .map_err(store_error)?;
 
         Ok(rows
             .into_iter()
-            .map(|(id, score, metadata)| VectorResult {
+            .map(|(id, score, kind, personality_id)| VectorResult {
                 id,
                 score: score as f32,
-                metadata,
+                metadata: serde_json::json!({
+                    "kind": kind,
+                    "personalityId": personality_id,
+                    "tenantId": self.tenant_id,
+                }),
             })
             .collect())
     }
 
     async fn delete(&self, id: &str) -> VectorStoreResult<bool> {
-        let result = sqlx::query("DELETE FROM brain.vectors WHERE id = $1")
-            .bind(id)
-            .execute(&self.pool)
-            .await
-            .map_err(|e| VectorError::Store(e.to_string()))?;
-        Ok(result.rows_affected() > 0)
+        let cleared: i64 = sqlx::query_scalar(
+            "WITH memory AS (
+               UPDATE brain.memories SET embedding = NULL
+               WHERE id = $1 AND tenant_id = $2 AND embedding IS NOT NULL RETURNING 1
+             ), knowledge AS (
+               UPDATE brain.knowledge SET embedding = NULL
+               WHERE id = $1 AND tenant_id = $2 AND embedding IS NOT NULL RETURNING 1
+             )
+             SELECT (SELECT COUNT(*) FROM memory) + (SELECT COUNT(*) FROM knowledge)",
+        )
+        .bind(id)
+        .bind(&self.tenant_id)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(store_error)?;
+        Ok(cleared > 0)
     }
 
     async fn count(&self) -> VectorStoreResult<usize> {
-        let (count,): (i64,) =
-            sqlx::query_as("SELECT count(*) FROM brain.vectors WHERE tenant_id = $1")
-                .bind(&self.tenant_id)
-                .fetch_one(&self.pool)
-                .await
-                .map_err(|e| VectorError::Store(e.to_string()))?;
-        Ok(count as usize)
+        let count: i64 = sqlx::query_scalar(
+            "SELECT (SELECT COUNT(*) FROM brain.memories WHERE tenant_id = $1 AND embedding IS NOT NULL)
+                  + (SELECT COUNT(*) FROM brain.knowledge WHERE tenant_id = $1 AND embedding IS NOT NULL)",
+        )
+        .bind(&self.tenant_id)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(store_error)?;
+        Ok(usize::try_from(count).unwrap_or(0))
     }
 }
 

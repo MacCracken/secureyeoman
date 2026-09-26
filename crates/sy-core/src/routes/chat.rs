@@ -733,80 +733,137 @@ async fn chat_complete(
 
 // ── Chat Feedback ───────────────────────────────────────────────────────
 
+/// Longest memory the brain accepts (the TS `maxContentLength` default).
+const MAX_MEMORY_CHARS: usize = 4096;
+
+fn bad_request(message: &str) -> axum::response::Response {
+    (
+        StatusCode::BAD_REQUEST,
+        Json(serde_json::json!({ "error": message })),
+    )
+        .into_response()
+}
+
+fn stored_memory_response(
+    stored: Option<Result<crate::db::brain::MemoryRow, String>>,
+    ok: impl FnOnce(crate::db::brain::MemoryRow) -> serde_json::Value,
+) -> axum::response::Response {
+    match stored {
+        Some(Ok(row)) => Json(ok(row)).into_response(),
+        Some(Err(e)) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e })),
+        )
+            .into_response(),
+        None => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({ "error": "Database not available" })),
+        )
+            .into_response(),
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ChatFeedbackRequest {
+    #[serde(default)]
+    conversation_id: String,
+    #[serde(default)]
     message_id: String,
-    rating: String,
-    comment: Option<String>,
+    #[serde(default)]
+    feedback: String,
+    details: Option<String>,
 }
 
-/// POST /api/v1/chat/feedback — submit response feedback.
+/// POST /api/v1/chat/feedback — record feedback on a response as a
+/// `preference` memory for adaptive learning (the TS `PreferenceLearner`);
+/// `{ stored: true }`.
 async fn chat_feedback(
     State(state): State<AppState>,
     Json(body): Json<ChatFeedbackRequest>,
 ) -> impl IntoResponse {
-    let Some(pool) = state.db() else {
-        return (
-            StatusCode::SERVICE_UNAVAILABLE,
-            Json(serde_json::json!({"error": "Database not available"})),
-        )
-            .into_response();
-    };
-    match chat::save_feedback(
-        pool,
-        &body.message_id,
-        &body.rating,
-        body.comment.as_deref(),
-    )
-    .await
-    {
-        Ok(row) => (
-            StatusCode::CREATED,
-            Json(serde_json::to_value(row).unwrap()),
-        )
-            .into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
+    if body.conversation_id.is_empty() || body.message_id.is_empty() || body.feedback.is_empty() {
+        return bad_request("conversationId, messageId, and feedback are required");
     }
+    let details = body.details.as_deref().filter(|d| !d.is_empty());
+    // Content and importance as the TS PreferenceLearner wrote them.
+    let (with_details, without_details, importance) = match body.feedback.as_str() {
+        "positive" => (
+            "User liked this response",
+            "User gave positive feedback on response",
+            0.5,
+        ),
+        "negative" => (
+            "User disliked this response",
+            "User gave negative feedback on response",
+            0.7,
+        ),
+        "correction" => ("User corrected response", "User provided a correction", 0.9),
+        _ => return bad_request("feedback must be one of: positive, negative, correction"),
+    };
+    let content = match details {
+        Some(d) => format!("{with_details}: {d}"),
+        None => without_details.to_string(),
+    };
+    if content.chars().count() > MAX_MEMORY_CHARS {
+        return bad_request("details are too long");
+    }
+    let mut context = serde_json::json!({
+        "conversationId": body.conversation_id,
+        "messageId": body.message_id,
+        "feedbackType": body.feedback,
+    });
+    if let Some(d) = details {
+        context["details"] = serde_json::Value::String(d.to_string());
+    }
+    let stored = crate::routes::brain::store_memory(
+        &state,
+        "preference",
+        &content,
+        "user_feedback",
+        &context,
+        importance,
+        None,
+    )
+    .await;
+    stored_memory_response(stored, |_| serde_json::json!({ "stored": true }))
 }
 
 // ── Chat Remember ───────────────────────────────────────────────────────
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct ChatRememberRequest {
-    message_id: String,
-    label: Option<String>,
+    #[serde(default)]
+    content: String,
+    #[serde(default)]
+    context: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
-/// POST /api/v1/chat/remember — save message as memory.
+/// POST /api/v1/chat/remember — store a chat message as an episodic memory;
+/// `{ memory }`.
 async fn chat_remember(
     State(state): State<AppState>,
     Json(body): Json<ChatRememberRequest>,
 ) -> impl IntoResponse {
-    let Some(pool) = state.db() else {
-        return (
-            StatusCode::SERVICE_UNAVAILABLE,
-            Json(serde_json::json!({"error": "Database not available"})),
-        )
-            .into_response();
-    };
-    match chat::save_memory(pool, &body.message_id, body.label.as_deref()).await {
-        Ok(row) => (
-            StatusCode::CREATED,
-            Json(serde_json::to_value(row).unwrap()),
-        )
-            .into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
+    let content = body.content.trim();
+    if content.is_empty() {
+        return bad_request("Content is required");
     }
+    if content.chars().count() > MAX_MEMORY_CHARS {
+        return bad_request("Content is too long");
+    }
+    let context = serde_json::Value::Object(body.context.unwrap_or_default());
+    let stored = crate::routes::brain::store_memory(
+        &state,
+        "episodic",
+        content,
+        "dashboard_chat",
+        &context,
+        0.5,
+        None,
+    )
+    .await;
+    stored_memory_response(stored, |row| serde_json::json!({ "memory": row }))
 }
 
 // ── Conversation Export ─────────────────────────────────────────────────

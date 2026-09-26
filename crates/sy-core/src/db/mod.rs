@@ -40,7 +40,6 @@ pub mod observability;
 pub mod outbound_webhooks;
 pub mod provider_accounts;
 pub mod responsible_ai;
-pub mod risk_assessment;
 pub mod simulation;
 pub mod webhook_transforms;
 
@@ -66,5 +65,17 @@ pub mod multimodal;
 pub mod policy_as_code;
 pub mod reports;
 pub mod seed;
+pub mod skills;
 pub mod video_stream;
 pub mod webhook_timeline;
+
+/// For a partial-update body: `Some(None)` when the field is an explicit JSON
+/// `null` (clear it), `None` when it is absent (keep it). Use with
+/// `#[serde(default, deserialize_with = "super::explicit_null")]`.
+pub(crate) fn explicit_null<'de, D, T>(d: D) -> Result<Option<Option<T>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: serde::Deserialize<'de>,
+{
+    serde::Deserialize::deserialize(d).map(Some)
+}

@@ -140,11 +140,11 @@ const GROUPS = [
 function setupMocks() {
   (mockApi.fetchSimTickConfig as any).mockResolvedValue(TICK_CONFIG);
   (mockApi.fetchSimMoodState as any).mockResolvedValue(MOOD_STATE);
-  (mockApi.fetchSimMoodHistory as any).mockResolvedValue({ events: MOOD_EVENTS });
-  (mockApi.fetchSimEntities as any).mockResolvedValue({ entities: ENTITIES });
-  (mockApi.fetchSimZones as any).mockResolvedValue({ zones: ZONES });
-  (mockApi.fetchSimRelationships as any).mockResolvedValue({ relationships: RELATIONSHIPS });
-  (mockApi.fetchSimGroups as any).mockResolvedValue({ groups: GROUPS });
+  (mockApi.fetchSimMoodHistory as any).mockResolvedValue({ items: MOOD_EVENTS });
+  (mockApi.fetchSimEntities as any).mockResolvedValue({ items: ENTITIES });
+  (mockApi.fetchSimZones as any).mockResolvedValue({ items: ZONES });
+  (mockApi.fetchSimRelationships as any).mockResolvedValue({ items: RELATIONSHIPS });
+  (mockApi.fetchSimGroups as any).mockResolvedValue({ items: GROUPS });
 }
 
 async function typePersonalityId(user: ReturnType<typeof userEvent.setup>) {
@@ -357,11 +357,11 @@ describe('SimulationPanel', () => {
   it('shows empty states for spatial tab with no data', async () => {
     (mockApi.fetchSimTickConfig as any).mockResolvedValue(TICK_CONFIG);
     (mockApi.fetchSimMoodState as any).mockResolvedValue(MOOD_STATE);
-    (mockApi.fetchSimMoodHistory as any).mockResolvedValue({ events: [] });
-    (mockApi.fetchSimEntities as any).mockResolvedValue({ entities: [] });
-    (mockApi.fetchSimZones as any).mockResolvedValue({ zones: [] });
-    (mockApi.fetchSimRelationships as any).mockResolvedValue({ relationships: [] });
-    (mockApi.fetchSimGroups as any).mockResolvedValue({ groups: [] });
+    (mockApi.fetchSimMoodHistory as any).mockResolvedValue({ items: [] });
+    (mockApi.fetchSimEntities as any).mockResolvedValue({ items: [] });
+    (mockApi.fetchSimZones as any).mockResolvedValue({ items: [] });
+    (mockApi.fetchSimRelationships as any).mockResolvedValue({ items: [] });
+    (mockApi.fetchSimGroups as any).mockResolvedValue({ items: [] });
 
     const user = userEvent.setup();
     render(<SimulationPanel />, { wrapper: createWrapper() });
@@ -376,11 +376,11 @@ describe('SimulationPanel', () => {
   it('shows empty states for relationships tab with no data', async () => {
     (mockApi.fetchSimTickConfig as any).mockResolvedValue(TICK_CONFIG);
     (mockApi.fetchSimMoodState as any).mockResolvedValue(MOOD_STATE);
-    (mockApi.fetchSimMoodHistory as any).mockResolvedValue({ events: [] });
-    (mockApi.fetchSimEntities as any).mockResolvedValue({ entities: [] });
-    (mockApi.fetchSimZones as any).mockResolvedValue({ zones: [] });
-    (mockApi.fetchSimRelationships as any).mockResolvedValue({ relationships: [] });
-    (mockApi.fetchSimGroups as any).mockResolvedValue({ groups: [] });
+    (mockApi.fetchSimMoodHistory as any).mockResolvedValue({ items: [] });
+    (mockApi.fetchSimEntities as any).mockResolvedValue({ items: [] });
+    (mockApi.fetchSimZones as any).mockResolvedValue({ items: [] });
+    (mockApi.fetchSimRelationships as any).mockResolvedValue({ items: [] });
+    (mockApi.fetchSimGroups as any).mockResolvedValue({ items: [] });
 
     const user = userEvent.setup();
     render(<SimulationPanel />, { wrapper: createWrapper() });

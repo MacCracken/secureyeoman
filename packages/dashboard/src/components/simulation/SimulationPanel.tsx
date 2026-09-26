@@ -63,6 +63,13 @@ const MOOD_COLORS: Record<MoodLabel, string> = {
   anxious: 'bg-purple-400 text-purple-900',
 };
 
+/** Simulation list endpoints answer `{ items }`; a bare array is tolerated. */
+function listItems<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
+  const items = (data as { items?: unknown } | null | undefined)?.items;
+  return Array.isArray(items) ? (items as T[]) : [];
+}
+
 export function SimulationPanel() {
   const queryClient = useQueryClient();
   const [personalityId, setPersonalityId] = useState('');
@@ -189,23 +196,23 @@ export function SimulationPanel() {
   const tickConfig: TickConfig | undefined = tickQuery.data;
   const moodState: MoodState | undefined = moodQuery.data;
   const moodEvents: MoodEvent[] = useMemo(
-    () => moodHistoryQuery.data?.events ?? moodHistoryQuery.data ?? [],
+    () => listItems<MoodEvent>(moodHistoryQuery.data),
     [moodHistoryQuery.data]
   );
   const entities: EntityLocation[] = useMemo(
-    () => entitiesQuery.data?.entities ?? entitiesQuery.data ?? [],
+    () => listItems<EntityLocation>(entitiesQuery.data),
     [entitiesQuery.data]
   );
   const zones: SpatialZone[] = useMemo(
-    () => zonesQuery.data?.zones ?? zonesQuery.data ?? [],
+    () => listItems<SpatialZone>(zonesQuery.data),
     [zonesQuery.data]
   );
   const relationships: EntityRelationship[] = useMemo(
-    () => relationshipsQuery.data?.relationships ?? relationshipsQuery.data ?? [],
+    () => listItems<EntityRelationship>(relationshipsQuery.data),
     [relationshipsQuery.data]
   );
   const groups: EntityGroup[] = useMemo(
-    () => groupsQuery.data?.groups ?? groupsQuery.data ?? [],
+    () => listItems<EntityGroup>(groupsQuery.data),
     [groupsQuery.data]
   );
 
