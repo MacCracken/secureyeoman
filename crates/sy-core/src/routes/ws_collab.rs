@@ -39,11 +39,11 @@ pub fn router() -> Router<AppState> {
 }
 
 /// The RBAC resource a collab document belongs to, if `doc_id` is well formed:
-/// `personality:<uuid>` or `skill:<uuid>` (skills are managed under
-/// `/api/v1/soul`, i.e. the `soul` resource).
+/// `personality:<uuid>` or `skill:<uuid>`. Both are managed under
+/// `/api/v1/soul`, i.e. the `soul` resource.
 fn doc_resource(doc_id: &str) -> Option<&'static str> {
     let (resource, id) = match doc_id.split_once(':')? {
-        ("personality", id) => ("personality", id),
+        ("personality", id) => ("soul", id),
         ("skill", id) => ("soul", id),
         _ => return None,
     };
@@ -153,10 +153,7 @@ mod tests {
     #[test]
     fn doc_ids_map_to_their_rbac_resource() {
         let id = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
-        assert_eq!(
-            doc_resource(&format!("personality:{id}")),
-            Some("personality")
-        );
+        assert_eq!(doc_resource(&format!("personality:{id}")), Some("soul"));
         assert_eq!(doc_resource(&format!("skill:{id}")), Some("soul"));
         assert_eq!(doc_resource(&format!("workflow:{id}")), None);
         assert_eq!(doc_resource("personality:not-a-uuid"), None);

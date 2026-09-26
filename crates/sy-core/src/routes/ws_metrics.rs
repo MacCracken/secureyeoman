@@ -23,20 +23,24 @@ use tracing::{debug, warn};
 use crate::routes::ws_auth::{self, WsPrincipal};
 use crate::state::AppState;
 
-/// Channel → required RBAC resource:action (the resource names the REST RBAC
-/// uses, so a channel is visible exactly to those who may read its REST twin).
+/// Channel → required RBAC resource:action, in the resource names the REST
+/// RBAC resolves to (`auth::permissions`), so a channel is visible exactly to
+/// those who may read its REST twin. As the TS gateway's map, except
+/// `video_stream`: TS required `capture:read`, a resource no route or role
+/// used, so only admins could subscribe; live frames need what viewing a
+/// stream session over REST needs, `capture.screen:capture`.
 /// Channels not listed here are open to any authenticated user.
-const CHANNEL_PERMISSIONS: &[(&str, &str, &str)] = &[
-    ("metrics", "telemetry", "read"),
+pub const CHANNEL_PERMISSIONS: &[(&str, &str, &str)] = &[
+    ("metrics", "metrics", "read"),
     ("audit", "audit", "read"),
     ("tasks", "tasks", "read"),
-    ("security", "security", "read"),
+    ("security", "security_events", "read"),
     ("proactive", "proactive", "read"),
     ("workflows", "workflows", "read"),
     ("soul", "soul", "read"),
     ("group_chat", "integrations", "read"),
     ("notifications", "notifications", "read"),
-    ("video_stream", "capture.video", "read"),
+    ("video_stream", "capture.screen", "capture"),
 ];
 
 fn channel_permission(channel: &str) -> Option<(&'static str, &'static str)> {

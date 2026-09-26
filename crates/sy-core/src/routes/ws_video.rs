@@ -39,9 +39,9 @@ async fn ws_video_upgrade(
             return ws_auth::refuse(ws, &headers, ws_auth::CLOSE_UNAUTHENTICATED, reason);
         }
     };
-    // Watching a capture stream takes the same permission as the REST
-    // `/api/v1/video` routes.
-    if !principal.can("capture.video", "read") {
+    // Watching a capture stream takes what viewing a stream session over
+    // REST takes (`GET /api/v1/video/stream/{id}`).
+    if !principal.can("capture.screen", "capture") {
         return ws_auth::refuse(
             ws,
             &headers,

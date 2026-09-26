@@ -54,9 +54,17 @@ const PUBLIC_PREFIXES: &[&str] = &[
     "/ws/", // WebSocket auth is handled by the WS handler (token in Sec-WebSocket-Protocol)
 ];
 
-/// Authenticated routes that only touch the caller's own session, so any valid
-/// principal may use them regardless of role (TS `TOKEN_ONLY_ROUTES`).
-const SELF_SERVICE_ROUTES: &[&str] = &["/api/v1/auth/me", "/api/v1/auth/logout"];
+/// Authenticated routes (by route template) that only touch the caller's own
+/// account, so any valid principal may use them regardless of role (TS
+/// `TOKEN_ONLY_ROUTES`). The notification preferences are scoped to the
+/// caller in their handlers; TS put them under `auth`, which left every role
+/// but admin unable to manage its own delivery channels.
+pub const SELF_SERVICE_ROUTES: &[&str] = &[
+    "/api/v1/auth/me",
+    "/api/v1/auth/logout",
+    "/api/v1/users/me/notification-prefs",
+    "/api/v1/users/me/notification-prefs/{id}",
+];
 
 /// Authenticated user context — injected into request extensions.
 #[derive(Debug, Clone)]
@@ -171,8 +179,10 @@ fn extract_bearer(headers: &axum::http::HeaderMap) -> Option<&str> {
 ///
 /// Runs after `require_auth`. If no `AuthContext` is present (public route),
 /// the request passes through. For authenticated requests, resolves the
-/// required permission from method + path and checks it against the user's role.
-/// Unmapped routes default to admin-only.
+/// required permission from the method and route template (the path when no
+/// route matched) and checks it against the role and the principal's scope.
+/// Unmapped routes are admin-only, and closed to scoped keys narrower than
+/// `*:*`.
 pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
     // Public routes have no AuthContext — skip RBAC
     let auth = match req.extensions().get::<AuthContext>() {
@@ -181,13 +191,17 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
     };
 
     let method = req.method().clone();
-    let path = req.uri().path().to_string();
+    let route = req
+        .extensions()
+        .get::<MatchedPath>()
+        .map_or_else(|| req.uri().path(), MatchedPath::as_str)
+        .to_string();
 
-    if SELF_SERVICE_ROUTES.contains(&path.as_str()) {
+    if SELF_SERVICE_ROUTES.contains(&route.as_str()) {
         return next.run(req).await;
     }
 
-    match resolve_permission(&method, &path) {
+    match resolve_permission(&method, &route) {
         Some(perm) => {
             // 1. The role must grant this resource:action.
             if !check_permission(&auth.role, perm.resource, perm.action) {
@@ -223,8 +237,12 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
             }
         }
         None => {
-            // Unmapped route: admin only
-            if auth.role != "admin" {
+            // Unmapped route: admin only. A scope cannot name an unmapped
+            // route, so a scoped key needs the full `*:*` to reach one.
+            if auth.role != "admin"
+                || (!auth.permissions.is_empty()
+                    && !check_permission_strings(&auth.permissions, "*", "*"))
+            {
                 return (
                     StatusCode::FORBIDDEN,
                     axum::Json(json!({

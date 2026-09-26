@@ -1,168 +1,428 @@
-//! RBAC permission resolution — convention-based prefix→resource mapping.
+//! RBAC permission resolution and the default role table.
 //!
-//! Mirrors `route-permissions.ts`: HTTP method → action, URL prefix → resource.
-//! Explicit overrides for ~60 routes that deviate from convention.
+//! Mirrors the TS gateway — `route-permissions.ts` for resolving a route to a
+//! `resource:action`, `rbac.ts` `DEFAULT_ROLES` for what each role holds — so
+//! roles and TS-era scoped API keys keep their meaning. Resolution:
+//! 1. an explicit override for the method and route template, else
+//! 2. the method's conventional action (GET/HEAD/OPTIONS → `read`, others →
+//!    `write`) on the resource of the first prefix that matches whole path
+//!    segments;
+//! 3. anything else is unmapped, which the middleware treats as admin-only.
+//!
+//! Every place the role table differs from TS carries a comment saying why;
+//! `tests/rbac_matrix.rs` pins the effective access per role and route.
 
 use axum::http::Method;
-use std::collections::HashMap;
-use std::sync::LazyLock;
 
 /// A resolved permission: (resource, action).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedPermission {
     pub resource: &'static str,
     pub action: &'static str,
 }
 
-/// Convention-based URL prefix → resource mapping (ordered most-specific-first).
-static PREFIX_MAP: LazyLock<Vec<(&str, &str)>> = LazyLock::new(|| {
-    vec![
-        ("/api/v1/auth/sso", "sso"),
-        ("/api/v1/auth", "auth"),
-        ("/api/v1/soul/personalities", "personality"),
-        ("/api/v1/soul", "soul"),
-        ("/api/v1/brain/documents", "documents"),
-        ("/api/v1/brain", "brain"),
-        ("/api/v1/spirit", "spirit"),
-        ("/api/v1/chat", "chat"),
-        ("/api/v1/tasks", "tasks"),
-        ("/api/v1/integrations", "integrations"),
-        ("/api/v1/agents", "agents"),
-        ("/api/v1/swarms", "swarms"),
-        ("/api/v1/teams", "teams"),
-        ("/api/v1/councils", "councils"),
-        ("/api/v1/workflows", "workflows"),
-        ("/api/v1/a2a", "a2a"),
-        ("/api/v1/training", "training"),
-        ("/api/v1/mcp", "mcp"),
-        ("/api/v1/audit", "audit"),
-        ("/api/v1/alerts", "alerts"),
-        ("/api/v1/telemetry", "telemetry"),
-        ("/api/v1/analytics", "analytics"),
-        ("/api/v1/notifications", "notifications"),
-        ("/api/v1/security", "security"),
-        ("/api/v1/risk-assessment", "risk-assessment"),
-        ("/api/v1/desktop", "capture.screen"),
-        ("/api/v1/video", "capture.video"),
-        ("/api/v1/terminal", "execution"),
-        ("/api/v1/execution", "execution"),
-        ("/api/v1/browser", "execution"),
-        ("/api/v1/sandbox", "sandbox"),
-        ("/api/v1/marketplace", "marketplace"),
-        ("/api/v1/extensions", "extensions"),
-        ("/api/v1/proactive", "proactive"),
-        ("/api/v1/edge", "edge"),
-        ("/api/v1/federation", "federation"),
-        ("/api/v1/tenants", "tenants"),
-        ("/api/v1/license", "license"),
-        ("/api/v1/backup", "backup"),
-        ("/api/v1/ifran", "ifran"),
-        ("/api/v1/provider-accounts", "providers"),
-        ("/api/v1/models", "models"),
-        ("/api/v1/conversations", "conversations"),
-        ("/api/v1/gateway", "gateway"),
-        ("/api/v1/dashboard", "dashboard"),
-        ("/api/v1/workspace", "workspace"),
-        ("/api/v1/voice", "voice"),
-        ("/api/v1/multimodal", "multimodal"),
-        ("/api/v1/diagnostics", "diagnostics"),
-    ]
-});
+/// URL prefix → resource, most specific first; a prefix matches the path
+/// itself or anything below it (`/api/v1/ai` does not match `/api/v1/aim`).
+/// The TS map's entries in its order, then prefixes only this build serves.
+pub const PREFIX_MAP: &[(&str, &str)] = &[
+    // Sub-domain resources (before their parent prefix)
+    ("/api/v1/security/athi", "security_athi"),
+    ("/api/v1/security/sra", "security_sra"),
+    ("/api/v1/security/dlp", "security"),
+    ("/api/v1/security/tee", "security"),
+    ("/api/v1/security/events", "security_events"),
+    ("/api/v1/brain/logs", "audit"),
+    // Cross-domain mappings (prefix ≠ resource)
+    ("/api/v1/conversations", "chat"),
+    ("/api/v1/replay-jobs", "chat"),
+    ("/api/v1/terminal", "execution"),
+    ("/api/v1/users", "auth"),
+    ("/api/v1/gmail", "integrations"),
+    ("/api/v1/twitter", "integrations"),
+    ("/api/v1/github", "integrations"),
+    ("/api/v1/webhooks", "integrations"),
+    ("/api/v1/webhook-transforms", "integrations"),
+    ("/api/v1/outbound-webhooks", "integrations"),
+    ("/api/v1/internal", "integrations"),
+    ("/api/v1/a2a", "agents"),
+    ("/api/v1/desktop", "capture.screen"),
+    ("/api/v1/video/stream", "capture.screen"),
+    ("/api/v1/capture", "capture.screen"),
+    ("/api/v1/gateway", "chat"),
+    ("/api/v1/alerts", "notifications"),
+    ("/api/v1/provider-accounts", "ai"),
+    // One-to-one domains
+    ("/api/v1/metrics", "metrics"),
+    ("/api/v1/tasks", "tasks"),
+    ("/api/v1/audit", "audit"),
+    ("/api/v1/auth", "auth"),
+    ("/api/v1/soul", "soul"),
+    ("/api/v1/integrations", "integrations"),
+    ("/api/v1/brain", "brain"),
+    ("/api/v1/comms", "comms"),
+    ("/api/v1/model", "model"),
+    ("/api/v1/mcp", "mcp"),
+    ("/api/v1/reports", "reports"),
+    ("/api/v1/dashboards", "dashboards"),
+    ("/api/v1/workspaces", "workspaces"),
+    ("/api/v1/secrets", "secrets"),
+    ("/api/v1/experiments", "experiments"),
+    ("/api/v1/marketplace", "marketplace"),
+    ("/api/v1/voice", "multimodal"),
+    ("/api/v1/multimodal", "multimodal"),
+    ("/api/v1/spirit", "spirit"),
+    ("/api/v1/chat", "chat"),
+    ("/api/v1/execution", "execution"),
+    ("/api/v1/agents", "agents"),
+    ("/api/v1/proactive", "proactive"),
+    ("/api/v1/browser", "browser"),
+    ("/api/v1/extensions", "extensions"),
+    ("/api/v1/federation", "federation"),
+    ("/api/v1/training", "training"),
+    ("/api/v1/eval", "eval"),
+    ("/api/v1/analytics", "analytics"),
+    ("/api/v1/license", "license"),
+    ("/api/v1/risk", "risk"),
+    ("/api/v1/workflows", "workflows"),
+    ("/api/v1/sandbox", "sandbox"),
+    ("/api/v1/responsible-ai", "responsible_ai"),
+    ("/api/v1/ai", "ai"),
+    ("/api/v1/events", "events"),
+    ("/api/v1/ecosystem", "integrations"),
+    ("/api/v1/simulation", "simulation"),
+    ("/api/v1/compliance", "compliance"),
+    ("/api/v1/scim", "auth"),
+    ("/api/v1/tenants", "tenants"),
+    ("/api/v1/admin", "admin"),
+    // Only this build serves these. No default role holds their resources,
+    // so they stay admin-only, but a scoped key can name them.
+    ("/api/v1/security", "security"),
+    ("/api/v1/notifications", "notifications"),
+    ("/api/v1/edge", "edge"),
+    ("/api/v1/ifran", "ifran"),
+    ("/api/v1/diagnostics", "diagnostics"),
+];
 
-/// Explicit overrides for routes that deviate from convention.
-/// Key: (method, path_pattern) → (resource, action).
-type OverrideMap = HashMap<(&'static str, &'static str), (&'static str, &'static str)>;
+/// (method, route template) → (resource, action) for routes whose action is
+/// not the method's convention or whose resource is not their prefix's. Keys
+/// are axum route templates, so `{id}` stands for any segment.
+pub const OVERRIDES: &[(&str, &str, &str, &str)] = &[
+    // POST → execute: high-privilege operations
+    ("POST", "/api/v1/chat", "chat", "execute"),
+    // This build's streaming twin of POST /api/v1/chat.
+    ("POST", "/api/v1/chat/stream", "chat", "execute"),
+    ("POST", "/api/v1/gateway", "chat", "execute"),
+    ("POST", "/api/v1/execution/run", "execution", "execute"),
+    ("POST", "/api/v1/terminal/execute", "execution", "execute"),
+    ("POST", "/api/v1/terminal/worktrees", "execution", "execute"),
+    (
+        "DELETE",
+        "/api/v1/terminal/worktrees/{id}",
+        "execution",
+        "execute",
+    ),
+    ("POST", "/api/v1/mcp/tools/call", "mcp", "execute"),
+    ("POST", "/api/v1/sandbox/scan", "sandbox", "execute"),
+    (
+        "POST",
+        "/api/v1/voice/profiles/{id}/preview",
+        "multimodal",
+        "execute",
+    ),
+    (
+        "POST",
+        "/api/v1/voice/profiles/clone",
+        "multimodal",
+        "execute",
+    ),
+    // POST → read: read-only operations that take a body
+    ("POST", "/api/v1/extensions/discover", "extensions", "read"),
+    (
+        "POST",
+        "/api/v1/federation/peers/{id}/health",
+        "federation",
+        "read",
+    ),
+    (
+        "POST",
+        "/api/v1/training/preferences/export",
+        "training",
+        "read",
+    ),
+    (
+        "POST",
+        "/api/v1/training/curated-datasets/preview",
+        "training",
+        "read",
+    ),
+    // Custom actions and cross-resource routes
+    ("POST", "/api/v1/audit/verify", "audit", "verify"),
+    // TS resolved this to auth:read. Verifying a token is all the MCP service
+    // calls under /auth, and its own action keeps the service role from
+    // reading users, API keys and roles.
+    ("POST", "/api/v1/auth/verify", "auth", "verify"),
+    ("POST", "/api/v1/auth/oauth/reload", "secrets", "write"),
+    // Simulation mood, nested under personalities
+    (
+        "GET",
+        "/api/v1/personalities/{id}/mood",
+        "simulation",
+        "read",
+    ),
+    (
+        "POST",
+        "/api/v1/personalities/{id}/mood/event",
+        "simulation",
+        "write",
+    ),
+    (
+        "GET",
+        "/api/v1/personalities/{id}/mood/history",
+        "simulation",
+        "read",
+    ),
+    (
+        "POST",
+        "/api/v1/personalities/{id}/mood/reset",
+        "simulation",
+        "write",
+    ),
+    // Screen capture: capture (look) / configure (control) / stream (record)
+    // instead of read / write. The desktop status and session routes exist
+    // only in this build and follow the same split.
+    ("GET", "/api/v1/desktop/status", "capture.screen", "capture"),
+    (
+        "GET",
+        "/api/v1/desktop/windows",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "POST",
+        "/api/v1/desktop/capture",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "GET",
+        "/api/v1/desktop/recording/active",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "POST",
+        "/api/v1/desktop/recording/stop",
+        "capture.screen",
+        "configure",
+    ),
+    (
+        "GET",
+        "/api/v1/desktop/sessions",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "GET",
+        "/api/v1/desktop/sessions/{id}",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "POST",
+        "/api/v1/desktop/sessions",
+        "capture.screen",
+        "configure",
+    ),
+    (
+        "DELETE",
+        "/api/v1/desktop/sessions/{id}",
+        "capture.screen",
+        "configure",
+    ),
+    (
+        "POST",
+        "/api/v1/capture/consent/request",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "GET",
+        "/api/v1/capture/consent/pending",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "GET",
+        "/api/v1/capture/consent/{id}",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "POST",
+        "/api/v1/capture/consent/{id}/grant",
+        "capture.screen",
+        "configure",
+    ),
+    (
+        "POST",
+        "/api/v1/capture/consent/{id}/deny",
+        "capture.screen",
+        "configure",
+    ),
+    (
+        "POST",
+        "/api/v1/capture/consent/{id}/revoke",
+        "capture.screen",
+        "configure",
+    ),
+    (
+        "POST",
+        "/api/v1/video/stream/start",
+        "capture.screen",
+        "stream",
+    ),
+    (
+        "GET",
+        "/api/v1/video/stream/sessions",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "GET",
+        "/api/v1/video/stream/sources",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "GET",
+        "/api/v1/video/stream/{id}",
+        "capture.screen",
+        "capture",
+    ),
+    (
+        "POST",
+        "/api/v1/video/stream/{id}/stop",
+        "capture.screen",
+        "configure",
+    ),
+];
 
-static OVERRIDES: LazyLock<OverrideMap> = LazyLock::new(|| {
-    let mut m = HashMap::new();
-    m.insert(("POST", "/api/v1/audit/verify"), ("audit", "verify"));
-    m.insert(("POST", "/api/v1/chat"), ("chat", "execute"));
-    m.insert(("POST", "/api/v1/chat/stream"), ("chat", "execute"));
-    m.insert(("POST", "/api/v1/execution/run"), ("execution", "execute"));
-    m.insert(
-        ("POST", "/api/v1/browser/sessions"),
-        ("execution", "execute"),
-    );
-    m.insert(("POST", "/api/v1/sandbox/scan"), ("sandbox", "execute"));
-    m
-});
+/// Whether `prefix` covers `path`: the path itself or anything below it.
+fn covers(prefix: &str, path: &str) -> bool {
+    path.strip_prefix(prefix)
+        .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+}
 
-/// Resolve the permission required for a given request.
-///
-/// Returns `None` for unmapped routes (which should default to admin-only).
-pub fn resolve_permission(method: &Method, path: &str) -> Option<ResolvedPermission> {
-    // 1. Check explicit overrides
+/// Resolve the permission a request needs, from its method and its route
+/// template (`MatchedPath`) or, for unrouted requests, its path. `None` for
+/// unmapped routes, which are admin-only.
+pub fn resolve_permission(method: &Method, route: &str) -> Option<ResolvedPermission> {
     let method_str = method.as_str();
-    if let Some(&(resource, action)) = OVERRIDES.get(&(method_str, path)) {
+    if let Some(&(_, _, resource, action)) = OVERRIDES
+        .iter()
+        .find(|(m, template, _, _)| *m == method_str && *template == route)
+    {
         return Some(ResolvedPermission { resource, action });
     }
-
-    // 2. Convention: method → action
     let action = match *method {
         Method::GET | Method::HEAD | Method::OPTIONS => "read",
         _ => "write",
     };
-
-    // 3. Convention: URL prefix → resource (first match wins)
-    for &(prefix, resource) in PREFIX_MAP.iter() {
-        if path.starts_with(prefix) {
-            return Some(ResolvedPermission { resource, action });
-        }
-    }
-
-    None // Unmapped → admin only
+    PREFIX_MAP
+        .iter()
+        .find(|(prefix, _)| covers(prefix, route))
+        .map(|&(_, resource)| ResolvedPermission { resource, action })
 }
 
-/// Role definitions with their allowed permissions.
-/// Each entry: (resource_pattern, actions).
+/// The default roles' grants: `(resource pattern, actions)`. The TS
+/// `DEFAULT_ROLES`, with each difference commented. Grants on resources no
+/// route resolves to yet (such as `logs`) are kept as TS had them, for the
+/// routes that will.
 pub fn role_permissions(role: &str) -> &'static [(&'static str, &'static [&'static str])] {
     match role {
         "admin" => &[("*", &["*"])],
         "operator" => &[
-            ("chat", &["read", "write", "execute"]),
-            ("brain", &["read", "write"]),
+            ("tasks", &["read", "write", "execute", "cancel"]),
+            ("integrations", &["read", "write", "delete", "test"]),
+            ("metrics", &["read"]),
+            ("logs", &["read"]),
+            ("reports", &["read", "write"]),
             ("soul", &["read", "write"]),
             ("spirit", &["read", "write"]),
-            ("personality", &["read", "write"]),
-            ("tasks", &["read", "write"]),
-            ("integrations", &["read", "write"]),
-            ("agents", &["read", "write"]),
-            ("swarms", &["read", "write"]),
-            ("teams", &["read", "write"]),
-            ("workflows", &["read", "write"]),
-            ("mcp", &["read", "write"]),
-            ("execution", &["read", "execute"]),
+            ("brain", &["read", "write"]),
+            ("comms", &["read", "write"]),
+            ("model", &["read", "write"]),
+            ("mcp", &["read", "write", "execute"]),
+            ("dashboards", &["read", "write"]),
+            ("workspaces", &["read", "write"]),
+            ("experiments", &["read", "write"]),
             ("marketplace", &["read", "write"]),
-            ("proactive", &["read", "write"]),
-            ("conversations", &["read", "write"]),
-            ("models", &["read"]),
-            ("providers", &["read"]),
-            ("documents", &["read", "write"]),
-            ("voice", &["read", "write"]),
             ("multimodal", &["read", "write"]),
+            ("chat", &["read", "write", "execute"]),
+            ("execution", &["read", "write", "execute"]),
+            ("agents", &["read", "write"]),
+            ("proactive", &["read", "write"]),
+            ("browser", &["read", "write"]),
+            ("extensions", &["read", "write"]),
+            ("responsible_ai", &["read", "write"]),
+            ("voice", &["listen", "tts"]),
+            // Not in TS, which left workflows admin-only although operators
+            // run tasks, agents and code: workflows add no reach beyond
+            // `execution:execute`, which operators hold.
+            ("workflows", &["read", "write"]),
+            // TS also granted:
+            // - `auth:read` — withheld: `auth` is identity administration
+            //   (users, API keys and their usage, roles and assignments, SSO,
+            //   OAuth tokens, SCIM). An operator's own session and
+            //   notification preferences are self-service routes instead.
+            // - `capture.screen` capture/configure/review and
+            //   `capture.camera` capture — withheld: TS granted them only
+            //   under duration limits (5 min screen, 1 min camera) that this
+            //   RBAC cannot express and the capture routes do not enforce.
         ],
         "auditor" => &[
-            ("audit", &["read"]),
-            ("security", &["read"]),
-            ("telemetry", &["read"]),
-            ("analytics", &["read"]),
-            ("risk-assessment", &["read"]),
+            ("logs", &["read", "export"]),
+            ("audit", &["read", "export", "verify"]),
+            ("metrics", &["read"]),
+            ("security_events", &["read"]),
+            ("reports", &["read", "write"]),
+            ("tasks", &["read"]),
+            ("execution", &["read"]),
+            ("agents", &["read"]),
+            ("proactive", &["read"]),
+            ("browser", &["read"]),
+            ("capture.screen", &["review"]),
+            ("capture.camera", &["review"]),
+            ("responsible_ai", &["read"]),
+            // Not in TS: reviewing risk assessments and the risk register is
+            // audit work, and reading them changes nothing.
+            ("risk", &["read"]),
         ],
         "viewer" => &[
-            ("brain", &["read"]),
-            ("soul", &["read"]),
-            ("personality", &["read"]),
+            ("metrics", &["read"]),
             ("tasks", &["read"]),
             ("integrations", &["read"]),
-            ("conversations", &["read"]),
-            ("models", &["read"]),
-            ("dashboard", &["read"]),
+            ("soul", &["read"]),
+            ("spirit", &["read"]),
+            ("brain", &["read"]),
+            ("model", &["read"]),
+            ("marketplace", &["read"]),
+            ("dashboards", &["read"]),
+            ("workspaces", &["read"]),
+            ("reports", &["read"]),
+            ("chat", &["read"]),
+            // TS also granted `mcp:read` — withheld: MCP server listings
+            // carry each server's `env`, which holds its credentials.
         ],
         "service" => &[
+            // TS granted `auth:read` for token verification; see the
+            // POST /api/v1/auth/verify override.
+            ("auth", &["verify"]),
+            ("mcp", &["execute", "read", "write"]),
             ("brain", &["read", "write"]),
             ("soul", &["read"]),
-            ("mcp", &["read", "write"]),
-            ("integrations", &["read"]),
+            ("internal", &["read"]),
+            ("integrations", &["read", "write"]),
         ],
         _ => &[],
     }
