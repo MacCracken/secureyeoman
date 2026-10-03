@@ -10,6 +10,8 @@ use axum::routing::{delete, get, patch, put};
 use axum::{Json, Router};
 use serde::Deserialize;
 
+use crate::auth::middleware::AuthContext;
+use crate::db::audit::NewAuditEntry;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -201,6 +203,7 @@ struct SetSecretRequest {
 /// PUT /api/v1/secrets/{name} — store a secret.
 async fn set_secret(
     State(state): State<AppState>,
+    auth: Option<axum::Extension<AuthContext>>,
     Path(name): Path<String>,
     Json(body): Json<SetSecretRequest>,
 ) -> impl IntoResponse {
@@ -248,6 +251,11 @@ async fn set_secret(
             unsafe { std::env::set_var(&name, &body.value) };
             // Drop cached /model/info so sidebar sees the new provider within one poll.
             crate::routes::models::invalidate_model_info_cache().await;
+            let mut entry =
+                NewAuditEntry::new("secret_access", "info", &format!("Secret {name} stored"))
+                    .metadata(serde_json::json!({ "secret": name, "action": "set" }));
+            entry.user_id = auth.map(|axum::Extension(a)| a.user_id);
+            state.audit_event(entry);
             (
                 StatusCode::OK,
                 Json(serde_json::json!({"saved": true, "name": name})),
@@ -265,6 +273,7 @@ async fn set_secret(
 /// DELETE /api/v1/secrets/{name} — remove a secret.
 async fn delete_secret(
     State(state): State<AppState>,
+    auth: Option<axum::Extension<AuthContext>>,
     Path(name): Path<String>,
 ) -> impl IntoResponse {
     if let Some(refusal) = refuse_secret_name(&name) {
@@ -294,6 +303,10 @@ async fn delete_secret(
     unsafe { std::env::remove_var(&name) };
     // Drop cached /model/info so sidebar can mute Chat within one poll.
     crate::routes::models::invalidate_model_info_cache().await;
+    let mut entry = NewAuditEntry::new("secret_access", "info", &format!("Secret {name} deleted"))
+        .metadata(serde_json::json!({ "secret": name, "action": "delete" }));
+    entry.user_id = auth.map(|axum::Extension(a)| a.user_id);
+    state.audit_event(entry);
     StatusCode::NO_CONTENT.into_response()
 }
 

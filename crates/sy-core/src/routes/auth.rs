@@ -8,6 +8,7 @@ use axum::{Json, Router};
 use serde::Deserialize;
 
 use crate::auth::jwt::{issue_access_token, issue_refresh_token, validate_token};
+use crate::db::audit::NewAuditEntry;
 use crate::db::auth;
 use crate::state::AppState;
 use webauthn_rs::prelude::{Passkey, PublicKeyCredential, RegisterPublicKeyCredential};
@@ -162,7 +163,18 @@ fn verify_admin_password(submitted: &str) -> bool {
     }
 }
 
-async fn login(State(state): State<AppState>, Json(body): Json<LoginRequest>) -> impl IntoResponse {
+async fn login(
+    State(state): State<AppState>,
+    // Absent when the router is driven without `ConnectInfo` (tests).
+    peer: Option<axum::Extension<axum::extract::ConnectInfo<std::net::SocketAddr>>>,
+    headers: axum::http::HeaderMap,
+    Json(body): Json<LoginRequest>,
+) -> impl IntoResponse {
+    let ip = crate::middleware::client_ip::client_ip_from(
+        peer.map(|axum::Extension(axum::extract::ConnectInfo(p))| p),
+        &headers,
+        state.trusted_proxies(),
+    );
     if body.password.len() < 8 {
         return (
             StatusCode::BAD_REQUEST,
@@ -181,6 +193,10 @@ async fn login(State(state): State<AppState>, Json(body): Json<LoginRequest>) ->
     }
 
     if !verify_admin_password(&body.password) {
+        state.audit_event(
+            NewAuditEntry::new("auth_failure", "warn", "Invalid admin password")
+                .metadata(serde_json::json!({ "ip": ip })),
+        );
         return (
             StatusCode::UNAUTHORIZED,
             Json(serde_json::json!({"error": "Invalid credentials"})),
@@ -223,21 +239,11 @@ async fn login(State(state): State<AppState>, Json(body): Json<LoginRequest>) ->
 
     let expires_in = jwt_config.access_token_expiry_secs;
 
-    // Record login audit event
-    if let Some(pool) = state.db() {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64;
-        let _ = sqlx::query(
-            "INSERT INTO audit.entries (id, tenant_id, event, level, message, user_id, timestamp, metadata)
-             VALUES ($1, 'default', 'auth.login', 'info', 'User logged in', 'admin', $2, '{}'::jsonb)"
-        )
-        .bind(uuid::Uuid::now_v7().to_string())
-        .bind(now)
-        .execute(pool)
-        .await;
-    }
+    state.audit_event(
+        NewAuditEntry::new("auth_success", "info", "Admin login")
+            .user("admin")
+            .metadata(serde_json::json!({ "ip": ip, "rememberMe": body.remember_me })),
+    );
 
     Json(serde_json::json!({
         "accessToken": access_token,
@@ -348,6 +354,7 @@ async fn logout(
             .revoke_token(&claims.jti, &claims.sub, expires_at_ms)
             .await;
     }
+    state.audit_event(NewAuditEntry::new("auth_success", "info", "User logout").user(&ctx.user_id));
     if !persisted {
         // The tokens are dead on this instance; say so rather than report a
         // logout that other instances (or this one, after a restart) ignore.
@@ -670,6 +677,13 @@ async fn create_api_key(
     };
     match auth::create_api_key(pool, &new_key).await {
         Ok(row) => {
+            state.audit_event(
+                NewAuditEntry::new("auth_success", "info", "API key created")
+                    .user(&auth_ctx.user_id)
+                    .metadata(serde_json::json!({
+                        "keyId": row.id, "keyPrefix": row.key_prefix, "role": row.role,
+                    })),
+            );
             let mut out = api_key_json(&row);
             out["key"] = serde_json::Value::String(raw_key.clone());
             out["rawKey"] = serde_json::Value::String(raw_key);
@@ -685,13 +699,20 @@ async fn create_api_key(
 
 async fn revoke_api_key(
     State(state): State<AppState>,
+    auth_ctx: Option<axum::Extension<crate::auth::middleware::AuthContext>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let Some(pool) = state.db() else {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     };
     match auth::revoke_api_key(pool, &id, "default").await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+        Ok(true) => {
+            let mut entry = NewAuditEntry::new("auth_success", "info", "API key revoked")
+                .metadata(serde_json::json!({ "keyId": id }));
+            entry.user_id = auth_ctx.map(|axum::Extension(a)| a.user_id);
+            state.audit_event(entry);
+            StatusCode::NO_CONTENT.into_response()
+        }
         Ok(false) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({"error": "API key not found or already revoked"})),
@@ -1847,15 +1868,11 @@ async fn sso_exchange(
     };
 
     // Record the SSO login.
-    let _ = sqlx::query(
-        "INSERT INTO audit.entries (id, tenant_id, event, level, message, user_id, timestamp, metadata)
-         VALUES ($1, 'default', 'auth.sso_login', 'info', 'User logged in via OIDC', $2, $3, '{}'::jsonb)",
-    )
-    .bind(uuid::Uuid::now_v7().to_string())
-    .bind(&user_id)
-    .bind(now_ms())
-    .execute(pool)
-    .await;
+    state.audit_event(
+        NewAuditEntry::new("auth_success", "info", "User logged in via OIDC")
+            .user(&user_id)
+            .metadata(serde_json::json!({ "method": "oidc" })),
+    );
 
     Json(serde_json::json!({
         "accessToken": access_token,

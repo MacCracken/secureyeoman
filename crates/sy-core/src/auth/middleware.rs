@@ -195,7 +195,11 @@ fn extract_bearer(headers: &axum::http::HeaderMap) -> Option<&str> {
 /// route matched) and checks it against the role and the principal's scope.
 /// Unmapped routes are admin-only, and closed to scoped keys narrower than
 /// `*:*`.
-pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
+pub async fn enforce_rbac(
+    State(state): State<AppState>,
+    req: Request<Body>,
+    next: Next,
+) -> Response<Body> {
     // Public routes have no AuthContext — skip RBAC
     let auth = match req.extensions().get::<AuthContext>() {
         Some(ctx) => ctx.clone(),
@@ -217,6 +221,7 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
         Some(perm) => {
             // 1. The role must grant this resource:action.
             if !check_permission(&auth.role, perm.resource, perm.action) {
+                audit_denial(&state, &auth, &method, &route, Some(&perm));
                 return (
                     StatusCode::FORBIDDEN,
                     axum::Json(json!({
@@ -236,6 +241,7 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
             if !auth.permissions.is_empty()
                 && !check_permission_strings(&auth.permissions, perm.resource, perm.action)
             {
+                audit_denial(&state, &auth, &method, &route, Some(&perm));
                 return (
                     StatusCode::FORBIDDEN,
                     axum::Json(json!({
@@ -255,6 +261,7 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
                 || (!auth.permissions.is_empty()
                     && !check_permission_strings(&auth.permissions, "*", "*"))
             {
+                audit_denial(&state, &auth, &method, &route, None);
                 return (
                     StatusCode::FORBIDDEN,
                     axum::Json(json!({
@@ -268,6 +275,32 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
     }
 
     next.run(req).await
+}
+
+/// Record an RBAC refusal in the audit chain (TS `auditDenial`), off the
+/// request path.
+fn audit_denial(
+    state: &AppState,
+    auth: &AuthContext,
+    method: &axum::http::Method,
+    route: &str,
+    perm: Option<&crate::auth::permissions::ResolvedPermission>,
+) {
+    state.audit_event(
+        crate::db::audit::NewAuditEntry::new(
+            "permission_denied",
+            "warn",
+            &format!("RBAC denied {method} {route}"),
+        )
+        .user(&auth.user_id)
+        .metadata(json!({
+            "role": auth.role,
+            "method": method.as_str(),
+            "path": route,
+            "resource": perm.map(|p| p.resource),
+            "action": perm.map(|p| p.action),
+        })),
+    );
 }
 
 #[cfg(test)]

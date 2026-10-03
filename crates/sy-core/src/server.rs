@@ -178,7 +178,7 @@ pub fn build_router(state: AppState) -> Router {
     // TraceLayer → CompressionLayer → CorsLayer → LocalNetworkCheck → IpReputation →
     // Backpressure → RateLimit → BodyLimit → CorrelationId → Fingerprint →
     // SecurityHeaders → require_auth → enforce_rbac → handler
-    app.layer(axum_mw::from_fn(enforce_rbac))
+    app.layer(axum_mw::from_fn_with_state(state.clone(), enforce_rbac))
         .layer(axum_mw::from_fn_with_state(state.clone(), require_auth))
         .layer(SecurityHeadersLayer)
         .layer(axum_mw::from_fn_with_state(

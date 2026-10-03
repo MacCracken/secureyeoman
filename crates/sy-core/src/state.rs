@@ -127,6 +127,12 @@ struct AppStateInner {
     /// OIDC SSO runtime — `Some` only when `OIDC_*` env vars are configured.
     pub oidc: Option<Arc<OidcRuntime>>,
     pub bridge_tx: broadcast::Sender<BridgeEvent>,
+    /// The persistent audit chain (set with the database).
+    pub audit: Option<Arc<crate::audit::AuditTrail>>,
+    /// The background audit writer's queue, started by the first event.
+    audit_tx: std::sync::OnceLock<tokio::sync::mpsc::Sender<crate::db::audit::NewAuditEntry>>,
+    /// Events dropped because the writer's queue was full.
+    audit_dropped: std::sync::atomic::AtomicU64,
     pub brain: Option<Arc<DynBrainManager>>,
     pub github_client: Option<Arc<GitHubClient>>,
     pub gmail_client: Option<Arc<GmailClient>>,
@@ -228,6 +234,26 @@ fn build_webauthn() -> Webauthn {
                 .and_then(|b| b.build())
                 .expect("localhost WebAuthn config is always valid")
         }
+    }
+}
+
+/// How many audit events may wait for the writer.
+pub const AUDIT_QUEUE: usize = 4096;
+/// The most events the writer appends in one transaction.
+const AUDIT_BATCH: usize = 256;
+
+/// Append queued audit events until every sender is gone.
+async fn audit_writer(
+    mut rx: tokio::sync::mpsc::Receiver<crate::db::audit::NewAuditEntry>,
+    pool: PgPool,
+    trail: Arc<crate::audit::AuditTrail>,
+) {
+    let mut batch = Vec::with_capacity(AUDIT_BATCH);
+    while rx.recv_many(&mut batch, AUDIT_BATCH).await > 0 {
+        if let Err(e) = crate::db::audit::append_batch(&pool, trail.signing_key(), &batch).await {
+            tracing::error!(error = %e, events = batch.len(), "could not record audit events");
+        }
+        batch.clear();
     }
 }
 
@@ -342,6 +368,9 @@ impl AppState {
                 webauthn_auth: Arc::new(WebauthnAuthStore::new()),
                 oidc: build_oidc(),
                 bridge_tx,
+                audit: None,
+                audit_tx: std::sync::OnceLock::new(),
+                audit_dropped: std::sync::atomic::AtomicU64::new(0),
                 brain: None,
                 github_client,
                 gmail_client,
@@ -373,9 +402,60 @@ impl AppState {
         );
 
         let inner = Arc::get_mut(&mut self.inner).unwrap();
+        // Read here, after main() has loaded persisted secrets from the DB.
+        inner.audit = Some(Arc::new(crate::audit::AuditTrail::from_env(
+            &inner.jwt_config.secret,
+        )));
         inner.db_pool = Some(pool);
         inner.brain = Some(Arc::new(brain));
         self
+    }
+
+    /// The persistent audit chain, when a database is configured.
+    pub fn audit(&self) -> Option<&Arc<crate::audit::AuditTrail>> {
+        self.inner.audit.as_ref()
+    }
+
+    /// Record an audit event in the background. Request handling never
+    /// waits on the chain: one writer task appends queued events in order, in
+    /// batches, on one connection at a time, so a burst of events (failed
+    /// logins, RBAC denials) cannot tie up the pool waiting on the chain lock.
+    /// Past [`AUDIT_QUEUE`] queued events, new ones are dropped and counted.
+    pub fn audit_event(&self, entry: crate::db::audit::NewAuditEntry) {
+        let (Some(pool), Some(trail)) = (self.db(), self.audit()) else {
+            return;
+        };
+        let tx = self.inner.audit_tx.get_or_init(|| {
+            let (tx, rx) = tokio::sync::mpsc::channel(AUDIT_QUEUE);
+            tokio::spawn(audit_writer(rx, pool.clone(), trail.clone()));
+            tx
+        });
+        match tx.try_send(entry) {
+            Ok(()) => {}
+            Err(tokio::sync::mpsc::error::TrySendError::Full(entry)) => {
+                let dropped = self
+                    .inner
+                    .audit_dropped
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                if dropped.is_multiple_of(1000) {
+                    tracing::warn!(
+                        event = %entry.event,
+                        dropped_total = dropped + 1,
+                        "audit queue full; dropping audit events"
+                    );
+                }
+            }
+            Err(tokio::sync::mpsc::error::TrySendError::Closed(entry)) => {
+                tracing::error!(event = %entry.event, "audit writer stopped; event not recorded");
+            }
+        }
+    }
+
+    /// Audit events dropped because the writer's queue was full.
+    pub fn audit_events_dropped(&self) -> u64 {
+        self.inner
+            .audit_dropped
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn db(&self) -> Option<&PgPool> {

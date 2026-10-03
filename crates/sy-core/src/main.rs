@@ -155,6 +155,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             app_state = app_state.with_db(pool);
+
+            // Verify the audit chain once at boot, off the startup path:
+            // health and analytics report this result until the next
+            // verification is requested.
+            if let (Some(pool), Some(trail)) = (app_state.db().cloned(), app_state.audit().cloned())
+            {
+                tokio::spawn(async move {
+                    match trail.verify(&pool).await {
+                        Ok(v) if v.valid => {
+                            info!(entries = v.entries_checked, "audit chain verified");
+                        }
+                        Ok(_) => {} // verify() logs the break
+                        Err(e) => {
+                            tracing::warn!(error = %e, "could not verify the audit chain at boot");
+                        }
+                    }
+                });
+            }
         }
         Err(e) => {
             info!("No database connection: {e} — brain/soul routes will return 503");

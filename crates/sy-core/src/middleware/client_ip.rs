@@ -145,7 +145,20 @@ fn parse_hop(hop: &str) -> Option<IpAddr> {
 /// one. Falls back to `"unknown"` without `ConnectInfo` (unit tests that drive
 /// the router with `oneshot`).
 pub fn client_ip<B>(req: &Request<B>, proxies: &TrustedProxies) -> String {
-    let Some(ConnectInfo(peer)) = req.extensions().get::<ConnectInfo<SocketAddr>>() else {
+    let peer = req
+        .extensions()
+        .get::<ConnectInfo<SocketAddr>>()
+        .map(|ConnectInfo(peer)| *peer);
+    client_ip_from(peer, req.headers(), proxies)
+}
+
+/// [`client_ip`] from a request's parts, for handlers that extract them.
+pub fn client_ip_from(
+    peer: Option<SocketAddr>,
+    headers: &axum::http::HeaderMap,
+    proxies: &TrustedProxies,
+) -> String {
+    let Some(peer) = peer else {
         return "unknown".to_string();
     };
     let peer = canonical(peer.ip());
@@ -153,8 +166,7 @@ pub fn client_ip<B>(req: &Request<B>, proxies: &TrustedProxies) -> String {
         return peer.to_string();
     }
 
-    let hops: Vec<&str> = req
-        .headers()
+    let hops: Vec<&str> = headers
         .get_all("x-forwarded-for")
         .iter()
         .filter_map(|v| v.to_str().ok())
