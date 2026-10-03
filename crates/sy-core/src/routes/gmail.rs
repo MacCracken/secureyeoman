@@ -24,6 +24,10 @@ pub fn router() -> Router<AppState> {
         .route("/api/v1/gmail/send", post(send_message))
         .route("/api/v1/gmail/drafts", post(create_draft))
         .route("/api/v1/gmail/labels", get(list_labels))
+        // Path parameters go into upstream API paths.
+        .route_layer(axum::middleware::from_fn(
+            crate::net::reject_unsafe_path_params,
+        ))
 }
 
 async fn resolve_auth(state: &AppState) -> Result<AuthMode, (StatusCode, Json<serde_json::Value>)> {

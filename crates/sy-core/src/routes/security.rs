@@ -229,7 +229,6 @@ pub fn router() -> Router<AppState> {
         )
         // ── TLS ──
         .route("/api/v1/security/tls", get(get_tls_status))
-        // NOTE: WebAuthn and break-glass routes live in auth.rs (they're /api/v1/auth/* paths)
         // ── Key rotation ──
         .route("/api/v1/admin/key-rotation", get(get_rotation_status))
         .route(
@@ -1509,37 +1508,15 @@ async fn list_principles() -> impl IntoResponse {
     .into_response()
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CritiqueRequest {
-    response: String,
-    principles: Vec<String>,
+/// Not implemented: it reported "No violations detected" without evaluating
+/// anything.
+async fn critique_response() -> impl IntoResponse {
+    not_implemented("Constitutional critique")
 }
 
-async fn critique_response(Json(body): Json<CritiqueRequest>) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "critique": format!("Evaluated against {} principles. No violations detected (placeholder).", body.principles.len()),
-        "violations": [],
-        "responseLength": body.response.len(),
-    }))
-    .into_response()
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ReviseRequest {
-    response: String,
-    principles: Vec<String>,
-}
-
-async fn revise_response(Json(body): Json<ReviseRequest>) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "original": body.response,
-        "revised": body.response,
-        "principlesApplied": body.principles,
-        "changed": false,
-    }))
-    .into_response()
+/// Not implemented: it returned the response unchanged as the revision.
+async fn revise_response() -> impl IntoResponse {
+    not_implemented("Constitutional revision")
 }
 
 // ── TEE (placeholder) ─────────────────────────────────────────────────────────
@@ -1581,65 +1558,30 @@ async fn verify_attestation(
     .into_response()
 }
 
-// ── Guardrail pipeline (placeholder) ─────────────────────────────────────────
+// ── Guardrail pipeline (not implemented) ─────────────────────────────────────
+//
+// There is no guardrail pipeline in this server. These reported PII,
+// prompt-injection and toxicity filters as enabled, accepted toggles, and
+// passed every test input — a dashboard showing protection that did not exist.
 
 async fn list_guardrail_filters() -> impl IntoResponse {
-    Json(serde_json::json!({
-        "filters": [
-            {"id": "pii", "name": "PII Detection", "enabled": true},
-            {"id": "prompt-injection", "name": "Prompt Injection", "enabled": true},
-            {"id": "toxicity", "name": "Toxicity Filter", "enabled": true},
-        ]
-    }))
-    .into_response()
+    not_implemented("The guardrail pipeline")
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ToggleFilterRequest {
-    enabled: bool,
-}
-
-async fn toggle_guardrail_filter(
-    Path(filter_id): Path<String>,
-    Json(body): Json<ToggleFilterRequest>,
-) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "filterId": filter_id,
-        "enabled": body.enabled,
-        "updated": true,
-    }))
-    .into_response()
+async fn toggle_guardrail_filter(Path(_filter_id): Path<String>) -> impl IntoResponse {
+    not_implemented("The guardrail pipeline")
 }
 
 async fn get_guardrail_metrics() -> impl IntoResponse {
-    Json(serde_json::json!({
-        "totalRequests": 0,
-        "blocked": 0,
-        "passed": 0,
-        "filterBreakdown": {},
-    }))
-    .into_response()
+    not_implemented("The guardrail pipeline")
 }
 
 async fn reset_guardrail_metrics() -> impl IntoResponse {
-    Json(serde_json::json!({ "reset": true })).into_response()
+    not_implemented("The guardrail pipeline")
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct TestPipelineRequest {
-    input: String,
-}
-
-async fn test_guardrail_pipeline(Json(body): Json<TestPipelineRequest>) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "input": body.input,
-        "passed": true,
-        "blocked": false,
-        "filterResults": [],
-    }))
-    .into_response()
+async fn test_guardrail_pipeline() -> impl IntoResponse {
+    not_implemented("The guardrail pipeline")
 }
 
 // ── Access review ─────────────────────────────────────────────────────────────
@@ -1795,140 +1737,25 @@ async fn get_tls_status(State(_s): State<AppState>) -> impl IntoResponse {
     .into_response()
 }
 
-// ── WebAuthn (placeholder) ────────────────────────────────────────────────────
+// ── Key rotation (not implemented) ────────────────────────────────────────────
 
-async fn webauthn_register_options() -> impl IntoResponse {
-    let challenge = uuid::Uuid::now_v7().to_string();
-    Json(serde_json::json!({
-        "challenge": challenge,
-        "rp": {"name": "SecureYeoman", "id": "secureyeoman.com"},
-        "user": {"id": "", "name": "", "displayName": ""},
-        "pubKeyCredParams": [{"alg": -7, "type": "public-key"}],
-        "timeout": 60000,
-        "attestation": "none",
-    }))
-    .into_response()
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct WebAuthnVerifyRequest {
-    credential: serde_json::Value,
-}
-
-async fn webauthn_register_verify(Json(_body): Json<WebAuthnVerifyRequest>) -> impl IntoResponse {
-    let credential_id = uuid::Uuid::now_v7().to_string();
+/// Not implemented. These answered with a made-up list of secrets and
+/// `rotated: true` while rotating nothing — an operator would believe a
+/// leaked secret had been replaced.
+fn not_implemented(what: &str) -> axum::response::Response {
     (
-        StatusCode::CREATED,
+        StatusCode::NOT_IMPLEMENTED,
         Json(serde_json::json!({
-            "verified": true,
-            "credentialId": credential_id,
+            "error": format!("{what} is not implemented on this server yet"),
         })),
     )
         .into_response()
 }
-
-async fn webauthn_authenticate_options() -> impl IntoResponse {
-    let challenge = uuid::Uuid::now_v7().to_string();
-    Json(serde_json::json!({
-        "challenge": challenge,
-        "timeout": 60000,
-        "rpId": "secureyeoman.com",
-        "allowCredentials": [],
-        "userVerification": "preferred",
-    }))
-    .into_response()
-}
-
-async fn webauthn_authenticate_verify(
-    Json(_body): Json<WebAuthnVerifyRequest>,
-) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "verified": true,
-        "userId": null,
-    }))
-    .into_response()
-}
-
-async fn list_webauthn_credentials() -> impl IntoResponse {
-    Json(serde_json::json!({ "credentials": [] })).into_response()
-}
-
-async fn delete_webauthn_credential(Path(id): Path<String>) -> impl IntoResponse {
-    let _ = id;
-    StatusCode::NO_CONTENT.into_response()
-}
-
-// ── Break-glass (placeholder) ─────────────────────────────────────────────────
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ActivateBreakGlassRequest {
-    reason: String,
-    requestor: String,
-}
-
-async fn activate_break_glass(Json(body): Json<ActivateBreakGlassRequest>) -> impl IntoResponse {
-    let session_id = uuid::Uuid::now_v7().to_string();
-    (
-        StatusCode::CREATED,
-        Json(serde_json::json!({
-            "sessionId": session_id,
-            "reason": body.reason,
-            "requestor": body.requestor,
-            "activatedAt": std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as i64,
-            "expiresInSeconds": 3600,
-        })),
-    )
-        .into_response()
-}
-
-async fn list_break_glass_sessions() -> impl IntoResponse {
-    Json(serde_json::json!({ "sessions": [] })).into_response()
-}
-
-async fn revoke_break_glass_session(Path(id): Path<String>) -> impl IntoResponse {
-    Json(serde_json::json!({ "sessionId": id, "revoked": true })).into_response()
-}
-
-async fn rotate_recovery_key() -> impl IntoResponse {
-    let key_id = uuid::Uuid::now_v7().to_string();
-    Json(serde_json::json!({
-        "keyId": key_id,
-        "rotatedAt": std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64,
-        "message": "Recovery key rotated. Store the new key securely.",
-    }))
-    .into_response()
-}
-
-// ── Key rotation (placeholder) ────────────────────────────────────────────────
 
 async fn get_rotation_status() -> impl IntoResponse {
-    Json(serde_json::json!({
-        "secrets": [
-            {"name": "db-password", "lastRotated": null, "nextRotation": null, "status": "manual"},
-            {"name": "jwt-secret", "lastRotated": null, "nextRotation": null, "status": "manual"},
-            {"name": "api-key", "lastRotated": null, "nextRotation": null, "status": "manual"},
-        ]
-    }))
-    .into_response()
+    not_implemented("Secret rotation")
 }
 
-async fn rotate_secret(Path(name): Path<String>) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "name": name,
-        "rotated": true,
-        "rotatedAt": std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64,
-        "message": "Secret rotation initiated (placeholder — wire to vault in production).",
-    }))
-    .into_response()
+async fn rotate_secret(Path(_name): Path<String>) -> impl IntoResponse {
+    not_implemented("Secret rotation")
 }

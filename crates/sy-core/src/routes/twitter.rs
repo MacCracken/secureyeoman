@@ -33,6 +33,10 @@ pub fn router() -> Router<AppState> {
             post(retweet_tweet),
         )
         .route("/api/v1/twitter/media/upload", post(media_upload))
+        // Path parameters go into upstream API paths.
+        .route_layer(axum::middleware::from_fn(
+            crate::net::reject_unsafe_path_params,
+        ))
 }
 
 /// Resolve Bearer token for read-only v2 API calls.

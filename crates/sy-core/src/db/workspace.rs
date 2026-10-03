@@ -50,18 +50,65 @@ pub async fn list_members(
     .await
 }
 
+/// A member's role in a workspace, if they are one.
+pub async fn member_role(
+    pool: &PgPool,
+    workspace_id: &str,
+    user_id: &str,
+) -> Result<Option<String>, sqlx::Error> {
+    let row: Option<(Option<String>,)> = sqlx::query_as(
+        "SELECT role FROM workspace.members WHERE workspace_id = $1 AND user_id = $2",
+    )
+    .bind(workspace_id)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.map(|(role,)| role.unwrap_or_else(|| "member".to_string())))
+}
+
+/// Whether a workspace role administers the workspace.
+pub fn is_workspace_admin(role: &str) -> bool {
+    matches!(role, "owner" | "admin")
+}
+
+/// The outcome of [`remove_member`].
+#[derive(Debug, PartialEq, Eq)]
+pub enum MemberRemoval {
+    Removed,
+    NotFound,
+    /// The member is the workspace's last owner/admin (TS refuses this).
+    LastAdmin,
+}
+
+/// Remove a member, unless they are the workspace's last owner or admin.
+/// The workspace's member rows are locked for the check, so two admins
+/// cannot remove each other at once and leave nobody in charge.
 pub async fn remove_member(
     pool: &PgPool,
     workspace_id: &str,
     user_id: &str,
-) -> Result<bool, sqlx::Error> {
-    let result =
-        sqlx::query("DELETE FROM workspace.members WHERE workspace_id = $1 AND user_id = $2")
-            .bind(workspace_id)
-            .bind(user_id)
-            .execute(pool)
-            .await?;
-    Ok(result.rows_affected() > 0)
+) -> Result<MemberRemoval, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    let members: Vec<(String, Option<String>)> = sqlx::query_as(
+        "SELECT user_id, role FROM workspace.members WHERE workspace_id = $1 FOR UPDATE",
+    )
+    .bind(workspace_id)
+    .fetch_all(&mut *tx)
+    .await?;
+    let admin = |role: &Option<String>| role.as_deref().is_some_and(is_workspace_admin);
+    let Some((_, role)) = members.iter().find(|(id, _)| id == user_id) else {
+        return Ok(MemberRemoval::NotFound);
+    };
+    if admin(role) && members.iter().filter(|(_, r)| admin(r)).count() <= 1 {
+        return Ok(MemberRemoval::LastAdmin);
+    }
+    sqlx::query("DELETE FROM workspace.members WHERE workspace_id = $1 AND user_id = $2")
+        .bind(workspace_id)
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(MemberRemoval::Removed)
 }
 
 pub async fn get_workspace(

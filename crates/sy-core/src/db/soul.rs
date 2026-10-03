@@ -252,19 +252,56 @@ pub async fn clear_default_personality(pool: &PgPool, tenant_id: &str) -> Result
 }
 
 /// Delete a personality by ID.
+/// The outcome of [`delete_personality`].
+#[derive(Debug, PartialEq, Eq)]
+pub enum PersonalityDeletion {
+    Deleted,
+    NotFound,
+    /// The built-in default personality.
+    IsDefault,
+    /// The active personality (TS refuses: nothing would answer chats).
+    IsActive,
+    /// Its resource policy sets `deletionMode: "manual"` (TS refuses).
+    Manual,
+}
+
+/// Delete a personality, unless it is the default or the active one, or its
+/// resource policy blocks deletion — checked and deleted in one statement,
+/// so a concurrent activation cannot slip between the check and the delete.
 pub async fn delete_personality(
     pool: &PgPool,
     id: &str,
     tenant_id: &str,
-) -> Result<bool, sqlx::Error> {
-    let result = sqlx::query(
-        "DELETE FROM soul.personalities WHERE id = $1 AND tenant_id = $2 AND is_default = false",
+) -> Result<PersonalityDeletion, sqlx::Error> {
+    let deleted = sqlx::query(
+        "DELETE FROM soul.personalities
+         WHERE id = $1 AND tenant_id = $2 AND is_default = false AND is_active = false
+           AND COALESCE(body->'resourcePolicy'->>'deletionMode', 'auto') <> 'manual'",
     )
     .bind(id)
     .bind(tenant_id)
     .execute(pool)
+    .await?
+    .rows_affected();
+    if deleted > 0 {
+        return Ok(PersonalityDeletion::Deleted);
+    }
+    let row: Option<(bool, bool, Option<String>)> = sqlx::query_as(
+        "SELECT is_default, is_active, body->'resourcePolicy'->>'deletionMode'
+         FROM soul.personalities WHERE id = $1 AND tenant_id = $2",
+    )
+    .bind(id)
+    .bind(tenant_id)
+    .fetch_optional(pool)
     .await?;
-    Ok(result.rows_affected() > 0)
+    Ok(match row {
+        None => PersonalityDeletion::NotFound,
+        Some((true, _, _)) => PersonalityDeletion::IsDefault,
+        Some((_, true, _)) => PersonalityDeletion::IsActive,
+        Some((_, _, mode)) if mode.as_deref() == Some("manual") => PersonalityDeletion::Manual,
+        // Changed between the two statements; report it as not deleted.
+        Some(_) => PersonalityDeletion::NotFound,
+    })
 }
 
 /// A `soul.meta` value (agent name, soul config overrides, …) by key.

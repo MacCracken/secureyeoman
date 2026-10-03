@@ -116,11 +116,16 @@ pub async fn approve_execution(pool: &PgPool, id: &str) -> Result<bool, sqlx::Er
 }
 
 /// Delete a session by ID.
-pub async fn delete_session(pool: &PgPool, id: &str) -> Result<bool, sqlx::Error> {
-    let result = sqlx::query("DELETE FROM execution.sessions WHERE id = $1")
-        .bind(id)
-        .execute(pool)
-        .await?;
+/// Terminate an active session (TS `terminateSession`). The row and its
+/// execution history stay: deleting the session cascaded the history away.
+pub async fn terminate_session(pool: &PgPool, id: &str) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query(
+        "UPDATE execution.sessions SET status = 'terminated', last_activity = now()
+         WHERE id = $1 AND status = 'active'",
+    )
+    .bind(id)
+    .execute(pool)
+    .await?;
     Ok(result.rows_affected() > 0)
 }
 

@@ -124,10 +124,45 @@ pub fn serialize_is_set<S: Serializer>(
     serializer.serialize_bool(secret.as_deref().is_some_and(|s| !s.is_empty()))
 }
 
+/// `serialize_with` for an environment map (`{"NAME": "value"}`): the names
+/// stay, every value is masked. Environment values are how commands get
+/// credentials, under names no key heuristic catches (`DB_PASS`, `PAT`).
+pub fn serialize_env_masked<S: Serializer>(
+    env: &Option<Value>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    let masked = env.as_ref().map(|env| match env {
+        Value::Object(map) => Value::Object(
+            map.keys()
+                .map(|k| (k.clone(), Value::String(REDACTED.to_string())))
+                .collect(),
+        ),
+        Value::Null => Value::Null,
+        _ => Value::String(REDACTED.to_string()),
+    });
+    serde::Serialize::serialize(&masked, serializer)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn env_maps_keep_names_and_mask_every_value() {
+        #[derive(serde::Serialize)]
+        struct Row {
+            #[serde(serialize_with = "serialize_env_masked")]
+            env: Option<Value>,
+        }
+        let out = serde_json::to_value(Row {
+            env: Some(json!({"DB_PASS": "hunter2", "PATH": "/usr/bin"})),
+        })
+        .unwrap();
+        assert_eq!(out, json!({"env": {"DB_PASS": REDACTED, "PATH": REDACTED}}));
+        let none = serde_json::to_value(Row { env: None }).unwrap();
+        assert_eq!(none, json!({"env": null}));
+    }
 
     #[test]
     fn credential_keys_are_masked_at_any_depth() {

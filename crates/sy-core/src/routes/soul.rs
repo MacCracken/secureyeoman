@@ -347,13 +347,26 @@ async fn delete_personality(
     let Some(pool) = state.db() else {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     };
+    let refuse = |status: StatusCode, message: &str| {
+        (status, Json(serde_json::json!({ "error": message }))).into_response()
+    };
     match soul::delete_personality(pool, &id, "default").await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
-        Ok(false) => (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": "Personality not found or is default"})),
-        )
-            .into_response(),
+        Ok(soul::PersonalityDeletion::Deleted) => StatusCode::NO_CONTENT.into_response(),
+        Ok(soul::PersonalityDeletion::NotFound) => {
+            refuse(StatusCode::NOT_FOUND, "Personality not found")
+        }
+        Ok(soul::PersonalityDeletion::IsDefault) => refuse(
+            StatusCode::BAD_REQUEST,
+            "Cannot delete the default personality",
+        ),
+        Ok(soul::PersonalityDeletion::IsActive) => refuse(
+            StatusCode::BAD_REQUEST,
+            "Cannot delete the active personality",
+        ),
+        Ok(soul::PersonalityDeletion::Manual) => refuse(
+            StatusCode::BAD_REQUEST,
+            "Deletion is blocked (mode: manual). Change the deletion mode in Body → Resources first.",
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": e.to_string()})),

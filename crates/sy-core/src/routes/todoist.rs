@@ -30,6 +30,10 @@ pub fn router() -> Router<AppState> {
             post(close_task),
         )
         .route("/api/v1/integrations/todoist/projects", get(list_projects))
+        // Path parameters go into upstream API paths.
+        .route_layer(axum::middleware::from_fn(
+            crate::net::reject_unsafe_path_params,
+        ))
 }
 
 async fn resolve_token(
