@@ -11,6 +11,9 @@ pub struct IntegrationRow {
     pub display_name: String,
     pub enabled: bool,
     pub status: String,
+    /// Holds the integration's credentials, so responses mask them (TS
+    /// `maskIntegration`); viewers read integrations.
+    #[serde(serialize_with = "crate::privacy::redact::serialize_redacted")]
     pub config: serde_json::Value,
     pub connected_at: Option<i64>,
     pub last_message_at: Option<i64>,
