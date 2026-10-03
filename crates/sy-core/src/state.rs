@@ -148,6 +148,25 @@ pub fn is_strong_jwt_secret(secret: &str) -> bool {
     secret.len() >= 32 && secret != DEV_JWT_PLACEHOLDER
 }
 
+/// The rotation grace secret from `SECUREYEOMAN_JWT_SECRET_PREVIOUS`, if it
+/// may be trusted. Tokens it signed keep validating, so a weak one (left blank
+/// after a rotation, short, or the dev placeholder) would let anyone mint an
+/// admin token; it is ignored with a warning instead.
+fn previous_jwt_secret(current: &str) -> Option<String> {
+    let previous = std::env::var("SECUREYEOMAN_JWT_SECRET_PREVIOUS").ok()?;
+    if previous.is_empty() || previous == current {
+        return None;
+    }
+    if !is_strong_jwt_secret(&previous) {
+        tracing::warn!(
+            "SECUREYEOMAN_JWT_SECRET_PREVIOUS is too weak (need >= 32 bytes and not the dev \
+             placeholder); ignoring it, so tokens it signed are no longer accepted"
+        );
+        return None;
+    }
+    Some(previous)
+}
+
 /// Generate a cryptographically-random ephemeral JWT secret (48 bytes, base64).
 fn generate_ephemeral_secret() -> String {
     use base64::Engine;
@@ -238,9 +257,10 @@ impl AppState {
             }
         };
 
+        let previous_secret = previous_jwt_secret(&jwt_secret);
         let jwt_config = JwtConfig {
             secret: jwt_secret,
-            previous_secret: std::env::var("SECUREYEOMAN_JWT_SECRET_PREVIOUS").ok(),
+            previous_secret,
             ..Default::default()
         };
 
@@ -416,31 +436,45 @@ impl AppState {
         self.inner.oidc.as_ref()
     }
 
-    /// Check if a token JTI has been revoked (cache → DB fallback).
-    pub async fn is_token_revoked(&self, jti: &str) -> bool {
-        // Check in-memory cache first
+    /// Whether a token JTI has been revoked (cache → DB fallback).
+    ///
+    /// `Err` means the database could not answer. Callers must then refuse
+    /// the token: the cache only holds this instance's revocations since it
+    /// started, so a logged-out token would otherwise pass during a DB fault.
+    pub async fn is_token_revoked(&self, jti: &str) -> Result<bool, sqlx::Error> {
         if self.inner.revoked_tokens.contains_key(jti) {
-            return true;
+            return Ok(true);
         }
-
-        // Fallback to DB
-        if let Some(pool) = self.db()
-            && let Ok(Some(expires_at)) = crate::db::auth::token_revocation_expiry(pool, jti).await
-        {
-            // Populate cache
-            self.cache_revocation(jti, expires_at);
-            return true;
+        let Some(pool) = self.db() else {
+            return Ok(false);
+        };
+        match crate::db::auth::token_revocation_expiry(pool, jti).await {
+            Ok(Some(expires_at)) => {
+                self.cache_revocation(jti, expires_at);
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(e) => {
+                tracing::error!(error = %e, "token revocation lookup failed; refusing the token");
+                Err(e)
+            }
         }
-
-        false
     }
 
     /// Revoke a token by JTI until `expires_at` (Unix ms — the token's own
-    /// expiry), in the cache and the DB.
-    pub async fn revoke_token(&self, jti: &str, user_id: &str, expires_at: i64) {
+    /// expiry), in the cache and the DB. `false` when the DB write failed: the
+    /// token is then dead on this instance only, until it expires or restarts.
+    pub async fn revoke_token(&self, jti: &str, user_id: &str, expires_at: i64) -> bool {
         self.cache_revocation(jti, expires_at);
-        if let Some(pool) = self.db() {
-            let _ = crate::db::auth::revoke_token(pool, jti, user_id, expires_at).await;
+        let Some(pool) = self.db() else {
+            return true;
+        };
+        match crate::db::auth::revoke_token(pool, jti, user_id, expires_at).await {
+            Ok(()) => true,
+            Err(e) => {
+                tracing::error!(error = %e, "could not persist a token revocation");
+                false
+            }
         }
     }
 

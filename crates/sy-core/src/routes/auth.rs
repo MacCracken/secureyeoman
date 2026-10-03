@@ -329,11 +329,12 @@ async fn logout(
     body: Result<Json<LogoutRequest>, axum::extract::rejection::JsonRejection>,
 ) -> impl IntoResponse {
     let Some(axum::Extension(ctx)) = auth else {
-        return StatusCode::NO_CONTENT;
+        return StatusCode::NO_CONTENT.into_response();
     };
+    let mut persisted = true;
     if let (Some(jti), Some(exp)) = (&ctx.jti, ctx.exp) {
         let expires_at_ms = (exp as i64).saturating_mul(1000);
-        state.revoke_token(jti, &ctx.user_id, expires_at_ms).await;
+        persisted &= state.revoke_token(jti, &ctx.user_id, expires_at_ms).await;
     }
     let refresh = body.ok().and_then(|Json(b)| b.refresh_token);
     if let Some(refresh) = refresh
@@ -343,11 +344,22 @@ async fn logout(
         && claims.sub == ctx.user_id
     {
         let expires_at_ms = (claims.exp as i64).saturating_mul(1000);
-        state
+        persisted &= state
             .revoke_token(&claims.jti, &claims.sub, expires_at_ms)
             .await;
     }
-    StatusCode::NO_CONTENT
+    if !persisted {
+        // The tokens are dead on this instance; say so rather than report a
+        // logout that other instances (or this one, after a restart) ignore.
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({
+                "error": "Logout was recorded on this server only: the revocation could not be saved",
+            })),
+        )
+            .into_response();
+    }
+    StatusCode::NO_CONTENT.into_response()
 }
 
 async fn me(
@@ -366,31 +378,72 @@ async fn me(
 #[derive(Deserialize)]
 struct VerifyRequest {
     token: String,
+    /// Optionally ask whether the token's principal holds `resource:action`
+    /// under the same two checks as the REST RBAC (role, then token scope);
+    /// the answer comes back as `authorized`.
+    #[serde(default)]
+    resource: Option<String>,
+    #[serde(default)]
+    action: Option<String>,
+}
+
+/// Validate a token the way the auth middleware does: a live, unrevoked
+/// access token. Refresh tokens and logged-out tokens are refused, as the TS
+/// `AuthService.validateToken` did.
+async fn verify_access_token(
+    state: &AppState,
+    token: &str,
+) -> Result<crate::auth::jwt::TokenClaims, axum::response::Response> {
+    let refuse = |status: StatusCode, error: &str| {
+        (
+            status,
+            Json(serde_json::json!({"valid": false, "error": error})),
+        )
+            .into_response()
+    };
+    let claims = validate_token(state.jwt_config(), token)
+        .map_err(|e| refuse(StatusCode::UNAUTHORIZED, &e))?;
+    if claims.token_type != "access" {
+        return Err(refuse(StatusCode::UNAUTHORIZED, "Not an access token"));
+    }
+    match state.is_token_revoked(&claims.jti).await {
+        Ok(false) => Ok(claims),
+        Ok(true) => Err(refuse(StatusCode::UNAUTHORIZED, "Token has been revoked")),
+        Err(_) => Err(refuse(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Token revocation status is unavailable",
+        )),
+    }
 }
 
 async fn verify(
     State(state): State<AppState>,
     Json(body): Json<VerifyRequest>,
 ) -> impl IntoResponse {
-    let jwt_config = state.jwt_config();
-    match validate_token(jwt_config, &body.token) {
-        Ok(claims) => Json(serde_json::json!({
-            "valid": true,
-            "sub": claims.sub,
-            "role": claims.role,
-            "permissions": claims.permissions,
-            "tokenType": claims.token_type,
-            "exp": claims.exp,
-            "iat": claims.iat,
-            "jti": claims.jti,
-        }))
-        .into_response(),
-        Err(e) => (
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({"valid": false, "error": e})),
-        )
-            .into_response(),
+    let claims = match verify_access_token(&state, &body.token).await {
+        Ok(claims) => claims,
+        Err(refusal) => return refusal,
+    };
+    let mut out = serde_json::json!({
+        "valid": true,
+        "sub": claims.sub,
+        "userId": claims.sub,
+        "role": claims.role,
+        "permissions": claims.permissions,
+        "tokenType": claims.token_type,
+        "exp": claims.exp,
+        "iat": claims.iat,
+        "jti": claims.jti,
+    });
+    if let (Some(resource), Some(action)) = (&body.resource, &body.action) {
+        use crate::auth::permissions::{check_permission, check_permission_strings};
+        out["authorized"] = serde_json::Value::Bool(
+            check_permission(&claims.role, resource, action)
+                && (claims.permissions.is_empty()
+                    || check_permission_strings(&claims.permissions, resource, action)),
+        );
     }
+    Json(out).into_response()
 }
 
 // ── Password Reset ───────────────────────────────────────────────────────
@@ -1179,8 +1232,7 @@ async fn federation_verify(
     State(state): State<AppState>,
     Json(body): Json<FederationVerifyRequest>,
 ) -> impl IntoResponse {
-    let jwt_config = state.jwt_config();
-    match validate_token(jwt_config, &body.token) {
+    match verify_access_token(&state, &body.token).await {
         Ok(claims) => Json(serde_json::json!({
             "valid": true,
             "sub": claims.sub,
@@ -1190,11 +1242,7 @@ async fn federation_verify(
             "exp": claims.exp,
         }))
         .into_response(),
-        Err(e) => (
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({"valid": false, "error": e})),
-        )
-            .into_response(),
+        Err(refusal) => refusal,
     }
 }
 

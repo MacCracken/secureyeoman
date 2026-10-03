@@ -67,8 +67,10 @@ pub async fn authenticate(
     if claims.token_type != "access" {
         return Err("Invalid authentication token");
     }
-    if state.is_token_revoked(&claims.jti).await {
-        return Err("Token has been revoked");
+    match state.is_token_revoked(&claims.jti).await {
+        Ok(false) => {}
+        Ok(true) => return Err("Token has been revoked"),
+        Err(_) => return Err("Token revocation status is unavailable"),
     }
     Ok(WsPrincipal {
         user_id: claims.sub,

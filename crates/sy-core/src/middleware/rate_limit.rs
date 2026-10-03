@@ -147,13 +147,14 @@ impl RateLimitState {
 /// Endpoints that accept or mint credentials — the brute-force and
 /// token-stuffing targets — get the strict tier. The rest of `/api/v1/auth`
 /// (session info, API key / user / role management) is ordinary API traffic:
-/// 5 req/min there throttled the dashboard's own settings pages.
+/// 5 req/min there throttled the dashboard's own settings pages. So is
+/// `/auth/verify`: its caller is already authenticated (`auth:verify`), and the
+/// MCP service verifies every client token through it from one address.
 fn is_credential_endpoint(path: &str) -> bool {
     const EXACT: &[&str] = &[
         "/api/v1/auth/login",
         "/api/v1/auth/refresh",
         "/api/v1/auth/reset-password",
-        "/api/v1/auth/verify",
         "/api/v1/auth/break-glass",
         "/api/v1/auth/federation/token",
         "/api/v1/auth/oauth/claim",
@@ -302,6 +303,7 @@ mod tests {
             "/api/v1/auth/api-keys",
             "/api/v1/auth/users",
             "/api/v1/auth/webauthn/credentials",
+            "/api/v1/auth/verify",
         ] {
             assert_eq!(state.classify(path).0, "general", "{path}");
         }

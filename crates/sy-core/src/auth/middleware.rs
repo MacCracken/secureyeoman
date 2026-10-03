@@ -113,13 +113,29 @@ pub async fn require_auth(
         let jwt_config = state.jwt_config();
         match validate_token(jwt_config, token) {
             Ok(claims) if claims.token_type == "access" => {
-                // Check if token has been revoked
-                if state.is_token_revoked(&claims.jti).await {
-                    return (
-                        StatusCode::UNAUTHORIZED,
-                        axum::Json(json!({"error": "Token has been revoked", "statusCode": 401})),
-                    )
-                        .into_response();
+                match state.is_token_revoked(&claims.jti).await {
+                    Ok(false) => {}
+                    Ok(true) => {
+                        return (
+                            StatusCode::UNAUTHORIZED,
+                            axum::Json(
+                                json!({"error": "Token has been revoked", "statusCode": 401}),
+                            ),
+                        )
+                            .into_response();
+                    }
+                    // Fail closed: without the revocation list a logged-out
+                    // token cannot be told apart from a live one.
+                    Err(_) => {
+                        return (
+                            StatusCode::SERVICE_UNAVAILABLE,
+                            axum::Json(json!({
+                                "error": "Token revocation status is unavailable",
+                                "statusCode": 503,
+                            })),
+                        )
+                            .into_response();
+                    }
                 }
                 req.extensions_mut().insert(AuthContext {
                     user_id: claims.sub,
