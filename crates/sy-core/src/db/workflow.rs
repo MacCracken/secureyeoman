@@ -380,6 +380,47 @@ pub async fn list_step_runs(
     .await
 }
 
+/// One step's outcome, for `workflow.step_runs`.
+pub struct NewStepRun<'a> {
+    pub step_id: &'a str,
+    pub step_name: &'a str,
+    pub step_type: &'a str,
+    pub status: &'a str,
+    pub output: Option<&'a serde_json::Value>,
+    pub error: Option<&'a str>,
+    pub started_at: i64,
+    pub completed_at: i64,
+}
+
+/// Record a run's step outcomes.
+pub async fn record_step_runs(
+    pool: &PgPool,
+    run_id: uuid::Uuid,
+    steps: &[NewStepRun<'_>],
+) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    for step in steps {
+        sqlx::query(
+            "INSERT INTO workflow.step_runs (run_id, step_id, step_name, step_type, status,
+                 output_json, error, started_at, completed_at, duration_ms)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        )
+        .bind(run_id)
+        .bind(step.step_id)
+        .bind(step.step_name)
+        .bind(step.step_type)
+        .bind(step.status)
+        .bind(step.output)
+        .bind(step.error)
+        .bind(step.started_at)
+        .bind(step.completed_at)
+        .bind(i32::try_from(step.completed_at.saturating_sub(step.started_at)).unwrap_or(i32::MAX))
+        .execute(&mut *tx)
+        .await?;
+    }
+    tx.commit().await
+}
+
 /// Cancel a pending or running run. Returns the run as it now is (a finished
 /// run is returned unchanged), or `None` if it does not exist.
 pub async fn cancel_run(

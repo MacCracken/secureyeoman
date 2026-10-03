@@ -240,7 +240,10 @@ fn parse_assignment(
     let json_start = response.find('{');
     let json_end = response.rfind('}');
 
+    // A reply with a `}` before its first `{` would make the slice panic
+    // (an abort, and the reply is model output a prompt can steer).
     if let (Some(start), Some(end)) = (json_start, json_end)
+        && start < end
         && let Ok(v) = serde_json::from_str::<serde_json::Value>(&response[start..=end])
     {
         let assigned: Vec<String> = v
@@ -323,6 +326,15 @@ mod tests {
         let response = r#"{"assignTo": ["researcher", "hacker"], "reasoning": "test"}"#;
         let (assigned, _) = parse_assignment(response, &valid);
         assert_eq!(assigned, vec!["researcher"]);
+    }
+
+    #[test]
+    fn parse_assignment_survives_braces_out_of_order() {
+        let valid = std::collections::HashSet::from(["dev"]);
+        for response in ["} then {", "}{", "}", "{", "a } b { c"] {
+            let (assigned, _) = parse_assignment(response, &valid);
+            assert!(assigned.is_empty(), "{response}");
+        }
     }
 
     #[test]

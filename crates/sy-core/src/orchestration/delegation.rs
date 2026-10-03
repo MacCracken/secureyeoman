@@ -62,6 +62,34 @@ pub trait AgentDelegate: Send + Sync {
     ) -> impl Future<Output = Result<DelegationResult, DelegationError>> + Send;
 }
 
+/// A delegate behind the security policy's `allowSubAgents` kill switch (TS
+/// `SubAgentManager.delegate`), checked at every delegation: turning it off
+/// also stops runs in progress at their next agent call.
+pub struct PolicyGatedDelegate<D> {
+    inner: D,
+    pool: sqlx::PgPool,
+}
+
+impl<D: AgentDelegate> PolicyGatedDelegate<D> {
+    pub fn new(inner: D, pool: sqlx::PgPool) -> Self {
+        Self { inner, pool }
+    }
+}
+
+impl<D: AgentDelegate> AgentDelegate for PolicyGatedDelegate<D> {
+    async fn delegate(
+        &self,
+        params: DelegationParams,
+    ) -> Result<DelegationResult, DelegationError> {
+        if !crate::db::security::policy_allows(&self.pool, "allowSubAgents").await {
+            return Err(DelegationError::Failed(
+                "Sub-agent delegation is disabled by security policy (allowSubAgents)".into(),
+            ));
+        }
+        self.inner.delegate(params).await
+    }
+}
+
 /// A no-op delegate for testing — returns the task as the result.
 pub struct EchoDelegate;
 

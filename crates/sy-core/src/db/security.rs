@@ -322,6 +322,23 @@ pub async fn delete_sra_blueprint(pool: &PgPool, id: &str) -> Result<bool, sqlx:
     Ok(r.rows_affected() > 0)
 }
 
+// --- Security policy ---
+
+/// Whether the stored security policy (`security.policy`, key
+/// `security_policy`) turns `flag` on. Flags default to off, including when
+/// the policy is missing or unreadable.
+pub async fn policy_allows(pool: &PgPool, flag: &str) -> bool {
+    let stored: Option<(String,)> =
+        sqlx::query_as("SELECT value FROM security.policy WHERE key = 'security_policy'")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
+    stored
+        .and_then(|(json,)| serde_json::from_str::<serde_json::Value>(&json).ok())
+        .and_then(|policy| policy.get(flag).and_then(serde_json::Value::as_bool))
+        .unwrap_or(false)
+}
+
 // --- Security scans ---
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]

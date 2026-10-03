@@ -362,3 +362,188 @@ async fn runs_and_import_export() {
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
+
+/// Poll a run until it leaves pending/running (or `want` when given).
+async fn wait_for_run(app: &Router, token: &str, run_id: &str, want: Option<&str>) -> Value {
+    for _ in 0..200 {
+        let (status, detail) = call(
+            app,
+            token,
+            "GET",
+            &format!("/api/v1/workflows/runs/{run_id}"),
+            None,
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{detail}");
+        let state = detail["run"]["status"].as_str().unwrap_or_default();
+        let done = match want {
+            Some(want) => state == want,
+            None => !["pending", "running"].contains(&state),
+        };
+        if done {
+            return detail["run"].clone();
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    panic!("run {run_id} did not finish");
+}
+
+async fn start_run(app: &Router, token: &str, steps: Value, input: Value) -> String {
+    let body = serde_json::json!({ "name": unique("exec"), "steps": steps }).to_string();
+    let def = create(app, token, &body).await;
+    let id = def["id"].as_str().unwrap();
+    let (status, started) = call(
+        app,
+        token,
+        "POST",
+        &format!("/api/v1/workflows/{id}/run"),
+        Some(&serde_json::json!({ "input": input }).to_string()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::ACCEPTED, "{started}");
+    started["run"]["id"].as_str().unwrap().to_string()
+}
+
+#[tokio::test]
+async fn runs_execute_what_the_definition_says() {
+    let Some(state) = common::db_state().await else {
+        return;
+    };
+    let app = build_router(state);
+    let admin = common::test_token("admin");
+
+    // The kill switch starts off (the default); restore whatever was set.
+    let (_, policy) = call(&app, &admin, "GET", "/api/v1/security/policy", None).await;
+    let sub_agents_before = policy["allowSubAgents"].as_bool().unwrap_or(false);
+    let (status, _) = call(
+        &app,
+        &admin,
+        "PATCH",
+        "/api/v1/security/policy",
+        Some(r#"{"allowSubAgents":false}"#),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // TS-style steps (`type`), a false and a true condition, and an agent
+    // step the kill switch refuses (onError: continue).
+    let run_id = start_run(
+        &app,
+        &admin,
+        serde_json::json!([
+            {"id": "a", "type": "transform", "config": {"outputTemplate": "q={{input.q}}"}},
+            {"id": "gated", "type": "transform", "dependsOn": ["a"],
+             "condition": "input.q > 5", "config": {"outputTemplate": "no"}},
+            {"id": "b", "type": "transform", "dependsOn": ["a"],
+             "condition": "steps.a.status == 'completed'", "config": {"outputTemplate": "yes"}},
+            {"id": "agent", "type": "agent", "dependsOn": ["b"], "onError": "continue",
+             "config": {"taskTemplate": "summarize"}},
+        ]),
+        serde_json::json!({"q": 1}),
+    )
+    .await;
+    let run = wait_for_run(&app, &admin, &run_id, None).await;
+    assert_eq!(run["status"], "completed", "{run}");
+    let steps: std::collections::HashMap<String, Value> = run["stepRuns"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| (s["stepId"].as_str().unwrap().to_string(), s.clone()))
+        .collect();
+    assert_eq!(steps["a"]["status"], "completed");
+    assert_eq!(steps["a"]["output"], "q=1");
+    assert_eq!(steps["gated"]["status"], "skipped");
+    assert_eq!(steps["b"]["status"], "completed");
+    assert_eq!(steps["agent"]["status"], "failed");
+    assert!(
+        steps["agent"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("allowSubAgents"),
+        "{}",
+        steps["agent"]
+    );
+
+    // A step type this server cannot run fails the run: a human_approval
+    // gate is never waved through.
+    let run_id = start_run(
+        &app,
+        &admin,
+        serde_json::json!([
+            {"id": "a", "type": "transform", "config": {"outputTemplate": "x"}},
+            {"id": "approve", "type": "human_approval", "dependsOn": ["a"]},
+            {"id": "deploy", "type": "transform", "dependsOn": ["approve"],
+             "config": {"outputTemplate": "deployed"}},
+        ]),
+        serde_json::json!({}),
+    )
+    .await;
+    let run = wait_for_run(&app, &admin, &run_id, None).await;
+    assert_eq!(run["status"], "failed", "{run}");
+    assert!(run["error"].as_str().unwrap().contains("human_approval"));
+    assert!(
+        !run["stepRuns"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|s| s["stepId"] == "deploy")
+    );
+
+    // A definition the engine cannot read fails; it used to "complete" as
+    // an empty workflow.
+    let run_id = start_run(
+        &app,
+        &admin,
+        serde_json::json!([{"id": "x", "type": "teleport"}]),
+        serde_json::json!({}),
+    )
+    .await;
+    let run = wait_for_run(&app, &admin, &run_id, None).await;
+    assert_eq!(run["status"], "failed", "{run}");
+    assert!(
+        run["error"]
+            .as_str()
+            .unwrap()
+            .contains("Invalid workflow definition")
+    );
+
+    // Cancelling stops the run: had it run on, both steps would be recorded
+    // well within the wait below.
+    let run_id = start_run(
+        &app,
+        &admin,
+        serde_json::json!([
+            {"id": "wait", "type": "delay", "config": {"durationMs": 800}},
+            {"id": "after", "type": "transform", "dependsOn": ["wait"],
+             "config": {"outputTemplate": "too late"}},
+        ]),
+        serde_json::json!({}),
+    )
+    .await;
+    wait_for_run(&app, &admin, &run_id, Some("running")).await;
+    let (status, cancelled) = call(
+        &app,
+        &admin,
+        "DELETE",
+        &format!("/api/v1/workflows/runs/{run_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(cancelled["run"]["status"], "cancelled");
+    tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+    let run = wait_for_run(&app, &admin, &run_id, None).await;
+    assert_eq!(run["status"], "cancelled");
+    assert_eq!(run["stepRuns"], serde_json::json!([]));
+
+    let restore = serde_json::json!({ "allowSubAgents": sub_agents_before }).to_string();
+    let (status, _) = call(
+        &app,
+        &admin,
+        "PATCH",
+        "/api/v1/security/policy",
+        Some(&restore),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+}
