@@ -10,6 +10,7 @@ vi.mock('../api/client', () => ({
   createApiKey: vi.fn(),
   fetchSecurityPolicy: vi.fn(),
   updateSecurityPolicy: vi.fn(),
+  setSecret: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -99,6 +100,36 @@ async function _navigateToStep(stepIndex: number) {
     });
   }
 }
+
+describe('OnboardingWizard provider key', () => {
+  async function enterKeyOnModelStep(key: string) {
+    renderWizard();
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/Step 2 of 5/)).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByLabelText(/^API Key$/), { target: { value: key } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+  }
+
+  it('stores the key as the secret the server reads for the provider', async () => {
+    vi.mocked(api.setSecret).mockResolvedValue(undefined);
+    await enterKeyOnModelStep('sk-ant-test');
+    await waitFor(() => {
+      expect(screen.getByText(/Step 3 of 5/)).toBeInTheDocument();
+    });
+    expect(api.setSecret).toHaveBeenCalledWith('ANTHROPIC_API_KEY', 'sk-ant-test');
+  });
+
+  it('says so, and stays on the step, when the key cannot be saved', async () => {
+    vi.mocked(api.setSecret).mockRejectedValue(new Error('403'));
+    await enterKeyOnModelStep('sk-ant-test');
+    await waitFor(() => {
+      expect(screen.getByText(/Could not save the anthropic API key/)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Step 2 of 5/)).toBeInTheDocument();
+  });
+});
 
 describe('OnboardingWizard', () => {
   it('renders 5 step progress indicators', () => {

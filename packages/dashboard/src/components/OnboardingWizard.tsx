@@ -8,6 +8,7 @@ import {
   createApiKey,
   fetchSecurityPolicy,
   updateSecurityPolicy,
+  setSecret,
 } from '../api/client';
 import type { PersonalityCreate, DefaultModel, ApiKeyCreateRequest } from '../types';
 
@@ -35,6 +36,15 @@ const PROVIDER_DEFAULTS: Record<Provider, string> = {
   ollama: 'llama3.2',
   deepseek: 'deepseek-chat',
   mistral: 'mistral-large-latest',
+};
+
+/** The variable each provider's key is stored as (as in Settings → Provider Keys). */
+const PROVIDER_KEY_ENV: Partial<Record<Provider, string>> = {
+  anthropic: 'ANTHROPIC_API_KEY',
+  openai: 'OPENAI_API_KEY',
+  gemini: 'GOOGLE_API_KEY',
+  deepseek: 'DEEPSEEK_API_KEY',
+  mistral: 'MISTRAL_API_KEY',
 };
 
 const SECURITY_TOGGLES: { key: string; label: string; description: string }[] = [
@@ -190,16 +200,16 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const handleNext = async () => {
     setError(null);
-    if (step === 'model' && providerApiKey && selectedProvider !== 'ollama') {
-      // Save provider API key via secrets manager
+    const keyEnv = PROVIDER_KEY_ENV[selectedProvider];
+    if (step === 'model' && providerApiKey && keyEnv) {
+      // Store the key as the secret the server reads for this provider.
       try {
-        await fetch('/api/v1/internal/secrets/resolve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: `${selectedProvider}_api_key`, value: providerApiKey }),
-        });
+        await setSecret(keyEnv, providerApiKey);
       } catch {
-        // non-fatal — user can configure later in Settings
+        setError(
+          `Could not save the ${selectedProvider} API key. Add it later in Settings → Provider Keys.`
+        );
+        return;
       }
     }
     if (step === 'security' && securityDirty) {

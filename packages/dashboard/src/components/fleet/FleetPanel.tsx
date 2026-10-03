@@ -19,7 +19,7 @@ import {
   Zap,
   Activity,
 } from 'lucide-react';
-import { fetchA2APeers, getAccessToken } from '../../api/client';
+import { fetchA2APeers } from '../../api/client';
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -72,11 +72,12 @@ function truncateId(id: string, len = 12): string {
   return id.length > len ? `${id.slice(0, len)}…` : id;
 }
 
+// A peer's /health is public. Never send it the user's access token: peer
+// URLs point at other hosts, and the token is a credential for this server.
 async function fetchNodeHealth(peerUrl: string): Promise<NodeHealth | null> {
   try {
-    const token = getAccessToken();
     const res = await fetch(`${peerUrl}/health`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'omit',
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;
@@ -88,9 +89,8 @@ async function fetchNodeHealth(peerUrl: string): Promise<NodeHealth | null> {
 
 async function pingNode(peerUrl: string): Promise<boolean> {
   try {
-    const token = getAccessToken();
     const res = await fetch(`${peerUrl}/health`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'omit',
       signal: AbortSignal.timeout(5000),
     });
     return res.ok;

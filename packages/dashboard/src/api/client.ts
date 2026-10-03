@@ -238,6 +238,23 @@ async function authorizedFetch(
   });
 }
 
+/**
+ * Replay a request queued while offline, with the current access token
+ * (refreshed on a 401 like any other call). Resolves with the response, for
+ * the caller to judge; rejects on a network error or a failed refresh.
+ */
+export function replayQueuedRequest(method: string, url: string, body: unknown): Promise<Response> {
+  return authorizedFetch(
+    url,
+    {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined || body === null ? undefined : JSON.stringify(body),
+    },
+    () => AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  );
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
