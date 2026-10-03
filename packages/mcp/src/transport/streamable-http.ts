@@ -10,7 +10,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ProxyAuth } from '../auth/proxy-auth.js';
+import { canExecuteTools, type ProxyAuth } from '../auth/proxy-auth.js';
 
 export interface StreamableHttpOptions {
   app: FastifyInstance;
@@ -38,6 +38,11 @@ export function registerStreamableHttpTransport(opts: StreamableHttpOptions): vo
     const authResult = await auth.verify(token);
     if (!authResult.valid) {
       return reply.code(401).send({ error: 'Invalid or expired token' });
+    }
+    if (!canExecuteTools(authResult)) {
+      return reply
+        .code(403)
+        .send({ error: 'Running MCP tools requires the mcp:execute permission' });
     }
 
     const body = request.body as Record<string, unknown>;
@@ -99,6 +104,11 @@ export function registerStreamableHttpTransport(opts: StreamableHttpOptions): vo
     const authResult = await auth.verify(token);
     if (!authResult.valid) {
       return reply.code(401).send({ error: 'Invalid or expired token' });
+    }
+    if (!canExecuteTools(authResult)) {
+      return reply
+        .code(403)
+        .send({ error: 'Running MCP tools requires the mcp:execute permission' });
     }
 
     const sessionId = request.headers['mcp-session-id'] as string | undefined;

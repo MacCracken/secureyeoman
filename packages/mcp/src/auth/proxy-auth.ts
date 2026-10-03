@@ -1,14 +1,29 @@
 /**
  * ProxyAuth — delegates JWT validation to core's /api/v1/auth/verify endpoint.
+ *
+ * Every verification also asks core whether the principal may execute MCP
+ * tools (`mcp:execute`, under core's RBAC: the role, then the token's scope),
+ * so a valid token alone — a viewer's dashboard session, say — cannot run
+ * tools.
  */
 
 import type { CoreApiClient } from '../core-client.js';
 
 export interface AuthResult {
   valid: boolean;
+  /** Whether the principal holds `mcp:execute` (core's answer). */
+  authorized?: boolean;
   userId?: string;
   role?: string;
   permissions?: string[];
+}
+
+/** The permission tool execution requires. */
+export const TOOL_EXECUTE_PERMISSION = { resource: 'mcp', action: 'execute' } as const;
+
+/** Whether a verification result permits running tools. */
+export function canExecuteTools(result: AuthResult): boolean {
+  return result.valid && result.authorized === true;
 }
 
 export class ProxyAuth {
@@ -34,7 +49,10 @@ export class ProxyAuth {
     }
 
     try {
-      const result = await this.client.post<AuthResult>('/api/v1/auth/verify', { token });
+      const result = await this.client.post<AuthResult>('/api/v1/auth/verify', {
+        token,
+        ...TOOL_EXECUTE_PERMISSION,
+      });
 
       // Cache successful validations
       if (result.valid) {

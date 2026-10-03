@@ -12,6 +12,9 @@ import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler, errorResponse, jsonResponse, textResponse } from './tool-utils.js';
 import { BrowserPool } from './browser-pool.js';
 import { ProxyManager } from './proxy-manager.js';
+import { validateUrl } from './web-tools.js';
+
+type Page = import('playwright').Page;
 
 export interface BrowserSessionEvent {
   type: 'create' | 'complete' | 'fail' | 'close';
@@ -47,6 +50,31 @@ function getPool(config: McpServiceConfig): BrowserPool {
     _pool = BrowserPool.fromConfig(config, proxyConfig);
   }
   return _pool;
+}
+
+/**
+ * A pool page that only loads what the web tools' SSRF guard allows. Every
+ * request is checked — the navigation, each redirect hop, frames and
+ * subresources — so cloud metadata, loopback and private hosts never load,
+ * directly or through a redirect. `data:`, `blob:` and `about:` URLs have no
+ * network reach of their own and stay allowed.
+ */
+async function openGuardedPage(pool: BrowserPool, config: McpServiceConfig): Promise<Page> {
+  const page = await pool.getPage();
+  await page.route('**/*', async (route) => {
+    const url = route.request().url();
+    let allowed = /^(data|blob|about):/i.test(url);
+    if (!allowed) {
+      try {
+        validateUrl(url, config);
+        allowed = true;
+      } catch {
+        allowed = false;
+      }
+    }
+    await (allowed ? route.continue() : route.abort('blockedbyclient'));
+  });
+  return page;
 }
 
 export function getBrowserPool(): BrowserPool | null {
@@ -91,12 +119,17 @@ export function registerBrowserTools(
       if (!config.exposeBrowser) {
         return errorResponse(NOT_AVAILABLE_MSG);
       }
+      try {
+        validateUrl(args.url, config);
+      } catch (err) {
+        return errorResponse(err instanceof Error ? err.message : String(err));
+      }
 
       const startTime = Date.now();
       emit({ type: 'create', toolName: 'browser_navigate', url: args.url });
 
       const pool = getPool(config);
-      const page = await pool.getPage();
+      const page = await openGuardedPage(pool, config);
       try {
         await page.goto(args.url, { timeout: args.timeout, waitUntil: 'domcontentloaded' });
 
@@ -148,6 +181,11 @@ export function registerBrowserTools(
       if (!config.exposeBrowser) {
         return errorResponse(NOT_AVAILABLE_MSG);
       }
+      try {
+        validateUrl(args.url, config);
+      } catch (err) {
+        return errorResponse(err instanceof Error ? err.message : String(err));
+      }
 
       const startTime = Date.now();
       emit({
@@ -159,7 +197,7 @@ export function registerBrowserTools(
       });
 
       const pool = getPool(config);
-      const page = await pool.getPage();
+      const page = await openGuardedPage(pool, config);
       try {
         await page.setViewportSize({ width: args.width, height: args.height });
         await page.goto(args.url, { timeout: pool.timeoutMs, waitUntil: 'domcontentloaded' });
@@ -226,7 +264,7 @@ export function registerBrowserTools(
       emit({ type: 'create', toolName: 'browser_click' });
 
       const pool = getPool(config);
-      const page = await pool.getPage();
+      const page = await openGuardedPage(pool, config);
       try {
         await page.click(args.selector);
         if (args.waitAfter > 0) {
@@ -273,7 +311,7 @@ export function registerBrowserTools(
       emit({ type: 'create', toolName: 'browser_fill' });
 
       const pool = getPool(config);
-      const page = await pool.getPage();
+      const page = await openGuardedPage(pool, config);
       try {
         await page.fill(args.selector, args.value);
 
@@ -316,7 +354,7 @@ export function registerBrowserTools(
       emit({ type: 'create', toolName: 'browser_evaluate' });
 
       const pool = getPool(config);
-      const page = await pool.getPage();
+      const page = await openGuardedPage(pool, config);
       try {
         const result = await page.evaluate(args.script);
 
@@ -355,12 +393,17 @@ export function registerBrowserTools(
       if (!config.exposeBrowser) {
         return errorResponse(NOT_AVAILABLE_MSG);
       }
+      try {
+        validateUrl(args.url, config);
+      } catch (err) {
+        return errorResponse(err instanceof Error ? err.message : String(err));
+      }
 
       const startTime = Date.now();
       emit({ type: 'create', toolName: 'browser_pdf', url: args.url });
 
       const pool = getPool(config);
-      const page = await pool.getPage();
+      const page = await openGuardedPage(pool, config);
       try {
         await page.goto(args.url, { timeout: pool.timeoutMs, waitUntil: 'domcontentloaded' });
 

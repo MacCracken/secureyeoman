@@ -11,7 +11,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import { CoreApiClient } from './core-client.js';
-import { ProxyAuth } from './auth/proxy-auth.js';
+import { ProxyAuth, canExecuteTools } from './auth/proxy-auth.js';
 import { AutoRegistration } from './registration/auto-register.js';
 import { registerStreamableHttpTransport } from './transport/streamable-http.js';
 import { registerAllTools, type ToolMiddleware } from './tools/index.js';
@@ -126,12 +126,14 @@ export class McpServiceServer {
 
     // 5a. Internal tool-call endpoint — lets core call YEOMAN MCP tools directly
     // without going through the full MCP protocol (initialize → tools/call → close).
-    // Auth: same ProxyAuth JWT as all other endpoints.
+    // Auth: same ProxyAuth JWT as all other endpoints, and the caller must
+    // hold mcp:execute — a valid token alone does not run tools.
     this.app.post('/api/v1/internal/tool-call', async (request, reply) => {
       const token = this.auth.extractToken(request.headers.authorization);
       if (!token) return reply.code(401).send({ error: 'Unauthorized' });
       const authResult = await this.auth.verify(token);
       if (!authResult.valid) return reply.code(401).send({ error: 'Unauthorized' });
+      if (!canExecuteTools(authResult)) return reply.code(403).send({ error: 'Forbidden' });
 
       const { name, arguments: args } = request.body as {
         name?: string;

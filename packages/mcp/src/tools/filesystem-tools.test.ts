@@ -149,6 +149,76 @@ describe('filesystem-tools', () => {
     });
   });
 
+  describe('handlers', () => {
+    async function call(
+      tool: string,
+      args: Record<string, unknown>,
+      overrides?: Partial<McpServiceConfig>
+    ) {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      registerFilesystemTools(server, makeConfig(overrides), noopMiddleware());
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      return globalToolRegistry.get(tool)!(args);
+    }
+
+    it('reads and writes inside the allowed path', async () => {
+      const read = await call('fs_read', { path: path.join(tmpDir, 'test.txt') });
+      expect(read.isError).toBeUndefined();
+      expect(read.content[0].text).toBe('hello world');
+      const target = path.join(tmpDir, 'new.txt');
+      const write = await call('fs_write', { path: target, content: 'written' });
+      expect(write.isError).toBeUndefined();
+      expect(await fs.readFile(target, 'utf-8')).toBe('written');
+    });
+
+    it('refuses every call while MCP_EXPOSE_FILESYSTEM is off', async () => {
+      const result = await call(
+        'fs_read',
+        { path: path.join(tmpDir, 'test.txt') },
+        { exposeFilesystem: false }
+      );
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('MCP_EXPOSE_FILESYSTEM');
+    });
+
+    it('does not admit a sibling that merely shares the prefix', async () => {
+      const sibling = `${tmpDir}-secrets`;
+      await fs.mkdir(sibling, { recursive: true });
+      await fs.writeFile(path.join(sibling, 'key'), 'secret');
+      try {
+        const result = await call('fs_read', { path: path.join(sibling, 'key') });
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('outside allowed paths');
+      } finally {
+        await fs.rm(sibling, { recursive: true, force: true });
+      }
+    });
+
+    it('never writes through a symlink out of the allowed path', async () => {
+      const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'mcp-fs-outside-'));
+      try {
+        // A linked directory component…
+        await fs.symlink(outside, path.join(tmpDir, 'linkdir'));
+        const viaDir = await call('fs_write', {
+          path: path.join(tmpDir, 'linkdir', 'planted.txt'),
+          content: 'x',
+        });
+        expect(viaDir.isError).toBe(true);
+        // …and a dangling link at the final component, whose target a write
+        // would create.
+        await fs.symlink(path.join(outside, 'created.txt'), path.join(tmpDir, 'dangling'));
+        const viaLink = await call('fs_write', {
+          path: path.join(tmpDir, 'dangling'),
+          content: 'x',
+        });
+        expect(viaLink.isError).toBe(true);
+        expect(await fs.readdir(outside)).toEqual([]);
+      } finally {
+        await fs.rm(outside, { recursive: true, force: true });
+      }
+    });
+  });
+
   describe('glob search', () => {
     it('should register fs_search tool with glob support', () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });

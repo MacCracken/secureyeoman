@@ -102,6 +102,34 @@ describe('validateUrl', () => {
     );
   });
 
+  it('blocks every IPv6 unique-local, link-local and unspecified form', () => {
+    for (const url of [
+      'http://[fd00::1]/',
+      'http://[fd12:3456:789a::1]/',
+      'http://[fc00::1]/',
+      'http://[fe80::1]/',
+      'http://[febf::1]/',
+      'http://[::]/',
+    ]) {
+      expect(() => validateUrl(url, config), url).toThrow('IP address blocked');
+    }
+  });
+
+  it('blocks the 100.64.0.0/10 shared range (tailnets, CGNAT)', () => {
+    for (const url of [
+      'http://100.64.0.1/',
+      'http://100.100.100.100/',
+      'http://100.127.255.254/',
+    ]) {
+      expect(() => validateUrl(url, config), url).toThrow('IP address blocked');
+    }
+    // Its public neighbours stay reachable.
+    expect(validateUrl('http://100.63.255.254/', config).hostname).toBe('100.63.255.254');
+    expect(validateUrl('http://100.128.0.1/', config).hostname).toBe('100.128.0.1');
+    // Public names that merely start with the same letters are untouched.
+    expect(validateUrl('https://fdic.gov/', config).hostname).toBe('fdic.gov');
+  });
+
   it('blocks metadata.google.internal', () => {
     expect(() => validateUrl('http://metadata.google.internal', config)).toThrow(
       'Hostname blocked'

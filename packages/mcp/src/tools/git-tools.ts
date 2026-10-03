@@ -4,17 +4,22 @@
  * Requires `git` on PATH. GitHub tools additionally require `gh` CLI
  * authenticated via `gh auth login`.
  *
- * Opt-in via MCP_EXPOSE_GIT=true. Operations are restricted to
- * allowedGitPaths (falls back to allowedPaths if empty).
+ * Operations are restricted to repositories under MCP_ALLOWED_PATHS; with no
+ * paths configured every git tool is refused. Refs and file arguments can
+ * never be read as git options, and repository-controlled hooks and helpers
+ * (fsmonitor, hooks, external diff and textconv drivers) are switched off, so
+ * a repository's own config cannot run commands through these tools.
  */
 
 import { execFile } from 'node:child_process';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler, textResponse } from './tool-utils.js';
+import { isAllowedPath } from '../utils/path-guard.js';
 
 const MAX_OUTPUT = 100_000; // truncate output at 100KB
 
@@ -23,18 +28,46 @@ function getAllowedPaths(config: McpServiceConfig): string[] {
 }
 
 function validateCwd(cwd: string, config: McpServiceConfig): string {
-  const resolved = path.resolve(cwd);
   const allowed = getAllowedPaths(config);
-
-  // If no paths configured, allow any directory
-  if (allowed.length === 0) return resolved;
-
-  const ok = allowed.some((p) => resolved.startsWith(path.resolve(p)));
-  if (!ok) {
-    throw new Error(`Path "${resolved}" is outside allowed git paths: ${allowed.join(', ')}`);
+  if (allowed.length === 0) {
+    throw new Error(
+      'Git tools are disabled: set MCP_ALLOWED_PATHS to the repositories they may use'
+    );
   }
-  return resolved;
+  const outside = (p: string) =>
+    new Error(`Path "${p}" is outside allowed git paths: ${allowed.join(', ')}`);
+  const lexical = path.resolve(cwd);
+  if (!isAllowedPath(lexical, allowed)) throw outside(lexical);
+  // Resolve symlinks too, so a link inside an allowed path cannot lead outside it.
+  let real: string;
+  try {
+    real = fs.realpathSync(lexical);
+  } catch {
+    throw new Error(`Path "${lexical}" does not exist`);
+  }
+  if (!isAllowedPath(real, allowed)) throw outside(real);
+  return real;
 }
+
+/**
+ * Refuse a ref, branch or file argument that git would parse as an option:
+ * `--output=<file>` on diff/log/show writes an arbitrary file.
+ */
+function assertNotOption(value: string, what: string): string {
+  if (value.startsWith('-')) {
+    throw new Error(`Invalid ${what} "${value}": must not start with "-"`);
+  }
+  return value;
+}
+
+/**
+ * Settings that keep a repository's own config from running commands: the
+ * fsmonitor hook runs on most commands, and hooks run on commit and checkout.
+ */
+const SAFE_GIT_CONFIG = ['-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null'];
+
+/** Flags for commands that render diffs: no external diff or textconv drivers. */
+const NO_DIFF_DRIVERS = ['--no-ext-diff', '--no-textconv'];
 
 function exec(
   cmd: string,
@@ -44,7 +77,7 @@ function exec(
   return new Promise((resolve, reject) => {
     execFile(
       cmd,
-      args,
+      cmd === 'git' ? [...SAFE_GIT_CONFIG, ...args] : args,
       { cwd, maxBuffer: 5 * 1024 * 1024, timeout: 30_000 },
       (error: Error | null, stdout, stderr) => {
         if (error && !stdout && !stderr) {
@@ -109,9 +142,9 @@ export function registerGitTools(
     },
     wrapToolHandler('git_log', middleware, async (args) => {
       const cwd = validateCwd(args.cwd, config);
-      const gitArgs = ['log', `--max-count=${String(args.maxCount)}`];
+      const gitArgs = ['log', ...NO_DIFF_DRIVERS, `--max-count=${String(args.maxCount)}`];
       if (args.oneline) gitArgs.push('--oneline');
-      if (args.branch) gitArgs.push(args.branch);
+      if (args.branch) gitArgs.push(assertNotOption(args.branch, 'branch'));
       const { stdout, stderr } = await exec('git', gitArgs, cwd);
       return textResponse(formatResult(stdout, stderr));
     })
@@ -134,10 +167,10 @@ export function registerGitTools(
     },
     wrapToolHandler('git_diff', middleware, async (args) => {
       const cwd = validateCwd(args.cwd, config);
-      const gitArgs = ['diff'];
+      const gitArgs = ['diff', ...NO_DIFF_DRIVERS];
       if (args.staged) gitArgs.push('--cached');
       if (args.stat) gitArgs.push('--stat');
-      if (args.ref) gitArgs.push(args.ref);
+      if (args.ref) gitArgs.push(assertNotOption(args.ref, 'ref'));
       if (args.path) {
         gitArgs.push('--');
         gitArgs.push(args.path);
@@ -185,7 +218,7 @@ export function registerGitTools(
 
       // Stage specific files if provided
       if (args.files.length > 0) {
-        const { stdout, stderr } = await exec('git', ['add', ...args.files], cwd);
+        const { stdout, stderr } = await exec('git', ['add', '--', ...args.files], cwd);
         if (stdout.trim() || stderr.trim()) results.push(formatResult(stdout, stderr));
       }
 
@@ -213,7 +246,7 @@ export function registerGitTools(
       const cwd = validateCwd(args.cwd, config);
       const gitArgs = ['checkout'];
       if (args.create) gitArgs.push('-b');
-      gitArgs.push(args.ref);
+      gitArgs.push(assertNotOption(args.ref, 'ref'));
       const { stdout, stderr } = await exec('git', gitArgs, cwd);
       return textResponse(formatResult(stdout, stderr));
     })
@@ -231,9 +264,9 @@ export function registerGitTools(
     },
     wrapToolHandler('git_show', middleware, async (args) => {
       const cwd = validateCwd(args.cwd, config);
-      const gitArgs = ['show'];
+      const gitArgs = ['show', ...NO_DIFF_DRIVERS];
       if (args.stat) gitArgs.push('--stat');
-      gitArgs.push(args.ref);
+      gitArgs.push(assertNotOption(args.ref, 'ref'));
       const { stdout, stderr } = await exec('git', gitArgs, cwd);
       return textResponse(formatResult(stdout, stderr));
     })

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ProxyAuth } from './proxy-auth.js';
+import { ProxyAuth, canExecuteTools } from './proxy-auth.js';
 import type { CoreApiClient } from '../core-client.js';
 
 function mockClient(response: unknown, shouldThrow = false): CoreApiClient {
@@ -79,7 +79,21 @@ describe('ProxyAuth', () => {
       auth = new ProxyAuth(client);
 
       await auth.verify('my-jwt-token');
-      expect(client.post).toHaveBeenCalledWith('/api/v1/auth/verify', { token: 'my-jwt-token' });
+      expect(client.post).toHaveBeenCalledWith('/api/v1/auth/verify', {
+        token: 'my-jwt-token',
+        resource: 'mcp',
+        action: 'execute',
+      });
+    });
+  });
+
+  describe('canExecuteTools', () => {
+    it('requires a valid token whose principal holds mcp:execute', () => {
+      expect(canExecuteTools({ valid: true, authorized: true })).toBe(true);
+      expect(canExecuteTools({ valid: true, authorized: false })).toBe(false);
+      // A core that does not answer the question fails closed.
+      expect(canExecuteTools({ valid: true })).toBe(false);
+      expect(canExecuteTools({ valid: false, authorized: true })).toBe(false);
     });
   });
 

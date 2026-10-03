@@ -7,9 +7,13 @@ import type { CoreApiClient } from '../core-client.js';
 
 function mockClient(): CoreApiClient {
   return {
-    post: vi
-      .fn()
-      .mockResolvedValue({ valid: true, userId: 'admin', role: 'admin', permissions: [] }),
+    post: vi.fn().mockResolvedValue({
+      valid: true,
+      authorized: true,
+      userId: 'admin',
+      role: 'admin',
+      permissions: [],
+    }),
     get: vi.fn().mockResolvedValue({}),
     delete: vi.fn().mockResolvedValue({}),
     put: vi.fn().mockResolvedValue({}),
@@ -55,6 +59,34 @@ describe('streamable-http transport', () => {
       payload: {},
     });
     expect(res.statusCode).toBe(401);
+
+    await app2.close();
+  });
+
+  it('should refuse a valid token that lacks mcp:execute', async () => {
+    // A viewer's dashboard session is a valid token, but not one that may run tools.
+    const client = mockClient();
+    (client.post as ReturnType<typeof vi.fn>).mockResolvedValue({
+      valid: true,
+      authorized: false,
+      userId: 'v',
+      role: 'viewer',
+    });
+    const viewerAuth = new ProxyAuth(client);
+
+    const app2 = Fastify({ logger: false });
+    registerStreamableHttpTransport({ app: app2, mcpServer, auth: viewerAuth });
+    await app2.ready();
+
+    for (const method of ['POST', 'GET'] as const) {
+      const res = await app2.inject({
+        method,
+        url: '/mcp/v1',
+        headers: { authorization: 'Bearer viewer-token' },
+        ...(method === 'POST' ? { payload: {} } : {}),
+      });
+      expect(res.statusCode).toBe(403);
+    }
 
     await app2.close();
   });
