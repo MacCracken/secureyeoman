@@ -3593,6 +3593,7 @@ dependencies = [
  "http",
  "http-body-util",
  "jsonwebtoken",
+ "libc",
  "md-5 0.10.6",
  "openidconnect",
  "rand 0.8.8",

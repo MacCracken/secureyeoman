@@ -6,11 +6,11 @@
 use crate::capabilities::EdgeCapabilities;
 
 pub fn advertise(caps: &EdgeCapabilities, port: u16) {
-    tracing::info!(
+    tracing::warn!(
         node_id = %caps.node_id,
         port,
         service = "_secureyeoman._tcp",
-        "mDNS advertisement started (stub)"
+        "mDNS advertisement is not implemented yet; this node is not discoverable on the LAN"
     );
     // TODO: Use mdns-sd crate for actual mDNS advertisement
     // let service = ServiceDaemon::new()?;

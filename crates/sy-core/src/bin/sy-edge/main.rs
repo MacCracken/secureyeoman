@@ -68,6 +68,7 @@ enum Commands {
 
 #[tokio::main]
 async fn main() {
+    make_non_dumpable();
     let cli = Cli::parse();
 
     match cli.command {
@@ -104,6 +105,24 @@ async fn main() {
         }
     }
 }
+
+/// Mark the process non-dumpable, so a program it runs for /api/v1/exec
+/// (same user, not root) cannot read its environment (tokens, API keys)
+/// from /proc/<pid>/environ, nor its memory; core dumps are off too.
+#[cfg(target_os = "linux")]
+fn make_non_dumpable() {
+    // SAFETY: PR_SET_DUMPABLE takes integer arguments only and changes only
+    // this process's dumpable attribute.
+    if unsafe { libc::prctl(libc::PR_SET_DUMPABLE, 0, 0, 0, 0) } != 0 {
+        eprintln!(
+            "sy-edge: could not mark the process non-dumpable: {}",
+            std::io::Error::last_os_error()
+        );
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn make_non_dumpable() {}
 
 fn init_tracing(level: &str) {
     use tracing_subscriber::{EnvFilter, fmt};

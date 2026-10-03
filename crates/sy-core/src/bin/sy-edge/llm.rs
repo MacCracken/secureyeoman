@@ -132,14 +132,17 @@ impl LlmClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| format!("Request failed: {e}"))?;
+            .map_err(|e| format!("Request failed: {}", e.without_url()))?;
 
         if !resp.status().is_success() {
             let text = resp.text().await.unwrap_or_default();
             return Err(format!("API error: {text}"));
         }
 
-        let data: serde_json::Value = resp.json().await.map_err(|e| format!("Parse error: {e}"))?;
+        let data: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("Parse error: {}", e.without_url()))?;
         Ok(data["choices"][0]["message"]["content"]
             .as_str()
             .unwrap_or("")
@@ -167,14 +170,17 @@ impl LlmClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| format!("Request failed: {e}"))?;
+            .map_err(|e| format!("Request failed: {}", e.without_url()))?;
 
         if !resp.status().is_success() {
             let text = resp.text().await.unwrap_or_default();
             return Err(format!("API error: {text}"));
         }
 
-        let data: serde_json::Value = resp.json().await.map_err(|e| format!("Parse error: {e}"))?;
+        let data: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("Parse error: {}", e.without_url()))?;
         Ok(data["content"][0]["text"]
             .as_str()
             .unwrap_or("")
@@ -199,14 +205,17 @@ impl LlmClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| format!("Request failed: {e}"))?;
+            .map_err(|e| format!("Request failed: {}", e.without_url()))?;
 
         if !resp.status().is_success() {
             let text = resp.text().await.unwrap_or_default();
             return Err(format!("API error: {text}"));
         }
 
-        let data: serde_json::Value = resp.json().await.map_err(|e| format!("Parse error: {e}"))?;
+        let data: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("Parse error: {}", e.without_url()))?;
         Ok(data["response"].as_str().unwrap_or("").to_string())
     }
 

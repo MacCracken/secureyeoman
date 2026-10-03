@@ -109,7 +109,7 @@ impl Messenger {
             .json(&body)
             .send()
             .await
-            .map_err(|e| format!("Send failed: {e}"))?;
+            .map_err(|e| format!("Send failed: {}", e.without_url()))?;
 
         if resp.status().is_success() {
             Ok(())

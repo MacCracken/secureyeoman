@@ -399,11 +399,19 @@ async fn scheduler_list(State(state): State<SharedState>) -> Json<serde_json::Va
 }
 
 async fn scheduler_add(
-    State(state): State<SharedState>,
+    State(_state): State<SharedState>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
-    match state.scheduler.add_task(body) {
-        Ok(id) => Json(serde_json::json!({ "id": id })).into_response(),
+    // The scheduler does not execute tasks yet; accepting one would report a
+    // schedule that never runs.
+    match scheduler::Scheduler::validate_task(&body) {
+        Ok(_) => (
+            StatusCode::NOT_IMPLEMENTED,
+            Json(serde_json::json!({
+                "error": "Scheduled task execution is not implemented on sy-edge yet; nothing was scheduled",
+            })),
+        )
+            .into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({ "error": e })),
@@ -419,11 +427,16 @@ async fn scheduler_remove(State(state): State<SharedState>, Path(id): Path<Strin
 
 // ── Update ──────────────────────────────────────────────────────────────────
 
-async fn update_check(State(_state): State<SharedState>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "current_version": crate::VERSION,
-        "update_available": false,
-    }))
+/// Not implemented: answering `update_available: false` without asking the
+/// parent claimed the node was current.
+async fn update_check(State(_state): State<SharedState>) -> impl IntoResponse {
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        Json(serde_json::json!({
+            "error": "On-demand update checks are not implemented on sy-edge yet",
+            "current_version": crate::VERSION,
+        })),
+    )
 }
 
 #[cfg(test)]
@@ -570,13 +583,29 @@ mod tests {
 
     #[tokio::test]
     async fn metrics_current() {
-        let app = build_router(test_state());
+        let state = test_state();
+        state.metrics.record_now();
+        let app = build_router(state);
         let req = Request::get("/api/v1/metrics").body(Body::empty()).unwrap();
         let resp = app.oneshot(req).await.unwrap();
         assert_eq!(resp.status(), SC::OK);
         let body = body_string(resp.into_body()).await;
         let json: serde_json::Value = serde_json::from_str(&body).unwrap();
         assert!(json["memory_total_mb"].as_u64().unwrap() > 0);
+        let at = json["timestamp"].as_str().unwrap();
+        assert!(chrono::DateTime::parse_from_rfc3339(at).is_ok(), "{at}");
+    }
+
+    #[tokio::test]
+    async fn metrics_before_the_first_sample_do_not_scan_on_request() {
+        // Served from the (empty) history: zeros, a live uptime, no scan.
+        let app = build_router(test_state());
+        let req = Request::get("/api/v1/metrics").body(Body::empty()).unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), SC::OK);
+        let body = body_string(resp.into_body()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(json["memory_total_mb"], 0);
     }
 
     #[tokio::test]
@@ -682,10 +711,8 @@ mod tests {
             .body(Body::from(serde_json::to_string(&body).unwrap()))
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), SC::OK);
-        let body = body_string(resp.into_body()).await;
-        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
-        assert!(json["id"].as_str().unwrap().starts_with("task-"));
+        // Valid, but tasks are not executed yet, so none is accepted.
+        assert_eq!(resp.status(), SC::NOT_IMPLEMENTED);
     }
 
     #[tokio::test]
@@ -733,10 +760,11 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), SC::OK);
+        // Not "no update": the node has not asked anyone.
+        assert_eq!(resp.status(), SC::NOT_IMPLEMENTED);
         let body = body_string(resp.into_body()).await;
         let json: serde_json::Value = serde_json::from_str(&body).unwrap();
-        assert_eq!(json["update_available"], false);
+        assert_eq!(json["current_version"], crate::VERSION);
     }
 
     #[tokio::test]

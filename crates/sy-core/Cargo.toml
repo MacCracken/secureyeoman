@@ -87,6 +87,10 @@ base64 = "0.23"
 thiserror = "2"
 dashmap = "6"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+# prctl(PR_SET_DUMPABLE) for sy-edge; already in the tree through tokio.
+libc = "0.2"
+
 [dev-dependencies]
 http-body-util = "0.1"
 tower = { version = "0.5", features = ["util"] }

@@ -70,7 +70,8 @@ impl Scheduler {
         })
     }
 
-    pub fn add_task(&self, body: serde_json::Value) -> Result<String, String> {
+    /// The task's type and interval, or why the request is invalid.
+    pub fn validate_task(body: &serde_json::Value) -> Result<(String, u64), String> {
         let task_type = body
             .get("type")
             .and_then(|v| v.as_str())
@@ -85,6 +86,14 @@ impl Scheduler {
         if interval < MIN_INTERVAL_SECS {
             return Err(format!("Interval too short (min {MIN_INTERVAL_SECS}s)"));
         }
+        Ok((task_type, interval))
+    }
+
+    // Tasks are not executed yet (see `start`), so the API refuses to add
+    // them; this stays for the executor that will.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub fn add_task(&self, body: serde_json::Value) -> Result<String, String> {
+        let (task_type, interval) = Self::validate_task(&body)?;
 
         let id = format!(
             "task-{}",
