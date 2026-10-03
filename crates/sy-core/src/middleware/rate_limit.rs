@@ -18,6 +18,8 @@ use axum::http::{HeaderValue, Request, Response, StatusCode};
 use axum::response::IntoResponse;
 use dashmap::DashMap;
 use serde_json::json;
+
+use crate::middleware::client_ip::TrustedProxies;
 use tower::{Layer, Service};
 
 use crate::middleware::ip_reputation::IpReputationState;
@@ -174,8 +176,8 @@ fn is_credential_endpoint(path: &str) -> bool {
 #[derive(Clone)]
 pub struct RateLimitLayer {
     state: RateLimitState,
-    /// Whether to trust `X-Forwarded-For` for client-IP (behind a trusted proxy).
-    trust_proxy: bool,
+    /// The proxies trusted to report the client address in `X-Forwarded-For`.
+    proxies: TrustedProxies,
     /// Optional IP-reputation state — 429s feed violation points when present.
     ip_reputation: Option<IpReputationState>,
 }
@@ -183,12 +185,12 @@ pub struct RateLimitLayer {
 impl RateLimitLayer {
     pub fn new(
         state: RateLimitState,
-        trust_proxy: bool,
+        proxies: TrustedProxies,
         ip_reputation: Option<IpReputationState>,
     ) -> Self {
         Self {
             state,
-            trust_proxy,
+            proxies,
             ip_reputation,
         }
     }
@@ -201,7 +203,7 @@ impl<S> Layer<S> for RateLimitLayer {
         RateLimitMiddleware {
             inner,
             state: self.state.clone(),
-            trust_proxy: self.trust_proxy,
+            proxies: self.proxies.clone(),
             ip_reputation: self.ip_reputation.clone(),
         }
     }
@@ -211,7 +213,7 @@ impl<S> Layer<S> for RateLimitLayer {
 pub struct RateLimitMiddleware<S> {
     inner: S,
     state: RateLimitState,
-    trust_proxy: bool,
+    proxies: TrustedProxies,
     ip_reputation: Option<IpReputationState>,
 }
 
@@ -231,7 +233,7 @@ where
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
-        let ip = crate::middleware::client_ip::client_ip(&req, self.trust_proxy);
+        let ip = crate::middleware::client_ip::client_ip(&req, &self.proxies);
         let path = req.uri().path().to_string();
         let state = self.state.clone();
         let ip_reputation = self.ip_reputation.clone();

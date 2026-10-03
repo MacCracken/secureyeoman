@@ -170,12 +170,20 @@ async fn seed_default_user(_pool: &PgPool) {
 }
 
 async fn seed_agent_name(pool: &PgPool) {
-    let _ = sqlx::query(
-        "INSERT INTO soul.meta (key, value) VALUES ('agentName', 'FRIDAY')
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64;
+    if let Err(e) = sqlx::query(
+        "INSERT INTO soul.meta (key, value, updated_at) VALUES ('agentName', 'FRIDAY', $1)
          ON CONFLICT DO NOTHING",
     )
+    .bind(now)
     .execute(pool)
-    .await;
+    .await
+    {
+        tracing::warn!(error = %e, "could not seed the agent name");
+    }
 }
 
 // ── Marketplace builtin skills ──────────────────────────────────────────────

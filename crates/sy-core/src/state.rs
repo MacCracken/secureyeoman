@@ -104,10 +104,10 @@ struct AppStateInner {
     pub started_at: Instant,
     pub version: String,
     pub allow_remote_access: bool,
-    /// Honor `X-Forwarded-For` for client-IP determination. Only enable when the
-    /// server sits behind a trusted reverse proxy that overwrites the header;
-    /// otherwise the header is attacker-controlled and must be ignored (default).
-    pub trust_proxy_headers: bool,
+    /// The proxies whose `X-Forwarded-For` names the client
+    /// (`SECUREYEOMAN_TRUSTED_PROXIES`); empty by default, when the header is
+    /// attacker-controlled and ignored.
+    pub trusted_proxies: crate::middleware::client_ip::TrustedProxies,
     pub backpressure: BackpressureState,
     /// In-memory cache of revoked JTIs (avoids a DB hit per request), each mapped
     /// to the token's own expiry in Unix ms — past that the token is dead anyway,
@@ -328,9 +328,7 @@ impl AppState {
                 allow_remote_access: std::env::var("SECUREYEOMAN_ALLOW_REMOTE_ACCESS")
                     .ok()
                     .is_some_and(|v| v == "true" || v == "1"),
-                trust_proxy_headers: std::env::var("SECUREYEOMAN_TRUST_PROXY_HEADERS")
-                    .ok()
-                    .is_some_and(|v| v == "true" || v == "1"),
+                trusted_proxies: crate::middleware::client_ip::TrustedProxies::from_env(),
                 backpressure: BackpressureState::new(),
                 revoked_tokens: Arc::new(dashmap::DashMap::new()),
                 fingerprint: FingerprintState::new(),
@@ -388,10 +386,9 @@ impl AppState {
         self.inner.allow_remote_access
     }
 
-    /// Whether `X-Forwarded-For` should be trusted for client-IP determination.
-    /// Defaults to false; enable only behind a trusted reverse proxy.
-    pub fn trust_proxy_headers(&self) -> bool {
-        self.inner.trust_proxy_headers
+    /// The proxies trusted to report the client address in `X-Forwarded-For`.
+    pub fn trusted_proxies(&self) -> &crate::middleware::client_ip::TrustedProxies {
+        &self.inner.trusted_proxies
     }
 
     pub fn backpressure(&self) -> &BackpressureState {
@@ -537,10 +534,13 @@ impl AppState {
         self
     }
 
-    /// Override the trusted-proxy setting (useful for testing).
-    pub fn with_trust_proxy_headers(mut self, trust: bool) -> Self {
+    /// Override the trusted proxies (useful for testing).
+    pub fn with_trusted_proxies(
+        mut self,
+        proxies: crate::middleware::client_ip::TrustedProxies,
+    ) -> Self {
         let inner = Arc::get_mut(&mut self.inner).unwrap();
-        inner.trust_proxy_headers = trust;
+        inner.trusted_proxies = proxies;
         self
     }
 
@@ -660,6 +660,11 @@ impl AppState {
     /// Get a new receiver for the event bridge broadcast channel.
     pub fn bridge_subscribe(&self) -> broadcast::Receiver<BridgeEvent> {
         self.inner.bridge_tx.subscribe()
+    }
+
+    /// How many event bridge SSE clients are connected.
+    pub fn bridge_subscriber_count(&self) -> usize {
+        self.inner.bridge_tx.receiver_count()
     }
 
     /// Broadcast an event to all connected event bridge SSE clients.

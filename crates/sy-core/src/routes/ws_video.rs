@@ -57,7 +57,12 @@ async fn ws_video_upgrade(
 
     let rx = state.bridge_subscribe();
 
+    // Clients only send control messages; frames are large but bounded, and
+    // a client that stops reading is dropped rather than buffered for.
     ws.protocols([principal.protocol])
+        .max_message_size(64 * 1024)
+        .max_frame_size(64 * 1024)
+        .max_write_buffer_size(16 * 1024 * 1024)
         .on_upgrade(move |socket| handle_video_client(socket, session_id, rx))
         .into_response()
 }

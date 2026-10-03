@@ -92,3 +92,44 @@ async fn successful_response_includes_remaining_header() {
         .unwrap();
     assert!(resp.headers().get("x-ratelimit-remaining").is_some());
 }
+
+/// Behind the bundled TLS proxy every connection comes from 127.0.0.1. With
+/// the proxy trusted, rate limits and reputation blocks apply per real
+/// client: one client exhausting the login budget — even tripping a block —
+/// does not lock the others out, and the proxy address itself is never
+/// blocked.
+#[tokio::test]
+async fn behind_a_trusted_proxy_limits_apply_per_client() {
+    use axum::extract::ConnectInfo;
+    use std::net::SocketAddr;
+    use sy_core::middleware::client_ip::TrustedProxies;
+
+    let (proxies, _) = TrustedProxies::parse_list("127.0.0.1");
+    let app = sy_core::server::build_router(common::test_state().with_trusted_proxies(proxies));
+    let login_via_proxy = |client: &str| {
+        let mut req = Request::post("/api/v1/auth/login")
+            .header("content-type", "application/json")
+            .header("x-forwarded-for", client)
+            .body(Body::from(r#"{"password":"wrong-password"}"#))
+            .unwrap();
+        let peer: SocketAddr = "127.0.0.1:50000".parse().unwrap();
+        req.extensions_mut().insert(ConnectInfo(peer));
+        req
+    };
+
+    // The attacker runs well past the budget (each 429 feeds reputation).
+    for _ in 0..30 {
+        common::send(app.clone(), login_via_proxy("203.0.113.66")).await;
+    }
+    let (status, _) = common::send(app.clone(), login_via_proxy("203.0.113.66")).await;
+    assert!(
+        status == 429 || status == 403,
+        "the attacker is limited: {status}"
+    );
+    // Another client behind the same proxy is unaffected.
+    let (status, _) = common::send(app.clone(), login_via_proxy("198.51.100.7")).await;
+    assert!(
+        status != 429 && status != 403,
+        "an innocent client was locked out: {status}"
+    );
+}

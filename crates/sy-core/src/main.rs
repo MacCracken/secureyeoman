@@ -69,11 +69,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(pool) => {
             info!("Connected to PostgreSQL");
 
-            // Run migrations from /usr/local/bin/migrations/ if they exist
+            // Run migrations from /usr/local/bin/migrations/ if they exist. An
+            // unreadable directory is reported, never swapped for another one.
             let migrations_dir = std::path::Path::new("/usr/local/bin/migrations");
-            if migrations_dir.exists() {
-                let mut files: Vec<_> = std::fs::read_dir(migrations_dir)
-                    .unwrap_or_else(|_| std::fs::read_dir(".").unwrap())
+            let entries = if migrations_dir.exists() {
+                std::fs::read_dir(migrations_dir)
+                    .map_err(
+                        |e| tracing::error!(error = %e, "cannot read the migrations directory"),
+                    )
+                    .ok()
+            } else {
+                None
+            };
+            if let Some(entries) = entries {
+                let mut files: Vec<_> = entries
                     .filter_map(|e| e.ok())
                     .filter(|e| e.path().extension().and_then(|x| x.to_str()) == Some("sql"))
                     .collect();
@@ -116,13 +125,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .unwrap_or_default();
 
             for (key, value) in &secrets {
-                if let Some(name) = key.strip_prefix("secret:")
-                    && !value.is_empty()
-                {
-                    // SAFETY: runs at startup before any concurrent env reads
-                    unsafe { std::env::set_var(name, value) };
-                    info!(secret = name, "loaded persisted secret");
+                let Some(name) = key.strip_prefix("secret:") else {
+                    continue;
+                };
+                if value.is_empty() {
+                    continue;
                 }
+                // A row written before names were validated could hold `=` or
+                // a NUL, which make set_var panic: the server would crash-loop
+                // at every boot. Reserved names never apply either.
+                if let Some(reason) = sy_core::routes::admin_settings::secret_name_error(name) {
+                    tracing::warn!(secret = name, reason, "skipping persisted secret");
+                    continue;
+                }
+                if value.contains('\0') {
+                    tracing::warn!(
+                        secret = name,
+                        "skipping persisted secret with a NUL in its value"
+                    );
+                    continue;
+                }
+                // SAFETY: a validated name and value; startup, before the
+                // listener accepts requests.
+                unsafe { std::env::set_var(name, value) };
+                info!(secret = name, "loaded persisted secret");
             }
             if !secrets.is_empty() {
                 info!(count = secrets.len(), "persisted secrets loaded");

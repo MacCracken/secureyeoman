@@ -6,6 +6,10 @@ use sqlx::Executor;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 
+/// Connections per pool. Every authenticated request may also do a
+/// token-revocation lookup, so this must not be a test-sized pool.
+const MAX_CONNECTIONS: u32 = 20;
+
 /// Shared pool options: bounded connection lifecycle + a server-side statement
 /// timeout. Without these, a stuck query holds a connection (and a worker)
 /// indefinitely and `acquire()` can block forever under contention.
@@ -45,15 +49,16 @@ pub async fn create_pool() -> Result<PgPool, String> {
         format!("postgresql://{user}:{password}@{host}:{port}/{name}")
     };
 
-    pool_options(20)
+    pool_options(MAX_CONNECTIONS)
         .connect(&database_url)
         .await
         .map_err(|e| format!("Failed to connect to PostgreSQL: {e}"))
 }
 
-/// Create a pool from an explicit URL (for testing).
+/// Create a pool from an explicit URL — `database_url` from the config file or
+/// `DATABASE_URL`, which production deployments set.
 pub async fn create_pool_from_url(url: &str) -> Result<PgPool, String> {
-    pool_options(5)
+    pool_options(MAX_CONNECTIONS)
         .connect(url)
         .await
         .map_err(|e| format!("Failed to connect to PostgreSQL: {e}"))

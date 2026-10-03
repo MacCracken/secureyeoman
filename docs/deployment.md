@@ -241,6 +241,17 @@ The MCP service is opt-in via Docker Compose profiles. Set `MCP_ENABLED=true` in
 
 ## Reverse Proxy
 
+### Client addresses behind a proxy
+
+Behind a reverse proxy every connection reaches sy-core from the proxy's address. The local-network gate, rate limits and IP-reputation blocks are per client, so tell sy-core which peers are your proxies:
+
+```bash
+# Addresses or CIDR ranges of the proxies in front of sy-core
+SECUREYEOMAN_TRUSTED_PROXIES=127.0.0.1,::1
+```
+
+`X-Forwarded-For` is honored only on connections from one of these peers, and it is read from the right, skipping trusted hops, so a client cannot prepend an address of its own; nginx's `$proxy_add_x_forwarded_for` (which appends) is safe. Without the setting the header is ignored and every proxied client shares the proxy's address. The bundled Docker image sets `127.0.0.1,::1` when it runs Caddy for TLS. `SECUREYEOMAN_TRUST_PROXY_HEADERS=true` with no list trusts proxies on loopback and private networks. Loopback is never auto-blocked by IP reputation.
+
 ### Security Headers
 
 The gateway automatically sets standard HTTP security headers on every response (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and HSTS when TLS is active). You do **not** need to duplicate these in your reverse proxy configuration. If your proxy adds the same headers, the gateway's values will take precedence (or you may get duplicate headers depending on your proxy config).

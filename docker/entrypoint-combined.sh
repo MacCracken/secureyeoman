@@ -49,6 +49,10 @@ if [ "$TLS_ENABLED" = "true" ]; then
     export SECUREYEOMAN_TLS_ENABLED="false"  # sy-core stays HTTP; Caddy terminates TLS
     export TLS_ENABLED="false"               # Ensure sy-core doesn't pick up TLS from env_file
     export TLS_TERMINATED_BY_PROXY="true"    # Tell sy-core TLS is handled by Caddy
+    # Caddy reaches sy-core over loopback and overwrites X-Forwarded-For with
+    # the real client; trusting it keeps rate limits and IP blocks per client
+    # (otherwise every client is 127.0.0.1 and one can lock the rest out).
+    export SECUREYEOMAN_TRUSTED_PROXIES="${SECUREYEOMAN_TRUSTED_PROXIES:-127.0.0.1,::1}"
 
     # Write supervisord override to enable caddy
     cat > /tmp/supervisord-caddy.conf <<OVERRIDE

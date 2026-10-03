@@ -126,14 +126,15 @@ fn too_large(limit: usize, received: Option<usize>) -> Response<Body> {
 
 /// Determine the body size limit for a given path and content type.
 fn resolve_limit(path: &str, content_type: Option<&str>) -> usize {
-    // Multipart uploads get the highest limit
-    if content_type.is_some_and(|ct| ct.contains("multipart")) {
-        return UPLOAD_LIMIT;
-    }
-
-    // Auth endpoints: small payloads only
+    // Auth endpoints: small payloads only, whatever the body claims to be.
     if path.starts_with("/api/v1/auth/") {
         return AUTH_LIMIT;
+    }
+
+    // Multipart uploads get the highest limit — matched on the media type
+    // itself, so `application/json; x=multipart` stays a JSON body.
+    if content_type.is_some_and(is_multipart_form) {
+        return UPLOAD_LIMIT;
     }
 
     // Chat endpoints: moderate payloads (messages can be long)
@@ -144,9 +145,34 @@ fn resolve_limit(path: &str, content_type: Option<&str>) -> usize {
     DEFAULT_LIMIT
 }
 
+/// Whether a Content-Type's media type is `multipart/form-data`.
+fn is_multipart_form(content_type: &str) -> bool {
+    content_type
+        .split(';')
+        .next()
+        .is_some_and(|essence| essence.trim().eq_ignore_ascii_case("multipart/form-data"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_upload_limit_needs_a_real_multipart_body_off_the_auth_routes() {
+        let multipart = Some("multipart/form-data; boundary=x");
+        assert_eq!(resolve_limit("/api/v1/auth/login", multipart), 16 * KB);
+        assert_eq!(
+            resolve_limit(
+                "/api/v1/brain/memories",
+                Some("application/json; x=multipart")
+            ),
+            MB
+        );
+        assert_eq!(
+            resolve_limit("/api/v1/brain/memories", Some("Multipart/Form-Data")),
+            10 * MB
+        );
+    }
 
     #[test]
     fn auth_routes_get_16kb_limit() {

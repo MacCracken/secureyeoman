@@ -32,9 +32,6 @@ const PUBLIC_ROUTES: &[&str] = &[
     "/api/v1/auth/oauth/config",
     "/api/v1/auth/oauth/claim",
     "/api/v1/auth/sso/exchange", // OIDC login completion (pre-auth)
-    "/api/v1/federation/knowledge/search",
-    "/api/v1/federation/marketplace",
-    "/api/v1/internal/mcp-bootstrap",
 ];
 
 /// Parameterised routes that bypass auth, matched on the route *template*
@@ -50,7 +47,6 @@ const PUBLIC_PREFIXES: &[&str] = &[
     "/api/v1/auth/sso/authorize/", // OIDC login initiation (pre-auth)
     "/api/v1/auth/sso/callback/",
     "/api/v1/auth/sso/saml/",
-    "/api/v1/federation/marketplace/",
     "/ws/", // WebSocket auth is handled by the WS handler (token in Sec-WebSocket-Protocol)
 ];
 
@@ -291,6 +287,11 @@ mod tests {
         assert!(!is_public("/api/v1/auth/oauth/google"));
         assert!(!is_public("/api/v1/auth/oauth/tokens"));
         assert!(!is_public("/api/v1/auth/oauth/tokens/some-id"));
+        // Paths the TS gateway served publicly have no handler here; they
+        // must not make a future route under them public by accident.
+        assert!(!is_public("/api/v1/federation/marketplace/x"));
+        assert!(!is_public("/api/v1/federation/knowledge/search"));
+        assert!(!is_public("/api/v1/internal/mcp-bootstrap"));
     }
 
     #[test]
