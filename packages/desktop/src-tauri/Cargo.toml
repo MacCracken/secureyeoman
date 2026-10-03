@@ -1,6 +1,6 @@
 [package]
 name = "secureyeoman-desktop"
-version = "0.5.4"
+version = "0.5.5"
 description = "SecureYeoman desktop app"
 authors = ["SecureYeoman Project Contributors"]
 license = "AGPL-3.0-only"

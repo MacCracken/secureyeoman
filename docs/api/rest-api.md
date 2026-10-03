@@ -666,34 +666,32 @@ Download the full audit log as a JSON file.
 
 #### GET /api/v1/security/events
 
-Get security events.
+Security events, newest first: the audit-chain entries whose event is one of `auth_success`, `auth_failure`, `rate_limit`, `injection_attempt`, `permission_denied`, `anomaly`, `sandbox_violation`, `config_change`, `secret_access`, `ai_request` or `ai_response`.
 
-**Required Permissions**: `security.read`
+**Required Permissions**: `security_events:read`
 
 **Query Parameters**
-- `type` (optional): Event type filter
-- `severity` (optional): Severity filter (`info`, `warn`, `error`, `critical`)
-- `from` (optional): ISO date string for start time
-- `to` (optional): ISO date string for end time
-- `limit` (optional): Number of results (default: 50)
+- `type` (optional): comma-separated event types; types that are not security events match nothing
+- `severity` (optional): comma-separated audit levels (`info`, `warn`, `error`, `security`)
+- `from`, `to` (optional): Unix milliseconds, inclusive
+- `limit` (optional): 1–1000 (default 50)
 - `offset` (optional): Pagination offset
 
-**Response**
+**Response** — `total` counts every match, not just this page:
 ```json
 {
   "events": [
     {
-      "id": "event_123",
-      "type": "auth_failure",
-      "severity": "warn",
-      "message": "Authentication failed for user",
-      "details": {
-        "user_id": "user_123",
-        "ip_address": "192.168.1.1",
-        "reason": "invalid_password"
-      },
-      "timestamp": "2026-02-11T00:00:00.000Z",
-      "acknowledged": false
+      "id": "0199a1b2-...",
+      "sequence": 4182,
+      "event": "permission_denied",
+      "level": "warn",
+      "message": "RBAC denied GET /api/v1/audit",
+      "userId": "user_123",
+      "metadata": { "role": "viewer", "method": "GET", "path": "/api/v1/audit" },
+      "timestamp": 1760000000000,
+      "signature": "…",
+      "previousHash": "…"
     }
   ],
   "total": 100,
@@ -701,6 +699,8 @@ Get security events.
   "offset": 0
 }
 ```
+
+`GET /api/v1/security/events/{id}` returns one such entry (404 for an entry that is not a security event).
 
 ---
 
@@ -800,9 +800,11 @@ Update security policy configuration.
 }
 ```
 
+Only the known policy fields are applied, each with its type (an unknown key is ignored; a wrong type is a 400; a body with no known field is a 400). The read-modify-write locks the stored policy, and each change is recorded in the audit chain as a `config_change` naming the changed fields.
+
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `allowSubAgents` | boolean | `true` | Allow sub-agent delegation |
+| `allowSubAgents` | boolean | `false` | Allow sub-agent delegation. Enforced at every delegation: workflow agent steps, swarms, councils and teams fail while it is off |
 | `allowA2A` | boolean | `false` | Allow A2A networking (requires sub-agents enabled) |
 | `allowSwarms` | boolean | `false` | Allow agent swarms / multi-agent orchestration (requires sub-agents enabled) |
 | `allowExtensions` | boolean | `false` | Allow lifecycle extension hooks |
@@ -811,19 +813,17 @@ Update security policy configuration.
 | `allowMultimodal` | boolean | `false` | Allow multimodal I/O (vision, speech, image generation, haptic feedback) |
 | `allowExperiments` | boolean | `false` | Allow A/B experiments (must be explicitly enabled after initialization) |
 
-**Response**
+**Response** — the whole policy after the change (every stored field, not only these):
 ```json
 {
-  "policy": {
-    "allowSubAgents": true,
-    "allowA2A": false,
-    "allowSwarms": false,
-    "allowExtensions": false,
-    "allowExecution": true,
-    "allowProactive": false,
-    "allowMultimodal": false,
-    "allowExperiments": false
-  }
+  "allowSubAgents": true,
+  "allowA2A": false,
+  "allowSwarms": false,
+  "allowExtensions": false,
+  "allowExecution": true,
+  "allowProactive": false,
+  "allowMultimodal": false,
+  "allowExperiments": false
 }
 ```
 

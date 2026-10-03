@@ -523,7 +523,9 @@ The standalone MCP service package provides full MCP protocol compliance with 39
 - `multimodal_transcribe` — Speech-to-text
 - `multimodal_jobs` — List multimodal processing jobs
 
-Configuration is via environment variables (not the YAML config file):
+Configuration is via environment variables (not the YAML config file).
+
+Every MCP request (`/mcp/v1` and the internal tool-call endpoint) needs a principal that holds `mcp:execute` — the `admin`, `operator` and `service` roles, or a key scoped to it. Core answers that question through `POST /api/v1/auth/verify`; viewer and auditor sessions are refused (403).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -534,7 +536,7 @@ Configuration is via environment variables (not the YAML config file):
 | `MCP_AUTO_REGISTER` | `true` | Auto-register with core's MCP server list on startup |
 | `MCP_CORE_URL` | `http://127.0.0.1:18789` | Core gateway URL |
 | `MCP_EXPOSE_FILESYSTEM` | `false` | Enable filesystem tools (`fs_read`, `fs_write`, `fs_list`, `fs_search`) — admin-only |
-| `MCP_ALLOWED_PATHS` | *(empty)* | Comma-separated paths allowed for filesystem tools |
+| `MCP_ALLOWED_PATHS` | *(empty)* | Comma-separated paths the filesystem **and git** tools may use. Required by both: while empty they refuse every path. Containment is decided on whole path segments after resolving symlinks (`/data` does not admit `/data-secrets`) |
 | `MCP_EXPOSE_WEB` | `false` | Enable web tools (`web_scrape_*`, `web_search*`, `web_extract_*`) |
 | `MCP_ALLOWED_URLS` | *(empty)* | Comma-separated domain allowlist for web tools (empty = all public URLs) |
 | `MCP_WEB_RATE_LIMIT` | `10` | Max web requests per minute (1–100) |
@@ -1121,7 +1123,7 @@ All security-sensitive values are referenced by environment variable name in the
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `SECUREYEOMAN_SIGNING_KEY` | Yes | Audit chain HMAC-SHA256 signing key (32+ chars) |
+| `SECUREYEOMAN_SIGNING_KEY` | Yes | Audit chain HMAC-SHA256 signing key (32+ chars). Without it the Rust server derives the key from the JWT secret and warns at boot: entries then verify only while that secret stays the same (never across restarts with an ephemeral one) |
 | `SECUREYEOMAN_TOKEN_SECRET` | Yes | JWT signing secret (32+ chars); auto-generated and persisted in DB if not set |
 | `SECUREYEOMAN_ENCRYPTION_KEY` | Yes | AES-256-GCM encryption key (32+ chars) |
 | `SECUREYEOMAN_ADMIN_PASSWORD` | Yes | Admin login password (32+ chars) |

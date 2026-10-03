@@ -40,6 +40,47 @@ As the project ecosystem grows (SecureYeoman, AGNOS, Agnostic, Ifran, Shruti, Ta
 
 ---
 
+## 0.5.5 — Second security & correctness review (shipped 2026-10-03)
+
+The areas 0.5.4 did not cover: the audit chain, the MCP tools, sy-edge, workflows and orchestration, the data plane, the integrations and the dashboard. See the [CHANGELOG](../../CHANGELOG.md#055--2026-10-03). What the review found and did not fix:
+
+### Audit chain
+
+- [ ] **Tail truncation.** A hash chain cannot show that its newest entries were deleted. Anchor the head outside the database (a periodic signed checkpoint to a log sink, or the TS in-memory chain's head commitment persisted elsewhere).
+- [ ] **Signing-key rotation.** TS kept a key history so a rotated chain still verified (in memory only). Changing `SECUREYEOMAN_SIGNING_KEY` now makes every earlier entry fail verification: record rotations as chain entries and verify each span with its key.
+- [ ] Verification walks the whole chain; past a few million entries, verify incrementally from the last verified entry.
+
+### Workflows and orchestration
+
+- [ ] **Step types the Rust engine does not run** (now failing the step instead of faking success): `human_approval`, `webhook`, `tool`/MCP, `swarm`, `council`, `resource`, `notification`, `a2a_delegate`, the training and CI steps, `subworkflow`, `code_execution` and the rest. `human_approval` needs the TS approval queue.
+- [ ] Cancelling a run stops it only on the instance executing it. Have the engine check the run's status between tiers.
+- [ ] Swarm, council and team runs cannot be cancelled mid-run, and their fan-out is uncapped (their tables are also part of the drift below).
+
+### Data plane and integrations
+
+- [ ] **`/api/v1/gateway`** dropped the TS per-key quotas (rpm/tpd), personality binding and usage recording, and lets the caller choose the model.
+- [ ] **Stored secrets** live in `security.policy` as plaintext and are loaded into the process environment at boot (`set_var` in a multi-threaded runtime). Move them to an encrypted store and hand them to the code that needs them.
+- [ ] **OAuth tokens:** the Rust code uses `auth.oauth_tokens`; the shipped table is `public.oauth_tokens` (part of the `db/auth.rs` drift). Until it is ported, OAuth-connected Gmail/GitHub accounts are invisible to the Rust routes.
+- [ ] Capture consent (screen/camera) lifecycle checks are missing; the capture tables are part of the drift, which hides it.
+- [ ] Chat requests may carry `system`-role history; memory recall ignores personality scoping; memory caps and episodic expiry are not enforced; a partial `PUT` of a personality or memory replaces the whole record.
+- [ ] Endpoints that now answer 501 need an implementation or removal: the guardrail pipeline, constitutional critique/revision, secret rotation, license activation (verify a signed key, as TS did), the integration ping (the MCP diagnostics tool also calls it with `GET`).
+
+### sy-edge
+
+- [ ] Registration: the parent does not serve `/api/v1/a2a/peers/local`; the edge sends a Bearer token where the TS parent expected `X-API-Key`, advertises its bind address (`0.0.0.0`) and sends no heartbeat. Port the parent route, then fix the client.
+- [ ] Run the node unprivileged by default (packaging): as root, the allowed readers (`cat`, `grep`, …) can read any file.
+- [ ] The scheduler, OTA updates and mDNS are not implemented (they answer 501 or log so).
+
+### Dashboard
+
+- [ ] Rust list endpoints still answer bare arrays and rows whose fields differ from the TS types (the client now tolerates the arrays; some fields render blank, and `total` is the page length for some paged lists). Fix the shapes server-side.
+- [ ] A single-use refresh token shared by several tabs: one tab's refresh can log the others out.
+- [ ] The refresh token is kept in `localStorage` even without "remember me".
+
+### Release checks
+
+- [ ] `cargo audit` and `cargo deny` were not run for 0.5.5 (not installed in the release environment). Run them, and add both to CI, which runs neither.
+
 ## 0.5.4 — Security & correctness review (shipped 2026-09-26)
 
 A review of the Rust server's auth surface, WebSockets, the sy-edge exec sandbox, outbound HTTP and its SQL, plus the toolchain/dependency refresh. See the [CHANGELOG](../../CHANGELOG.md#054--2026-09-26). Rust CI now runs fmt, clippy and the full test suite, including DB-backed tests against the shipped migrations; before 0.5.4 CI only built `sy-edge`.
@@ -55,20 +96,22 @@ sy-core builds its SQL as runtime strings, so nothing checks it against the sche
 | parse but cannot decode into their row struct | 61 |
 | decode only until the first `NULL` (non-`Option` field, nullable column) | 19 |
 
-By the 0.5.4 release the core daily-use modules are ported, each with a DB-backed test: soul skills and config, chat feedback and memories, workflow versions, personality mood, users and notification preferences, the marketplace community sync, brain documents and the pgvector store, events, voice, risk and MCP. The report now stands at 296 working statements of 677, with 322 failing to parse, 54 failing to decode, and 3 that decode only until the first `NULL`.
+By the 0.5.4 release the core daily-use modules are ported, each with a DB-backed test: soul skills and config, chat feedback and memories, workflow versions, personality mood, users and notification preferences, the marketplace community sync, brain documents and the pgvector store, events, voice, risk and MCP. The report then stood at 296 working statements of 677.
+
+At the 0.5.5 release: **311 of 691 work**, 318 fail to parse, 54 fail to decode, and none decodes only until the first `NULL`. (0.5.5 replaced the audit storage, routed the security events feed through it, and dropped code for tables the schema lacks.)
 
 What remains, worst first, as failing/checked:
 - `db/training.rs` 64/72
-- `db/security.rs` 42/54
+- `db/security.rs` 38/51
 - `db/agents.rs` 31/47 (swarms, councils, teams)
-- `db/auth.rs` 24/43 (users, roles, assignments, OAuth tokens, SSO providers, password resets, break-glass)
+- `db/auth.rs` 24/41 (users, roles, assignments, OAuth tokens, SSO providers, password resets, break-glass)
 - `db/responsible_ai.rs` 22/22
 - `db/federation.rs` 17/19
 - `db/extensions.rs` 12/16
-- `db/eval.rs` 7/12
 - `db/edge.rs` 9/9
 - `db/proactive.rs` 9/9
 - `db/tenants.rs` 8/9
+- `db/eval.rs` 7/12
 - `db/simulation.rs` 7/7 (scenarios, runs)
 - `db/chaos.rs` 6/7
 - `db/execution.rs` 6/8
@@ -95,7 +138,6 @@ The role table follows TS `DEFAULT_ROLES`; the deliberate differences are commen
 ### Smaller follow-ups
 
 - [ ] Fingerprinting is opt-in as of 0.5.4 (`SECUREYEOMAN_FINGERPRINT_ENABLED`). If it is made a default again, it must exempt authenticated API clients; the score treats every non-browser client as a bot.
-- [ ] Collab room fan-out echoes a client's own CRDT updates back to it. Yjs de-duplicates them, so this only wastes bandwidth.
 
 ---
 
