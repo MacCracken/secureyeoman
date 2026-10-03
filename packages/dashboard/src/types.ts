@@ -1181,7 +1181,7 @@ export interface KbDocument {
   personalityId: string | null;
   title: string;
   filename?: string;
-  format: 'pdf' | 'html' | 'md' | 'txt' | 'url';
+  format: 'pdf' | 'html' | 'md' | 'txt' | 'url' | 'excalidraw';
   sourceUrl?: string;
   visibility: 'private' | 'shared';
   status: 'pending' | 'processing' | 'ready' | 'error';

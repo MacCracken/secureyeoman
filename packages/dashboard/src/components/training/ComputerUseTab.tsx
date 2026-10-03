@@ -152,7 +152,7 @@ export function ComputerUseTab() {
                             : 'bg-muted text-muted-foreground'
                       }`}
                     >
-                      r={ep.reward.toFixed(2)}
+                      r={(ep.reward ?? 0).toFixed(2)}
                     </span>
                     {ep.done && (
                       <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">

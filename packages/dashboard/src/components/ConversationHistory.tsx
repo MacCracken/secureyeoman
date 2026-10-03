@@ -20,7 +20,6 @@ import {
   fetchCompressedContext,
   type HistoryEntry,
 } from '../api/client';
-import { sanitizeText } from '../utils/sanitize';
 
 const TIER_CONFIG = {
   message: {
@@ -193,9 +192,7 @@ export function ConversationHistory({ conversationId }: { conversationId: string
                   <ChevronRight className="w-3 h-3" />
                 )}
                 <Icon className={`w-3 h-3 ${config.textColor}`} />
-                <span className="text-xs truncate flex-1">
-                  {sanitizeText(entry.content.substring(0, 80))}
-                </span>
+                <span className="text-xs truncate flex-1">{entry.content.substring(0, 80)}</span>
                 <span className="text-[10px] text-muted-foreground">{entry.tokenCount}t</span>
                 {entry.sealedAt && (
                   <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded">
@@ -205,7 +202,7 @@ export function ConversationHistory({ conversationId }: { conversationId: string
               </button>
               {isExpanded && (
                 <div className="px-3 pb-2 text-xs whitespace-pre-wrap text-muted-foreground border-t border-muted/50 pt-2">
-                  {sanitizeText(entry.content)}
+                  {entry.content}
                 </div>
               )}
             </div>

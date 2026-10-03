@@ -7,33 +7,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Brain, Link2, TrendingUp, Loader2 } from 'lucide-react';
+import { fetchCognitiveStats, type CognitiveAccessTrendEntry } from '../../api/client';
 
-interface ActivationItem {
-  id: string;
-  activation: number;
-}
-
-interface AccessTrendEntry {
-  day: string;
-  count: number;
-}
-
-interface CognitiveStats {
-  topMemories: ActivationItem[];
-  topDocuments: ActivationItem[];
-  associationCount: number;
-  avgAssociationWeight: number;
-  accessTrend: AccessTrendEntry[];
-}
-
-async function fetchCognitiveStats(): Promise<CognitiveStats> {
-  const res = await fetch('/api/v1/brain/cognitive-stats');
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  return data.stats;
-}
-
-function TrendBar({ entries }: { entries: AccessTrendEntry[] }) {
+function TrendBar({ entries }: { entries: CognitiveAccessTrendEntry[] }) {
   if (entries.length === 0) {
     return <p className="text-xs text-muted-foreground">No access data in the last 7 days</p>;
   }

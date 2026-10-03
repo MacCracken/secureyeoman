@@ -77,8 +77,9 @@ const STATUS_COLORS: Record<string, string> = {
   monitoring: 'bg-purple-100 text-purple-700',
 };
 
-function formatLabel(s: string): string {
-  return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+function formatLabel(s: string | null | undefined): string {
+  // Scenarios served by the Rust gateway may lack `actor` and other labels.
+  return (s ?? '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function riskColor(score: number): string {
@@ -655,7 +656,7 @@ export function ATHITab() {
               <tbody>
                 {scenarios.map((s: any) => (
                   <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30">
-                    <td className="py-2 px-2 font-medium">{s.title}</td>
+                    <td className="py-2 px-2 font-medium">{s.title ?? s.name}</td>
                     <td className="py-2 px-2 text-xs">{formatLabel(s.actor)}</td>
                     <td className="py-2 px-2">
                       <div className="flex flex-wrap gap-1">
@@ -701,7 +702,7 @@ export function ATHITab() {
                           onClick={() => {
                             setEditingScenario({
                               id: s.id,
-                              title: s.title,
+                              title: s.title ?? s.name ?? '',
                               description: s.description ?? '',
                               actor: s.actor,
                               techniques: s.techniques ?? [],

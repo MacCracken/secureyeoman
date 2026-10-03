@@ -29,7 +29,6 @@ import {
 } from '../../api/client';
 import type { KnowledgeEntry, Skill } from '../../types';
 import { CollapsibleSection, relativeTime } from './shared';
-import { sanitizeText } from '../../utils/sanitize';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 
 export type ModelDataType = { available?: Record<string, { model: string }[]> } | undefined;
@@ -1101,7 +1100,7 @@ export function BrainSection({
                       </span>
                       <span className="text-xs text-muted-foreground">src: {k.source}</span>
                     </div>
-                    <p className="mt-0.5">{sanitizeText(k.content)}</p>
+                    <p className="mt-0.5">{k.content}</p>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
@@ -1214,7 +1213,7 @@ export function BrainSection({
               >
                 <span className="text-sm flex items-center gap-1.5">
                   <Wrench className="w-3 h-3 text-muted-foreground" />
-                  {sanitizeText(skill.name)}
+                  {skill.name}
                 </span>
                 <button
                   onClick={() => void navigate('/skills', { state: { openSkillId: skill.id } })}

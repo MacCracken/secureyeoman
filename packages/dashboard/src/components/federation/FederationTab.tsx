@@ -194,8 +194,9 @@ function PeerRow({
                   {icon}
                   {label}
                 </span>
+                {/* The Rust gateway may send `features: null`. */}
                 <ToggleSwitch
-                  checked={peer.features[feat]}
+                  checked={peer.features?.[feat] ?? false}
                   onChange={(v) => {
                     onToggleFeature(feat, v);
                   }}
@@ -204,7 +205,7 @@ function PeerRow({
               </div>
             ))}
           </div>
-          {peer.features.marketplace && (
+          {peer.features?.marketplace && (
             <button
               onClick={onBrowseMarketplace}
               className="btn btn-sm btn-ghost flex items-center gap-1.5 text-xs"

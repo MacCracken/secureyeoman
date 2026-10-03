@@ -5,12 +5,15 @@
  * After a successful purchase, retrieves the license key from the LemonSqueezy
  * checkout event and auto-applies it to the SY instance.
  *
+ * lemon.js is third-party code, so it is fetched only when the user starts a
+ * checkout — never merely because the Settings page was visited.
+ *
  * Supports two flows:
  *   1. Direct: LS checkout returns the license key in the success event
  *   2. Fallback: Poll the licensing service for the key (legacy sy-licensing flow)
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { setLicenseKey } from '../api/client';
 import { useLicense } from './useLicense';
 
@@ -43,31 +46,47 @@ const LICENSING_API = import.meta.env.VITE_LICENSING_API_URL ?? '';
 
 export type CheckoutTier = 'pro' | 'solopreneur' | 'enterprise';
 
+const LEMON_JS_SRC = 'https://app.lemonsqueezy.com/js/lemon.js';
+
+/** In-flight or completed load of lemon.js, shared by every hook instance. */
+let lemonJsLoad: Promise<void> | null = null;
+
+/** True once the LemonSqueezy SDK is initialised (initialising it if loaded). */
+function lemonSdkReady(): boolean {
+  if (!window.LemonSqueezy) window.createLemonSqueezy?.();
+  return Boolean(window.LemonSqueezy);
+}
+
+/**
+ * Load lemon.js on first use. A failed load is forgotten so the next checkout
+ * click can try again.
+ */
+function loadLemonJs(): Promise<void> {
+  if (lemonSdkReady()) return Promise.resolve();
+  lemonJsLoad ??= new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = LEMON_JS_SRC;
+    script.async = true;
+    script.onload = () => {
+      if (lemonSdkReady()) resolve();
+      else reject(new Error('Checkout SDK failed to initialise'));
+    };
+    script.onerror = () => {
+      script.remove();
+      reject(new Error('Checkout SDK failed to load'));
+    };
+    document.head.appendChild(script);
+  }).catch((err: unknown) => {
+    lemonJsLoad = null;
+    throw err;
+  });
+  return lemonJsLoad;
+}
+
 export function useLemonCheckout() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const scriptLoaded = useRef(false);
   const { refresh } = useLicense();
-
-  // Load lemon.js once
-  useEffect(() => {
-    if (scriptLoaded.current || typeof document === 'undefined') return;
-
-    const existing = document.querySelector('script[src*="lemonsqueezy"]');
-    if (existing) {
-      scriptLoaded.current = true;
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://app.lemonsqueezy.com/js/lemon.js';
-    script.defer = true;
-    script.onload = () => {
-      scriptLoaded.current = true;
-      window.createLemonSqueezy?.();
-    };
-    document.body.appendChild(script);
-  }, []);
 
   const openCheckout = useCallback(
     (tier: CheckoutTier) => {
@@ -77,25 +96,31 @@ export function useLemonCheckout() {
         return;
       }
 
-      if (!window.LemonSqueezy) {
-        setError('Checkout SDK not loaded. Please try again.');
-        return;
-      }
-
       setError(null);
       setIsLoading(true);
 
-      // Listen for checkout success
-      window.LemonSqueezy.Setup({
-        eventHandler: (event: LemonEvent) => {
-          if (event.event === 'Checkout.Success') {
-            void handleCheckoutSuccess(event);
-          }
-        },
-      });
+      // Fetch lemon.js now that the user has asked for a checkout.
+      void loadLemonJs()
+        .then(() => {
+          const sdk = window.LemonSqueezy;
+          if (!sdk) throw new Error('Checkout SDK not available');
 
-      // Open the overlay
-      window.LemonSqueezy.Url.Open(url);
+          // Listen for checkout success
+          sdk.Setup({
+            eventHandler: (event: LemonEvent) => {
+              if (event.event === 'Checkout.Success') {
+                void handleCheckoutSuccess(event);
+              }
+            },
+          });
+
+          // Open the overlay
+          sdk.Url.Open(url);
+        })
+        .catch(() => {
+          setIsLoading(false);
+          setError('Checkout SDK could not be loaded. Please try again.');
+        });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []

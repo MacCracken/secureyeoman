@@ -38,7 +38,6 @@ import { usePushToTalk } from '../hooks/usePushToTalk';
 import { useTheme } from '../hooks/useTheme';
 import { VoiceOverlay } from './VoiceOverlay';
 import type { Personality, ChatMessage, CreationEvent } from '../types';
-import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
 import { Link, useNavigate } from 'react-router-dom';
 import { AgentWorldWidget } from './AgentWorldWidget';
@@ -1219,7 +1218,7 @@ function StandardEditorPage() {
                                 <Sparkles className="w-2.5 h-2.5 shrink-0" />
                                 <span>
                                   {ev.label} {ev.action ?? 'Created'}:{' '}
-                                  <strong className="font-medium">{sanitizeText(ev.name)}</strong>
+                                  <strong className="font-medium">{ev.name}</strong>
                                 </span>
                               </div>
                             ))}
@@ -1237,10 +1236,10 @@ function StandardEditorPage() {
                               : ''
                           }
                         >
-                          <ChatMarkdown content={sanitizeText(msg.content)} size="xs" />
+                          <ChatMarkdown content={msg.content} size="xs" />
                         </div>
                       ) : (
-                        <p className="text-xs whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
+                        <p className="text-xs whitespace-pre-wrap">{msg.content}</p>
                       )}
 
                       {msg.role === 'assistant' && (

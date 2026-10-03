@@ -25,7 +25,6 @@ import {
   Activity,
 } from 'lucide-react';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { sanitizeText } from '../utils/sanitize';
 import { markNotificationRead, markAllNotificationsRead, deleteNotification } from '../api/client';
 import type { WebSocketMessage, ServerNotification } from '../types';
 
@@ -376,15 +375,13 @@ export function NotificationBell() {
                         <p
                           className={`text-xs font-medium truncate ${n.read ? '' : 'text-foreground'}`}
                         >
-                          {sanitizeText(n.title)}
+                          {n.title}
                         </p>
                         {!n.read && (
                           <span className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0 ml-1" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {sanitizeText(n.message)}
-                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{n.message}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         {formatTime(n.timestamp)}
                       </p>

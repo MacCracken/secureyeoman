@@ -35,6 +35,7 @@ import { getAccessToken } from '../api/client';
 import { Logo } from './Logo';
 import { NewEntityDialog } from './NewEntityDialog';
 import {
+  fetchAgentProfiles,
   fetchExtensionConfig,
   fetchSecurityPolicy,
   fetchProactiveConfig,
@@ -108,7 +109,7 @@ export function Sidebar({
 
   const { data: agentsData } = useQuery({
     queryKey: ['subAgentProfiles'],
-    queryFn: () => fetch('/api/v1/agents/profiles').then((r) => r.json()),
+    queryFn: fetchAgentProfiles,
     staleTime: 30000,
   });
 

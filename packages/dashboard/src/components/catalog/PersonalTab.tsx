@@ -34,7 +34,6 @@ import {
 } from '../../api/client';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import type { Skill, SkillCreate } from '../../types';
-import { sanitizeText } from '../../utils/sanitize';
 import { useCollabEditor } from '../../hooks/useCollabEditor.js';
 import { PresenceBanner } from '../PresenceBanner.js';
 import { exportSkill } from './shared';
@@ -654,9 +653,7 @@ export function PersonalTab() {
                       {SOURCE_LABELS[skill.source] || skill.source}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {sanitizeText(skill.description)}
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">{skill.description}</p>
                   {(skill.triggerPatterns || []).length > 0 && (
                     <div className="flex items-center flex-wrap gap-1 mt-2">
                       <span className="text-xs font-medium text-muted-foreground mr-1">

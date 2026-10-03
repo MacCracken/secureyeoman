@@ -38,6 +38,11 @@ import {
   type PairwiseComparisonSummary,
 } from '../../api/client';
 
+/** One-decimal score, or a dash when the run carries none (Rust gateway rows). */
+function formatScore(value: number | null | undefined): string {
+  return typeof value === 'number' ? value.toFixed(1) : '—';
+}
+
 // ── Dataset Section ──────────────────────────────────────────────────────────
 
 function DatasetSection() {
@@ -295,9 +300,9 @@ function PointwiseEvalSection() {
             >
               <span className="font-mono">{run.modelName}</span>
               <span>
-                G:{run.avgGroundedness.toFixed(1)} C:{run.avgCoherence.toFixed(1)} R:
-                {run.avgRelevance.toFixed(1)} F:{run.avgFluency.toFixed(1)} H:
-                {run.avgHarmlessness.toFixed(1)}
+                G:{formatScore(run.avgGroundedness)} C:{formatScore(run.avgCoherence)} R:
+                {formatScore(run.avgRelevance)} F:{formatScore(run.avgFluency)} H:
+                {formatScore(run.avgHarmlessness)}
               </span>
               <span className="text-muted-foreground">
                 {new Date(run.scoredAt).toLocaleDateString()}

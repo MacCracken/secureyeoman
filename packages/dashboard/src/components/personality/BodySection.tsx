@@ -14,7 +14,13 @@ import {
   Terminal,
   Cpu,
 } from 'lucide-react';
-import { fetchMcpConfig, fetchSecurityPolicy, getAccessToken } from '../../api/client';
+import {
+  fetchIntegrations,
+  fetchMcpConfig,
+  fetchMcpServers,
+  fetchOAuthTokens,
+  fetchSecurityPolicy,
+} from '../../api/client';
 import type { IntegrationAccess, IntegrationAccessMode } from '@secureyeoman/shared';
 import { CollapsibleSection } from './shared';
 import { LOCAL_MCP_NAME } from './shared';
@@ -157,29 +163,22 @@ export function BodySection({
     'vision',
     'vocalization',
   ] as const;
+  // These keys are shared with the Connections pages, so they must use the
+  // same authenticated fetchers (an unauthenticated 401 body cached here would
+  // be served to every other reader of the key).
   const { data: serversData, isLoading: serversLoading } = useQuery({
     queryKey: ['mcpServers'],
-    queryFn: () => fetch('/api/v1/mcp/servers').then((r) => r.json()),
+    queryFn: fetchMcpServers,
   });
   const servers = serversData?.servers ?? [];
 
   const { data: integrationsData, isLoading: integrationsLoading } = useQuery({
     queryKey: ['integrations'],
-    queryFn: () => fetch('/api/v1/integrations').then((r) => r.json()),
+    queryFn: fetchIntegrations,
   });
   const { data: oauthTokensData, isLoading: oauthTokensLoading } = useQuery({
     queryKey: ['oauth-tokens'],
-    queryFn: async () => {
-      const token = getAccessToken();
-      const res = await fetch('/api/v1/auth/oauth/tokens', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) return [];
-      const body = (await res.json()) as {
-        tokens?: { id: string; provider: string; email: string }[];
-      };
-      return body.tokens ?? [];
-    },
+    queryFn: fetchOAuthTokens,
   });
   // OAuth tokens that have a matching Integration (same platform + email) should supersede
   // the integration entry — MCP tools use OAuth tokens, not the integration adapter credentials.

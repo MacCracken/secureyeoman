@@ -418,7 +418,7 @@ function PeersTab() {
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-1 truncate">{peer.url}</p>
-                {peer.capabilities.length > 0 && (
+                {Array.isArray(peer.capabilities) && peer.capabilities.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1">
                     {peer.capabilities.map((cap) => (
                       <span

@@ -111,19 +111,21 @@ function formToRule(
   };
 }
 
+// Rules served by the Rust gateway keep their trigger/action in `condition` /
+// `action` JSON and lack the flat fields: fall back to the form defaults.
 function ruleToForm(r: RoutingRule): RuleFormState {
   return {
     name: r.name,
-    description: r.description,
+    description: r.description ?? '',
     enabled: r.enabled,
     priority: r.priority,
-    triggerPlatforms: r.triggerPlatforms.join(', '),
-    triggerIntegrationIds: r.triggerIntegrationIds.join(', '),
+    triggerPlatforms: (r.triggerPlatforms ?? []).join(', '),
+    triggerIntegrationIds: (r.triggerIntegrationIds ?? []).join(', '),
     triggerChatIdPattern: r.triggerChatIdPattern ?? '',
     triggerSenderIdPattern: r.triggerSenderIdPattern ?? '',
     triggerKeywordPattern: r.triggerKeywordPattern ?? '',
-    triggerDirection: r.triggerDirection,
-    actionType: r.actionType,
+    triggerDirection: r.triggerDirection ?? EMPTY_FORM.triggerDirection,
+    actionType: r.actionType ?? EMPTY_FORM.actionType,
     actionTargetIntegrationId: r.actionTargetIntegrationId ?? '',
     actionTargetChatId: r.actionTargetChatId ?? '',
     actionPersonalityId: r.actionPersonalityId ?? '',
@@ -436,7 +438,7 @@ export function RoutingRulesPage() {
                     <dt>Direction</dt>
                     <dd>{rule.triggerDirection}</dd>
                     <dt>Platforms</dt>
-                    <dd>{rule.triggerPlatforms.join(', ') || 'any'}</dd>
+                    <dd>{(rule.triggerPlatforms ?? []).join(', ') || 'any'}</dd>
                     <dt>Action</dt>
                     <dd>{rule.actionType}</dd>
                     {rule.triggerKeywordPattern && (

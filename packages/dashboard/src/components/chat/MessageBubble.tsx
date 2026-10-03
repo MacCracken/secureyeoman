@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import type { Personality, CreationEvent } from '../../types';
 import type { ChatMessage } from '../../types';
-import { sanitizeText } from '../../utils/sanitize';
 import { ChatMarkdown } from '../ChatMarkdown';
 import { ThinkingBlock } from '../ThinkingBlock';
 import { PersonalityAvatar } from '../PersonalitiesPage';
@@ -157,7 +156,7 @@ export const MessageBubble = memo(function MessageBubble({
             {msg.brainContext.contextSnippets.length > 0 && (
               <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
                 {msg.brainContext.contextSnippets.map((s, j) => (
-                  <li key={j}>{sanitizeText(s)}</li>
+                  <li key={j}>{s}</li>
                 ))}
               </ul>
             )}
@@ -267,7 +266,7 @@ export const MessageBubble = memo(function MessageBubble({
                   <Sparkles className="w-3 h-3 shrink-0" />
                   <span>
                     {ev.label} {ev.action ?? 'Created'}:{' '}
-                    <strong className="font-medium">{sanitizeText(ev.name)}</strong>
+                    <strong className="font-medium">{ev.name}</strong>
                   </span>
                 </div>
               ))}
@@ -285,10 +284,10 @@ export const MessageBubble = memo(function MessageBubble({
                 : ''
             }
           >
-            <ChatMarkdown content={sanitizeText(msg.content)} size="sm" />
+            <ChatMarkdown content={msg.content} size="sm" />
           </div>
         ) : (
-          <p className="text-sm whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
+          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
         )}
 
         <div className="flex items-center gap-2 mt-1">

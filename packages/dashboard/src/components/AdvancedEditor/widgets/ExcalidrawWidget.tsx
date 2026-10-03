@@ -10,6 +10,7 @@ import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { ExcalidrawEditorLazy } from './ExcalidrawEditorLazy';
 import { useWebSocket } from '../../../hooks/useWebSocket';
 import { sanitizeSvg } from '../../../utils/sanitize';
+import { fetchDocument, ingestExcalidraw, listDocuments } from '../../../api/client';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -255,11 +256,9 @@ export function ExcalidrawWidget({
 
   const loadKbDocs = useCallback(async () => {
     try {
-      const resp = await fetch('/api/v1/brain/documents?format=excalidraw');
-      if (resp.ok) {
-        const data = (await resp.json()) as { documents: KbDocument[] };
-        setKbDocs(data.documents ?? []);
-      }
+      const data = await listDocuments();
+      // The server does not filter by format: keep only Excalidraw scenes.
+      setKbDocs((data.documents ?? []).filter((d) => d.format === 'excalidraw'));
     } catch {
       /* ignore */
     }
@@ -274,18 +273,11 @@ export function ExcalidrawWidget({
       setLoading(true);
       setError(null);
       try {
-        const resp = await fetch(`/api/v1/brain/documents/${docId}`);
-        if (!resp.ok) throw new Error('Failed to load document');
-        const data = (await resp.json()) as {
-          document: KbDocument & {
-            content?: string;
-            metadata?: { excalidrawScene?: ExcalidrawScene };
-          };
-        };
-        onConfigChange?.({ excalidrawDocumentId: data.document.id });
+        const { document: doc } = await fetchDocument(docId);
+        onConfigChange?.({ excalidrawDocumentId: doc.id });
 
         // Push scene into live editor if available
-        const sceneData = data.document.metadata?.excalidrawScene;
+        const sceneData = doc.metadata?.excalidrawScene as ExcalidrawScene | undefined;
         if (sceneData) {
           const elements = sceneData.elements ?? [];
           excalidrawAPIRef.current?.updateScene({ elements: elements as never[] });
@@ -306,16 +298,10 @@ export function ExcalidrawWidget({
     setLoading(true);
     setError(null);
     try {
-      const resp = await fetch('/api/v1/brain/documents/ingest-excalidraw', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scene: currentScene,
-          title: `Excalidraw — ${new Date().toISOString().slice(0, 16)}`,
-        }),
-      });
-      if (!resp.ok) throw new Error('Failed to save');
-      const data = (await resp.json()) as { document: KbDocument };
+      const data = await ingestExcalidraw(
+        currentScene,
+        `Excalidraw — ${new Date().toISOString().slice(0, 16)}`
+      );
       const sceneStr = JSON.stringify(currentScene, null, 2);
       setJsonText(sceneStr);
       onConfigChange?.({

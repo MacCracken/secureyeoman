@@ -232,7 +232,10 @@ export function ExperimentsTab() {
 }
 
 function ExperimentDetail({ exp }: { exp: TrainingExperimentItem }) {
-  const metricsData = Object.entries(exp.evalMetrics).map(([key, value]) => ({
+  // Experiments served by the Rust gateway carry none of these fields yet.
+  const hyperparameters = exp.hyperparameters ?? {};
+  const lossCurve = exp.lossCurve ?? [];
+  const metricsData = Object.entries(exp.evalMetrics ?? {}).map(([key, value]) => ({
     dimension: key,
     value,
     fullMark: 5,
@@ -244,11 +247,11 @@ function ExperimentDetail({ exp }: { exp: TrainingExperimentItem }) {
       {exp.notes && <p className="text-xs text-muted-foreground">{exp.notes}</p>}
 
       {/* Hyperparameters */}
-      {Object.keys(exp.hyperparameters).length > 0 && (
+      {Object.keys(hyperparameters).length > 0 && (
         <div>
           <p className="text-xs font-medium mb-1">Hyperparameters</p>
           <div className="grid grid-cols-2 gap-1 text-xs">
-            {Object.entries(exp.hyperparameters).map(([k, v]) => (
+            {Object.entries(hyperparameters).map(([k, v]) => (
               <div key={k} className="bg-muted rounded px-2 py-1">
                 <span className="text-muted-foreground">{k}:</span>{' '}
                 <span className="font-mono">{String(v)}</span>
@@ -259,11 +262,11 @@ function ExperimentDetail({ exp }: { exp: TrainingExperimentItem }) {
       )}
 
       {/* Loss curve */}
-      {exp.lossCurve.length > 0 && (
+      {lossCurve.length > 0 && (
         <div>
           <p className="text-xs font-medium mb-1">Loss Curve</p>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={exp.lossCurve}>
+            <LineChart data={lossCurve}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="step" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} />

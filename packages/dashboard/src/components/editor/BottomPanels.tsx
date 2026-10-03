@@ -177,7 +177,7 @@ export function HistoryPanel() {
                       <XCircle className="w-3.5 h-3.5 text-red-500" />
                     )}
                   </td>
-                  <td className="px-2 py-1.5 font-mono">{exec.sessionId.slice(0, 8)}</td>
+                  <td className="px-2 py-1.5 font-mono">{(exec.sessionId ?? '').slice(0, 8)}</td>
                   <td className="px-2 py-1.5">
                     <span
                       className={`px-1 py-0.5 rounded border ${

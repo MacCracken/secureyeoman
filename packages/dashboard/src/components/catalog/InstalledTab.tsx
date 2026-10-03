@@ -33,7 +33,6 @@ import {
 import type { WorkflowDefinition, SwarmTemplate } from '../../api/client';
 import type { Skill } from '../../types';
 import type { CatalogSkill } from '../../types';
-import { sanitizeText } from '../../utils/sanitize';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { type TabType, type ContentType, ContentTypeSelector, categoryLabel } from './shared';
 
@@ -189,9 +188,7 @@ function InstalledWorkflows({
               </span>
             )}
           </div>
-          {wf.description && (
-            <p className="text-sm text-muted-foreground mt-1">{sanitizeText(wf.description)}</p>
-          )}
+          {wf.description && <p className="text-sm text-muted-foreground mt-1">{wf.description}</p>}
           <p className="text-xs text-muted-foreground mt-1">
             {wf.steps.length} step{wf.steps.length !== 1 ? 's' : ''}
           </p>
@@ -282,9 +279,7 @@ function InstalledSwarms({
               {t.strategy}
             </span>
           </div>
-          {t.description && (
-            <p className="text-sm text-muted-foreground mt-1">{sanitizeText(t.description)}</p>
-          )}
+          {t.description && <p className="text-sm text-muted-foreground mt-1">{t.description}</p>}
           <div className="flex flex-wrap gap-1 mt-2">
             {t.roles.map((r) => (
               <span
@@ -466,9 +461,7 @@ function InstalledSystem({
               )}
             </div>
             {primary.description && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {sanitizeText(primary.description)}
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{primary.description}</p>
             )}
             {/* Install scope */}
             <div className="flex items-center flex-wrap gap-1.5 mt-2">
@@ -666,7 +659,7 @@ export function InstalledTab({
             {SOURCE_LABELS[primary.source] || primary.source}
           </span>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">{sanitizeText(primary.description)}</p>
+        <p className="text-sm text-muted-foreground mt-1">{primary.description}</p>
         <div className="flex items-center flex-wrap gap-1.5 mt-2">
           <span className="text-xs text-muted-foreground">Personalities:</span>
           {group.map((s) => (

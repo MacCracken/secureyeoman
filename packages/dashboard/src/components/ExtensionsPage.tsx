@@ -893,7 +893,8 @@ function DebuggerTab() {
     testMut.mutate({ hookPoint: testHookPointValue, data: parsedData });
   };
 
-  const entries = logData?.entries ?? [];
+  // Hook-log rows from the Rust gateway carry no `errors` list.
+  const entries = (logData?.entries ?? []).map((e) => ({ ...e, errors: e.errors ?? [] }));
 
   return (
     <div className="space-y-4">

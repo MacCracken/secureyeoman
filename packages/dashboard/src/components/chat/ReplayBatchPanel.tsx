@@ -150,10 +150,10 @@ export function ReplayBatchPanel({
         )}
       </div>
 
-      {/* Report view */}
-      {report && (
+      {/* Report view — the Rust gateway's report lacks `summary`/`results` for now */}
+      {report?.summary && (
         <div className="border rounded-lg p-4 space-y-3" data-testid="report-view">
-          <h4 className="text-sm font-semibold">Report: {report.job.replayModel}</h4>
+          <h4 className="text-sm font-semibold">Report: {report.job?.replayModel}</h4>
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div className="border rounded p-2">
               <div className="text-lg font-bold text-blue-500">{report.summary.sourceWins}</div>
@@ -183,10 +183,10 @@ export function ReplayBatchPanel({
               </tr>
             </thead>
             <tbody>
-              {report.results.map((r) => (
+              {(report.results ?? []).map((r) => (
                 <tr key={r.id} className="border-b">
                   <td className="py-1 font-mono truncate max-w-[100px]">
-                    {r.sourceConversationId.slice(0, 8)}
+                    {(r.sourceConversationId ?? '').slice(0, 8)}
                   </td>
                   <td className="py-1">{r.replayModel}</td>
                   <td className="py-1">{r.pairwiseWinner ?? '—'}</td>

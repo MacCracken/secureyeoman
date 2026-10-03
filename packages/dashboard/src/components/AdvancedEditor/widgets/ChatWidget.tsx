@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useChatStream } from '../../../hooks/useChat';
 import { Send, Loader2 } from 'lucide-react';
 import { ChatMarkdown } from '../../ChatMarkdown';
-import { sanitizeText } from '../../../utils/sanitize';
 
 export function ChatWidget() {
   const [input, setInput] = useState('');
@@ -30,7 +29,7 @@ export function ChatWidget() {
               }`}
             >
               {msg.role === 'user' ? (
-                <span>{sanitizeText(msg.content)}</span>
+                <span>{msg.content}</span>
               ) : (
                 <ChatMarkdown content={msg.content} />
               )}

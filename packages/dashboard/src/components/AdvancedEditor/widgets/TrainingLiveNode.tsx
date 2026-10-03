@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, Zap } from 'lucide-react';
 import {
@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import {
-  fetchTrainingStream,
+  subscribeTrainingStream,
   fetchQualityScores,
   triggerQualityScoring,
 } from '../../../api/client';
@@ -25,7 +25,6 @@ export function TrainingLiveNode() {
   const [lossSeries, setLossSeries] = useState<StreamPoint[]>([]);
   const [throughput, setThroughput] = useState(0);
   const [agreement, setAgreement] = useState(0);
-  const esRef = useRef<EventSource | null>(null);
   const queryClient = useQueryClient();
 
   const { data: _qualityData } = useQuery({
@@ -40,11 +39,10 @@ export function TrainingLiveNode() {
   });
 
   useEffect(() => {
-    const es = fetchTrainingStream();
-    esRef.current = es;
-    const handleMessage = (evt: MessageEvent<string>) => {
+    // Returns the unsubscribe function, which closes the stream on unmount.
+    return subscribeTrainingStream((raw) => {
       try {
-        const data = JSON.parse(evt.data) as { type: string; value: number; ts: number };
+        const data = JSON.parse(raw) as { type: string; value: number; ts: number };
         const point: StreamPoint = { ts: data.ts, value: data.value };
         if (data.type === 'loss') setLossSeries((p) => [...p.slice(-99), point]);
         else if (data.type === 'throughput') setThroughput(data.value);
@@ -52,11 +50,7 @@ export function TrainingLiveNode() {
       } catch {
         /* skip */
       }
-    };
-    es.addEventListener('message', handleMessage as EventListener);
-    return () => {
-      es.close();
-    };
+    });
   }, []);
 
   return (

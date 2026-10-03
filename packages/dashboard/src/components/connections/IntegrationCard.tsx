@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { updateIntegration } from '../../api/client';
 import type { IntegrationInfo } from '../../types';
-import { sanitizeText } from '../../utils/sanitize';
 import { PLATFORM_META, BASE_FIELDS, STATUS_CONFIG, formatRelativeTime } from './platformMetadata';
 
 export function IntegrationCard({
@@ -151,7 +150,7 @@ export function IntegrationCard({
         {integration.errorMessage && (
           <div className="mt-2 p-2 rounded bg-red-500/10 border border-red-500/20">
             <p className="text-xs text-red-600 dark:text-red-400 break-words">
-              {sanitizeText(integration.errorMessage)}
+              {integration.errorMessage}
             </p>
           </div>
         )}

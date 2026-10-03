@@ -716,7 +716,9 @@ function SuggestionRow({
           </span>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {(suggestion.action as any)?.content ?? JSON.stringify(suggestion.action).slice(0, 100)}
+          {(suggestion.action as any)?.content ??
+            // Suggestions from the Rust gateway carry no `action` payload.
+            (suggestion.action ? JSON.stringify(suggestion.action).slice(0, 100) : '')}
         </p>
         <p className="text-[10px] text-muted-foreground mt-1">
           {new Date(suggestion.suggestedAt).toLocaleString()}
