@@ -311,12 +311,32 @@ pub async fn update_workflow(
     .await
 }
 
+/// Delete a workflow with its runs (their step runs cascade) and versions.
+/// `workflow.runs.workflow_id` has no `ON DELETE CASCADE`, so deleting the
+/// definition alone failed — a 500 — for any workflow that had ever run.
 pub async fn delete_workflow(pool: &PgPool, id: uuid::Uuid) -> Result<bool, sqlx::Error> {
-    let result = sqlx::query("DELETE FROM workflow.definitions WHERE id = $1")
+    let mut tx = pool.begin().await?;
+    sqlx::query("DELETE FROM workflow.runs WHERE workflow_id = $1")
         .bind(id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
-    Ok(result.rows_affected() > 0)
+    let deleted = sqlx::query("DELETE FROM workflow.definitions WHERE id = $1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    tx.commit().await?;
+    Ok(deleted > 0)
+}
+
+/// The runs of a workflow that are still pending or running.
+pub async fn active_run_ids(pool: &PgPool, id: uuid::Uuid) -> Result<Vec<uuid::Uuid>, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT id FROM workflow.runs WHERE workflow_id = $1 AND status IN ('pending', 'running')",
+    )
+    .bind(id)
+    .fetch_all(pool)
+    .await
 }
 
 // ── Runs ─────────────────────────────────────────────────────────────────

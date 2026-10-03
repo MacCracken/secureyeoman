@@ -22,7 +22,8 @@ pub async fn list_workspaces(
     tenant_id: &str,
 ) -> Result<Vec<WorkspaceRow>, sqlx::Error> {
     sqlx::query_as::<_, WorkspaceRow>(
-        "SELECT * FROM workspace.workspaces WHERE tenant_id = $1 ORDER BY name ASC",
+        "SELECT id, name, description, COALESCE(settings, '{}'::jsonb) AS settings, created_at, updated_at, identity_provider_id, sso_domain, tenant_id
+         FROM workspace.workspaces WHERE tenant_id = $1 ORDER BY name ASC",
     )
     .bind(tenant_id)
     .fetch_all(pool)
@@ -43,7 +44,8 @@ pub async fn list_members(
     workspace_id: &str,
 ) -> Result<Vec<WorkspaceMemberRow>, sqlx::Error> {
     sqlx::query_as::<_, WorkspaceMemberRow>(
-        "SELECT workspace_id, user_id, role, joined_at FROM workspace.members WHERE workspace_id = $1 ORDER BY joined_at ASC",
+        "SELECT workspace_id, user_id, COALESCE(role, 'member') AS role, joined_at
+         FROM workspace.members WHERE workspace_id = $1 ORDER BY joined_at ASC",
     )
     .bind(workspace_id)
     .fetch_all(pool)
@@ -117,7 +119,8 @@ pub async fn get_workspace(
     tenant_id: &str,
 ) -> Result<Option<WorkspaceRow>, sqlx::Error> {
     sqlx::query_as::<_, WorkspaceRow>(
-        "SELECT * FROM workspace.workspaces WHERE id = $1 AND tenant_id = $2",
+        "SELECT id, name, description, COALESCE(settings, '{}'::jsonb) AS settings, created_at, updated_at, identity_provider_id, sso_domain, tenant_id
+         FROM workspace.workspaces WHERE id = $1 AND tenant_id = $2",
     )
     .bind(id)
     .bind(tenant_id)

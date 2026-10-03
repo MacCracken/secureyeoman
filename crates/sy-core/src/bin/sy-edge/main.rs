@@ -108,7 +108,7 @@ async fn main() {
 
 /// Mark the process non-dumpable, so a program it runs for /api/v1/exec
 /// (same user, not root) cannot read its environment (tokens, API keys)
-/// from /proc/<pid>/environ, nor its memory; core dumps are off too.
+/// from `/proc/<pid>/environ`, nor its memory; core dumps are off too.
 #[cfg(target_os = "linux")]
 fn make_non_dumpable() {
     // SAFETY: PR_SET_DUMPABLE takes integer arguments only and changes only

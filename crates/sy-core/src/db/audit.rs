@@ -328,7 +328,7 @@ pub async fn append_batch(
         let hash = entry_hash(&row);
         row.integrity_signature = sign(&hash, &row.integrity_previous_hash, signing_key);
 
-        let (seq,): (i64,) = sqlx::query_as(
+        let seq: i64 = sqlx::query_scalar(
             "INSERT INTO audit.entries (id, correlation_id, event, level, message, user_id,
                  task_id, metadata, \"timestamp\", integrity_version, integrity_signature,
                  integrity_previous_hash, tenant_id)

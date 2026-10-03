@@ -231,11 +231,22 @@ async fn update_workflow(
     Json(response).into_response()
 }
 
-/// DELETE /api/v1/workflows/{id} — 204.
+/// DELETE /api/v1/workflows/{id} — 204; its runs go with it, and any still
+/// executing on this instance is stopped.
 async fn delete_workflow(State(state): State<AppState>, Path(id): Path<uuid::Uuid>) -> Response {
     let Some(pool) = state.db() else {
         return db_unavailable();
     };
+    match workflow::active_run_ids(pool, id).await {
+        Ok(runs) => {
+            for run in runs {
+                if let Some((_, cancel)) = RUNNING.remove(&run) {
+                    cancel.notify_one();
+                }
+            }
+        }
+        Err(e) => return internal(e),
+    }
     match workflow::delete_workflow(pool, id).await {
         Ok(true) => StatusCode::NO_CONTENT.into_response(),
         Ok(false) => not_found("Workflow"),

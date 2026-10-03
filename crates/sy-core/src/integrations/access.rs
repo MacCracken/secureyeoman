@@ -72,7 +72,7 @@ async fn credential_ids(pool: &PgPool, platform: &str, oauth_providers: &[&str])
     let providers: Vec<String> = oauth_providers.iter().map(|p| p.to_string()).collect();
     ids.extend(
         sqlx::query_scalar::<_, String>(
-            "SELECT id FROM auth.oauth_tokens WHERE provider = ANY($1)",
+            "SELECT id FROM public.oauth_tokens WHERE provider = ANY($1)",
         )
         .bind(&providers)
         .fetch_all(pool)

@@ -388,10 +388,30 @@ async fn wait_for_run(app: &Router, token: &str, run_id: &str, want: Option<&str
     panic!("run {run_id} did not finish");
 }
 
-async fn start_run(app: &Router, token: &str, steps: Value, input: Value) -> String {
+/// Delete the workflows a test created — with their runs, which the delete
+/// has to take along (`runs.workflow_id` does not cascade).
+async fn delete_created(app: &Router, token: &str, created: &[String]) {
+    for id in created {
+        let path = format!("/api/v1/workflows/{id}");
+        let (status, body) = call(app, token, "DELETE", &path, None).await;
+        assert_eq!(status, StatusCode::NO_CONTENT, "{path}: {body}");
+        let (status, _) = call(app, token, "GET", &path, None).await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{path}");
+    }
+}
+
+/// Create a workflow of `steps` (recorded in `created`) and start a run.
+async fn start_run(
+    app: &Router,
+    token: &str,
+    created: &mut Vec<String>,
+    steps: Value,
+    input: Value,
+) -> String {
     let body = serde_json::json!({ "name": unique("exec"), "steps": steps }).to_string();
     let def = create(app, token, &body).await;
     let id = def["id"].as_str().unwrap();
+    created.push(id.to_string());
     let (status, started) = call(
         app,
         token,
@@ -411,6 +431,7 @@ async fn runs_execute_what_the_definition_says() {
     };
     let app = build_router(state);
     let admin = common::test_token("admin");
+    let mut created = Vec::new();
 
     // The kill switch starts off (the default); restore whatever was set.
     let (_, policy) = call(&app, &admin, "GET", "/api/v1/security/policy", None).await;
@@ -430,6 +451,7 @@ async fn runs_execute_what_the_definition_says() {
     let run_id = start_run(
         &app,
         &admin,
+        &mut created,
         serde_json::json!([
             {"id": "a", "type": "transform", "config": {"outputTemplate": "q={{input.q}}"}},
             {"id": "gated", "type": "transform", "dependsOn": ["a"],
@@ -469,6 +491,7 @@ async fn runs_execute_what_the_definition_says() {
     let run_id = start_run(
         &app,
         &admin,
+        &mut created,
         serde_json::json!([
             {"id": "a", "type": "transform", "config": {"outputTemplate": "x"}},
             {"id": "approve", "type": "human_approval", "dependsOn": ["a"]},
@@ -494,6 +517,7 @@ async fn runs_execute_what_the_definition_says() {
     let run_id = start_run(
         &app,
         &admin,
+        &mut created,
         serde_json::json!([{"id": "x", "type": "teleport"}]),
         serde_json::json!({}),
     )
@@ -512,6 +536,7 @@ async fn runs_execute_what_the_definition_says() {
     let run_id = start_run(
         &app,
         &admin,
+        &mut created,
         serde_json::json!([
             {"id": "wait", "type": "delay", "config": {"durationMs": 800}},
             {"id": "after", "type": "transform", "dependsOn": ["wait"],
@@ -536,6 +561,8 @@ async fn runs_execute_what_the_definition_says() {
     assert_eq!(run["status"], "cancelled");
     assert_eq!(run["stepRuns"], serde_json::json!([]));
 
+    delete_created(&app, &admin, &created).await;
+
     let restore = serde_json::json!({ "allowSubAgents": sub_agents_before }).to_string();
     let (status, _) = call(
         &app,
@@ -556,11 +583,13 @@ async fn emergency_stop_disables_and_cancels() {
     let pool = state.db().unwrap().clone();
     let app = build_router(state);
     let admin = common::test_token("admin");
+    let mut created = Vec::new();
 
     // A workflow mid-run: stopped, disabled, and its run cancelled.
     let run_id = start_run(
         &app,
         &admin,
+        &mut created,
         serde_json::json!([
             {"id": "wait", "type": "delay", "config": {"durationMs": 800}},
             {"id": "after", "type": "transform", "dependsOn": ["wait"],
@@ -654,4 +683,5 @@ async fn emergency_stop_disables_and_cancels() {
         .execute(&pool)
         .await
         .unwrap();
+    delete_created(&app, &admin, &created).await;
 }
