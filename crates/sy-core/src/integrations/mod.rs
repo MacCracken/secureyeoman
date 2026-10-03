@@ -1,5 +1,6 @@
 //! Integration clients — reusable credential resolution, proxy helpers, and typed API clients.
 
+pub mod access;
 pub mod github;
 pub mod gmail;
 pub mod google_calendar;

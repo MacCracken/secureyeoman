@@ -10,6 +10,7 @@ use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 
+use crate::integrations::access::{self, AccessMode};
 use crate::integrations::proxy::{self, AuthMode};
 use crate::state::AppState;
 
@@ -304,6 +305,15 @@ async fn create_issue(
     Path((owner, repo)): Path<(String, String)>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
+    let mode = access::mode_for(&state, "github", &["github"]).await;
+    if mode == AccessMode::Suggest {
+        return access::refuse(
+            StatusCode::FORBIDDEN,
+            "GitHub mode is 'suggest' — creating issues is not permitted in suggest mode. \
+             The personality may only read repository data."
+                .into(),
+        );
+    }
     if let Some(client) = state.github() {
         let title = body
             .get("title")
@@ -344,6 +354,30 @@ async fn create_comment(
     Path((owner, repo, number)): Path<(String, String, String)>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
+    let mode = access::mode_for(&state, "github", &["github"]).await;
+    match mode {
+        AccessMode::Suggest => {
+            return access::refuse(
+                StatusCode::FORBIDDEN,
+                "GitHub mode is 'suggest' — commenting is not permitted. The personality may only \
+                 read repository data."
+                    .into(),
+            );
+        }
+        AccessMode::Draft => {
+            return Json(serde_json::json!({
+                "preview": true,
+                "message": "GitHub mode is \"draft\" — this comment has NOT been posted. Review it \
+                            and post it manually if approved.",
+                "owner": owner,
+                "repo": repo,
+                "number": number,
+                "body": body.get("body"),
+            }))
+            .into_response();
+        }
+        AccessMode::Auto => {}
+    }
     gh_post(
         &state,
         &format!("/repos/{owner}/{repo}/issues/{number}/comments"),
@@ -360,6 +394,28 @@ async fn create_ssh_key(
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
+    let mode = access::mode_for(&state, "github", &["github"]).await;
+    match mode {
+        AccessMode::Suggest => {
+            return access::refuse(
+                StatusCode::FORBIDDEN,
+                "GitHub mode is 'suggest' — adding SSH keys is not permitted. The personality may \
+                 only read account data."
+                    .into(),
+            );
+        }
+        AccessMode::Draft => {
+            return Json(serde_json::json!({
+                "preview": true,
+                "message": "GitHub mode is \"draft\" — this SSH key has NOT been added. Review the \
+                            details below and add it manually via GitHub Settings > SSH Keys if approved.",
+                "title": body.get("title"),
+                "key": body.get("key"),
+            }))
+            .into_response();
+        }
+        AccessMode::Auto => {}
+    }
     gh_post(&state, "/user/keys", &body).await
 }
 
@@ -367,6 +423,16 @@ async fn delete_ssh_key(
     State(state): State<AppState>,
     Path(key_id): Path<String>,
 ) -> impl IntoResponse {
+    let mode = access::mode_for(&state, "github", &["github"]).await;
+    if mode != AccessMode::Auto {
+        return access::refuse(
+            StatusCode::FORBIDDEN,
+            format!(
+                "GitHub mode is '{}' — deleting SSH keys requires 'auto' mode.",
+                mode.as_str()
+            ),
+        );
+    }
     let auth = match resolve_auth(&state).await {
         Ok(a) => a,
         Err(e) => return e.into_response(),
@@ -401,6 +467,33 @@ async fn create_pull(
     Path((owner, repo)): Path<(String, String)>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
+    let mode = access::mode_for(&state, "github", &["github"]).await;
+    match mode {
+        AccessMode::Suggest => {
+            return access::refuse(
+                StatusCode::FORBIDDEN,
+                "GitHub mode is 'suggest' — creating pull requests is not permitted. The personality \
+                 may only read repository data."
+                    .into(),
+            );
+        }
+        AccessMode::Draft => {
+            return Json(serde_json::json!({
+                "preview": true,
+                "message": "GitHub mode is \"draft\" — this pull request has NOT been created. Review \
+                            the details below and create it manually if approved.",
+                "owner": owner,
+                "repo": repo,
+                "title": body.get("title"),
+                "head": body.get("head"),
+                "base": body.get("base"),
+                "body": body.get("body"),
+                "draft": body.get("draft"),
+            }))
+            .into_response();
+        }
+        AccessMode::Auto => {}
+    }
     gh_post(&state, &format!("/repos/{owner}/{repo}/pulls"), &body).await
 }
 

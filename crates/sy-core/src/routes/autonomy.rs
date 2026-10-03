@@ -24,8 +24,9 @@ pub fn router() -> Router<AppState> {
             "/api/v1/autonomy/audits/{id}/items/{itemId}",
             put(update_audit_item),
         )
+        // Unmapped in RBAC, so admin only (as TS required).
         .route(
-            "/api/v1/autonomy/emergency-stop/{agentId}/{reason}",
+            "/api/v1/autonomy/emergency-stop/{type}/{id}",
             post(emergency_stop),
         )
 }
@@ -48,9 +49,7 @@ async fn overview(State(state): State<AppState>) -> impl IntoResponse {
     Json(serde_json::json!({
         "enabled": true,
         "dbConnected": db_available,
-        "emergencyStopActive": false,
         "pendingAudits": 0,
-        "message": "Autonomy module operational",
     }))
     .into_response()
 }
@@ -202,14 +201,70 @@ async fn create_audit(
     }
 }
 
-/// POST /api/v1/autonomy/emergency-stop/{agentId}/{reason} — emergency stop an agent.
-async fn emergency_stop(Path((agent_id, reason)): Path<(String, String)>) -> impl IntoResponse {
-    // In production this would signal the agent runtime to halt immediately.
-    Json(serde_json::json!({
-        "agentId": agent_id,
-        "reason": reason,
-        "stopped": true,
-        "message": "Emergency stop signal dispatched",
-    }))
-    .into_response()
+/// POST /api/v1/autonomy/emergency-stop/{type}/{id} — stop a skill or a
+/// workflow now (TS `emergencyStop`): the skill is disabled; the workflow is
+/// disabled and its pending and running runs are cancelled. It used to read
+/// the type and id as an agent and a reason, and answer "stopped" without
+/// stopping anything.
+async fn emergency_stop(
+    State(state): State<AppState>,
+    auth: Option<axum::Extension<crate::auth::middleware::AuthContext>>,
+    Path((kind, id)): Path<(String, String)>,
+) -> impl IntoResponse {
+    let Some(pool) = state.db() else {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "Database not available"})),
+        )
+            .into_response();
+    };
+    let stopped = match kind.as_str() {
+        "skill" => sqlx::query("UPDATE soul.skills SET enabled = false WHERE id = $1")
+            .bind(&id)
+            .execute(pool)
+            .await
+            .map(|r| r.rows_affected() > 0),
+        "workflow" => match uuid::Uuid::parse_str(&id) {
+            Ok(workflow_id) => {
+                crate::routes::workflow::emergency_stop_workflow(pool, workflow_id).await
+            }
+            Err(_) => Ok(false),
+        },
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "type must be skill or workflow"})),
+            )
+                .into_response();
+        }
+    };
+    match stopped {
+        Ok(true) => {
+            let mut entry = crate::db::audit::NewAuditEntry::new(
+                "autonomy_emergency_stop",
+                "warn",
+                &format!("Emergency stop activated for {kind} {id}"),
+            );
+            let actor = auth.map(|axum::Extension(a)| a.user_id);
+            entry.metadata = Some(serde_json::json!({
+                "type": kind, "targetId": id, "actorId": actor,
+            }));
+            entry.user_id = actor;
+            state.audit_event(entry);
+            Json(serde_json::json!({ "success": true, "type": kind, "id": id })).into_response()
+        }
+        Ok(false) => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": format!("{kind} not found")})),
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "emergency stop failed");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Internal server error"})),
+            )
+                .into_response()
+        }
+    }
 }

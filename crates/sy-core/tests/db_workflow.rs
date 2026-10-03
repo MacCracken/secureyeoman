@@ -547,3 +547,111 @@ async fn runs_execute_what_the_definition_says() {
     .await;
     assert_eq!(status, StatusCode::OK);
 }
+
+#[tokio::test]
+async fn emergency_stop_disables_and_cancels() {
+    let Some(state) = common::db_state().await else {
+        return;
+    };
+    let pool = state.db().unwrap().clone();
+    let app = build_router(state);
+    let admin = common::test_token("admin");
+
+    // A workflow mid-run: stopped, disabled, and its run cancelled.
+    let run_id = start_run(
+        &app,
+        &admin,
+        serde_json::json!([
+            {"id": "wait", "type": "delay", "config": {"durationMs": 800}},
+            {"id": "after", "type": "transform", "dependsOn": ["wait"],
+             "config": {"outputTemplate": "too late"}},
+        ]),
+        serde_json::json!({}),
+    )
+    .await;
+    let run = wait_for_run(&app, &admin, &run_id, Some("running")).await;
+    let workflow_id = run["workflowId"].as_str().unwrap().to_string();
+
+    // Not for operators (the route is unmapped in RBAC: admin only).
+    let operator = common::test_token("operator");
+    let (status, _) = call(
+        &app,
+        &operator,
+        "POST",
+        &format!("/api/v1/autonomy/emergency-stop/workflow/{workflow_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+
+    let (status, body) = call(
+        &app,
+        &admin,
+        "POST",
+        &format!("/api/v1/autonomy/emergency-stop/workflow/{workflow_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["success"], true);
+    tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+    let run = wait_for_run(&app, &admin, &run_id, None).await;
+    assert_eq!(run["status"], "cancelled", "{run}");
+    assert_eq!(
+        run["stepRuns"],
+        serde_json::json!([]),
+        "the run was stopped"
+    );
+    let (_, def) = call(
+        &app,
+        &admin,
+        "GET",
+        &format!("/api/v1/workflows/{workflow_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(def["definition"]["isEnabled"], false);
+
+    // A skill: disabled.
+    let skill = unique("skill");
+    sqlx::query("INSERT INTO soul.skills (id, name, created_at, updated_at) VALUES ($1, $1, 0, 0)")
+        .bind(&skill)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let (status, _) = call(
+        &app,
+        &admin,
+        "POST",
+        &format!("/api/v1/autonomy/emergency-stop/skill/{skill}"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (enabled,): (bool,) = sqlx::query_as("SELECT enabled FROM soul.skills WHERE id = $1")
+        .bind(&skill)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(!enabled);
+
+    // Unknown targets and types.
+    for (path, want) in [
+        (
+            "/api/v1/autonomy/emergency-stop/skill/no-such-skill".to_string(),
+            StatusCode::NOT_FOUND,
+        ),
+        (
+            format!("/api/v1/autonomy/emergency-stop/agent/{skill}"),
+            StatusCode::BAD_REQUEST,
+        ),
+    ] {
+        let (status, _) = call(&app, &admin, "POST", &path, None).await;
+        assert_eq!(status, want, "{path}");
+    }
+    sqlx::query("DELETE FROM soul.skills WHERE id = $1")
+        .bind(&skill)
+        .execute(&pool)
+        .await
+        .unwrap();
+}

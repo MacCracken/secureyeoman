@@ -399,6 +399,42 @@ static RUNNING: std::sync::LazyLock<
     dashmap::DashMap<uuid::Uuid, std::sync::Arc<tokio::sync::Notify>>,
 > = std::sync::LazyLock::new(dashmap::DashMap::new);
 
+/// Emergency stop (autonomy): disable a workflow and cancel its pending and
+/// running runs, stopping those executing on this instance. `false` when
+/// the workflow does not exist.
+pub(crate) async fn emergency_stop_workflow(
+    pool: &sqlx::PgPool,
+    id: uuid::Uuid,
+) -> Result<bool, sqlx::Error> {
+    let now = now_ms();
+    let updated = sqlx::query(
+        "UPDATE workflow.definitions SET is_enabled = false, updated_at = $2 WHERE id = $1",
+    )
+    .bind(id)
+    .bind(now)
+    .execute(pool)
+    .await?
+    .rows_affected();
+    if updated == 0 {
+        return Ok(false);
+    }
+    let cancelled: Vec<uuid::Uuid> = sqlx::query_scalar(
+        "UPDATE workflow.runs SET status = 'cancelled', completed_at = $2
+         WHERE workflow_id = $1 AND status IN ('pending', 'running')
+         RETURNING id",
+    )
+    .bind(id)
+    .bind(now)
+    .fetch_all(pool)
+    .await?;
+    for run in cancelled {
+        if let Some((_, cancel)) = RUNNING.remove(&run) {
+            cancel.notify_one();
+        }
+    }
+    Ok(true)
+}
+
 /// Execute a run on the workflow engine in the background, recording its
 /// progress on the run row and each step's outcome in its step runs.
 fn spawn_execution(
