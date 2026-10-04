@@ -60,6 +60,12 @@ All notable changes to SecureYeoman are documented in this file.
 - lemon.js loaded on every Settings visit; it now loads when a checkout starts.
 - Logging out did not clear cached data for the next user of the tab.
 
+### Security — dependencies
+
+- **`undici` 7.29.0 → 7.30.0** under `@qdrant/js-client-rest` (root override): ten advisories published after 0.5.4, among them TLS certificate validation bypass in `BalancedPool`, cross-user cookie disclosure via shared caches, and several denials of service.
+- **`braces`** (stack exhaustion on deeply nested patterns) has no patched release. Excalidraw pinned `sass` 1.51.0, which pulled it in through `chokidar` 3; `sass` is overridden to 1.105.1 (`chokidar` 5, no `braces`). Nothing in the repo compiles Sass, so this changes no output. The production dependency tree now audits clean (`npm audit --omit=dev`: 0).
+- Still open: `braces` reaches the **build-time** tools Tailwind 3 and `vite-plugin-pwa` 0.19 (6 high, via `chokidar` 3, `fast-glob` and `micromatch`), with patterns the build itself supplies. Clearing it needs Tailwind 4 and `vite-plugin-pwa` 2 (both majors); until then the full `npm audit` fails.
+
 ### Fixed
 
 - **Workflows:** definitions written by the dashboard and TS (`type`, not `stepType`) ran as empty workflows; a workflow that had ever run could not be deleted (a 500 — its runs are now deleted with it); `PATCH /api/v1/security/policy` reset every other toggle when its read failed, and accepted any key.
