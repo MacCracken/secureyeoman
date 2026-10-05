@@ -807,33 +807,33 @@ export function ChatPage() {
               onTyping={handleTyping}
             />
           </div>
+
+          {/* Branch explorer side panel — an overlay on phones, a column beside the chat from sm up */}
+          {showBranchTree && selectedConversationId && (
+            <Suspense fallback={null}>
+              <div className="fixed inset-y-0 right-0 z-30 w-full max-w-96 shrink-0 sm:static sm:z-auto sm:w-96">
+                <BranchExplorer
+                  conversationId={selectedConversationId}
+                  activeConversationId={selectedConversationId}
+                  onNavigate={(id) => {
+                    setSelectedConversationId(id);
+                  }}
+                  onCompare={(sourceId, targetId) => {
+                    setSelectedConversationId(sourceId);
+                    void queryClient.invalidateQueries({ queryKey: ['conversation', targetId] });
+                  }}
+                  onClose={() => {
+                    setShowBranchTree(false);
+                  }}
+                />
+              </div>
+            </Suspense>
+          )}
         </div>
       ) : (
         <div className="flex-1 min-h-0">
           <GroupChatPage />
         </div>
-      )}
-
-      {/* Branch explorer side panel */}
-      {showBranchTree && selectedConversationId && (
-        <Suspense fallback={null}>
-          <div className="w-96 shrink-0">
-            <BranchExplorer
-              conversationId={selectedConversationId}
-              activeConversationId={selectedConversationId}
-              onNavigate={(id) => {
-                setSelectedConversationId(id);
-              }}
-              onCompare={(sourceId, targetId) => {
-                setSelectedConversationId(sourceId);
-                void queryClient.invalidateQueries({ queryKey: ['conversation', targetId] });
-              }}
-              onClose={() => {
-                setShowBranchTree(false);
-              }}
-            />
-          </div>
-        </Suspense>
       )}
 
       {/* Replay dialog modal */}

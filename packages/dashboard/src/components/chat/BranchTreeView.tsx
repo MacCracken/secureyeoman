@@ -49,10 +49,12 @@ function flattenTree(
     },
     sourcePosition: Position.Bottom,
     targetPosition: Position.Top,
+    // Theme variables hold HSL channels, so they need hsl(). The colour replaces React Flow's #222.
     style: {
-      border: isActive ? '2px solid var(--primary)' : '1px solid var(--border)',
+      border: isActive ? '2px solid hsl(var(--primary))' : '1px solid hsl(var(--border))',
       borderRadius: '8px',
-      background: 'var(--card)',
+      background: 'hsl(var(--card))',
+      color: 'hsl(var(--card-foreground))',
       width: 240,
     },
   });
@@ -63,9 +65,10 @@ function flattenTree(
       source: parentId,
       target: node.conversationId,
       label: node.forkMessageIndex != null ? `msg ${node.forkMessageIndex}` : undefined,
-      markerEnd: { type: MarkerType.ArrowClosed },
-      style: { stroke: 'var(--muted-foreground)' },
-      labelStyle: { fontSize: 10, fill: 'var(--muted-foreground)' },
+      markerEnd: { type: MarkerType.ArrowClosed, color: 'hsl(var(--muted-foreground))' },
+      style: { stroke: 'hsl(var(--muted-foreground))' },
+      labelStyle: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+      labelBgStyle: { fill: 'hsl(var(--card))' },
     });
   }
 

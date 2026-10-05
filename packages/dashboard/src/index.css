@@ -105,6 +105,8 @@
 
 /* CSS Variables for theming */
 :root {
+  /* Native controls (date pickers, spinners, select popups) match the theme; `.dark` switches them. */
+  color-scheme: light;
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
   --card: 0 0% 100%;
@@ -134,6 +136,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
   --card: 222.2 84% 4.9%;
@@ -1166,4 +1169,27 @@ html[data-theme="nightowl"] {
       min-width: 44px;
     }
   }
+}
+
+/*
+  React Flow's stylesheet, which the graph components import unlayered, paints the controls and
+  the minimap white. Unlayered rules beat every layer in this file, so these overrides stay
+  unlayered, scoped under .react-flow to win, and follow the theme.
+*/
+.react-flow .react-flow__controls-button {
+  background: hsl(var(--card));
+  border-bottom-color: hsl(var(--border));
+  color: hsl(var(--card-foreground));
+}
+
+.react-flow .react-flow__controls-button:hover {
+  background: hsl(var(--muted));
+}
+
+.react-flow .react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.react-flow .react-flow__minimap {
+  background-color: hsl(var(--card));
 }

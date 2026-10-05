@@ -37,6 +37,10 @@ vi.mock('../api/client', () => ({
   getAccessToken: vi.fn().mockReturnValue(null),
 }));
 
+vi.mock('./chat/BranchExplorer', () => ({
+  BranchExplorer: () => <div data-testid="branch-explorer" />,
+}));
+
 // ── Mock ModelWidget to keep test focused ────────────────────────
 vi.mock('./ModelWidget', () => ({
   ModelWidget: ({ onClose }: { onClose: () => void }) => (
@@ -183,6 +187,38 @@ describe('ChatPage', () => {
   it('renders sidebar toggle button', () => {
     renderComponent();
     expect(screen.getByTestId('sidebar-toggle')).toBeInTheDocument();
+  });
+
+  it('opens the branch explorer beside the chat, not below it', async () => {
+    // The restored conversation must be in the list, or the page drops it once the list loads.
+    mockFetchConversations.mockResolvedValue({
+      conversations: [
+        {
+          id: 'conv-1',
+          title: 'Planning',
+          personalityId: 'p-1',
+          messageCount: 2,
+          parentConversationId: null,
+          forkMessageIndex: null,
+          branchLabel: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+    localStorage.setItem('soul:chatConversationId', 'conv-1');
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText(/Chat with FRIDAY/);
+    await waitFor(() => {
+      expect(mockFetchConversations).toHaveBeenCalled();
+    });
+
+    await user.click(await screen.findByTitle('View branch tree'));
+    const explorer = await screen.findByTestId('branch-explorer');
+    // The chat row holds the conversation toggle and the chat; outside it, the panel had no height.
+    expect(screen.getByTestId('sidebar-toggle').parentElement).toContainElement(explorer);
   });
 
   it('opens conversation sidebar on toggle click', async () => {

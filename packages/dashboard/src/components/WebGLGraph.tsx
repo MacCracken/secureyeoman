@@ -1,9 +1,11 @@
 import { useMemo, useEffect } from 'react';
-import { SigmaContainer, useLoadGraph, useRegisterEvents } from '@react-sigma/core';
+import { SigmaContainer, useLoadGraph, useRegisterEvents, useSetSettings } from '@react-sigma/core';
+import drawHover from 'sigma/rendering/canvas/hover';
 import DirectedGraph from 'graphology';
 import forceAtlas2 from 'graphology-layout-forceatlas2';
 import dagre from 'dagre';
 import '@react-sigma/core/lib/react-sigma.min.css';
+import { useTheme } from '../hooks/useTheme';
 
 export interface WebGLGraphNode {
   id: string;
@@ -110,6 +112,29 @@ function GraphLoader({
   return null;
 }
 
+/**
+ * Sigma paints labels on a canvas, in black by default. They take the theme's foreground instead,
+ * read again on every theme switch. Sigma's hover box is always white, so hovered labels stay black.
+ */
+function ThemedLabels() {
+  const { theme, isDark } = useTheme();
+  const setSettings = useSetSettings();
+
+  useEffect(() => {
+    const foreground = getComputedStyle(document.documentElement)
+      .getPropertyValue('--foreground')
+      .trim();
+    setSettings({
+      labelColor: { color: `hsl(${foreground})` },
+      hoverRenderer: (context, data, settings) => {
+        drawHover(context, data, { ...settings, labelColor: { color: '#000' } });
+      },
+    });
+  }, [theme, isDark, setSettings]);
+
+  return null;
+}
+
 // ── Public component ──────────────────────────────────────────────
 
 export function WebGLGraph({
@@ -142,7 +167,8 @@ export function WebGLGraph({
 
   return (
     <SigmaContainer
-      style={{ height, width: '100%' }}
+      // react-sigma's stylesheet paints the graph white; let the themed page show through.
+      style={{ height, width: '100%', background: 'transparent' }}
       className={className}
       settings={{
         renderEdgeLabels: false,
@@ -155,6 +181,7 @@ export function WebGLGraph({
       }}
     >
       <GraphLoader nodes={nodes} edges={edges} onNodeClick={onNodeClick} layout={layout} />
+      <ThemedLabels />
     </SigmaContainer>
   );
 }

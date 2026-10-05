@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { WebGLGraph } from './WebGLGraph';
+import { useTheme, type ThemeId } from '../hooks/useTheme';
 // Imported after vi.mock hoisting — these resolve to the mocked versions
 import _forceAtlas2 from 'graphology-layout-forceatlas2';
 import _dagre from 'dagre';
+import _drawHover from 'sigma/rendering/canvas/hover';
 
 // ── Mocks ───────────────────────────────────────────────────────────
 
@@ -13,6 +15,7 @@ const mockLoadGraph = vi.fn();
 const mockRegisterEvents = vi.fn((handlers: Record<string, (args: unknown) => void>) => {
   capturedRegisterHandlers = handlers;
 });
+const mockSetSettings = vi.fn();
 
 vi.mock('@react-sigma/core', () => ({
   SigmaContainer: ({
@@ -28,10 +31,13 @@ vi.mock('@react-sigma/core', () => ({
   ),
   useLoadGraph: () => mockLoadGraph,
   useRegisterEvents: () => mockRegisterEvents,
+  useSetSettings: () => mockSetSettings,
   useSigma: vi.fn(() => ({ getCamera: vi.fn(), refresh: vi.fn() })),
 }));
 
 vi.mock('@react-sigma/core/lib/react-sigma.min.css', () => ({}));
+
+vi.mock('sigma/rendering/canvas/hover', () => ({ default: vi.fn() }));
 
 // Pure vi.fn() inside factories — no external variable references needed
 vi.mock('graphology-layout-forceatlas2', () => ({
@@ -72,6 +78,8 @@ const dagMock = _dagre as unknown as {
   graphlib: { Graph: ReturnType<typeof vi.fn> };
   layout: ReturnType<typeof vi.fn>;
 };
+
+const drawHoverMock = _drawHover as unknown as ReturnType<typeof vi.fn>;
 
 // dagre graph instance — returned by new dagre.graphlib.Graph()
 const mockDagreGraphInstance = {
@@ -241,5 +249,63 @@ describe('WebGLGraph', () => {
     await screen.findByTestId('sigma-container');
     expect(setNodeAttributeSpy).toHaveBeenCalledWith(expect.any(String), 'x', 100);
     expect(setNodeAttributeSpy).toHaveBeenCalledWith(expect.any(String), 'y', 200);
+  });
+});
+
+describe('WebGLGraph theming', () => {
+  let switchTheme: (theme: ThemeId) => void = () => {};
+  function ThemeSwitcher() {
+    switchTheme = useTheme().setTheme;
+    return null;
+  }
+
+  beforeEach(() => {
+    mockSetSettings.mockClear();
+    drawHoverMock.mockClear();
+    mockWebGLSupport(true);
+  });
+
+  afterEach(() => {
+    document.documentElement.style.removeProperty('--foreground');
+    vi.restoreAllMocks();
+  });
+
+  it('draws labels in the theme foreground on a transparent canvas', async () => {
+    document.documentElement.style.setProperty('--foreground', '210 40% 98%');
+    render(<WebGLGraph nodes={sampleNodes} edges={sampleEdges} />);
+    const container = await screen.findByTestId('sigma-container');
+
+    expect(container.style.background).toBe('transparent');
+    const settings = mockSetSettings.mock.lastCall![0];
+    expect(settings.labelColor).toEqual({ color: 'hsl(210 40% 98%)' });
+
+    // Sigma's hover box is white whatever the theme, so the hovered label stays black.
+    const context = {} as CanvasRenderingContext2D;
+    const node = { x: 0, y: 0, size: 6, label: 'Node 1', color: '#ff0000' };
+    settings.hoverRenderer(context, node, { labelSize: 12, labelColor: settings.labelColor });
+    expect(drawHoverMock).toHaveBeenCalledWith(
+      context,
+      node,
+      expect.objectContaining({ labelSize: 12, labelColor: { color: '#000' } })
+    );
+  });
+
+  it('reads the foreground again when the theme switches', async () => {
+    render(
+      <>
+        <ThemeSwitcher />
+        <WebGLGraph nodes={sampleNodes} edges={sampleEdges} />
+      </>
+    );
+    await screen.findByTestId('sigma-container');
+    act(() => {
+      switchTheme('dark');
+    });
+
+    document.documentElement.style.setProperty('--foreground', '215 14% 17%');
+    act(() => {
+      switchTheme('github-light');
+    });
+    expect(mockSetSettings.mock.lastCall![0].labelColor).toEqual({ color: 'hsl(215 14% 17%)' });
   });
 });
