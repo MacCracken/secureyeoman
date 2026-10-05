@@ -75,7 +75,7 @@ export function AgentEvalWidget() {
         </label>
         <select
           id="eval-suite-select"
-          className="rounded border px-2 py-1 text-sm"
+          className="rounded-sm border px-2 py-1 text-sm"
           value={selectedSuite ?? ''}
           onChange={(e) => {
             setSelectedSuite(e.target.value || null);
@@ -93,7 +93,7 @@ export function AgentEvalWidget() {
         {selectedSuite && (
           <button
             type="button"
-            className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-sm bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
             disabled={runSuiteMutation.isPending}
             onClick={() => {
               runSuiteMutation.mutate(selectedSuite);
@@ -156,7 +156,7 @@ export function AgentEvalWidget() {
 
       {/* Run detail — per-scenario results */}
       {runDetail && (
-        <div className="mt-4 rounded border p-3">
+        <div className="mt-4 rounded-sm border p-3">
           <h3 className="mb-2 font-medium">
             Run Detail: {runDetail.suiteName}
             <span

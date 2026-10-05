@@ -25,7 +25,6 @@ import {
   Activity,
 } from 'lucide-react';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { sanitizeText } from '../utils/sanitize';
 import { markNotificationRead, markAllNotificationsRead, deleteNotification } from '../api/client';
 import type { WebSocketMessage, ServerNotification } from '../types';
 
@@ -281,15 +280,15 @@ export function NotificationBell() {
   const iconForType = (type: string) => {
     switch (type) {
       case 'security':
-        return <Shield className="w-4 h-4 text-warning flex-shrink-0" />;
+        return <Shield className="w-4 h-4 text-warning shrink-0" />;
       case 'task_completed':
-        return <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />;
+        return <CheckCircle className="w-4 h-4 text-success shrink-0" />;
       case 'task_failed':
-        return <XCircle className="w-4 h-4 text-destructive flex-shrink-0" />;
+        return <XCircle className="w-4 h-4 text-destructive shrink-0" />;
       case 'heartbeat_alert':
-        return <Activity className="w-4 h-4 text-warning flex-shrink-0" />;
+        return <Activity className="w-4 h-4 text-warning shrink-0" />;
       default:
-        return <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0" />;
+        return <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0" />;
     }
   };
 
@@ -368,7 +367,7 @@ export function NotificationBell() {
                     onClick={() => {
                       markAsRead(n);
                     }}
-                    className="flex gap-2 flex-1 min-w-0 text-left hover:bg-muted/30 transition-colors rounded"
+                    className="flex gap-2 flex-1 min-w-0 text-left hover:bg-muted/30 transition-colors rounded-sm"
                   >
                     {iconForType(n.type)}
                     <div className="min-w-0 flex-1">
@@ -376,15 +375,13 @@ export function NotificationBell() {
                         <p
                           className={`text-xs font-medium truncate ${n.read ? '' : 'text-foreground'}`}
                         >
-                          {sanitizeText(n.title)}
+                          {n.title}
                         </p>
                         {!n.read && (
-                          <span className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0 ml-1" />
+                          <span className="w-1.5 h-1.5 bg-primary rounded-full shrink-0 ml-1" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {sanitizeText(n.message)}
-                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{n.message}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         {formatTime(n.timestamp)}
                       </p>
@@ -394,7 +391,7 @@ export function NotificationBell() {
                     onClick={() => {
                       removeItem(n);
                     }}
-                    className="btn-ghost p-1 text-muted-foreground hover:text-destructive flex-shrink-0 self-start mt-0.5"
+                    className="btn-ghost p-1 text-muted-foreground hover:text-destructive shrink-0 self-start mt-0.5"
                     aria-label={`Dismiss: ${n.title}`}
                     title="Dismiss"
                   >

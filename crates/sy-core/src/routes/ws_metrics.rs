@@ -29,7 +29,8 @@ use crate::state::AppState;
 /// `video_stream`: TS required `capture:read`, a resource no route or role
 /// used, so only admins could subscribe; live frames need what viewing a
 /// stream session over REST needs, `capture.screen:capture`.
-/// Channels not listed here are open to any authenticated user.
+/// Channels not listed here are open to any authenticated user, except the
+/// per-session `video:<id>` frame channels, which `/ws/video` gates.
 pub const CHANNEL_PERMISSIONS: &[(&str, &str, &str)] = &[
     ("metrics", "metrics", "read"),
     ("audit", "audit", "read"),
@@ -43,7 +44,18 @@ pub const CHANNEL_PERMISSIONS: &[(&str, &str, &str)] = &[
     ("video_stream", "capture.screen", "capture"),
 ];
 
+/// Largest client message (subscribe/unsubscribe requests are tiny).
+const MAX_MESSAGE_BYTES: usize = 64 * 1024;
+/// Bytes queued for a client that stops reading before it is dropped.
+const MAX_QUEUED_BYTES: usize = 1024 * 1024;
+/// Channels one client may hold, and the longest channel name accepted.
+const MAX_SUBSCRIPTIONS: usize = 64;
+const MAX_CHANNEL_NAME: usize = 128;
+
 fn channel_permission(channel: &str) -> Option<(&'static str, &'static str)> {
+    if channel.starts_with("video:") {
+        return Some(("capture.screen", "capture"));
+    }
     CHANNEL_PERMISSIONS
         .iter()
         .find(|(ch, _, _)| *ch == channel)
@@ -76,6 +88,9 @@ async fn ws_metrics_upgrade(
     let rx = state.bridge_subscribe();
 
     ws.protocols([principal.protocol.clone()])
+        .max_message_size(MAX_MESSAGE_BYTES)
+        .max_frame_size(MAX_MESSAGE_BYTES)
+        .max_write_buffer_size(MAX_QUEUED_BYTES)
         .on_upgrade(move |socket| handle_ws_client(socket, principal, rx))
         .into_response()
 }
@@ -111,8 +126,13 @@ async fn handle_ws_client(
                                     let mut accepted = Vec::new();
                                     for ch in channels.iter().take(50) {
                                         // Gated channels need their RBAC permission;
-                                        // refused ones are simply left out of the ack.
-                                        if !may_subscribe(&principal, ch) {
+                                        // refused ones are simply left out of the ack,
+                                        // as are names past the per-client bounds.
+                                        if ch.len() > MAX_CHANNEL_NAME
+                                            || (subscribed_channels.len() >= MAX_SUBSCRIPTIONS
+                                                && !subscribed_channels.contains(ch))
+                                            || !may_subscribe(&principal, ch)
+                                        {
                                             continue;
                                         }
                                         subscribed_channels.insert(ch.clone());
@@ -210,5 +230,12 @@ mod tests {
         assert!(may_subscribe(&auditor, "audit"));
         assert!(may_subscribe(&auditor, "security"));
         assert!(may_subscribe(&principal("admin"), "video_stream"));
+    }
+
+    #[test]
+    fn per_session_video_frames_are_gated_like_ws_video() {
+        assert!(!may_subscribe(&principal("viewer"), "video:0190a1b2"));
+        assert!(!may_subscribe(&principal("operator"), "video:0190a1b2"));
+        assert!(may_subscribe(&principal("admin"), "video:0190a1b2"));
     }
 }

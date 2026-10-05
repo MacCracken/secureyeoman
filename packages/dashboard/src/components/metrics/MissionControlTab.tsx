@@ -277,7 +277,7 @@ const ActiveTasksSection = memo(function ActiveTasksSection({
           <div className="space-y-2">
             {activeTasks.map((task) => (
               <div key={task.id} className="flex items-start gap-2 p-2 rounded-md bg-muted/30">
-                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin mt-0.5 flex-shrink-0" />
+                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin mt-0.5 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-xs font-medium truncate">{task.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{task.type}</p>
@@ -326,10 +326,10 @@ const WorkflowRunsSection = memo(function WorkflowRunsSection({ navigate }: Sect
                 className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => void navigate('/automation?tab=workflows')}
               >
-                <GitMerge className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                <GitMerge className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span className="text-xs font-medium truncate flex-1">{wf.name}</span>
                 <span
-                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${wf.isEnabled ? 'bg-success' : 'bg-muted-foreground'}`}
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${wf.isEnabled ? 'bg-success' : 'bg-muted-foreground'}`}
                 />
               </div>
             ))}
@@ -380,16 +380,16 @@ const AgentHealthSection = memo(function AgentHealthSection({
                       p.avatarUrl.startsWith('/avatars/') ? p.avatarUrl : `/api/v1${p.avatarUrl}`
                     }
                     alt={p.name}
-                    className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                    className="w-5 h-5 rounded-full object-cover shrink-0"
                   />
                 ) : (
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                     <Bot className="w-3 h-3 text-primary" />
                   </div>
                 )}
                 <span className="text-xs font-medium truncate flex-1">{p.name}</span>
                 <span
-                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${heartbeatRunning ? 'bg-success' : 'bg-muted-foreground'}`}
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${heartbeatRunning ? 'bg-success' : 'bg-muted-foreground'}`}
                 />
               </div>
             ))}
@@ -486,10 +486,10 @@ const IntegrationGridSection = memo(function IntegrationGridSection({
             {mcpServers.slice(0, 5).map((srv) => (
               <div key={srv.id} className="flex items-center gap-2 text-xs">
                 <span
-                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${srv.enabled ? 'bg-success' : 'bg-muted-foreground'}`}
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${srv.enabled ? 'bg-success' : 'bg-muted-foreground'}`}
                 />
                 <span className="truncate flex-1 font-medium">{srv.name}</span>
-                <span className="text-muted-foreground flex-shrink-0">
+                <span className="text-muted-foreground shrink-0">
                   {srv.enabled ? 'Active' : 'Off'}
                 </span>
               </div>
@@ -540,7 +540,7 @@ const SecurityEventsSection = memo(function SecurityEventsSection({
             {securityEvents.slice(0, 5).map((evt) => (
               <div key={evt.id} className="flex items-start gap-2 text-xs">
                 <span
-                  className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${SEV_DOT[evt.severity] ?? 'bg-muted'}`}
+                  className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${SEV_DOT[evt.severity] ?? 'bg-muted'}`}
                 />
                 <div className="min-w-0">
                   <p className="font-medium truncate capitalize">{evt.type.replace(/_/g, ' ')}</p>
@@ -590,7 +590,7 @@ const AuditStreamSection = memo(function AuditStreamSection({ navigate }: Sectio
                 className="flex items-start gap-2 text-xs border-b border-border/30 pb-1.5 last:border-0"
               >
                 <span
-                  className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${LEVEL_DOT[entry.level] ?? 'bg-primary'}`}
+                  className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${LEVEL_DOT[entry.level] ?? 'bg-primary'}`}
                 />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium truncate capitalize">
@@ -598,7 +598,7 @@ const AuditStreamSection = memo(function AuditStreamSection({ navigate }: Sectio
                   </p>
                   <p className="text-muted-foreground truncate">{entry.message}</p>
                 </div>
-                <span className="text-muted-foreground flex-shrink-0 font-mono text-[10px]">
+                <span className="text-muted-foreground shrink-0 font-mono text-[10px]">
                   {new Date(entry.timestamp).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -646,7 +646,7 @@ const AgentWorldSection = memo(function AgentWorldSection({
                   adjustZoom(-0.25);
                 }}
                 disabled={worldZoom <= 0.5}
-                className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
+                className="px-1.5 py-0.5 rounded-sm hover:text-foreground disabled:opacity-30"
                 aria-label="Zoom out"
               >
                 −
@@ -658,7 +658,7 @@ const AgentWorldSection = memo(function AgentWorldSection({
                   adjustZoom(0.25);
                 }}
                 disabled={worldZoom >= 2.0}
-                className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
+                className="px-1.5 py-0.5 rounded-sm hover:text-foreground disabled:opacity-30"
                 aria-label="Zoom in"
               >
                 +
@@ -670,7 +670,7 @@ const AgentWorldSection = memo(function AgentWorldSection({
                 onClick={() => {
                   setAndPersistWorldView('grid');
                 }}
-                className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                 title="Card grid view"
                 aria-pressed={worldViewMode === 'grid'}
               >
@@ -680,7 +680,7 @@ const AgentWorldSection = memo(function AgentWorldSection({
                 onClick={() => {
                   setAndPersistWorldView('map');
                 }}
-                className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                 title="World map view"
                 aria-pressed={worldViewMode === 'map'}
               >
@@ -690,7 +690,7 @@ const AgentWorldSection = memo(function AgentWorldSection({
                 onClick={() => {
                   setAndPersistWorldView('large');
                 }}
-                className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                 title="Large zone view"
                 aria-pressed={worldViewMode === 'large'}
               >
@@ -888,7 +888,7 @@ function SortableCardWrapper({
         <button
           {...attributes}
           {...listeners}
-          className="absolute top-2 left-2 z-20 p-1 rounded bg-background/80 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-2 left-2 z-20 p-1 rounded-sm bg-background/80 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
@@ -896,7 +896,7 @@ function SortableCardWrapper({
       {editMode && !def.pinned && (
         <button
           onClick={onRemove}
-          className="absolute top-2 right-2 z-20 p-1 rounded bg-background/80 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-2 right-2 z-20 p-1 rounded-sm bg-background/80 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <X className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
@@ -1168,7 +1168,7 @@ export function MissionControlTab({
           aria-modal="true"
           aria-label="Agent World — fullscreen"
         >
-          <div className="flex items-center justify-between px-4 py-2 border-b flex-shrink-0">
+          <div className="flex items-center justify-between px-4 py-2 border-b shrink-0">
             <div className="flex items-center gap-2">
               <Bot className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium">Agent World</span>
@@ -1180,7 +1180,7 @@ export function MissionControlTab({
                     adjustZoom(-0.25);
                   }}
                   disabled={worldZoom <= 0.5}
-                  className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
+                  className="px-1.5 py-0.5 rounded-sm hover:text-foreground disabled:opacity-30"
                   aria-label="Zoom out"
                 >
                   −
@@ -1191,7 +1191,7 @@ export function MissionControlTab({
                     adjustZoom(0.25);
                   }}
                   disabled={worldZoom >= 2.0}
-                  className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
+                  className="px-1.5 py-0.5 rounded-sm hover:text-foreground disabled:opacity-30"
                   aria-label="Zoom in"
                 >
                   +
@@ -1203,7 +1203,7 @@ export function MissionControlTab({
                   onClick={() => {
                     setAndPersistWorldView('grid');
                   }}
-                  className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                   title="Card grid view"
                   aria-pressed={worldViewMode === 'grid'}
                 >
@@ -1213,7 +1213,7 @@ export function MissionControlTab({
                   onClick={() => {
                     setAndPersistWorldView('map');
                   }}
-                  className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                   title="World map view"
                   aria-pressed={worldViewMode === 'map'}
                 >
@@ -1223,7 +1223,7 @@ export function MissionControlTab({
                   onClick={() => {
                     setAndPersistWorldView('large');
                   }}
-                  className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                   title="Large zone view"
                   aria-pressed={worldViewMode === 'large'}
                 >
@@ -1236,7 +1236,7 @@ export function MissionControlTab({
                   setIsFullscreen(false);
                 }}
                 aria-label="Exit fullscreen"
-                className="p-1 rounded hover:bg-muted transition-colors"
+                className="p-1 rounded-sm hover:bg-muted transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1266,7 +1266,7 @@ export function MissionControlTab({
                 setCatalogueOpen(false);
                 setEditMode(false);
               }}
-              className="p-1 rounded hover:bg-muted"
+              className="p-1 rounded-sm hover:bg-muted"
             >
               <X className="w-4 h-4" />
             </button>
@@ -1299,7 +1299,7 @@ export function MissionControlTab({
                         )
                       );
                     }}
-                    className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors focus:outline-none ${
+                    className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors focus:outline-hidden ${
                       isVisible ? 'bg-primary' : 'bg-muted'
                     } ${def.pinned ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                   >

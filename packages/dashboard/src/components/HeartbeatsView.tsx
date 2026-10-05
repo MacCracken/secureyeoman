@@ -154,7 +154,7 @@ export function HeartbeatsView() {
     <div className="space-y-3">
       {/* Filter bar */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
 
         {/* Text search */}
         <div className="relative">
@@ -229,7 +229,7 @@ export function HeartbeatsView() {
 
       {/* Date Range Filter — filters by last run time */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
         {HB_DATE_PRESETS.map((preset) => (
           <button
             key={preset.label}
@@ -372,9 +372,9 @@ function HeartbeatCard({
       <div className="p-4 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           {task.enabled ? (
-            <Play className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+            <Play className="w-4 h-4 text-success shrink-0 mt-0.5" />
           ) : (
-            <Pause className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <Pause className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
           )}
           <div className="min-w-0">
             <p className="font-medium text-sm">{task.name}</p>
@@ -448,7 +448,7 @@ function HeartbeatCard({
             onClick={() => {
               setExpanded((e) => !e);
             }}
-            className="btn-ghost p-1 rounded"
+            className="btn-ghost p-1 rounded-sm"
             title="Toggle execution history"
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -504,7 +504,7 @@ function HeartbeatCard({
                         </td>
                         <td className="py-1 pr-4">
                           {agentName ? (
-                            <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded whitespace-nowrap">
+                            <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded-sm whitespace-nowrap">
                               {agentName}
                             </span>
                           ) : (

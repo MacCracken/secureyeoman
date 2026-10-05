@@ -12,6 +12,7 @@ use axum::body::Body;
 use axum::extract::ConnectInfo;
 use axum::http::Request;
 use std::net::SocketAddr;
+use sy_core::middleware::client_ip::TrustedProxies;
 use sy_core::server::build_router;
 use sy_core::state::AppState;
 
@@ -22,11 +23,13 @@ fn restricted_app() -> axum::Router {
     build_router(state)
 }
 
-/// Build a test app that trusts `X-Forwarded-For` (simulating a reverse proxy).
+/// Build a test app behind a reverse proxy at 10.0.0.0/8, whose
+/// `X-Forwarded-For` is trusted.
 fn proxied_app() -> axum::Router {
+    let (proxies, _) = TrustedProxies::parse_list("10.0.0.0/8");
     let state = AppState::new(sy_core::types::CoreConfig::default())
         .with_allow_remote_access(false)
-        .with_trust_proxy_headers(true);
+        .with_trusted_proxies(proxies);
     build_router(state)
 }
 
@@ -85,8 +88,8 @@ async fn forged_forwarded_for_does_not_bypass_gate() {
 /// honored (the proxy is responsible for setting it to the real client).
 #[tokio::test]
 async fn trusted_proxy_honors_forwarded_for() {
-    // Public peer (the proxy), but the forwarded client is private → allowed.
-    let mut req = req_from_peer("8.8.8.8");
+    // The trusted proxy forwards a private client → allowed.
+    let mut req = req_from_peer("10.0.0.1");
     req.headers_mut()
         .insert("x-forwarded-for", "192.168.1.50".parse().unwrap());
     let (status, _) = common::send(proxied_app(), req).await;
@@ -104,6 +107,17 @@ async fn trusted_proxy_honors_forwarded_for() {
         status2, 403,
         "trusted proxy: public forwarded client rejected"
     );
+}
+
+/// Trusting a proxy does not let every peer speak for a client: one that
+/// reaches the published port directly cannot forge its way past the gate.
+#[tokio::test]
+async fn forwarded_for_from_a_peer_that_is_not_a_trusted_proxy_is_ignored() {
+    let mut req = req_from_peer("8.8.8.8");
+    req.headers_mut()
+        .insert("x-forwarded-for", "192.168.1.50".parse().unwrap());
+    let (status, _) = common::send(proxied_app(), req).await;
+    assert_eq!(status, 403);
 }
 
 #[tokio::test]

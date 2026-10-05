@@ -226,7 +226,7 @@ async fn list_memories(
         "default",
         q.r#type.as_deref(),
         q.personality_id.as_deref(),
-        q.limit.min(1000),
+        q.limit.clamp(1, 1000),
         q.offset,
     )
     .await
@@ -362,7 +362,7 @@ async fn search_memories(
     // Use BrainManager for hybrid semantic + FTS search with ACT-R ranking
     if let Some(brain_mgr) = state.brain() {
         match brain_mgr
-            .recall(query_text, q.limit.min(100) as usize, None)
+            .recall(query_text, q.limit.clamp(1, 100) as usize, None)
             .await
         {
             Ok(scored) => {
@@ -395,7 +395,7 @@ async fn search_memories(
         )
             .into_response();
     };
-    match brain::search_memories(pool, "default", query_text, q.limit.min(100)).await {
+    match brain::search_memories(pool, "default", query_text, q.limit.clamp(1, 100)).await {
         Ok(rows) => Json(serde_json::to_value(rows).unwrap()).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -515,7 +515,7 @@ async fn query_knowledge(
         "default",
         query_text,
         q.personality_id.as_deref(),
-        q.limit.min(100),
+        q.limit.clamp(1, 100),
     )
     .await
     {

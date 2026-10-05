@@ -195,7 +195,7 @@ export function AutonomyTab() {
                       <td className="p-3 text-muted-foreground capitalize">{item.type}</td>
                       <td className="p-3">
                         <span
-                          className={`px-2 py-0.5 rounded text-xs font-semibold ${LEVEL_COLORS[item.autonomyLevel]}`}
+                          className={`px-2 py-0.5 rounded-sm text-xs font-semibold ${LEVEL_COLORS[item.autonomyLevel]}`}
                         >
                           {item.autonomyLevel}
                         </span>
@@ -228,7 +228,7 @@ export function AutonomyTab() {
                 review.
               </p>
               <input
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
                 placeholder="Audit name (e.g. Q1 2026 Autonomy Review)"
                 value={wizardName}
                 onChange={(e) => {
@@ -253,7 +253,7 @@ export function AutonomyTab() {
                     {runs.map((run) => (
                       <button
                         key={run.id}
-                        className="w-full text-left p-2 rounded hover:bg-muted text-sm flex justify-between"
+                        className="w-full text-left p-2 rounded-sm hover:bg-muted text-sm flex justify-between"
                         onClick={() => {
                           setWizardRunId(run.id);
                           setWizardStep(run.status === 'completed' ? 'done' : 'A');
@@ -311,7 +311,7 @@ export function AutonomyTab() {
                         ))}
                       </div>
                       <input
-                        className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
                         placeholder="Notes (optional)"
                         value={item.note}
                         onChange={(e) => {
@@ -381,7 +381,7 @@ export function AutonomyTab() {
               {activeRun.reportMarkdown && (
                 <details className="text-sm">
                   <summary className="cursor-pointer font-medium">View Report</summary>
-                  <pre className="mt-2 p-4 bg-muted rounded text-xs overflow-auto max-h-96 whitespace-pre-wrap">
+                  <pre className="mt-2 p-4 bg-muted rounded-sm text-xs overflow-auto max-h-96 whitespace-pre-wrap">
                     {activeRun.reportMarkdown}
                   </pre>
                 </details>
@@ -403,7 +403,7 @@ export function AutonomyTab() {
       {activePanel === 'registry' && (
         <div className="space-y-4">
           <div className="flex items-start gap-2 p-4 bg-destructive/10 rounded-lg text-sm text-destructive">
-            <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
             <p>
               Emergency stop immediately disables the skill or workflow. In-flight runs are not
               cancelled. This action is audited. Admin role required.

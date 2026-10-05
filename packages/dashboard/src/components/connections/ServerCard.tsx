@@ -54,7 +54,7 @@ export function ServerCard({
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{server.description}</p>
           )}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-xs text-muted-foreground">
-            <span className="px-1.5 py-0.5 rounded bg-muted/50">{server.transport}</span>
+            <span className="px-1.5 py-0.5 rounded-sm bg-muted/50">{server.transport}</span>
             {server.transport === 'stdio' && server.command && (
               <span className="truncate font-mono max-w-[120px] sm:max-w-[200px]">
                 {server.command}

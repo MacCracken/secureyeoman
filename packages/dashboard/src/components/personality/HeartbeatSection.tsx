@@ -41,12 +41,12 @@ export function HeartbeatTasksSection() {
         <p className="text-xs text-muted-foreground">No heartbeat tasks configured.</p>
       )}
       {tasks.map((task: HeartbeatTask) => (
-        <div key={task.name} className="text-sm bg-muted px-3 py-2 rounded">
+        <div key={task.name} className="text-sm bg-muted px-3 py-2 rounded-sm">
           {editingTask === task.name ? (
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <strong>{task.name}</strong>
-                <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-accent text-accent-foreground">
+                <span className="text-[10px] uppercase px-1.5 py-0.5 rounded-sm bg-accent text-accent-foreground">
                   {task.type}
                 </span>
               </div>
@@ -60,7 +60,7 @@ export function HeartbeatTasksSection() {
                   onChange={(e) => {
                     setEditFreqMinutes(parseInt(e.target.value) || 1);
                   }}
-                  className="w-20 px-2 py-1 text-sm rounded border bg-background"
+                  className="w-20 px-2 py-1 text-sm rounded-sm border bg-background"
                 />
                 <div className="flex-1" />
                 <button
@@ -89,7 +89,7 @@ export function HeartbeatTasksSection() {
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
                 <strong>{task.name}</strong>
-                <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-accent text-accent-foreground">
+                <span className="text-[10px] uppercase px-1.5 py-0.5 rounded-sm bg-accent text-accent-foreground">
                   {task.type}
                 </span>
                 <span
@@ -110,7 +110,7 @@ export function HeartbeatTasksSection() {
                   <span className="text-xs italic text-muted-foreground truncate max-w-48">{`\u201C${String(task.config.prompt)}\u201D`}</span>
                 )}
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
                 <label
                   className="relative inline-flex items-center cursor-pointer"
                   title={task.enabled ? 'Enabled' : 'Disabled'}

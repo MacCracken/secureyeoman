@@ -26,7 +26,7 @@ export function OfflineBanner() {
             <button
               onClick={() => void syncPending()}
               disabled={syncing}
-              className="ml-2 rounded bg-yellow-700 px-2 py-0.5 text-xs hover:bg-yellow-600 disabled:opacity-50"
+              className="ml-2 rounded-sm bg-yellow-700 px-2 py-0.5 text-xs hover:bg-yellow-600 disabled:opacity-50"
             >
               {syncing ? 'Syncing...' : 'Sync now'}
             </button>

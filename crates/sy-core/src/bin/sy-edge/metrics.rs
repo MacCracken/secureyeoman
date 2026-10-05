@@ -31,15 +31,30 @@ impl MetricsCollector {
         }
     }
 
+    /// Sample every `SAMPLE_INTERVAL` into the history. Requests read the
+    /// latest sample; nothing samples on the request path, where a full
+    /// system scan per call let anyone reaching the public Prometheus route
+    /// keep the device busy.
     pub fn start(&self) -> JoinHandle<()> {
         let history = self.history.clone();
         let started_at = self.started_at;
 
         tokio::spawn(async move {
+            let mut sampler = Some(Sampler::new());
             loop {
-                let sample = collect_sample(started_at);
-                {
-                    let mut h = history.write().unwrap();
+                // Reading /proc and statvfs can block (a hung network mount),
+                // so it runs off the async workers.
+                let Some(mut s) = sampler.take() else { break };
+                let Ok((s, sample)) = tokio::task::spawn_blocking(move || {
+                    let sample = s.sample(started_at);
+                    (s, sample)
+                })
+                .await
+                else {
+                    break;
+                };
+                sampler = Some(s);
+                if let Ok(mut h) = history.write() {
                     if h.len() >= MAX_HISTORY {
                         h.remove(0);
                     }
@@ -50,20 +65,48 @@ impl MetricsCollector {
         })
     }
 
+    /// Take a sample now, on this thread (tests drive the routes without the
+    /// sampler task).
+    #[cfg(test)]
+    pub fn record_now(&self) {
+        let sample = Sampler::new().sample(self.started_at);
+        self.history.write().unwrap().push(sample);
+    }
+
+    /// The latest sample (zeros, but a live uptime, before the first one).
+    fn latest(&self) -> MetricsSample {
+        let mut sample = self
+            .history
+            .read()
+            .ok()
+            .and_then(|h| h.last().cloned())
+            .unwrap_or_else(|| MetricsSample {
+                cpu_percent: 0.0,
+                memory_used_mb: 0,
+                memory_total_mb: 0,
+                disk_used_percent: 0.0,
+                uptime_seconds: 0,
+                timestamp: now_rfc3339(),
+            });
+        sample.uptime_seconds = self.started_at.elapsed().as_secs();
+        sample
+    }
+
     pub fn current(&self) -> serde_json::Value {
-        let sample = collect_sample(self.started_at);
-        serde_json::to_value(sample).unwrap_or_default()
+        serde_json::to_value(self.latest()).unwrap_or_default()
     }
 
     pub fn history(&self, minutes: u32) -> serde_json::Value {
-        let h = self.history.read().unwrap();
+        let Ok(h) = self.history.read() else {
+            return serde_json::Value::Array(Vec::new());
+        };
         let samples_needed = (minutes as usize * 6).min(h.len()); // 6 samples per minute
         let start = h.len().saturating_sub(samples_needed);
         serde_json::to_value(&h[start..]).unwrap_or_default()
     }
 
     pub fn prometheus(&self) -> String {
-        let sample = collect_sample(self.started_at);
+        let sample = self.latest();
         format!(
             "# HELP sy_edge_cpu_percent CPU usage percentage\n\
              # TYPE sy_edge_cpu_percent gauge\n\
@@ -85,39 +128,56 @@ impl MetricsCollector {
     }
 }
 
-fn collect_sample(started_at: Instant) -> MetricsSample {
-    let sys = sysinfo::System::new_all();
-    let total_mem = sys.total_memory() / (1024 * 1024);
-    let used_mem = sys.used_memory() / (1024 * 1024);
-    let cpu = sys.global_cpu_usage();
+/// Long-lived sysinfo handles: CPU usage is the change between two
+/// refreshes, so a fresh `System` per sample always read 0%.
+struct Sampler {
+    sys: sysinfo::System,
+    disks: sysinfo::Disks,
+}
 
-    // Disk usage
-    let disks = sysinfo::Disks::new_with_refreshed_list();
-    let disk_percent = if let Some(d) = disks.list().first() {
-        let total = d.total_space() as f64;
-        if total > 0.0 {
-            ((total - d.available_space() as f64) / total * 100.0) as f32
-        } else {
-            0.0
+impl Sampler {
+    fn new() -> Self {
+        let mut sys = sysinfo::System::new();
+        sys.refresh_cpu_usage();
+        // The first reading needs an interval behind it.
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        Self {
+            sys,
+            disks: sysinfo::Disks::new_with_refreshed_list(),
         }
-    } else {
-        0.0
-    };
+    }
 
-    MetricsSample {
-        cpu_percent: cpu,
-        memory_used_mb: used_mem,
-        memory_total_mb: total_mem,
-        disk_used_percent: disk_percent,
-        uptime_seconds: started_at.elapsed().as_secs(),
-        timestamp: chrono_now(),
+    fn sample(&mut self, started_at: Instant) -> MetricsSample {
+        self.sys.refresh_cpu_usage();
+        self.sys.refresh_memory();
+        self.disks.refresh(true);
+        let disk_percent = self
+            .disks
+            .list()
+            .first()
+            .map(|d| {
+                let total = d.total_space() as f64;
+                if total > 0.0 {
+                    ((total - d.available_space() as f64) / total * 100.0) as f32
+                } else {
+                    0.0
+                }
+            })
+            .unwrap_or(0.0);
+
+        MetricsSample {
+            cpu_percent: self.sys.global_cpu_usage(),
+            memory_used_mb: self.sys.used_memory() / (1024 * 1024),
+            memory_total_mb: self.sys.total_memory() / (1024 * 1024),
+            disk_used_percent: disk_percent,
+            uptime_seconds: started_at.elapsed().as_secs(),
+            timestamp: now_rfc3339(),
+        }
     }
 }
 
-fn chrono_now() -> String {
-    // Simple ISO 8601 without chrono dependency
-    let dur = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default();
-    format!("{}Z", dur.as_secs())
+/// The sample time as RFC 3339 (it was Unix seconds with a stray `Z`, which
+/// no date parser reads).
+fn now_rfc3339() -> String {
+    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }

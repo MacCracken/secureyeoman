@@ -96,7 +96,7 @@ export function SwarmTemplatesTab({
         <div className="relative max-w-2xl">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
-            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             placeholder={
               source === 'community'
                 ? 'Search community swarm templates…'
@@ -156,7 +156,7 @@ export function SwarmTemplatesTab({
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="font-medium text-sm truncate">{tmpl.name}</h3>
                     <span
-                      className={`text-xs px-1.5 py-0.5 rounded border ${STRATEGY_COLORS[tmpl.strategy] ?? ''}`}
+                      className={`text-xs px-1.5 py-0.5 rounded-sm border ${STRATEGY_COLORS[tmpl.strategy] ?? ''}`}
                     >
                       {tmpl.strategy}
                     </span>
@@ -168,7 +168,7 @@ export function SwarmTemplatesTab({
                     {tmpl.roles.map((r) => (
                       <span
                         key={r.role}
-                        className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded"
+                        className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-sm"
                       >
                         {r.role}
                       </span>

@@ -219,6 +219,106 @@ async fn logout_tolerates_a_missing_or_malformed_body() {
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
 
+#[tokio::test]
+async fn a_token_is_refused_while_its_revocation_status_is_unknown() {
+    // A database that can never be reached: every revocation lookup errors.
+    // The cache only knows this instance's revocations, so the token must be
+    // refused rather than waved through.
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .acquire_timeout(std::time::Duration::from_millis(500))
+        .connect_lazy("postgres://nobody:nothing@127.0.0.1:1/none")
+        .unwrap();
+    let app = build_router(common::test_state().with_db(pool));
+    let token = common::test_token("admin");
+    let (status, _) =
+        common::send(app.clone(), common::authed_get("/api/v1/auth/me", &token)).await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    let service = common::test_token_for("mcp-service", "service");
+    let (status, _) = common::send(
+        app,
+        common::authed_post(
+            "/api/v1/auth/verify",
+            &service,
+            &format!(r#"{{"token":"{token}"}}"#),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+}
+
+// ── Token verification (used by the MCP service) ─────────────────────────
+
+async fn verify(app: axum::Router, caller: &str, body: &str) -> (StatusCode, serde_json::Value) {
+    let (status, bytes) = common::send(
+        app,
+        common::authed_post("/api/v1/auth/verify", caller, body),
+    )
+    .await;
+    (status, json(&bytes))
+}
+
+#[tokio::test]
+async fn verify_accepts_only_live_access_tokens() {
+    let app = build_router(common::test_state());
+    let service = common::test_token_for("mcp-service", "service");
+
+    let access = common::test_token_for("u-1", "viewer");
+    let (status, out) = verify(app.clone(), &service, &format!(r#"{{"token":"{access}"}}"#)).await;
+    assert_eq!(status, StatusCode::OK, "{out}");
+    assert_eq!(out["valid"], true);
+    assert_eq!(out["userId"], "u-1");
+
+    // A refresh token is not a credential for API calls.
+    let refresh = common::test_refresh_token_for("u-1", "viewer");
+    let (status, out) = verify(
+        app.clone(),
+        &service,
+        &format!(r#"{{"token":"{refresh}"}}"#),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED, "{out}");
+    assert_eq!(out["valid"], false);
+
+    // Nor is a logged-out access token.
+    let (status, _) = common::send(
+        app.clone(),
+        common::authed_post("/api/v1/auth/logout", &access, "{}"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, out) = verify(app, &service, &format!(r#"{{"token":"{access}"}}"#)).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED, "{out}");
+    assert_eq!(out["valid"], false);
+}
+
+#[tokio::test]
+async fn verify_answers_whether_the_principal_holds_a_permission() {
+    let app = build_router(common::test_state());
+    let service = common::test_token_for("mcp-service", "service");
+    let ask = |token: &str| format!(r#"{{"token":"{token}","resource":"mcp","action":"execute"}}"#);
+
+    for (role, want) in [
+        ("admin", true),
+        ("operator", true),
+        ("service", true),
+        ("viewer", false),
+        ("auditor", false),
+    ] {
+        let token = common::test_token_for("u-1", role);
+        let (status, out) = verify(app.clone(), &service, &ask(&token)).await;
+        assert_eq!(status, StatusCode::OK, "{role}: {out}");
+        assert_eq!(out["authorized"], want, "{role}");
+    }
+    // A scope narrower than the role narrows the answer too.
+    let scoped = common::test_token_scoped("operator", &["brain:read"]);
+    let (_, out) = verify(app.clone(), &service, &ask(&scoped)).await;
+    assert_eq!(out["authorized"], false);
+    // Without a resource and action there is no decision to report.
+    let token = common::test_token("operator");
+    let (_, out) = verify(app, &service, &format!(r#"{{"token":"{token}"}}"#)).await;
+    assert!(out.get("authorized").is_none(), "{out}");
+}
+
 // ── API keys ─────────────────────────────────────────────────────────────
 
 #[tokio::test]

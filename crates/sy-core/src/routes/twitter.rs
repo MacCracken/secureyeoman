@@ -13,6 +13,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 
+use crate::integrations::access::{self, AccessMode};
 use crate::integrations::proxy::{self, AuthMode};
 use crate::state::AppState;
 
@@ -33,6 +34,10 @@ pub fn router() -> Router<AppState> {
             post(retweet_tweet),
         )
         .route("/api/v1/twitter/media/upload", post(media_upload))
+        // Path parameters go into upstream API paths.
+        .route_layer(axum::middleware::from_fn(
+            crate::net::reject_unsafe_path_params,
+        ))
 }
 
 /// Resolve Bearer token for read-only v2 API calls.
@@ -289,6 +294,32 @@ async fn post_tweet(
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
+    let mode = access::mode_for(&state, "twitter", &["twitter"]).await;
+    match mode {
+        AccessMode::Suggest => {
+            return access::refuse(
+                StatusCode::FORBIDDEN,
+                "Twitter mode is 'suggest' — posting tweets is not permitted. The personality may \
+                 only read."
+                    .into(),
+            );
+        }
+        AccessMode::Draft => {
+            return Json(serde_json::json!({
+                "draftMode": true,
+                "preview": {
+                    "text": body.get("text"),
+                    "replyToTweetId": body.get("replyToTweetId"),
+                    "quoteTweetId": body.get("quoteTweetId"),
+                    "mediaIds": body.get("mediaIds"),
+                },
+                "message": "Draft mode active — tweet NOT posted. Show this preview to the user and \
+                            ask for confirmation before posting.",
+            }))
+            .into_response();
+        }
+        AccessMode::Auto => {}
+    }
     if let Some(client) = state.twitter() {
         let text = body
             .get("text")
@@ -320,6 +351,16 @@ async fn like_tweet(
     State(state): State<AppState>,
     Path(tweet_id): Path<String>,
 ) -> impl IntoResponse {
+    let mode = access::mode_for(&state, "twitter", &["twitter"]).await;
+    if mode != AccessMode::Auto {
+        return access::refuse(
+            StatusCode::FORBIDDEN,
+            format!(
+                "Twitter mode is '{}' — liking tweets requires 'auto' mode.",
+                mode.as_str()
+            ),
+        );
+    }
     let auth = match resolve_user_token(&state).await {
         Ok(a) => a,
         Err(e) => return e.into_response(),
@@ -364,6 +405,16 @@ async fn retweet_tweet(
     State(state): State<AppState>,
     Path(tweet_id): Path<String>,
 ) -> impl IntoResponse {
+    let mode = access::mode_for(&state, "twitter", &["twitter"]).await;
+    if mode != AccessMode::Auto {
+        return access::refuse(
+            StatusCode::FORBIDDEN,
+            format!(
+                "Twitter mode is '{}' — retweeting requires 'auto' mode.",
+                mode.as_str()
+            ),
+        );
+    }
     let auth = match resolve_user_token(&state).await {
         Ok(a) => a,
         Err(e) => return e.into_response(),

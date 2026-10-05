@@ -150,7 +150,10 @@ are greyed out (disabled) to prevent confusion.
 ## Access Modes
 
 The integration access mode (set in **Body → Integration Access** or on the Connections page) controls
-what each tool is allowed to do:
+what each tool is allowed to do. The server enforces it on every write route, from the active
+personality's entry for the credentials in use; with no entry the mode is `suggest`. Credentials
+configured through environment variables (`GMAIL_OAUTH_TOKEN`, `TWITTER_BEARER_TOKEN`, …) have no
+integration id, so their entry uses the platform name as its id (`gmail`, `twitter`, `github`).
 
 ### Gmail
 

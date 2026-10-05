@@ -25,7 +25,6 @@ import {
 import { fetchTasks, createTask, deleteTask, updateTask, fetchPersonalities } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { Task } from '../types';
-import { sanitizeText } from '../utils/sanitize';
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   completed: <CheckCircle className="w-4 h-4 text-success" />,
@@ -230,7 +229,7 @@ export function OpenTasks() {
                 onClick={() => {
                   setShowCreateDialog(false);
                 }}
-                className="btn-ghost p-1 rounded"
+                className="btn-ghost p-1 rounded-sm"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -244,7 +243,7 @@ export function OpenTasks() {
                   onChange={(e) => {
                     setNewTask({ ...newTask, name: e.target.value });
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background"
+                  className="w-full px-3 py-2 rounded-sm border bg-background"
                   placeholder="e.g., Run backup"
                 />
               </div>
@@ -255,7 +254,7 @@ export function OpenTasks() {
                   onChange={(e) => {
                     setNewTask({ ...newTask, type: e.target.value });
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background"
+                  className="w-full px-3 py-2 rounded-sm border bg-background"
                 >
                   {TYPE_OPTIONS.map((t) => (
                     <option key={t} value={t}>
@@ -272,7 +271,7 @@ export function OpenTasks() {
                   onChange={(e) => {
                     setNewTask({ ...newTask, description: e.target.value });
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background"
+                  className="w-full px-3 py-2 rounded-sm border bg-background"
                   placeholder="Optional description"
                 />
               </div>
@@ -283,7 +282,7 @@ export function OpenTasks() {
                   onChange={(e) => {
                     setNewTask({ ...newTask, input: e.target.value });
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background font-mono text-sm"
+                  className="w-full px-3 py-2 rounded-sm border bg-background font-mono text-sm"
                   rows={3}
                   placeholder='{"key": "value"}'
                 />
@@ -349,7 +348,7 @@ export function OpenTasks() {
                 onClick={() => {
                   setEditTask(null);
                 }}
-                className="btn-ghost p-1 rounded"
+                className="btn-ghost p-1 rounded-sm"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -363,7 +362,7 @@ export function OpenTasks() {
                   onChange={(e) => {
                     setEditTask({ ...editTask, name: e.target.value });
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background"
+                  className="w-full px-3 py-2 rounded-sm border bg-background"
                 />
               </div>
               <div>
@@ -373,7 +372,7 @@ export function OpenTasks() {
                   onChange={(e) => {
                     setEditTask({ ...editTask, type: e.target.value });
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background"
+                  className="w-full px-3 py-2 rounded-sm border bg-background"
                 >
                   {TYPE_OPTIONS.map((t) => (
                     <option key={t} value={t}>
@@ -390,7 +389,7 @@ export function OpenTasks() {
                   onChange={(e) => {
                     setEditTask({ ...editTask, description: e.target.value });
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background"
+                  className="w-full px-3 py-2 rounded-sm border bg-background"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
@@ -486,7 +485,7 @@ export function OpenTasks() {
 
       {/* Date Range Filter */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
         {DATE_PRESETS.map((preset) => (
           <button
             key={preset.label}
@@ -626,7 +625,7 @@ function TaskRow({
             (pId ? (personalityMap.get(pId) ?? null) : null);
           if (pName) {
             return (
-              <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs">
+              <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded-sm text-xs">
                 {pName}
               </span>
             );
@@ -636,17 +635,17 @@ function TaskRow({
       </td>
       <td className="px-2 py-3 font-mono text-xs hidden sm:table-cell">{task.id.slice(0, 8)}...</td>
       <td className="px-2 py-3">
-        <div className="font-medium text-sm">{sanitizeText(task.name)}</div>
+        <div className="font-medium text-sm">{task.name}</div>
         {task.description && (
           <div className="text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-xs">
-            {sanitizeText(task.description)}
+            {task.description}
           </div>
         )}
       </td>
       <td className="px-2 py-3 text-xs hidden lg:table-cell">
         {task.parentTaskId ? (
           <span
-            className="px-1.5 py-0.5 bg-muted text-muted-foreground rounded font-mono text-xs"
+            className="px-1.5 py-0.5 bg-muted text-muted-foreground rounded-sm font-mono text-xs"
             title={task.parentTaskId}
           >
             ↳ {task.parentTaskId.slice(0, 8)}…
@@ -656,7 +655,7 @@ function TaskRow({
         )}
       </td>
       <td className="px-2 py-3 hidden md:table-cell">
-        <span className="px-1.5 py-0.5 text-xs bg-muted rounded">{task.type}</span>
+        <span className="px-1.5 py-0.5 text-xs bg-muted rounded-sm">{task.type}</span>
       </td>
       <td className="px-2 py-3">
         <div className="flex items-center gap-1.5">
@@ -682,7 +681,7 @@ function TaskRow({
               onClick={() => {
                 onEdit(task);
               }}
-              className="btn-ghost p-1.5 rounded"
+              className="btn-ghost p-1.5 rounded-sm"
               title="Edit task"
             >
               <Edit2 className="w-3.5 h-3.5" />
@@ -693,7 +692,7 @@ function TaskRow({
               onClick={() => {
                 onDelete(task);
               }}
-              className="btn-ghost p-1.5 rounded text-destructive hover:text-destructive"
+              className="btn-ghost p-1.5 rounded-sm text-destructive hover:text-destructive"
               title="Delete task"
             >
               <Trash2 className="w-3.5 h-3.5" />

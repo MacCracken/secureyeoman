@@ -400,7 +400,7 @@ export function VoiceProfileManager() {
                   setCloneName(e.target.value);
                 }}
                 placeholder="My cloned voice"
-                className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
               />
             </div>
 
@@ -485,7 +485,7 @@ export function VoiceProfileManager() {
                   setForm((f) => ({ ...f, name: e.target.value }));
                 }}
                 placeholder="Profile name"
-                className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
               />
             </div>
             <div>
@@ -496,7 +496,7 @@ export function VoiceProfileManager() {
                   onChange={(e) => {
                     setForm((f) => ({ ...f, provider: e.target.value }));
                   }}
-                  className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary pr-8"
+                  className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm appearance-none focus:outline-hidden focus:ring-2 focus:ring-primary pr-8"
                 >
                   <option value="">Select provider...</option>
                   {TTS_PROVIDERS.map((p) => (
@@ -519,7 +519,7 @@ export function VoiceProfileManager() {
                 setForm((f) => ({ ...f, voiceId: e.target.value }));
               }}
               placeholder="Provider-specific voice identifier"
-              className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
             />
           </div>
 
@@ -531,7 +531,7 @@ export function VoiceProfileManager() {
                 setForm((f) => ({ ...f, settingsJson: e.target.value }));
               }}
               rows={4}
-              className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+              className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-primary resize-y"
               placeholder='{"speed": 1.0, "pitch": 0}'
             />
           </div>
@@ -576,9 +576,9 @@ export function VoiceProfileManager() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+              <div className="flex items-center gap-1 ml-2 shrink-0">
                 <button
-                  className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+                  className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
                   onClick={() => void handlePreview(profile.id)}
                   disabled={previewingId === profile.id}
                   title="Preview"
@@ -590,7 +590,7 @@ export function VoiceProfileManager() {
                   )}
                 </button>
                 <button
-                  className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+                  className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
                   onClick={() => {
                     openEdit(profile);
                   }}
@@ -599,7 +599,7 @@ export function VoiceProfileManager() {
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-destructive transition-colors"
+                  className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground hover:text-destructive transition-colors"
                   onClick={() => {
                     setDeleteTarget(profile);
                   }}

@@ -24,6 +24,8 @@ use dashmap::DashMap;
 use serde_json::json;
 use tower::{Layer, Service};
 
+use crate::middleware::client_ip::TrustedProxies;
+
 /// Configuration for the IP reputation system.
 #[derive(Debug, Clone)]
 pub struct IpReputationConfig {
@@ -99,8 +101,10 @@ impl IpReputationState {
         entry.last_updated = now;
         entry.reason = reason.to_string();
 
-        // Auto-block if threshold exceeded
-        if entry.score >= self.config.threshold && !entry.blocked {
+        // Auto-block if threshold exceeded — never a loopback address: that is
+        // the server itself or a local proxy in front of it, and blocking it
+        // would lock every client out (rate limits still apply).
+        if entry.score >= self.config.threshold && !entry.blocked && !is_loopback(ip) {
             entry.blocked = true;
             entry.blocked_at = Some(now);
         }
@@ -225,7 +229,30 @@ impl IpReputationState {
                 self.records.remove(&ip);
             }
         }
+
+        // Phase 3: every entry is a live block — release the oldest ones, or
+        // the map grows without bound under address rotation.
+        if self.records.len() >= self.config.max_cache {
+            let mut blocks: Vec<(String, Option<Instant>)> = self
+                .records
+                .iter()
+                .map(|e| (e.key().clone(), e.blocked_at))
+                .collect();
+            blocks.sort_by_key(|(_, at)| *at);
+            let to_remove = self.records.len().saturating_sub(self.config.max_cache) + 1;
+            for (ip, _) in blocks.into_iter().take(to_remove) {
+                self.records.remove(&ip);
+            }
+        }
     }
+}
+
+/// Whether `ip` is a loopback address (IPv4-mapped forms included).
+fn is_loopback(ip: &str) -> bool {
+    ip.parse::<std::net::IpAddr>().is_ok_and(|ip| match ip {
+        std::net::IpAddr::V6(v6) => v6.to_canonical().is_loopback(),
+        v4 => v4.is_loopback(),
+    })
 }
 
 /// Information about a blocked IP.
@@ -239,13 +266,13 @@ pub struct BlockInfo {
 #[derive(Clone)]
 pub struct IpReputationLayer {
     state: IpReputationState,
-    /// Whether to trust `X-Forwarded-For` for client-IP (behind a trusted proxy).
-    trust_proxy: bool,
+    /// The proxies trusted to report the client address in `X-Forwarded-For`.
+    proxies: TrustedProxies,
 }
 
 impl IpReputationLayer {
-    pub fn new(state: IpReputationState, trust_proxy: bool) -> Self {
-        Self { state, trust_proxy }
+    pub fn new(state: IpReputationState, proxies: TrustedProxies) -> Self {
+        Self { state, proxies }
     }
 }
 
@@ -256,7 +283,7 @@ impl<S> Layer<S> for IpReputationLayer {
         IpReputationMiddleware {
             inner,
             state: self.state.clone(),
-            trust_proxy: self.trust_proxy,
+            proxies: self.proxies.clone(),
         }
     }
 }
@@ -265,7 +292,7 @@ impl<S> Layer<S> for IpReputationLayer {
 pub struct IpReputationMiddleware<S> {
     inner: S,
     state: IpReputationState,
-    trust_proxy: bool,
+    proxies: TrustedProxies,
 }
 
 impl<S, ResBody> Service<Request<Body>> for IpReputationMiddleware<S>
@@ -284,7 +311,7 @@ where
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
-        let ip = crate::middleware::client_ip::client_ip(&req, self.trust_proxy);
+        let ip = crate::middleware::client_ip::client_ip(&req, &self.proxies);
         let state = self.state.clone();
         let mut inner = self.inner.clone();
 
@@ -313,6 +340,31 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn loopback_is_never_auto_blocked() {
+        let state = IpReputationState::default();
+        for ip in ["127.0.0.1", "::1", "::ffff:127.0.0.1"] {
+            state.record_violation(ip, 1_000.0, "test");
+            assert!(state.is_blocked(ip).is_none(), "{ip}");
+        }
+        state.record_violation("203.0.113.9", 1_000.0, "test");
+        assert!(state.is_blocked("203.0.113.9").is_some());
+    }
+
+    #[test]
+    fn the_cache_cap_holds_when_every_entry_is_blocked() {
+        let state = IpReputationState::new(IpReputationConfig {
+            max_cache: 8,
+            ..IpReputationConfig::default()
+        });
+        for i in 0..50 {
+            state.record_violation(&format!("203.0.113.{i}"), 1_000.0, "test");
+        }
+        assert!(state.records.len() <= 8, "{}", state.records.len());
+        // The newest offender is still blocked.
+        assert!(state.is_blocked("203.0.113.49").is_some());
+    }
 
     #[test]
     fn record_violation_increases_score() {

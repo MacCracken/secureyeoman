@@ -162,7 +162,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Create New</h3>
-          <button onClick={w.handleClose} className="btn-ghost p-1 rounded">
+          <button onClick={w.handleClose} className="btn-ghost p-1 rounded-sm">
             <X className="w-4 h-4" />
           </button>
         </div>

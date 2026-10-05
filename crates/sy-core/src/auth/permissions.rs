@@ -157,6 +157,10 @@ pub const OVERRIDES: &[(&str, &str, &str, &str)] = &[
     ),
     // Custom actions and cross-resource routes
     ("POST", "/api/v1/audit/verify", "audit", "verify"),
+    // Exporting the log is its own action, which auditors hold; as a POST it
+    // would otherwise need audit:write (admin only).
+    ("GET", "/api/v1/audit/export", "audit", "export"),
+    ("POST", "/api/v1/audit/export", "audit", "export"),
     // TS resolved this to auth:read. Verifying a token is all the MCP service
     // calls under /auth, and its own action keeps the service role from
     // reading users, API keys and roles.

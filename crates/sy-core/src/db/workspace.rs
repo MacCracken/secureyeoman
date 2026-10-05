@@ -22,7 +22,8 @@ pub async fn list_workspaces(
     tenant_id: &str,
 ) -> Result<Vec<WorkspaceRow>, sqlx::Error> {
     sqlx::query_as::<_, WorkspaceRow>(
-        "SELECT * FROM workspace.workspaces WHERE tenant_id = $1 ORDER BY name ASC",
+        "SELECT id, name, description, COALESCE(settings, '{}'::jsonb) AS settings, created_at, updated_at, identity_provider_id, sso_domain, tenant_id
+         FROM workspace.workspaces WHERE tenant_id = $1 ORDER BY name ASC",
     )
     .bind(tenant_id)
     .fetch_all(pool)
@@ -43,25 +44,73 @@ pub async fn list_members(
     workspace_id: &str,
 ) -> Result<Vec<WorkspaceMemberRow>, sqlx::Error> {
     sqlx::query_as::<_, WorkspaceMemberRow>(
-        "SELECT workspace_id, user_id, role, joined_at FROM workspace.members WHERE workspace_id = $1 ORDER BY joined_at ASC",
+        "SELECT workspace_id, user_id, COALESCE(role, 'member') AS role, joined_at
+         FROM workspace.members WHERE workspace_id = $1 ORDER BY joined_at ASC",
     )
     .bind(workspace_id)
     .fetch_all(pool)
     .await
 }
 
+/// A member's role in a workspace, if they are one.
+pub async fn member_role(
+    pool: &PgPool,
+    workspace_id: &str,
+    user_id: &str,
+) -> Result<Option<String>, sqlx::Error> {
+    let row: Option<(Option<String>,)> = sqlx::query_as(
+        "SELECT role FROM workspace.members WHERE workspace_id = $1 AND user_id = $2",
+    )
+    .bind(workspace_id)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.map(|(role,)| role.unwrap_or_else(|| "member".to_string())))
+}
+
+/// Whether a workspace role administers the workspace.
+pub fn is_workspace_admin(role: &str) -> bool {
+    matches!(role, "owner" | "admin")
+}
+
+/// The outcome of [`remove_member`].
+#[derive(Debug, PartialEq, Eq)]
+pub enum MemberRemoval {
+    Removed,
+    NotFound,
+    /// The member is the workspace's last owner/admin (TS refuses this).
+    LastAdmin,
+}
+
+/// Remove a member, unless they are the workspace's last owner or admin.
+/// The workspace's member rows are locked for the check, so two admins
+/// cannot remove each other at once and leave nobody in charge.
 pub async fn remove_member(
     pool: &PgPool,
     workspace_id: &str,
     user_id: &str,
-) -> Result<bool, sqlx::Error> {
-    let result =
-        sqlx::query("DELETE FROM workspace.members WHERE workspace_id = $1 AND user_id = $2")
-            .bind(workspace_id)
-            .bind(user_id)
-            .execute(pool)
-            .await?;
-    Ok(result.rows_affected() > 0)
+) -> Result<MemberRemoval, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    let members: Vec<(String, Option<String>)> = sqlx::query_as(
+        "SELECT user_id, role FROM workspace.members WHERE workspace_id = $1 FOR UPDATE",
+    )
+    .bind(workspace_id)
+    .fetch_all(&mut *tx)
+    .await?;
+    let admin = |role: &Option<String>| role.as_deref().is_some_and(is_workspace_admin);
+    let Some((_, role)) = members.iter().find(|(id, _)| id == user_id) else {
+        return Ok(MemberRemoval::NotFound);
+    };
+    if admin(role) && members.iter().filter(|(_, r)| admin(r)).count() <= 1 {
+        return Ok(MemberRemoval::LastAdmin);
+    }
+    sqlx::query("DELETE FROM workspace.members WHERE workspace_id = $1 AND user_id = $2")
+        .bind(workspace_id)
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(MemberRemoval::Removed)
 }
 
 pub async fn get_workspace(
@@ -70,7 +119,8 @@ pub async fn get_workspace(
     tenant_id: &str,
 ) -> Result<Option<WorkspaceRow>, sqlx::Error> {
     sqlx::query_as::<_, WorkspaceRow>(
-        "SELECT * FROM workspace.workspaces WHERE id = $1 AND tenant_id = $2",
+        "SELECT id, name, description, COALESCE(settings, '{}'::jsonb) AS settings, created_at, updated_at, identity_provider_id, sso_domain, tenant_id
+         FROM workspace.workspaces WHERE id = $1 AND tenant_id = $2",
     )
     .bind(id)
     .bind(tenant_id)

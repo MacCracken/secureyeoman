@@ -10,7 +10,7 @@ function Button({
   onClick?: () => void;
 }) {
   const base =
-    'inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none';
+    'inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-hidden';
   const variants = {
     primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
     secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',

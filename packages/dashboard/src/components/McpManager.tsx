@@ -199,7 +199,7 @@ export function McpManager() {
                     setForm({ ...form, name: e.target.value });
                   }}
                   placeholder="e.g. filesystem-server"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
@@ -210,7 +210,7 @@ export function McpManager() {
                   onChange={(e) => {
                     setForm({ ...form, transport: e.target.value as TransportType });
                   }}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
                 >
                   <option value="stdio">stdio</option>
                   <option value="sse">sse</option>
@@ -228,7 +228,7 @@ export function McpManager() {
                   setForm({ ...form, description: e.target.value });
                 }}
                 placeholder="Optional description"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
               />
             </div>
 
@@ -243,7 +243,7 @@ export function McpManager() {
                       setForm({ ...form, command: e.target.value });
                     }}
                     placeholder="e.g. npx or python"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
@@ -257,7 +257,7 @@ export function McpManager() {
                       setForm({ ...form, args: e.target.value });
                     }}
                     placeholder="e.g. -y @modelcontextprotocol/server-filesystem /tmp"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -271,7 +271,7 @@ export function McpManager() {
                     setForm({ ...form, url: e.target.value });
                   }}
                   placeholder="https://example.com/mcp"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
                 />
               </div>
             )}
@@ -297,7 +297,7 @@ export function McpManager() {
                       handleEnvChange(i, 'key', e.target.value);
                     }}
                     placeholder="KEY"
-                    className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
                   />
                   <span className="text-muted-foreground">=</span>
                   <input
@@ -307,7 +307,7 @@ export function McpManager() {
                       handleEnvChange(i, 'value', e.target.value);
                     }}
                     placeholder="value"
-                    className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
                   />
                   <button
                     type="button"
@@ -409,9 +409,9 @@ export function McpManager() {
                     {serverTools.map((tool) => (
                       <div
                         key={`${tool.serverId}-${tool.name}`}
-                        className="flex items-start gap-2 p-2 rounded bg-muted/30 text-sm"
+                        className="flex items-start gap-2 p-2 rounded-sm bg-muted/30 text-sm"
                       >
-                        <Wrench className="w-3 h-3 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <Wrench className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
                         <div className="min-w-0">
                           <span className="font-mono text-xs">{tool.name}</span>
                           {tool.description && (
@@ -487,7 +487,7 @@ function ServerCard({
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{server.description}</p>
           )}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-xs text-muted-foreground">
-            <span className="px-1.5 py-0.5 rounded bg-muted/50">{server.transport}</span>
+            <span className="px-1.5 py-0.5 rounded-sm bg-muted/50">{server.transport}</span>
             {server.transport === 'stdio' && server.command && (
               <span className="truncate font-mono max-w-[120px] sm:max-w-[200px]">
                 {server.command}

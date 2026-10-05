@@ -311,12 +311,32 @@ pub async fn update_workflow(
     .await
 }
 
+/// Delete a workflow with its runs (their step runs cascade) and versions.
+/// `workflow.runs.workflow_id` has no `ON DELETE CASCADE`, so deleting the
+/// definition alone failed — a 500 — for any workflow that had ever run.
 pub async fn delete_workflow(pool: &PgPool, id: uuid::Uuid) -> Result<bool, sqlx::Error> {
-    let result = sqlx::query("DELETE FROM workflow.definitions WHERE id = $1")
+    let mut tx = pool.begin().await?;
+    sqlx::query("DELETE FROM workflow.runs WHERE workflow_id = $1")
         .bind(id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
-    Ok(result.rows_affected() > 0)
+    let deleted = sqlx::query("DELETE FROM workflow.definitions WHERE id = $1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    tx.commit().await?;
+    Ok(deleted > 0)
+}
+
+/// The runs of a workflow that are still pending or running.
+pub async fn active_run_ids(pool: &PgPool, id: uuid::Uuid) -> Result<Vec<uuid::Uuid>, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT id FROM workflow.runs WHERE workflow_id = $1 AND status IN ('pending', 'running')",
+    )
+    .bind(id)
+    .fetch_all(pool)
+    .await
 }
 
 // ── Runs ─────────────────────────────────────────────────────────────────
@@ -378,6 +398,47 @@ pub async fn list_step_runs(
     .bind(run_id)
     .fetch_all(pool)
     .await
+}
+
+/// One step's outcome, for `workflow.step_runs`.
+pub struct NewStepRun<'a> {
+    pub step_id: &'a str,
+    pub step_name: &'a str,
+    pub step_type: &'a str,
+    pub status: &'a str,
+    pub output: Option<&'a serde_json::Value>,
+    pub error: Option<&'a str>,
+    pub started_at: i64,
+    pub completed_at: i64,
+}
+
+/// Record a run's step outcomes.
+pub async fn record_step_runs(
+    pool: &PgPool,
+    run_id: uuid::Uuid,
+    steps: &[NewStepRun<'_>],
+) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    for step in steps {
+        sqlx::query(
+            "INSERT INTO workflow.step_runs (run_id, step_id, step_name, step_type, status,
+                 output_json, error, started_at, completed_at, duration_ms)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        )
+        .bind(run_id)
+        .bind(step.step_id)
+        .bind(step.step_name)
+        .bind(step.step_type)
+        .bind(step.status)
+        .bind(step.output)
+        .bind(step.error)
+        .bind(step.started_at)
+        .bind(step.completed_at)
+        .bind(i32::try_from(step.completed_at.saturating_sub(step.started_at)).unwrap_or(i32::MAX))
+        .execute(&mut *tx)
+        .await?;
+    }
+    tx.commit().await
 }
 
 /// Cancel a pending or running run. Returns the run as it now is (a finished

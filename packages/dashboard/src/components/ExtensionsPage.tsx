@@ -107,7 +107,7 @@ export function ExtensionsPage() {
           <p className="text-muted-foreground text-sm">
             Enable the extensions system in your configuration to use lifecycle hooks.
           </p>
-          <pre className="mt-4 text-xs bg-muted p-3 rounded text-left inline-block">
+          <pre className="mt-4 text-xs bg-muted p-3 rounded-sm text-left inline-block">
             {`extensions:
   enabled: true`}
           </pre>
@@ -266,7 +266,7 @@ function ExtensionsTab() {
                 setShowRegister(false);
                 clearExtForm();
               }}
-              className="btn-ghost p-1 rounded"
+              className="btn-ghost p-1 rounded-sm"
             >
               <X className="w-4 h-4" />
             </button>
@@ -353,7 +353,7 @@ function ExtensionsTab() {
                   onClick={() => {
                     removeMut.mutate(ext.id);
                   }}
-                  className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
+                  className="btn-ghost p-1 rounded-sm text-destructive hover:bg-destructive/10"
                   title="Remove extension"
                   aria-label="Remove extension"
                 >
@@ -466,7 +466,7 @@ function HooksTab() {
                 setShowRegister(false);
                 clearHookForm();
               }}
-              className="btn-ghost p-1 rounded"
+              className="btn-ghost p-1 rounded-sm"
             >
               <X className="w-4 h-4" />
             </button>
@@ -557,10 +557,10 @@ function HooksTab() {
           <div key={hook.id} className="card p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <Anchor className="w-4 h-4 text-primary flex-shrink-0" />
+                <Anchor className="w-4 h-4 text-primary shrink-0" />
                 <span className="text-sm font-medium">{hook.hookPoint}</span>
                 <span
-                  className={`text-xs px-1.5 py-0.5 rounded border ${SEMANTICS_COLORS[hook.semantics] ?? 'bg-muted text-muted-foreground border-border'}`}
+                  className={`text-xs px-1.5 py-0.5 rounded-sm border ${SEMANTICS_COLORS[hook.semantics] ?? 'bg-muted text-muted-foreground border-border'}`}
                 >
                   {hook.semantics}
                 </span>
@@ -577,7 +577,7 @@ function HooksTab() {
                   onClick={() => {
                     removeMut.mutate(hook.id);
                   }}
-                  className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
+                  className="btn-ghost p-1 rounded-sm text-destructive hover:bg-destructive/10"
                   title="Remove hook"
                   aria-label="Remove hook"
                 >
@@ -669,7 +669,7 @@ function WebhooksTab() {
                 setShowRegister(false);
                 clearWhForm();
               }}
-              className="btn-ghost p-1 rounded"
+              className="btn-ghost p-1 rounded-sm"
             >
               <X className="w-4 h-4" />
             </button>
@@ -743,7 +743,7 @@ function WebhooksTab() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <Webhook className="w-4 h-4 text-primary flex-shrink-0" />
+                  <Webhook className="w-4 h-4 text-primary shrink-0" />
                   <span className="text-sm font-medium truncate">{wh.url}</span>
                   {wh.enabled ? (
                     <ToggleRight className="w-3.5 h-3.5 text-green-500" />
@@ -755,7 +755,7 @@ function WebhooksTab() {
                   {wh.hookPoints.map((point) => (
                     <span
                       key={point}
-                      className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary"
+                      className="text-xs px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary"
                     >
                       {point}
                     </span>
@@ -766,7 +766,7 @@ function WebhooksTab() {
                 onClick={() => {
                   removeMut.mutate(wh.id);
                 }}
-                className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
+                className="btn-ghost p-1 rounded-sm text-destructive hover:bg-destructive/10"
                 title="Remove webhook"
                 aria-label="Remove webhook"
               >
@@ -893,7 +893,8 @@ function DebuggerTab() {
     testMut.mutate({ hookPoint: testHookPointValue, data: parsedData });
   };
 
-  const entries = logData?.entries ?? [];
+  // Hook-log rows from the Rust gateway carry no `errors` list.
+  const entries = (logData?.entries ?? []).map((e) => ({ ...e, errors: e.errors ?? [] }));
 
   return (
     <div className="space-y-4">
@@ -970,11 +971,11 @@ function DebuggerTab() {
               }`}
             >
               {lastResult.errors.length > 0 ? (
-                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
               ) : lastResult.vetoed ? (
-                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
               ) : (
-                <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               )}
               <span>
                 {lastResult.vetoed
@@ -1026,7 +1027,7 @@ function DebuggerTab() {
                 void refetchLog();
               }}
               disabled={isFetching}
-              className="btn-ghost p-1.5 rounded"
+              className="btn-ghost p-1.5 rounded-sm"
               title="Refresh log"
               aria-label="Refresh log"
             >
@@ -1063,11 +1064,11 @@ function DebuggerTab() {
                 <div className="flex items-center gap-3 flex-wrap">
                   {/* Status icon */}
                   {entry.errors.length > 0 ? (
-                    <AlertCircle className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
+                    <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
                   ) : entry.vetoed ? (
-                    <AlertCircle className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                    <AlertCircle className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
                   ) : (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
                   )}
 
                   {/* Hook point */}
@@ -1075,7 +1076,7 @@ function DebuggerTab() {
 
                   {/* Test badge */}
                   {entry.isTest && (
-                    <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                    <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-sm bg-purple-500/10 text-purple-500 border border-purple-500/20">
                       <FlaskConical className="w-3 h-3" />
                       test
                     </span>
@@ -1083,7 +1084,7 @@ function DebuggerTab() {
 
                   {/* Vetoed badge */}
                   {entry.vetoed && (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 border border-yellow-500/20">
+                    <span className="text-xs px-1.5 py-0.5 rounded-sm bg-yellow-500/10 text-yellow-600 border border-yellow-500/20">
                       vetoed
                     </span>
                   )}

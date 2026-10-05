@@ -147,7 +147,7 @@ export function IntentStep({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
+        <button onClick={goBack} className="btn-ghost p-1 rounded-sm" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Intent</h3>
@@ -183,7 +183,7 @@ export function IntentStep({
               onChange={(e) => {
                 set({ name: e.target.value });
               }}
-              className="w-full px-3 py-2 rounded border bg-background"
+              className="w-full px-3 py-2 rounded-sm border bg-background"
               placeholder="e.g., Production Safety Intent"
             />
           </div>
@@ -207,7 +207,7 @@ export function IntentStep({
                       onChange={(e) => {
                         updateGoal(g.id, { name: e.target.value });
                       }}
-                      className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                      className="flex-1 px-2 py-1.5 rounded-sm border bg-background text-sm"
                       placeholder="Goal name"
                     />
                     <input
@@ -218,7 +218,7 @@ export function IntentStep({
                       onChange={(e) => {
                         updateGoal(g.id, { priority: parseInt(e.target.value) || 5 });
                       }}
-                      className="w-14 px-2 py-1.5 rounded border bg-background text-sm text-center"
+                      className="w-14 px-2 py-1.5 rounded-sm border bg-background text-sm text-center"
                       title="Priority (1–10)"
                     />
                     <button
@@ -236,7 +236,7 @@ export function IntentStep({
                     onChange={(e) => {
                       updateGoal(g.id, { description: e.target.value });
                     }}
-                    className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                    className="w-full px-2 py-1.5 rounded-sm border bg-background text-sm"
                     placeholder="Description"
                   />
                 </div>
@@ -268,7 +268,7 @@ export function IntentStep({
                     onChange={(e) => {
                       updateBoundary(b.id, { rule: e.target.value });
                     }}
-                    className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                    className="flex-1 px-2 py-1.5 rounded-sm border bg-background text-sm"
                     placeholder="e.g., Never delete production data"
                   />
                   <button
@@ -286,7 +286,7 @@ export function IntentStep({
                   onChange={(e) => {
                     updateBoundary(b.id, { rationale: e.target.value });
                   }}
-                  className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                  className="w-full px-2 py-1.5 rounded-sm border bg-background text-sm"
                   placeholder="Rationale"
                 />
               </div>
@@ -319,7 +319,7 @@ export function IntentStep({
                     onChange={(e) => {
                       updatePolicy(p.id, { rule: e.target.value });
                     }}
-                    className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                    className="flex-1 px-2 py-1.5 rounded-sm border bg-background text-sm"
                     placeholder="Policy rule"
                   />
                   <select
@@ -327,7 +327,7 @@ export function IntentStep({
                     onChange={(e) => {
                       updatePolicy(p.id, { enforcement: e.target.value as 'warn' | 'block' });
                     }}
-                    className="px-2 py-1.5 rounded border bg-background text-sm"
+                    className="px-2 py-1.5 rounded-sm border bg-background text-sm"
                   >
                     <option value="warn">Warn</option>
                     <option value="block">Block</option>
@@ -347,7 +347,7 @@ export function IntentStep({
                   onChange={(e) => {
                     updatePolicy(p.id, { rationale: e.target.value });
                   }}
-                  className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                  className="w-full px-2 py-1.5 rounded-sm border bg-background text-sm"
                   placeholder="Rationale"
                 />
               </div>
@@ -367,7 +367,7 @@ export function IntentStep({
             onChange={(e) => {
               set({ importJson: e.target.value, importError: '' });
             }}
-            className="w-full px-3 py-2 rounded border bg-background font-mono text-xs resize-none"
+            className="w-full px-3 py-2 rounded-sm border bg-background font-mono text-xs resize-none"
             rows={8}
             placeholder={
               '{\n  "name": "...",\n  "goals": [],\n  "hardBoundaries": [],\n  "policies": []\n}'

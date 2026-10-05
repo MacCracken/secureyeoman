@@ -34,12 +34,19 @@ async fn check_update(parent_url: &str, arch: &str) -> Result<Option<String>, St
         crate::VERSION
     );
 
-    let resp = reqwest::get(&url)
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .map_err(|e| format!("Client setup failed: {e}"))?;
+    let resp = client
+        .get(&url)
+        .send()
         .await
         .map_err(|e| format!("Request failed: {e}"))?;
 
+    // A failed check is not "no update" (the parent may not serve the route).
     if !resp.status().is_success() {
-        return Ok(None);
+        return Err(format!("Update check returned HTTP {}", resp.status()));
     }
 
     let data: serde_json::Value = resp.json().await.map_err(|e| format!("Parse error: {e}"))?;

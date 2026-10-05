@@ -59,7 +59,7 @@ export function BranchExplorer({
         </div>
         <button
           onClick={onClose}
-          className="btn-ghost p-1 rounded"
+          className="btn-ghost p-1 rounded-sm"
           data-testid="branch-explorer-close"
         >
           <X className="w-4 h-4" />

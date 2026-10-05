@@ -57,7 +57,7 @@ export function LoginPage() {
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
           {error && (
             <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -81,7 +81,7 @@ export function LoginPage() {
               disabled={isSubmitting}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm
                          placeholder:text-muted-foreground
-                         focus:outline-none focus:ring-2 focus:ring-ring
+                         focus:outline-hidden focus:ring-2 focus:ring-ring
                          disabled:opacity-50"
             />
           </div>
@@ -94,7 +94,7 @@ export function LoginPage() {
                 setRememberMe(e.target.checked);
               }}
               disabled={isSubmitting}
-              className="rounded border-input"
+              className="rounded-sm border-input"
             />
             Remember me
           </label>

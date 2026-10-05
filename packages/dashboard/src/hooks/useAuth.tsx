@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   login as apiLogin,
   logout as apiLogout,
@@ -25,15 +26,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => getAccessToken());
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const handleAuthFailure = useCallback(() => {
+  // Drop every cached query when a session ends, so whoever signs in next in
+  // this tab never sees the previous user's data.
+  const endSession = useCallback(() => {
+    queryClient.clear();
     setToken(null);
     void navigate('/login', { replace: true });
-  }, [navigate]);
+  }, [queryClient, navigate]);
 
   useEffect(() => {
-    setOnAuthFailure(handleAuthFailure);
-  }, [handleAuthFailure]);
+    // A failed token refresh ends the session the same way a logout does.
+    setOnAuthFailure(endSession);
+  }, [endSession]);
 
   useEffect(() => {
     // Verify existing token with the server on mount.
@@ -57,9 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await apiLogout();
-    setToken(null);
-    void navigate('/login', { replace: true });
-  }, [navigate]);
+    endSession();
+  }, [endSession]);
 
   return (
     <AuthContext.Provider

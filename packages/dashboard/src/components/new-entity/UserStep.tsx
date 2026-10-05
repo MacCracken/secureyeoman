@@ -27,7 +27,7 @@ export function UserStep({ user, setUser, createUserMut, goBack, handleClose }: 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
+        <button onClick={goBack} className="btn-ghost p-1 rounded-sm" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New User</h3>
@@ -41,7 +41,7 @@ export function UserStep({ user, setUser, createUserMut, goBack, handleClose }: 
           onChange={(e) => {
             set({ email: e.target.value, error: '' });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="user@example.com"
         />
       </div>
@@ -54,7 +54,7 @@ export function UserStep({ user, setUser, createUserMut, goBack, handleClose }: 
           onChange={(e) => {
             set({ displayName: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="Jane Doe"
         />
       </div>
@@ -67,7 +67,7 @@ export function UserStep({ user, setUser, createUserMut, goBack, handleClose }: 
           onChange={(e) => {
             set({ password: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="••••••••"
         />
       </div>
@@ -79,7 +79,7 @@ export function UserStep({ user, setUser, createUserMut, goBack, handleClose }: 
           onChange={(e) => {
             set({ isAdmin: e.target.checked });
           }}
-          className="rounded"
+          className="rounded-sm"
         />
         Admin
       </label>

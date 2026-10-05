@@ -22,10 +22,6 @@ vi.mock('../../api/client', () => ({
   fetchPersonalities: vi.fn(),
 }));
 
-vi.mock('../../utils/sanitize', () => ({
-  sanitizeText: (s: string) => s,
-}));
-
 const mockSkill: CatalogSkill = {
   name: 'Test Skill',
   version: '1.0.0',
@@ -68,6 +64,29 @@ const mockCommunitySkill: CatalogSkill = {
   name: 'Community Skill',
   source: 'community',
 };
+
+/**
+ * A marketplace row as the Rust gateway serves it (MarketplaceSkillRow): no
+ * triggerPatterns, authorInfo, mcpToolsAllowed or useWhen, and nullable
+ * description, version, author, category and downloadCount.
+ */
+const rustMarketplaceRow = {
+  id: 'rust-1',
+  name: 'Rust Skill',
+  description: null,
+  version: null,
+  author: null,
+  category: null,
+  tags: [],
+  downloadCount: null,
+  rating: null,
+  instructions: 'Do the thing',
+  tools: [],
+  installed: null,
+  publishedAt: 1_700_000_000_000,
+  updatedAt: 1_700_000_000_000,
+  source: 'community',
+} as unknown as CatalogSkill;
 
 describe('ContentTypeSelector', () => {
   it('should render content type buttons', () => {
@@ -250,6 +269,24 @@ describe('SkillCard', () => {
       />
     );
     expect(screen.getByText('Custom Badge')).toBeInTheDocument();
+  });
+});
+
+describe('SkillCard with a Rust marketplace row', () => {
+  it('renders without trigger patterns, version or download count', () => {
+    render(
+      <SkillCard
+        skill={rustMarketplaceRow}
+        onInstall={vi.fn()}
+        onUninstall={vi.fn()}
+        onPreview={vi.fn()}
+        installing={false}
+        uninstalling={false}
+      />
+    );
+    expect(screen.getByText('Rust Skill')).toBeInTheDocument();
+    expect(screen.getByText('0 installs')).toBeInTheDocument();
+    expect(screen.queryByText(/^v/)).not.toBeInTheDocument();
   });
 });
 
@@ -448,6 +485,39 @@ describe('SkillPreviewModal', () => {
       />
     );
     expect(screen.getByText('Installed globally')).toBeInTheDocument();
+  });
+
+  it('renders the preview for a Rust marketplace row (was a crash)', () => {
+    render(
+      <SkillPreviewModal
+        skill={rustMarketplaceRow}
+        onClose={vi.fn()}
+        onInstall={vi.fn()}
+        onUninstall={vi.fn()}
+        installing={false}
+        uninstalling={false}
+      />
+    );
+    expect(screen.getByRole('heading', { name: 'Rust Skill' })).toBeInTheDocument();
+    expect(screen.getByText('Do the thing')).toBeInTheDocument();
+    expect(screen.getByText('0 installs')).toBeInTheDocument();
+    expect(screen.queryByText('Trigger Patterns')).not.toBeInTheDocument();
+    expect(screen.queryByText(/MCP Restricted To/)).not.toBeInTheDocument();
+    expect(screen.queryByText('GitHub')).not.toBeInTheDocument();
+  });
+
+  it('renders description markup as literal text', () => {
+    render(
+      <SkillPreviewModal
+        skill={{ ...mockSkill, description: 'Parses <stdio.h> & a < b' }}
+        onClose={vi.fn()}
+        onInstall={vi.fn()}
+        onUninstall={vi.fn()}
+        installing={false}
+        uninstalling={false}
+      />
+    );
+    expect(screen.getByText('Parses <stdio.h> & a < b')).toBeInTheDocument();
   });
 });
 

@@ -157,7 +157,7 @@ const TickerBar = memo(function TickerBar({ ticks }: { ticks: PriceTick[] }) {
   return (
     <div className="flex gap-3 overflow-x-auto scrollbar-hide py-1">
       {ticks.map((tick) => (
-        <div key={tick.symbol} className="flex items-center gap-1.5 flex-shrink-0 text-xs">
+        <div key={tick.symbol} className="flex items-center gap-1.5 shrink-0 text-xs">
           <span className="font-semibold text-foreground">{tick.symbol}</span>
           <span className="font-mono">${tick.price.toFixed(2)}</span>
           <span className={`font-mono ${tick.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>

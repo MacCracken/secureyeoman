@@ -79,24 +79,44 @@ async fn list_members(State(state): State<AppState>, Path(id): Path<String>) -> 
     }
 }
 
+/// DELETE /api/v1/workspaces/{id}/members/{userId} — for global admins and
+/// the workspace's own owners/admins; never the last owner/admin (TS
+/// `requireWorkspaceAdmin` and its last-admin check).
 async fn remove_member(
     State(state): State<AppState>,
+    auth: Option<axum::Extension<crate::auth::middleware::AuthContext>>,
     Path((id, user_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
     let Some(pool) = state.db() else {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     };
+    let error = |status: StatusCode, message: &str| {
+        (status, Json(serde_json::json!({ "error": message }))).into_response()
+    };
+    let Some(axum::Extension(caller)) = auth else {
+        return error(StatusCode::UNAUTHORIZED, "Not authenticated");
+    };
+    if caller.role != "admin" {
+        match workspace::member_role(pool, &id, &caller.user_id).await {
+            Ok(Some(role)) if workspace::is_workspace_admin(&role) => {}
+            Ok(_) => {
+                return error(
+                    StatusCode::FORBIDDEN,
+                    "Only workspace admins can perform this action",
+                );
+            }
+            Err(e) => return error(StatusCode::INTERNAL_SERVER_ERROR, &e.to_string()),
+        }
+    }
     match workspace::remove_member(pool, &id, &user_id).await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
-        Ok(false) => (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": "Member not found in workspace"})),
-        )
-            .into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
+        Ok(workspace::MemberRemoval::Removed) => StatusCode::NO_CONTENT.into_response(),
+        Ok(workspace::MemberRemoval::NotFound) => {
+            error(StatusCode::NOT_FOUND, "Member not found in workspace")
+        }
+        Ok(workspace::MemberRemoval::LastAdmin) => error(
+            StatusCode::BAD_REQUEST,
+            "Cannot remove the last admin/owner from a workspace",
+        ),
+        Err(e) => error(StatusCode::INTERNAL_SERVER_ERROR, &e.to_string()),
     }
 }

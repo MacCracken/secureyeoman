@@ -32,7 +32,12 @@ pub async fn health(State(state): State<AppState>) -> Json<serde_json::Value> {
         "networkMode": network_mode,
         "checks": {
             "database": db_ok,
-            "auditChain": db_ok,
+            // The last verification of the audit chain (one runs at boot);
+            // until it reports, the database being up is all that is known.
+            "auditChain": state
+                .audit()
+                .and_then(|trail| trail.last_verification())
+                .map_or(db_ok, |v| db_ok && v.valid),
             "mcp": true,
         },
     }))

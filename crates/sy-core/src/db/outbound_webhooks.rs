@@ -9,6 +9,12 @@ pub struct OutboundWebhookRow {
     pub id: String,
     pub url: String,
     pub events: serde_json::Value,
+    /// The HMAC signing secret is never returned; responses carry
+    /// `hasSecret` instead.
+    #[serde(
+        rename(serialize = "hasSecret"),
+        serialize_with = "crate::privacy::redact::serialize_is_set"
+    )]
     pub secret: Option<String>,
     pub description: Option<String>,
     pub enabled: bool,

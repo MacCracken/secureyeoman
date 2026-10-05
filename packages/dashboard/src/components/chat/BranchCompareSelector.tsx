@@ -69,7 +69,7 @@ export function BranchCompareSelector({ tree, onCompare }: BranchCompareSelector
           onChange={(e) => {
             setSourceId(e.target.value);
           }}
-          className="flex-1 border rounded px-2 py-1.5 text-xs bg-background truncate"
+          className="flex-1 border rounded-sm px-2 py-1.5 text-xs bg-background truncate"
           data-testid="compare-source-select"
         >
           <option value="">Select source...</option>
@@ -89,7 +89,7 @@ export function BranchCompareSelector({ tree, onCompare }: BranchCompareSelector
           onChange={(e) => {
             setTargetId(e.target.value);
           }}
-          className="flex-1 border rounded px-2 py-1.5 text-xs bg-background truncate"
+          className="flex-1 border rounded-sm px-2 py-1.5 text-xs bg-background truncate"
           data-testid="compare-target-select"
         >
           <option value="">Select target...</option>
@@ -105,7 +105,7 @@ export function BranchCompareSelector({ tree, onCompare }: BranchCompareSelector
         <button
           onClick={handleCompare}
           disabled={!sourceId || !targetId || sourceId === targetId}
-          className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 shrink-0"
+          className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 disabled:opacity-50 shrink-0"
           data-testid="compare-button"
         >
           Compare

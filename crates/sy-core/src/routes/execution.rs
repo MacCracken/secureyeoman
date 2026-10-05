@@ -140,18 +140,31 @@ async fn get_session(State(state): State<AppState>, Path(id): Path<String>) -> i
     }
 }
 
+/// DELETE /api/v1/execution/sessions/{id} — terminate an active session;
+/// its history is kept (TS `terminateSession`).
 async fn delete_session(
     State(state): State<AppState>,
+    auth: Option<axum::Extension<crate::auth::middleware::AuthContext>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let Some(pool) = state.db() else {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     };
-    match execution::delete_session(pool, &id).await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+    match execution::terminate_session(pool, &id).await {
+        Ok(true) => {
+            let mut entry = crate::db::audit::NewAuditEntry::new(
+                "session_terminated",
+                "info",
+                "Execution session terminated",
+            )
+            .metadata(serde_json::json!({ "sessionId": id }));
+            entry.user_id = auth.map(|axum::Extension(a)| a.user_id);
+            state.audit_event(entry);
+            StatusCode::NO_CONTENT.into_response()
+        }
         Ok(false) => (
             StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": "Session not found"})),
+            Json(serde_json::json!({"error": "Session not found or not active"})),
         )
             .into_response(),
         Err(e) => (

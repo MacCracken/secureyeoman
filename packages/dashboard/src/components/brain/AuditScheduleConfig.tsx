@@ -130,11 +130,11 @@ export default function AuditScheduleConfig() {
 
   return (
     <div className="card">
-      <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+      <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
         <Calendar className="w-4 h-4 text-muted-foreground" />
-        <h2 className="card-title text-sm sm:text-base">Audit Schedules</h2>
+        <h2 className="card-title text-sm sm:text-base!">Audit Schedules</h2>
       </div>
-      <div className="card-content space-y-4 p-3 sm:p-4 pt-0 sm:pt-0">
+      <div className="card-content space-y-4 p-3 sm:p-4! pt-0 sm:pt-0!">
         <ScheduleSection
           scope="daily"
           value={schedules.daily}

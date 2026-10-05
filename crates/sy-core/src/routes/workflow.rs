@@ -231,11 +231,22 @@ async fn update_workflow(
     Json(response).into_response()
 }
 
-/// DELETE /api/v1/workflows/{id} — 204.
+/// DELETE /api/v1/workflows/{id} — 204; its runs go with it, and any still
+/// executing on this instance is stopped.
 async fn delete_workflow(State(state): State<AppState>, Path(id): Path<uuid::Uuid>) -> Response {
     let Some(pool) = state.db() else {
         return db_unavailable();
     };
+    match workflow::active_run_ids(pool, id).await {
+        Ok(runs) => {
+            for run in runs {
+                if let Some((_, cancel)) = RUNNING.remove(&run) {
+                    cancel.notify_one();
+                }
+            }
+        }
+        Err(e) => return internal(e),
+    }
     match workflow::delete_workflow(pool, id).await {
         Ok(true) => StatusCode::NO_CONTENT.into_response(),
         Ok(false) => not_found("Workflow"),
@@ -391,8 +402,52 @@ struct RunWorkflowRequest {
     triggered_by: String,
 }
 
+/// Runs executing on this instance, so cancelling one stops it: its task is
+/// dropped at the next await (an agent call, a delay) instead of running on
+/// and spending tokens after the run reads "cancelled". (A run on another
+/// instance keeps its cancelled status but runs to its end.)
+static RUNNING: std::sync::LazyLock<
+    dashmap::DashMap<uuid::Uuid, std::sync::Arc<tokio::sync::Notify>>,
+> = std::sync::LazyLock::new(dashmap::DashMap::new);
+
+/// Emergency stop (autonomy): disable a workflow and cancel its pending and
+/// running runs, stopping those executing on this instance. `false` when
+/// the workflow does not exist.
+pub(crate) async fn emergency_stop_workflow(
+    pool: &sqlx::PgPool,
+    id: uuid::Uuid,
+) -> Result<bool, sqlx::Error> {
+    let now = now_ms();
+    let updated = sqlx::query(
+        "UPDATE workflow.definitions SET is_enabled = false, updated_at = $2 WHERE id = $1",
+    )
+    .bind(id)
+    .bind(now)
+    .execute(pool)
+    .await?
+    .rows_affected();
+    if updated == 0 {
+        return Ok(false);
+    }
+    let cancelled: Vec<uuid::Uuid> = sqlx::query_scalar(
+        "UPDATE workflow.runs SET status = 'cancelled', completed_at = $2
+         WHERE workflow_id = $1 AND status IN ('pending', 'running')
+         RETURNING id",
+    )
+    .bind(id)
+    .bind(now)
+    .fetch_all(pool)
+    .await?;
+    for run in cancelled {
+        if let Some((_, cancel)) = RUNNING.remove(&run) {
+            cancel.notify_one();
+        }
+    }
+    Ok(true)
+}
+
 /// Execute a run on the workflow engine in the background, recording its
-/// progress on the run row.
+/// progress on the run row and each step's outcome in its step runs.
 fn spawn_execution(
     pool: sqlx::PgPool,
     run_id: uuid::Uuid,
@@ -402,43 +457,93 @@ fn spawn_execution(
     let wf_id = wf.id.to_string();
     let wf_name = wf.name.clone();
     let steps_json = wf.steps_json.clone();
+    let cancel = std::sync::Arc::new(tokio::sync::Notify::new());
+    RUNNING.insert(run_id, cancel.clone());
     tokio::spawn(async move {
-        let _ = workflow::update_run_status(&pool, run_id, "running", None, None).await;
-
-        let steps: Vec<crate::orchestration::workflow::WorkflowStep> =
-            serde_json::from_value(steps_json).unwrap_or_default();
-        let def = crate::orchestration::workflow::WorkflowDefinition {
-            id: wf_id,
-            name: wf_name,
-            steps,
-            input: input.unwrap_or(serde_json::json!({})),
-        };
-
-        // Execute the workflow DAG via Hoosh/AGNOS LLM Gateway
-        let engine = crate::orchestration::workflow::WorkflowEngine::new(
-            crate::orchestration::hoosh::HooshDelegate::from_env(),
-        );
-        match engine.execute(&def).await {
-            Ok(result) => {
-                let output = serde_json::to_value(&result.final_output).ok();
-                let _ =
-                    workflow::update_run_status(&pool, run_id, "completed", output.as_ref(), None)
-                        .await;
-                tracing::info!(run_id = %run_id, steps = result.steps_completed, "workflow completed");
-            }
-            Err(e) => {
-                let _ = workflow::update_run_status(
-                    &pool,
-                    run_id,
-                    "failed",
-                    None,
-                    Some(&e.to_string()),
-                )
-                .await;
-                tracing::error!(run_id = %run_id, error = %e, "workflow failed");
+        tokio::select! {
+            () = execute_run(&pool, run_id, wf_id, wf_name, steps_json, input) => {}
+            () = cancel.notified() => {
+                tracing::info!(run_id = %run_id, "workflow run cancelled");
             }
         }
+        RUNNING.remove(&run_id);
     });
+}
+
+async fn execute_run(
+    pool: &sqlx::PgPool,
+    run_id: uuid::Uuid,
+    wf_id: String,
+    wf_name: String,
+    steps_json: serde_json::Value,
+    input: Option<serde_json::Value>,
+) {
+    use crate::orchestration::workflow::{WorkflowDefinition, WorkflowEngine, WorkflowStep};
+
+    let _ = workflow::update_run_status(pool, run_id, "running", None, None).await;
+
+    // A definition this engine cannot read fails the run; it used to run as
+    // an empty workflow and report "completed".
+    let steps: Vec<WorkflowStep> = match serde_json::from_value(steps_json) {
+        Ok(steps) => steps,
+        Err(e) => {
+            let message = format!("Invalid workflow definition: {e}");
+            let _ = workflow::update_run_status(pool, run_id, "failed", None, Some(&message)).await;
+            tracing::warn!(run_id = %run_id, error = %message, "workflow failed");
+            return;
+        }
+    };
+    let def = WorkflowDefinition {
+        id: wf_id,
+        name: wf_name,
+        steps,
+        input: input.unwrap_or(serde_json::json!({})),
+    };
+
+    // Agent steps go through the AGNOS LLM gateway, behind the
+    // allowSubAgents kill switch.
+    let engine = WorkflowEngine::new(crate::orchestration::delegation::PolicyGatedDelegate::new(
+        crate::orchestration::hoosh::HooshDelegate::from_env(),
+        pool.clone(),
+    ));
+    let (outcome, records) = engine.execute_recorded(&def).await;
+
+    let step_runs: Vec<workflow::NewStepRun<'_>> = records
+        .iter()
+        .map(|r| workflow::NewStepRun {
+            step_id: &r.step_id,
+            step_name: &r.step_name,
+            step_type: &r.step_type,
+            status: r.status,
+            output: (!r.output.is_null()).then_some(&r.output),
+            error: r.error.as_deref(),
+            started_at: r.started_at,
+            completed_at: r.completed_at,
+        })
+        .collect();
+    if let Err(e) = workflow::record_step_runs(pool, run_id, &step_runs).await {
+        tracing::warn!(run_id = %run_id, error = %e, "could not record workflow step runs");
+    }
+
+    match outcome {
+        Ok(result) => {
+            let output = serde_json::to_value(&result.final_output).ok();
+            let _ =
+                workflow::update_run_status(pool, run_id, "completed", output.as_ref(), None).await;
+            tracing::info!(
+                run_id = %run_id,
+                completed = result.steps_completed,
+                failed = result.steps_failed,
+                skipped = result.steps_skipped,
+                "workflow completed"
+            );
+        }
+        Err(e) => {
+            let _ = workflow::update_run_status(pool, run_id, "failed", None, Some(&e.to_string()))
+                .await;
+            tracing::warn!(run_id = %run_id, error = %e, "workflow failed");
+        }
+    }
 }
 
 /// POST /api/v1/workflows/{id}/run — start a run; `202 { run }`.
@@ -566,7 +671,14 @@ async fn cancel_run(State(state): State<AppState>, Path(id): Path<uuid::Uuid>) -
         return db_unavailable();
     };
     match workflow::cancel_run(pool, id).await {
-        Ok(Some(run)) => Json(serde_json::json!({ "run": run.to_json() })).into_response(),
+        Ok(Some(run)) => {
+            if run.status == "cancelled"
+                && let Some((_, cancel)) = RUNNING.remove(&id)
+            {
+                cancel.notify_one();
+            }
+            Json(serde_json::json!({ "run": run.to_json() })).into_response()
+        }
         Ok(None) => not_found("Run"),
         Err(e) => internal(e),
     }

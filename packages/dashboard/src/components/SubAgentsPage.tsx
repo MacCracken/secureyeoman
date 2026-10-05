@@ -191,7 +191,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
                 setDelegateTaskText('');
                 setDelegateContext('');
               }}
-              className="btn-ghost p-1 rounded"
+              className="btn-ghost p-1 rounded-sm"
             >
               <X className="w-4 h-4" />
             </button>
@@ -378,7 +378,7 @@ function ActiveDelegationsTab({
                 {STATUS_ICONS[d.status]}
                 <span className="text-sm font-medium">{d.profileName}</span>
                 <span
-                  className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[d.status] ?? ''}`}
+                  className={`text-xs px-1.5 py-0.5 rounded-sm border ${STATUS_COLORS[d.status] ?? ''}`}
                 >
                   {d.status}
                 </span>
@@ -399,7 +399,7 @@ function ActiveDelegationsTab({
               onClick={() => {
                 cancelMut.mutate(d.delegationId);
               }}
-              className="btn-ghost p-1.5 rounded text-destructive hover:bg-destructive/10"
+              className="btn-ghost p-1.5 rounded-sm text-destructive hover:bg-destructive/10"
               title="Cancel delegation"
             >
               <Square className="w-4 h-4" />
@@ -468,7 +468,7 @@ function HistoryTab() {
                 {STATUS_ICONS[d.status]}
                 <span className="text-sm font-medium truncate">{d.task}</span>
                 <span
-                  className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[d.status] ?? ''}`}
+                  className={`text-xs px-1.5 py-0.5 rounded-sm border ${STATUS_COLORS[d.status] ?? ''}`}
                 >
                   {d.status}
                 </span>
@@ -537,7 +537,7 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
       {delegation.result && (
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-1">Result</p>
-          <pre className="text-xs bg-muted p-2 rounded whitespace-pre-wrap max-h-48 overflow-y-auto">
+          <pre className="text-xs bg-muted p-2 rounded-sm whitespace-pre-wrap max-h-48 overflow-y-auto">
             {delegation.result}
           </pre>
         </div>
@@ -545,7 +545,7 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
       {delegation.error && (
         <div>
           <p className="text-xs font-medium text-destructive mb-1">Error</p>
-          <pre className="text-xs bg-destructive/10 p-2 rounded">{delegation.error}</pre>
+          <pre className="text-xs bg-destructive/10 p-2 rounded-sm">{delegation.error}</pre>
         </div>
       )}
 
@@ -566,7 +566,7 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
               onClick={() => {
                 setHistoryView('list');
               }}
-              className={`p-1 rounded transition-colors ${historyView === 'list' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`p-1 rounded-sm transition-colors ${historyView === 'list' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
               title="List view"
             >
               <List className="w-3.5 h-3.5" />
@@ -575,7 +575,7 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
               onClick={() => {
                 setHistoryView('graph');
               }}
-              className={`p-1 rounded transition-colors ${historyView === 'graph' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`p-1 rounded-sm transition-colors ${historyView === 'graph' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
               title="Graph view"
             >
               <Share2 className="w-3.5 h-3.5" />
@@ -687,7 +687,7 @@ function TreeNodeRow({ node, depth }: { node: TreeNode; depth: number }) {
   return (
     <>
       <div
-        className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/30 transition-colors"
+        className="flex items-center gap-2 py-1.5 px-2 rounded-sm hover:bg-muted/30 transition-colors"
         style={{ paddingLeft: `${depth * 20 + 8}px` }}
       >
         {depth > 0 && <span className="text-muted-foreground/40 text-xs">{'└'}</span>}
@@ -696,7 +696,7 @@ function TreeNodeRow({ node, depth }: { node: TreeNode; depth: number }) {
           {node.task.length > 60 ? node.task.slice(0, 60) + '...' : node.task}
         </span>
         <span
-          className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[node.status] ?? ''}`}
+          className={`text-xs px-1.5 py-0.5 rounded-sm border ${STATUS_COLORS[node.status] ?? ''}`}
         >
           {node.status}
         </span>
@@ -790,7 +790,7 @@ function ProfilesTab({
                 setProfileBudget(50000);
                 setProfileTools('');
               }}
-              className="btn-ghost p-1 rounded"
+              className="btn-ghost p-1 rounded-sm"
             >
               <X className="w-4 h-4" />
             </button>
@@ -903,7 +903,7 @@ function ProfilesTab({
                   onClick={() => {
                     deleteMut.mutate(p.id);
                   }}
-                  className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
+                  className="btn-ghost p-1 rounded-sm text-destructive hover:bg-destructive/10"
                   title="Delete profile"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -1018,7 +1018,7 @@ function ProfileSkillsSection({ profileId }: { profileId: string }) {
                 availableSkills.slice(0, 10).map((s: CatalogSkill) => (
                   <button
                     key={s.id}
-                    className="block text-xs text-left w-full hover:bg-muted px-1.5 py-0.5 rounded"
+                    className="block text-xs text-left w-full hover:bg-muted px-1.5 py-0.5 rounded-sm"
                     onClick={() => {
                       addMut.mutate(s.id);
                     }}

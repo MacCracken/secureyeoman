@@ -101,8 +101,9 @@ export function ExperimentsPage() {
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">Experiments are Disabled</h2>
           <p className="text-muted-foreground mb-4">
-            Enable <code className="text-sm bg-muted px-1.5 py-0.5 rounded">allowExperiments</code>{' '}
-            in Settings &gt; Security to activate A/B experiments.
+            Enable{' '}
+            <code className="text-sm bg-muted px-1.5 py-0.5 rounded-sm">allowExperiments</code> in
+            Settings &gt; Security to activate A/B experiments.
           </p>
           <p className="text-xs text-muted-foreground">
             This setting must be explicitly enabled after initialization and saved to the database.
@@ -179,7 +180,7 @@ function ExperimentsList() {
                 setName('');
                 setDescription('');
               }}
-              className="p-1 rounded hover:bg-muted/50"
+              className="p-1 rounded-sm hover:bg-muted/50"
             >
               <X className="w-4 h-4" />
             </button>
@@ -254,7 +255,7 @@ function ExperimentsList() {
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium">{exp.name}</p>
                   <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-medium border ${EXP_STATUS_STYLES[exp.status] ?? 'bg-muted text-muted-foreground border-border'}`}
+                    className={`px-2 py-0.5 rounded-sm text-[10px] font-medium border ${EXP_STATUS_STYLES[exp.status] ?? 'bg-muted text-muted-foreground border-border'}`}
                   >
                     {exp.status}
                   </span>
@@ -267,13 +268,13 @@ function ExperimentsList() {
                   {new Date(exp.createdAt).toLocaleDateString()}
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 {exp.status === 'draft' && (
                   <button
                     onClick={() => {
                       startMut.mutate(exp.id);
                     }}
-                    className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+                    className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground"
                     title="Start experiment"
                   >
                     <Play className="w-4 h-4" />
@@ -284,7 +285,7 @@ function ExperimentsList() {
                     onClick={() => {
                       stopMut.mutate(exp.id);
                     }}
-                    className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+                    className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground"
                     title="Stop experiment"
                   >
                     <Square className="w-4 h-4" />
@@ -294,7 +295,7 @@ function ExperimentsList() {
                   onClick={() => {
                     deleteMut.mutate(exp.id);
                   }}
-                  className="p-1.5 rounded hover:bg-muted/50 text-destructive"
+                  className="p-1.5 rounded-sm hover:bg-muted/50 text-destructive"
                   title="Delete experiment"
                 >
                   <Trash2 className="w-4 h-4" />

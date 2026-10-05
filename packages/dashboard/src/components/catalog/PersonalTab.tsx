@@ -34,7 +34,6 @@ import {
 } from '../../api/client';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import type { Skill, SkillCreate } from '../../types';
-import { sanitizeText } from '../../utils/sanitize';
 import { useCollabEditor } from '../../hooks/useCollabEditor.js';
 import { PresenceBanner } from '../PresenceBanner.js';
 import { exportSkill } from './shared';
@@ -398,7 +397,7 @@ export function PersonalTab() {
             onChange={(e) => {
               setSelectedPersonalityId(e.target.value);
             }}
-            className="bg-card border border-border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
+            className="bg-card border border-border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
           >
             {personalities.map((p) => (
               <option key={p.id} value={p.id}>
@@ -523,7 +522,7 @@ export function PersonalTab() {
                 onChange={(e) => {
                   setForm({ ...form, personalityId: e.target.value || null });
                 }}
-                className="w-full bg-background border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
+                className="w-full bg-background border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
               >
                 <option value="">Global (All Personalities)</option>
                 {personalities.map((p) => (
@@ -654,9 +653,7 @@ export function PersonalTab() {
                       {SOURCE_LABELS[skill.source] || skill.source}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {sanitizeText(skill.description)}
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">{skill.description}</p>
                   {(skill.triggerPatterns || []).length > 0 && (
                     <div className="flex items-center flex-wrap gap-1 mt-2">
                       <span className="text-xs font-medium text-muted-foreground mr-1">
@@ -665,7 +662,7 @@ export function PersonalTab() {
                       {(skill.triggerPatterns || []).map((p, i) => (
                         <span
                           key={i}
-                          className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-mono"
+                          className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-sm font-mono"
                         >
                           {p}
                         </span>
@@ -681,7 +678,7 @@ export function PersonalTab() {
                       {(skill.mcpToolsAllowed || []).map((t, i) => (
                         <span
                           key={i}
-                          className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded font-mono"
+                          className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-sm font-mono"
                         >
                           {t}
                         </span>
@@ -692,7 +689,7 @@ export function PersonalTab() {
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <GitBranch className="w-3 h-3 text-info shrink-0" />
                       <span className="text-xs font-medium text-muted-foreground">Workflow:</span>
-                      <span className="text-xs bg-info/10 text-info px-2 py-0.5 rounded font-mono">
+                      <span className="text-xs bg-info/10 text-info px-2 py-0.5 rounded-sm font-mono">
                         {skill.linkedWorkflowId}
                       </span>
                     </div>

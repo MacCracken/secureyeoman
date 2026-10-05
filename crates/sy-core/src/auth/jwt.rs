@@ -122,8 +122,10 @@ pub fn validate_token(config: &JwtConfig, token: &str) -> Result<TokenClaims, St
         return Ok(claims);
     }
 
-    // Try previous secret (rotation grace period)
+    // Try previous secret (rotation grace period). A weak one (empty, short,
+    // the dev placeholder) is never trusted: anyone could sign with it.
     if let Some(ref prev) = config.previous_secret
+        && crate::state::is_strong_jwt_secret(prev)
         && let Ok(claims) = try_validate(token, prev, &config.issuer, &config.audience)
     {
         return Ok(claims);
@@ -240,6 +242,28 @@ mod tests {
         };
         let claims = validate_token(&rotated, &token).unwrap();
         assert_eq!(claims.sub, "user-1");
+    }
+
+    #[test]
+    fn weak_previous_secret_is_never_trusted() {
+        // `SECUREYEOMAN_JWT_SECRET_PREVIOUS=` (cleared after a rotation) and
+        // the dev placeholder must not become signing keys anyone can use.
+        for weak in ["", "short", crate::state::DEV_JWT_PLACEHOLDER] {
+            let forger = JwtConfig {
+                secret: weak.to_string(),
+                ..Default::default()
+            };
+            let forged = issue_access_token(&forger, "admin", "admin", &[]).unwrap();
+            let server = JwtConfig {
+                secret: "current-strong-secret-at-least-32-chars!".to_string(),
+                previous_secret: Some(weak.to_string()),
+                ..Default::default()
+            };
+            assert!(
+                validate_token(&server, &forged).is_err(),
+                "a token signed with {weak:?} was accepted"
+            );
+        }
     }
 
     #[test]

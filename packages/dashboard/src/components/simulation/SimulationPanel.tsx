@@ -247,7 +247,7 @@ export function SimulationPanel() {
             setPersonalityId(e.target.value);
           }}
           placeholder="Enter personality ID to monitor..."
-          className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/30"
           data-testid="personality-id-input"
         />
       </div>
@@ -419,7 +419,7 @@ function TickTab({
             </h2>
             <button
               onClick={onRefetch}
-              className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+              className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground"
               aria-label="Refresh tick data"
             >
               <RefreshCw className="w-4 h-4" />
@@ -455,7 +455,7 @@ function TickTab({
             {tickConfig.paused ? (
               <button
                 onClick={onResume}
-                className="px-3 py-1.5 rounded bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 text-sm"
+                className="px-3 py-1.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 text-sm"
                 data-testid="resume-btn"
               >
                 <Play className="w-4 h-4" />
@@ -464,7 +464,7 @@ function TickTab({
             ) : (
               <button
                 onClick={onPause}
-                className="px-3 py-1.5 rounded bg-yellow-500 text-white hover:opacity-90 flex items-center gap-1.5 text-sm"
+                className="px-3 py-1.5 rounded-sm bg-yellow-500 text-white hover:opacity-90 flex items-center gap-1.5 text-sm"
                 data-testid="pause-btn"
               >
                 <Pause className="w-4 h-4" />
@@ -473,7 +473,7 @@ function TickTab({
             )}
             <button
               onClick={onAdvance}
-              className="px-3 py-1.5 rounded bg-muted text-foreground hover:opacity-90 flex items-center gap-1.5 text-sm"
+              className="px-3 py-1.5 rounded-sm bg-muted text-foreground hover:opacity-90 flex items-center gap-1.5 text-sm"
               data-testid="advance-btn"
             >
               <SkipForward className="w-4 h-4" />
@@ -481,7 +481,7 @@ function TickTab({
             </button>
             <button
               onClick={onDelete}
-              className="px-3 py-1.5 rounded bg-destructive text-destructive-foreground hover:opacity-90 flex items-center gap-1.5 text-sm"
+              className="px-3 py-1.5 rounded-sm bg-destructive text-destructive-foreground hover:opacity-90 flex items-center gap-1.5 text-sm"
               data-testid="delete-btn"
             >
               <Trash2 className="w-4 h-4" />
@@ -546,7 +546,7 @@ function TickTab({
           <button
             onClick={onStart}
             disabled={isStarting}
-            className="px-3 py-1.5 rounded bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 text-sm disabled:opacity-50"
+            className="px-3 py-1.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 text-sm disabled:opacity-50"
             data-testid="start-btn"
           >
             {isStarting ? (
@@ -612,7 +612,7 @@ function MoodTab({
           </h2>
           <button
             onClick={onRefetch}
-            className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+            className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground"
             aria-label="Refresh mood data"
           >
             <RefreshCw className="w-4 h-4" />
@@ -642,7 +642,7 @@ function MoodTab({
               </div>
               <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-red-400 via-gray-400 to-green-400 rounded-full transition-all"
+                  className="h-full bg-linear-to-r from-red-400 via-gray-400 to-green-400 rounded-full transition-all"
                   style={{ width: `${valencePercent}%` }}
                   data-testid="valence-bar"
                 />
@@ -662,7 +662,7 @@ function MoodTab({
               </div>
               <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-blue-400 to-orange-400 rounded-full transition-all"
+                  className="h-full bg-linear-to-r from-blue-400 to-orange-400 rounded-full transition-all"
                   style={{ width: `${arousalPercent}%` }}
                   data-testid="arousal-bar"
                 />
@@ -681,7 +681,7 @@ function MoodTab({
             {/* Reset button */}
             <button
               onClick={onResetMood}
-              className="px-3 py-1.5 rounded bg-muted text-foreground hover:opacity-90 flex items-center gap-1.5 text-sm"
+              className="px-3 py-1.5 rounded-sm bg-muted text-foreground hover:opacity-90 flex items-center gap-1.5 text-sm"
               data-testid="reset-mood-btn"
             >
               <RefreshCw className="w-4 h-4" />
@@ -747,7 +747,7 @@ function MoodTab({
         <button
           onClick={onSubmitEvent}
           disabled={isSubmitting || !moodEventType.trim()}
-          className="px-3 py-1.5 rounded bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 text-sm disabled:opacity-50"
+          className="px-3 py-1.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 text-sm disabled:opacity-50"
           data-testid="submit-mood-event-btn"
         >
           {isSubmitting ? (
@@ -819,7 +819,7 @@ function SpatialTab({ entities, zones, isLoading, onRefetch }: SpatialTabProps) 
             <span className="text-xs text-muted-foreground">{entities.length} total</span>
             <button
               onClick={onRefetch}
-              className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+              className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground"
               aria-label="Refresh spatial data"
             >
               <RefreshCw className="w-4 h-4" />
@@ -911,7 +911,7 @@ function RelationshipsTab({ relationships, groups, isLoading, onRefetch }: Relat
           </h2>
           <button
             onClick={onRefetch}
-            className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+            className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground"
             aria-label="Refresh relationship data"
           >
             <RefreshCw className="w-4 h-4" />
@@ -938,7 +938,7 @@ function RelationshipsTab({ relationships, groups, isLoading, onRefetch }: Relat
                     <td className="py-1.5 pr-3 font-mono text-xs">{rel.sourceEntityId}</td>
                     <td className="py-1.5 pr-3 font-mono text-xs">{rel.targetEntityId}</td>
                     <td className="py-1.5 pr-3">
-                      <span className="px-1.5 py-0.5 rounded text-xs bg-muted">{rel.type}</span>
+                      <span className="px-1.5 py-0.5 rounded-sm text-xs bg-muted">{rel.type}</span>
                     </td>
                     <td className="py-1.5 pr-3">
                       <AffinityBar value={rel.affinity} />
@@ -1021,7 +1021,7 @@ function AffinityBar({ value }: { value: number }) {
     <div className="flex items-center gap-1.5">
       <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-red-400 to-green-400 rounded-full"
+          className="h-full bg-linear-to-r from-red-400 to-green-400 rounded-full"
           style={{ width: `${pct}%` }}
         />
       </div>

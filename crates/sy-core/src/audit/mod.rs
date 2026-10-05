@@ -9,9 +9,116 @@
 //! a plain forward hash-walk cannot catch — is detected too.
 //!
 //! Genesis block starts with previousHash = "0000...0000" (64 zeros).
+//!
+//! The server's persistent chain is `crate::db::audit` (the TS 1.0.0 format
+//! in `audit.entries`); [`AuditTrail`] holds its signing key and last
+//! verification. The in-memory [`AuditChain`] below is a self-contained
+//! variant with sequence binding and a head commitment.
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+
+/// Where the persistent chain's signing key came from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SigningKeySource {
+    /// `SECUREYEOMAN_SIGNING_KEY` (at least 32 bytes), as TS required.
+    Configured,
+    /// Derived from the JWT signing secret: stable exactly as long as it is.
+    DerivedFromJwtSecret,
+}
+
+/// The persistent audit chain's runtime state: its signing key, and the last
+/// verification, which stats and health report without re-walking the chain.
+pub struct AuditTrail {
+    signing_key: String,
+    key_source: SigningKeySource,
+    last_verification: std::sync::RwLock<Option<crate::db::audit::Verification>>,
+}
+
+impl AuditTrail {
+    /// The key from `SECUREYEOMAN_SIGNING_KEY`, or one derived from the JWT
+    /// secret when that is unset or too short (entries then verify only for
+    /// as long as the JWT secret stays the same).
+    pub fn from_env(jwt_secret: &str) -> Self {
+        match std::env::var("SECUREYEOMAN_SIGNING_KEY") {
+            Ok(key) if key.len() >= 32 => Self::with_key(key, SigningKeySource::Configured),
+            other => {
+                if other.is_ok() {
+                    tracing::warn!(
+                        "SECUREYEOMAN_SIGNING_KEY is shorter than 32 bytes; deriving the audit \
+                         chain key from the JWT secret instead"
+                    );
+                } else {
+                    tracing::warn!(
+                        "SECUREYEOMAN_SIGNING_KEY is not set; the audit chain key is derived \
+                         from the JWT secret, so entries verify only while that secret stays \
+                         the same (never across restarts with an ephemeral one)"
+                    );
+                }
+                let key = crate::crypto::hmac_sha256(
+                    b"secureyeoman/audit-chain/v1",
+                    jwt_secret.as_bytes(),
+                );
+                Self::with_key(key, SigningKeySource::DerivedFromJwtSecret)
+            }
+        }
+    }
+
+    pub fn with_key(signing_key: String, key_source: SigningKeySource) -> Self {
+        Self {
+            signing_key,
+            key_source,
+            last_verification: std::sync::RwLock::new(None),
+        }
+    }
+
+    pub fn signing_key(&self) -> &str {
+        &self.signing_key
+    }
+
+    pub fn key_source(&self) -> SigningKeySource {
+        self.key_source
+    }
+
+    /// The most recent verification, if one has run.
+    pub fn last_verification(&self) -> Option<crate::db::audit::Verification> {
+        self.last_verification
+            .read()
+            .map(|v| v.clone())
+            .unwrap_or(None)
+    }
+
+    pub fn set_last_verification(&self, v: crate::db::audit::Verification) {
+        if let Ok(mut slot) = self.last_verification.write() {
+            *slot = Some(v);
+        }
+    }
+
+    /// Walk the chain now and remember the outcome.
+    pub async fn verify(
+        &self,
+        pool: &sqlx::PgPool,
+    ) -> Result<crate::db::audit::Verification, sqlx::Error> {
+        let v = crate::db::audit::verify_chain(pool, &self.signing_key).await?;
+        if !v.valid {
+            tracing::error!(broken_at = ?v.broken_at, error = ?v.error, "audit chain verification failed");
+        }
+        self.set_last_verification(v.clone());
+        Ok(v)
+    }
+
+    /// The last verification, or one run now if none has (the boot
+    /// verification may still be walking the chain).
+    pub async fn last_or_verify(
+        &self,
+        pool: &sqlx::PgPool,
+    ) -> Result<crate::db::audit::Verification, sqlx::Error> {
+        match self.last_verification() {
+            Some(v) => Ok(v),
+            None => self.verify(pool).await,
+        }
+    }
+}
 
 const GENESIS_HASH: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 const CHAIN_VERSION: &str = "1.1.0";

@@ -34,6 +34,7 @@ vi.mock('./NewEntityDialog', () => ({
 
 vi.mock('../api/client', () => ({
   getAccessToken: vi.fn().mockReturnValue(null),
+  fetchAgentProfiles: vi.fn(),
   fetchExtensionConfig: vi.fn(),
   fetchSecurityPolicy: vi.fn(),
   fetchProactiveConfig: vi.fn(),
@@ -47,6 +48,7 @@ const mockFetchExtensionConfig = vi.mocked(api.fetchExtensionConfig);
 const mockFetchProactiveConfig = vi.mocked(api.fetchProactiveConfig);
 const mockFetchHealth = vi.mocked(api.fetchHealth);
 const mockFetchModelInfo = vi.mocked(api.fetchModelInfo);
+const mockFetchAgentProfiles = vi.mocked(api.fetchAgentProfiles);
 
 // ── Import after mocks ───────────────────────────────────────────────
 
@@ -114,6 +116,7 @@ function renderSidebar() {
 describe('Sidebar nav order', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockFetchAgentProfiles.mockResolvedValue({ profiles: [] });
     mockFetchSecurityPolicy.mockResolvedValue(BASE_POLICY as any);
     mockFetchExtensionConfig.mockResolvedValue({ config: { enabled: false } } as any);
     mockFetchProactiveConfig.mockResolvedValue({ config: { enabled: false } } as any);

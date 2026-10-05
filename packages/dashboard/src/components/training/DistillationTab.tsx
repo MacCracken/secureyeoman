@@ -40,7 +40,7 @@ function DistillationJobCard({
             <button
               onClick={onRun}
               disabled={isRunPending}
-              className="p-1 hover:bg-primary/10 hover:text-primary rounded"
+              className="p-1 hover:bg-primary/10 hover:text-primary rounded-sm"
               title={job.status === 'failed' ? 'Retry job' : 'Run job'}
             >
               {isRunPending ? (
@@ -52,7 +52,7 @@ function DistillationJobCard({
           )}
           <button
             onClick={onDelete}
-            className="p-1 hover:bg-destructive/10 hover:text-destructive rounded"
+            className="p-1 hover:bg-destructive/10 hover:text-destructive rounded-sm"
             title="Delete job"
           >
             <Trash2 className="w-3 h-3" />
@@ -68,9 +68,9 @@ function DistillationJobCard({
             </span>
             <span>{progress}%</span>
           </div>
-          <div className="h-1.5 bg-muted rounded">
+          <div className="h-1.5 bg-muted rounded-sm">
             <div
-              className="h-1.5 bg-primary rounded transition-all"
+              className="h-1.5 bg-primary rounded-sm transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -182,7 +182,7 @@ export function DistillationTab() {
                 onChange={(e) => {
                   setForm((f) => ({ ...f, name: e.target.value }));
                 }}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
                 placeholder="e.g. claude-opus distillation"
               />
             </div>
@@ -193,7 +193,7 @@ export function DistillationTab() {
                 onChange={(e) => {
                   setForm((f) => ({ ...f, teacherProvider: e.target.value }));
                 }}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
               >
                 <option value="anthropic">Anthropic</option>
                 <option value="openai">OpenAI</option>
@@ -208,7 +208,7 @@ export function DistillationTab() {
                 onChange={(e) => {
                   setForm((f) => ({ ...f, teacherModel: e.target.value }));
                 }}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
                 placeholder="claude-opus-4-6"
               />
             </div>
@@ -222,7 +222,7 @@ export function DistillationTab() {
                     exportFormat: e.target.value as 'sharegpt' | 'instruction',
                   }));
                 }}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
               >
                 <option value="sharegpt">ShareGPT JSONL</option>
                 <option value="instruction">Instruction JSONL</option>
@@ -238,7 +238,7 @@ export function DistillationTab() {
                 }}
                 min={1}
                 max={10000}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
               />
             </div>
             <div className="col-span-2">
@@ -249,7 +249,7 @@ export function DistillationTab() {
                 onChange={(e) => {
                   setForm((f) => ({ ...f, outputPath: e.target.value }));
                 }}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
                 placeholder="/data/distillation.jsonl"
               />
             </div>
@@ -263,7 +263,7 @@ export function DistillationTab() {
                     priorityMode: e.target.value as 'failure-first' | 'uniform' | 'success-first',
                   }));
                 }}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
               >
                 <option value="uniform">Uniform</option>
                 <option value="failure-first">Failure-first</option>
@@ -303,7 +303,7 @@ export function DistillationTab() {
                   }}
                   min={1}
                   max={500}
-                  className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                  className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
                 />
               </div>
             )}

@@ -98,7 +98,7 @@ export function DlpWidget() {
       <h3 className="text-base font-semibold text-zinc-200">Data Loss Prevention</h3>
 
       {/* Classification Overview */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">Classification Overview</div>
         <div className="grid grid-cols-2 gap-2">
           {['public', 'internal', 'confidential', 'restricted'].map((level) => (
@@ -115,7 +115,7 @@ export function DlpWidget() {
 
       {/* Egress Stats */}
       {egressData && (
-        <div className="rounded border border-zinc-700 p-3">
+        <div className="rounded-sm border border-zinc-700 p-3">
           <div className="mb-2 font-medium text-zinc-300">Egress Activity</div>
           {'totalEvents' in egressData ? (
             <div className="space-y-1 text-xs">
@@ -148,12 +148,12 @@ export function DlpWidget() {
       )}
 
       {/* Policy Status */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">Policy Status</div>
         <div className="flex items-center gap-2">
-          <div className="h-2 flex-1 rounded bg-zinc-700">
+          <div className="h-2 flex-1 rounded-sm bg-zinc-700">
             <div
-              className="h-2 rounded bg-green-500"
+              className="h-2 rounded-sm bg-green-500"
               style={{
                 width: totalPolicies > 0 ? `${(enabledPolicies / totalPolicies) * 100}%` : '0%',
               }}

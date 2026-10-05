@@ -173,3 +173,75 @@ async fn plain_http_requests_to_ws_routes_are_not_upgraded() {
     let (status, _) = common::send(common::test_app(), req).await;
     assert_ne!(status, StatusCode::SWITCHING_PROTOCOLS);
 }
+
+/// Send one client frame (clients must mask; a zero key leaves the payload as is).
+async fn send_frame(stream: &mut TcpStream, opcode: u8, payload: &[u8]) -> std::io::Result<()> {
+    let mut frame = vec![0x80 | opcode];
+    match payload.len() {
+        n if n < 126 => frame.push(0x80 | n as u8),
+        n if n <= u16::MAX as usize => {
+            frame.push(0x80 | 126);
+            frame.extend_from_slice(&(n as u16).to_be_bytes());
+        }
+        n => {
+            frame.push(0x80 | 127);
+            frame.extend_from_slice(&(n as u64).to_be_bytes());
+        }
+    }
+    frame.extend_from_slice(&[0, 0, 0, 0]);
+    frame.extend_from_slice(payload);
+    stream.write_all(&frame).await
+}
+
+/// Whether the server sends nothing on `stream` for a short while.
+async fn stays_quiet(stream: &mut TcpStream) -> bool {
+    let mut byte = [0u8; 1];
+    timeout(Duration::from_millis(300), stream.read(&mut byte))
+        .await
+        .is_err()
+}
+
+#[tokio::test]
+async fn collab_ops_reach_the_other_clients_but_are_not_echoed() {
+    let addr = serve(common::test_state()).await;
+    let path = format!("/ws/collab/skill:{DOC}");
+    let operator = protocol(&common::test_token("operator"));
+    let (head, mut alice) = handshake(addr, &path, Some(&operator)).await;
+    assert!(head.starts_with("http/1.1 101"), "{head}");
+    let (head, mut bob) = handshake(addr, &path, Some(&operator)).await;
+    assert!(head.starts_with("http/1.1 101"), "{head}");
+
+    send_frame(&mut alice, 0x2, &[1, 2, 3]).await.unwrap();
+    let (opcode, payload) = read_frame(&mut bob).await;
+    assert_eq!((opcode, payload), (0x2, vec![1, 2, 3]));
+    assert!(
+        stays_quiet(&mut alice).await,
+        "the sender got its own op back"
+    );
+}
+
+#[tokio::test]
+async fn oversized_collab_messages_end_the_connection() {
+    let addr = serve(common::test_state()).await;
+    let path = format!("/ws/collab/personality:{DOC}");
+    let operator = protocol(&common::test_token("operator"));
+    let (_, mut mallory) = handshake(addr, &path, Some(&operator)).await;
+    let (_, mut bob) = handshake(addr, &path, Some(&operator)).await;
+
+    // 1 MiB + 1: the server may stop reading part-way, so the write can fail.
+    let _ = send_frame(&mut mallory, 0x2, &vec![0u8; 1024 * 1024 + 1]).await;
+    let mut buf = [0u8; 64];
+    let ended = timeout(Duration::from_secs(5), async {
+        loop {
+            match mallory.read(&mut buf).await {
+                Ok(0) | Err(_) => break true,                    // closed
+                Ok(n) if buf[..n].contains(&0x88) => break true, // close frame
+                Ok(_) => {}
+            }
+        }
+    })
+    .await
+    .unwrap_or(false);
+    assert!(ended, "an oversized message did not end the connection");
+    assert!(stays_quiet(&mut bob).await, "the oversized op was relayed");
+}

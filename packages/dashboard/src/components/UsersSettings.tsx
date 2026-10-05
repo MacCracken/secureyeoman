@@ -110,7 +110,7 @@ export function UsersSettings() {
                     onChange={(e) => {
                       setCreateForm((f) => ({ ...f, email: e.target.value }));
                     }}
-                    className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                     placeholder="user@example.com"
                   />
                 </div>
@@ -122,7 +122,7 @@ export function UsersSettings() {
                     onChange={(e) => {
                       setCreateForm((f) => ({ ...f, displayName: e.target.value }));
                     }}
-                    className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                     placeholder="Jane Doe"
                   />
                 </div>
@@ -134,7 +134,7 @@ export function UsersSettings() {
                     onChange={(e) => {
                       setCreateForm((f) => ({ ...f, password: e.target.value }));
                     }}
-                    className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                     placeholder="••••••••"
                   />
                 </div>
@@ -210,7 +210,7 @@ export function UsersSettings() {
                           onChange={(e) => {
                             setEditDisplayName(e.target.value);
                           }}
-                          className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                         />
                       </div>
                       <div className="flex items-center gap-2 pt-4">
@@ -276,7 +276,7 @@ export function UsersSettings() {
                             </span>
                           )}
                           {user.isBuiltin && (
-                            <span className="text-xs text-muted bg-surface border border-border rounded px-1.5 py-0.5 shrink-0">
+                            <span className="text-xs text-muted bg-surface border border-border rounded-sm px-1.5 py-0.5 shrink-0">
                               built-in
                             </span>
                           )}
@@ -315,7 +315,7 @@ export function UsersSettings() {
 
                 {/* ── Delete confirmation ── */}
                 {confirmDelete?.id === user.id && (
-                  <div className="p-3 bg-destructive/10 border border-destructive/30 rounded space-y-2">
+                  <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-sm space-y-2">
                     <p className="text-xs text-destructive">
                       Delete user <strong>{user.displayName}</strong>? This cannot be undone.
                     </p>

@@ -120,7 +120,7 @@ export const ChatInputArea = memo(function ChatInputArea({
           }
           disabled={isPending || disabled}
           rows={3}
-          className="flex-1 resize-none rounded-lg border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
+          className="flex-1 resize-none rounded-lg border bg-background px-4 py-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
         />
         {hasAuditory && (
           <VoiceToggle

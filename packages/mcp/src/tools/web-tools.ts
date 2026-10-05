@@ -28,9 +28,11 @@ const BLOCKED_IP_RANGES = [
   /^192\.168\./, // 192.168.0.0/16
   /^169\.254\./, // link-local / cloud metadata
   /^0\./, // 0.0.0.0/8
+  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // 100.64.0.0/10 CGNAT (tailnets)
   /^::1$/, // IPv6 loopback
-  /^fc00:/i, // IPv6 ULA
-  /^fe80:/i, // IPv6 link-local
+  /^::$/, // IPv6 unspecified
+  /^f[cd][0-9a-f]{0,2}:/i, // IPv6 unique-local fc00::/7 (fd.. in practice)
+  /^fe[89ab][0-9a-f]?:/i, // IPv6 link-local fe80::/10
 ];
 
 const BLOCKED_HOSTNAMES = ['localhost', 'metadata.google.internal', 'metadata.internal'];

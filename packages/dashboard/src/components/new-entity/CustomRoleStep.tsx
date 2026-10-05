@@ -19,7 +19,7 @@ export function CustomRoleStep({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
+        <button onClick={goBack} className="btn-ghost p-1 rounded-sm" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Custom Role</h3>
@@ -32,7 +32,7 @@ export function CustomRoleStep({
           onChange={(e) => {
             setCustomRole({ ...customRole, name: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="e.g., Data Analyst"
         />
       </div>
@@ -44,7 +44,7 @@ export function CustomRoleStep({
           onChange={(e) => {
             setCustomRole({ ...customRole, description: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="Role purpose and capabilities"
         />
       </div>

@@ -316,7 +316,7 @@ export function DepartmentalRiskTab() {
                   {/* View toggle + snapshot button */}
                   <div className="flex items-center gap-2">
                     <button
-                      className={`px-3 py-1 text-sm rounded ${deptDetailView === 'intent' ? 'bg-primary text-primary-content' : 'bg-base-200'}`}
+                      className={`px-3 py-1 text-sm rounded-sm ${deptDetailView === 'intent' ? 'bg-primary text-primary-content' : 'bg-base-200'}`}
                       onClick={() => {
                         setDeptDetailView('intent');
                       }}
@@ -324,7 +324,7 @@ export function DepartmentalRiskTab() {
                       Intent
                     </button>
                     <button
-                      className={`px-3 py-1 text-sm rounded ${deptDetailView === 'risk' ? 'bg-primary text-primary-content' : 'bg-base-200'}`}
+                      className={`px-3 py-1 text-sm rounded-sm ${deptDetailView === 'risk' ? 'bg-primary text-primary-content' : 'bg-base-200'}`}
                       onClick={() => {
                         setDeptDetailView('risk');
                       }}
@@ -332,7 +332,7 @@ export function DepartmentalRiskTab() {
                       Risk
                     </button>
                     <button
-                      className="ml-auto text-xs px-2 py-1 border border-border rounded hover:bg-base-200"
+                      className="ml-auto text-xs px-2 py-1 border border-border rounded-sm hover:bg-base-200"
                       onClick={() => {
                         void snapshotDepartment(selectedDept).then(() => {
                           invalidateAll();

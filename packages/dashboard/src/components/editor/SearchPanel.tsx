@@ -131,7 +131,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
             onClick={() => {
               setShowReplace((v) => !v);
             }}
-            className={`p-1 rounded text-xs ${showReplace ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`p-1 rounded-sm text-xs ${showReplace ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
             title="Toggle replace"
           >
             <Replace className="w-3.5 h-3.5" />
@@ -139,7 +139,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded text-muted-foreground hover:text-foreground"
+              className="p-1 rounded-sm text-muted-foreground hover:text-foreground"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -154,7 +154,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
             <input
               ref={inputRef}
-              className="w-full pl-7 pr-2 py-1.5 text-xs bg-muted/30 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full pl-7 pr-2 py-1.5 text-xs bg-muted/30 border border-border rounded-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
               placeholder="Search..."
               value={query}
               onChange={(e) => {
@@ -170,7 +170,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
             onClick={() => {
               setCaseSensitive((v) => !v);
             }}
-            className={`p-1 rounded text-xs ${caseSensitive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`p-1 rounded-sm text-xs ${caseSensitive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
             title="Match case"
           >
             <CaseSensitive className="w-3.5 h-3.5" />
@@ -179,7 +179,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
             onClick={() => {
               setUseRegex((v) => !v);
             }}
-            className={`p-1 rounded text-xs ${useRegex ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`p-1 rounded-sm text-xs ${useRegex ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
             title="Use regex"
           >
             <Regex className="w-3.5 h-3.5" />
@@ -192,7 +192,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
             <div className="relative flex-1">
               <Replace className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
               <input
-                className="w-full pl-7 pr-2 py-1.5 text-xs bg-muted/30 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full pl-7 pr-2 py-1.5 text-xs bg-muted/30 border border-border rounded-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
                 placeholder="Replace..."
                 value={replaceText}
                 onChange={(e) => {
@@ -210,7 +210,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
                 replaceMutation.isPending ||
                 fileGroups.filter((g) => g.selected).length === 0
               }
-              className="px-2 py-1.5 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+              className="px-2 py-1.5 text-xs rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
               title="Replace all in selected files"
               data-testid="replace-all-btn"
             >
@@ -221,7 +221,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
 
         {/* File glob filter */}
         <input
-          className="w-full px-2 py-1 text-xs bg-muted/30 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full px-2 py-1 text-xs bg-muted/30 border border-border rounded-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
           placeholder="Files to include (e.g. *.ts, *.tsx)"
           value={glob}
           onChange={(e) => {
@@ -280,7 +280,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
                     e.stopPropagation();
                     toggleSelect(gi);
                   }}
-                  className="flex-shrink-0"
+                  className="shrink-0"
                 >
                   {group.selected ? (
                     <CheckSquare className="w-3 h-3 text-primary" />
@@ -290,15 +290,13 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
                 </button>
               )}
               {group.expanded ? (
-                <ChevronDown className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
+                <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
               ) : (
-                <ChevronRight className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
+                <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground" />
               )}
-              <FileText className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
+              <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />
               <span className="truncate font-medium">{group.file}</span>
-              <span className="ml-auto flex-shrink-0 text-muted-foreground">
-                {group.matches.length}
-              </span>
+              <span className="ml-auto shrink-0 text-muted-foreground">{group.matches.length}</span>
             </div>
 
             {group.expanded &&
@@ -309,7 +307,7 @@ export function SearchPanel({ cwd, onNavigate, onClose }: SearchPanelProps) {
                   onClick={() => onNavigate?.(group.file, match.line)}
                   data-testid="search-match"
                 >
-                  <span className="flex-shrink-0 text-muted-foreground w-8 text-right">
+                  <span className="shrink-0 text-muted-foreground w-8 text-right">
                     {match.line}
                   </span>
                   <span className="font-mono truncate">{match.text}</span>

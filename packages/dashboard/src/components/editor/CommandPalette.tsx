@@ -100,7 +100,7 @@ export function CommandPalette({
       >
         {/* Search input */}
         <div className="flex items-center gap-2 px-3 py-2.5 border-b">
-          <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -110,10 +110,10 @@ export function CommandPalette({
             }}
             onKeyDown={handleKeyDown}
             placeholder="Type a command..."
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+            className="flex-1 bg-transparent text-sm outline-hidden placeholder:text-muted-foreground/60"
             data-testid="command-palette-input"
           />
-          <kbd className="hidden sm:inline text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
+          <kbd className="hidden sm:inline text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm border">
             Esc
           </kbd>
         </div>
@@ -150,12 +150,12 @@ export function CommandPalette({
                   }`}
                   data-testid={`command-item-${item.id}`}
                 >
-                  <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center">
+                  <span className="w-4 h-4 shrink-0 flex items-center justify-center">
                     {item.icon}
                   </span>
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.shortcut && (
-                    <kbd className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
+                    <kbd className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm border">
                       {item.shortcut}
                     </kbd>
                   )}

@@ -7,33 +7,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Brain, Link2, TrendingUp, Loader2 } from 'lucide-react';
+import { fetchCognitiveStats, type CognitiveAccessTrendEntry } from '../../api/client';
 
-interface ActivationItem {
-  id: string;
-  activation: number;
-}
-
-interface AccessTrendEntry {
-  day: string;
-  count: number;
-}
-
-interface CognitiveStats {
-  topMemories: ActivationItem[];
-  topDocuments: ActivationItem[];
-  associationCount: number;
-  avgAssociationWeight: number;
-  accessTrend: AccessTrendEntry[];
-}
-
-async function fetchCognitiveStats(): Promise<CognitiveStats> {
-  const res = await fetch('/api/v1/brain/cognitive-stats');
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  return data.stats;
-}
-
-function TrendBar({ entries }: { entries: AccessTrendEntry[] }) {
+function TrendBar({ entries }: { entries: CognitiveAccessTrendEntry[] }) {
   if (entries.length === 0) {
     return <p className="text-xs text-muted-foreground">No access data in the last 7 days</p>;
   }
@@ -91,14 +67,14 @@ export function CognitiveMemoryWidget() {
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="p-2 rounded bg-muted/30">
+        <div className="p-2 rounded-sm bg-muted/30">
           <div className="flex items-center gap-1.5 mb-0.5">
             <Link2 className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Associations</span>
           </div>
           <p className="text-lg font-bold">{data.associationCount}</p>
         </div>
-        <div className="p-2 rounded bg-muted/30">
+        <div className="p-2 rounded-sm bg-muted/30">
           <div className="flex items-center gap-1.5 mb-0.5">
             <TrendingUp className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Avg Weight</span>

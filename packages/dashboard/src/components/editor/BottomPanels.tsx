@@ -53,7 +53,7 @@ export function SessionsPanel() {
       {sessions.map((session) => (
         <div
           key={session.id}
-          className="flex items-center justify-between gap-2 px-2 py-1.5 rounded bg-muted/30 text-xs"
+          className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-sm bg-muted/30 text-xs"
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {SESSION_STATUS_ICONS[session.status] ?? (
@@ -61,11 +61,11 @@ export function SessionsPanel() {
             )}
             <span className="font-mono">{session.id.slice(0, 12)}</span>
             <span
-              className={`px-1.5 py-0.5 rounded border ${SESSION_STATUS_COLORS[session.status] ?? 'bg-muted text-muted-foreground border-border'}`}
+              className={`px-1.5 py-0.5 rounded-sm border ${SESSION_STATUS_COLORS[session.status] ?? 'bg-muted text-muted-foreground border-border'}`}
             >
               {session.status}
             </span>
-            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+            <span className="px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary">
               {session.runtime}
             </span>
           </div>
@@ -77,7 +77,7 @@ export function SessionsPanel() {
               onClick={() => {
                 terminateMut.mutate(session.id);
               }}
-              className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
+              className="btn-ghost p-1 rounded-sm text-destructive hover:bg-destructive/10"
               title="Terminate session"
               aria-label="Terminate session"
             >
@@ -131,7 +131,7 @@ export function HistoryPanel() {
           onChange={(e) => {
             setSessionFilter(e.target.value);
           }}
-          className="bg-card border border-border rounded text-xs py-1 px-2 w-48"
+          className="bg-card border border-border rounded-sm text-xs py-1 px-2 w-48"
           placeholder="Filter by session ID..."
         />
       </div>
@@ -177,7 +177,7 @@ export function HistoryPanel() {
                       <XCircle className="w-3.5 h-3.5 text-red-500" />
                     )}
                   </td>
-                  <td className="px-2 py-1.5 font-mono">{exec.sessionId.slice(0, 8)}</td>
+                  <td className="px-2 py-1.5 font-mono">{(exec.sessionId ?? '').slice(0, 8)}</td>
                   <td className="px-2 py-1.5">
                     <span
                       className={`px-1 py-0.5 rounded border ${
@@ -206,7 +206,7 @@ export function HistoryPanel() {
                         onClick={() => {
                           approveMut.mutate(exec.id);
                         }}
-                        className="btn-ghost p-0.5 rounded text-green-500 hover:bg-green-500/10"
+                        className="btn-ghost p-0.5 rounded-sm text-green-500 hover:bg-green-500/10"
                         title="Approve"
                         aria-label="Approve"
                       >
@@ -216,7 +216,7 @@ export function HistoryPanel() {
                         onClick={() => {
                           rejectMut.mutate(exec.id);
                         }}
-                        className="btn-ghost p-0.5 rounded text-red-500 hover:bg-red-500/10"
+                        className="btn-ghost p-0.5 rounded-sm text-red-500 hover:bg-red-500/10"
                         title="Reject"
                         aria-label="Reject"
                       >
@@ -235,15 +235,15 @@ export function HistoryPanel() {
             const exec = executions.find((e) => e.id === expandedId);
             if (!exec) return null;
             return (
-              <div className="mx-2 my-1 p-2 rounded bg-muted/30 space-y-1">
+              <div className="mx-2 my-1 p-2 rounded-sm bg-muted/30 space-y-1">
                 <h4 className="text-xs font-medium">Detail: {exec.id.slice(0, 12)}</h4>
                 {exec.stdout && (
-                  <pre className="text-[10px] bg-muted p-1.5 rounded whitespace-pre-wrap max-h-24 overflow-y-auto font-mono">
+                  <pre className="text-[10px] bg-muted p-1.5 rounded-sm whitespace-pre-wrap max-h-24 overflow-y-auto font-mono">
                     {exec.stdout}
                   </pre>
                 )}
                 {exec.stderr && (
-                  <pre className="text-[10px] bg-destructive/10 p-1.5 rounded whitespace-pre-wrap max-h-24 overflow-y-auto font-mono">
+                  <pre className="text-[10px] bg-destructive/10 p-1.5 rounded-sm whitespace-pre-wrap max-h-24 overflow-y-auto font-mono">
                     {exec.stderr}
                   </pre>
                 )}

@@ -8,7 +8,18 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { replayQueuedRequest } from '../api/client';
 import { drainMutations, removeMutation } from '../lib/offline-db';
+
+/**
+ * Whether a replayed mutation is finished with: it succeeded, or the server
+ * refused it for good (a client error a retry cannot fix). An expired session
+ * (401), a timeout, rate limiting and server errors leave it queued.
+ */
+function settled(status: number): boolean {
+  if (status >= 200 && status < 300) return true;
+  return status >= 400 && status < 500 && ![401, 408, 429].includes(status);
+}
 
 export function useOffline() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -57,11 +68,10 @@ export function useOffline() {
       const mutations = await drainMutations();
       for (const m of mutations) {
         try {
-          await fetch(m.url, {
-            method: m.method,
-            headers: { 'Content-Type': 'application/json' },
-            body: m.body ? JSON.stringify(m.body) : undefined,
-          });
+          // With the access token: the bare fetch this used was always 401,
+          // and the mutation was dropped anyway.
+          const res = await replayQueuedRequest(m.method, m.url, m.body);
+          if (!settled(res.status)) break; // keep it, in order, for the next sync
           await removeMutation(m.id);
         } catch {
           // Stop on first failure — remaining mutations stay queued

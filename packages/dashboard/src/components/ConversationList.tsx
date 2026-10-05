@@ -174,7 +174,7 @@ export function ConversationList({
         <div className="flex items-center gap-1">
           <button
             onClick={handleNew}
-            className="btn-ghost p-1.5 rounded"
+            className="btn-ghost p-1.5 rounded-sm"
             aria-label="New conversation"
           >
             <Plus className="w-4 h-4" />
@@ -182,14 +182,14 @@ export function ConversationList({
           {/* Hide collapse on mobile — use backdrop dismiss instead */}
           <button
             onClick={onToggleCollapse}
-            className="btn-ghost p-1.5 rounded hidden md:flex"
+            className="btn-ghost p-1.5 rounded-sm hidden md:flex"
             aria-label="Collapse"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={onMobileClose}
-            className="btn-ghost p-1.5 rounded md:hidden"
+            className="btn-ghost p-1.5 rounded-sm md:hidden"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
@@ -217,9 +217,9 @@ export function ConversationList({
             }}
           >
             {conv.parentConversationId ? (
-              <GitBranch className="w-3.5 h-3.5 flex-shrink-0 text-primary" />
+              <GitBranch className="w-3.5 h-3.5 shrink-0 text-primary" />
             ) : (
-              <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+              <MessageSquare className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
             )}
 
             {editingId === conv.id ? (
@@ -234,7 +234,7 @@ export function ConversationList({
                     if (e.key === 'Enter') handleSubmitRename();
                     if (e.key === 'Escape') handleCancelRename();
                   }}
-                  className="flex-1 min-w-0 text-xs bg-background border rounded px-1.5 py-1"
+                  className="flex-1 min-w-0 text-xs bg-background border rounded-sm px-1.5 py-1"
                   // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                   onClick={(e) => {
@@ -356,7 +356,7 @@ export function ConversationList({
       {/* Share toast */}
       {shareToast && (
         <div className="absolute bottom-2 left-2 right-2 z-50 rounded-md bg-primary px-3 py-2 text-xs text-primary-foreground shadow-md flex items-center gap-2">
-          <Link className="w-3.5 h-3.5 flex-shrink-0" />
+          <Link className="w-3.5 h-3.5 shrink-0" />
           {shareToast}
         </div>
       )}
@@ -386,17 +386,17 @@ export function ConversationList({
     return (
       <>
         {mobileDrawer}
-        <div className="hidden md:flex flex-col items-center py-2 border-r w-10 flex-shrink-0">
+        <div className="hidden md:flex flex-col items-center py-2 border-r w-10 shrink-0">
           <button
             onClick={onToggleCollapse}
-            className="btn-ghost p-1.5 rounded mb-2"
+            className="btn-ghost p-1.5 rounded-sm mb-2"
             aria-label="Expand conversations"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
           <button
             onClick={onNew}
-            className="btn-ghost p-1.5 rounded mb-2"
+            className="btn-ghost p-1.5 rounded-sm mb-2"
             aria-label="New conversation"
           >
             <Plus className="w-4 h-4" />
@@ -424,7 +424,7 @@ export function ConversationList({
   return (
     <>
       {mobileDrawer}
-      <div className="hidden md:flex flex-col border-r w-64 flex-shrink-0 overflow-hidden">
+      <div className="hidden md:flex flex-col border-r w-64 shrink-0 overflow-hidden">
         {listContent}
       </div>
     </>

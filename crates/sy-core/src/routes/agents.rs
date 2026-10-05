@@ -766,7 +766,10 @@ async fn execute_swarm(
                 // Load template and execute swarm
                 match agents::get_swarm_template(&pool, &template_id).await {
                     Ok(Some(template)) => {
-                        let delegate = crate::orchestration::hoosh::HooshDelegate::from_env();
+                        let delegate = crate::orchestration::delegation::PolicyGatedDelegate::new(
+                            crate::orchestration::hoosh::HooshDelegate::from_env(),
+                            pool.clone(),
+                        );
                         let executor =
                             crate::orchestration::swarm::SwarmExecutor::new(delegate, pool.clone());
                         match executor
@@ -1021,7 +1024,10 @@ async fn convene_council(
 
                 match agents::get_council_template(&pool, &template_id).await {
                     Ok(Some(template)) => {
-                        let delegate = crate::orchestration::hoosh::HooshDelegate::from_env();
+                        let delegate = crate::orchestration::delegation::PolicyGatedDelegate::new(
+                            crate::orchestration::hoosh::HooshDelegate::from_env(),
+                            pool.clone(),
+                        );
                         let executor = crate::orchestration::council::CouncilExecutor::new(
                             delegate,
                             pool.clone(),
@@ -1238,7 +1244,10 @@ async fn run_team(
 
                 match agents::get_team(&pool, &team_id).await {
                     Ok(Some(team)) => {
-                        let delegate = crate::orchestration::hoosh::HooshDelegate::from_env();
+                        let delegate = crate::orchestration::delegation::PolicyGatedDelegate::new(
+                            crate::orchestration::hoosh::HooshDelegate::from_env(),
+                            pool.clone(),
+                        );
                         let executor =
                             crate::orchestration::team::TeamExecutor::new(delegate, pool.clone());
                         match executor

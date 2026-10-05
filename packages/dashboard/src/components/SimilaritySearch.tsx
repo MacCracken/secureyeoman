@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Search, Loader2, Brain, BookOpen, SlidersHorizontal } from 'lucide-react';
 import { searchSimilar } from '../api/client';
-import { sanitizeText } from '../utils/sanitize';
 
 interface VectorResult {
   id: string;
@@ -75,7 +74,7 @@ export function SimilaritySearch() {
               onChange={(e) => {
                 setTypeFilter(e.target.value as typeof typeFilter);
               }}
-              className="w-full text-xs bg-background border rounded px-2 py-1"
+              className="w-full text-xs bg-background border rounded-sm px-2 py-1"
             >
               <option value="all">All</option>
               <option value="memories">Memories</option>
@@ -128,19 +127,19 @@ export function SimilaritySearch() {
                   )}
                   <span>{result.metadata?.type === 'memory' ? 'Memory' : 'Knowledge'}</span>
                   {result.metadata?.memoryType != null && (
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                      {sanitizeText(String(result.metadata.memoryType))}
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-sm">
+                      {String(result.metadata.memoryType)}
                     </span>
                   )}
                   {result.metadata?.topic != null && (
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                      {sanitizeText(String(result.metadata.topic))}
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-sm">
+                      {String(result.metadata.topic)}
                     </span>
                   )}
                 </div>
                 <ScoreIndicator score={result.score} />
               </div>
-              <p className="text-xs font-mono">{sanitizeText(result.id)}</p>
+              <p className="text-xs font-mono">{result.id}</p>
             </div>
           ))}
         </div>

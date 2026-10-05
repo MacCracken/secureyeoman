@@ -176,7 +176,7 @@ export function DashboardLayout() {
             </span>
             <button
               onClick={() => void refetchMetrics()}
-              className="btn-ghost p-1 rounded hover:bg-destructive/20"
+              className="btn-ghost p-1 rounded-sm hover:bg-destructive/20"
               aria-label="Retry connection"
             >
               <RefreshCw className="w-4 h-4" />
@@ -193,8 +193,8 @@ export function DashboardLayout() {
             <WifiOff className="w-4 h-4 shrink-0" />
             <span>
               <strong>Local AI Unavailable</strong> — {aiHealth.provider} at{' '}
-              <code className="text-xs bg-warning/10 px-1 rounded">{aiHealth.baseUrl}</code> is not
-              reachable. Check that {aiHealth.provider} is running.
+              <code className="text-xs bg-warning/10 px-1 rounded-sm">{aiHealth.baseUrl}</code> is
+              not reachable. Check that {aiHealth.provider} is running.
             </span>
           </div>
         )}

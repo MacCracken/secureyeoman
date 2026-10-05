@@ -39,6 +39,203 @@ const BLOCKED: &[&str] = &[
 
 const MAX_OUTPUT: usize = 1_048_576; // 1 MB
 
+/// The child's whole environment. It inherits nothing: the edge's own
+/// environment holds its API and registration tokens, LLM keys and
+/// messaging credentials, which `cat /proc/self/environ` would print.
+const CHILD_ENV: &[(&str, &str)] = &[
+    (
+        "PATH",
+        "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    ),
+    ("LANG", "C.UTF-8"),
+    ("TERM", "dumb"),
+];
+
+/// Why `args` are refused for `command`, if they are. Several allowed tools
+/// change the system or run programs through particular options: `ip netns
+/// exec` runs any program (as root, a root shell), `ip link set ... down`
+/// cuts the network, `ss -D FILE` writes (truncates) any file and `ss -K`
+/// kills connections, `hostname NAME` renames the host and `sensors -s`
+/// writes hardware limits. Those tools may only show.
+fn arg_policy_error(command: &str, args: &[String]) -> Option<String> {
+    match command {
+        "hostname" => hostname_args(args),
+        "ip" => ip_args(args),
+        "ss" => ss_args(args),
+        "sensors" => sensors_args(args),
+        _ => None,
+    }
+}
+
+/// `hostname` prints; given a name (or `-F`/`-b`) it sets one.
+fn hostname_args(args: &[String]) -> Option<String> {
+    const SHOW: &[&str] = &[
+        "-a",
+        "--alias",
+        "-A",
+        "--all-fqdns",
+        "-d",
+        "--domain",
+        "-f",
+        "--fqdn",
+        "--long",
+        "-i",
+        "--ip-address",
+        "-I",
+        "--all-ip-addresses",
+        "-s",
+        "--short",
+        "-h",
+        "--help",
+        "-V",
+        "--version",
+    ];
+    args.iter()
+        .find(|a| !SHOW.contains(&a.as_str()))
+        .map(|a| format!("hostname argument not allowed: {a} (display options only)"))
+}
+
+/// `ip [OPTIONS] OBJECT [show|list ...]`, and `ip route get`. iproute2
+/// accepts abbreviations (`ip l s` is `ip link set`), so the object and the
+/// verb must be spelled out, and options that switch namespaces (`-n`,
+/// `-all`), run command files (`-batch`) or force are refused.
+fn ip_args(args: &[String]) -> Option<String> {
+    const OPTIONS: &[&str] = &[
+        "-4",
+        "-6",
+        "-0",
+        "-s",
+        "-stats",
+        "-statistics",
+        "-d",
+        "-details",
+        "-j",
+        "-json",
+        "-p",
+        "-pretty",
+        "-br",
+        "-brief",
+        "-c",
+        "-color",
+        "-o",
+        "-oneline",
+        "-h",
+        "-human",
+        "-human-readable",
+        "-r",
+        "-resolve",
+    ];
+    const OBJECTS: &[&str] = &[
+        "address",
+        "addr",
+        "link",
+        "route",
+        "neigh",
+        "neighbour",
+        "neighbor",
+        "rule",
+        "maddress",
+        "maddr",
+    ];
+    let mut rest = args.iter().map(String::as_str).peekable();
+    while let Some(option) = rest.next_if(|a| a.starts_with('-')) {
+        if !OPTIONS.contains(&option) {
+            return Some(format!("ip option not allowed: {option}"));
+        }
+    }
+    let object = rest.next()?;
+    if !OBJECTS.contains(&object) {
+        return Some(format!(
+            "ip object not allowed: {object} (one of {})",
+            OBJECTS.join(", ")
+        ));
+    }
+    match rest.next() {
+        None | Some("show" | "list") => None,
+        Some("get") if object == "route" => None,
+        Some(verb) => Some(format!(
+            "ip {object} {verb} is not allowed (show and list only)"
+        )),
+    }
+}
+
+/// `ss` with options that only choose what is shown: not `-D`/`--diag`
+/// (writes a file), `-K`/`--kill`, `-F`/`--filter` (reads a file) or
+/// `-N`/`--net` (switches namespace).
+fn ss_args(args: &[String]) -> Option<String> {
+    const SHORT: &str = "hVHOnraloempiTsEZzb460tSudwxMB";
+    // Options whose value may follow in the same argument (`-finet`).
+    const SHORT_WITH_VALUE: &str = "fA";
+    const LONG: &[&str] = &[
+        "help",
+        "version",
+        "no-header",
+        "oneline",
+        "numeric",
+        "resolve",
+        "all",
+        "listening",
+        "options",
+        "extended",
+        "memory",
+        "processes",
+        "threads",
+        "info",
+        "tos",
+        "cgroup",
+        "summary",
+        "events",
+        "context",
+        "contexts",
+        "bpf",
+        "ipv4",
+        "ipv6",
+        "packet",
+        "tcp",
+        "sctp",
+        "udp",
+        "dccp",
+        "raw",
+        "unix",
+        "mptcp",
+        "vsock",
+        "tipc",
+        "xdp",
+        "inet-sockopt",
+        "bound-inactive",
+        "family",
+        "query",
+        "socket",
+    ];
+    for arg in args {
+        if let Some(long) = arg.strip_prefix("--") {
+            let name = long.split('=').next().unwrap_or_default();
+            if !LONG.contains(&name) {
+                return Some(format!("ss option not allowed: --{name}"));
+            }
+        } else if let Some(cluster) = arg.strip_prefix('-') {
+            for c in cluster.chars() {
+                if SHORT_WITH_VALUE.contains(c) {
+                    break; // the rest is the option's value
+                }
+                if !SHORT.contains(c) {
+                    return Some(format!("ss option not allowed: -{c}"));
+                }
+            }
+        }
+    }
+    None
+}
+
+/// `sensors` prints; `-s`/`--set` writes the configured limits to hardware.
+fn sensors_args(args: &[String]) -> Option<String> {
+    args.iter()
+        .find(|a| {
+            a.as_str() == "--set" || (a.starts_with('-') && !a.starts_with("--") && a.contains('s'))
+        })
+        .map(|a| format!("sensors option not allowed: {a}"))
+}
+
 /// Read `r` to EOF, keeping at most `cap` bytes; the flag reports whether more
 /// was available. Stops reading (and drops `r`) as soon as the cap is exceeded.
 async fn read_capped<R: AsyncRead + Unpin>(r: R, cap: usize) -> std::io::Result<(Vec<u8>, bool)> {
@@ -119,10 +316,16 @@ impl SandboxManager {
             }
         }
 
+        if let Some(refusal) = arg_policy_error(command, args) {
+            return Err(refusal);
+        }
+
         let timeout_secs = timeout_secs.clamp(MIN_TIMEOUT_SECS, MAX_TIMEOUT_SECS);
 
         let mut cmd = Command::new(command);
         cmd.args(args)
+            .env_clear()
+            .envs(CHILD_ENV.iter().copied())
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -198,6 +401,100 @@ mod tests {
                 "{forbidden} must not be in the default allowlist (SSRF/exfil/escape)"
             );
         }
+    }
+
+    fn strings(args: &[&str]) -> Vec<String> {
+        args.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn tools_that_can_change_the_system_may_only_show() {
+        let refused = |cmd: &str, args: &[&str]| arg_policy_error(cmd, &strings(args)).is_some();
+        // ip: namespaces run programs, batches run command files, and
+        // abbreviations hide mutating verbs.
+        assert!(refused("ip", &["netns", "exec", "x", "sh", "-c", "id"]));
+        assert!(refused("ip", &["-n", "x", "addr"]));
+        assert!(refused("ip", &["-all", "netns", "exec", "id"]));
+        assert!(refused("ip", &["-batch", "/tmp/cmds"]));
+        assert!(refused("ip", &["-force", "-b", "/tmp/cmds"]));
+        assert!(refused("ip", &["link", "set", "eth0", "down"]));
+        assert!(refused("ip", &["l", "s", "eth0", "down"]));
+        assert!(refused(
+            "ip",
+            &["addr", "add", "10.0.0.9/24", "dev", "eth0"]
+        ));
+        assert!(refused("ip", &["route", "flush", "table", "main"]));
+        assert!(refused("ip", &["addr", "del", "10.0.0.9/24"]));
+        // ss: -D writes a file, -K kills sockets, -F reads one.
+        assert!(refused("ss", &["-D", "/etc/passwd"]));
+        assert!(refused("ss", &["-tanD/tmp/x"]));
+        assert!(refused("ss", &["--diag=/tmp/x"]));
+        assert!(refused("ss", &["-K", "dport", "=", "22"]));
+        assert!(refused("ss", &["--kill"]));
+        assert!(refused("ss", &["-F", "/root/.ssh/id_rsa"]));
+        assert!(refused("ss", &["-N", "other"]));
+        // hostname NAME renames the host.
+        assert!(refused("hostname", &["pwned"]));
+        assert!(refused("hostname", &["-F", "/tmp/name"]));
+        assert!(refused("hostname", &["-b", "x"]));
+        // sensors -s writes limits.
+        assert!(refused("sensors", &["-s"]));
+        assert!(refused("sensors", &["-us"]));
+        assert!(refused("sensors", &["--set"]));
+
+        // Showing still works.
+        for (cmd, args) in [
+            ("ip", &["addr"][..]),
+            ("ip", &["-br", "-4", "addr", "show", "dev", "eth0"]),
+            ("ip", &["-s", "-s", "link", "list"]),
+            ("ip", &["route", "get", "1.1.1.1"]),
+            ("ip", &["-j", "neigh", "show"]),
+            ("ip", &[]),
+            ("ss", &["-tulpn"]),
+            ("ss", &["-s"]),
+            ("ss", &["-finet", "-A", "tcp", "state", "established"]),
+            (
+                "ss",
+                &["--tcp", "--listening", "--numeric", "--family=inet6"],
+            ),
+            ("hostname", &[]),
+            ("hostname", &["-I"]),
+            ("hostname", &["--fqdn"]),
+            ("sensors", &["-u"]),
+            ("sensors", &["-j"]),
+            ("ps", &["aux"]),
+            ("cat", &["/proc/meminfo"]),
+        ] {
+            assert!(!refused(cmd, args), "{cmd} {args:?} should be allowed");
+        }
+    }
+
+    #[tokio::test]
+    async fn refused_arguments_never_run() {
+        let sm = SandboxManager::new();
+        let err = sm
+            .execute("ss", &strings(&["-D", "/tmp/sy-edge-ss-dump"]), None, 5)
+            .await
+            .unwrap_err();
+        assert!(err.contains("-D"), "{err}");
+        assert!(!std::path::Path::new("/tmp/sy-edge-ss-dump").exists());
+    }
+
+    #[tokio::test]
+    async fn commands_do_not_inherit_the_edge_environment() {
+        let sm = SandboxManager::new();
+        let out = sm
+            .execute("cat", &strings(&["/proc/self/environ"]), None, 5)
+            .await
+            .unwrap();
+        let mut names: Vec<&str> = out
+            .stdout
+            .split('\0')
+            .filter(|v| !v.is_empty())
+            .filter_map(|v| v.split_once('=').map(|(name, _)| name))
+            .collect();
+        names.sort_unstable();
+        assert_eq!(names, ["LANG", "PATH", "TERM"], "{:?}", out.stdout);
     }
 
     #[tokio::test]

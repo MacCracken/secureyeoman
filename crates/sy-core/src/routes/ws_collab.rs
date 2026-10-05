@@ -6,9 +6,12 @@
 //! docId format: `personality:<uuid>` | `skill:<uuid>`
 //!
 //! Protocol: binary messages (Uint8Array CRDT operations).
-//! Clients in the same room receive each other's binary messages (fan-out).
+//! Clients in the same room receive each other's binary messages (fan-out),
+//! never their own. Messages are capped at 1 MiB, and a client that stops
+//! reading is dropped once 4 MiB are queued for it.
 
 use axum::Router;
+use axum::body::Bytes;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Path, State};
 use axum::http::HeaderMap;
@@ -17,14 +20,27 @@ use axum::routing::get;
 use futures::{SinkExt, StreamExt};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::sync::{RwLock, broadcast};
 use tracing::{debug, warn};
 
 use crate::routes::ws_auth;
 use crate::state::AppState;
 
+/// Largest CRDT message a client may send.
+const MAX_MESSAGE_BYTES: usize = 1024 * 1024;
+/// Bytes queued for a client that stops reading before it is dropped.
+const MAX_QUEUED_BYTES: usize = 4 * 1024 * 1024;
+
+/// An op on its way through a room: the sending client, and the op itself
+/// (refcounted, so the fan-out does not copy it per receiver).
+type RoomOp = (u64, Bytes);
+
 /// Shared collab room state — maps docId → broadcast sender for binary CRDT ops.
-type CollabRooms = Arc<RwLock<HashMap<String, broadcast::Sender<Vec<u8>>>>>;
+type CollabRooms = Arc<RwLock<HashMap<String, broadcast::Sender<RoomOp>>>>;
+
+/// Source of per-connection ids, so a client's own ops are not echoed back.
+static NEXT_CLIENT: AtomicU64 = AtomicU64::new(1);
 
 /// Lazy-init shared rooms via AppState extension or a module-level static.
 /// Using a static here since AppState doesn't need to know about collab internals.
@@ -79,12 +95,15 @@ async fn ws_collab_upgrade(
     }
 
     ws.protocols([principal.protocol])
+        .max_message_size(MAX_MESSAGE_BYTES)
+        .max_frame_size(MAX_MESSAGE_BYTES)
+        .max_write_buffer_size(MAX_QUEUED_BYTES)
         .on_upgrade(move |socket| handle_collab_client(socket, doc_id))
         .into_response()
 }
 
 async fn handle_collab_client(socket: WebSocket, doc_id: String) {
-    let client_id = uuid::Uuid::now_v7().to_string();
+    let client_id = NEXT_CLIENT.fetch_add(1, Ordering::Relaxed);
     debug!(client_id = %client_id, doc_id = %doc_id, "Collab client connected");
 
     // Get or create the room's broadcast channel
@@ -107,7 +126,7 @@ async fn handle_collab_client(socket: WebSocket, doc_id: String) {
                 match msg {
                     Some(Ok(Message::Binary(data))) => {
                         // Broadcast to all other clients in the room
-                        let _ = tx.send(data.to_vec());
+                        let _ = tx.send((client_id, data));
                     }
                     Some(Ok(Message::Close(_))) | None => break,
                     _ => {}
@@ -116,8 +135,10 @@ async fn handle_collab_client(socket: WebSocket, doc_id: String) {
             // Messages from other clients in the room → forward to this client
             event = rx.recv() => {
                 match event {
-                    Ok(data) => {
-                        if sender.send(Message::Binary(data.into())).await.is_err() {
+                    // The client already applied its own op.
+                    Ok((from, _)) if from == client_id => {}
+                    Ok((_, data)) => {
+                        if sender.send(Message::Binary(data)).await.is_err() {
                             break;
                         }
                     }

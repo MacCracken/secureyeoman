@@ -32,16 +32,28 @@ vi.mock('../../../hooks/useWebSocket', () => ({
   }),
 }));
 
-// Mock fetch
-const mockFetch = vi.fn();
-globalThis.fetch = mockFetch;
+// The widget's KB calls go through the authenticated API client.
+vi.mock('../../../api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../api/client')>();
+  return {
+    ...actual,
+    listDocuments: vi.fn(),
+    fetchDocument: vi.fn(),
+    ingestExcalidraw: vi.fn(),
+  };
+});
+
+import * as api from '../../../api/client';
+
+const mockListDocuments = vi.mocked(api.listDocuments);
+const mockFetchDocument = vi.mocked(api.fetchDocument);
+const mockIngestExcalidraw = vi.mocked(api.ingestExcalidraw);
 
 beforeEach(() => {
-  mockFetch.mockReset();
-  mockFetch.mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve({ documents: [] }),
-  });
+  mockListDocuments.mockReset();
+  mockListDocuments.mockResolvedValue({ documents: [], total: 0 });
+  mockFetchDocument.mockReset();
+  mockIngestExcalidraw.mockReset();
   mockUpdateScene.mockReset();
   mockSubscribe.mockReset();
   mockLastMessage = null;
@@ -108,12 +120,7 @@ describe('ExcalidrawWidget', () => {
   });
 
   it('Save to KB triggers POST', async () => {
-    mockFetch
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ documents: [] }) }) // loadKbDocs
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ document: { id: 'doc-1' } }),
-      }); // save
+    mockIngestExcalidraw.mockResolvedValue({ document: { id: 'doc-1' } } as any);
 
     render(<ExcalidrawWidget sceneJson={SAMPLE_SCENE} />);
 
@@ -124,35 +131,33 @@ describe('ExcalidrawWidget', () => {
     const saveBtn = screen.getByText('Save to KB');
     await user.click(saveBtn);
 
-    // Should have called ingest-excalidraw
-    const saveCalls = mockFetch.mock.calls.filter(
-      (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('ingest-excalidraw')
+    // Should have called ingest-excalidraw (through the authenticated client)
+    expect(mockIngestExcalidraw).toHaveBeenCalledTimes(1);
+    expect(mockIngestExcalidraw.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ elements: expect.any(Array) })
     );
-    expect(saveCalls.length).toBe(1);
   });
 
   it('Load from KB calls updateScene', async () => {
     const scenePayload = { elements: [{ type: 'rectangle', x: 0, y: 0, width: 50, height: 50 }] };
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            documents: [{ id: 'doc-1', title: 'Test', format: 'excalidraw' }],
-          }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            document: { id: 'doc-1', title: 'Test', metadata: { excalidrawScene: scenePayload } },
-          }),
-      });
+    mockListDocuments.mockResolvedValue({
+      documents: [
+        { id: 'doc-1', title: 'Test', format: 'excalidraw' },
+        // Not a scene: the server ignores format filters, the widget must not list it.
+        { id: 'doc-2', title: 'Manual', format: 'pdf' },
+      ],
+      total: 2,
+    } as any);
+    mockFetchDocument.mockResolvedValue({
+      document: { id: 'doc-1', title: 'Test', metadata: { excalidrawScene: scenePayload } },
+    } as any);
 
     render(<ExcalidrawWidget />);
 
     // Wait for KB docs to load
     const select = await screen.findByDisplayValue('Load from KB...');
+    expect(screen.getByRole('option', { name: 'Test' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Manual' })).not.toBeInTheDocument();
     fireEvent.change(select, { target: { value: 'doc-1' } });
 
     // Wait for the load to complete

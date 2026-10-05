@@ -78,7 +78,7 @@ export default function AnalyticsTab() {
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 activeSubTab === tab.id
-                  ? 'bg-card shadow-sm text-foreground'
+                  ? 'bg-card shadow-xs text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -99,7 +99,7 @@ export default function AnalyticsTab() {
                 }}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                   days === d
-                    ? 'bg-card shadow-sm text-foreground'
+                    ? 'bg-card shadow-xs text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >

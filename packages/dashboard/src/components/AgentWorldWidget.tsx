@@ -213,7 +213,7 @@ function AgentCard({ personality, state, taskLabel, frame, onClick }: AgentCardP
 
   return (
     <div
-      className={`font-mono text-[1em] leading-snug p-2 rounded border select-none w-[88px] flex-shrink-0 ${STATE_BORDER_CLS[state]} bg-card/50 ${state === 'offline' ? 'opacity-50' : ''} ${onClick ? 'cursor-pointer hover:bg-muted/30 transition-colors' : ''}`}
+      className={`font-mono text-[1em] leading-snug p-2 rounded-sm border select-none w-[88px] shrink-0 ${STATE_BORDER_CLS[state]} bg-card/50 ${state === 'offline' ? 'opacity-50' : ''} ${onClick ? 'cursor-pointer hover:bg-muted/30 transition-colors' : ''}`}
       title={`${personality.name} — ${STATE_LABEL[state]}${taskLabel ? `: ${taskLabel}` : ''}`}
       onClick={onClick}
     >
@@ -264,7 +264,7 @@ function SubAgentCard({ delegation, frame }: SubAgentCardProps) {
   const name = trunc(delegation.profileName, 10);
   return (
     <div
-      className="font-mono text-[1em] leading-snug p-2 rounded border select-none w-[88px] flex-shrink-0 border-purple-400/50 bg-card/50"
+      className="font-mono text-[1em] leading-snug p-2 rounded-sm border select-none w-[88px] shrink-0 border-purple-400/50 bg-card/50"
       title={`[sub-agent] ${delegation.profileName}: ${delegation.task}`}
     >
       <div className="font-bold text-center text-foreground truncate mb-0.5">{name}</div>
@@ -292,7 +292,7 @@ function SubAgentPill({ delegation, frame }: SubAgentCardProps) {
   const name = trunc(delegation.profileName, 8);
   return (
     <div
-      className="flex items-center gap-1 px-1.5 py-0.5 rounded border text-[0.9em] font-mono border-purple-400/50 bg-card/50"
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-[0.9em] font-mono border-purple-400/50 bg-card/50"
       title={`[sub-agent] ${delegation.profileName}: ${delegation.task}`}
     >
       <span className="text-purple-400">{f.face}</span>
@@ -318,7 +318,7 @@ function AgentPill({ personality, state, frame, inMeeting, onClick }: AgentPillP
 
   return (
     <div
-      className={`flex items-center gap-1 px-1.5 py-0.5 rounded border text-[0.9em] font-mono ${STATE_BORDER_CLS[state]} bg-card/50 ${state === 'offline' ? 'opacity-50' : ''} ${onClick ? 'cursor-pointer hover:bg-muted/30 transition-colors' : ''}`}
+      className={`flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-[0.9em] font-mono ${STATE_BORDER_CLS[state]} bg-card/50 ${state === 'offline' ? 'opacity-50' : ''} ${onClick ? 'cursor-pointer hover:bg-muted/30 transition-colors' : ''}`}
       title={`${personality.name} — ${STATE_LABEL[state]}`}
       onClick={onClick}
     >
@@ -363,7 +363,7 @@ function ZoneBox({
   const showDelegations = zoneId === 'workspace' && delegations.length > 0;
 
   return (
-    <div className="border border-border rounded p-2 min-h-[60px] flex flex-col gap-1">
+    <div className="border border-border rounded-sm p-2 min-h-[60px] flex flex-col gap-1">
       <div className="flex items-center justify-between mb-1">
         <span className="text-[0.9em] font-semibold text-muted-foreground uppercase tracking-wide">
           {label}

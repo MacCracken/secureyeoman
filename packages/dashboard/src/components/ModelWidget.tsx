@@ -168,7 +168,7 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
           <Cpu className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium">Model Selection</span>
         </div>
-        <button onClick={onClose} className="btn-ghost p-1 rounded">
+        <button onClick={onClose} className="btn-ghost p-1 rounded-sm">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -203,7 +203,7 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
               localFirstMutation.mutate({ localFirst: !localFirst });
             }}
             disabled={localFirstMutation.isPending}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 mt-0.5 ${
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 mt-0.5 ${
               localFirst ? 'bg-primary' : 'bg-muted'
             }`}
           >
@@ -294,7 +294,7 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
                             deleteMutation.mutate(m.model);
                           }}
                           disabled={deleteMutation.isPending}
-                          className="p-2 hover:bg-destructive/10 hover:text-destructive rounded mr-1"
+                          className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-sm mr-1"
                           title={`Remove ${m.model}`}
                         >
                           {isDeleting ? (
@@ -323,13 +323,13 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
                           if (e.key === 'Enter') void handlePull();
                         }}
                         placeholder="e.g. llama3:8b"
-                        className="flex-1 px-2 py-1 text-xs border rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="flex-1 px-2 py-1 text-xs border rounded-sm bg-background focus:outline-hidden focus:ring-1 focus:ring-primary"
                         disabled={isPulling}
                       />
                       <button
                         onClick={() => void handlePull()}
                         disabled={isPulling || !pullModel.trim()}
-                        className="btn-ghost p-1 rounded"
+                        className="btn-ghost p-1 rounded-sm"
                         title="Pull model"
                       >
                         {isPulling ? (
@@ -346,9 +346,9 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
                           {pullProgress !== null && <span>{pullProgress}%</span>}
                         </div>
                         {pullProgress !== null && (
-                          <div className="h-1 bg-muted rounded mt-0.5">
+                          <div className="h-1 bg-muted rounded-sm mt-0.5">
                             <div
-                              className="h-1 bg-primary rounded transition-all"
+                              className="h-1 bg-primary rounded-sm transition-all"
                               style={{ width: `${pullProgress}%` }}
                             />
                           </div>

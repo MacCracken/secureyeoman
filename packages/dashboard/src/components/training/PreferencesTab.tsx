@@ -49,7 +49,7 @@ export function PreferencesTab() {
           <h3 className="text-sm font-medium">Preference Pairs (DPO)</h3>
           <div className="flex gap-2 text-xs text-muted-foreground">
             {Object.entries(sourceCounts).map(([source, count]) => (
-              <span key={source} className="bg-muted px-2 py-0.5 rounded">
+              <span key={source} className="bg-muted px-2 py-0.5 rounded-sm">
                 {source}: {count}
               </span>
             ))}
@@ -63,7 +63,7 @@ export function PreferencesTab() {
               onChange={(e) => {
                 setSourceFilter(e.target.value);
               }}
-              className="text-xs bg-muted border-0 rounded px-2 py-1"
+              className="text-xs bg-muted border-0 rounded-sm px-2 py-1"
             >
               <option value="">All sources</option>
               <option value="annotation">Annotation</option>
@@ -101,7 +101,7 @@ export function PreferencesTab() {
                   <p className="line-clamp-2">{pair.prompt}</p>
                 </div>
                 <div className="flex items-center gap-2 ml-3">
-                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{pair.source}</span>
+                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded-sm">{pair.source}</span>
                   <button
                     onClick={() => {
                       deleteMutation.mutate(pair.id);
@@ -114,13 +114,13 @@ export function PreferencesTab() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-green-50 dark:bg-green-950/20 rounded p-2">
+                <div className="bg-green-50 dark:bg-green-950/20 rounded-sm p-2">
                   <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mb-1">
                     <ThumbsUp className="w-3 h-3" /> Chosen
                   </div>
                   <p className="text-xs line-clamp-3">{pair.chosen}</p>
                 </div>
-                <div className="bg-red-50 dark:bg-red-950/20 rounded p-2">
+                <div className="bg-red-50 dark:bg-red-950/20 rounded-sm p-2">
                   <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 mb-1">
                     <ThumbsDown className="w-3 h-3" /> Rejected
                   </div>

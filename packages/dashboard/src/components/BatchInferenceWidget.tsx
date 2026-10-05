@@ -94,7 +94,7 @@ export default function BatchInferenceWidget() {
       <h3 className="text-base font-semibold text-zinc-200">Batch Inference</h3>
 
       {/* Job Form */}
-      <div className="space-y-3 rounded border border-zinc-700 p-3">
+      <div className="space-y-3 rounded-sm border border-zinc-700 p-3">
         <div className="font-medium text-zinc-300">New Batch Job</div>
 
         <div>
@@ -106,7 +106,7 @@ export default function BatchInferenceWidget() {
               setName(e.target.value);
             }}
             placeholder="batch-eval-01"
-            className="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-sm border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-hidden"
           />
         </div>
 
@@ -121,7 +121,7 @@ export default function BatchInferenceWidget() {
             placeholder={
               'Explain quantum computing\nSummarize this document\nTranslate to French: Hello world'
             }
-            className="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-sm border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-hidden"
           />
         </div>
 
@@ -142,7 +142,7 @@ export default function BatchInferenceWidget() {
         <button
           onClick={handleSubmit}
           disabled={createMutation.isPending || !name.trim() || !prompts.trim()}
-          className="rounded bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
+          className="rounded-sm bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
         >
           {createMutation.isPending ? 'Submitting...' : 'Submit Batch'}
         </button>
@@ -158,19 +158,19 @@ export default function BatchInferenceWidget() {
           job.totalPrompts > 0 ? Math.round((job.completedPrompts / job.totalPrompts) * 100) : 0;
 
         return (
-          <div key={job.id} className="rounded border border-zinc-700 p-3">
+          <div key={job.id} className="rounded-sm border border-zinc-700 p-3">
             <div className="mb-1 flex items-center justify-between">
               <span className="font-medium text-zinc-200">{job.name}</span>
-              <span className="rounded bg-zinc-700 px-1.5 py-0.5 text-xs text-zinc-400">
+              <span className="rounded-sm bg-zinc-700 px-1.5 py-0.5 text-xs text-zinc-400">
                 {job.status}
               </span>
             </div>
 
             {/* Progress Bar */}
             <div className="mb-2 flex items-center gap-2">
-              <div className="h-2 flex-1 rounded bg-zinc-700">
+              <div className="h-2 flex-1 rounded-sm bg-zinc-700">
                 <div
-                  className="h-2 rounded bg-blue-500 transition-all"
+                  className="h-2 rounded-sm bg-blue-500 transition-all"
                   style={{ width: `${pct}%` }}
                 />
               </div>

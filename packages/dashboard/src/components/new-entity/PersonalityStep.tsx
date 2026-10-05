@@ -21,7 +21,7 @@ export function PersonalityStep({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
+        <button onClick={goBack} className="btn-ghost p-1 rounded-sm" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Personality</h3>
@@ -34,7 +34,7 @@ export function PersonalityStep({
           onChange={(e) => {
             setPersonality({ ...personality, name: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="e.g., Coding Assistant"
         />
       </div>
@@ -46,7 +46,7 @@ export function PersonalityStep({
           onChange={(e) => {
             setPersonality({ ...personality, description: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="Optional description"
         />
       </div>
@@ -58,7 +58,7 @@ export function PersonalityStep({
             onChange={(e) => {
               setPersonality({ ...personality, model: e.target.value });
             }}
-            className="w-full px-3 py-2 rounded border bg-background"
+            className="w-full px-3 py-2 rounded-sm border bg-background"
           >
             <option value="">Default (system)</option>
             {Object.entries(modelsByProvider).map(([provider, models]) => (
@@ -78,7 +78,7 @@ export function PersonalityStep({
             onChange={(e) => {
               setPersonality({ ...personality, model: e.target.value });
             }}
-            className="w-full px-3 py-2 rounded border bg-background"
+            className="w-full px-3 py-2 rounded-sm border bg-background"
             placeholder="e.g., claude-3-5-sonnet-20241022"
           />
         )}

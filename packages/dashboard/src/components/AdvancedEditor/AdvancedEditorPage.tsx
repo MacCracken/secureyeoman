@@ -330,7 +330,7 @@ function AdvancedEditorInner() {
           onClick={() => {
             setCatalogOpen((v) => !v);
           }}
-          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
           title="Add Widget (Cmd+N)"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -343,7 +343,7 @@ function AdvancedEditorInner() {
             onClick={() => {
               setLayoutMenuOpen((v) => !v);
             }}
-            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border hover:bg-muted"
+            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm border hover:bg-muted"
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
             {activeLayout ?? 'Layouts'}
@@ -388,7 +388,7 @@ function AdvancedEditorInner() {
                         onClick={() => {
                           handleDeleteLayout(name);
                         }}
-                        className="px-2 py-1 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 rounded"
+                        className="px-2 py-1 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 rounded-sm"
                         title="Delete layout"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -428,7 +428,7 @@ function AdvancedEditorInner() {
         <div className="flex-1" />
         <button
           onClick={doSave}
-          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border hover:bg-muted"
+          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm border hover:bg-muted"
           title="Save (Cmd+S)"
         >
           <Save className="w-3.5 h-3.5" />
@@ -436,7 +436,7 @@ function AdvancedEditorInner() {
         </button>
         <Link
           to="/editor"
-          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border hover:bg-muted"
+          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm border hover:bg-muted"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Basic Editor

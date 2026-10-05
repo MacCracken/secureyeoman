@@ -52,7 +52,7 @@ export function EditorWidget({ filePath: initialPath, onConfigChange }: Props) {
       <div className="flex items-center gap-1 px-2 py-1 border-b bg-muted/20 text-xs">
         <FolderOpen className="w-3 h-3 text-muted-foreground" />
         <input
-          className="flex-1 bg-transparent outline-none text-xs font-mono"
+          className="flex-1 bg-transparent outline-hidden text-xs font-mono"
           placeholder="File path..."
           value={filePath}
           onChange={(e) => {

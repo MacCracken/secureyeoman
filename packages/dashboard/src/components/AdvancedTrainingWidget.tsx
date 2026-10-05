@@ -69,7 +69,7 @@ function CheckpointBrowser({
       {checkpoints.map((cp) => (
         <div
           key={cp.id}
-          className="flex items-center justify-between rounded border border-zinc-700 px-2 py-1.5"
+          className="flex items-center justify-between rounded-sm border border-zinc-700 px-2 py-1.5"
         >
           <div className="flex items-center gap-3 text-xs">
             <span className="font-mono text-zinc-300">Step {cp.step}</span>
@@ -81,7 +81,7 @@ function CheckpointBrowser({
               onResume(cp.id);
             }}
             disabled={resuming}
-            className="rounded bg-blue-600 px-2 py-0.5 text-xs text-white hover:bg-blue-500 disabled:opacity-50"
+            className="rounded-sm bg-blue-600 px-2 py-0.5 text-xs text-white hover:bg-blue-500 disabled:opacity-50"
           >
             Resume
           </button>
@@ -152,7 +152,7 @@ export default function AdvancedTrainingWidget() {
       <h3 className="text-base font-semibold text-zinc-200">Advanced Training</h3>
 
       {/* Training Method Selector */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">Training Method</div>
         <div className="space-y-1">
           {methods.map((m) => (
@@ -175,7 +175,7 @@ export default function AdvancedTrainingWidget() {
       </div>
 
       {/* GPU Count */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">GPU Count</div>
         <div className="flex items-center gap-3">
           <input
@@ -198,7 +198,7 @@ export default function AdvancedTrainingWidget() {
           startMutation.mutate({ method, gpuCount });
         }}
         disabled={startMutation.isPending || !!activeJob}
-        className="rounded bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
+        className="rounded-sm bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
       >
         {activeJob ? 'Training in Progress...' : 'Start Training'}
       </button>
@@ -209,14 +209,14 @@ export default function AdvancedTrainingWidget() {
 
       {/* Active Job Progress */}
       {activeJob && (
-        <div className="rounded border border-zinc-700 p-3">
+        <div className="rounded-sm border border-zinc-700 p-3">
           <div className="mb-1 font-medium text-zinc-300">
             Running: {activeJob.method.toUpperCase()} on {activeJob.gpuCount} GPU(s)
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-2 flex-1 rounded bg-zinc-700">
+            <div className="h-2 flex-1 rounded-sm bg-zinc-700">
               <div
-                className="h-2 rounded bg-blue-500 transition-all"
+                className="h-2 rounded-sm bg-blue-500 transition-all"
                 style={{
                   width: `${Math.round((activeJob.currentStep / activeJob.totalSteps) * 100)}%`,
                 }}
@@ -230,7 +230,7 @@ export default function AdvancedTrainingWidget() {
       )}
 
       {/* Checkpoint Browser */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">Checkpoints</div>
         <CheckpointBrowser
           checkpoints={allCheckpoints}

@@ -53,7 +53,7 @@ export function VoiceOverlay({
         ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
       `}
     >
-      <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl shadow-2xl p-4 min-w-[280px] max-w-md">
+      <div className="bg-background/95 backdrop-blur-xs border border-border rounded-xl shadow-2xl p-4 min-w-[280px] max-w-md">
         <div className="flex items-center gap-3 mb-3">
           <div
             className={`

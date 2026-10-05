@@ -79,20 +79,16 @@ async fn get_report(State(state): State<AppState>, Path(id): Path<String>) -> im
     }
 }
 
-/// POST /api/v1/diagnostics/ping-integrations — ping all integrations.
-///
-/// This is a fire-and-forget check.  In production it would iterate over
-/// registered integration endpoints and test connectivity.  For now it
-/// returns a placeholder status.
-async fn ping_integrations(State(state): State<AppState>) -> impl IntoResponse {
-    let db_available = state.db().is_some();
-    Json(serde_json::json!({
-        "status": "completed",
-        "dbConnected": db_available,
-        "integrations": [],
-        "message": "All integration pings dispatched",
-    }))
-    .into_response()
+/// POST /api/v1/diagnostics/ping-integrations — not implemented: it answered
+/// "All integration pings dispatched" without pinging any.
+async fn ping_integrations(State(_state): State<AppState>) -> impl IntoResponse {
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        Json(serde_json::json!({
+            "error": "Integration pings are not implemented on this server yet",
+        })),
+    )
+        .into_response()
 }
 
 /// GET /api/v1/system/gpu — probe GPU hardware.
@@ -101,26 +97,26 @@ async fn ping_integrations(State(state): State<AppState>) -> impl IntoResponse {
 async fn gpu_status() -> impl IntoResponse {
     // Probe via sy-hwprobe (ai-hwaccel)
     let hw_devices = crate::hwprobe::probe_all();
+    // Summed from the devices themselves: this used to read a `vramMb` field
+    // they do not have, so VRAM was always 0 and local inference never viable.
+    let total_vram: u64 = hw_devices.iter().map(|d| d.vram_total_mb).sum();
+    let free_vram: u64 = hw_devices.iter().map(|d| d.vram_free_mb).sum();
+    let tpu_count = hw_devices.iter().filter(|d| d.tpu_available).count();
+    let best = hw_devices.iter().max_by_key(|d| d.vram_free_mb);
     let devices: Vec<serde_json::Value> = hw_devices
         .iter()
         .map(|d| serde_json::to_value(d).unwrap_or_default())
         .collect();
 
-    let total_vram: f64 = devices
-        .iter()
-        .filter_map(|d: &serde_json::Value| d.get("vramMb").and_then(|v| v.as_f64()))
-        .sum();
-    let available = !devices.is_empty();
-
     Json(serde_json::json!({
-        "available": available,
+        "available": !devices.is_empty(),
         "devices": devices,
         "totalVramMb": total_vram,
-        "totalFreeVramMb": total_vram,
-        "bestDevice": devices.first(),
-        "localInferenceViable": total_vram >= 4096.0,
-        "tpuCount": 0,
-        "tpuAvailable": false,
+        "totalFreeVramMb": free_vram,
+        "bestDevice": best,
+        "localInferenceViable": free_vram >= 4096,
+        "tpuCount": tpu_count,
+        "tpuAvailable": tpu_count > 0,
         "source": "ai-hwaccel",
         "probedAt": chrono::Utc::now().to_rfc3339(),
     }))

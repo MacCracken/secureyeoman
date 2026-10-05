@@ -32,9 +32,6 @@ const PUBLIC_ROUTES: &[&str] = &[
     "/api/v1/auth/oauth/config",
     "/api/v1/auth/oauth/claim",
     "/api/v1/auth/sso/exchange", // OIDC login completion (pre-auth)
-    "/api/v1/federation/knowledge/search",
-    "/api/v1/federation/marketplace",
-    "/api/v1/internal/mcp-bootstrap",
 ];
 
 /// Parameterised routes that bypass auth, matched on the route *template*
@@ -50,7 +47,6 @@ const PUBLIC_PREFIXES: &[&str] = &[
     "/api/v1/auth/sso/authorize/", // OIDC login initiation (pre-auth)
     "/api/v1/auth/sso/callback/",
     "/api/v1/auth/sso/saml/",
-    "/api/v1/federation/marketplace/",
     "/ws/", // WebSocket auth is handled by the WS handler (token in Sec-WebSocket-Protocol)
 ];
 
@@ -113,13 +109,29 @@ pub async fn require_auth(
         let jwt_config = state.jwt_config();
         match validate_token(jwt_config, token) {
             Ok(claims) if claims.token_type == "access" => {
-                // Check if token has been revoked
-                if state.is_token_revoked(&claims.jti).await {
-                    return (
-                        StatusCode::UNAUTHORIZED,
-                        axum::Json(json!({"error": "Token has been revoked", "statusCode": 401})),
-                    )
-                        .into_response();
+                match state.is_token_revoked(&claims.jti).await {
+                    Ok(false) => {}
+                    Ok(true) => {
+                        return (
+                            StatusCode::UNAUTHORIZED,
+                            axum::Json(
+                                json!({"error": "Token has been revoked", "statusCode": 401}),
+                            ),
+                        )
+                            .into_response();
+                    }
+                    // Fail closed: without the revocation list a logged-out
+                    // token cannot be told apart from a live one.
+                    Err(_) => {
+                        return (
+                            StatusCode::SERVICE_UNAVAILABLE,
+                            axum::Json(json!({
+                                "error": "Token revocation status is unavailable",
+                                "statusCode": 503,
+                            })),
+                        )
+                            .into_response();
+                    }
                 }
                 req.extensions_mut().insert(AuthContext {
                     user_id: claims.sub,
@@ -183,7 +195,11 @@ fn extract_bearer(headers: &axum::http::HeaderMap) -> Option<&str> {
 /// route matched) and checks it against the role and the principal's scope.
 /// Unmapped routes are admin-only, and closed to scoped keys narrower than
 /// `*:*`.
-pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
+pub async fn enforce_rbac(
+    State(state): State<AppState>,
+    req: Request<Body>,
+    next: Next,
+) -> Response<Body> {
     // Public routes have no AuthContext — skip RBAC
     let auth = match req.extensions().get::<AuthContext>() {
         Some(ctx) => ctx.clone(),
@@ -205,6 +221,7 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
         Some(perm) => {
             // 1. The role must grant this resource:action.
             if !check_permission(&auth.role, perm.resource, perm.action) {
+                audit_denial(&state, &auth, &method, &route, Some(&perm));
                 return (
                     StatusCode::FORBIDDEN,
                     axum::Json(json!({
@@ -224,6 +241,7 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
             if !auth.permissions.is_empty()
                 && !check_permission_strings(&auth.permissions, perm.resource, perm.action)
             {
+                audit_denial(&state, &auth, &method, &route, Some(&perm));
                 return (
                     StatusCode::FORBIDDEN,
                     axum::Json(json!({
@@ -243,6 +261,7 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
                 || (!auth.permissions.is_empty()
                     && !check_permission_strings(&auth.permissions, "*", "*"))
             {
+                audit_denial(&state, &auth, &method, &route, None);
                 return (
                     StatusCode::FORBIDDEN,
                     axum::Json(json!({
@@ -256,6 +275,32 @@ pub async fn enforce_rbac(req: Request<Body>, next: Next) -> Response<Body> {
     }
 
     next.run(req).await
+}
+
+/// Record an RBAC refusal in the audit chain (TS `auditDenial`), off the
+/// request path.
+fn audit_denial(
+    state: &AppState,
+    auth: &AuthContext,
+    method: &axum::http::Method,
+    route: &str,
+    perm: Option<&crate::auth::permissions::ResolvedPermission>,
+) {
+    state.audit_event(
+        crate::db::audit::NewAuditEntry::new(
+            "permission_denied",
+            "warn",
+            &format!("RBAC denied {method} {route}"),
+        )
+        .user(&auth.user_id)
+        .metadata(json!({
+            "role": auth.role,
+            "method": method.as_str(),
+            "path": route,
+            "resource": perm.map(|p| p.resource),
+            "action": perm.map(|p| p.action),
+        })),
+    );
 }
 
 #[cfg(test)]
@@ -275,6 +320,11 @@ mod tests {
         assert!(!is_public("/api/v1/auth/oauth/google"));
         assert!(!is_public("/api/v1/auth/oauth/tokens"));
         assert!(!is_public("/api/v1/auth/oauth/tokens/some-id"));
+        // Paths the TS gateway served publicly have no handler here; they
+        // must not make a future route under them public by accident.
+        assert!(!is_public("/api/v1/federation/marketplace/x"));
+        assert!(!is_public("/api/v1/federation/knowledge/search"));
+        assert!(!is_public("/api/v1/internal/mcp-bootstrap"));
     }
 
     #[test]

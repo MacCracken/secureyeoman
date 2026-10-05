@@ -9,6 +9,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 
+use crate::integrations::access::{self, AccessMode};
 use crate::integrations::proxy::{self, AuthMode};
 use crate::state::AppState;
 
@@ -24,6 +25,10 @@ pub fn router() -> Router<AppState> {
         .route("/api/v1/gmail/send", post(send_message))
         .route("/api/v1/gmail/drafts", post(create_draft))
         .route("/api/v1/gmail/labels", get(list_labels))
+        // Path parameters go into upstream API paths.
+        .route_layer(axum::middleware::from_fn(
+            crate::net::reject_unsafe_path_params,
+        ))
 }
 
 async fn resolve_auth(state: &AppState) -> Result<AuthMode, (StatusCode, Json<serde_json::Value>)> {
@@ -157,6 +162,21 @@ async fn send_message(
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
+    let mode = access::mode_for(&state, "gmail", &["gmail", "google"]).await;
+    if mode != AccessMode::Auto {
+        return access::refuse(
+            StatusCode::FORBIDDEN,
+            format!(
+                "Gmail mode is '{}' — sending emails directly is not permitted. {}",
+                mode.as_str(),
+                if mode == AccessMode::Draft {
+                    "Use gmail_compose_draft to create a draft for human review."
+                } else {
+                    "The personality may only read messages."
+                }
+            ),
+        );
+    }
     if let Some(client) = state.gmail() {
         let to = body
             .get("to")
@@ -200,6 +220,15 @@ async fn create_draft(
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
+    let mode = access::mode_for(&state, "gmail", &["gmail", "google"]).await;
+    if mode == AccessMode::Suggest {
+        return access::refuse(
+            StatusCode::FORBIDDEN,
+            "Gmail mode is 'suggest' — composing drafts is not permitted. The personality may only \
+             read messages."
+                .into(),
+        );
+    }
     let auth = match resolve_auth(&state).await {
         Ok(a) => a,
         Err(e) => return e.into_response(),

@@ -655,7 +655,7 @@ export function EntityWidget({
 
   return (
     <div
-      className={`relative overflow-hidden rounded bg-black ${className}`}
+      className={`relative overflow-hidden rounded-sm bg-black ${className}`}
       style={{ width, height }}
       data-testid="entity-widget"
     >

@@ -154,11 +154,11 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
 
       {/* Filters & Table */}
       <div className="card overflow-hidden">
-        <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+        <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
           <Filter className="w-4 h-4 text-muted-foreground" />
-          <h2 className="card-title text-sm sm:text-base">Sessions</h2>
+          <h2 className="card-title text-sm sm:text-base!">Sessions</h2>
         </div>
-        <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
+        <div className="card-content space-y-3 p-3 sm:p-4! pt-0 sm:pt-0!">
           <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={statusFilter}
@@ -287,7 +287,7 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
                                     <img
                                       src={`data:image/png;base64,${session.screenshot}`}
                                       alt="Session screenshot"
-                                      className="mt-1 rounded border border-border max-w-md max-h-60 object-contain"
+                                      className="mt-1 rounded-sm border border-border max-w-md max-h-60 object-contain"
                                     />
                                   </div>
                                 )}

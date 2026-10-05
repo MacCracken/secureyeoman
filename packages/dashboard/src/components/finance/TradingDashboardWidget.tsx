@@ -135,12 +135,12 @@ export function TradingDashboardWidget({
             onChange={(e) => {
               setSearchInput(e.target.value.toUpperCase());
             }}
-            className="border rounded px-2 py-1 text-sm w-24 bg-background"
+            className="border rounded-sm px-2 py-1 text-sm w-24 bg-background"
             placeholder="Symbol"
           />
           <button
             type="submit"
-            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+            className="p-1 rounded-sm hover:bg-muted text-muted-foreground hover:text-foreground"
           >
             <Search className="w-3.5 h-3.5" />
           </button>
@@ -165,7 +165,7 @@ export function TradingDashboardWidget({
         {(['Open', 'High', 'Low', 'Close'] as const).map((label) => {
           const val = last[label.toLowerCase() as keyof OhlcvPoint] as number;
           return (
-            <div key={label} className="bg-muted/50 rounded p-1.5 text-center">
+            <div key={label} className="bg-muted/50 rounded-sm p-1.5 text-center">
               <div className="text-muted-foreground">{label}</div>
               <div className="font-mono font-medium">{val.toFixed(2)}</div>
             </div>

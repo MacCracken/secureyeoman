@@ -118,7 +118,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
             Enable the Agent-to-Agent protocol in your configuration to manage peers and delegate
             tasks.
           </p>
-          <pre className="mt-4 text-xs bg-muted p-3 rounded text-left inline-block">
+          <pre className="mt-4 text-xs bg-muted p-3 rounded-sm text-left inline-block">
             {`a2a:
   enabled: true`}
           </pre>
@@ -159,7 +159,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
             onClick={() => {
               setShowDelegate(!showDelegate);
             }}
-            className="btn btn-ghost flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3 py-1.5"
+            className="btn btn-ghost flex items-center gap-1.5 text-xs sm:text-sm! px-2.5 sm:px-3! py-1.5"
           >
             <Send className="w-3.5 h-3.5" />
             Delegate Task
@@ -176,7 +176,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
                 setShowDelegate(false);
                 clearDelegateForm();
               }}
-              className="btn-ghost p-1 rounded"
+              className="btn-ghost p-1 rounded-sm"
             >
               <X className="w-4 h-4" />
             </button>
@@ -213,7 +213,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
           {delegateResult && (
             <div>
               <p className="text-xs font-medium text-green-500 mb-1">Task delegated successfully</p>
-              <pre className="text-xs bg-muted p-2 rounded whitespace-pre-wrap break-words max-h-32 overflow-y-auto font-mono">
+              <pre className="text-xs bg-muted p-2 rounded-sm whitespace-pre-wrap wrap-break-word max-h-32 overflow-y-auto font-mono">
                 {JSON.stringify(delegateResult, null, 2)}
               </pre>
             </div>
@@ -345,7 +345,7 @@ function PeersTab() {
                 setShowAddPeer(false);
                 clearPeerForm();
               }}
-              className="btn-ghost p-1 rounded"
+              className="btn-ghost p-1 rounded-sm"
             >
               <X className="w-4 h-4" />
             </button>
@@ -407,23 +407,23 @@ function PeersTab() {
                   )}
                   <span className="text-sm font-semibold">{peer.name}</span>
                   <span
-                    className={`text-xs px-1.5 py-0.5 rounded border ${TRUST_COLORS[peer.trustLevel] ?? 'bg-muted text-muted-foreground border-border'}`}
+                    className={`text-xs px-1.5 py-0.5 rounded-sm border ${TRUST_COLORS[peer.trustLevel] ?? 'bg-muted text-muted-foreground border-border'}`}
                   >
                     {peer.trustLevel}
                   </span>
                   <span
-                    className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[peer.status] ?? 'bg-muted text-muted-foreground border-border'}`}
+                    className={`text-xs px-1.5 py-0.5 rounded-sm border ${STATUS_COLORS[peer.status] ?? 'bg-muted text-muted-foreground border-border'}`}
                   >
                     {peer.status}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-1 truncate">{peer.url}</p>
-                {peer.capabilities.length > 0 && (
+                {Array.isArray(peer.capabilities) && peer.capabilities.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1">
                     {peer.capabilities.map((cap) => (
                       <span
                         key={cap.name}
-                        className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary"
+                        className="text-xs px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary"
                       >
                         {cap.name}
                       </span>
@@ -457,7 +457,7 @@ function PeersTab() {
                     onClick={() => {
                       setEditingTrust(peer.id);
                     }}
-                    className="btn-ghost p-1 rounded text-muted-foreground hover:text-foreground"
+                    className="btn-ghost p-1 rounded-sm text-muted-foreground hover:text-foreground"
                     title="Change trust level"
                   >
                     <Shield className="w-3.5 h-3.5" />
@@ -467,7 +467,7 @@ function PeersTab() {
                   onClick={() => {
                     removeMut.mutate(peer.id);
                   }}
-                  className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
+                  className="btn-ghost p-1 rounded-sm text-destructive hover:bg-destructive/10"
                   title="Remove peer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -522,8 +522,8 @@ function CapabilitiesTab() {
           ) : (
             <div className="space-y-2">
               {localCapabilities.map((cap) => (
-                <div key={cap.name} className="flex items-center gap-2 p-2 rounded bg-muted/30">
-                  <Radio className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                <div key={cap.name} className="flex items-center gap-2 p-2 rounded-sm bg-muted/30">
+                  <Radio className="w-3.5 h-3.5 text-primary shrink-0" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{cap.name}</span>
@@ -585,7 +585,7 @@ function CapabilitiesTab() {
                         onClick={() => {
                           setExpandedCap(expandedCap === cap.name ? null : cap.name);
                         }}
-                        className="w-full flex items-center gap-2 p-2 rounded bg-muted/30 hover:bg-muted/50 text-left"
+                        className="w-full flex items-center gap-2 p-2 rounded-sm bg-muted/30 hover:bg-muted/50 text-left"
                       >
                         {expandedCap === cap.name ? (
                           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
@@ -680,9 +680,9 @@ function MessagesTab() {
             <div key={msg.id} className="card p-3 sm:p-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 mb-1">
                 <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
-                  <ArrowRightLeft className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span
-                    className={`text-xs px-1.5 py-0.5 rounded border shrink-0 ${TYPE_COLORS[msg.type] ?? 'bg-muted text-muted-foreground border-border'}`}
+                    className={`text-xs px-1.5 py-0.5 rounded-sm border shrink-0 ${TYPE_COLORS[msg.type] ?? 'bg-muted text-muted-foreground border-border'}`}
                   >
                     {msg.type}
                   </span>
@@ -694,12 +694,12 @@ function MessagesTab() {
                     {toPeer?.name ?? msg.toPeerId.slice(0, 8)}
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground flex-shrink-0">
+                <span className="text-xs text-muted-foreground shrink-0">
                   {new Date(msg.timestamp).toLocaleString()}
                 </span>
               </div>
               {msg.payload != null && (
-                <pre className="text-xs bg-muted p-2 rounded mt-2 whitespace-pre-wrap break-words max-h-32 overflow-y-auto font-mono">
+                <pre className="text-xs bg-muted p-2 rounded-sm mt-2 whitespace-pre-wrap wrap-break-word max-h-32 overflow-y-auto font-mono">
                   {typeof msg.payload === 'string'
                     ? msg.payload
                     : JSON.stringify(msg.payload, null, 2)}

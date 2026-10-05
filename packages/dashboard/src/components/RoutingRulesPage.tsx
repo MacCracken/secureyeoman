@@ -111,19 +111,21 @@ function formToRule(
   };
 }
 
+// Rules served by the Rust gateway keep their trigger/action in `condition` /
+// `action` JSON and lack the flat fields: fall back to the form defaults.
 function ruleToForm(r: RoutingRule): RuleFormState {
   return {
     name: r.name,
-    description: r.description,
+    description: r.description ?? '',
     enabled: r.enabled,
     priority: r.priority,
-    triggerPlatforms: r.triggerPlatforms.join(', '),
-    triggerIntegrationIds: r.triggerIntegrationIds.join(', '),
+    triggerPlatforms: (r.triggerPlatforms ?? []).join(', '),
+    triggerIntegrationIds: (r.triggerIntegrationIds ?? []).join(', '),
     triggerChatIdPattern: r.triggerChatIdPattern ?? '',
     triggerSenderIdPattern: r.triggerSenderIdPattern ?? '',
     triggerKeywordPattern: r.triggerKeywordPattern ?? '',
-    triggerDirection: r.triggerDirection,
-    actionType: r.actionType,
+    triggerDirection: r.triggerDirection ?? EMPTY_FORM.triggerDirection,
+    actionType: r.actionType ?? EMPTY_FORM.actionType,
     actionTargetIntegrationId: r.actionTargetIntegrationId ?? '',
     actionTargetChatId: r.actionTargetChatId ?? '',
     actionPersonalityId: r.actionPersonalityId ?? '',
@@ -297,7 +299,7 @@ export function RoutingRulesPage() {
                   onClick={() => {
                     toggleMutation.mutate({ id: rule.id, enabled: !rule.enabled });
                   }}
-                  className={`flex-shrink-0 p-1.5 rounded transition-colors ${
+                  className={`shrink-0 p-1.5 rounded transition-colors ${
                     rule.enabled
                       ? 'text-green-500 hover:bg-green-50 dark:hover:bg-green-950'
                       : 'text-muted-foreground hover:bg-muted'
@@ -311,7 +313,7 @@ export function RoutingRulesPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm truncate">{rule.name}</span>
                     {!rule.enabled && (
-                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">
                         disabled
                       </span>
                     )}
@@ -322,13 +324,13 @@ export function RoutingRulesPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => {
                       startEdit(rule);
                       setExpandedId(null);
                     }}
-                    className="p-1.5 rounded hover:bg-muted text-muted-foreground"
+                    className="p-1.5 rounded-sm hover:bg-muted text-muted-foreground"
                     title="Edit"
                   >
                     <Edit2 className="w-4 h-4" />
@@ -337,7 +339,7 @@ export function RoutingRulesPage() {
                     onClick={() => {
                       setExpandedId(isExpanded ? null : rule.id);
                     }}
-                    className="p-1.5 rounded hover:bg-muted text-muted-foreground"
+                    className="p-1.5 rounded-sm hover:bg-muted text-muted-foreground"
                     title="Test"
                   >
                     <Play className="w-4 h-4" />
@@ -348,7 +350,7 @@ export function RoutingRulesPage() {
                         deleteMutation.mutate(rule.id);
                       }
                     }}
-                    className="p-1.5 rounded hover:bg-muted text-destructive"
+                    className="p-1.5 rounded-sm hover:bg-muted text-destructive"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -357,7 +359,7 @@ export function RoutingRulesPage() {
                     onClick={() => {
                       setExpandedId(isExpanded ? null : rule.id);
                     }}
-                    className="p-1.5 rounded hover:bg-muted text-muted-foreground"
+                    className="p-1.5 rounded-sm hover:bg-muted text-muted-foreground"
                   >
                     {isExpanded ? (
                       <ChevronUp className="w-4 h-4" />
@@ -382,7 +384,7 @@ export function RoutingRulesPage() {
                       onChange={(e) => {
                         setTestParams((p) => ({ ...p, platform: e.target.value }));
                       }}
-                      className="w-32 rounded border border-input bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                      className="w-32 rounded-sm border border-input bg-background px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-ring"
                     />
                     <input
                       type="text"
@@ -391,7 +393,7 @@ export function RoutingRulesPage() {
                       onChange={(e) => {
                         setTestParams((p) => ({ ...p, text: e.target.value }));
                       }}
-                      className="flex-1 rounded border border-input bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                      className="flex-1 rounded-sm border border-input bg-background px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-ring"
                     />
                     <button
                       onClick={() => {
@@ -399,7 +401,7 @@ export function RoutingRulesPage() {
                         testMutation.mutate({ id: rule.id, params: testParams });
                       }}
                       disabled={!testParams.platform || testMutation.isPending}
-                      className="px-3 py-1.5 rounded bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-sm bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 flex items-center gap-1.5"
                     >
                       {testMutation.isPending ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -419,9 +421,9 @@ export function RoutingRulesPage() {
                       }`}
                     >
                       {testResult.matched ? (
-                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
                       ) : (
-                        <XCircle className="w-4 h-4 flex-shrink-0" />
+                        <XCircle className="w-4 h-4 shrink-0" />
                       )}
                       <span>
                         {testResult.matched
@@ -436,7 +438,7 @@ export function RoutingRulesPage() {
                     <dt>Direction</dt>
                     <dd>{rule.triggerDirection}</dd>
                     <dt>Platforms</dt>
-                    <dd>{rule.triggerPlatforms.join(', ') || 'any'}</dd>
+                    <dd>{(rule.triggerPlatforms ?? []).join(', ') || 'any'}</dd>
                     <dt>Action</dt>
                     <dd>{rule.actionType}</dd>
                     {rule.triggerKeywordPattern && (
@@ -490,7 +492,7 @@ function RuleForm({
   error,
 }: RuleFormProps) {
   const inputClass =
-    'w-full rounded border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
+    'w-full rounded-sm border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring';
   const labelClass = 'block text-xs font-medium text-muted-foreground mb-1';
 
   return (
@@ -747,21 +749,21 @@ function RuleForm({
             onChange={(e) => {
               setField('enabled', e.target.checked);
             }}
-            className="rounded"
+            className="rounded-sm"
           />
           Enabled
         </label>
         <div className="flex gap-2">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded border border-border text-sm hover:bg-muted transition-colors"
+            className="px-4 py-2 rounded-sm border border-border text-sm hover:bg-muted transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onSubmit}
             disabled={!form.name.trim() || isPending}
-            className="px-4 py-2 rounded bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 hover:bg-primary/90 transition-colors flex items-center gap-2"
+            className="px-4 py-2 rounded-sm bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 hover:bg-primary/90 transition-colors flex items-center gap-2"
           >
             {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
             {isNew ? 'Create Rule' : 'Save Changes'}

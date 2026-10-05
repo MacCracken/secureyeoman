@@ -96,7 +96,7 @@ export default function CaptureTab() {
   return (
     <div className="space-y-6 p-4">
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-3 rounded">
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-3 rounded-sm">
           {error}
         </div>
       )}
@@ -111,7 +111,7 @@ export default function CaptureTab() {
             {recordings.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-700 rounded"
+                className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-700 rounded-sm"
               >
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
@@ -122,7 +122,7 @@ export default function CaptureTab() {
                 </div>
                 <button
                   onClick={() => void handleStopRecording(r.id)}
-                  className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                  className="px-3 py-1 bg-red-600 text-white text-sm rounded-sm hover:bg-red-700"
                 >
                   Stop
                 </button>
@@ -142,7 +142,7 @@ export default function CaptureTab() {
             {consents.map((c) => (
               <div
                 key={c.id}
-                className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded"
+                className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-sm"
               >
                 <div>
                   <p className="font-medium">{c.scope.resource}</p>
@@ -154,13 +154,13 @@ export default function CaptureTab() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => void handleDeny(c.id)}
-                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                    className="px-3 py-1 bg-red-600 text-white text-sm rounded-sm hover:bg-red-700"
                   >
                     Deny
                   </button>
                   <button
                     onClick={() => void handleGrant(c.id)}
-                    className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                    className="px-3 py-1 bg-green-600 text-white text-sm rounded-sm hover:bg-green-700"
                   >
                     Approve
                   </button>
@@ -175,19 +175,19 @@ export default function CaptureTab() {
       <section>
         <h3 className="text-lg font-semibold mb-3">Capture Settings</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="p-3 bg-zinc-50 dark:bg-zinc-700 rounded">
+          <div className="p-3 bg-zinc-50 dark:bg-zinc-700 rounded-sm">
             <span className="text-zinc-500">Default Timeout</span>
             <p className="font-medium">30s</p>
           </div>
-          <div className="p-3 bg-zinc-50 dark:bg-zinc-700 rounded">
+          <div className="p-3 bg-zinc-50 dark:bg-zinc-700 rounded-sm">
             <span className="text-zinc-500">Max Duration</span>
             <p className="font-medium">600s</p>
           </div>
-          <div className="p-3 bg-zinc-50 dark:bg-zinc-700 rounded">
+          <div className="p-3 bg-zinc-50 dark:bg-zinc-700 rounded-sm">
             <span className="text-zinc-500">Max Active Recordings</span>
             <p className="font-medium">3</p>
           </div>
-          <div className="p-3 bg-zinc-50 dark:bg-zinc-700 rounded">
+          <div className="p-3 bg-zinc-50 dark:bg-zinc-700 rounded-sm">
             <span className="text-zinc-500">Consent Required</span>
             <p className="font-medium">Yes</p>
           </div>

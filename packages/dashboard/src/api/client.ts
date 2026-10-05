@@ -185,76 +185,97 @@ async function attemptTokenRefresh(): Promise<boolean> {
 
 // ── Core request function ─────────────────────────────────────────────
 
+/**
+ * fetch() with the access token in the Authorization header. On a 401 the
+ * token is refreshed once — concurrent 401s share a single refresh — and the
+ * call is retried with the new token. When the refresh fails the session is
+ * cleared, the auth-failure handler runs and an APIError(401) is thrown.
+ *
+ * `signal` is called once per attempt, so a timeout restarts for the retry.
+ * Any other error status is returned to the caller, not thrown.
+ */
+async function authorizedFetch(
+  url: string,
+  init: RequestInit,
+  signal: () => AbortSignal,
+  skipAuth = false
+): Promise<Response> {
+  const headers: Record<string, string> = {
+    ...((init.headers as Record<string, string> | undefined) ?? {}),
+  };
+  const token = getAccessToken();
+  if (token && !skipAuth) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, { ...init, headers, signal: signal() });
+  if (response.status !== 401 || skipAuth) return response;
+
+  // Deduplicate concurrent refreshes: all in-flight 401s await the same
+  // promise, and `finally` guarantees the flags are cleared regardless of
+  // whether the refresh succeeded, failed, or threw an exception.
+  if (!_isRefreshing) {
+    _isRefreshing = true;
+    _refreshPromise = attemptTokenRefresh().finally(() => {
+      _isRefreshing = false;
+      _refreshPromise = null;
+    });
+  }
+
+  const refreshed = await _refreshPromise;
+  if (!refreshed) {
+    // Refresh failed — clear auth and notify
+    clearAuthTokens();
+    _onAuthFailure?.();
+    throw new APIError('Authentication failed', 401);
+  }
+
+  // Retry the original request with the new token
+  return fetch(url, {
+    ...init,
+    headers: { ...headers, Authorization: `Bearer ${getAccessToken()}` },
+    signal: signal(),
+  });
+}
+
+/**
+ * Replay a request queued while offline, with the current access token
+ * (refreshed on a 401 like any other call). Resolves with the response, for
+ * the caller to judge; rejects on a network error or a failed refresh.
+ */
+export function replayQueuedRequest(method: string, url: string, body: unknown): Promise<Response> {
+  return authorizedFetch(
+    url,
+    {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined || body === null ? undefined : JSON.stringify(body),
+    },
+    () => AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  );
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
   skipAuth = false
 ): Promise<T> {
-  const url = `${API_BASE}${endpoint}`;
-  const token = getAccessToken();
-
   const headers: Record<string, string> = {
-    ...((options.headers as Record<string, string>) ?? {}),
+    ...((options.headers as Record<string, string> | undefined) ?? {}),
   };
 
   if (options.body) {
     headers['Content-Type'] = 'application/json';
   }
 
-  if (token && !skipAuth) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
+  const response = await authorizedFetch(
+    `${API_BASE}${endpoint}`,
+    { ...options, headers },
     // Respect a caller-supplied signal (e.g. React Query's abort controller)
     // and fall back to a 30-second timeout to prevent hanging fetches.
-    signal: options.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
-
-  if (response.status === 401 && !skipAuth) {
-    // Deduplicate concurrent refreshes: all in-flight 401s await the same
-    // promise, and `finally` guarantees the flags are cleared regardless of
-    // whether the refresh succeeded, failed, or threw an exception.
-    if (!_isRefreshing) {
-      _isRefreshing = true;
-      _refreshPromise = attemptTokenRefresh().finally(() => {
-        _isRefreshing = false;
-        _refreshPromise = null;
-      });
-    }
-
-    const refreshed = await _refreshPromise;
-
-    if (refreshed) {
-      // Retry the original request with new token
-      const newToken = getAccessToken();
-      headers.Authorization = `Bearer ${newToken}`;
-      const retryResponse = await fetch(url, {
-        ...options,
-        headers,
-        signal: options.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
-
-      if (!retryResponse.ok) {
-        const error = await retryResponse
-          .json()
-          .catch(() => ({ message: `HTTP ${retryResponse.status}` }));
-        throw new APIError(
-          error.message || `HTTP ${retryResponse.status}`,
-          retryResponse.status,
-          error.error || error.code
-        );
-      }
-      return parseResponseBody(retryResponse);
-    }
-
-    // Refresh failed — clear auth and notify
-    clearAuthTokens();
-    _onAuthFailure?.();
-    throw new APIError('Authentication failed', 401);
-  }
+    () => options.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    skipAuth
+  );
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
@@ -273,6 +294,160 @@ async function parseResponseBody<T>(response: Response): Promise<T> {
   if (response.status === 204) return undefined as T;
   const text = await response.text();
   return (text ? JSON.parse(text) : undefined) as T;
+}
+
+// ── List responses ────────────────────────────────────────────────────
+
+/**
+ * Normalize a list endpoint's body to the wrapped shape the dashboard reads.
+ *
+ * The TS gateway wrapped its lists (`{ tasks, total }`, `{ jobs }`, ...);
+ * several Rust handlers answer with the bare JSON array instead. An array is
+ * wrapped under `key` with `total` set to its length (the page length, for a
+ * paged endpoint); an object is passed through unchanged; an empty body
+ * becomes an empty list.
+ */
+export function toListResponse<W extends object>(body: unknown, key: keyof W & string): W {
+  if (Array.isArray(body)) {
+    return { [key]: body, total: body.length } as unknown as W;
+  }
+  if (body !== null && typeof body === 'object') {
+    return body as W;
+  }
+  return { [key]: [], total: 0 } as unknown as W;
+}
+
+/** GET a list endpoint that may answer with a bare array or the wrapped object. */
+async function requestList<W extends object>(endpoint: string, key: keyof W & string): Promise<W> {
+  return toListResponse<W>(await request<unknown>(endpoint), key);
+}
+
+// ── Server-sent events ────────────────────────────────────────────────
+
+/** Delay before reconnecting a dropped event stream (EventSource's default). */
+const EVENT_STREAM_RETRY_MS = 3_000;
+
+/**
+ * Incremental parser for the `text/event-stream` format. Feed it decoded
+ * chunks; it calls `onMessage` with the data of every complete event of the
+ * default `message` type — what an EventSource `message` listener receives.
+ * Comments, `id`/`retry` fields and named events are ignored.
+ */
+export function createEventStreamParser(
+  onMessage: (data: string) => void
+): (chunk: string) => void {
+  let buffer = '';
+  let data: string[] = [];
+  let eventType = '';
+  let skipLeadingLf = false;
+
+  return (chunk: string) => {
+    // A CRLF split across two chunks must not count as two line breaks.
+    let text = chunk;
+    if (skipLeadingLf && text.startsWith('\n')) text = text.slice(1);
+    skipLeadingLf = text.endsWith('\r');
+
+    buffer += text;
+    const lines = buffer.split(/\r\n|\r|\n/);
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      if (line === '') {
+        // Blank line: dispatch the event.
+        if (data.length > 0 && (eventType === '' || eventType === 'message')) {
+          onMessage(data.join('\n'));
+        }
+        data = [];
+        eventType = '';
+        continue;
+      }
+      if (line.startsWith(':')) continue; // comment / keep-alive
+      const colon = line.indexOf(':');
+      const field = colon === -1 ? line : line.slice(0, colon);
+      let value = colon === -1 ? '' : line.slice(colon + 1);
+      if (value.startsWith(' ')) value = value.slice(1);
+      if (field === 'data') data.push(value);
+      else if (field === 'event') eventType = value;
+    }
+  };
+}
+
+/** Resolve after `ms`, or as soon as `signal` aborts. */
+function waitOrAbort(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+/**
+ * Subscribe to a server-sent event stream. This reads the stream with fetch
+ * rather than EventSource so the access token travels in the Authorization
+ * header (with the usual refresh on a 401): an EventSource cannot set
+ * headers, and a token in the query string ends up in server and proxy logs.
+ *
+ * Like EventSource, a dropped connection is retried; an error status or a
+ * response that is not `text/event-stream` ends the subscription. Returns a
+ * function that closes the stream.
+ */
+function subscribeEventStream(endpoint: string, onMessage: (data: string) => void): () => void {
+  const controller = new AbortController();
+  const { signal } = controller;
+  const deliver = (data: string) => {
+    if (!signal.aborted) onMessage(data);
+  };
+
+  const run = async () => {
+    while (!signal.aborted) {
+      let response: Response;
+      try {
+        response = await authorizedFetch(
+          `${API_BASE}${endpoint}`,
+          { headers: { Accept: 'text/event-stream' } },
+          () => signal
+        );
+      } catch (err) {
+        // An auth failure is final (the handler has already logged the user
+        // out); anything else is a network error worth retrying.
+        if (signal.aborted || err instanceof APIError) return;
+        await waitOrAbort(EVENT_STREAM_RETRY_MS, signal);
+        continue;
+      }
+
+      const contentType = response.headers.get('content-type') ?? '';
+      if (!response.ok || !response.body || !contentType.includes('text/event-stream')) {
+        void response.body?.cancel().catch(() => undefined);
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      const parse = createEventStreamParser(deliver);
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          parse(decoder.decode(value, { stream: true }));
+        }
+      } catch {
+        // Connection dropped, or closed by the caller.
+      }
+      if (signal.aborted) return;
+      await waitOrAbort(EVENT_STREAM_RETRY_MS, signal);
+    }
+  };
+
+  void run();
+  return () => {
+    controller.abort();
+  };
 }
 
 // ── Login / Logout ────────────────────────────────────────────────────
@@ -413,8 +588,9 @@ export async function fetchTasks(params?: {
 
   const queryString = query.toString();
   try {
-    return await request<{ tasks: Task[]; total: number }>(
-      `/tasks${queryString ? `?${queryString}` : ''}`
+    return await requestList<{ tasks: Task[]; total: number }>(
+      `/tasks${queryString ? `?${queryString}` : ''}`,
+      'tasks'
     );
   } catch {
     return { tasks: [], total: 0 };
@@ -979,7 +1155,10 @@ export interface CreateDistillationJobRequest {
 }
 
 export async function fetchDistillationJobs(): Promise<DistillationJob[]> {
-  const data = await request<{ jobs: DistillationJob[] }>('/training/distillation/jobs');
+  const data = await requestList<{ jobs: DistillationJob[] }>(
+    '/training/distillation/jobs',
+    'jobs'
+  );
   return data.jobs;
 }
 
@@ -1040,7 +1219,7 @@ export interface CreateFinetuneJobRequest {
 }
 
 export async function fetchFinetuneJobs(): Promise<FinetuneJob[]> {
-  const data = await request<{ jobs: FinetuneJob[] }>('/training/finetune/jobs');
+  const data = await requestList<{ jobs: FinetuneJob[] }>('/training/finetune/jobs', 'jobs');
   return data.jobs;
 }
 
@@ -1068,11 +1247,13 @@ export async function registerFinetuneAdapter(
 
 // ─── Phase 92: Training Stream + Quality + Computer Use ───────────
 
-/** Open an SSE connection to the live training stream. */
-export function fetchTrainingStream(): EventSource {
-  const token = getAccessToken();
-  const url = `${API_BASE}/training/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
-  return new EventSource(url);
+/**
+ * Subscribe to the live training telemetry stream (server-sent events).
+ * `onMessage` receives the raw `data` of each event; the returned function
+ * closes the stream. See {@link subscribeEventStream}.
+ */
+export function subscribeTrainingStream(onMessage: (data: string) => void): () => void {
+  return subscribeEventStream('/training/stream', onMessage);
 }
 
 export interface QualityScore {
@@ -1083,7 +1264,10 @@ export interface QualityScore {
 }
 
 export async function fetchQualityScores(limit = 100): Promise<{ conversations: QualityScore[] }> {
-  return request<{ conversations: QualityScore[] }>(`/training/quality?limit=${limit}`);
+  return requestList<{ conversations: QualityScore[] }>(
+    `/training/quality?limit=${limit}`,
+    'conversations'
+  );
 }
 
 export async function triggerQualityScoring(): Promise<{ scored: number }> {
@@ -1129,8 +1313,9 @@ export async function fetchComputerUseEpisodes(opts?: {
   if (opts?.sessionId) params.set('sessionId', opts.sessionId);
   if (opts?.limit) params.set('limit', String(opts.limit));
   const qs = params.toString();
-  const data = await request<{ episodes: ComputerUseEpisode[] }>(
-    `/training/computer-use/episodes${qs ? `?${qs}` : ''}`
+  const data = await requestList<{ episodes: ComputerUseEpisode[] }>(
+    `/training/computer-use/episodes${qs ? `?${qs}` : ''}`,
+    'episodes'
   );
   return data.episodes;
 }
@@ -1222,7 +1407,10 @@ export interface PairwiseResult {
 }
 
 export async function fetchEvalDatasets(): Promise<EvalDataset[]> {
-  const data = await request<{ datasets: EvalDataset[] }>('/training/judge/datasets');
+  const data = await requestList<{ datasets: EvalDataset[] }>(
+    '/training/judge/datasets',
+    'datasets'
+  );
   return data.datasets;
 }
 
@@ -1256,7 +1444,7 @@ export async function runPointwiseEval(req: {
 }
 
 export async function fetchEvalRuns(): Promise<EvalRunSummary[]> {
-  const data = await request<{ runs: EvalRunSummary[] }>('/training/judge/runs');
+  const data = await requestList<{ runs: EvalRunSummary[] }>('/training/judge/runs', 'runs');
   return data.runs;
 }
 
@@ -1311,7 +1499,10 @@ export async function fetchOAuthConfig(): Promise<{ providers: { id: string; nam
 
 export async function fetchOAuthTokens(): Promise<OAuthConnectedToken[]> {
   try {
-    const data = await request<{ tokens: OAuthConnectedToken[] }>('/auth/oauth/tokens');
+    const data = await requestList<{ tokens: OAuthConnectedToken[] }>(
+      '/auth/oauth/tokens',
+      'tokens'
+    );
     return data.tokens;
   } catch {
     return [];
@@ -2479,7 +2670,17 @@ export async function triggerMcpHealthCheck(
 
 export async function fetchMcpCredentialKeys(serverId: string): Promise<{ keys: string[] }> {
   try {
-    return await request(`/mcp/servers/${serverId}/credentials`);
+    // The Rust gateway lists credential rows (`[{ serverId, key, createdAt }]`)
+    // where the TS gateway answered `{ keys: string[] }`.
+    const { keys } = await requestList<{ keys: (string | { key?: string })[] }>(
+      `/mcp/servers/${serverId}/credentials`,
+      'keys'
+    );
+    return {
+      keys: (keys ?? [])
+        .map((k) => (typeof k === 'string' ? k : k.key))
+        .filter((k): k is string => typeof k === 'string'),
+    };
   } catch {
     return { keys: [] };
   }
@@ -3017,7 +3218,7 @@ export async function createReplayBatch(config: {
 }
 
 export async function fetchReplayJobs(): Promise<{ jobs: ReplayJob[] }> {
-  return request('/replay-jobs');
+  return requestList<{ jobs: ReplayJob[] }>('/replay-jobs', 'jobs');
 }
 
 export async function fetchReplayJob(id: string): Promise<ReplayJob> {
@@ -3192,7 +3393,10 @@ export async function fetchDelegationMessages(
   delegationId: string
 ): Promise<{ messages: Record<string, unknown>[] }> {
   try {
-    return await request(`/agents/delegations/${delegationId}/messages`);
+    return await requestList<{ messages: Record<string, unknown>[] }>(
+      `/agents/delegations/${delegationId}/messages`,
+      'messages'
+    );
   } catch {
     return { messages: [] };
   }
@@ -3376,16 +3580,21 @@ export interface GpuProbeResult {
   probedAt: string;
 }
 
+/**
+ * A locally available model. The Rust gateway currently passes Ollama's raw
+ * `/api/tags` entries through (name, size, details, ...), so every field but
+ * `name` may be missing: consumers must read them defensively.
+ */
 export interface LocalModel {
   name: string;
-  provider: 'ollama' | 'lmstudio' | 'localai';
-  sizeBytes: number;
-  estimatedVramMb: number;
-  lastSeen: string;
-  capabilities: string[];
-  tier: string;
-  family: string;
-  parameterCount: string | null;
+  provider?: 'ollama' | 'lmstudio' | 'localai';
+  sizeBytes?: number;
+  estimatedVramMb?: number;
+  lastSeen?: string;
+  capabilities?: string[];
+  tier?: string;
+  family?: string;
+  parameterCount?: string | null;
 }
 
 export interface LocalModelRegistryState {
@@ -3394,6 +3603,8 @@ export interface LocalModelRegistryState {
   ollamaAvailable: boolean;
   lmstudioAvailable: boolean;
   localaiAvailable: boolean;
+  /** Rust gateway shape: per-provider availability in place of the `*Available` flags. */
+  providers?: { ollama?: boolean; lmstudio?: boolean; localai?: boolean };
 }
 
 export interface PrivacyRoutingDecision {
@@ -3656,7 +3867,17 @@ export async function discoverExtensions(): Promise<{
 
 export async function fetchExtensionConfig(): Promise<{ config: Record<string, unknown> }> {
   try {
-    return await request('/extensions/config');
+    const body = await request<unknown>('/extensions/config');
+    // The Rust gateway answers with the raw key/value rows
+    // (`[{ key, value }]`) where the TS gateway answered `{ config }`.
+    if (Array.isArray(body)) {
+      const config: Record<string, unknown> = {};
+      for (const row of body as { key?: unknown; value?: unknown }[]) {
+        if (typeof row?.key === 'string') config[row.key] = row.value;
+      }
+      return { config };
+    }
+    return (body as { config: Record<string, unknown> } | undefined) ?? { config: {} };
   } catch {
     return { config: {} };
   }
@@ -3681,7 +3902,7 @@ export async function fetchHookExecutionLog(
   if (hookPoint) params.set('hookPoint', hookPoint);
   params.set('limit', String(limit));
   try {
-    return await request(`/extensions/hooks/log?${params.toString()}`);
+    return await requestList(`/extensions/hooks/log?${params.toString()}`, 'entries');
   } catch {
     return { entries: [] };
   }
@@ -3726,7 +3947,7 @@ export async function fetchExecutionSessions(): Promise<{
   }[];
 }> {
   try {
-    return await request('/execution/sessions');
+    return await requestList('/execution/sessions', 'sessions');
   } catch {
     return { sessions: [] };
   }
@@ -3772,7 +3993,7 @@ export async function fetchExecutionHistory(params?: {
   if (params?.offset) query.set('offset', params.offset.toString());
   const qs = query.toString();
   try {
-    return await request(`/execution/history${qs ? `?${qs}` : ''}`);
+    return await requestList(`/execution/history${qs ? `?${qs}` : ''}`, 'executions');
   } catch {
     return { executions: [], total: 0 };
   }
@@ -3808,7 +4029,7 @@ export async function fetchA2APeers(): Promise<{
   }[];
 }> {
   try {
-    return await request('/a2a/peers');
+    return await requestList('/a2a/peers', 'peers');
   } catch {
     return { peers: [] };
   }
@@ -3950,7 +4171,10 @@ export async function fetchProactiveTriggers(filter?: {
   if (filter?.enabled !== undefined) query.set('enabled', String(filter.enabled));
   const qs = query.toString();
   try {
-    return await request(`/proactive/triggers${qs ? `?${qs}` : ''}`);
+    return await requestList<{ triggers: ProactiveTriggerData[] }>(
+      `/proactive/triggers${qs ? `?${qs}` : ''}`,
+      'triggers'
+    );
   } catch {
     return { triggers: [] };
   }
@@ -4016,7 +4240,10 @@ export async function fetchProactiveSuggestions(filter?: {
   if (filter?.offset) query.set('offset', String(filter.offset));
   const qs = query.toString();
   try {
-    return await request(`/proactive/suggestions${qs ? `?${qs}` : ''}`);
+    return await requestList<{ suggestions: ProactiveSuggestionData[]; total: number }>(
+      `/proactive/suggestions${qs ? `?${qs}` : ''}`,
+      'suggestions'
+    );
   } catch {
     return { suggestions: [], total: 0 };
   }
@@ -4038,7 +4265,10 @@ export async function clearExpiredSuggestions(): Promise<{ deleted: number }> {
 
 export async function fetchProactivePatterns(): Promise<{ patterns: ProactivePatternData[] }> {
   try {
-    return await request('/proactive/patterns');
+    return await requestList<{ patterns: ProactivePatternData[] }>(
+      '/proactive/patterns',
+      'patterns'
+    );
   } catch {
     return { patterns: [] };
   }
@@ -4192,7 +4422,10 @@ export async function fetchBrowserSessions(params?: {
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.offset) query.set('offset', String(params.offset));
     const qs = query.toString();
-    return await request(`/browser/sessions${qs ? `?${qs}` : ''}`);
+    return await requestList<{ sessions: Record<string, unknown>[]; total: number }>(
+      `/browser/sessions${qs ? `?${qs}` : ''}`,
+      'sessions'
+    );
   } catch {
     return { sessions: [], total: 0 };
   }
@@ -4370,7 +4603,10 @@ export interface SwarmRun {
 
 export async function fetchSwarmTemplates(): Promise<{ templates: SwarmTemplate[] }> {
   try {
-    return await request('/agents/swarms/templates');
+    return await requestList<{ templates: SwarmTemplate[] }>(
+      '/agents/swarms/templates',
+      'templates'
+    );
   } catch {
     return { templates: [] };
   }
@@ -4432,7 +4668,10 @@ export async function fetchSwarmRuns(params?: {
   if (params?.offset) query.set('offset', params.offset.toString());
   const qs = query.toString();
   try {
-    return await request(`/agents/swarms${qs ? `?${qs}` : ''}`);
+    return await requestList<{ runs: SwarmRun[]; total: number }>(
+      `/agents/swarms${qs ? `?${qs}` : ''}`,
+      'runs'
+    );
   } catch {
     return { runs: [], total: 0 };
   }
@@ -4496,7 +4735,10 @@ export async function fetchGroupChatChannels(params?: {
     if (params?.limit) qs.set('limit', String(params.limit));
     if (params?.offset) qs.set('offset', String(params.offset));
     const query = qs.toString();
-    return await request(`/group-chat/channels${query ? `?${query}` : ''}`);
+    return await requestList<{ channels: GroupChatChannel[]; total: number }>(
+      `/group-chat/channels${query ? `?${query}` : ''}`,
+      'channels'
+    );
   } catch {
     return { channels: [], total: 0 };
   }
@@ -4513,8 +4755,9 @@ export async function fetchGroupChatMessages(
     if (params?.offset) qs.set('offset', String(params.offset));
     if (params?.before) qs.set('before', String(params.before));
     const query = qs.toString();
-    return await request(
-      `/group-chat/channels/${encodeURIComponent(integrationId)}/${encodeURIComponent(chatId)}/messages${query ? `?${query}` : ''}`
+    return await requestList<{ messages: GroupChatMessage[]; total: number }>(
+      `/group-chat/channels/${encodeURIComponent(integrationId)}/${encodeURIComponent(chatId)}/messages${query ? `?${query}` : ''}`,
+      'messages'
     );
   } catch {
     return { messages: [], total: 0 };
@@ -4569,7 +4812,10 @@ export async function fetchRoutingRules(params?: {
     if (params?.limit) qs.set('limit', String(params.limit));
     if (params?.offset) qs.set('offset', String(params.offset));
     const query = qs.toString();
-    return await request(`/routing-rules${query ? `?${query}` : ''}`);
+    return await requestList<{ rules: RoutingRule[]; total: number }>(
+      `/routing-rules${query ? `?${query}` : ''}`,
+      'rules'
+    );
   } catch {
     return { rules: [], total: 0 };
   }
@@ -5532,7 +5778,10 @@ export async function fetchTenants(
   if (opts.limit) params.set('limit', String(opts.limit));
   if (opts.offset) params.set('offset', String(opts.offset));
   const qs = params.toString();
-  return request(`/admin/tenants${qs ? `?${qs}` : ''}`);
+  return requestList<{ tenants: TenantRecord[]; total: number }>(
+    `/admin/tenants${qs ? `?${qs}` : ''}`,
+    'tenants'
+  );
 }
 
 export async function createTenant(data: {
@@ -5596,7 +5845,7 @@ export async function deleteBackup(id: string): Promise<void> {
 // ─── Federation API (Phase 79) ────────────────────────────────────────
 
 export async function fetchFederationPeers(): Promise<{ peers: FederationPeer[] }> {
-  return request('/federation/peers');
+  return requestList<{ peers: FederationPeer[] }>('/federation/peers', 'peers');
 }
 
 export async function addFederationPeer(data: {
@@ -5784,8 +6033,56 @@ export async function listDocuments(opts?: {
   return request(`/brain/documents${qs}`);
 }
 
+export async function fetchDocument(
+  id: string
+): Promise<{ document: KbDocument & { content?: string; metadata?: Record<string, unknown> } }> {
+  return request(`/brain/documents/${encodeURIComponent(id)}`);
+}
+
+/** Store an Excalidraw scene as a knowledge-base document. */
+export async function ingestExcalidraw(
+  scene: object,
+  title: string,
+  opts?: { personalityId?: string; visibility?: string }
+): Promise<{ document: KbDocument }> {
+  return request('/brain/documents/ingest-excalidraw', {
+    method: 'POST',
+    body: JSON.stringify({ scene, title, ...opts }),
+  });
+}
+
 export async function deleteDocument(id: string): Promise<void> {
   await request(`/brain/documents/${id}`, { method: 'DELETE' });
+}
+
+// ─── Cognitive memory stats (Phase 124) ──────────────────────────────────────
+
+export interface CognitiveActivationItem {
+  id: string;
+  activation: number;
+}
+
+export interface CognitiveAccessTrendEntry {
+  day: string;
+  count: number;
+}
+
+export interface CognitiveStats {
+  topMemories: CognitiveActivationItem[];
+  topDocuments: CognitiveActivationItem[];
+  associationCount: number;
+  avgAssociationWeight: number;
+  accessTrend: CognitiveAccessTrendEntry[];
+}
+
+/**
+ * ACT-R activation and Hebbian association stats. Resolves to null when the
+ * server answers without the `{ stats }` envelope (the Rust gateway currently
+ * returns plain counts), so the widget shows its "not available" state.
+ */
+export async function fetchCognitiveStats(): Promise<CognitiveStats | null> {
+  const data = await request<{ stats?: CognitiveStats } | undefined>('/brain/cognitive-stats');
+  return data?.stats ?? null;
 }
 
 export async function fetchKnowledgeHealth(personalityId?: string): Promise<KnowledgeHealthStats> {
@@ -5867,7 +6164,10 @@ export async function fetchCommunitySwarmTemplates(): Promise<{
   templates: unknown[];
   total: number;
 }> {
-  return request('/agents/swarms/templates');
+  return requestList<{ templates: unknown[]; total: number }>(
+    '/agents/swarms/templates',
+    'templates'
+  );
 }
 
 // ─── Profile Skills (Phase 89) ───────────────────────────────────────────────
@@ -6103,7 +6403,10 @@ export async function fetchPreferencePairs(opts?: {
   if (opts?.source) qs.set('source', opts.source);
   if (opts?.limit) qs.set('limit', String(opts.limit));
   const q = qs.toString();
-  return request(`/training/preferences${q ? `?${q}` : ''}`);
+  return requestList<{ pairs: PreferencePairItem[] }>(
+    `/training/preferences${q ? `?${q}` : ''}`,
+    'pairs'
+  );
 }
 
 export async function createPreferencePair(data: {
@@ -6195,7 +6498,10 @@ export async function fetchCuratedDatasets(opts?: {
   const qs = new URLSearchParams();
   if (opts?.status) qs.set('status', opts.status);
   const q = qs.toString();
-  return request(`/training/curated-datasets${q ? `?${q}` : ''}`);
+  return requestList<{ datasets: CuratedDatasetItem[] }>(
+    `/training/curated-datasets${q ? `?${q}` : ''}`,
+    'datasets'
+  );
 }
 
 export async function deleteCuratedDataset(id: string): Promise<void> {
@@ -6232,7 +6538,10 @@ export async function fetchTrainingExperiments(opts?: {
   const qs = new URLSearchParams();
   if (opts?.status) qs.set('status', opts.status);
   const q = qs.toString();
-  return request(`/training/experiments${q ? `?${q}` : ''}`);
+  return requestList<{ experiments: TrainingExperimentItem[] }>(
+    `/training/experiments${q ? `?${q}` : ''}`,
+    'experiments'
+  );
 }
 
 export async function createTrainingExperiment(data: {
@@ -6298,7 +6607,10 @@ export async function rollbackModel(personalityId: string): Promise<ModelVersion
 export async function fetchModelVersions(
   personalityId: string
 ): Promise<{ versions: ModelVersionItem[] }> {
-  return request(`/training/model-versions?personalityId=${personalityId}`);
+  return requestList<{ versions: ModelVersionItem[] }>(
+    `/training/model-versions?personalityId=${personalityId}`,
+    'versions'
+  );
 }
 
 // A/B Tests
@@ -6344,7 +6656,7 @@ export async function fetchAbTests(opts?: {
   if (opts?.personalityId) qs.set('personalityId', opts.personalityId);
   if (opts?.status) qs.set('status', opts.status);
   const q = qs.toString();
-  return request(`/training/ab-tests${q ? `?${q}` : ''}`);
+  return requestList<{ tests: AbTestItem[] }>(`/training/ab-tests${q ? `?${q}` : ''}`, 'tests');
 }
 
 export async function getAbTest(id: string): Promise<AbTestItem> {
@@ -6486,8 +6798,9 @@ export async function fetchAthiScenarios(params?: {
   if (params?.limit != null) q.set('limit', String(params.limit));
   if (params?.offset != null) q.set('offset', String(params.offset));
   const qs = q.toString();
-  return request<{ items: AthiScenario[]; total: number }>(
-    `/security/athi/scenarios${qs ? `?${qs}` : ''}`
+  return requestList<{ items: AthiScenario[]; total: number }>(
+    `/security/athi/scenarios${qs ? `?${qs}` : ''}`,
+    'items'
   );
 }
 
@@ -6532,7 +6845,10 @@ export async function fetchAthiMatrix(): Promise<{ matrix: AthiRiskMatrixCell[] 
 }
 
 export async function fetchAthiTopRisks(limit = 10): Promise<{ topRisks: AthiScenario[] }> {
-  return request<{ topRisks: AthiScenario[] }>(`/security/athi/top-risks?limit=${limit}`);
+  return requestList<{ topRisks: AthiScenario[] }>(
+    `/security/athi/top-risks?limit=${limit}`,
+    'topRisks'
+  );
 }
 
 export async function fetchAthiSummary(): Promise<{ summary: AthiExecutiveSummary }> {
@@ -6542,8 +6858,9 @@ export async function fetchAthiSummary(): Promise<{ summary: AthiExecutiveSummar
 export async function fetchAthiScenariosByTechnique(
   technique: string
 ): Promise<{ scenarios: AthiScenario[] }> {
-  return request<{ scenarios: AthiScenario[] }>(
-    `/security/athi/scenarios/by-technique/${encodeURIComponent(technique)}`
+  return requestList<{ scenarios: AthiScenario[] }>(
+    `/security/athi/scenarios/by-technique/${encodeURIComponent(technique)}`,
+    'scenarios'
   );
 }
 
@@ -6911,7 +7228,10 @@ export async function fetchScanHistory(params?: {
   if (params?.personalityId) query.set('personalityId', params.personalityId);
   const qs = query.toString() ? `?${query.toString()}` : '';
   try {
-    return await request<{ rows: ScanHistoryRow[]; total: number }>(`/sandbox/scans${qs}`);
+    return await requestList<{ rows: ScanHistoryRow[]; total: number }>(
+      `/sandbox/scans${qs}`,
+      'rows'
+    );
   } catch {
     return { rows: [], total: 0 };
   }
@@ -6935,7 +7255,7 @@ export async function fetchScanStats(): Promise<{ stats: ScanStats }> {
 
 export async function fetchQuarantineItems(): Promise<{ items: QuarantineEntry[] }> {
   try {
-    return await request<{ items: QuarantineEntry[] }>('/sandbox/quarantine');
+    return await requestList<{ items: QuarantineEntry[] }>('/sandbox/quarantine', 'items');
   } catch {
     return { items: [] };
   }
@@ -7054,7 +7374,10 @@ export async function fetchAnnotations(params?: {
   if (params?.filePath) qs.set('filePath', params.filePath);
   if (params?.personalityId) qs.set('personalityId', params.personalityId);
   const q = qs.toString();
-  return request(`/editor/annotations${q ? `?${q}` : ''}`);
+  return requestList<{ annotations: Annotation[] }>(
+    `/editor/annotations${q ? `?${q}` : ''}`,
+    'annotations'
+  );
 }
 
 export async function createAnnotation(

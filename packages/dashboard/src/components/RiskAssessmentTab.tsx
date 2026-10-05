@@ -104,7 +104,7 @@ function ScoreArc({ score, level }: { score: number; level?: RiskLevel }) {
 
   return (
     <div className="relative w-36 h-36 flex items-center justify-center">
-      <svg width="144" height="144" viewBox="0 0 144 144" className="-rotate-[135deg]">
+      <svg width="144" height="144" viewBox="0 0 144 144" className="rotate-[-135deg]">
         <circle
           cx="72"
           cy="72"
@@ -216,7 +216,7 @@ function OverviewSection({ onRun, running }: { onRun: () => void; running: boole
 
       {latest && (
         <div className="grid gap-6 md:grid-cols-2">
-          <div className="card bg-base-100 border border-border shadow-sm">
+          <div className="card bg-base-100 border border-border shadow-xs">
             <div className="card-body items-center gap-4">
               <ScoreArc score={latest.compositeScore ?? 0} level={latest.riskLevel} />
               <div className="text-center">
@@ -306,7 +306,7 @@ function AssessmentsSection() {
 
       <div className="space-y-2">
         {(data?.items ?? []).map((a) => (
-          <div key={a.id} className="card bg-base-100 border border-border shadow-sm">
+          <div key={a.id} className="card bg-base-100 border border-border shadow-xs">
             <div
               className="card-body cursor-pointer select-none"
               onClick={() => {
@@ -426,7 +426,7 @@ function FindingRow({
   const status = 'status' in finding ? finding.status : undefined;
 
   return (
-    <div className={`rounded border border-border ${compact ? 'p-2' : 'p-3'} space-y-1`}>
+    <div className={`rounded-sm border border-border ${compact ? 'p-2' : 'p-3'} space-y-1`}>
       <div
         className="flex items-start gap-2 cursor-pointer"
         onClick={() => {
@@ -662,7 +662,7 @@ function FeedsSection() {
       </div>
 
       {showAdd && (
-        <div className="card bg-base-100 border border-border shadow-sm">
+        <div className="card bg-base-100 border border-border shadow-xs">
           <div className="card-body gap-3">
             <h4 className="font-semibold">New External Feed</h4>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -756,7 +756,7 @@ function FeedsSection() {
 
       <div className="space-y-3">
         {feeds?.map((feed) => (
-          <div key={feed.id} className="card bg-base-100 border border-border shadow-sm">
+          <div key={feed.id} className="card bg-base-100 border border-border shadow-xs">
             <div className="card-body gap-2">
               <div className="flex items-center gap-3">
                 <Database className="w-5 h-5 text-primary shrink-0" />

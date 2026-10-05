@@ -23,6 +23,7 @@ const mockPage = {
   waitForSelector: vi.fn().mockResolvedValue(undefined),
   waitForTimeout: vi.fn().mockResolvedValue(undefined),
   setDefaultTimeout: vi.fn(),
+  route: vi.fn().mockResolvedValue(undefined),
   close: vi.fn().mockResolvedValue(undefined),
   isClosed: vi.fn().mockReturnValue(false),
 };
@@ -167,10 +168,51 @@ describe('browser tools with exposeBrowser=true', () => {
     registerBrowserTools(server as any, createConfig(true), mockMiddleware as any);
   });
 
+  it('refuses to navigate to private, metadata or file URLs', async () => {
+    for (const tool of ['browser_navigate', 'browser_screenshot', 'browser_pdf']) {
+      for (const url of [
+        'http://169.254.169.254/latest/meta-data/',
+        'http://127.0.0.1:18789/api/v1/auth/me',
+        'file:///etc/passwd',
+      ]) {
+        const result = await server.getHandler(tool)!({
+          url,
+          timeout: 30000,
+          fullPage: false,
+          width: 1280,
+          height: 720,
+          format: 'A4',
+        });
+        expect(result.isError, `${tool} ${url}`).toBe(true);
+      }
+    }
+    expect(mockPage.goto).not.toHaveBeenCalled();
+  });
+
+  it('guards every request the page makes, redirects and frames included', async () => {
+    await server.getHandler('browser_navigate')!({ url: 'https://example.com', timeout: 30000 });
+    expect(mockPage.route).toHaveBeenCalledWith('**/*', expect.any(Function));
+    const guard = mockPage.route.mock.calls[0]![1] as (route: unknown) => Promise<void>;
+    const decide = async (url: string) => {
+      const route = {
+        request: () => ({ url: () => url }),
+        continue: vi.fn().mockResolvedValue(undefined),
+        abort: vi.fn().mockResolvedValue(undefined),
+      };
+      await guard(route);
+      return route.abort.mock.calls.length > 0 ? 'blocked' : 'allowed';
+    };
+    expect(await decide('https://example.com/app.js')).toBe('allowed');
+    expect(await decide('data:image/png;base64,AAAA')).toBe('allowed');
+    expect(await decide('http://169.254.169.254/latest/meta-data/')).toBe('blocked');
+    expect(await decide('http://[fd00::1]/')).toBe('blocked');
+    expect(await decide('http://localhost:3001/')).toBe('blocked');
+  });
+
   it('browser_navigate returns page info', async () => {
     const handler = server.getHandler('browser_navigate')!;
     const result = await handler({ url: 'https://example.com', timeout: 30000 });
-    expect(result.isError).toBeUndefined();
+    expect(result.isError, result.content[0].text).toBeUndefined();
     const parsed = JSON.parse(result.content[0].text);
     expect(parsed.title).toBe('Test Page');
     expect(parsed.url).toBe('https://example.com');

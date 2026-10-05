@@ -19,7 +19,7 @@ import {
   Zap,
   Activity,
 } from 'lucide-react';
-import { fetchA2APeers, getAccessToken } from '../../api/client';
+import { fetchA2APeers } from '../../api/client';
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -72,11 +72,12 @@ function truncateId(id: string, len = 12): string {
   return id.length > len ? `${id.slice(0, len)}…` : id;
 }
 
+// A peer's /health is public. Never send it the user's access token: peer
+// URLs point at other hosts, and the token is a credential for this server.
 async function fetchNodeHealth(peerUrl: string): Promise<NodeHealth | null> {
   try {
-    const token = getAccessToken();
     const res = await fetch(`${peerUrl}/health`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'omit',
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;
@@ -88,9 +89,8 @@ async function fetchNodeHealth(peerUrl: string): Promise<NodeHealth | null> {
 
 async function pingNode(peerUrl: string): Promise<boolean> {
   try {
-    const token = getAccessToken();
     const res = await fetch(`${peerUrl}/health`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'omit',
       signal: AbortSignal.timeout(5000),
     });
     return res.ok;
@@ -147,7 +147,7 @@ function TagList({ tags }: { tags: string[] }) {
       {tags.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary"
+          className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary"
         >
           <Tag className="w-2.5 h-2.5" />
           {tag}
@@ -192,7 +192,7 @@ function NodeRow({ node }: { node: EnrichedNode }) {
       {/* Node ID */}
       <td className="px-3 py-3 whitespace-nowrap">
         <code
-          className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground"
+          className="text-xs bg-muted px-1.5 py-0.5 rounded-sm font-mono text-muted-foreground"
           title={caps?.nodeId ?? node.id}
         >
           {truncateId(caps?.nodeId ?? node.id)}
@@ -243,7 +243,7 @@ function NodeRow({ node }: { node: EnrichedNode }) {
           <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
         ) : caps ? (
           caps.hasGpu ? (
-            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-500 border border-purple-500/20">
+            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm bg-purple-500/10 text-purple-500 border border-purple-500/20">
               <Zap className="w-2.5 h-2.5" />
               GPU
             </span>

@@ -803,14 +803,14 @@ export function PersonalityEditor({
               onClick={() => {
                 setShowWizard(true);
               }}
-              className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
+              className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base!"
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Wizard</span>
             </button>
             <button
               onClick={startCreate}
-              className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
+              className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base!"
             >
               <Plus className="w-4 h-4" /> <span className="sm:hidden">New</span>
               <span className="hidden sm:inline">New Personality</span>
@@ -864,7 +864,7 @@ export function PersonalityEditor({
               </h3>
               {editingPersonality?.isDefault && (
                 <p className="text-xs text-primary flex items-center gap-1 mt-0.5">
-                  <Star className="w-3 h-3 fill-current flex-shrink-0" />
+                  <Star className="w-3 h-3 fill-current shrink-0" />
                   Default — used for new chats and the dashboard
                 </p>
               )}
@@ -890,7 +890,7 @@ export function PersonalityEditor({
                   onChange={(e) => {
                     setForm((f) => ({ ...f, name: e.target.value }));
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
                   maxLength={100}
                 />
               </div>
@@ -901,7 +901,7 @@ export function PersonalityEditor({
                   onChange={(e) => {
                     setForm((f) => ({ ...f, sex: e.target.value as PersonalityCreate['sex'] }));
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
                 >
                   {SEX_OPTIONS.map((o) => (
                     <option key={o} value={o}>
@@ -920,7 +920,7 @@ export function PersonalityEditor({
                 onChange={(e) => {
                   setForm((f) => ({ ...f, description: e.target.value }));
                 }}
-                className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
                 maxLength={1000}
               />
             </div>
@@ -939,7 +939,7 @@ export function PersonalityEditor({
                     setForm((f) => ({ ...f, systemPrompt: val }));
                   }
                 }}
-                className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary resize-y"
                 rows={4}
                 maxLength={8000}
               />
@@ -1158,7 +1158,7 @@ export function PersonalityEditor({
                 <div className="flex">
                   {/* Full-height avatar panel */}
                   <div
-                    className={`relative flex-shrink-0 w-20 sm:w-24 self-stretch ${p.isDefault ? 'bg-primary/10' : 'bg-muted'}`}
+                    className={`relative shrink-0 w-20 sm:w-24 self-stretch ${p.isDefault ? 'bg-primary/10' : 'bg-muted'}`}
                   >
                     {p.avatarUrl ? (
                       <img
@@ -1184,18 +1184,18 @@ export function PersonalityEditor({
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
                           {p.isActive && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
                               Active
                             </span>
                           )}
                           {p.isDefault && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-primary/10 text-primary">
                               <Star className="w-2.5 h-2.5 fill-current" /> Default
                             </span>
                           )}
                           {p.isWithinActiveHours && (
                             <span
-                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400"
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400"
                               title="Within active hours"
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
@@ -1209,7 +1209,7 @@ export function PersonalityEditor({
                       </div>
 
                       {/* Actions - always visible */}
-                      <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+                      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                         {/* Set / clear default */}
                         {p.isDefault ? (
                           <button
@@ -1217,7 +1217,7 @@ export function PersonalityEditor({
                               clearDefaultMut.mutate();
                             }}
                             disabled={clearDefaultMut.isPending}
-                            className="btn-ghost p-1.5 sm:p-2 text-primary hover:text-muted-foreground rounded-lg"
+                            className="btn-ghost p-1.5 sm:p-2! text-primary hover:text-muted-foreground rounded-lg"
                             title="Remove as default"
                             aria-label="Remove default personality"
                           >
@@ -1229,7 +1229,7 @@ export function PersonalityEditor({
                               setDefaultMut.mutate(p.id);
                             }}
                             disabled={setDefaultMut.isPending}
-                            className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-primary rounded-lg"
+                            className="btn-ghost p-1.5 sm:p-2! text-muted-foreground hover:text-primary rounded-lg"
                             title={`Set ${p.name} as default`}
                             aria-label={`Set ${p.name} as default personality`}
                           >
@@ -1251,7 +1251,7 @@ export function PersonalityEditor({
                                 disableMut.mutate(p.id);
                               }}
                               disabled={disableMut.isPending}
-                              className="btn-ghost p-1.5 sm:p-2 text-green-500 hover:text-muted-foreground rounded-lg"
+                              className="btn-ghost p-1.5 sm:p-2! text-green-500 hover:text-muted-foreground rounded-lg"
                               title={`Disable ${p.name}`}
                               aria-label={`Disable personality ${p.name}`}
                             >
@@ -1264,7 +1264,7 @@ export function PersonalityEditor({
                               enableMut.mutate(p.id);
                             }}
                             disabled={enableMut.isPending}
-                            className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-green-500 rounded-lg"
+                            className="btn-ghost p-1.5 sm:p-2! text-muted-foreground hover:text-green-500 rounded-lg"
                             title={`Enable ${p.name}`}
                             aria-label={`Enable personality ${p.name}`}
                           >
@@ -1287,7 +1287,7 @@ export function PersonalityEditor({
                               }
                             })();
                           }}
-                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
+                          className="btn-ghost p-1.5 sm:p-2! text-muted-foreground hover:text-foreground rounded-lg"
                           title={`Export ${p.name}`}
                           aria-label={`Export personality ${p.name}`}
                         >
@@ -1297,7 +1297,7 @@ export function PersonalityEditor({
                           onClick={() => {
                             startEdit(p);
                           }}
-                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
+                          className="btn-ghost p-1.5 sm:p-2! text-muted-foreground hover:text-foreground rounded-lg"
                           title={`Edit ${p.name}`}
                           aria-label={`Edit personality ${p.name}`}
                         >
@@ -1315,7 +1315,7 @@ export function PersonalityEditor({
                             }
                           }}
                           disabled={p.isActive || deleteMut.isPending}
-                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
+                          className="btn-ghost p-1.5 sm:p-2! text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
                           title={
                             p.isActive
                               ? 'Deactivate this personality before deleting'
@@ -1404,7 +1404,7 @@ export function PersonalityEditor({
                       {preview.tools.length > 0 && <span>{preview.tools.length} tools</span>}
                     </div>
                   </div>
-                  <pre className="text-[10px] sm:text-xs bg-background p-2 sm:p-3 rounded border overflow-auto max-h-40 sm:max-h-64 whitespace-pre-wrap font-mono">
+                  <pre className="text-[10px] sm:text-xs bg-background p-2 sm:p-3 rounded-sm border overflow-auto max-h-40 sm:max-h-64 whitespace-pre-wrap font-mono">
                     {preview.prompt}
                   </pre>
                 </div>
@@ -1509,7 +1509,7 @@ export function PersonalityView() {
         </div>
         <button
           onClick={() => void navigate('/personality/new')}
-          className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
+          className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base!"
         >
           <Plus className="w-4 h-4" />
           <span className="sm:hidden">New</span>
@@ -1541,7 +1541,7 @@ export function PersonalityView() {
             >
               <div className="flex">
                 <div
-                  className={`relative flex-shrink-0 w-20 sm:w-24 self-stretch ${p.isDefault ? 'bg-primary/10' : 'bg-muted'}`}
+                  className={`relative shrink-0 w-20 sm:w-24 self-stretch ${p.isDefault ? 'bg-primary/10' : 'bg-muted'}`}
                 >
                   {p.avatarUrl ? (
                     <img
@@ -1565,18 +1565,18 @@ export function PersonalityView() {
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
                         {p.isActive && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
                             Active
                           </span>
                         )}
                         {p.isDefault && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-primary/10 text-primary">
                             <Star className="w-2.5 h-2.5 fill-current" /> Default
                           </span>
                         )}
                         {p.isWithinActiveHours && (
                           <span
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400"
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400"
                             title="Within active hours"
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
@@ -1589,14 +1589,14 @@ export function PersonalityView() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                       {p.isDefault ? (
                         <button
                           onClick={() => {
                             clearDefaultMut.mutate();
                           }}
                           disabled={clearDefaultMut.isPending}
-                          className="btn-ghost p-1.5 sm:p-2 text-primary hover:text-muted-foreground rounded-lg"
+                          className="btn-ghost p-1.5 sm:p-2! text-primary hover:text-muted-foreground rounded-lg"
                           title="Remove as default"
                         >
                           <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
@@ -1607,7 +1607,7 @@ export function PersonalityView() {
                             setDefaultMut.mutate(p.id);
                           }}
                           disabled={setDefaultMut.isPending}
-                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-primary rounded-lg"
+                          className="btn-ghost p-1.5 sm:p-2! text-muted-foreground hover:text-primary rounded-lg"
                           title={`Set ${p.name} as default`}
                         >
                           <Star className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1627,7 +1627,7 @@ export function PersonalityView() {
                               disableMut.mutate(p.id);
                             }}
                             disabled={disableMut.isPending}
-                            className="btn-ghost p-1.5 sm:p-2 text-green-500 hover:text-muted-foreground rounded-lg"
+                            className="btn-ghost p-1.5 sm:p-2! text-green-500 hover:text-muted-foreground rounded-lg"
                             title={`Disable ${p.name}`}
                           >
                             <Power className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1639,7 +1639,7 @@ export function PersonalityView() {
                             enableMut.mutate(p.id);
                           }}
                           disabled={enableMut.isPending}
-                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-green-500 rounded-lg"
+                          className="btn-ghost p-1.5 sm:p-2! text-muted-foreground hover:text-green-500 rounded-lg"
                           title={`Enable ${p.name}`}
                         >
                           <Power className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1647,7 +1647,7 @@ export function PersonalityView() {
                       )}
                       <button
                         onClick={() => void navigate(`/personality/${p.id}/edit`)}
-                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
+                        className="btn-ghost p-1.5 sm:p-2! text-muted-foreground hover:text-foreground rounded-lg"
                         title={`Edit ${p.name}`}
                       >
                         <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1664,7 +1664,7 @@ export function PersonalityView() {
                           }
                         }}
                         disabled={p.isActive || deleteMut.isPending}
-                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
+                        className="btn-ghost p-1.5 sm:p-2! text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
                         title={
                           p.isActive
                             ? 'Deactivate this personality before deleting'
@@ -1741,7 +1741,7 @@ export function PersonalityView() {
                     {preview.tools.length > 0 && <span>{preview.tools.length} tools</span>}
                   </div>
                 </div>
-                <pre className="text-[10px] sm:text-xs bg-background p-2 sm:p-3 rounded border overflow-auto max-h-40 sm:max-h-64 whitespace-pre-wrap font-mono">
+                <pre className="text-[10px] sm:text-xs bg-background p-2 sm:p-3 rounded-sm border overflow-auto max-h-40 sm:max-h-64 whitespace-pre-wrap font-mono">
                   {preview.prompt}
                 </pre>
               </div>

@@ -66,7 +66,7 @@ export function CommunityThemesSection({
         <div className="relative flex-1 max-w-2xl">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
-            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             placeholder="Search community themes…"
             value={themeQuery}
             onChange={(e) => {
@@ -119,7 +119,7 @@ export function CommunityThemesSection({
                 key={skill.id}
                 skill={skill}
                 badge={
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm">
                     <Palette className="w-2.5 h-2.5" />
                     Theme
                   </span>

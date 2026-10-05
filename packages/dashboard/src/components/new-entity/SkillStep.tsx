@@ -13,7 +13,7 @@ export function SkillStep({ skill, setSkill, goBack, handleClose, navigateTo }: 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
+        <button onClick={goBack} className="btn-ghost p-1 rounded-sm" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Skill</h3>
@@ -26,7 +26,7 @@ export function SkillStep({ skill, setSkill, goBack, handleClose, navigateTo }: 
           onChange={(e) => {
             setSkill({ ...skill, name: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="e.g., Git Helper"
         />
       </div>
@@ -38,7 +38,7 @@ export function SkillStep({ skill, setSkill, goBack, handleClose, navigateTo }: 
           onChange={(e) => {
             setSkill({ ...skill, description: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="What this skill does"
         />
       </div>
@@ -50,7 +50,7 @@ export function SkillStep({ skill, setSkill, goBack, handleClose, navigateTo }: 
           onChange={(e) => {
             setSkill({ ...skill, trigger: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="e.g., /git or on_push"
         />
       </div>
@@ -61,7 +61,7 @@ export function SkillStep({ skill, setSkill, goBack, handleClose, navigateTo }: 
           onChange={(e) => {
             setSkill({ ...skill, action: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background font-mono text-sm"
+          className="w-full px-3 py-2 rounded-sm border bg-background font-mono text-sm"
           rows={3}
           placeholder="What the skill does..."
         />

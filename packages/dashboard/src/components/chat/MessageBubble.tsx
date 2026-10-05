@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import type { Personality, CreationEvent } from '../../types';
 import type { ChatMessage } from '../../types';
-import { sanitizeText } from '../../utils/sanitize';
 import { ChatMarkdown } from '../ChatMarkdown';
 import { ThinkingBlock } from '../ThinkingBlock';
 import { PersonalityAvatar } from '../PersonalitiesPage';
@@ -59,7 +58,7 @@ export const MessageBubble = memo(function MessageBubble({
   return (
     <div className={`flex group ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[90%] sm:max-w-[75%] md:max-w-[70%] rounded-lg px-4 py-3 break-words ${
+        className={`max-w-[90%] sm:max-w-[75%] md:max-w-[70%] rounded-lg px-4 py-3 wrap-break-word ${
           msg.role === 'user'
             ? isBeingEdited
               ? 'bg-primary/70 text-primary-foreground ring-2 ring-primary'
@@ -104,7 +103,7 @@ export const MessageBubble = memo(function MessageBubble({
               onClick={() => {
                 onEditStart(index);
               }}
-              className="ml-auto opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+              className="ml-auto opacity-0 group-hover:opacity-60 hover:opacity-100! transition-opacity"
               title="Edit and resend from here"
               data-testid={`edit-msg-${index}`}
             >
@@ -118,7 +117,7 @@ export const MessageBubble = memo(function MessageBubble({
               onClick={() => {
                 onBranch(index);
               }}
-              className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+              className="opacity-0 group-hover:opacity-60 hover:opacity-100! transition-opacity"
               title="Branch from this message"
               data-testid={`branch-msg-${index}`}
             >
@@ -145,7 +144,7 @@ export const MessageBubble = memo(function MessageBubble({
         {/* Brain context snippets popover */}
         {isExpanded && msg.brainContext && (
           <div
-            className="mb-2 p-2 rounded bg-background/80 border text-xs space-y-1"
+            className="mb-2 p-2 rounded-sm bg-background/80 border text-xs space-y-1"
             data-testid={`brain-context-${index}`}
           >
             <div className="font-medium flex items-center gap-1">
@@ -157,7 +156,7 @@ export const MessageBubble = memo(function MessageBubble({
             {msg.brainContext.contextSnippets.length > 0 && (
               <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
                 {msg.brainContext.contextSnippets.map((s, j) => (
-                  <li key={j}>{sanitizeText(s)}</li>
+                  <li key={j}>{s}</li>
                 ))}
               </ul>
             )}
@@ -267,7 +266,7 @@ export const MessageBubble = memo(function MessageBubble({
                   <Sparkles className="w-3 h-3 shrink-0" />
                   <span>
                     {ev.label} {ev.action ?? 'Created'}:{' '}
-                    <strong className="font-medium">{sanitizeText(ev.name)}</strong>
+                    <strong className="font-medium">{ev.name}</strong>
                   </span>
                 </div>
               ))}
@@ -285,10 +284,10 @@ export const MessageBubble = memo(function MessageBubble({
                 : ''
             }
           >
-            <ChatMarkdown content={sanitizeText(msg.content)} size="sm" />
+            <ChatMarkdown content={msg.content} size="sm" />
           </div>
         ) : (
-          <p className="text-sm whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
+          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
         )}
 
         <div className="flex items-center gap-2 mt-1">

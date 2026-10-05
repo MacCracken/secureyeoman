@@ -12,9 +12,18 @@ vi.mock('node:child_process', () => ({
   }),
 }));
 
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { registerGitTools } from './git-tools.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
+
+// Paths are resolved on disk (symlinks included), so the allowed repo exists.
+const REPO = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'git-tools-')));
+/** What every git invocation is prefixed with: repo config cannot run hooks. */
+const SAFE = ['-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null'];
+const NO_DRIVERS = ['--no-ext-diff', '--no-textconv'];
 
 function noopMiddleware(): ToolMiddleware {
   return {
@@ -29,7 +38,7 @@ function noopMiddleware(): ToolMiddleware {
 
 function makeConfig(overrides: Partial<McpServiceConfig> = {}): McpServiceConfig {
   return {
-    allowedPaths: ['/tmp/test-repo'],
+    allowedPaths: [REPO],
     ...overrides,
   } as McpServiceConfig;
 }
@@ -155,7 +164,7 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_status')!;
-      const result = await handler({ cwd: '/tmp/test-repo', short: false });
+      const result = await handler({ cwd: REPO, short: false });
       expect(result.content[0].text).toContain('mock stdout');
     });
 
@@ -165,10 +174,10 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_status')!;
-      await handler({ cwd: '/tmp/test-repo', short: true });
+      await handler({ cwd: REPO, short: true });
       expect(execFile).toHaveBeenCalledWith(
         'git',
-        ['status', '--short'],
+        [...SAFE, 'status', '--short'],
         expect.any(Object),
         expect.any(Function)
       );
@@ -184,13 +193,78 @@ describe('git-tools', () => {
       expect(result.content[0].text).toContain('outside allowed');
     });
 
-    it('allows any path when allowedPaths is empty', async () => {
+    it('refuses every path when no allowedPaths are configured', async () => {
+      const { execFile } = await import('node:child_process');
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerGitTools(server, makeConfig({ allowedPaths: [] } as any), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_status')!;
-      const result = await handler({ cwd: '/any/path', short: false });
-      expect(result.isError).toBeUndefined();
+      const result = await handler({ cwd: REPO, short: false });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('MCP_ALLOWED_PATHS');
+      expect(execFile).not.toHaveBeenCalled();
+    });
+
+    it('does not admit a sibling that merely shares the prefix', async () => {
+      const sibling = `${REPO}-secrets`;
+      fs.mkdirSync(sibling, { recursive: true });
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      registerGitTools(server, makeConfig(), noopMiddleware());
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      const result = await globalToolRegistry.get('git_status')!({ cwd: sibling, short: false });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('outside allowed');
+    });
+
+    it('does not follow a symlink out of the allowed path', async () => {
+      const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'git-outside-'));
+      const link = path.join(REPO, 'escape');
+      if (!fs.existsSync(link)) fs.symlinkSync(outside, link);
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      registerGitTools(server, makeConfig(), noopMiddleware());
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      const result = await globalToolRegistry.get('git_status')!({ cwd: link, short: false });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('outside allowed');
+    });
+  });
+
+  describe('option injection', () => {
+    it('refuses refs and branches that git would read as options', async () => {
+      const { execFile } = await import('node:child_process');
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      registerGitTools(server, makeConfig(), noopMiddleware());
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      const evil = `--output=${path.join(REPO, 'pwned')}`;
+      for (const [tool, args] of [
+        ['git_diff', { cwd: REPO, staged: false, stat: false, ref: evil }],
+        ['git_log', { cwd: REPO, maxCount: 1, oneline: true, branch: evil }],
+        ['git_show', { cwd: REPO, ref: evil, stat: false }],
+        ['git_checkout', { cwd: REPO, ref: evil, create: false }],
+      ] as const) {
+        const result = await globalToolRegistry.get(tool)!(args);
+        expect(result.isError, tool).toBe(true);
+      }
+      expect(execFile).not.toHaveBeenCalled();
+    });
+
+    it('passes files to git add after "--"', async () => {
+      const { execFile } = await import('node:child_process');
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      registerGitTools(server, makeConfig(), noopMiddleware());
+      const { globalToolRegistry } = await import('./tool-utils.js');
+      await globalToolRegistry.get('git_commit')!({
+        cwd: REPO,
+        message: 'm',
+        files: ['--pathspec-from-file=/etc/passwd'],
+        all: false,
+      });
+      expect(execFile).toHaveBeenCalledWith(
+        'git',
+        [...SAFE, 'add', '--', '--pathspec-from-file=/etc/passwd'],
+        expect.any(Object),
+        expect.any(Function)
+      );
     });
   });
 
@@ -201,10 +275,10 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_log')!;
-      await handler({ cwd: '/tmp/test-repo', maxCount: 10, oneline: true });
+      await handler({ cwd: REPO, maxCount: 10, oneline: true });
       expect(execFile).toHaveBeenCalledWith(
         'git',
-        ['log', '--max-count=10', '--oneline'],
+        [...SAFE, 'log', ...NO_DRIVERS, '--max-count=10', '--oneline'],
         expect.any(Object),
         expect.any(Function)
       );
@@ -216,10 +290,10 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_log')!;
-      await handler({ cwd: '/tmp/test-repo', maxCount: 5, oneline: false, branch: 'feature' });
+      await handler({ cwd: REPO, maxCount: 5, oneline: false, branch: 'feature' });
       expect(execFile).toHaveBeenCalledWith(
         'git',
-        ['log', '--max-count=5', 'feature'],
+        [...SAFE, 'log', ...NO_DRIVERS, '--max-count=5', 'feature'],
         expect.any(Object),
         expect.any(Function)
       );
@@ -233,10 +307,10 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_diff')!;
-      await handler({ cwd: '/tmp/test-repo', staged: true, stat: true });
+      await handler({ cwd: REPO, staged: true, stat: true });
       expect(execFile).toHaveBeenCalledWith(
         'git',
-        ['diff', '--cached', '--stat'],
+        [...SAFE, 'diff', ...NO_DRIVERS, '--cached', '--stat'],
         expect.any(Object),
         expect.any(Function)
       );
@@ -249,7 +323,7 @@ describe('git-tools', () => {
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_diff')!;
       await handler({
-        cwd: '/tmp/test-repo',
+        cwd: REPO,
         staged: false,
         stat: false,
         ref: 'HEAD~3',
@@ -257,7 +331,7 @@ describe('git-tools', () => {
       });
       expect(execFile).toHaveBeenCalledWith(
         'git',
-        ['diff', 'HEAD~3', '--', 'src/'],
+        [...SAFE, 'diff', ...NO_DRIVERS, 'HEAD~3', '--', 'src/'],
         expect.any(Object),
         expect.any(Function)
       );
@@ -271,7 +345,7 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_commit')!;
-      await handler({ cwd: '/tmp/test-repo', message: 'test commit', files: ['a.ts'], all: false });
+      await handler({ cwd: REPO, message: 'test commit', files: ['a.ts'], all: false });
       // Should call add then commit
       expect(execFile).toHaveBeenCalledTimes(2);
     });
@@ -282,10 +356,10 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_commit')!;
-      await handler({ cwd: '/tmp/test-repo', message: 'test', files: [], all: true });
+      await handler({ cwd: REPO, message: 'test', files: [], all: true });
       expect(execFile).toHaveBeenCalledWith(
         'git',
-        ['commit', '-m', 'test', '-a'],
+        [...SAFE, 'commit', '-m', 'test', '-a'],
         expect.any(Object),
         expect.any(Function)
       );
@@ -299,10 +373,10 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_checkout')!;
-      await handler({ cwd: '/tmp/test-repo', ref: 'main', create: false });
+      await handler({ cwd: REPO, ref: 'main', create: false });
       expect(execFile).toHaveBeenCalledWith(
         'git',
-        ['checkout', 'main'],
+        [...SAFE, 'checkout', 'main'],
         expect.any(Object),
         expect.any(Function)
       );
@@ -314,10 +388,10 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_checkout')!;
-      await handler({ cwd: '/tmp/test-repo', ref: 'new-branch', create: true });
+      await handler({ cwd: REPO, ref: 'new-branch', create: true });
       expect(execFile).toHaveBeenCalledWith(
         'git',
-        ['checkout', '-b', 'new-branch'],
+        [...SAFE, 'checkout', '-b', 'new-branch'],
         expect.any(Object),
         expect.any(Function)
       );
@@ -331,10 +405,10 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_show')!;
-      await handler({ cwd: '/tmp/test-repo', ref: 'HEAD', stat: true });
+      await handler({ cwd: REPO, ref: 'HEAD', stat: true });
       expect(execFile).toHaveBeenCalledWith(
         'git',
-        ['show', '--stat', 'HEAD'],
+        [...SAFE, 'show', ...NO_DRIVERS, '--stat', 'HEAD'],
         expect.any(Object),
         expect.any(Function)
       );
@@ -349,7 +423,7 @@ describe('git-tools', () => {
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_pr_list')!;
       await handler({
-        cwd: '/tmp/test-repo',
+        cwd: REPO,
         state: 'open',
         limit: 10,
         author: 'user1',
@@ -369,7 +443,7 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_pr_view')!;
-      await handler({ cwd: '/tmp/test-repo', number: 42, comments: true });
+      await handler({ cwd: REPO, number: 42, comments: true });
       expect(execFile).toHaveBeenCalledWith(
         'gh',
         ['pr', 'view', '42', '--comments'],
@@ -385,7 +459,7 @@ describe('git-tools', () => {
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_pr_create')!;
       await handler({
-        cwd: '/tmp/test-repo',
+        cwd: REPO,
         title: 'Fix bug',
         body: 'details',
         base: 'main',
@@ -420,7 +494,7 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_pr_diff')!;
-      await handler({ cwd: '/tmp/test-repo', number: 5 });
+      await handler({ cwd: REPO, number: 5 });
       expect(execFile).toHaveBeenCalledWith(
         'gh',
         ['pr', 'diff', '5'],
@@ -436,7 +510,7 @@ describe('git-tools', () => {
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_issue_list')!;
       await handler({
-        cwd: '/tmp/test-repo',
+        cwd: REPO,
         state: 'open',
         limit: 10,
         assignee: 'me',
@@ -467,7 +541,7 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_issue_view')!;
-      await handler({ cwd: '/tmp/test-repo', number: 7, comments: true });
+      await handler({ cwd: REPO, number: 7, comments: true });
       expect(execFile).toHaveBeenCalledWith(
         'gh',
         ['issue', 'view', '7', '--comments'],
@@ -483,7 +557,7 @@ describe('git-tools', () => {
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_issue_create')!;
       await handler({
-        cwd: '/tmp/test-repo',
+        cwd: REPO,
         title: 'New issue',
         body: 'content',
         label: ['enhancement'],
@@ -514,7 +588,7 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('github_repo_view')!;
-      await handler({ cwd: '/tmp/test-repo' });
+      await handler({ cwd: REPO });
       expect(execFile).toHaveBeenCalledWith(
         'gh',
         ['repo', 'view'],
@@ -536,7 +610,7 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_status')!;
-      const result = await handler({ cwd: '/tmp/test-repo', short: false });
+      const result = await handler({ cwd: REPO, short: false });
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('command not found');
     });
@@ -552,7 +626,7 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_status')!;
-      const result = await handler({ cwd: '/tmp/test-repo', short: false });
+      const result = await handler({ cwd: REPO, short: false });
       expect(result.content[0].text).toContain('warning: some git warning');
     });
 
@@ -567,7 +641,7 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_status')!;
-      const result = await handler({ cwd: '/tmp/test-repo', short: false });
+      const result = await handler({ cwd: REPO, short: false });
       expect(result.content[0].text).toBe('(no output)');
     });
   });
@@ -580,7 +654,7 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), mw);
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_status')!;
-      const result = await handler({ cwd: '/tmp/test-repo', short: false });
+      const result = await handler({ cwd: REPO, short: false });
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Rate limit');
     });
@@ -593,10 +667,10 @@ describe('git-tools', () => {
       registerGitTools(server, makeConfig(), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('git_branch_list')!;
-      await handler({ cwd: '/tmp/test-repo', all: true });
+      await handler({ cwd: REPO, all: true });
       expect(execFile).toHaveBeenCalledWith(
         'git',
-        ['branch', '-v', '-a'],
+        [...SAFE, 'branch', '-v', '-a'],
         expect.any(Object),
         expect.any(Function)
       );

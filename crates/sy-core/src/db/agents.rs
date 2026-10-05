@@ -19,6 +19,9 @@ pub struct AgentProfileRow {
     pub r#type: String,
     pub command: Option<String>,
     pub command_args: Option<serde_json::Value>,
+    /// Masked in every response: readers of profiles (operators, auditors)
+    /// must not get the credentials a command runs with.
+    #[serde(serialize_with = "crate::privacy::redact::serialize_env_masked")]
     pub command_env: Option<serde_json::Value>,
     pub mcp_tool: Option<String>,
     pub mcp_tool_input: Option<String>,

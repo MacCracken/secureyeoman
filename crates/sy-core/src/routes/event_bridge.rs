@@ -5,6 +5,7 @@
 //! - GET  /api/v1/events/bridge/status  — bridge status (connected clients)
 
 use axum::extract::{Query, State};
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::routing::{get, post};
@@ -48,6 +49,9 @@ async fn bridge_stream(
 
     let broadcast = BroadcastStream::new(rx).filter_map(|result| {
         match result {
+            // `Event::event` asserts there is no CR/LF in the name, and a panic
+            // aborts the server: never hand it a name publish did not vet.
+            Ok(evt) if !is_valid_event_name(&evt.event) => None,
             Ok(evt) => {
                 let payload = serde_json::json!({
                     "event": evt.event,
@@ -80,26 +84,59 @@ struct PublishBody {
     source: Option<String>,
 }
 
+/// An SSE event name: `[A-Za-z0-9._:-]{1,128}`. Anything with a line break
+/// would make axum's `Event::event` panic, aborting the server.
+fn is_valid_event_name(name: &str) -> bool {
+    (1..=128).contains(&name.len())
+        && name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b':' | b'-'))
+}
+
 /// POST /api/v1/events/bridge/publish — broadcast an event to all connected SSE clients.
 async fn bridge_publish(
     State(state): State<AppState>,
     Json(body): Json<PublishBody>,
 ) -> impl IntoResponse {
+    if !is_valid_event_name(&body.event) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "error": "Event names are 1-128 characters of A-Z, a-z, 0-9 and . _ : -",
+            })),
+        )
+            .into_response();
+    }
     let sent = state.bridge_broadcast(BridgeEvent {
         event: body.event,
         data: body.data.to_string(),
         source: body.source.unwrap_or_else(|| "secureyeoman".to_string()),
     });
 
-    Json(serde_json::json!({ "sent": sent }))
+    Json(serde_json::json!({ "sent": sent })).into_response()
 }
 
 /// GET /api/v1/events/bridge/status — bridge status.
 async fn bridge_status(State(state): State<AppState>) -> impl IntoResponse {
-    let subscriber_count = state.bridge_subscribe().len();
+    let subscriber_count = state.bridge_subscriber_count();
     Json(serde_json::json!({
         "outbound": {
             "subscriberCount": subscriber_count,
         },
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_valid_event_name;
+
+    #[test]
+    fn event_names_cannot_carry_line_breaks() {
+        for ok in ["task.completed", "agnos:heartbeat", "a-b_c", "x"] {
+            assert!(is_valid_event_name(ok), "{ok}");
+        }
+        for bad in ["", "a\nb", "a\rb", "with space", &"x".repeat(129)] {
+            assert!(!is_valid_event_name(bad), "{bad:?}");
+        }
+    }
 }

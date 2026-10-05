@@ -114,12 +114,12 @@ function StepNode({ data }: { data: { label: string; type: string; selected?: bo
   const colorClass = stepTypeColor(data.type);
   return (
     <div
-      className={`px-3 py-2 rounded-lg border-2 bg-card shadow-sm min-w-[120px] ${
+      className={`px-3 py-2 rounded-lg border-2 bg-card shadow-xs min-w-[120px] ${
         data.selected ? 'border-primary' : 'border-border'
       }`}
     >
       <div
-        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium mb-1 ${colorClass}`}
+        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-xs font-medium mb-1 ${colorClass}`}
       >
         {data.type}
       </div>
@@ -321,7 +321,7 @@ export function WorkflowBuilder() {
           onChange={(e) => {
             setWfName(e.target.value);
           }}
-          className="flex-1 max-w-xs px-3 py-1.5 rounded-md border bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+          className="flex-1 max-w-xs px-3 py-1.5 rounded-md border bg-background text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-primary"
           placeholder="Workflow name"
         />
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -331,7 +331,7 @@ export function WorkflowBuilder() {
             onChange={(e) => {
               setIsEnabled(e.target.checked);
             }}
-            className="rounded"
+            className="rounded-sm"
           />
           Enabled
         </label>
@@ -396,7 +396,7 @@ export function WorkflowBuilder() {
               }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/50 text-sm transition-colors text-left"
             >
-              <span className={`p-1 rounded text-xs ${color}`}>
+              <span className={`p-1 rounded-sm text-xs ${color}`}>
                 <Icon className="w-3 h-3" />
               </span>
               {label}
@@ -436,7 +436,7 @@ export function WorkflowBuilder() {
                 onClick={() => {
                   setSelectedNode(null);
                 }}
-                className="p-1 rounded hover:bg-muted/50"
+                className="p-1 rounded-sm hover:bg-muted/50"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -451,7 +451,7 @@ export function WorkflowBuilder() {
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Type</label>
                 <span
-                  className={`block w-fit mt-0.5 px-2 py-0.5 rounded text-xs font-medium ${stepTypeColor(selectedNode.data.type)}`}
+                  className={`block w-fit mt-0.5 px-2 py-0.5 rounded-sm text-xs font-medium ${stepTypeColor(selectedNode.data.type)}`}
                 >
                   {selectedNode.data.type}
                 </span>
@@ -473,7 +473,7 @@ export function WorkflowBuilder() {
                       prev ? { ...prev, data: { ...prev.data, label: e.target.value } } : null
                     );
                   }}
-                  className="mt-1 w-full px-2 py-1.5 rounded border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="mt-1 w-full px-2 py-1.5 rounded-sm border bg-background text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
                 />
               </div>
 
@@ -502,7 +502,7 @@ export function WorkflowBuilder() {
                       // ignore invalid JSON while typing
                     }
                   }}
-                  className="mt-1 w-full px-2 py-1.5 rounded border bg-background text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  className="mt-1 w-full px-2 py-1.5 rounded-sm border bg-background text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary resize-none"
                 />
               </div>
 
@@ -525,7 +525,7 @@ export function WorkflowBuilder() {
                       )
                     );
                   }}
-                  className="mt-1 w-full px-2 py-1.5 rounded border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="mt-1 w-full px-2 py-1.5 rounded-sm border bg-background text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
                 >
                   <option value="fail">Fail</option>
                   <option value="continue">Continue</option>

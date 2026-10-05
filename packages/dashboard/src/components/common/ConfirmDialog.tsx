@@ -62,7 +62,7 @@ export function ConfirmDialog({
       >
         <div className="flex items-start gap-3 mb-4">
           <AlertTriangle
-            className={`w-5 h-5 mt-0.5 flex-shrink-0 ${destructive ? 'text-destructive' : 'text-warning'}`}
+            className={`w-5 h-5 mt-0.5 shrink-0 ${destructive ? 'text-destructive' : 'text-warning'}`}
           />
           <div>
             <h3 id="confirm-title" className="font-medium">

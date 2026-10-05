@@ -21,7 +21,6 @@ import {
   fetchPersonalities,
 } from '../../api/client';
 import type { Skill, CatalogSkill, Personality } from '../../types';
-import { sanitizeText } from '../../utils/sanitize';
 
 export const LazyWorkflowsTab = lazy(() =>
   import('../marketplace/WorkflowsTab').then((m) => ({ default: m.WorkflowsTab }))
@@ -64,7 +63,7 @@ export function ContentTypeSelector({
           }}
           className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
             value === t.value
-              ? 'bg-background text-foreground shadow-sm'
+              ? 'bg-background text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -146,16 +145,18 @@ export function SkillCard({
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-1">
         <h3 className="font-medium text-sm line-clamp-1 flex-1">{skill.name}</h3>
-        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
-          v{skill.version}
-        </span>
+        {skill.version && (
+          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground shrink-0">
+            v{skill.version}
+          </span>
+        )}
       </div>
 
       {/* Badges row */}
       <div className="flex items-center gap-1.5 mb-2">
         {badge ?? (
           <>
-            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm">
               <Zap className="w-2.5 h-2.5" />
               Skill
             </span>
@@ -164,16 +165,14 @@ export function SkillCard({
         )}
       </div>
 
-      {/* Description */}
-      <p className="text-xs text-muted-foreground mb-4 line-clamp-3 flex-1">
-        {sanitizeText(skill.description)}
-      </p>
+      {/* Description — rendered as text, which React escapes */}
+      <p className="text-xs text-muted-foreground mb-4 line-clamp-3 flex-1">{skill.description}</p>
 
       {/* Footer */}
       <div className="pt-3 border-t border-border mt-auto">
         <div className="flex items-center justify-between mb-3">
           {skill.author === 'YEOMAN' ? (
-            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm font-medium">
               <Shield className="w-2.5 h-2.5" />
               YEOMAN
             </span>
@@ -181,7 +180,7 @@ export function SkillCard({
             <span className="text-xs font-medium text-foreground">{skill.author}</span>
           )}
           <span className="text-[10px] text-muted-foreground">
-            {skill.downloadCount.toLocaleString()} installs
+            {(skill.downloadCount ?? 0).toLocaleString()} installs
           </span>
         </div>
 
@@ -260,6 +259,14 @@ export function SkillPreviewModal({
     };
   }, [onClose]);
 
+  // The Rust marketplace row (MarketplaceSkillRow) carries no triggerPatterns,
+  // mcpToolsAllowed, authorInfo or useWhen, and may send null for
+  // downloadCount, version and description: read every list defensively.
+  const tags = skill.tags ?? [];
+  const triggerPatterns = skill.triggerPatterns ?? [];
+  const tools = skill.tools ?? [];
+  const mcpToolsAllowed = skill.mcpToolsAllowed ?? [];
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
@@ -273,11 +280,13 @@ export function SkillPreviewModal({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base font-semibold">{skill.name}</h2>
-              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
-                v{skill.version}
-              </span>
+              {skill.version && (
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground">
+                  v{skill.version}
+                </span>
+              )}
               {skill.source === 'community' && (
-                <span className="inline-flex items-center gap-1 text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">
+                <span className="inline-flex items-center gap-1 text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-sm">
                   <GitBranch className="w-2.5 h-2.5" />
                   Community
                 </span>
@@ -285,7 +294,7 @@ export function SkillPreviewModal({
             </div>
             <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
               {skill.author === 'YEOMAN' ? (
-                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm font-medium">
                   <Shield className="w-2.5 h-2.5" />
                   YEOMAN
                 </span>
@@ -314,7 +323,7 @@ export function SkillPreviewModal({
               )}
               {skill.authorInfo?.license && <span>{skill.authorInfo.license}</span>}
               <span className="capitalize">{skill.category}</span>
-              <span>{skill.downloadCount.toLocaleString()} installs</span>
+              <span>{(skill.downloadCount ?? 0).toLocaleString()} installs</span>
             </div>
           </div>
           <button
@@ -329,12 +338,12 @@ export function SkillPreviewModal({
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
           {/* Tags */}
-          {skill.tags.length > 0 && (
+          {tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {skill.tags.map((tag) => (
+              {tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground"
+                  className="text-[10px] bg-muted px-2 py-0.5 rounded-sm text-muted-foreground"
                 >
                   {tag}
                 </span>
@@ -342,15 +351,13 @@ export function SkillPreviewModal({
             </div>
           )}
 
-          {/* Description */}
+          {/* Description — rendered as text, which React escapes */}
           {skill.description && (
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
                 Description
               </h3>
-              <p className="text-sm text-foreground leading-relaxed">
-                {sanitizeText(skill.description)}
-              </p>
+              <p className="text-sm text-foreground leading-relaxed">{skill.description}</p>
             </div>
           )}
 
@@ -360,23 +367,23 @@ export function SkillPreviewModal({
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
                 Instructions
               </h3>
-              <pre className="text-xs bg-muted rounded-lg p-3 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-64 overflow-y-auto">
+              <pre className="text-xs bg-muted rounded-lg p-3 whitespace-pre-wrap wrap-break-word font-mono leading-relaxed max-h-64 overflow-y-auto">
                 {skill.instructions}
               </pre>
             </div>
           )}
 
           {/* Trigger Patterns */}
-          {skill.triggerPatterns.length > 0 && (
+          {triggerPatterns.length > 0 && (
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
                 Trigger Patterns
               </h3>
               <div className="space-y-1">
-                {skill.triggerPatterns.map((pattern, i) => (
+                {triggerPatterns.map((pattern, i) => (
                   <code
                     key={i}
-                    className="block text-xs bg-muted rounded px-2 py-1 font-mono text-foreground"
+                    className="block text-xs bg-muted rounded-sm px-2 py-1 font-mono text-foreground"
                   >
                     {pattern}
                   </code>
@@ -386,16 +393,16 @@ export function SkillPreviewModal({
           )}
 
           {/* MCP Tools */}
-          {skill.tools.length > 0 && (
+          {tools.length > 0 && (
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-                MCP Tools ({skill.tools.length})
+                MCP Tools ({tools.length})
               </h3>
               <div className="flex flex-wrap gap-1.5">
-                {skill.tools.map((tool) => (
+                {tools.map((tool, i) => (
                   <span
-                    key={tool.name}
-                    className="text-[10px] bg-muted px-2 py-0.5 rounded font-mono text-foreground"
+                    key={tool.name ?? i}
+                    className="text-[10px] bg-muted px-2 py-0.5 rounded-sm font-mono text-foreground"
                   >
                     {tool.name}
                   </span>
@@ -405,20 +412,20 @@ export function SkillPreviewModal({
           )}
 
           {/* MCP Tool Allowlist */}
-          {(skill.mcpToolsAllowed || []).length > 0 && (
+          {mcpToolsAllowed.length > 0 && (
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-warning" />
-                MCP Restricted To ({(skill.mcpToolsAllowed || []).length})
+                MCP Restricted To ({mcpToolsAllowed.length})
               </h3>
               <p className="text-xs text-muted-foreground mb-1.5">
                 Only these tools are available while this skill is active.
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {(skill.mcpToolsAllowed || []).map((t, i) => (
+                {mcpToolsAllowed.map((t, i) => (
                   <span
                     key={i}
-                    className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded font-mono"
+                    className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded-sm font-mono"
                   >
                     {t}
                   </span>
@@ -431,7 +438,7 @@ export function SkillPreviewModal({
         {/* Footer */}
         <div className="p-5 border-t border-border flex items-center justify-between gap-3">
           <div className="text-xs text-muted-foreground">
-            Updated {new Date(skill.updatedAt).toLocaleDateString()}
+            {skill.updatedAt ? `Updated ${new Date(skill.updatedAt).toLocaleDateString()}` : null}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="btn btn-ghost text-sm px-4">
@@ -497,7 +504,7 @@ export function PersonalitySelector({
           onChange={(e) => {
             onChange(e.target.value);
           }}
-          className="bg-card border border-border rounded-lg pl-10 pr-8 py-2.5 text-sm min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
+          className="bg-card border border-border rounded-lg pl-10 pr-8 py-2.5 text-sm min-w-[200px] focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
         >
           {!required && <option value="">Global (All Personalities)</option>}
           {required && <option value="">— Select a personality —</option>}

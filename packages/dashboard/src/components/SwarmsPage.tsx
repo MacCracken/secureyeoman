@@ -131,7 +131,7 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">Agent Swarms Disabled</h2>
           <p className="text-muted-foreground text-sm">
-            Enable <code className="bg-muted px-1 rounded">allowSubAgents</code> in Security
+            Enable <code className="bg-muted px-1 rounded-sm">allowSubAgents</code> in Security
             Settings to use agent swarms.
           </p>
         </div>
@@ -237,7 +237,7 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
               onClick={() => {
                 setSelectedTemplate(null);
               }}
-              className="btn-ghost p-1 rounded"
+              className="btn-ghost p-1 rounded-sm"
             >
               <X className="w-4 h-4" />
             </button>
@@ -323,12 +323,12 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
                       {STATUS_ICONS[run.status] ?? STATUS_ICONS.pending}
                       <span className="text-sm font-medium truncate">{run.templateName}</span>
                       <span
-                        className={`text-xs px-1.5 py-0.5 rounded border ${STRATEGY_COLORS[run.strategy] ?? ''}`}
+                        className={`text-xs px-1.5 py-0.5 rounded-sm border ${STRATEGY_COLORS[run.strategy] ?? ''}`}
                       >
                         {run.strategy}
                       </span>
                       <span
-                        className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[run.status] ?? ''}`}
+                        className={`text-xs px-1.5 py-0.5 rounded-sm border ${STATUS_COLORS[run.status] ?? ''}`}
                       >
                         {run.status}
                       </span>
@@ -424,7 +424,7 @@ function TemplateForm({
         <span className="font-medium text-sm">
           {mode === 'edit' ? 'Edit Swarm Template' : 'New Swarm Template'}
         </span>
-        <button onClick={onCancel} className="btn-ghost p-1 rounded">
+        <button onClick={onCancel} className="btn-ghost p-1 rounded-sm">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -498,7 +498,7 @@ function TemplateForm({
                   onChange={(e) => {
                     updateRole(i, 'role', e.target.value);
                   }}
-                  className="bg-card border border-border rounded px-2 py-1.5 text-xs font-mono"
+                  className="bg-card border border-border rounded-sm px-2 py-1.5 text-xs font-mono"
                   placeholder="role (e.g. reviewer)"
                 />
                 <input
@@ -506,7 +506,7 @@ function TemplateForm({
                   onChange={(e) => {
                     updateRole(i, 'profileName', e.target.value);
                   }}
-                  className="bg-card border border-border rounded px-2 py-1.5 text-xs font-mono"
+                  className="bg-card border border-border rounded-sm px-2 py-1.5 text-xs font-mono"
                   placeholder="profile (e.g. reviewer)"
                 />
                 <input
@@ -514,7 +514,7 @@ function TemplateForm({
                   onChange={(e) => {
                     updateRole(i, 'description', e.target.value);
                   }}
-                  className="col-span-2 bg-card border border-border rounded px-2 py-1.5 text-xs"
+                  className="col-span-2 bg-card border border-border rounded-sm px-2 py-1.5 text-xs"
                   placeholder="What this role does (optional)"
                 />
               </div>
@@ -522,7 +522,7 @@ function TemplateForm({
                 onClick={() => {
                   removeRole(i);
                 }}
-                className="btn-ghost p-1 rounded text-muted-foreground hover:text-destructive mt-0.5 shrink-0"
+                className="btn-ghost p-1 rounded-sm text-muted-foreground hover:text-destructive mt-0.5 shrink-0"
                 disabled={roles.length === 1}
                 aria-label="Remove role"
               >
@@ -602,7 +602,7 @@ function TemplateCard({
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-semibold truncate">{template.name}</span>
           <span
-            className={`text-xs px-1.5 py-0.5 rounded border shrink-0 ${STRATEGY_COLORS[template.strategy] ?? ''}`}
+            className={`text-xs px-1.5 py-0.5 rounded-sm border shrink-0 ${STRATEGY_COLORS[template.strategy] ?? ''}`}
           >
             {template.strategy}
           </span>
@@ -611,7 +611,7 @@ function TemplateCard({
           {onEdit && (
             <button
               onClick={onEdit}
-              className="btn-ghost p-1 rounded text-muted-foreground hover:text-foreground"
+              className="btn-ghost p-1 rounded-sm text-muted-foreground hover:text-foreground"
               aria-label="Edit template"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -621,7 +621,7 @@ function TemplateCard({
             <button
               onClick={onDelete}
               disabled={isDeleting}
-              className="btn-ghost p-1 rounded text-muted-foreground hover:text-destructive"
+              className="btn-ghost p-1 rounded-sm text-muted-foreground hover:text-destructive"
               aria-label="Delete template"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -640,7 +640,7 @@ function TemplateCard({
       <div className="flex items-center gap-1 flex-wrap">
         {template.roles.map((role, i) => (
           <span key={`${role.role}-${i}`} className="flex items-center gap-1">
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{role.role}</span>
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded-sm font-mono">{role.role}</span>
             {i < template.roles.length - 1 && (
               <ChevronRight className="w-3 h-3 text-muted-foreground" />
             )}
@@ -649,7 +649,7 @@ function TemplateCard({
         {template.coordinatorProfile && (
           <>
             <ChevronRight className="w-3 h-3 text-muted-foreground" />
-            <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono">
+            <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm font-mono">
               {template.coordinatorProfile} (coord)
             </span>
           </>
@@ -676,13 +676,13 @@ function RunDetail({ run, onCancel }: { run: SwarmRun; onCancel?: () => void }) 
             {members.map((m: SwarmMember) => (
               <div
                 key={m.id}
-                className="flex items-center gap-2 text-xs py-1 px-2 rounded bg-muted/30"
+                className="flex items-center gap-2 text-xs py-1 px-2 rounded-sm bg-muted/30"
               >
                 {STATUS_ICONS[m.status] ?? STATUS_ICONS.pending}
                 <span className="font-mono font-medium">{m.role}</span>
                 <span className="text-muted-foreground">→ {m.profileName}</span>
                 <span
-                  className={`ml-auto px-1.5 py-0.5 rounded border ${STATUS_COLORS[m.status] ?? ''}`}
+                  className={`ml-auto px-1.5 py-0.5 rounded-sm border ${STATUS_COLORS[m.status] ?? ''}`}
                 >
                   {m.status}
                 </span>
@@ -696,7 +696,7 @@ function RunDetail({ run, onCancel }: { run: SwarmRun; onCancel?: () => void }) 
       {run.result && (
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-1">Result</p>
-          <pre className="text-xs bg-muted p-2 rounded whitespace-pre-wrap max-h-40 overflow-y-auto">
+          <pre className="text-xs bg-muted p-2 rounded-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
             {run.result}
           </pre>
         </div>
@@ -706,7 +706,7 @@ function RunDetail({ run, onCancel }: { run: SwarmRun; onCancel?: () => void }) 
       {run.error && (
         <div>
           <p className="text-xs font-medium text-destructive mb-1">Error</p>
-          <pre className="text-xs bg-destructive/10 p-2 rounded">{run.error}</pre>
+          <pre className="text-xs bg-destructive/10 p-2 rounded-sm">{run.error}</pre>
         </div>
       )}
 

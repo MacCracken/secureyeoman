@@ -260,7 +260,9 @@ async fn mcp_config(State(state): State<AppState>) -> impl IntoResponse {
     Json(serde_json::Value::Object(config)).into_response()
 }
 
-/// PATCH /api/v1/mcp/config — partial update of MCP feature flags.
+/// PATCH /api/v1/mcp/config — set some MCP feature flags. Only the known
+/// settings (the TS `McpFeatureConfig`), each with its default's JSON type;
+/// other keys are ignored, as TS ignored them.
 async fn patch_mcp_config(
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
@@ -272,37 +274,73 @@ async fn patch_mcp_config(
         )
             .into_response();
     };
+    let bad_request = |message: String| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": message })),
+        )
+            .into_response()
+    };
+    let Some(obj) = body.as_object() else {
+        return bad_request("Body must be a JSON object".into());
+    };
+    let defaults = default_mcp_config();
+    let mut changes = Vec::new();
+    for (key, value) in obj {
+        let Some(default) = defaults.get(key) else {
+            continue;
+        };
+        if std::mem::discriminant(value) != std::mem::discriminant(default) {
+            return bad_request(format!("Invalid value for {key}"));
+        }
+        changes.push((key, value.to_string()));
+    }
 
-    // Write each key-value pair to mcp.config table
-    if let Some(obj) = body.as_object() {
-        for (key, value) in obj {
-            let value_str = serde_json::to_string(value).unwrap_or_default();
-            let _ = sqlx::query(
+    let written: Result<(), sqlx::Error> = async {
+        let mut tx = pool.begin().await?;
+        for (key, value) in &changes {
+            sqlx::query(
                 "INSERT INTO mcp.config (key, value) VALUES ($1, $2)
                  ON CONFLICT (key) DO UPDATE SET value = $2",
             )
             .bind(key)
-            .bind(&value_str)
-            .execute(pool)
-            .await;
+            .bind(value)
+            .execute(&mut *tx)
+            .await?;
         }
+        tx.commit().await
+    }
+    .await;
+    if let Err(e) = written {
+        tracing::error!(error = %e, "MCP config update failed");
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": "Internal server error"})),
+        )
+            .into_response();
     }
 
-    // Return updated config
     let config = load_mcp_config(pool).await;
     Json(serde_json::Value::Object(config)).into_response()
 }
 
-/// Load MCP config from DB, merged with correct defaults from TS MCP_CONFIG_DEFAULTS.
+/// The MCP feature config: the defaults, overlaid with the stored values of
+/// the same settings. Other rows in `mcp.config` (credentials among them)
+/// are never part of it — TS copied only `MCP_CONFIG_DEFAULTS` keys.
 async fn load_mcp_config(pool: &sqlx::PgPool) -> serde_json::Map<String, serde_json::Value> {
     let mut config = default_mcp_config();
 
     // Override with DB values (stored as text in mcp.config)
     if let Ok(rows) = mcp::get_config(pool).await {
         for row in rows {
+            let Some(default) = config.get(&row.key) else {
+                continue;
+            };
             let parsed: serde_json::Value =
                 serde_json::from_str(&row.value).unwrap_or(serde_json::Value::String(row.value));
-            config.insert(row.key, parsed);
+            if std::mem::discriminant(&parsed) == std::mem::discriminant(default) {
+                config.insert(row.key, parsed);
+            }
         }
     }
 

@@ -24,7 +24,7 @@ pub async fn check_local_network(
         return next.run(req).await;
     }
 
-    let ip = crate::middleware::client_ip::client_ip(&req, state.trust_proxy_headers());
+    let ip = crate::middleware::client_ip::client_ip(&req, state.trusted_proxies());
 
     if !is_private_ip(&ip) {
         return (

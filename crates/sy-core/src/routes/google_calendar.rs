@@ -44,6 +44,10 @@ pub fn router() -> Router<AppState> {
             "/api/v1/integrations/googlecalendar/freebusy",
             post(freebusy),
         )
+        // Path parameters go into upstream API paths.
+        .route_layer(axum::middleware::from_fn(
+            crate::net::reject_unsafe_path_params,
+        ))
 }
 
 async fn resolve_auth(state: &AppState) -> Result<AuthMode, (StatusCode, Json<serde_json::Value>)> {

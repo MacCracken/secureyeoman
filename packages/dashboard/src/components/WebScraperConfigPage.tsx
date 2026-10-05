@@ -118,11 +118,11 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
 
       {/* URL Allowlist */}
       <div className="card">
-        <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+        <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
           <Globe className="w-4 h-4 text-muted-foreground" />
-          <h2 className="card-title text-sm sm:text-base">URL Allowlist</h2>
+          <h2 className="card-title text-sm sm:text-base!">URL Allowlist</h2>
         </div>
-        <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
+        <div className="card-content space-y-3 p-3 sm:p-4! pt-0 sm:pt-0!">
           <p className="text-xs text-muted-foreground">
             When empty, all URLs are allowed. Add specific URLs or patterns to restrict scraping.
           </p>
@@ -156,7 +156,7 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
               {allowedUrls.map((url) => (
                 <div
                   key={url}
-                  className="flex items-center justify-between bg-muted/30 rounded px-3 py-1.5 text-sm"
+                  className="flex items-center justify-between bg-muted/30 rounded-sm px-3 py-1.5 text-sm"
                 >
                   <span className="font-mono text-xs truncate">{url}</span>
                   <button
@@ -179,11 +179,11 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Rate Limiting */}
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
             <Gauge className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-sm sm:text-base">Rate Limiting</h2>
+            <h2 className="card-title text-sm sm:text-base!">Rate Limiting</h2>
           </div>
-          <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
+          <div className="card-content space-y-3 p-3 sm:p-4! pt-0 sm:pt-0!">
             <div>
               <label className="text-xs text-muted-foreground block mb-1">
                 Requests per minute
@@ -205,11 +205,11 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
 
         {/* Proxy Settings */}
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
             <Shield className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-sm sm:text-base">Proxy Settings</h2>
+            <h2 className="card-title text-sm sm:text-base!">Proxy Settings</h2>
           </div>
-          <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
+          <div className="card-content space-y-3 p-3 sm:p-4! pt-0 sm:pt-0!">
             <div>
               <label className="text-xs text-muted-foreground block mb-1">Strategy</label>
               <select
@@ -249,7 +249,7 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
                   {proxyProviders.map((p) => (
                     <span
                       key={p}
-                      className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded"
+                      className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-sm"
                     >
                       {p}
                     </span>

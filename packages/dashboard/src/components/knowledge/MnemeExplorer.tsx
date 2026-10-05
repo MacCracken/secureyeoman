@@ -143,7 +143,7 @@ export function MnemeExplorer() {
             onClick={() => {
               setViewMode('list');
             }}
-            className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`p-1.5 rounded-sm ${viewMode === 'list' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <List className="w-4 h-4" />
           </button>
@@ -151,7 +151,7 @@ export function MnemeExplorer() {
             onClick={() => {
               setViewMode('graph');
             }}
-            className={`p-1.5 rounded ${viewMode === 'graph' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`p-1.5 rounded-sm ${viewMode === 'graph' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <Network className="w-4 h-4" />
           </button>
@@ -168,7 +168,7 @@ export function MnemeExplorer() {
             setSearchQuery(e.target.value);
           }}
           placeholder="Search Mneme notes..."
-          className="w-full bg-card border border-border rounded text-sm py-1.5 pl-8 pr-2"
+          className="w-full bg-card border border-border rounded-sm text-sm py-1.5 pl-8 pr-2"
         />
       </div>
 
@@ -192,7 +192,7 @@ export function MnemeExplorer() {
 
       {/* Graph View */}
       {viewMode === 'graph' && graphData.nodes.length > 0 && (
-        <div className="border border-border rounded overflow-hidden">
+        <div className="border border-border rounded-sm overflow-hidden">
           <WebGLGraph
             nodes={graphData.nodes}
             edges={graphData.edges}

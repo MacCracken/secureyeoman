@@ -112,7 +112,7 @@ export function ForgePanel() {
       {showAddForm && (
         <div className="card p-3 space-y-2">
           <select
-            className="w-full text-xs p-1.5 rounded border border-border bg-background"
+            className="w-full text-xs p-1.5 rounded-sm border border-border bg-background"
             value={addForm.provider}
             onChange={(e) => {
               setAddForm({ ...addForm, provider: e.target.value });
@@ -125,7 +125,7 @@ export function ForgePanel() {
             <option value="bitbucket">Bitbucket</option>
           </select>
           <input
-            className="w-full text-xs p-1.5 rounded border border-border bg-background"
+            className="w-full text-xs p-1.5 rounded-sm border border-border bg-background"
             placeholder="Base URL (e.g. https://github.com)"
             value={addForm.baseUrl}
             onChange={(e) => {
@@ -133,7 +133,7 @@ export function ForgePanel() {
             }}
           />
           <input
-            className="w-full text-xs p-1.5 rounded border border-border bg-background"
+            className="w-full text-xs p-1.5 rounded-sm border border-border bg-background"
             placeholder="Token (optional)"
             type="password"
             value={addForm.token}
@@ -142,7 +142,7 @@ export function ForgePanel() {
             }}
           />
           <button
-            className="text-xs px-3 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="text-xs px-3 py-1 rounded-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
             disabled={!addForm.baseUrl || addMut.isPending}
             onClick={() => {
               addMut.mutate({

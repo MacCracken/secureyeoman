@@ -104,10 +104,10 @@ struct AppStateInner {
     pub started_at: Instant,
     pub version: String,
     pub allow_remote_access: bool,
-    /// Honor `X-Forwarded-For` for client-IP determination. Only enable when the
-    /// server sits behind a trusted reverse proxy that overwrites the header;
-    /// otherwise the header is attacker-controlled and must be ignored (default).
-    pub trust_proxy_headers: bool,
+    /// The proxies whose `X-Forwarded-For` names the client
+    /// (`SECUREYEOMAN_TRUSTED_PROXIES`); empty by default, when the header is
+    /// attacker-controlled and ignored.
+    pub trusted_proxies: crate::middleware::client_ip::TrustedProxies,
     pub backpressure: BackpressureState,
     /// In-memory cache of revoked JTIs (avoids a DB hit per request), each mapped
     /// to the token's own expiry in Unix ms — past that the token is dead anyway,
@@ -127,6 +127,12 @@ struct AppStateInner {
     /// OIDC SSO runtime — `Some` only when `OIDC_*` env vars are configured.
     pub oidc: Option<Arc<OidcRuntime>>,
     pub bridge_tx: broadcast::Sender<BridgeEvent>,
+    /// The persistent audit chain (set with the database).
+    pub audit: Option<Arc<crate::audit::AuditTrail>>,
+    /// The background audit writer's queue, started by the first event.
+    audit_tx: std::sync::OnceLock<tokio::sync::mpsc::Sender<crate::db::audit::NewAuditEntry>>,
+    /// Events dropped because the writer's queue was full.
+    audit_dropped: std::sync::atomic::AtomicU64,
     pub brain: Option<Arc<DynBrainManager>>,
     pub github_client: Option<Arc<GitHubClient>>,
     pub gmail_client: Option<Arc<GmailClient>>,
@@ -146,6 +152,25 @@ pub const DEV_JWT_PLACEHOLDER: &str = "dev-jwt-secret-change-in-production!!";
 /// well-known development placeholder.
 pub fn is_strong_jwt_secret(secret: &str) -> bool {
     secret.len() >= 32 && secret != DEV_JWT_PLACEHOLDER
+}
+
+/// The rotation grace secret from `SECUREYEOMAN_JWT_SECRET_PREVIOUS`, if it
+/// may be trusted. Tokens it signed keep validating, so a weak one (left blank
+/// after a rotation, short, or the dev placeholder) would let anyone mint an
+/// admin token; it is ignored with a warning instead.
+fn previous_jwt_secret(current: &str) -> Option<String> {
+    let previous = std::env::var("SECUREYEOMAN_JWT_SECRET_PREVIOUS").ok()?;
+    if previous.is_empty() || previous == current {
+        return None;
+    }
+    if !is_strong_jwt_secret(&previous) {
+        tracing::warn!(
+            "SECUREYEOMAN_JWT_SECRET_PREVIOUS is too weak (need >= 32 bytes and not the dev \
+             placeholder); ignoring it, so tokens it signed are no longer accepted"
+        );
+        return None;
+    }
+    Some(previous)
 }
 
 /// Generate a cryptographically-random ephemeral JWT secret (48 bytes, base64).
@@ -212,6 +237,26 @@ fn build_webauthn() -> Webauthn {
     }
 }
 
+/// How many audit events may wait for the writer.
+pub const AUDIT_QUEUE: usize = 4096;
+/// The most events the writer appends in one transaction.
+const AUDIT_BATCH: usize = 256;
+
+/// Append queued audit events until every sender is gone.
+async fn audit_writer(
+    mut rx: tokio::sync::mpsc::Receiver<crate::db::audit::NewAuditEntry>,
+    pool: PgPool,
+    trail: Arc<crate::audit::AuditTrail>,
+) {
+    let mut batch = Vec::with_capacity(AUDIT_BATCH);
+    while rx.recv_many(&mut batch, AUDIT_BATCH).await > 0 {
+        if let Err(e) = crate::db::audit::append_batch(&pool, trail.signing_key(), &batch).await {
+            tracing::error!(error = %e, events = batch.len(), "could not record audit events");
+        }
+        batch.clear();
+    }
+}
+
 impl AppState {
     pub fn new(config: CoreConfig) -> Self {
         // Resolve the JWT signing secret. We NEVER fall back to a known/guessable
@@ -238,9 +283,10 @@ impl AppState {
             }
         };
 
+        let previous_secret = previous_jwt_secret(&jwt_secret);
         let jwt_config = JwtConfig {
             secret: jwt_secret,
-            previous_secret: std::env::var("SECUREYEOMAN_JWT_SECRET_PREVIOUS").ok(),
+            previous_secret,
             ..Default::default()
         };
 
@@ -308,9 +354,7 @@ impl AppState {
                 allow_remote_access: std::env::var("SECUREYEOMAN_ALLOW_REMOTE_ACCESS")
                     .ok()
                     .is_some_and(|v| v == "true" || v == "1"),
-                trust_proxy_headers: std::env::var("SECUREYEOMAN_TRUST_PROXY_HEADERS")
-                    .ok()
-                    .is_some_and(|v| v == "true" || v == "1"),
+                trusted_proxies: crate::middleware::client_ip::TrustedProxies::from_env(),
                 backpressure: BackpressureState::new(),
                 revoked_tokens: Arc::new(dashmap::DashMap::new()),
                 fingerprint: FingerprintState::new(),
@@ -324,6 +368,9 @@ impl AppState {
                 webauthn_auth: Arc::new(WebauthnAuthStore::new()),
                 oidc: build_oidc(),
                 bridge_tx,
+                audit: None,
+                audit_tx: std::sync::OnceLock::new(),
+                audit_dropped: std::sync::atomic::AtomicU64::new(0),
                 brain: None,
                 github_client,
                 gmail_client,
@@ -355,9 +402,60 @@ impl AppState {
         );
 
         let inner = Arc::get_mut(&mut self.inner).unwrap();
+        // Read here, after main() has loaded persisted secrets from the DB.
+        inner.audit = Some(Arc::new(crate::audit::AuditTrail::from_env(
+            &inner.jwt_config.secret,
+        )));
         inner.db_pool = Some(pool);
         inner.brain = Some(Arc::new(brain));
         self
+    }
+
+    /// The persistent audit chain, when a database is configured.
+    pub fn audit(&self) -> Option<&Arc<crate::audit::AuditTrail>> {
+        self.inner.audit.as_ref()
+    }
+
+    /// Record an audit event in the background. Request handling never
+    /// waits on the chain: one writer task appends queued events in order, in
+    /// batches, on one connection at a time, so a burst of events (failed
+    /// logins, RBAC denials) cannot tie up the pool waiting on the chain lock.
+    /// Past [`AUDIT_QUEUE`] queued events, new ones are dropped and counted.
+    pub fn audit_event(&self, entry: crate::db::audit::NewAuditEntry) {
+        let (Some(pool), Some(trail)) = (self.db(), self.audit()) else {
+            return;
+        };
+        let tx = self.inner.audit_tx.get_or_init(|| {
+            let (tx, rx) = tokio::sync::mpsc::channel(AUDIT_QUEUE);
+            tokio::spawn(audit_writer(rx, pool.clone(), trail.clone()));
+            tx
+        });
+        match tx.try_send(entry) {
+            Ok(()) => {}
+            Err(tokio::sync::mpsc::error::TrySendError::Full(entry)) => {
+                let dropped = self
+                    .inner
+                    .audit_dropped
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                if dropped.is_multiple_of(1000) {
+                    tracing::warn!(
+                        event = %entry.event,
+                        dropped_total = dropped + 1,
+                        "audit queue full; dropping audit events"
+                    );
+                }
+            }
+            Err(tokio::sync::mpsc::error::TrySendError::Closed(entry)) => {
+                tracing::error!(event = %entry.event, "audit writer stopped; event not recorded");
+            }
+        }
+    }
+
+    /// Audit events dropped because the writer's queue was full.
+    pub fn audit_events_dropped(&self) -> u64 {
+        self.inner
+            .audit_dropped
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn db(&self) -> Option<&PgPool> {
@@ -368,10 +466,9 @@ impl AppState {
         self.inner.allow_remote_access
     }
 
-    /// Whether `X-Forwarded-For` should be trusted for client-IP determination.
-    /// Defaults to false; enable only behind a trusted reverse proxy.
-    pub fn trust_proxy_headers(&self) -> bool {
-        self.inner.trust_proxy_headers
+    /// The proxies trusted to report the client address in `X-Forwarded-For`.
+    pub fn trusted_proxies(&self) -> &crate::middleware::client_ip::TrustedProxies {
+        &self.inner.trusted_proxies
     }
 
     pub fn backpressure(&self) -> &BackpressureState {
@@ -416,31 +513,45 @@ impl AppState {
         self.inner.oidc.as_ref()
     }
 
-    /// Check if a token JTI has been revoked (cache → DB fallback).
-    pub async fn is_token_revoked(&self, jti: &str) -> bool {
-        // Check in-memory cache first
+    /// Whether a token JTI has been revoked (cache → DB fallback).
+    ///
+    /// `Err` means the database could not answer. Callers must then refuse
+    /// the token: the cache only holds this instance's revocations since it
+    /// started, so a logged-out token would otherwise pass during a DB fault.
+    pub async fn is_token_revoked(&self, jti: &str) -> Result<bool, sqlx::Error> {
         if self.inner.revoked_tokens.contains_key(jti) {
-            return true;
+            return Ok(true);
         }
-
-        // Fallback to DB
-        if let Some(pool) = self.db()
-            && let Ok(Some(expires_at)) = crate::db::auth::token_revocation_expiry(pool, jti).await
-        {
-            // Populate cache
-            self.cache_revocation(jti, expires_at);
-            return true;
+        let Some(pool) = self.db() else {
+            return Ok(false);
+        };
+        match crate::db::auth::token_revocation_expiry(pool, jti).await {
+            Ok(Some(expires_at)) => {
+                self.cache_revocation(jti, expires_at);
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(e) => {
+                tracing::error!(error = %e, "token revocation lookup failed; refusing the token");
+                Err(e)
+            }
         }
-
-        false
     }
 
     /// Revoke a token by JTI until `expires_at` (Unix ms — the token's own
-    /// expiry), in the cache and the DB.
-    pub async fn revoke_token(&self, jti: &str, user_id: &str, expires_at: i64) {
+    /// expiry), in the cache and the DB. `false` when the DB write failed: the
+    /// token is then dead on this instance only, until it expires or restarts.
+    pub async fn revoke_token(&self, jti: &str, user_id: &str, expires_at: i64) -> bool {
         self.cache_revocation(jti, expires_at);
-        if let Some(pool) = self.db() {
-            let _ = crate::db::auth::revoke_token(pool, jti, user_id, expires_at).await;
+        let Some(pool) = self.db() else {
+            return true;
+        };
+        match crate::db::auth::revoke_token(pool, jti, user_id, expires_at).await {
+            Ok(()) => true,
+            Err(e) => {
+                tracing::error!(error = %e, "could not persist a token revocation");
+                false
+            }
         }
     }
 
@@ -503,10 +614,13 @@ impl AppState {
         self
     }
 
-    /// Override the trusted-proxy setting (useful for testing).
-    pub fn with_trust_proxy_headers(mut self, trust: bool) -> Self {
+    /// Override the trusted proxies (useful for testing).
+    pub fn with_trusted_proxies(
+        mut self,
+        proxies: crate::middleware::client_ip::TrustedProxies,
+    ) -> Self {
         let inner = Arc::get_mut(&mut self.inner).unwrap();
-        inner.trust_proxy_headers = trust;
+        inner.trusted_proxies = proxies;
         self
     }
 
@@ -626,6 +740,11 @@ impl AppState {
     /// Get a new receiver for the event bridge broadcast channel.
     pub fn bridge_subscribe(&self) -> broadcast::Receiver<BridgeEvent> {
         self.inner.bridge_tx.subscribe()
+    }
+
+    /// How many event bridge SSE clients are connected.
+    pub fn bridge_subscriber_count(&self) -> usize {
+        self.inner.bridge_tx.receiver_count()
     }
 
     /// Broadcast an event to all connected event bridge SSE clients.

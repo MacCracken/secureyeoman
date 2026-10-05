@@ -173,7 +173,7 @@ function ExportDropdown() {
   return (
     <div ref={dropRef} className="relative">
       <button
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-border rounded hover:bg-muted transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-border rounded-sm hover:bg-muted transition-colors disabled:opacity-50"
         onClick={() => {
           setOpen((o) => !o);
         }}

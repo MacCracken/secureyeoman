@@ -52,7 +52,7 @@ export function RoleForm({
         <label className="text-xs text-muted-foreground block mb-1">Name</label>
         <input
           type="text"
-          className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
           placeholder="e.g. Custom Ops"
           value={form.name}
           onChange={(e) => {
@@ -64,7 +64,7 @@ export function RoleForm({
         <label className="text-xs text-muted-foreground block mb-1">Description</label>
         <input
           type="text"
-          className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
           placeholder="Optional description"
           value={form.description}
           onChange={(e) => {
@@ -78,7 +78,7 @@ export function RoleForm({
         </label>
         <input
           type="text"
-          className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
           placeholder="tasks:read, metrics:read, audit:read"
           value={form.permissions}
           onChange={(e) => {
@@ -92,7 +92,7 @@ export function RoleForm({
         </label>
         <input
           type="text"
-          className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
           placeholder={existingRoleIds.slice(0, 3).join(', ')}
           value={form.inheritFrom}
           onChange={(e) => {
@@ -290,7 +290,7 @@ export function RolesSettings() {
                       <Lock className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">{role.name}</span>
                       {role.isBuiltin && (
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-sm">
                           Built-in
                         </span>
                       )}
@@ -323,7 +323,10 @@ export function RolesSettings() {
                   )}
                   <div className="flex flex-wrap gap-1">
                     {role.permissions.map((perm) => (
-                      <span key={formatPerm(perm)} className="text-xs bg-muted px-2 py-0.5 rounded">
+                      <span
+                        key={formatPerm(perm)}
+                        className="text-xs bg-muted px-2 py-0.5 rounded-sm"
+                      >
                         {formatPerm(perm)}
                       </span>
                     ))}

@@ -47,7 +47,7 @@ const CHANNEL_COLORS: Record<string, string> = {
 function ChannelBadge({ type }: { type: string }) {
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-medium ${CHANNEL_COLORS[type] ?? 'bg-muted text-muted-foreground'}`}
+      className={`px-2 py-0.5 rounded-sm text-xs font-medium ${CHANNEL_COLORS[type] ?? 'bg-muted text-muted-foreground'}`}
     >
       {type}
     </span>
@@ -293,7 +293,7 @@ function RuleForm({
         <div>
           <label className="text-xs font-medium text-muted-foreground">Name *</label>
           <input
-            className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm"
+            className="mt-1 w-full px-3 py-1.5 rounded-sm border bg-background text-sm"
             value={form.name}
             onChange={(e) => {
               set('name', e.target.value);
@@ -307,7 +307,7 @@ function RuleForm({
             <span className="ml-1 text-xs opacity-60">(e.g. security.rateLimitHitsTotal)</span>
           </label>
           <input
-            className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm font-mono"
+            className="mt-1 w-full px-3 py-1.5 rounded-sm border bg-background text-sm font-mono"
             value={form.metricPath}
             onChange={(e) => {
               set('metricPath', e.target.value);
@@ -318,7 +318,7 @@ function RuleForm({
         <div>
           <label className="text-xs font-medium text-muted-foreground">Description</label>
           <input
-            className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm"
+            className="mt-1 w-full px-3 py-1.5 rounded-sm border bg-background text-sm"
             value={form.description}
             onChange={(e) => {
               set('description', e.target.value);
@@ -330,7 +330,7 @@ function RuleForm({
           <div className="flex-none">
             <label className="text-xs font-medium text-muted-foreground">Operator</label>
             <select
-              className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm"
+              className="mt-1 w-full px-3 py-1.5 rounded-sm border bg-background text-sm"
               value={form.operator}
               onChange={(e) => {
                 set('operator', e.target.value);
@@ -347,7 +347,7 @@ function RuleForm({
             <label className="text-xs font-medium text-muted-foreground">Threshold *</label>
             <input
               type="number"
-              className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm"
+              className="mt-1 w-full px-3 py-1.5 rounded-sm border bg-background text-sm"
               value={form.threshold}
               onChange={(e) => {
                 set('threshold', e.target.value);
@@ -358,7 +358,7 @@ function RuleForm({
             <label className="text-xs font-medium text-muted-foreground">Cooldown (s)</label>
             <input
               type="number"
-              className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm"
+              className="mt-1 w-full px-3 py-1.5 rounded-sm border bg-background text-sm"
               value={form.cooldownSeconds}
               onChange={(e) => {
                 set('cooldownSeconds', e.target.value);
@@ -383,7 +383,7 @@ function RuleForm({
         {form.channels.map((ch, i) => (
           <div key={i} className="flex gap-2 mb-2">
             <select
-              className="px-2 py-1.5 rounded border bg-background text-sm"
+              className="px-2 py-1.5 rounded-sm border bg-background text-sm"
               value={ch.type}
               onChange={(e) => {
                 updateChannel(i, { type: e.target.value as AlertChannel['type'] });
@@ -397,7 +397,7 @@ function RuleForm({
             </select>
             {(ch.type === 'slack' || ch.type === 'webhook') && (
               <input
-                className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                className="flex-1 px-2 py-1.5 rounded-sm border bg-background text-sm"
                 placeholder="https://..."
                 value={ch.url ?? ''}
                 onChange={(e) => {
@@ -407,7 +407,7 @@ function RuleForm({
             )}
             {(ch.type === 'pagerduty' || ch.type === 'opsgenie') && (
               <input
-                className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                className="flex-1 px-2 py-1.5 rounded-sm border bg-background text-sm"
                 placeholder="Routing / Genie key"
                 value={ch.routingKey ?? ''}
                 onChange={(e) => {
@@ -418,7 +418,7 @@ function RuleForm({
             {ch.type === 'ntfy' && (
               <>
                 <input
-                  className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                  className="flex-1 px-2 py-1.5 rounded-sm border bg-background text-sm"
                   placeholder="https://ntfy.sh/my-topic"
                   value={ch.url ?? ''}
                   onChange={(e) => {
@@ -426,7 +426,7 @@ function RuleForm({
                   }}
                 />
                 <input
-                  className="w-36 px-2 py-1.5 rounded border bg-background text-sm"
+                  className="w-36 px-2 py-1.5 rounded-sm border bg-background text-sm"
                   placeholder="Auth token (optional)"
                   value={ch.routingKey ?? ''}
                   onChange={(e) => {
@@ -440,7 +440,7 @@ function RuleForm({
               onClick={() => {
                 removeChannel(i);
               }}
-              className="p-1.5 rounded hover:bg-destructive/10 text-destructive"
+              className="p-1.5 rounded-sm hover:bg-destructive/10 text-destructive"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -455,11 +455,11 @@ function RuleForm({
             onSave(form);
           }}
           disabled={saving || !form.name || !form.metricPath}
-          className="px-4 py-1.5 rounded bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
+          className="px-4 py-1.5 rounded-sm bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save rule'}
         </button>
-        <button type="button" onClick={onCancel} className="px-4 py-1.5 rounded border text-sm">
+        <button type="button" onClick={onCancel} className="px-4 py-1.5 rounded-sm border text-sm">
           Cancel
         </button>
         <label className="flex items-center gap-2 text-sm cursor-pointer ml-auto">
@@ -654,7 +654,7 @@ export function AlertRulesTab() {
                   onClick={() => {
                     patchMutation.mutate({ id: rule.id, patch: { enabled: !rule.enabled } });
                   }}
-                  className="p-1.5 rounded hover:bg-muted"
+                  className="p-1.5 rounded-sm hover:bg-muted"
                   title={rule.enabled ? 'Disable' : 'Enable'}
                 >
                   {rule.enabled ? (
@@ -669,7 +669,7 @@ export function AlertRulesTab() {
                   onClick={() => {
                     testMutation.mutate(rule.id);
                   }}
-                  className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                  className="p-1.5 rounded-sm hover:bg-muted text-muted-foreground hover:text-foreground"
                   title="Test-fire"
                 >
                   <TestTube className="w-4 h-4" />
@@ -682,7 +682,7 @@ export function AlertRulesTab() {
                       deleteMutation.mutate(rule.id);
                     }
                   }}
-                  className="p-1.5 rounded hover:bg-destructive/10 text-destructive"
+                  className="p-1.5 rounded-sm hover:bg-destructive/10 text-destructive"
                   title="Delete"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -732,7 +732,7 @@ export function AlertRulesTab() {
                       onClick={() => {
                         setEditingId(rule.id);
                       }}
-                      className="px-3 py-1.5 rounded border text-sm hover:bg-muted"
+                      className="px-3 py-1.5 rounded-sm border text-sm hover:bg-muted"
                     >
                       Edit
                     </button>

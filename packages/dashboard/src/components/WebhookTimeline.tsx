@@ -63,7 +63,7 @@ export function WebhookTimeline() {
       {/* Filter bar */}
       <div className="flex flex-wrap gap-2">
         <select
-          className="text-xs p-1.5 rounded border border-border bg-background"
+          className="text-xs p-1.5 rounded-sm border border-border bg-background"
           value={providerFilter}
           onChange={(e) => {
             setProviderFilter(e.target.value);
@@ -76,7 +76,7 @@ export function WebhookTimeline() {
           ))}
         </select>
         <input
-          className="text-xs p-1.5 rounded border border-border bg-background flex-1 min-w-[120px]"
+          className="text-xs p-1.5 rounded-sm border border-border bg-background flex-1 min-w-[120px]"
           placeholder="Filter by repo..."
           value={repoFilter}
           onChange={(e) => {
@@ -84,7 +84,7 @@ export function WebhookTimeline() {
           }}
         />
         <input
-          className="text-xs p-1.5 rounded border border-border bg-background flex-1 min-w-[120px]"
+          className="text-xs p-1.5 rounded-sm border border-border bg-background flex-1 min-w-[120px]"
           placeholder="Filter by event..."
           value={eventFilter}
           onChange={(e) => {
@@ -161,7 +161,7 @@ export function WebhookTimeline() {
 
             {/* Expanded metadata */}
             {expandedId === evt.id && (
-              <div className="mt-2 p-2 rounded bg-muted/30 overflow-x-auto">
+              <div className="mt-2 p-2 rounded-sm bg-muted/30 overflow-x-auto">
                 <pre className="text-[10px] whitespace-pre-wrap break-all">
                   {JSON.stringify(evt.metadata, null, 2)}
                 </pre>

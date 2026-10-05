@@ -57,7 +57,7 @@ export function ProactiveStep({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
+        <button onClick={goBack} className="btn-ghost p-1 rounded-sm" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Proactive Trigger</h3>
@@ -72,7 +72,7 @@ export function ProactiveStep({
             onChange={(e) => {
               set({ name: e.target.value });
             }}
-            className="w-full px-3 py-2 rounded border bg-background"
+            className="w-full px-3 py-2 rounded-sm border bg-background"
             placeholder="My trigger"
           />
         </div>
@@ -83,7 +83,7 @@ export function ProactiveStep({
             onChange={(e) => {
               set({ type: e.target.value as typeof proactive.type });
             }}
-            className="w-full px-3 py-2 rounded border bg-background"
+            className="w-full px-3 py-2 rounded-sm border bg-background"
           >
             <option value="schedule">Schedule (Cron)</option>
             <option value="event">Event</option>
@@ -103,7 +103,7 @@ export function ProactiveStep({
             onChange={(e) => {
               set({ cron: e.target.value });
             }}
-            className="w-full px-3 py-2 rounded border bg-background font-mono"
+            className="w-full px-3 py-2 rounded-sm border bg-background font-mono"
             placeholder="0 9 * * 1-5"
           />
         </div>
@@ -118,7 +118,7 @@ export function ProactiveStep({
             onChange={(e) => {
               set({ eventType: e.target.value });
             }}
-            className="w-full px-3 py-2 rounded border bg-background"
+            className="w-full px-3 py-2 rounded-sm border bg-background"
             placeholder="integration_disconnected"
           />
         </div>
@@ -132,7 +132,7 @@ export function ProactiveStep({
             onChange={(e) => {
               set({ actionType: e.target.value as typeof proactive.actionType });
             }}
-            className="w-full px-3 py-2 rounded border bg-background"
+            className="w-full px-3 py-2 rounded-sm border bg-background"
           >
             <option value="message">Message</option>
             <option value="remind">Remind</option>
@@ -145,7 +145,7 @@ export function ProactiveStep({
             onChange={(e) => {
               set({ approvalMode: e.target.value as typeof proactive.approvalMode });
             }}
-            className="w-full px-3 py-2 rounded border bg-background"
+            className="w-full px-3 py-2 rounded-sm border bg-background"
           >
             <option value="auto">Auto-execute</option>
             <option value="suggest">Suggest first</option>
@@ -161,7 +161,7 @@ export function ProactiveStep({
           onChange={(e) => {
             set({ actionContent: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background font-mono text-sm resize-none"
+          className="w-full px-3 py-2 rounded-sm border bg-background font-mono text-sm resize-none"
           rows={3}
           placeholder="Enter the message or reminder content..."
         />

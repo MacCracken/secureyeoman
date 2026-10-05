@@ -90,7 +90,7 @@ export function CostDashboard() {
                   setPeriod(p);
                 }}
                 className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                  period === p ? 'bg-background shadow-sm font-medium' : 'hover:bg-background/50'
+                  period === p ? 'bg-background shadow-xs font-medium' : 'hover:bg-background/50'
                 }`}
               >
                 {p}

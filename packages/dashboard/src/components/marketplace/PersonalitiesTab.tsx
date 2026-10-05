@@ -20,7 +20,6 @@ import {
   fetchPersonalities,
   deletePersonality,
   type CommunityPersonality,
-  getAccessToken,
 } from '../../api/client';
 
 /** Format category label: "sci-fi/antagonist" → "Sci-Fi — Antagonist" */
@@ -48,13 +47,20 @@ function sortCategories(a: string, b: string): number {
   return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
 }
 
-/** Build avatar URL — uses backend avatar endpoint or falls back to letter SVG */
+/**
+ * Build avatar URL — uses backend avatar endpoint or falls back to letter SVG.
+ * The access token is never put in the URL (query strings end up in server
+ * and proxy logs); an avatar that cannot be served falls back to the letter.
+ */
 function avatarUrl(p: CommunityPersonality): string {
   if (p.avatarFile) {
-    const token = getAccessToken();
-    return `/api/v1/marketplace/community/personalities/avatar/${encodeURIComponent(p.avatarFile)}${token ? `?token=${token}` : ''}`;
+    return `/api/v1/marketplace/community/personalities/avatar/${encodeURIComponent(p.avatarFile)}`;
   }
-  // Fallback: data URI with first letter
+  return letterAvatarUrl(p);
+}
+
+/** Data URI of a rounded square showing the personality's first letter. */
+function letterAvatarUrl(p: CommunityPersonality): string {
   const letter = (p.name[0] ?? '?').toUpperCase();
   const colors: Record<string, string> = {
     professional: '#3b82f6',
@@ -225,6 +231,10 @@ export function PersonalitiesTab() {
                             src={avatarUrl(p)}
                             alt=""
                             className="w-10 h-10 rounded-lg shrink-0"
+                            onError={(e) => {
+                              const fallback = letterAvatarUrl(p);
+                              if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+                            }}
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
@@ -243,7 +253,7 @@ export function PersonalitiesTab() {
                                   .map(([k, v]) => (
                                     <span
                                       key={k}
-                                      className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
+                                      className="text-[10px] px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground"
                                     >
                                       {k}: {v}
                                     </span>

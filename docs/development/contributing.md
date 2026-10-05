@@ -109,6 +109,7 @@ This mirrors how CI runs DB tests (see `.github/workflows/ci.yml`, `test-db` job
 ### Dashboard / CSS
 
 - **Tailwind preflight `img`**: `max-width: 100%; height: auto` can silently cap images. Fix: `maxWidth: 'none'` inline.
+- **Component classes beat plain utilities, and responsive variants too**: `.card*`, `.btn*` and `.badge*` (in `src/index.css`) sit after Tailwind's utilities, so `card-header p-3` keeps the card padding and `sm:p-4` loses to it as well. To override one of their properties at a breakpoint (or under `dark:`), mark it important: `card-header sm:p-4!`. `hover:`, `focus-visible:` and `disabled:` win without it.
 - **React 18 `onWheel` is passive**: `e.preventDefault()` is a no-op. Use native `{ passive: false }` listener.
 
 ### MCP Tool Registration

@@ -124,7 +124,6 @@ pub fn router() -> Router<AppState> {
         .route("/api/v1/security/events/{id}", get(get_security_event))
         // ── Security policy ──
         .route("/api/v1/security/policy", get(get_security_policy))
-        .route("/api/v1/security/policy", put(update_security_policy))
         .route("/api/v1/security/policy", patch(patch_security_policy))
         // ── Security scans ──
         .route("/api/v1/security/scans", get(list_security_scans))
@@ -230,7 +229,6 @@ pub fn router() -> Router<AppState> {
         )
         // ── TLS ──
         .route("/api/v1/security/tls", get(get_tls_status))
-        // NOTE: WebAuthn and break-glass routes live in auth.rs (they're /api/v1/auth/* paths)
         // ── Key rotation ──
         .route("/api/v1/admin/key-rotation", get(get_rotation_status))
         .route(
@@ -895,22 +893,96 @@ async fn get_sra_summary(State(s): State<AppState>) -> impl IntoResponse {
 
 // ── Security events ───────────────────────────────────────────────────────────
 
-async fn list_security_events(State(s): State<AppState>, Query(q): Query<PQ>) -> impl IntoResponse {
+/// The audit events that are security events (TS `SECURITY_EVENT_TYPES`,
+/// the shared `SecurityEventType`): the feed is a view of the audit chain.
+pub const SECURITY_EVENT_TYPES: &[&str] = &[
+    "auth_success",
+    "auth_failure",
+    "rate_limit",
+    "injection_attempt",
+    "permission_denied",
+    "anomaly",
+    "sandbox_violation",
+    "config_change",
+    "secret_access",
+    "ai_request",
+    "ai_response",
+];
+
+#[derive(Deserialize)]
+struct SecurityEventsQuery {
+    /// Comma-separated audit levels.
+    severity: Option<String>,
+    /// Comma-separated event types; anything but a security event is ignored.
+    #[serde(rename = "type")]
+    event_type: Option<String>,
+    from: Option<i64>,
+    to: Option<i64>,
+    limit: Option<i64>,
+    offset: Option<i64>,
+}
+
+/// GET /api/v1/security/events — security events from the audit chain,
+/// newest first: `{ events, total, limit, offset }`.
+async fn list_security_events(
+    State(s): State<AppState>,
+    Query(q): Query<SecurityEventsQuery>,
+) -> impl IntoResponse {
     let Some(pool) = s.db() else {
         return err_unavailable();
     };
-    match security::list_security_events(pool, "default", q.limit.min(100), q.offset).await {
-        Ok(r) => {
-            let total = r.len();
-            Json(serde_json::json!({"events": r, "total": total})).into_response()
-        }
-        Err(_) => {
-            // Table may not exist yet — return empty list
-            Json(serde_json::json!({"events": [], "total": 0})).into_response()
+    let limit = q.limit.filter(|l| *l >= 1).unwrap_or(50).min(1000);
+    let offset = q.offset.unwrap_or(0).max(0);
+    let events: Vec<&str> = match q.event_type.as_deref() {
+        Some(types) => types
+            .split(',')
+            .map(str::trim)
+            .filter(|t| SECURITY_EVENT_TYPES.contains(t))
+            .collect(),
+        None => SECURITY_EVENT_TYPES.to_vec(),
+    };
+    // An empty event list means "no event filter" to the query: types that
+    // are not security events match nothing here, not the whole audit log.
+    if events.is_empty() {
+        return Json(serde_json::json!({
+            "events": [], "total": 0, "limit": limit, "offset": offset,
+        }))
+        .into_response();
+    }
+    let filter = crate::db::audit::EntryFilter {
+        from: q.from,
+        to: q.to,
+        levels: q
+            .severity
+            .as_deref()
+            .map(|s| {
+                s.split(',')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .collect()
+            })
+            .unwrap_or_default(),
+        events,
+        user_id: None,
+        task_id: None,
+    };
+    match crate::db::audit::list_entries(pool, &filter, limit, offset).await {
+        Ok((rows, total)) => Json(serde_json::json!({
+            "events": rows.iter().map(crate::db::audit::AuditEntryRow::to_wire).collect::<Vec<_>>(),
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }))
+        .into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "security events query failed");
+            err_internal("Internal server error")
         }
     }
 }
 
+/// GET /api/v1/security/events/{id} — one security event; other audit
+/// entries are not reachable through this route.
 async fn get_security_event(
     State(s): State<AppState>,
     Path(id): Path<String>,
@@ -918,48 +990,50 @@ async fn get_security_event(
     let Some(pool) = s.db() else {
         return err_unavailable();
     };
-    match security::get_security_event(pool, &id).await {
-        Ok(Some(r)) => Json(serde_json::to_value(r).unwrap()).into_response(),
-        Ok(None) => not_found("Security event not found"),
-        Err(e) => err_internal(e),
+    match crate::db::audit::get_entry(pool, &id).await {
+        Ok(Some(row)) if SECURITY_EVENT_TYPES.contains(&row.event.as_str()) => {
+            Json(row.to_wire()).into_response()
+        }
+        Ok(_) => not_found("Security event not found"),
+        Err(e) => {
+            tracing::error!(error = %e, "security event query failed");
+            err_internal("Internal server error")
+        }
     }
 }
 
 // ── Security policy ───────────────────────────────────────────────────────────
 
+/// The stored policy (`security.policy`, key `security_policy`), or the
+/// defaults when none is stored or the stored JSON is not an object.
+async fn load_security_policy(pool: &sqlx::PgPool) -> Result<serde_json::Value, sqlx::Error> {
+    let row: Option<(String,)> =
+        sqlx::query_as("SELECT value FROM security.policy WHERE key = 'security_policy'")
+            .fetch_optional(pool)
+            .await?;
+    Ok(row
+        .and_then(|(json,)| serde_json::from_str::<serde_json::Value>(&json).ok())
+        .filter(serde_json::Value::is_object)
+        .unwrap_or_else(default_security_policy))
+}
+
 async fn get_security_policy(State(s): State<AppState>) -> impl IntoResponse {
     let Some(pool) = s.db() else {
         return err_unavailable();
     };
-    // security.policy is a key/value table: key='security_policy', value=JSON string
-    let row: Option<(String,)> =
-        sqlx::query_as("SELECT value FROM security.policy WHERE key = 'security_policy'")
-            .fetch_optional(pool)
-            .await
-            .unwrap_or(None);
-
-    match row {
-        Some((json_str,)) => {
-            let val: serde_json::Value =
-                serde_json::from_str(&json_str).unwrap_or_else(|_| default_security_policy());
-            Json(val).into_response()
+    match load_security_policy(pool).await {
+        Ok(policy) => Json(policy).into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "security policy read failed");
+            err_internal("Internal server error")
         }
-        None => Json(default_security_policy()).into_response(),
     }
 }
 
-/// Whether the stored security policy turns `flag` on. Flags default to off,
-/// as in `default_security_policy`, including when the policy is unreadable.
+/// Whether the stored security policy turns `flag` on (see
+/// [`security::policy_allows`]).
 pub(crate) async fn policy_allows(pool: &sqlx::PgPool, flag: &str) -> bool {
-    let stored: Option<(String,)> =
-        sqlx::query_as("SELECT value FROM security.policy WHERE key = 'security_policy'")
-            .fetch_optional(pool)
-            .await
-            .unwrap_or(None);
-    stored
-        .and_then(|(json,)| serde_json::from_str::<serde_json::Value>(&json).ok())
-        .and_then(|policy| policy.get(flag).and_then(serde_json::Value::as_bool))
-        .unwrap_or(false)
+    security::policy_allows(pool, flag).await
 }
 
 fn default_security_policy() -> serde_json::Value {
@@ -997,85 +1071,188 @@ fn default_security_policy() -> serde_json::Value {
     })
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct UpdatePolicyRequest {
-    name: String,
-    policy_json: serde_json::Value,
-    #[serde(default = "default_true")]
-    enabled: bool,
+/// What a policy field holds.
+#[derive(Clone, Copy)]
+enum PolicyField {
+    Bool,
+    Number,
+    Text,
+    TextList,
+    OneOf(&'static [&'static str]),
 }
 
-async fn update_security_policy(
-    State(s): State<AppState>,
-    Json(body): Json<UpdatePolicyRequest>,
-) -> impl IntoResponse {
-    let Some(pool) = s.db() else {
-        return err_unavailable();
-    };
-    let id = uuid::Uuid::now_v7().to_string();
-    match security::upsert_security_policy(
-        pool,
-        &id,
-        "default",
-        &body.name,
-        &body.policy_json,
-        body.enabled,
-    )
-    .await
-    {
-        Ok(r) => Json(serde_json::to_value(r).unwrap()).into_response(),
-        Err(e) => err_internal(e),
+impl PolicyField {
+    fn accepts(self, value: &serde_json::Value) -> bool {
+        use serde_json::Value;
+        match (self, value) {
+            (Self::Bool, Value::Bool(_)) | (Self::Number, Value::Number(_)) => true,
+            (Self::Text, Value::String(_)) => true,
+            (Self::TextList, Value::Array(items)) => items.iter().all(Value::is_string),
+            (Self::OneOf(allowed), Value::String(s)) => allowed.contains(&s.as_str()),
+            _ => false,
+        }
     }
 }
 
-/// PATCH /api/v1/security/policy — partial update (toggles from dashboard).
+const GUARD_MODES: &[&str] = &["block", "warn", "disabled"];
+const GUARD_ACTIONS: &[&str] = &["block", "warn", "audit_only"];
+
+/// The fields PATCH may set: the dashboard's `SecurityPolicy`, plus the TS
+/// gateway's `communityGitUrl`. Other keys are ignored, as TS ignored them.
+const POLICY_FIELDS: &[(&str, PolicyField)] = {
+    use PolicyField::*;
+    &[
+        ("allowSubAgents", Bool),
+        ("allowA2A", Bool),
+        ("allowSwarms", Bool),
+        ("allowExtensions", Bool),
+        ("allowExecution", Bool),
+        ("allowProactive", Bool),
+        ("allowWorkflows", Bool),
+        ("allowCommunityGitFetch", Bool),
+        ("communityGitUrl", Text),
+        ("allowExperiments", Bool),
+        ("allowStorybook", Bool),
+        ("allowMultimodal", Bool),
+        ("allowDesktopControl", Bool),
+        ("allowCamera", Bool),
+        ("allowDynamicTools", Bool),
+        ("sandboxDynamicTools", Bool),
+        ("allowAnomalyDetection", Bool),
+        ("allowSimulation", Bool),
+        ("sandboxFirecracker", Bool),
+        ("sandboxGvisor", Bool),
+        ("sandboxWasm", Bool),
+        ("sandboxCredentialProxy", Bool),
+        ("allowNetworkTools", Bool),
+        ("allowNetBoxWrite", Bool),
+        ("allowTwingate", Bool),
+        ("allowOrgIntent", Bool),
+        ("allowIntent", Bool),
+        ("allowIntentEditor", Bool),
+        ("allowKnowledgeBase", Bool),
+        ("allowCodeEditor", Bool),
+        ("allowAdvancedEditor", Bool),
+        ("allowTrainingExport", Bool),
+        ("promptGuardMode", OneOf(GUARD_MODES)),
+        ("responseGuardMode", OneOf(GUARD_MODES)),
+        ("jailbreakThreshold", Number),
+        ("jailbreakAction", OneOf(GUARD_ACTIONS)),
+        ("strictSystemPromptConfidentiality", Bool),
+        ("abuseDetectionEnabled", Bool),
+        ("contentGuardrailsEnabled", Bool),
+        (
+            "contentGuardrailsPiiMode",
+            OneOf(&["disabled", "detect_only", "redact"]),
+        ),
+        ("contentGuardrailsToxicityEnabled", Bool),
+        ("contentGuardrailsToxicityMode", OneOf(GUARD_ACTIONS)),
+        ("contentGuardrailsToxicityClassifierUrl", Text),
+        ("contentGuardrailsToxicityThreshold", Number),
+        ("contentGuardrailsBlockList", TextList),
+        ("contentGuardrailsBlockedTopics", TextList),
+        ("contentGuardrailsGroundingEnabled", Bool),
+        ("contentGuardrailsGroundingMode", OneOf(&["flag", "block"])),
+    ]
+};
+
+/// The policy fields a PATCH body sets, or why it is refused.
+fn policy_changes(
+    body: &serde_json::Value,
+) -> Result<serde_json::Map<String, serde_json::Value>, String> {
+    let Some(body) = body.as_object() else {
+        return Err("Body must be a JSON object".to_string());
+    };
+    let mut changes = serde_json::Map::new();
+    for (key, value) in body {
+        let Some((_, field)) = POLICY_FIELDS.iter().find(|(name, _)| name == key) else {
+            continue;
+        };
+        if value.is_null() {
+            continue; // `undefined` in TS: not a change
+        }
+        if !field.accepts(value) {
+            return Err(format!("Invalid value for {key}"));
+        }
+        changes.insert(key.clone(), value.clone());
+    }
+    if changes.is_empty() {
+        return Err("No valid fields provided".to_string());
+    }
+    Ok(changes)
+}
+
+/// PATCH /api/v1/security/policy — set some policy fields (the dashboard's
+/// toggles), recorded in the audit chain as a `config_change`.
 async fn patch_security_policy(
     State(s): State<AppState>,
+    auth: Option<axum::Extension<crate::auth::middleware::AuthContext>>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
     let Some(pool) = s.db() else {
         return err_unavailable();
     };
-
-    // Load existing policy or defaults
-    let row: Option<(String,)> =
-        sqlx::query_as("SELECT value FROM security.policy WHERE key = 'security_policy'")
-            .fetch_optional(pool)
-            .await
-            .unwrap_or(None);
-
-    let mut current = match row {
-        Some((json_str,)) => {
-            serde_json::from_str(&json_str).unwrap_or_else(|_| default_security_policy())
+    let changes = match policy_changes(&body) {
+        Ok(changes) => changes,
+        Err(message) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "error": message })),
+            )
+                .into_response();
         }
-        None => default_security_policy(),
     };
 
-    // Merge incoming fields
-    if let (Some(current_obj), Some(body_obj)) = (current.as_object_mut(), body.as_object()) {
-        for (key, value) in body_obj {
-            current_obj.insert(key.clone(), value.clone());
+    // Read-modify-write in one transaction, the row locked, so concurrent
+    // toggles do not undo each other; a failed read must not fall back to
+    // the defaults, or every other toggle would be reset by this write.
+    let result: Result<serde_json::Value, sqlx::Error> = async {
+        let mut tx = pool.begin().await?;
+        let row: Option<(String,)> = sqlx::query_as(
+            "SELECT value FROM security.policy WHERE key = 'security_policy' FOR UPDATE",
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
+        let mut policy = row
+            .and_then(|(json,)| serde_json::from_str::<serde_json::Value>(&json).ok())
+            .filter(serde_json::Value::is_object)
+            .unwrap_or_else(default_security_policy);
+        if let Some(obj) = policy.as_object_mut() {
+            obj.extend(changes.clone());
         }
+        let now = chrono::Utc::now().timestamp_millis();
+        sqlx::query(
+            "INSERT INTO security.policy (key, value, updated_at) VALUES ('security_policy', $1, $2)
+             ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = $2",
+        )
+        .bind(policy.to_string())
+        .bind(now)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        Ok(policy)
     }
-
-    // Upsert to key/value table
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis() as i64;
-    let json_str = serde_json::to_string(&current).unwrap_or_default();
-
-    let _ = sqlx::query(
-        "INSERT INTO security.policy (key, value, updated_at) VALUES ('security_policy', $1, $2)
-         ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = $2",
-    )
-    .bind(&json_str)
-    .bind(now)
-    .execute(pool)
     .await;
 
-    Json(current).into_response()
+    match result {
+        Ok(policy) => {
+            let mut entry = crate::db::audit::NewAuditEntry::new(
+                "config_change",
+                "info",
+                "Security policy updated via dashboard",
+            )
+            .metadata(serde_json::json!({
+                "changes": changes.keys().collect::<Vec<_>>(),
+            }));
+            entry.user_id = auth.map(|axum::Extension(ctx)| ctx.user_id);
+            s.audit_event(entry);
+            Json(policy).into_response()
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "security policy update failed");
+            err_internal("Internal server error")
+        }
+    }
 }
 
 // ── Security scans ────────────────────────────────────────────────────────────
@@ -1331,37 +1508,15 @@ async fn list_principles() -> impl IntoResponse {
     .into_response()
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CritiqueRequest {
-    response: String,
-    principles: Vec<String>,
+/// Not implemented: it reported "No violations detected" without evaluating
+/// anything.
+async fn critique_response() -> impl IntoResponse {
+    not_implemented("Constitutional critique")
 }
 
-async fn critique_response(Json(body): Json<CritiqueRequest>) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "critique": format!("Evaluated against {} principles. No violations detected (placeholder).", body.principles.len()),
-        "violations": [],
-        "responseLength": body.response.len(),
-    }))
-    .into_response()
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ReviseRequest {
-    response: String,
-    principles: Vec<String>,
-}
-
-async fn revise_response(Json(body): Json<ReviseRequest>) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "original": body.response,
-        "revised": body.response,
-        "principlesApplied": body.principles,
-        "changed": false,
-    }))
-    .into_response()
+/// Not implemented: it returned the response unchanged as the revision.
+async fn revise_response() -> impl IntoResponse {
+    not_implemented("Constitutional revision")
 }
 
 // ── TEE (placeholder) ─────────────────────────────────────────────────────────
@@ -1403,65 +1558,30 @@ async fn verify_attestation(
     .into_response()
 }
 
-// ── Guardrail pipeline (placeholder) ─────────────────────────────────────────
+// ── Guardrail pipeline (not implemented) ─────────────────────────────────────
+//
+// There is no guardrail pipeline in this server. These reported PII,
+// prompt-injection and toxicity filters as enabled, accepted toggles, and
+// passed every test input — a dashboard showing protection that did not exist.
 
 async fn list_guardrail_filters() -> impl IntoResponse {
-    Json(serde_json::json!({
-        "filters": [
-            {"id": "pii", "name": "PII Detection", "enabled": true},
-            {"id": "prompt-injection", "name": "Prompt Injection", "enabled": true},
-            {"id": "toxicity", "name": "Toxicity Filter", "enabled": true},
-        ]
-    }))
-    .into_response()
+    not_implemented("The guardrail pipeline")
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ToggleFilterRequest {
-    enabled: bool,
-}
-
-async fn toggle_guardrail_filter(
-    Path(filter_id): Path<String>,
-    Json(body): Json<ToggleFilterRequest>,
-) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "filterId": filter_id,
-        "enabled": body.enabled,
-        "updated": true,
-    }))
-    .into_response()
+async fn toggle_guardrail_filter(Path(_filter_id): Path<String>) -> impl IntoResponse {
+    not_implemented("The guardrail pipeline")
 }
 
 async fn get_guardrail_metrics() -> impl IntoResponse {
-    Json(serde_json::json!({
-        "totalRequests": 0,
-        "blocked": 0,
-        "passed": 0,
-        "filterBreakdown": {},
-    }))
-    .into_response()
+    not_implemented("The guardrail pipeline")
 }
 
 async fn reset_guardrail_metrics() -> impl IntoResponse {
-    Json(serde_json::json!({ "reset": true })).into_response()
+    not_implemented("The guardrail pipeline")
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct TestPipelineRequest {
-    input: String,
-}
-
-async fn test_guardrail_pipeline(Json(body): Json<TestPipelineRequest>) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "input": body.input,
-        "passed": true,
-        "blocked": false,
-        "filterResults": [],
-    }))
-    .into_response()
+async fn test_guardrail_pipeline() -> impl IntoResponse {
+    not_implemented("The guardrail pipeline")
 }
 
 // ── Access review ─────────────────────────────────────────────────────────────
@@ -1617,140 +1737,25 @@ async fn get_tls_status(State(_s): State<AppState>) -> impl IntoResponse {
     .into_response()
 }
 
-// ── WebAuthn (placeholder) ────────────────────────────────────────────────────
+// ── Key rotation (not implemented) ────────────────────────────────────────────
 
-async fn webauthn_register_options() -> impl IntoResponse {
-    let challenge = uuid::Uuid::now_v7().to_string();
-    Json(serde_json::json!({
-        "challenge": challenge,
-        "rp": {"name": "SecureYeoman", "id": "secureyeoman.com"},
-        "user": {"id": "", "name": "", "displayName": ""},
-        "pubKeyCredParams": [{"alg": -7, "type": "public-key"}],
-        "timeout": 60000,
-        "attestation": "none",
-    }))
-    .into_response()
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct WebAuthnVerifyRequest {
-    credential: serde_json::Value,
-}
-
-async fn webauthn_register_verify(Json(_body): Json<WebAuthnVerifyRequest>) -> impl IntoResponse {
-    let credential_id = uuid::Uuid::now_v7().to_string();
+/// Not implemented. These answered with a made-up list of secrets and
+/// `rotated: true` while rotating nothing — an operator would believe a
+/// leaked secret had been replaced.
+fn not_implemented(what: &str) -> axum::response::Response {
     (
-        StatusCode::CREATED,
+        StatusCode::NOT_IMPLEMENTED,
         Json(serde_json::json!({
-            "verified": true,
-            "credentialId": credential_id,
+            "error": format!("{what} is not implemented on this server yet"),
         })),
     )
         .into_response()
 }
-
-async fn webauthn_authenticate_options() -> impl IntoResponse {
-    let challenge = uuid::Uuid::now_v7().to_string();
-    Json(serde_json::json!({
-        "challenge": challenge,
-        "timeout": 60000,
-        "rpId": "secureyeoman.com",
-        "allowCredentials": [],
-        "userVerification": "preferred",
-    }))
-    .into_response()
-}
-
-async fn webauthn_authenticate_verify(
-    Json(_body): Json<WebAuthnVerifyRequest>,
-) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "verified": true,
-        "userId": null,
-    }))
-    .into_response()
-}
-
-async fn list_webauthn_credentials() -> impl IntoResponse {
-    Json(serde_json::json!({ "credentials": [] })).into_response()
-}
-
-async fn delete_webauthn_credential(Path(id): Path<String>) -> impl IntoResponse {
-    let _ = id;
-    StatusCode::NO_CONTENT.into_response()
-}
-
-// ── Break-glass (placeholder) ─────────────────────────────────────────────────
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ActivateBreakGlassRequest {
-    reason: String,
-    requestor: String,
-}
-
-async fn activate_break_glass(Json(body): Json<ActivateBreakGlassRequest>) -> impl IntoResponse {
-    let session_id = uuid::Uuid::now_v7().to_string();
-    (
-        StatusCode::CREATED,
-        Json(serde_json::json!({
-            "sessionId": session_id,
-            "reason": body.reason,
-            "requestor": body.requestor,
-            "activatedAt": std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as i64,
-            "expiresInSeconds": 3600,
-        })),
-    )
-        .into_response()
-}
-
-async fn list_break_glass_sessions() -> impl IntoResponse {
-    Json(serde_json::json!({ "sessions": [] })).into_response()
-}
-
-async fn revoke_break_glass_session(Path(id): Path<String>) -> impl IntoResponse {
-    Json(serde_json::json!({ "sessionId": id, "revoked": true })).into_response()
-}
-
-async fn rotate_recovery_key() -> impl IntoResponse {
-    let key_id = uuid::Uuid::now_v7().to_string();
-    Json(serde_json::json!({
-        "keyId": key_id,
-        "rotatedAt": std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64,
-        "message": "Recovery key rotated. Store the new key securely.",
-    }))
-    .into_response()
-}
-
-// ── Key rotation (placeholder) ────────────────────────────────────────────────
 
 async fn get_rotation_status() -> impl IntoResponse {
-    Json(serde_json::json!({
-        "secrets": [
-            {"name": "db-password", "lastRotated": null, "nextRotation": null, "status": "manual"},
-            {"name": "jwt-secret", "lastRotated": null, "nextRotation": null, "status": "manual"},
-            {"name": "api-key", "lastRotated": null, "nextRotation": null, "status": "manual"},
-        ]
-    }))
-    .into_response()
+    not_implemented("Secret rotation")
 }
 
-async fn rotate_secret(Path(name): Path<String>) -> impl IntoResponse {
-    Json(serde_json::json!({
-        "name": name,
-        "rotated": true,
-        "rotatedAt": std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64,
-        "message": "Secret rotation initiated (placeholder — wire to vault in production).",
-    }))
-    .into_response()
+async fn rotate_secret(Path(_name): Path<String>) -> impl IntoResponse {
+    not_implemented("Secret rotation")
 }

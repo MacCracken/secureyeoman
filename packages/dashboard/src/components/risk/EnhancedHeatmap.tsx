@@ -117,7 +117,7 @@ export function EnhancedHeatmap({ cells, onCellClick }: EnhancedHeatmapProps) {
                   if (!cell) {
                     return (
                       <td key={domain} className="py-1 px-2">
-                        <div className="w-full h-10 bg-muted/30 rounded flex items-center justify-center text-xs text-muted-foreground">
+                        <div className="w-full h-10 bg-muted/30 rounded-sm flex items-center justify-center text-xs text-muted-foreground">
                           --
                         </div>
                       </td>
@@ -141,7 +141,7 @@ export function EnhancedHeatmap({ cells, onCellClick }: EnhancedHeatmapProps) {
                       >
                         {cell.score.toFixed(0)}
                         {cell.breached && (
-                          <AlertTriangle className="absolute -top-1 -right-1 w-3.5 h-3.5 text-red-600 drop-shadow-sm" />
+                          <AlertTriangle className="absolute -top-1 -right-1 w-3.5 h-3.5 text-red-600 drop-shadow-xs" />
                         )}
                       </button>
                     </td>
@@ -157,16 +157,16 @@ export function EnhancedHeatmap({ cells, onCellClick }: EnhancedHeatmapProps) {
       <div className="flex items-center gap-4 text-xs text-muted-foreground px-1">
         <span className="font-medium">Score:</span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded bg-green-500" /> 0-24
+          <span className="inline-block w-3 h-3 rounded-sm bg-green-500" /> 0-24
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded bg-yellow-400" /> 25-49
+          <span className="inline-block w-3 h-3 rounded-sm bg-yellow-400" /> 25-49
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded bg-orange-400" /> 50-74
+          <span className="inline-block w-3 h-3 rounded-sm bg-orange-400" /> 50-74
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded bg-red-500" /> 75-100
+          <span className="inline-block w-3 h-3 rounded-sm bg-red-500" /> 75-100
         </span>
         <span className="ml-2 flex items-center gap-1">
           <AlertTriangle className="w-3 h-3 text-red-600" /> Breach

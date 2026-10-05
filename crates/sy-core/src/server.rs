@@ -30,15 +30,8 @@ fn build_cors_layer() -> CorsLayer {
     let origins_raw = std::env::var("SECUREYEOMAN_CORS_ORIGINS")
         .unwrap_or_else(|_| "http://localhost:5173".to_string());
 
-    let origins: Vec<HeaderValue> = origins_raw
-        .split(',')
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .filter_map(|s| HeaderValue::from_str(s).ok())
-        .collect();
-
     CorsLayer::new()
-        .allow_origin(AllowOrigin::list(origins))
+        .allow_origin(AllowOrigin::list(cors_origins(&origins_raw)))
         .allow_methods([
             HttpMethod::GET,
             HttpMethod::POST,
@@ -54,6 +47,25 @@ fn build_cors_layer() -> CorsLayer {
             HeaderName::from_static("x-correlation-id"),
         ])
         .allow_credentials(true)
+}
+
+/// The allowed origins in a comma-separated list. A wildcard is dropped with a
+/// warning: credentialed CORS cannot use one, and `AllowOrigin::list` panics on
+/// it, which would abort the server at every boot.
+fn cors_origins(raw: &str) -> Vec<HeaderValue> {
+    raw.split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .filter(|s| {
+            if *s == "*" {
+                tracing::warn!(
+                    "SECUREYEOMAN_CORS_ORIGINS: ignoring \"*\" (credentialed requests need explicit origins)"
+                );
+            }
+            *s != "*"
+        })
+        .filter_map(|s| HeaderValue::from_str(s).ok())
+        .collect()
 }
 
 /// Fallback handler for unmatched routes. Returns a 404 JSON error.
@@ -166,7 +178,7 @@ pub fn build_router(state: AppState) -> Router {
     // TraceLayer → CompressionLayer → CorsLayer → LocalNetworkCheck → IpReputation →
     // Backpressure → RateLimit → BodyLimit → CorrelationId → Fingerprint →
     // SecurityHeaders → require_auth → enforce_rbac → handler
-    app.layer(axum_mw::from_fn(enforce_rbac))
+    app.layer(axum_mw::from_fn_with_state(state.clone(), enforce_rbac))
         .layer(axum_mw::from_fn_with_state(state.clone(), require_auth))
         .layer(SecurityHeadersLayer)
         .layer(axum_mw::from_fn_with_state(
@@ -177,7 +189,7 @@ pub fn build_router(state: AppState) -> Router {
         .layer(BodyLimitLayer)
         .layer(RateLimitLayer::new(
             RateLimitState::new(),
-            state.trust_proxy_headers(),
+            state.trusted_proxies().clone(),
             state.ip_reputation().cloned(),
         ))
         .layer(axum_mw::from_fn_with_state(
@@ -189,7 +201,7 @@ pub fn build_router(state: AppState) -> Router {
         // `state.ip_reputation()`).
         .layer(IpReputationLayer::new(
             state.ip_reputation().cloned().unwrap_or_default(),
-            state.trust_proxy_headers(),
+            state.trusted_proxies().clone(),
         ))
         .layer(axum_mw::from_fn_with_state(
             state.clone(),
@@ -211,6 +223,22 @@ mod tests {
 
     fn test_state() -> AppState {
         AppState::new(crate::types::CoreConfig::default()).with_allow_remote_access(true)
+    }
+
+    #[test]
+    fn a_wildcard_origin_is_dropped_not_fatal() {
+        let origins = cors_origins("*, https://app.example.com ,,http://localhost:5173");
+        assert_eq!(
+            origins,
+            vec![
+                HeaderValue::from_static("https://app.example.com"),
+                HeaderValue::from_static("http://localhost:5173"),
+            ]
+        );
+        // The layer builds (AllowOrigin::list panics on a wildcard).
+        let _ = CorsLayer::new()
+            .allow_origin(AllowOrigin::list(cors_origins("*")))
+            .allow_credentials(true);
     }
 
     #[tokio::test]

@@ -336,7 +336,7 @@ export function GatewayAnalyticsTab() {
           Loading usage data…
         </div>
       ) : summaryError ? (
-        <div className="p-3 rounded border border-destructive bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+        <div className="p-3 rounded-sm border border-destructive bg-destructive/10 text-destructive text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           Failed to load usage data.
         </div>

@@ -11,6 +11,8 @@
 //! 2. Keyword scanning (case-insensitive)
 //! 3. Custom regex patterns
 
+pub mod redact;
+
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 

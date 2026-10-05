@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CognitiveMemoryWidget } from './CognitiveMemoryWidget';
+import { clearAuthTokens, setAuthTokens } from '../../api/client';
 
 function createQC() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
@@ -31,8 +32,21 @@ const mockStats = {
   ],
 };
 
+/** Answer every fetch with a fresh JSON Response (a body can only be read once). */
+function mockFetchJson(body: unknown, status = 200) {
+  return vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+    Promise.resolve(
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+  );
+}
+
 beforeEach(() => {
   vi.restoreAllMocks();
+  clearAuthTokens();
 });
 
 describe('CognitiveMemoryWidget', () => {
@@ -43,7 +57,7 @@ describe('CognitiveMemoryWidget', () => {
   });
 
   it('shows error state', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 500 } as Response);
+    mockFetchJson({ error: 'boom' }, 500);
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Cognitive memory not available')).toBeInTheDocument();
@@ -51,10 +65,7 @@ describe('CognitiveMemoryWidget', () => {
   });
 
   it('renders heading', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ stats: mockStats }),
-    } as Response);
+    mockFetchJson({ stats: mockStats });
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Cognitive Memory')).toBeInTheDocument();
@@ -62,10 +73,7 @@ describe('CognitiveMemoryWidget', () => {
   });
 
   it('shows association count', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ stats: mockStats }),
-    } as Response);
+    mockFetchJson({ stats: mockStats });
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('42')).toBeInTheDocument();
@@ -73,10 +81,7 @@ describe('CognitiveMemoryWidget', () => {
   });
 
   it('shows avg weight', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ stats: mockStats }),
-    } as Response);
+    mockFetchJson({ stats: mockStats });
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('0.567')).toBeInTheDocument();
@@ -84,10 +89,7 @@ describe('CognitiveMemoryWidget', () => {
   });
 
   it('shows access trend section', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ stats: mockStats }),
-    } as Response);
+    mockFetchJson({ stats: mockStats });
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('7-Day Access Trend')).toBeInTheDocument();
@@ -95,10 +97,7 @@ describe('CognitiveMemoryWidget', () => {
   });
 
   it('shows top activated memories', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ stats: mockStats }),
-    } as Response);
+    mockFetchJson({ stats: mockStats });
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Top Activated Memories')).toBeInTheDocument();
@@ -108,13 +107,31 @@ describe('CognitiveMemoryWidget', () => {
   });
 
   it('shows empty trend message when no data', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ stats: { ...mockStats, accessTrend: [] } }),
-    } as Response);
+    mockFetchJson({ stats: { ...mockStats, accessTrend: [] } });
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText(/No access data/)).toBeInTheDocument();
+    });
+  });
+
+  it('sends the access token (the raw fetch it replaced got a 401)', async () => {
+    setAuthTokens('access-token', 'refresh-token');
+    const fetchSpy = mockFetchJson({ stats: mockStats });
+    renderWidget();
+    await waitFor(() => {
+      expect(screen.getByText('42')).toBeInTheDocument();
+    });
+    const [url, init] = fetchSpy.mock.calls[0];
+    expect(url).toBe('/api/v1/brain/cognitive-stats');
+    expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer access-token');
+  });
+
+  it('shows the unavailable state for a body without the stats envelope', async () => {
+    // The Rust gateway currently answers with plain counts.
+    mockFetchJson({ memoryCount: 3, knowledgeCount: 1, avgRelevance: 0.5 });
+    renderWidget();
+    await waitFor(() => {
+      expect(screen.getByText('Cognitive memory not available')).toBeInTheDocument();
     });
   });
 });

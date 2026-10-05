@@ -8,6 +8,7 @@ use axum::{Json, Router};
 use serde::Deserialize;
 
 use crate::auth::jwt::{issue_access_token, issue_refresh_token, validate_token};
+use crate::db::audit::NewAuditEntry;
 use crate::db::auth;
 use crate::state::AppState;
 use webauthn_rs::prelude::{Passkey, PublicKeyCredential, RegisterPublicKeyCredential};
@@ -162,7 +163,18 @@ fn verify_admin_password(submitted: &str) -> bool {
     }
 }
 
-async fn login(State(state): State<AppState>, Json(body): Json<LoginRequest>) -> impl IntoResponse {
+async fn login(
+    State(state): State<AppState>,
+    // Absent when the router is driven without `ConnectInfo` (tests).
+    peer: Option<axum::Extension<axum::extract::ConnectInfo<std::net::SocketAddr>>>,
+    headers: axum::http::HeaderMap,
+    Json(body): Json<LoginRequest>,
+) -> impl IntoResponse {
+    let ip = crate::middleware::client_ip::client_ip_from(
+        peer.map(|axum::Extension(axum::extract::ConnectInfo(p))| p),
+        &headers,
+        state.trusted_proxies(),
+    );
     if body.password.len() < 8 {
         return (
             StatusCode::BAD_REQUEST,
@@ -181,6 +193,10 @@ async fn login(State(state): State<AppState>, Json(body): Json<LoginRequest>) ->
     }
 
     if !verify_admin_password(&body.password) {
+        state.audit_event(
+            NewAuditEntry::new("auth_failure", "warn", "Invalid admin password")
+                .metadata(serde_json::json!({ "ip": ip })),
+        );
         return (
             StatusCode::UNAUTHORIZED,
             Json(serde_json::json!({"error": "Invalid credentials"})),
@@ -223,21 +239,11 @@ async fn login(State(state): State<AppState>, Json(body): Json<LoginRequest>) ->
 
     let expires_in = jwt_config.access_token_expiry_secs;
 
-    // Record login audit event
-    if let Some(pool) = state.db() {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64;
-        let _ = sqlx::query(
-            "INSERT INTO audit.entries (id, tenant_id, event, level, message, user_id, timestamp, metadata)
-             VALUES ($1, 'default', 'auth.login', 'info', 'User logged in', 'admin', $2, '{}'::jsonb)"
-        )
-        .bind(uuid::Uuid::now_v7().to_string())
-        .bind(now)
-        .execute(pool)
-        .await;
-    }
+    state.audit_event(
+        NewAuditEntry::new("auth_success", "info", "Admin login")
+            .user("admin")
+            .metadata(serde_json::json!({ "ip": ip, "rememberMe": body.remember_me })),
+    );
 
     Json(serde_json::json!({
         "accessToken": access_token,
@@ -329,11 +335,12 @@ async fn logout(
     body: Result<Json<LogoutRequest>, axum::extract::rejection::JsonRejection>,
 ) -> impl IntoResponse {
     let Some(axum::Extension(ctx)) = auth else {
-        return StatusCode::NO_CONTENT;
+        return StatusCode::NO_CONTENT.into_response();
     };
+    let mut persisted = true;
     if let (Some(jti), Some(exp)) = (&ctx.jti, ctx.exp) {
         let expires_at_ms = (exp as i64).saturating_mul(1000);
-        state.revoke_token(jti, &ctx.user_id, expires_at_ms).await;
+        persisted &= state.revoke_token(jti, &ctx.user_id, expires_at_ms).await;
     }
     let refresh = body.ok().and_then(|Json(b)| b.refresh_token);
     if let Some(refresh) = refresh
@@ -343,11 +350,23 @@ async fn logout(
         && claims.sub == ctx.user_id
     {
         let expires_at_ms = (claims.exp as i64).saturating_mul(1000);
-        state
+        persisted &= state
             .revoke_token(&claims.jti, &claims.sub, expires_at_ms)
             .await;
     }
-    StatusCode::NO_CONTENT
+    state.audit_event(NewAuditEntry::new("auth_success", "info", "User logout").user(&ctx.user_id));
+    if !persisted {
+        // The tokens are dead on this instance; say so rather than report a
+        // logout that other instances (or this one, after a restart) ignore.
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({
+                "error": "Logout was recorded on this server only: the revocation could not be saved",
+            })),
+        )
+            .into_response();
+    }
+    StatusCode::NO_CONTENT.into_response()
 }
 
 async fn me(
@@ -366,31 +385,72 @@ async fn me(
 #[derive(Deserialize)]
 struct VerifyRequest {
     token: String,
+    /// Optionally ask whether the token's principal holds `resource:action`
+    /// under the same two checks as the REST RBAC (role, then token scope);
+    /// the answer comes back as `authorized`.
+    #[serde(default)]
+    resource: Option<String>,
+    #[serde(default)]
+    action: Option<String>,
+}
+
+/// Validate a token the way the auth middleware does: a live, unrevoked
+/// access token. Refresh tokens and logged-out tokens are refused, as the TS
+/// `AuthService.validateToken` did.
+async fn verify_access_token(
+    state: &AppState,
+    token: &str,
+) -> Result<crate::auth::jwt::TokenClaims, axum::response::Response> {
+    let refuse = |status: StatusCode, error: &str| {
+        (
+            status,
+            Json(serde_json::json!({"valid": false, "error": error})),
+        )
+            .into_response()
+    };
+    let claims = validate_token(state.jwt_config(), token)
+        .map_err(|e| refuse(StatusCode::UNAUTHORIZED, &e))?;
+    if claims.token_type != "access" {
+        return Err(refuse(StatusCode::UNAUTHORIZED, "Not an access token"));
+    }
+    match state.is_token_revoked(&claims.jti).await {
+        Ok(false) => Ok(claims),
+        Ok(true) => Err(refuse(StatusCode::UNAUTHORIZED, "Token has been revoked")),
+        Err(_) => Err(refuse(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Token revocation status is unavailable",
+        )),
+    }
 }
 
 async fn verify(
     State(state): State<AppState>,
     Json(body): Json<VerifyRequest>,
 ) -> impl IntoResponse {
-    let jwt_config = state.jwt_config();
-    match validate_token(jwt_config, &body.token) {
-        Ok(claims) => Json(serde_json::json!({
-            "valid": true,
-            "sub": claims.sub,
-            "role": claims.role,
-            "permissions": claims.permissions,
-            "tokenType": claims.token_type,
-            "exp": claims.exp,
-            "iat": claims.iat,
-            "jti": claims.jti,
-        }))
-        .into_response(),
-        Err(e) => (
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({"valid": false, "error": e})),
-        )
-            .into_response(),
+    let claims = match verify_access_token(&state, &body.token).await {
+        Ok(claims) => claims,
+        Err(refusal) => return refusal,
+    };
+    let mut out = serde_json::json!({
+        "valid": true,
+        "sub": claims.sub,
+        "userId": claims.sub,
+        "role": claims.role,
+        "permissions": claims.permissions,
+        "tokenType": claims.token_type,
+        "exp": claims.exp,
+        "iat": claims.iat,
+        "jti": claims.jti,
+    });
+    if let (Some(resource), Some(action)) = (&body.resource, &body.action) {
+        use crate::auth::permissions::{check_permission, check_permission_strings};
+        out["authorized"] = serde_json::Value::Bool(
+            check_permission(&claims.role, resource, action)
+                && (claims.permissions.is_empty()
+                    || check_permission_strings(&claims.permissions, resource, action)),
+        );
     }
+    Json(out).into_response()
 }
 
 // ── Password Reset ───────────────────────────────────────────────────────
@@ -617,6 +677,13 @@ async fn create_api_key(
     };
     match auth::create_api_key(pool, &new_key).await {
         Ok(row) => {
+            state.audit_event(
+                NewAuditEntry::new("auth_success", "info", "API key created")
+                    .user(&auth_ctx.user_id)
+                    .metadata(serde_json::json!({
+                        "keyId": row.id, "keyPrefix": row.key_prefix, "role": row.role,
+                    })),
+            );
             let mut out = api_key_json(&row);
             out["key"] = serde_json::Value::String(raw_key.clone());
             out["rawKey"] = serde_json::Value::String(raw_key);
@@ -632,13 +699,20 @@ async fn create_api_key(
 
 async fn revoke_api_key(
     State(state): State<AppState>,
+    auth_ctx: Option<axum::Extension<crate::auth::middleware::AuthContext>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let Some(pool) = state.db() else {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     };
     match auth::revoke_api_key(pool, &id, "default").await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+        Ok(true) => {
+            let mut entry = NewAuditEntry::new("auth_success", "info", "API key revoked")
+                .metadata(serde_json::json!({ "keyId": id }));
+            entry.user_id = auth_ctx.map(|axum::Extension(a)| a.user_id);
+            state.audit_event(entry);
+            StatusCode::NO_CONTENT.into_response()
+        }
         Ok(false) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({"error": "API key not found or already revoked"})),
@@ -1179,8 +1253,7 @@ async fn federation_verify(
     State(state): State<AppState>,
     Json(body): Json<FederationVerifyRequest>,
 ) -> impl IntoResponse {
-    let jwt_config = state.jwt_config();
-    match validate_token(jwt_config, &body.token) {
+    match verify_access_token(&state, &body.token).await {
         Ok(claims) => Json(serde_json::json!({
             "valid": true,
             "sub": claims.sub,
@@ -1190,11 +1263,7 @@ async fn federation_verify(
             "exp": claims.exp,
         }))
         .into_response(),
-        Err(e) => (
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({"valid": false, "error": e})),
-        )
-            .into_response(),
+        Err(refusal) => refusal,
     }
 }
 
@@ -1799,15 +1868,11 @@ async fn sso_exchange(
     };
 
     // Record the SSO login.
-    let _ = sqlx::query(
-        "INSERT INTO audit.entries (id, tenant_id, event, level, message, user_id, timestamp, metadata)
-         VALUES ($1, 'default', 'auth.sso_login', 'info', 'User logged in via OIDC', $2, $3, '{}'::jsonb)",
-    )
-    .bind(uuid::Uuid::now_v7().to_string())
-    .bind(&user_id)
-    .bind(now_ms())
-    .execute(pool)
-    .await;
+    state.audit_event(
+        NewAuditEntry::new("auth_success", "info", "User logged in via OIDC")
+            .user(&user_id)
+            .metadata(serde_json::json!({ "method": "oidc" })),
+    );
 
     Json(serde_json::json!({
         "accessToken": access_token,

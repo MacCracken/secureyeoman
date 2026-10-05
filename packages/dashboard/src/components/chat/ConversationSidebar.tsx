@@ -48,7 +48,10 @@ export function ConversationSidebar({
         {/* Mobile header */}
         <div className="flex items-center justify-between mb-2 sm:hidden">
           <span className="text-sm font-semibold">Conversations</span>
-          <button onClick={onClose} className="p-1 rounded hover:bg-muted/50 text-muted-foreground">
+          <button
+            onClick={onClose}
+            className="p-1 rounded-sm hover:bg-muted/50 text-muted-foreground"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -83,11 +86,11 @@ export function ConversationSidebar({
               data-testid={`conversation-item-${conv.id}`}
             >
               {personality ? (
-                <div className="w-4 h-4 flex-shrink-0 rounded-full overflow-hidden flex items-center justify-center bg-muted text-muted-foreground">
+                <div className="w-4 h-4 shrink-0 rounded-full overflow-hidden flex items-center justify-center bg-muted text-muted-foreground">
                   <PersonalityAvatar personality={personality} size={16} />
                 </div>
               ) : (
-                <MessageSquare className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+                <MessageSquare className="w-4 h-4 shrink-0 text-muted-foreground" />
               )}
               <div className="flex-1 min-w-0">
                 {editingConversationId === conv.id ? (
@@ -102,7 +105,7 @@ export function ConversationSidebar({
                       onChange={(e) => {
                         onEditTitleChange(e.target.value);
                       }}
-                      className="flex-1 min-w-0 text-sm bg-background border rounded px-1 py-0.5"
+                      className="flex-1 min-w-0 text-sm bg-background border rounded-sm px-1 py-0.5"
                       // eslint-disable-next-line jsx-a11y/no-autofocus
                       autoFocus
                       data-testid="rename-input"

@@ -47,7 +47,7 @@ export function MemoryStep({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
+        <button onClick={goBack} className="btn-ghost p-1 rounded-sm" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">Add Memory</h3>
@@ -82,7 +82,7 @@ export function MemoryStep({
               onChange={(e) => {
                 set({ memType: e.target.value as typeof memory.memType });
               }}
-              className="w-full px-3 py-2 rounded border bg-background"
+              className="w-full px-3 py-2 rounded-sm border bg-background"
             >
               <option value="episodic">Episodic — specific events or experiences</option>
               <option value="semantic">Semantic — facts and concepts</option>
@@ -97,7 +97,7 @@ export function MemoryStep({
               onChange={(e) => {
                 set({ content: e.target.value, error: '' });
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-sm resize-none"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-sm resize-none"
               rows={3}
               placeholder="The memory content to store..."
             />
@@ -111,7 +111,7 @@ export function MemoryStep({
                 onChange={(e) => {
                   set({ source: e.target.value, error: '' });
                 }}
-                className="w-full px-3 py-2 rounded border bg-background"
+                className="w-full px-3 py-2 rounded-sm border bg-background"
                 placeholder="e.g. user, system, chat"
               />
             </div>
@@ -144,7 +144,7 @@ export function MemoryStep({
               onChange={(e) => {
                 set({ topic: e.target.value, error: '' });
               }}
-              className="w-full px-3 py-2 rounded border bg-background"
+              className="w-full px-3 py-2 rounded-sm border bg-background"
               placeholder="e.g. Project Architecture, API Design"
             />
           </div>
@@ -155,7 +155,7 @@ export function MemoryStep({
               onChange={(e) => {
                 set({ knowledgeContent: e.target.value, error: '' });
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-sm resize-none"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-sm resize-none"
               rows={5}
               placeholder="Markdown or plain text content to store in the knowledge base..."
             />

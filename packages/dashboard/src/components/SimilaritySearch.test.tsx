@@ -12,10 +12,6 @@ vi.mock('../api/client', async (importOriginal) => {
   };
 });
 
-vi.mock('../utils/sanitize', () => ({
-  sanitizeText: (s: string) => s,
-}));
-
 import * as api from '../api/client';
 
 const mockSearchSimilar = vi.mocked(api.searchSimilar);

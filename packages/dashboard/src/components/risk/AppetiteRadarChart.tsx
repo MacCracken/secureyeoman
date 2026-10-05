@@ -92,10 +92,10 @@ export function AppetiteRadarChart({
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-0.5 bg-blue-500 rounded" /> Threshold
+            <span className="inline-block w-3 h-0.5 bg-blue-500 rounded-sm" /> Threshold
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-0.5 bg-red-500 rounded" /> Current
+            <span className="inline-block w-3 h-0.5 bg-red-500 rounded-sm" /> Current
           </span>
         </div>
       </div>
@@ -142,7 +142,7 @@ export function AppetiteRadarChart({
           {PRESETS.map((preset) => (
             <button
               key={preset.label}
-              className={`px-3 py-1 text-xs text-white rounded transition-colors ${preset.color}`}
+              className={`px-3 py-1 text-xs text-white rounded-sm transition-colors ${preset.color}`}
               onClick={() => {
                 onAppetiteChange(buildAppetite(preset.value));
               }}

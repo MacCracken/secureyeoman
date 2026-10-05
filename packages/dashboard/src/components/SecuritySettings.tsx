@@ -90,7 +90,7 @@ function PolicyToggle({
           aria-label={`Toggle ${label}`}
           disabled={isPending}
           onClick={onToggle}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
             enabled ? 'bg-primary' : 'bg-muted'
           } ${isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
@@ -856,7 +856,7 @@ export function SecuritySettings() {
 
           {/* Status badge — shown when delegation is enabled */}
           {subAgentsAllowed && (
-            <div className="flex items-center gap-2 text-xs text-success bg-success/5 border border-success/20 rounded px-3 py-2">
+            <div className="flex items-center gap-2 text-xs text-success bg-success/5 border border-success/20 rounded-sm px-3 py-2">
               <span>✓</span>
               <span>
                 Delegation is active — personalities with Sub-Agent Delegation enabled can use{' '}

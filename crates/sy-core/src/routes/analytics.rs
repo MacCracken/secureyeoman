@@ -21,7 +21,17 @@ pub fn router() -> Router<AppState> {
         .route("/api/v1/costs/breakdown", get(costs_breakdown))
 }
 
-async fn system_metrics() -> impl IntoResponse {
+async fn system_metrics(State(state): State<AppState>) -> impl IntoResponse {
+    // The audit chain as last verified (at boot, or on request); valid only
+    // when a verification said so.
+    let (audit_entries_total, audit_verification) = match (state.db(), state.audit()) {
+        (Some(pool), Some(trail)) => (
+            crate::db::audit::count_entries(pool).await.unwrap_or(0),
+            trail.last_or_verify(pool).await.ok(),
+        ),
+        _ => (0, None),
+    };
+
     // Read real system metrics where possible
     let mut memory_used_mb = 0u64;
     let mut memory_limit_mb = 0u64;
@@ -131,8 +141,9 @@ async fn system_metrics() -> impl IntoResponse {
         },
         "security": {
             "injectionAttemptsTotal": 0,
-            "auditEntriesTotal": 0,
-            "auditChainValid": true,
+            "auditEntriesTotal": audit_entries_total,
+            "auditChainValid": audit_verification.as_ref().is_some_and(|v| v.valid),
+            "lastAuditVerification": audit_verification.as_ref().map(|v| v.verified_at),
             "eventsByType": {},
             "eventsBySeverity": {},
             "authAttemptsTotal": 0,

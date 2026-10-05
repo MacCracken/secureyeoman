@@ -38,7 +38,7 @@ function FinetuneJobCard({
           {job.status === 'running' && (
             <button
               onClick={onViewLogs}
-              className="btn-ghost p-1 rounded text-xs flex items-center gap-1"
+              className="btn-ghost p-1 rounded-sm text-xs flex items-center gap-1"
             >
               <Cpu className="w-3 h-3" />
               {showLogs ? 'Hide' : 'Logs'}
@@ -47,7 +47,7 @@ function FinetuneJobCard({
           {job.status === 'complete' && (
             <button
               onClick={onRegister}
-              className="btn-ghost p-1 rounded text-xs flex items-center gap-1 text-green-600"
+              className="btn-ghost p-1 rounded-sm text-xs flex items-center gap-1 text-green-600"
               title="Register with Ollama"
             >
               <CheckCircle2 className="w-3 h-3" />
@@ -56,7 +56,7 @@ function FinetuneJobCard({
           )}
           <button
             onClick={onDelete}
-            className="p-1 hover:bg-destructive/10 hover:text-destructive rounded"
+            className="p-1 hover:bg-destructive/10 hover:text-destructive rounded-sm"
             title="Delete job"
           >
             <Trash2 className="w-3 h-3" />
@@ -166,7 +166,7 @@ export function FinetuneTab() {
                 onChange={(e) => {
                   setForm((f) => ({ ...f, name: e.target.value }));
                 }}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
                 placeholder="e.g. llama3 customer-support adapter"
               />
             </div>
@@ -178,7 +178,7 @@ export function FinetuneTab() {
                 onChange={(e) => {
                   setForm((f) => ({ ...f, baseModel: e.target.value }));
                 }}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
                 placeholder="llama3:8b"
               />
             </div>
@@ -190,7 +190,7 @@ export function FinetuneTab() {
                 onChange={(e) => {
                   setForm((f) => ({ ...f, adapterName: e.target.value }));
                 }}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
                 placeholder="my-custom-llama3"
               />
             </div>
@@ -202,7 +202,7 @@ export function FinetuneTab() {
                 onChange={(e) => {
                   setForm((f) => ({ ...f, datasetPath: e.target.value }));
                 }}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
                 placeholder="/data/distillation.jsonl"
               />
             </div>
@@ -216,7 +216,7 @@ export function FinetuneTab() {
                 }}
                 min={4}
                 max={128}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
               />
             </div>
             <div>
@@ -229,7 +229,7 @@ export function FinetuneTab() {
                 }}
                 min={4}
                 max={256}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
               />
             </div>
             <div>
@@ -242,7 +242,7 @@ export function FinetuneTab() {
                 }}
                 min={1}
                 max={32}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
               />
             </div>
             <div>
@@ -255,7 +255,7 @@ export function FinetuneTab() {
                 }}
                 min={1}
                 max={20}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
               />
             </div>
             <div>
@@ -268,7 +268,7 @@ export function FinetuneTab() {
                 }}
                 min={4}
                 max={80}
-                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                className="w-full mt-1 px-2 py-1 text-sm border rounded-sm bg-background"
               />
             </div>
           </div>

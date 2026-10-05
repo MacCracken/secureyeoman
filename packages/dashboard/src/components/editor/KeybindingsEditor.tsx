@@ -30,7 +30,7 @@ function KeyCapture({ binding, onCapture, onCancel, conflict }: KeyCaptureProps)
         autoFocus
         readOnly
         value={captured || 'Press keys...'}
-        className={`w-36 text-xs font-mono px-2 py-1 rounded border focus:outline-none focus:ring-1 ${
+        className={`w-36 text-xs font-mono px-2 py-1 rounded border focus:outline-hidden focus:ring-1 ${
           conflict
             ? 'border-yellow-500 focus:ring-yellow-500 bg-yellow-500/5'
             : 'border-primary focus:ring-primary bg-card'
@@ -54,13 +54,13 @@ function KeyCapture({ binding, onCapture, onCancel, conflict }: KeyCaptureProps)
           if (captured) onCapture(captured);
         }}
         disabled={!captured}
-        className="text-[10px] px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+        className="text-[10px] px-2 py-1 rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
       >
         Save
       </button>
       <button
         onClick={onCancel}
-        className="text-[10px] px-2 py-1 rounded border border-border hover:bg-muted"
+        className="text-[10px] px-2 py-1 rounded-sm border border-border hover:bg-muted"
       >
         Cancel
       </button>
@@ -111,7 +111,7 @@ export function KeybindingsEditor({ open, onClose }: KeybindingsEditorProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={resetAll}
-              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border border-border text-muted-foreground hover:text-foreground hover:bg-muted"
               title="Reset all to defaults"
               data-testid="reset-all"
             >
@@ -142,7 +142,7 @@ export function KeybindingsEditor({ open, onClose }: KeybindingsEditorProps) {
                 {group.items.map((binding) => (
                   <div
                     key={binding.id}
-                    className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/30 group"
+                    className="flex items-center justify-between py-1.5 px-2 rounded-sm hover:bg-muted/30 group"
                     data-testid={`binding-row-${binding.id}`}
                   >
                     <span className="text-xs flex-1">{binding.label}</span>
@@ -164,7 +164,7 @@ export function KeybindingsEditor({ open, onClose }: KeybindingsEditorProps) {
                     ) : (
                       <div className="flex items-center gap-1.5">
                         {binding.shortcut ? (
-                          <kbd className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border min-w-[60px] text-center">
+                          <kbd className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm border min-w-[60px] text-center">
                             {binding.shortcut}
                           </kbd>
                         ) : (

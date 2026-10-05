@@ -151,15 +151,13 @@ export function StatCard({
                     : 'text-muted-foreground'
               }`}
             >
-              {trendUp === true && <CheckCircle className="w-3 h-3 flex-shrink-0" />}
-              {trendUp === false && <XCircle className="w-3 h-3 flex-shrink-0" />}
+              {trendUp === true && <CheckCircle className="w-3 h-3 shrink-0" />}
+              {trendUp === false && <XCircle className="w-3 h-3 shrink-0" />}
               <span className="truncate">{trend}</span>
             </p>
           )}
         </div>
-        <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg text-primary flex-shrink-0">
-          {icon}
-        </div>
+        <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg text-primary shrink-0">{icon}</div>
       </div>
     </div>
   );
@@ -181,7 +179,7 @@ export function ServiceStatusRow({
   return (
     <div
       className={`flex items-center justify-between py-2 border-b last:border-0${
-        onClick ? ' cursor-pointer hover:bg-muted/20 rounded px-1 -mx-1 transition-colors' : ''
+        onClick ? ' cursor-pointer hover:bg-muted/20 rounded-sm px-1 -mx-1 transition-colors' : ''
       }`}
       onClick={onClick}
     >

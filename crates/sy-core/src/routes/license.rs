@@ -6,7 +6,6 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use serde::Deserialize;
 
 use crate::state::AppState;
 
@@ -53,26 +52,15 @@ fn license_features(tier: &str) -> serde_json::Value {
     }
 }
 
-#[derive(Deserialize)]
-struct ApplyKeyRequest {
-    key: String,
-}
-
-async fn apply_key(Json(body): Json<ApplyKeyRequest>) -> impl IntoResponse {
-    // Basic format validation — real validation would check signature / license server.
-    if body.key.len() < 16 {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({"error": "Invalid license key format"})),
-        )
-            .into_response();
-    }
-
-    // In production this would persist the key and validate with the licensing service.
-    // For now, acknowledge receipt.
-    Json(serde_json::json!({
-        "accepted": true,
-        "message": "License key received — restart required to activate"
-    }))
-    .into_response()
+/// Not implemented: it answered `accepted: true` ("restart required to
+/// activate") for any 16 characters while storing and verifying nothing, so
+/// a purchased key looked applied and never was.
+async fn apply_key() -> impl IntoResponse {
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        Json(serde_json::json!({
+            "error": "Applying a license key is not implemented on this server yet. \
+                      Set SY_LICENSE_KEY and SY_LICENSE_TIER in the server environment.",
+        })),
+    )
 }

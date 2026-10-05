@@ -497,11 +497,11 @@ export function ChatPage() {
                   data-testid="personality-selector"
                 >
                   {personality ? (
-                    <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center bg-muted text-primary">
+                    <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-muted text-primary">
                       <PersonalityAvatar personality={personality} size={24} />
                     </div>
                   ) : (
-                    <Bot className="w-6 h-6 text-primary flex-shrink-0" />
+                    <Bot className="w-6 h-6 text-primary shrink-0" />
                   )}
                   <div className="text-left">
                     <div className="flex items-center gap-1.5">
@@ -510,7 +510,7 @@ export function ChatPage() {
                       </h2>
                       {personality?.isDefault && (
                         <span title="Default personality">
-                          <Star className="w-3.5 h-3.5 fill-current text-primary flex-shrink-0" />
+                          <Star className="w-3.5 h-3.5 fill-current text-primary shrink-0" />
                         </span>
                       )}
                       <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -553,7 +553,7 @@ export function ChatPage() {
                         }`}
                         data-testid={`personality-option-${p.id}`}
                       >
-                        <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center bg-muted text-primary">
+                        <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-muted text-primary">
                           <PersonalityAvatar personality={p} size={20} />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -597,7 +597,7 @@ export function ChatPage() {
                   onClick={() => {
                     setShowModelWidget((v) => !v);
                   }}
-                  className="btn-ghost text-xs px-3 py-1.5 rounded-full border font-mono max-w-[10rem] truncate"
+                  className="btn-ghost text-xs px-3 py-1.5 rounded-full border font-mono max-w-40 truncate"
                   title={currentModel ?? 'Select model'}
                 >
                   {modelInfoData?.current.model ?? 'Model'}
@@ -618,7 +618,7 @@ export function ChatPage() {
                     onClick={() => {
                       setShowStrategyPicker((v) => !v);
                     }}
-                    className={`btn-ghost text-xs px-3 py-1.5 rounded-full border max-w-[10rem] truncate ${
+                    className={`btn-ghost text-xs px-3 py-1.5 rounded-full border max-w-40 truncate ${
                       selectedStrategy ? 'bg-primary/15 border-primary text-primary' : ''
                     }`}
                     title={selectedStrategy?.name ?? 'Select reasoning strategy'}
@@ -626,7 +626,7 @@ export function ChatPage() {
                     {selectedStrategy?.name ?? 'Strategy'}
                   </button>
                   {showStrategyPicker && (
-                    <div className="absolute right-0 top-full mt-2 z-50 card p-2 shadow-lg min-w-[14rem] max-h-60 overflow-y-auto">
+                    <div className="absolute right-0 top-full mt-2 z-50 card p-2 shadow-lg min-w-56 max-h-60 overflow-y-auto">
                       <button
                         onClick={() => {
                           setSelectedStrategyId(null);
@@ -651,7 +651,7 @@ export function ChatPage() {
                         >
                           <div className="flex items-center gap-2">
                             <span>{s.name}</span>
-                            <span className="text-muted-foreground text-[10px] px-1 py-0.5 rounded bg-muted">
+                            <span className="text-muted-foreground text-[10px] px-1 py-0.5 rounded-sm bg-muted">
                               {s.category}
                             </span>
                           </div>
@@ -817,7 +817,7 @@ export function ChatPage() {
       {/* Branch explorer side panel */}
       {showBranchTree && selectedConversationId && (
         <Suspense fallback={null}>
-          <div className="w-96 flex-shrink-0">
+          <div className="w-96 shrink-0">
             <BranchExplorer
               conversationId={selectedConversationId}
               activeConversationId={selectedConversationId}

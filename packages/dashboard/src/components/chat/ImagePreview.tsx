@@ -23,7 +23,7 @@ export function ImagePreview({ src, alt, className }: ImagePreviewProps) {
           setLightbox(true);
           setZoom(1);
         }}
-        className={`relative group rounded overflow-hidden border border-border hover:border-primary/50 transition-colors ${className ?? ''}`}
+        className={`relative group rounded-sm overflow-hidden border border-border hover:border-primary/50 transition-colors ${className ?? ''}`}
       >
         <img
           src={src}
@@ -59,7 +59,7 @@ export function ImagePreview({ src, alt, className }: ImagePreviewProps) {
             >
               <ZoomOut className="w-4 h-4" />
             </button>
-            <span className="text-white text-xs font-mono min-w-[3rem] text-center">
+            <span className="text-white text-xs font-mono min-w-12 text-center">
               {Math.round(zoom * 100)}%
             </span>
             <button

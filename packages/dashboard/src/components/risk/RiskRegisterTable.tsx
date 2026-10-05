@@ -158,7 +158,7 @@ function compareField(a: RegisterEntry, b: RegisterEntry, field: SortField, dir:
 function SeverityBadge({ severity }: { severity: string }) {
   const cls = SEVERITY_COLORS[severity] ?? 'bg-gray-100 text-gray-600 border-gray-200';
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium border ${cls}`}>
+    <span className={`px-2 py-0.5 rounded-sm text-xs font-medium border ${cls}`}>
       {formatLabel(severity)}
     </span>
   );
@@ -248,7 +248,7 @@ export function RiskRegisterTable({
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-3">
         <select
-          className="text-sm border border-border rounded px-2 py-1.5 bg-background text-foreground"
+          className="text-sm border border-border rounded-sm px-2 py-1.5 bg-background text-foreground"
           value={filterStatus}
           onChange={(e) => {
             setFilterStatus(e.target.value);
@@ -264,7 +264,7 @@ export function RiskRegisterTable({
         </select>
 
         <select
-          className="text-sm border border-border rounded px-2 py-1.5 bg-background text-foreground"
+          className="text-sm border border-border rounded-sm px-2 py-1.5 bg-background text-foreground"
           value={filterCategory}
           onChange={(e) => {
             setFilterCategory(e.target.value);
@@ -280,7 +280,7 @@ export function RiskRegisterTable({
         </select>
 
         <select
-          className="text-sm border border-border rounded px-2 py-1.5 bg-background text-foreground"
+          className="text-sm border border-border rounded-sm px-2 py-1.5 bg-background text-foreground"
           value={filterSeverity}
           onChange={(e) => {
             setFilterSeverity(e.target.value);
@@ -302,7 +302,7 @@ export function RiskRegisterTable({
         </span>
 
         <button
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-primary rounded hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-primary rounded-sm hover:bg-primary/90 transition-colors"
           onClick={onAdd}
         >
           <Plus className="w-4 h-4" />
@@ -423,7 +423,7 @@ export function RiskRegisterTable({
                       }}
                     >
                       <select
-                        className="text-xs border border-border rounded px-1.5 py-1 bg-background text-foreground"
+                        className="text-xs border border-border rounded-sm px-1.5 py-1 bg-background text-foreground"
                         value={entry.status}
                         onChange={(e) => {
                           onStatusChange(entry.id, e.target.value);
@@ -500,7 +500,7 @@ export function RiskRegisterTable({
                                 {entry.mitigations.map((m, idx) => (
                                   <div
                                     key={m.id ?? idx}
-                                    className="flex items-start gap-3 bg-background border border-border rounded p-2 text-sm"
+                                    className="flex items-start gap-3 bg-background border border-border rounded-sm p-2 text-sm"
                                   >
                                     <span
                                       className={`shrink-0 px-2 py-0.5 rounded text-xs font-medium ${

@@ -259,16 +259,16 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       {/* Semantic Search */}
       {activeTab === 'search' && (
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
             <Sparkles className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-sm sm:text-base">Semantic Search</h2>
+            <h2 className="card-title text-sm sm:text-base!">Semantic Search</h2>
             {selectedPersonalityId !== ALL_PERSONALITIES && (
               <span className="ml-auto text-xs text-muted-foreground">
                 Scoped to: {selectedPersonalityName}
               </span>
             )}
           </div>
-          <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
+          <div className="card-content space-y-3 p-3 sm:p-4! pt-0 sm:pt-0!">
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
@@ -368,16 +368,16 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       {/* Memories List */}
       {activeTab === 'memories' && (
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
             <Database className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-sm sm:text-base">Memories</h2>
+            <h2 className="card-title text-sm sm:text-base!">Memories</h2>
             {selectedPersonalityId !== ALL_PERSONALITIES && (
               <span className="ml-auto text-xs text-muted-foreground">
                 Scoped to: {selectedPersonalityName}
               </span>
             )}
           </div>
-          <div className="card-content p-3 sm:p-4 pt-0 sm:pt-0">
+          <div className="card-content p-3 sm:p-4! pt-0 sm:pt-0!">
             {memoriesLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -412,11 +412,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                         ) : (
                           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                         )}
-                        <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                        <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm">
                           {MEMORY_TYPE_LABELS[mem.type] ?? mem.type}
                         </span>
                         {selectedPersonalityId === ALL_PERSONALITIES && (
-                          <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded shrink-0">
+                          <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-sm shrink-0">
                             {memPersonalityName}
                           </span>
                         )}
@@ -446,7 +446,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                           <div>
                             <span className="font-medium">Content:</span>
                           </div>
-                          <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40 whitespace-pre-wrap break-words">
+                          <pre className="mt-1 p-2 bg-muted rounded-sm text-xs overflow-auto max-h-40 whitespace-pre-wrap wrap-break-word">
                             {mem.content}
                           </pre>
                           <button
@@ -478,16 +478,16 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       {/* Knowledge List */}
       {activeTab === 'knowledge' && (
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
             <BookOpen className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-sm sm:text-base">Knowledge</h2>
+            <h2 className="card-title text-sm sm:text-base!">Knowledge</h2>
             {selectedPersonalityId !== ALL_PERSONALITIES && (
               <span className="ml-auto text-xs text-muted-foreground">
                 Scoped to: {selectedPersonalityName}
               </span>
             )}
           </div>
-          <div className="card-content p-3 sm:p-4 pt-0 sm:pt-0">
+          <div className="card-content p-3 sm:p-4! pt-0 sm:pt-0!">
             {knowledgeLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -522,11 +522,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                         ) : (
                           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                         )}
-                        <span className="text-xs bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded">
+                        <span className="text-xs bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded-sm">
                           {entry.topic}
                         </span>
                         {selectedPersonalityId === ALL_PERSONALITIES && (
-                          <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded shrink-0">
+                          <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-sm shrink-0">
                             {entryPersonalityName}
                           </span>
                         )}
@@ -558,7 +558,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                           <div>
                             <span className="font-medium">Content:</span>
                           </div>
-                          <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40 whitespace-pre-wrap break-words">
+                          <pre className="mt-1 p-2 bg-muted rounded-sm text-xs overflow-auto max-h-40 whitespace-pre-wrap wrap-break-word">
                             {entry.content}
                           </pre>
                           <button
@@ -590,11 +590,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       {/* Add Memory */}
       {activeTab === 'add' && (
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
             <Plus className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-sm sm:text-base">Add Memory Entry</h2>
+            <h2 className="card-title text-sm sm:text-base!">Add Memory Entry</h2>
           </div>
-          <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
+          <div className="card-content space-y-3 p-3 sm:p-4! pt-0 sm:pt-0!">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Type</label>

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -90,7 +90,7 @@ vi.mock('../api/client', async (importOriginal) => {
     createFinetuneJob: vi.fn(),
     deleteFinetuneJob: vi.fn(),
     registerFinetuneAdapter: vi.fn(),
-    fetchTrainingStream: vi.fn(),
+    subscribeTrainingStream: vi.fn(),
     fetchQualityScores: vi.fn(),
     triggerQualityScoring: vi.fn(),
     fetchComputerUseEpisodes: vi.fn(),
@@ -111,7 +111,7 @@ const mockFetchFinetuneJobs = vi.mocked(api.fetchFinetuneJobs);
 const mockCreateFinetuneJob = vi.mocked(api.createFinetuneJob);
 const mockDeleteFinetuneJob = vi.mocked(api.deleteFinetuneJob);
 const mockRegisterFinetuneAdapter = vi.mocked(api.registerFinetuneAdapter);
-const mockFetchTrainingStream = vi.mocked(api.fetchTrainingStream);
+const mockSubscribeTrainingStream = vi.mocked(api.subscribeTrainingStream);
 const mockFetchQualityScores = vi.mocked(api.fetchQualityScores);
 const mockTriggerQualityScoring = vi.mocked(api.triggerQualityScoring);
 const mockFetchComputerUseEpisodes = vi.mocked(api.fetchComputerUseEpisodes);
@@ -140,23 +140,6 @@ function renderWithProviders(ui: React.ReactElement) {
   );
 }
 
-function makeMockEventSource() {
-  const listeners: Record<string, ((evt: MessageEvent) => void)[]> = {};
-  return {
-    addEventListener: vi.fn((type: string, cb: (evt: MessageEvent) => void) => {
-      if (!listeners[type]) listeners[type] = [];
-      listeners[type].push(cb);
-    }),
-    removeEventListener: vi.fn(),
-    close: vi.fn(),
-    _emit(type: string, data: unknown) {
-      for (const cb of listeners[type] ?? []) {
-        cb(new MessageEvent(type, { data: JSON.stringify(data) }));
-      }
-    },
-  };
-}
-
 const MOCK_STATS = { conversations: 120, memories: 55, knowledge: 18 };
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -172,8 +155,8 @@ describe('TrainingTab', () => {
     });
     mockFetchDistillationJobs.mockResolvedValue([]);
     mockFetchFinetuneJobs.mockResolvedValue([]);
-    const es = makeMockEventSource();
-    mockFetchTrainingStream.mockReturnValue(es as unknown as EventSource);
+    // Returns the unsubscribe function the component calls on unmount.
+    mockSubscribeTrainingStream.mockReturnValue(vi.fn());
     mockFetchQualityScores.mockResolvedValue({ conversations: [] });
     mockFetchComputerUseEpisodes.mockResolvedValue([]);
     mockFetchComputerUseStats.mockResolvedValue({
@@ -923,9 +906,27 @@ describe('TrainingTab', () => {
       });
     });
 
-    it('opens EventSource for live stream', async () => {
+    it('subscribes to the live training stream', async () => {
       await goToLive();
-      expect(mockFetchTrainingStream).toHaveBeenCalled();
+      expect(mockSubscribeTrainingStream).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it('shows stream events and closes the stream on unmount', async () => {
+      const unsubscribe = vi.fn();
+      mockSubscribeTrainingStream.mockReturnValue(unsubscribe);
+      const user = userEvent.setup();
+      const { unmount } = renderWithProviders(<TrainingTab />);
+      await user.click(screen.getByRole('tab', { name: /Live/ }));
+
+      const onMessage = mockSubscribeTrainingStream.mock.lastCall![0];
+      act(() => {
+        onMessage(JSON.stringify({ type: 'throughput', value: 12.5, ts: 1 }));
+        onMessage('not json');
+      });
+      expect(screen.getByText('12.5')).toBeInTheDocument();
+
+      unmount();
+      expect(unsubscribe).toHaveBeenCalled();
     });
 
     it('renders Conversation Quality Coverage heading', async () => {

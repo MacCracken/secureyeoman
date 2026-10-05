@@ -248,12 +248,12 @@ export function ServiceKeysPanel() {
 
                     return (
                       <div key={keyDef.name}>
-                        <div className="flex items-center justify-between p-2 rounded bg-muted/20 text-sm">
+                        <div className="flex items-center justify-between p-2 rounded-sm bg-muted/20 text-sm">
                           <div className="flex items-center gap-2.5 flex-1 min-w-0">
                             {isSet ? (
-                              <CheckCircle className="w-3.5 h-3.5 text-success flex-shrink-0" />
+                              <CheckCircle className="w-3.5 h-3.5 text-success shrink-0" />
                             ) : (
-                              <XCircle className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
+                              <XCircle className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
                             )}
                             <div className="min-w-0">
                               <span className="text-xs block truncate">{keyDef.label}</span>
@@ -262,9 +262,9 @@ export function ServiceKeysPanel() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 flex-shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             <button
-                              className="text-primary hover:text-primary/80 p-1 rounded hover:bg-muted/50"
+                              className="text-primary hover:text-primary/80 p-1 rounded-sm hover:bg-muted/50"
                               onClick={() => {
                                 setEditingKey(isEditing ? null : keyDef.name);
                                 setEditValue('');
@@ -276,7 +276,7 @@ export function ServiceKeysPanel() {
                             </button>
                             {isSet && (
                               <button
-                                className="text-destructive hover:text-destructive/80 p-1 rounded hover:bg-destructive/10"
+                                className="text-destructive hover:text-destructive/80 p-1 rounded-sm hover:bg-destructive/10"
                                 onClick={() => {
                                   setConfirmDelete(keyDef.name);
                                 }}
@@ -298,7 +298,7 @@ export function ServiceKeysPanel() {
                                 setEditValue(e.target.value);
                               }}
                               placeholder={keyDef.isUrl ? 'https://...' : 'Paste key...'}
-                              className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                              className="px-2 py-1.5 rounded-sm border bg-background text-foreground font-mono text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                               // eslint-disable-next-line jsx-a11y/no-autofocus
                               autoFocus
                             />
@@ -379,14 +379,14 @@ export function ServiceKeysPanel() {
                     const isEditing = editingKey === key;
                     return (
                       <div key={key}>
-                        <div className="flex items-center justify-between p-2 rounded bg-muted/20 text-sm">
+                        <div className="flex items-center justify-between p-2 rounded-sm bg-muted/20 text-sm">
                           <div className="flex items-center gap-2.5">
                             <Lock className="w-3 h-3 text-muted-foreground" />
                             <span className="font-mono text-xs">{key}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <button
-                              className="text-primary hover:text-primary/80 p-1 rounded hover:bg-muted/50"
+                              className="text-primary hover:text-primary/80 p-1 rounded-sm hover:bg-muted/50"
                               onClick={() => {
                                 setEditingKey(isEditing ? null : key);
                                 setEditValue('');
@@ -397,7 +397,7 @@ export function ServiceKeysPanel() {
                               <Pen className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              className="text-destructive hover:text-destructive/80 p-1 rounded hover:bg-destructive/10"
+                              className="text-destructive hover:text-destructive/80 p-1 rounded-sm hover:bg-destructive/10"
                               onClick={() => {
                                 setConfirmDelete(key);
                               }}
@@ -418,7 +418,7 @@ export function ServiceKeysPanel() {
                                 setEditValue(e.target.value);
                               }}
                               placeholder="New value..."
-                              className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                              className="px-2 py-1.5 rounded-sm border bg-background text-foreground font-mono text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                               // eslint-disable-next-line jsx-a11y/no-autofocus
                               autoFocus
                             />
@@ -469,7 +469,7 @@ export function ServiceKeysPanel() {
                           setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''));
                         }}
                         placeholder="MY_SECRET_KEY"
-                        className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="px-2 py-1.5 rounded-sm border bg-background text-foreground font-mono text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                         // eslint-disable-next-line jsx-a11y/no-autofocus
                         autoFocus
                       />
@@ -483,7 +483,7 @@ export function ServiceKeysPanel() {
                           setNewValue(e.target.value);
                         }}
                         placeholder="••••••••"
-                        className="px-2 py-1.5 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="px-2 py-1.5 rounded-sm border bg-background text-foreground font-mono text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                       />
                     </div>
                   </div>

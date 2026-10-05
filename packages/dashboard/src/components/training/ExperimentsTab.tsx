@@ -56,7 +56,7 @@ function StatusBadge({ status }: { status: string }) {
   const item = map[status] ?? map.draft;
 
   return (
-    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded ${item.cls}`}>
+    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm ${item.cls}`}>
       {item.icon} {status}
     </span>
   );
@@ -114,7 +114,7 @@ export function ExperimentsTab() {
           onChange={(e) => {
             setNewName(e.target.value);
           }}
-          className="text-sm bg-muted border-0 rounded px-3 py-1.5 flex-1 max-w-xs"
+          className="text-sm bg-muted border-0 rounded-sm px-3 py-1.5 flex-1 max-w-xs"
         />
         <button
           onClick={() => {
@@ -180,7 +180,7 @@ export function ExperimentsTab() {
                 <p className="text-xs text-muted-foreground mb-1">Compare two experiments:</p>
                 <div className="flex items-center gap-2">
                   <select
-                    className="text-xs bg-muted rounded px-2 py-1 flex-1"
+                    className="text-xs bg-muted rounded-sm px-2 py-1 flex-1"
                     onChange={(e) => {
                       const val = e.target.value;
                       setDiffIds((prev) => (val ? [val, prev?.[1] ?? ''] : null));
@@ -195,7 +195,7 @@ export function ExperimentsTab() {
                   </select>
                   <GitCompare className="w-4 h-4 text-muted-foreground" />
                   <select
-                    className="text-xs bg-muted rounded px-2 py-1 flex-1"
+                    className="text-xs bg-muted rounded-sm px-2 py-1 flex-1"
                     onChange={(e) => {
                       const val = e.target.value;
                       setDiffIds((prev) => (val && prev?.[0] ? [prev[0], val] : null));
@@ -232,7 +232,10 @@ export function ExperimentsTab() {
 }
 
 function ExperimentDetail({ exp }: { exp: TrainingExperimentItem }) {
-  const metricsData = Object.entries(exp.evalMetrics).map(([key, value]) => ({
+  // Experiments served by the Rust gateway carry none of these fields yet.
+  const hyperparameters = exp.hyperparameters ?? {};
+  const lossCurve = exp.lossCurve ?? [];
+  const metricsData = Object.entries(exp.evalMetrics ?? {}).map(([key, value]) => ({
     dimension: key,
     value,
     fullMark: 5,
@@ -244,12 +247,12 @@ function ExperimentDetail({ exp }: { exp: TrainingExperimentItem }) {
       {exp.notes && <p className="text-xs text-muted-foreground">{exp.notes}</p>}
 
       {/* Hyperparameters */}
-      {Object.keys(exp.hyperparameters).length > 0 && (
+      {Object.keys(hyperparameters).length > 0 && (
         <div>
           <p className="text-xs font-medium mb-1">Hyperparameters</p>
           <div className="grid grid-cols-2 gap-1 text-xs">
-            {Object.entries(exp.hyperparameters).map(([k, v]) => (
-              <div key={k} className="bg-muted rounded px-2 py-1">
+            {Object.entries(hyperparameters).map(([k, v]) => (
+              <div key={k} className="bg-muted rounded-sm px-2 py-1">
                 <span className="text-muted-foreground">{k}:</span>{' '}
                 <span className="font-mono">{String(v)}</span>
               </div>
@@ -259,11 +262,11 @@ function ExperimentDetail({ exp }: { exp: TrainingExperimentItem }) {
       )}
 
       {/* Loss curve */}
-      {exp.lossCurve.length > 0 && (
+      {lossCurve.length > 0 && (
         <div>
           <p className="text-xs font-medium mb-1">Loss Curve</p>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={exp.lossCurve}>
+            <LineChart data={lossCurve}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="step" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} />
@@ -309,7 +312,10 @@ function DiffView({ diff }: { diff: ExperimentDiffItem }) {
           <p className="text-xs font-medium mb-1">Hyperparameter Differences</p>
           <div className="space-y-1">
             {Object.entries(diff.hyperparamDiffs).map(([key, { a, b }]) => (
-              <div key={key} className="flex items-center text-xs gap-2 bg-muted rounded px-2 py-1">
+              <div
+                key={key}
+                className="flex items-center text-xs gap-2 bg-muted rounded-sm px-2 py-1"
+              >
                 <span className="font-medium w-24">{key}</span>
                 <span className="text-red-500 font-mono">{String(a ?? '—')}</span>
                 <span className="text-muted-foreground">→</span>
@@ -325,7 +331,10 @@ function DiffView({ diff }: { diff: ExperimentDiffItem }) {
           <p className="text-xs font-medium mb-1">Metric Differences</p>
           <div className="space-y-1">
             {Object.entries(diff.metricDiffs).map(([key, { a, b }]) => (
-              <div key={key} className="flex items-center text-xs gap-2 bg-muted rounded px-2 py-1">
+              <div
+                key={key}
+                className="flex items-center text-xs gap-2 bg-muted rounded-sm px-2 py-1"
+              >
                 <span className="font-medium w-24">{key}</span>
                 <span className="font-mono">{a?.toFixed(3) ?? '—'}</span>
                 <span className="text-muted-foreground">→</span>

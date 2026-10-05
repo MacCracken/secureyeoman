@@ -82,7 +82,7 @@ export function ReplayBatchPanel({
               setModel(e.target.value);
             }}
             placeholder="Model"
-            className="border rounded px-2 py-1.5 text-sm bg-background"
+            className="border rounded-sm px-2 py-1.5 text-sm bg-background"
             data-testid="batch-model-input"
           />
           <input
@@ -92,7 +92,7 @@ export function ReplayBatchPanel({
               setProvider(e.target.value);
             }}
             placeholder="Provider"
-            className="border rounded px-2 py-1.5 text-sm bg-background"
+            className="border rounded-sm px-2 py-1.5 text-sm bg-background"
             data-testid="batch-provider-input"
           />
         </div>
@@ -102,7 +102,7 @@ export function ReplayBatchPanel({
           disabled={
             selectedConversationIds.length === 0 || !model || !provider || batchMutation.isPending
           }
-          className="w-full px-3 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full px-3 py-2 text-sm bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
           data-testid="batch-submit"
         >
           {batchMutation.isPending ? (
@@ -124,7 +124,7 @@ export function ReplayBatchPanel({
             {jobs.map((job) => (
               <div
                 key={job.id}
-                className="flex items-center justify-between text-xs border rounded px-2 py-1.5"
+                className="flex items-center justify-between text-xs border rounded-sm px-2 py-1.5"
               >
                 <div className="flex items-center gap-2">
                   <StatusIcon status={job.status} />
@@ -150,20 +150,20 @@ export function ReplayBatchPanel({
         )}
       </div>
 
-      {/* Report view */}
-      {report && (
+      {/* Report view — the Rust gateway's report lacks `summary`/`results` for now */}
+      {report?.summary && (
         <div className="border rounded-lg p-4 space-y-3" data-testid="report-view">
-          <h4 className="text-sm font-semibold">Report: {report.job.replayModel}</h4>
+          <h4 className="text-sm font-semibold">Report: {report.job?.replayModel}</h4>
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="border rounded p-2">
+            <div className="border rounded-sm p-2">
               <div className="text-lg font-bold text-blue-500">{report.summary.sourceWins}</div>
               <div className="text-muted-foreground">Source Wins</div>
             </div>
-            <div className="border rounded p-2">
+            <div className="border rounded-sm p-2">
               <div className="text-lg font-bold text-green-500">{report.summary.replayWins}</div>
               <div className="text-muted-foreground">Replay Wins</div>
             </div>
-            <div className="border rounded p-2">
+            <div className="border rounded-sm p-2">
               <div className="text-lg font-bold text-yellow-500">{report.summary.ties}</div>
               <div className="text-muted-foreground">Ties</div>
             </div>
@@ -183,10 +183,10 @@ export function ReplayBatchPanel({
               </tr>
             </thead>
             <tbody>
-              {report.results.map((r) => (
+              {(report.results ?? []).map((r) => (
                 <tr key={r.id} className="border-b">
                   <td className="py-1 font-mono truncate max-w-[100px]">
-                    {r.sourceConversationId.slice(0, 8)}
+                    {(r.sourceConversationId ?? '').slice(0, 8)}
                   </td>
                   <td className="py-1">{r.replayModel}</td>
                   <td className="py-1">{r.pairwiseWinner ?? '—'}</td>

@@ -193,7 +193,7 @@ export function EmailTab({
       </p>
 
       {oauthError && (
-        <div className="p-3 rounded border border-destructive bg-destructive/10 text-destructive text-sm">
+        <div className="p-3 rounded-sm border border-destructive bg-destructive/10 text-destructive text-sm">
           Gmail connection error: {decodeURIComponent(oauthError)}
         </div>
       )}
@@ -258,7 +258,7 @@ export function EmailTab({
                   onChange={(e) => {
                     setGmailForm((f) => ({ ...f, enableRead: e.target.checked }));
                   }}
-                  className="w-4 h-4 rounded accent-primary"
+                  className="w-4 h-4 rounded-sm accent-primary"
                 />
               </label>
               <label className="flex items-center gap-2.5 p-3 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
@@ -272,7 +272,7 @@ export function EmailTab({
                   onChange={(e) => {
                     setGmailForm((f) => ({ ...f, enableSend: e.target.checked }));
                   }}
-                  className="w-4 h-4 rounded accent-primary"
+                  className="w-4 h-4 rounded-sm accent-primary"
                 />
               </label>
             </div>
@@ -544,7 +544,7 @@ export function EmailTab({
                         onChange={(e) => {
                           setImapForm((f) => ({ ...f, tls: e.target.checked }));
                         }}
-                        className="w-4 h-4 rounded accent-primary"
+                        className="w-4 h-4 rounded-sm accent-primary"
                       />
                     </label>
                     <label className="flex items-center gap-2.5 p-3 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
@@ -558,7 +558,7 @@ export function EmailTab({
                         onChange={(e) => {
                           setImapForm((f) => ({ ...f, rejectUnauthorized: !e.target.checked }));
                         }}
-                        className="w-4 h-4 rounded accent-primary"
+                        className="w-4 h-4 rounded-sm accent-primary"
                       />
                     </label>
                   </div>
@@ -575,7 +575,7 @@ export function EmailTab({
                         onChange={(e) => {
                           setImapForm((f) => ({ ...f, enableRead: e.target.checked }));
                         }}
-                        className="w-4 h-4 rounded accent-primary"
+                        className="w-4 h-4 rounded-sm accent-primary"
                       />
                     </label>
                     <label className="flex items-center gap-2.5 p-3 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
@@ -589,7 +589,7 @@ export function EmailTab({
                         onChange={(e) => {
                           setImapForm((f) => ({ ...f, enableSend: e.target.checked }));
                         }}
-                        className="w-4 h-4 rounded accent-primary"
+                        className="w-4 h-4 rounded-sm accent-primary"
                       />
                     </label>
                   </div>

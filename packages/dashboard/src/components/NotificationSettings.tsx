@@ -76,7 +76,7 @@ export function NotificationSettings() {
           aria-label="Toggle notifications"
         >
           <span
-            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-xs transition-transform ${
               prefs.enabled ? 'translate-x-4' : 'translate-x-0'
             }`}
           />
@@ -101,7 +101,7 @@ export function NotificationSettings() {
           aria-label="Toggle notification sound"
         >
           <span
-            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-xs transition-transform ${
               prefs.sound ? 'translate-x-4' : 'translate-x-0'
             }`}
           />
@@ -120,7 +120,7 @@ export function NotificationSettings() {
                 onChange={() => {
                   toggleEventType(opt.value);
                 }}
-                className="rounded border-border"
+                className="rounded-sm border-border"
               />
               <span className="text-sm">{opt.label}</span>
             </label>

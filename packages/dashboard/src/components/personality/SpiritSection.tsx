@@ -94,7 +94,7 @@ export function SpiritSection({
           {passions.map((p: Passion) => (
             <div
               key={p.id}
-              className="flex items-center justify-between text-sm bg-muted px-2 py-1 rounded"
+              className="flex items-center justify-between text-sm bg-muted px-2 py-1 rounded-sm"
             >
               <span>
                 <strong>{p.name}</strong> (intensity: {p.intensity}){' '}
@@ -120,7 +120,7 @@ export function SpiritSection({
               onChange={(e) => {
                 setNewPassion((p) => ({ ...p, name: e.target.value }));
               }}
-              className="flex-1 px-2 py-1.5 text-sm rounded border bg-background"
+              className="flex-1 px-2 py-1.5 text-sm rounded-sm border bg-background"
             />
             <input
               type="range"
@@ -143,7 +143,7 @@ export function SpiritSection({
               onChange={(e) => {
                 setNewPassion((p) => ({ ...p, description: e.target.value }));
               }}
-              className="flex-1 max-w-[calc(100%-80px)] px-2 py-1.5 text-sm rounded border bg-background"
+              className="flex-1 max-w-[calc(100%-80px)] px-2 py-1.5 text-sm rounded-sm border bg-background"
             />
             <button
               onClick={() => {
@@ -165,7 +165,7 @@ export function SpiritSection({
           {inspirations.map((i: Inspiration) => (
             <div
               key={i.id}
-              className="flex items-center justify-between text-sm bg-muted px-2 py-1 rounded"
+              className="flex items-center justify-between text-sm bg-muted px-2 py-1 rounded-sm"
             >
               <span>
                 <strong>{i.source}</strong> (impact: {i.impact}){' '}
@@ -191,7 +191,7 @@ export function SpiritSection({
               onChange={(e) => {
                 setNewInspiration((i) => ({ ...i, source: e.target.value }));
               }}
-              className="flex-1 px-2 py-1.5 text-sm rounded border bg-background"
+              className="flex-1 px-2 py-1.5 text-sm rounded-sm border bg-background"
             />
             <input
               type="range"
@@ -214,7 +214,7 @@ export function SpiritSection({
               onChange={(e) => {
                 setNewInspiration((i) => ({ ...i, description: e.target.value }));
               }}
-              className="flex-1 max-w-[calc(100%-80px)] px-2 py-1.5 text-sm rounded border bg-background"
+              className="flex-1 max-w-[calc(100%-80px)] px-2 py-1.5 text-sm rounded-sm border bg-background"
             />
             <button
               onClick={() => {
@@ -236,7 +236,7 @@ export function SpiritSection({
           {pains.map((p: Pain) => (
             <div
               key={p.id}
-              className="flex items-center justify-between text-sm bg-muted px-2 py-1 rounded"
+              className="flex items-center justify-between text-sm bg-muted px-2 py-1 rounded-sm"
             >
               <span>
                 <strong>{p.trigger}</strong> (severity: {p.severity}){' '}
@@ -262,7 +262,7 @@ export function SpiritSection({
               onChange={(e) => {
                 setNewPain((p) => ({ ...p, trigger: e.target.value }));
               }}
-              className="flex-1 px-2 py-1.5 text-sm rounded border bg-background"
+              className="flex-1 px-2 py-1.5 text-sm rounded-sm border bg-background"
             />
             <input
               type="range"
@@ -285,7 +285,7 @@ export function SpiritSection({
               onChange={(e) => {
                 setNewPain((p) => ({ ...p, description: e.target.value }));
               }}
-              className="flex-1 max-w-[calc(100%-80px)] px-2 py-1.5 text-sm rounded border bg-background"
+              className="flex-1 max-w-[calc(100%-80px)] px-2 py-1.5 text-sm rounded-sm border bg-background"
             />
             <button
               onClick={() => {

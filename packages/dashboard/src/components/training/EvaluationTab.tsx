@@ -38,6 +38,11 @@ import {
   type PairwiseComparisonSummary,
 } from '../../api/client';
 
+/** One-decimal score, or a dash when the run carries none (Rust gateway rows). */
+function formatScore(value: number | null | undefined): string {
+  return typeof value === 'number' ? value.toFixed(1) : '—';
+}
+
 // ── Dataset Section ──────────────────────────────────────────────────────────
 
 function DatasetSection() {
@@ -99,7 +104,7 @@ function DatasetSection() {
             onChange={(e) => {
               setNewName(e.target.value);
             }}
-            className="w-full px-2 py-1 text-sm border rounded bg-background"
+            className="w-full px-2 py-1 text-sm border rounded-sm bg-background"
           />
           <textarea
             placeholder='Samples JSON: [{"prompt":"...","gold":"..."},...]'
@@ -107,13 +112,13 @@ function DatasetSection() {
             onChange={(e) => {
               setNewSamples(e.target.value);
             }}
-            className="w-full px-2 py-1 text-sm border rounded bg-background h-24 font-mono"
+            className="w-full px-2 py-1 text-sm border rounded-sm bg-background h-24 font-mono"
           />
           <div className="flex gap-2">
             <button
               onClick={handleCreate}
               disabled={!newName.trim() || !newSamples.trim() || createMutation.isPending}
-              className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded disabled:opacity-50"
+              className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded-sm disabled:opacity-50"
             >
               {createMutation.isPending ? 'Creating...' : 'Create'}
             </button>
@@ -213,7 +218,7 @@ function PointwiseEvalSection() {
             onChange={(e) => {
               setSelectedDataset(e.target.value);
             }}
-            className="w-full px-2 py-1 text-sm border rounded bg-background"
+            className="w-full px-2 py-1 text-sm border rounded-sm bg-background"
           >
             <option value="">Select dataset...</option>
             {datasets?.map((ds: EvalDataset) => (
@@ -232,13 +237,13 @@ function PointwiseEvalSection() {
             onChange={(e) => {
               setModelName(e.target.value);
             }}
-            className="w-full px-2 py-1 text-sm border rounded bg-background"
+            className="w-full px-2 py-1 text-sm border rounded-sm bg-background"
           />
         </div>
         <button
           onClick={handleRun}
           disabled={!selectedDataset || !modelName.trim() || evalMutation.isPending}
-          className="flex items-center gap-1 px-3 py-1 text-xs bg-primary text-primary-foreground rounded disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-1 text-xs bg-primary text-primary-foreground rounded-sm disabled:opacity-50"
         >
           {evalMutation.isPending ? (
             <Loader2 className="w-3 h-3 animate-spin" />
@@ -291,13 +296,13 @@ function PointwiseEvalSection() {
           {runs.map((run: EvalRunSummary) => (
             <div
               key={run.evalRunId}
-              className="flex items-center justify-between text-xs border rounded px-2 py-1"
+              className="flex items-center justify-between text-xs border rounded-sm px-2 py-1"
             >
               <span className="font-mono">{run.modelName}</span>
               <span>
-                G:{run.avgGroundedness.toFixed(1)} C:{run.avgCoherence.toFixed(1)} R:
-                {run.avgRelevance.toFixed(1)} F:{run.avgFluency.toFixed(1)} H:
-                {run.avgHarmlessness.toFixed(1)}
+                G:{formatScore(run.avgGroundedness)} C:{formatScore(run.avgCoherence)} R:
+                {formatScore(run.avgRelevance)} F:{formatScore(run.avgFluency)} H:
+                {formatScore(run.avgHarmlessness)}
               </span>
               <span className="text-muted-foreground">
                 {new Date(run.scoredAt).toLocaleDateString()}
@@ -359,7 +364,7 @@ function PairwiseSection() {
             onChange={(e) => {
               setSelectedDataset(e.target.value);
             }}
-            className="w-full px-2 py-1 text-sm border rounded bg-background"
+            className="w-full px-2 py-1 text-sm border rounded-sm bg-background"
           >
             <option value="">Select...</option>
             {datasets?.map((ds: EvalDataset) => (
@@ -378,7 +383,7 @@ function PairwiseSection() {
             onChange={(e) => {
               setModelA(e.target.value);
             }}
-            className="w-full px-2 py-1 text-sm border rounded bg-background"
+            className="w-full px-2 py-1 text-sm border rounded-sm bg-background"
           />
         </div>
         <div className="flex-1 min-w-[100px]">
@@ -390,7 +395,7 @@ function PairwiseSection() {
             onChange={(e) => {
               setModelB(e.target.value);
             }}
-            className="w-full px-2 py-1 text-sm border rounded bg-background"
+            className="w-full px-2 py-1 text-sm border rounded-sm bg-background"
           />
         </div>
         <button
@@ -398,7 +403,7 @@ function PairwiseSection() {
           disabled={
             !selectedDataset || !modelA.trim() || !modelB.trim() || compareMutation.isPending
           }
-          className="flex items-center gap-1 px-3 py-1 text-xs bg-primary text-primary-foreground rounded disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-1 text-xs bg-primary text-primary-foreground rounded-sm disabled:opacity-50"
         >
           {compareMutation.isPending ? (
             <Loader2 className="w-3 h-3 animate-spin" />
@@ -437,7 +442,7 @@ function PairwiseSection() {
       {comparisons?.map((c: PairwiseComparisonSummary) => (
         <div
           key={c.comparisonId}
-          className="flex items-center gap-3 text-xs border rounded px-3 py-2"
+          className="flex items-center gap-3 text-xs border rounded-sm px-3 py-2"
         >
           <span className="font-mono">{c.modelA}</span>
           <span className="text-green-600 font-semibold">{c.winsA}W</span>
@@ -477,7 +482,7 @@ function AutoEvalSection() {
             onChange={(e) => {
               setGroundednessThreshold(e.target.value);
             }}
-            className="w-full px-2 py-1 text-sm border rounded bg-background"
+            className="w-full px-2 py-1 text-sm border rounded-sm bg-background"
           />
         </div>
         <div>
@@ -491,13 +496,13 @@ function AutoEvalSection() {
             onChange={(e) => {
               setCoherenceThreshold(e.target.value);
             }}
-            className="w-full px-2 py-1 text-sm border rounded bg-background"
+            className="w-full px-2 py-1 text-sm border rounded-sm bg-background"
           />
         </div>
       </div>
 
       <div className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
-        <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+        <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
         <span>
           A model must score &ge; {groundednessThreshold} on groundedness and &ge;{' '}
           {coherenceThreshold} on coherence to pass the auto-eval gate. Failed models will trigger a

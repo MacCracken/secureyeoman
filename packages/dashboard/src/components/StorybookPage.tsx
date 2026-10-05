@@ -30,8 +30,8 @@ export function StorybookPage() {
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">Storybook is Disabled</h2>
           <p className="text-muted-foreground mb-4">
-            Enable <code className="text-sm bg-muted px-1.5 py-0.5 rounded">allowStorybook</code> in
-            Settings &gt; Security to access the component development environment.
+            Enable <code className="text-sm bg-muted px-1.5 py-0.5 rounded-sm">allowStorybook</code>{' '}
+            in Settings &gt; Security to access the component development environment.
           </p>
         </div>
       </div>

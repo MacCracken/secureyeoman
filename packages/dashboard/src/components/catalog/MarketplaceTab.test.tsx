@@ -11,10 +11,6 @@ vi.mock('../../api/client', () => ({
   fetchPersonalities: vi.fn(),
 }));
 
-vi.mock('../../utils/sanitize', () => ({
-  sanitizeText: (s: string) => s,
-}));
-
 vi.mock('../marketplace/WorkflowsTab', () => ({
   WorkflowsTab: () => <div data-testid="workflows-tab">Workflows</div>,
 }));

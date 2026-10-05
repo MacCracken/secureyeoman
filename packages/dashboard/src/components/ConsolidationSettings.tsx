@@ -260,7 +260,7 @@ export default function ConsolidationSettings() {
           {scheduleData?.schedule && (
             <p className="text-xs text-muted-foreground">
               Current:{' '}
-              <code className="bg-muted px-1.5 py-0.5 rounded">{scheduleData.schedule}</code>
+              <code className="bg-muted px-1.5 py-0.5 rounded-sm">{scheduleData.schedule}</code>
             </p>
           )}
         </div>
@@ -279,7 +279,7 @@ export default function ConsolidationSettings() {
               onChange={(e) => {
                 setDryRun(e.target.checked);
               }}
-              className="rounded"
+              className="rounded-sm"
             />
             Dry run (preview only)
           </label>

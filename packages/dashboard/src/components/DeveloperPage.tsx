@@ -59,7 +59,7 @@ export function DeveloperPage() {
             }}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
               activeTab === tab.id
-                ? 'bg-background shadow-sm text-foreground'
+                ? 'bg-background shadow-xs text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >

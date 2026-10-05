@@ -66,9 +66,11 @@ Edge nodes participate in SecureYeoman's Agent-to-Agent network as peers with he
 
 ```bash
 secureyeoman-edge register \
-  --parent-url https://hub.example.com \
-  --registration-token "token-from-parent"
+  --parent https://hub.example.com \
+  --token "token-from-parent"
 ```
+
+> **0.5.5:** the Rust server does not serve the registration endpoint yet (`POST /api/v1/a2a/peers/local`), so registration with a Rust parent fails and is logged as such; the node keeps running standalone.
 
 On first connection, the edge node pins the parent's TLS certificate using TOFU (Trust On First Use). The SHA-256 hash is stored in `parent-cert-pin.hex` and enforced on all subsequent requests.
 
@@ -78,12 +80,7 @@ Peers progress through trust levels: `unknown` -> `discovered` -> `registered` -
 
 ### mDNS discovery
 
-Edge nodes advertise themselves on the local network via `_secureyeoman._tcp`. Other nodes on the same LAN auto-discover and register as peers:
-
-```bash
-# Discovery runs automatically on start; no configuration needed
-secureyeoman-edge start  # broadcasts and listens for mDNS
-```
+Not implemented yet: nodes do not advertise `_secureyeoman._tcp` on the LAN (the node logs a warning at start). Register nodes with their parent explicitly.
 
 ---
 
@@ -91,74 +88,51 @@ secureyeoman-edge start  # broadcasts and listens for mDNS
 
 ### Sandboxed Command Execution
 
-Execute commands with allowlist/blocklist controls, timeout enforcement, and workspace root restriction.
+Run read-only inspection commands: `ls`, `cat`, `head`, `tail`, `wc`, `grep`, `df`, `du`, `uname`, `hostname`, `ip`, `ss`, `ps`, `top`, `free`, `lsblk`, `lscpu` and `sensors` (`GET /api/v1/exec/allowed` lists them). No shell is involved: `command` is a bare program name and `args` are passed as-is.
 
 ```bash
-curl -X POST http://localhost:18891/sandbox/exec \
+curl -X POST http://localhost:18891/api/v1/exec \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "command": "df -h",
-    "timeout": 5000,
-    "workspaceRoot": "/opt/edge-data"
-  }'
+  -d '{"command": "df", "args": ["-h"], "timeout_seconds": 5}'
 ```
 
-Symlinks are resolved to prevent escaping the workspace. Output is truncated at 64 KB.
+- `workspace` (optional) sets the working directory; it must resolve under `/tmp` or `/home`.
+- `timeout_seconds` defaults to 30 and is clamped to 1–300; stdout and stderr are each capped at 1 MiB (`truncated` reports a cut).
+- Tools that can change the system may only show: `ip` takes a spelled-out object (`addr`, `link`, `route`, `neigh`, `rule`, `maddr`) with `show`/`list` (or `route get`), and no `-n`, `-batch` or `-force`, so `ip netns exec` and `ip link set` are refused; `ss` refuses `-D` (writes a file), `-K` (kills sockets), `-F` and `-N`; `hostname` takes display options only; `sensors` refuses `-s`.
+- Commands run with an empty environment (a fixed `PATH`, `LANG` and `TERM`), and the edge process is non-dumpable on Linux, so a command cannot read the node's tokens or API keys from `/proc`.
+- Run the node as an unprivileged user: the allowed readers can read any file the node's user can.
 
 ### Interval Scheduler
 
-Schedule recurring tasks of three types: `command`, `webhook`, and `llm`. Minimum interval is 10 seconds.
-
-```bash
-curl -X POST http://localhost:18891/scheduler/tasks \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "command",
-    "command": "uptime",
-    "intervalSeconds": 60,
-    "name": "uptime-check"
-  }'
-```
+Not implemented yet: `POST /api/v1/scheduler/tasks` validates the task and answers `501 Not Implemented` without scheduling anything. `GET` lists no tasks.
 
 ### Outbound Messaging
 
-Send notifications to Slack, Discord, Telegram, or generic webhooks. Targets auto-configure from env vars. The `GET /messaging/targets` endpoint returns redacted targets (URLs and tokens are never exposed).
+Send notifications to Slack (`SLACK_WEBHOOK_URL`), Discord (`DISCORD_WEBHOOK_URL`) or Telegram (`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`) with `POST /api/v1/messaging/send` (`{"target", "text"}`) or `POST /api/v1/messaging/broadcast`. `GET /api/v1/messaging/targets` lists targets without their URLs or tokens, and send errors never include the URL.
 
 ### Multi-Provider LLM
 
-Route LLM requests through OpenAI, Anthropic, Ollama, or OpenRouter. SSRF protection blocks requests to private IPs (except Ollama on localhost).
-
-```bash
-curl -X POST http://localhost:18891/llm/chat \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "provider": "ollama",
-    "model": "llama3",
-    "messages": [{"role": "user", "content": "Summarize system health"}]
-  }'
-```
+`POST /api/v1/llm/complete` (`{"prompt", "provider"?, "model"?, "max_tokens"?}`) uses the providers configured by environment: OpenAI-compatible (`OPENAI_API_KEY`, `OPENAI_BASE_URL`), Anthropic (`ANTHROPIC_API_KEY`), Ollama (`OLLAMA_URL`) and OpenRouter (`OPENROUTER_API_KEY`). Provider URLs come only from that configuration, never from the request.
 
 ### Persistent Memory
 
-Namespaced key-value store with TTL support, backed by a JSON file. Atomic writes via temp-file-and-rename. Limits: 1 MB per value, 10K entries.
+Namespaced key-value store with optional TTL, backed by a JSON file. Limits: 1 MiB per value, 10,000 entries.
 
 ```bash
 # Write
-curl -X PUT http://localhost:18891/memory/sensors/temperature \
+curl -X PUT http://localhost:18891/api/v1/memory/sensors/temperature \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"value": "22.5", "ttl": 3600}'
+  -d '{"value": "22.5", "ttl_seconds": 3600}'
 
 # Read
-curl -H "Authorization: Bearer $TOKEN" http://localhost:18891/memory/sensors/temperature
+curl -H "Authorization: Bearer $TOKEN" http://localhost:18891/api/v1/memory/sensors/temperature
 ```
 
 ### System Metrics
 
-CPU, memory, and disk metrics are collected every 10 seconds into a ring buffer (1 hour of history). Available as JSON or Prometheus text format at `/metrics`.
+CPU, memory and disk usage are sampled every 10 seconds into a ring buffer (one hour). `GET /api/v1/metrics` returns the latest sample, `GET /api/v1/metrics/history?minutes=N` the history, and the unauthenticated `GET /api/v1/metrics/prometheus` the latest sample in Prometheus text format. Requests read the stored sample; nothing scans the system per request.
 
 ### Capability Detection
 
@@ -180,25 +154,17 @@ The parent instance aggregates metrics and capabilities from all registered edge
 
 ## OTA Updates
 
-Edge nodes can check for and apply updates from the parent instance:
-
-```bash
-curl -X POST http://localhost:18891/update-check \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-The update process downloads the new binary, verifies its SHA-256 checksum, and performs an atomic binary swap. The node does **not** auto-restart — leave that to your process supervisor (systemd, Docker, etc.).
+Not implemented yet. With a parent configured, the node asks it hourly whether a newer build exists and logs the answer (a failed check is logged as a failure, not as "no update"); it downloads nothing. `GET /api/v1/update/check` answers `501 Not Implemented` with the running version. Update nodes with your package manager or image pipeline.
 
 ---
 
 ## Security Considerations
 
-- **Auth is mandatory.** Set `SECUREYEOMAN_EDGE_API_TOKEN` before starting. All endpoints except `/health` require a valid bearer token, compared in constant time.
-- **Rate limiting** is enabled by default: 100 requests/second per IP with burst up to 200. Stale buckets are cleaned every 5 minutes.
+- **Auth is mandatory.** Set `SECUREYEOMAN_EDGE_API_TOKEN` before starting; without it every endpoint but `/health` and the Prometheus metrics answers 503, unless `SY_EDGE_DEV_MODE=true` explicitly allows unauthenticated access on a trusted network. Tokens are compared in constant time.
+- **Rate limiting:** 100 requests/second per peer address with bursts up to 200, applied before authentication. At most 10,000 addresses are tracked; past that, idle entries are dropped and new addresses wait.
 - **TOFU certificate pinning** prevents MITM after first connection to the parent. Delete `parent-cert-pin.hex` to re-pin if you rotate certificates.
-- **Sandbox restrictions:** Commands must pass the allowlist and must not match the blocklist. Symlinks are resolved before checking workspace boundaries.
-- **SSRF protection:** LLM provider URLs are validated to block private IP ranges (RFC 1918, link-local). Ollama on localhost is explicitly allowed.
-- **Secret redaction:** Messaging target URLs and tokens are never returned in API responses.
+- **Command execution:** see [Sandboxed Command Execution](#sandboxed-command-execution) — an allowlist of read-only tools, argument policies for the ones that could change the system, no inherited environment, and a non-dumpable node process.
+- **Secret redaction:** Messaging target URLs and tokens are never returned in API responses or errors.
 - **Error sanitization:** Internal error details are stripped from HTTP responses to prevent information leakage.
 
 ---

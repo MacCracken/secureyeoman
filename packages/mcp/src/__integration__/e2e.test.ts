@@ -34,9 +34,15 @@ beforeAll(async () => {
   mockCore.get('/health', async () => ({ status: 'ok' }));
 
   mockCore.post('/api/v1/auth/verify', async (request) => {
-    const body = request.body as { token?: string };
+    const body = request.body as { token?: string; resource?: string; action?: string };
     if (body?.token === 'valid-user-token') {
-      return { valid: true, userId: 'admin', role: 'admin', permissions: ['*'] };
+      return {
+        valid: true,
+        userId: 'admin',
+        role: 'admin',
+        permissions: ['*'],
+        ...(body.resource && body.action ? { authorized: true } : {}),
+      };
     }
     return { valid: false };
   });

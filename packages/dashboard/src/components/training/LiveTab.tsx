@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Loader2, Zap, Activity } from 'lucide-react';
 import {
@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import {
-  fetchTrainingStream,
+  subscribeTrainingStream,
   fetchQualityScores,
   triggerQualityScoring,
   type QualityScore,
@@ -27,7 +27,6 @@ export function LiveTab() {
   const [throughput, setThroughput] = useState(0);
   const [agreement, setAgreement] = useState(0);
   const [rewardSeries, setRewardSeries] = useState<StreamPoint[]>([]);
-  const esRef = useRef<EventSource | null>(null);
 
   const {
     data: qualityData,
@@ -45,12 +44,10 @@ export function LiveTab() {
   });
 
   useEffect(() => {
-    const es = fetchTrainingStream();
-    esRef.current = es;
-
-    es.addEventListener('message', (evt: MessageEvent<string>) => {
+    // Returns the unsubscribe function, which closes the stream on unmount.
+    return subscribeTrainingStream((raw) => {
       try {
-        const data = JSON.parse(evt.data) as {
+        const data = JSON.parse(raw) as {
           type: string;
           value: number;
           ts: number;
@@ -69,10 +66,6 @@ export function LiveTab() {
         // skip malformed
       }
     });
-
-    return () => {
-      es.close();
-    };
   }, []);
 
   const qualityConvs = qualityData?.conversations ?? [];
@@ -173,16 +166,17 @@ export function LiveTab() {
           <p className="text-sm text-muted-foreground">No quality scores yet. Click "Score now".</p>
         ) : (
           <div className="flex flex-wrap gap-1">
-            {qualityConvs.map((q: QualityScore) => {
-              const pct = q.qualityScore;
+            {qualityConvs.map((q: QualityScore, i: number) => {
+              // Rows from the Rust gateway lack the TS fields; render them as 0.
+              const pct = q.qualityScore ?? 0;
               // Red = 0.0 (needs training), green = 1.0 (well covered)
               const hue = Math.round(pct * 120); // 0=red, 120=green
               return (
                 <div
-                  key={q.conversationId}
-                  title={`${q.conversationId.slice(0, 8)} — score: ${pct.toFixed(2)} (${q.signalSource})`}
+                  key={q.conversationId ?? i}
+                  title={`${(q.conversationId ?? '').slice(0, 8)} — score: ${pct.toFixed(2)} (${q.signalSource})`}
                   style={{ backgroundColor: `hsl(${hue}, 60%, 45%)` }}
-                  className="w-4 h-4 rounded-sm cursor-default"
+                  className="w-4 h-4 rounded-xs cursor-default"
                 />
               );
             })}

@@ -124,7 +124,7 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
             </label>
             <input
               type="text"
-              className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/50"
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
@@ -140,7 +140,7 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
             <div>
               <label className="block text-sm font-medium mb-1">Category</label>
               <select
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background text-foreground"
                 value={category}
                 onChange={(e) => {
                   setCategory(e.target.value);
@@ -156,7 +156,7 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
             <div>
               <label className="block text-sm font-medium mb-1">Severity</label>
               <select
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background text-foreground"
                 value={severity}
                 onChange={(e) => {
                   setSeverity(e.target.value);
@@ -176,7 +176,7 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
             <div>
               <label className="block text-sm font-medium mb-1">Likelihood (1-5)</label>
               <select
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background text-foreground"
                 value={likelihood}
                 onChange={(e) => {
                   setLikelihood(Number(e.target.value));
@@ -192,7 +192,7 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
             <div>
               <label className="block text-sm font-medium mb-1">Impact (1-5)</label>
               <select
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background text-foreground"
                 value={impact}
                 onChange={(e) => {
                   setImpact(Number(e.target.value));
@@ -229,7 +229,7 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
               <label className="block text-sm font-medium mb-1">Owner</label>
               <input
                 type="text"
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/50"
                 value={owner}
                 onChange={(e) => {
                   setOwner(e.target.value);
@@ -241,7 +241,7 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
               <label className="block text-sm font-medium mb-1">Due Date</label>
               <input
                 type="date"
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/50"
                 value={dueDate}
                 onChange={(e) => {
                   setDueDate(e.target.value);
@@ -254,7 +254,7 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
           <div>
             <label className="block text-sm font-medium mb-1">Description</label>
             <textarea
-              className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[60px]"
+              className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/50 min-h-[60px]"
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value);
@@ -268,14 +268,14 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
           <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
             <button
               type="button"
-              className="px-4 py-2 text-sm border border-border rounded hover:bg-muted transition-colors"
+              className="px-4 py-2 text-sm border border-border rounded-sm hover:bg-muted transition-colors"
               onClick={onClose}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
               disabled={!title.trim()}
             >
               Add Entry

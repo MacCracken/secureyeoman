@@ -290,7 +290,7 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
                                 {job.input && (
                                   <div>
                                     <span className="font-medium">Input: </span>
-                                    <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40">
+                                    <pre className="mt-1 p-2 bg-muted rounded-sm text-xs overflow-auto max-h-40">
                                       {JSON.stringify(job.input, null, 2)}
                                     </pre>
                                   </div>
@@ -298,7 +298,7 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
                                 {job.output && (
                                   <div>
                                     <span className="font-medium">Output: </span>
-                                    <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40">
+                                    <pre className="mt-1 p-2 bg-muted rounded-sm text-xs overflow-auto max-h-40">
                                       {JSON.stringify(job.output, null, 2)}
                                     </pre>
                                   </div>
@@ -497,7 +497,7 @@ function ProviderSection({
                 <select
                   value={model || 'whisper-1'}
                   onChange={(e) => onSelectModel?.('stt', e.target.value)}
-                  className="bg-card border border-border rounded text-xs py-0.5 px-1.5"
+                  className="bg-card border border-border rounded-sm text-xs py-0.5 px-1.5"
                   disabled={isPending}
                 >
                   {WHISPER_MODELS.map((m) => (

@@ -161,7 +161,7 @@ export function BranchStatsPanel({ tree }: BranchStatsPanelProps) {
             {modelEntries.map(([model, count]) => (
               <div key={model} className="flex items-center justify-between text-xs">
                 <span className="font-mono truncate max-w-[160px]">{model}</span>
-                <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                <span className="px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground">
                   {count}
                 </span>
               </div>

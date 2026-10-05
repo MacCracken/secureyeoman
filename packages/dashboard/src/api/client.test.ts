@@ -3832,3 +3832,221 @@ describe('Bulk API coverage tests', () => {
     await downloadBackup('b1');
   });
 });
+
+// ── Rust gateway response shapes ─────────────────────────────────────
+
+import {
+  toListResponse,
+  createEventStreamParser,
+  subscribeTrainingStream,
+  fetchCognitiveStats,
+  fetchDocument,
+  ingestExcalidraw,
+} from './client';
+
+describe('toListResponse', () => {
+  it('wraps a bare array under the key, with total = length', () => {
+    const rows = [{ id: 'a' }, { id: 'b' }];
+    expect(toListResponse<{ tasks: unknown[]; total: number }>(rows, 'tasks')).toEqual({
+      tasks: rows,
+      total: 2,
+    });
+  });
+
+  it('passes a wrapped object through unchanged', () => {
+    const body = { tasks: [{ id: 'a' }], total: 40 };
+    expect(toListResponse<{ tasks: unknown[]; total: number }>(body, 'tasks')).toBe(body);
+  });
+
+  it('turns an empty body into an empty list', () => {
+    expect(toListResponse<{ jobs: unknown[] }>(undefined, 'jobs')).toEqual({ jobs: [], total: 0 });
+    expect(toListResponse<{ jobs: unknown[] }>(null, 'jobs')).toEqual({ jobs: [], total: 0 });
+  });
+});
+
+describe('list fetchers accept the Rust bare-array shape', () => {
+  const rows = [{ id: 'r1' }, { id: 'r2' }];
+
+  it('fetchTasks wraps a bare array and keeps a wrapped answer', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse(rows));
+    expect(await fetchTasks()).toEqual({ tasks: rows, total: 2 });
+    mockFetch.mockReturnValueOnce(jsonResponse({ tasks: rows, total: 9 }));
+    expect(await fetchTasks()).toEqual({ tasks: rows, total: 9 });
+  });
+
+  it.each([
+    ['fetchProactiveTriggers', () => fetchProactiveTriggers(), 'triggers'],
+    ['fetchSwarmTemplates', () => fetchSwarmTemplates(), 'templates'],
+    ['fetchSwarmRuns', () => fetchSwarmRuns(), 'runs'],
+    ['fetchGroupChatChannels', () => fetchGroupChatChannels(), 'channels'],
+    ['fetchRoutingRules', () => fetchRoutingRules(), 'rules'],
+    ['fetchA2APeers', () => fetchA2APeers(), 'peers'],
+    ['fetchQuarantineItems', () => fetchQuarantineItems(), 'items'],
+    ['fetchAthiScenarios', () => fetchAthiScenarios(), 'items'],
+    ['fetchExecutionHistory', () => fetchExecutionHistory(), 'executions'],
+    ['fetchTenants', () => fetchTenants(), 'tenants'],
+    ['fetchReplayJobs', () => fetchReplayJobs(), 'jobs'],
+    ['fetchHookExecutionLog', () => fetchHookExecutionLog(), 'entries'],
+    ['fetchQualityScores', () => fetchQualityScores(), 'conversations'],
+    ['fetchAbTests', () => fetchAbTests(), 'tests'],
+  ] as [string, () => Promise<Record<string, unknown>>, string][])(
+    '%s',
+    async (_name, call, key) => {
+      mockFetch.mockReturnValueOnce(jsonResponse(rows));
+      const result = await call();
+      expect(result[key]).toEqual(rows);
+      expect(result.total).toBe(2);
+    }
+  );
+
+  it('fetchers that unwrap the list return the array', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse(rows));
+    expect(await fetchDistillationJobs()).toEqual(rows);
+    mockFetch.mockReturnValueOnce(jsonResponse(rows));
+    expect(await fetchOAuthTokens()).toEqual(rows);
+  });
+
+  it('fetchExtensionConfig turns key/value rows into the config record', async () => {
+    mockFetch.mockReturnValueOnce(
+      jsonResponse([
+        { key: 'enabled', value: true },
+        { key: 'maxHooks', value: 5 },
+      ])
+    );
+    expect(await fetchExtensionConfig()).toEqual({ config: { enabled: true, maxHooks: 5 } });
+    mockFetch.mockReturnValueOnce(jsonResponse({ config: { enabled: false } }));
+    expect(await fetchExtensionConfig()).toEqual({ config: { enabled: false } });
+  });
+
+  it('fetchMcpCredentialKeys maps credential rows to their key names', async () => {
+    mockFetch.mockReturnValueOnce(
+      jsonResponse([
+        { serverId: 's1', key: 'API_TOKEN', createdAt: 1 },
+        { serverId: 's1', key: 'REGION', createdAt: 2 },
+      ])
+    );
+    expect(await fetchMcpCredentialKeys('s1')).toEqual({ keys: ['API_TOKEN', 'REGION'] });
+    mockFetch.mockReturnValueOnce(jsonResponse({ keys: ['A'] }));
+    expect(await fetchMcpCredentialKeys('s1')).toEqual({ keys: ['A'] });
+  });
+});
+
+describe('createEventStreamParser', () => {
+  function parseAll(chunks: string[]) {
+    const out: string[] = [];
+    const parse = createEventStreamParser((d) => out.push(d));
+    for (const c of chunks) parse(c);
+    return out;
+  }
+
+  it('delivers the data of each message event', () => {
+    expect(parseAll(['data: {"a":1}\n\ndata:{"b":2}\n\n'])).toEqual(['{"a":1}', '{"b":2}']);
+  });
+
+  it('joins multi-line data and handles events split across chunks', () => {
+    expect(parseAll(['da', 'ta: hel', 'lo\ndata: wor', 'ld\n', '\n'])).toEqual(['hello\nworld']);
+  });
+
+  it('does not treat a CRLF split across chunks as two line breaks', () => {
+    expect(parseAll(['data: a\r', '\ndata: b\r\n\r\n'])).toEqual(['a\nb']);
+  });
+
+  it('ignores comments, named events and incomplete trailing events', () => {
+    expect(
+      parseAll([
+        ': keep-alive\n\nevent: progress\ndata: skip\n\nevent: message\ndata: ok\n\ndata: x',
+      ])
+    ).toEqual(['ok']);
+  });
+});
+
+describe('subscribeTrainingStream', () => {
+  function sseResponse(chunks: string[], contentType = 'text/event-stream') {
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const c of chunks) controller.enqueue(encoder.encode(c));
+        controller.close();
+      },
+    });
+    return new Response(body, { status: 200, headers: { 'Content-Type': contentType } });
+  }
+
+  it('sends the token in the Authorization header, never in the URL', async () => {
+    setAuthTokens('stream-token', 'r');
+    mockFetch.mockResolvedValueOnce(sseResponse(['data: {"type":"loss","value":1,"ts":1}\n\n']));
+    const received: string[] = [];
+    const unsubscribe = subscribeTrainingStream((d) => received.push(d));
+
+    await vi.waitFor(() => {
+      expect(received).toEqual(['{"type":"loss","value":1,"ts":1}']);
+    });
+    unsubscribe();
+
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('/api/v1/training/stream');
+    expect(String(url)).not.toContain('token');
+    expect(init.headers.Authorization).toBe('Bearer stream-token');
+    expect(init.headers.Accept).toBe('text/event-stream');
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('stops for good on a response that is not an event stream', async () => {
+    vi.useFakeTimers();
+    try {
+      // The Rust handler is a JSON stub today.
+      mockFetch.mockResolvedValue(sseResponse(['{"status":"stub"}'], 'application/json'));
+      const onMessage = vi.fn();
+      const unsubscribe = subscribeTrainingStream(onMessage);
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(onMessage).not.toHaveBeenCalled();
+      unsubscribe();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('aborts the request when unsubscribed', async () => {
+    mockFetch.mockReturnValueOnce(new Promise(() => {}));
+    const unsubscribe = subscribeTrainingStream(vi.fn());
+    await vi.waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+    const signal = mockFetch.mock.calls[0][1].signal as AbortSignal;
+    expect(signal.aborted).toBe(false);
+    unsubscribe();
+    expect(signal.aborted).toBe(true);
+  });
+});
+
+describe('authenticated replacements for raw fetch calls', () => {
+  beforeEach(() => {
+    setAuthTokens('tok', 'r');
+  });
+
+  it('fetchCognitiveStats returns the stats, or null without the envelope', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ stats: { associationCount: 3 } }));
+    expect(await fetchCognitiveStats()).toEqual({ associationCount: 3 });
+    expect(mockFetch.mock.calls[0][0]).toBe('/api/v1/brain/cognitive-stats');
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer tok');
+
+    mockFetch.mockReturnValueOnce(jsonResponse({ memoryCount: 1 }));
+    expect(await fetchCognitiveStats()).toBeNull();
+  });
+
+  it('fetchDocument and ingestExcalidraw send the token', async () => {
+    mockFetch.mockReturnValueOnce(jsonResponse({ document: { id: 'd 1' } }));
+    await fetchDocument('d 1');
+    expect(mockFetch.mock.calls[0][0]).toBe('/api/v1/brain/documents/d%201');
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer tok');
+
+    mockFetch.mockReturnValueOnce(jsonResponse({ document: { id: 'd2' } }));
+    await ingestExcalidraw({ elements: [] }, 'Sketch');
+    const [url, init] = mockFetch.mock.calls[1];
+    expect(url).toBe('/api/v1/brain/documents/ingest-excalidraw');
+    expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bearer tok');
+    expect(JSON.parse(init.body)).toEqual({ scene: { elements: [] }, title: 'Sketch' });
+  });
+});

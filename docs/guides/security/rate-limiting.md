@@ -152,7 +152,7 @@ These are visible in **Mission Control → Security Events** and exposed at `GET
 ### All requests returning 429
 
 If legitimate requests are being blocked, check:
-- Whether a proxy or load balancer is forwarding a shared IP (`X-Forwarded-For` not being passed through correctly)
+- Whether a proxy or load balancer makes every client share its address: list it in `SECUREYEOMAN_TRUSTED_PROXIES` (see the reverse-proxy section of the deployment guide), or `X-Forwarded-For` is ignored
 - The `auth_attempts` window (15 min) — a burst of login failures from the same IP can block subsequent legitimate logins
 
 ### Rate limits not shared across instances

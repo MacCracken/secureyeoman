@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, Zap } from 'lucide-react';
 import {
@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import {
-  fetchTrainingStream,
+  subscribeTrainingStream,
   fetchQualityScores,
   triggerQualityScoring,
 } from '../../../api/client';
@@ -25,7 +25,6 @@ export function TrainingLiveNode() {
   const [lossSeries, setLossSeries] = useState<StreamPoint[]>([]);
   const [throughput, setThroughput] = useState(0);
   const [agreement, setAgreement] = useState(0);
-  const esRef = useRef<EventSource | null>(null);
   const queryClient = useQueryClient();
 
   const { data: _qualityData } = useQuery({
@@ -40,11 +39,10 @@ export function TrainingLiveNode() {
   });
 
   useEffect(() => {
-    const es = fetchTrainingStream();
-    esRef.current = es;
-    const handleMessage = (evt: MessageEvent<string>) => {
+    // Returns the unsubscribe function, which closes the stream on unmount.
+    return subscribeTrainingStream((raw) => {
       try {
-        const data = JSON.parse(evt.data) as { type: string; value: number; ts: number };
+        const data = JSON.parse(raw) as { type: string; value: number; ts: number };
         const point: StreamPoint = { ts: data.ts, value: data.value };
         if (data.type === 'loss') setLossSeries((p) => [...p.slice(-99), point]);
         else if (data.type === 'throughput') setThroughput(data.value);
@@ -52,24 +50,20 @@ export function TrainingLiveNode() {
       } catch {
         /* skip */
       }
-    };
-    es.addEventListener('message', handleMessage as EventListener);
-    return () => {
-      es.close();
-    };
+    });
   }, []);
 
   return (
     <div className="p-3 space-y-3 text-sm h-full overflow-auto">
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded border p-2">
+        <div className="rounded-sm border p-2">
           <div className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Zap className="w-3 h-3" /> Throughput
           </div>
           <div className="text-lg font-semibold">{throughput.toFixed(1)}</div>
           <div className="text-[10px] text-muted-foreground">samples/min</div>
         </div>
-        <div className="rounded border p-2">
+        <div className="rounded-sm border p-2">
           <div className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Activity className="w-3 h-3" /> Agreement
           </div>
@@ -102,7 +96,7 @@ export function TrainingLiveNode() {
           scoreMut.mutate();
         }}
         disabled={scoreMut.isPending}
-        className="text-xs px-2 py-1 rounded border hover:bg-muted"
+        className="text-xs px-2 py-1 rounded-sm border hover:bg-muted"
       >
         Score Now
       </button>

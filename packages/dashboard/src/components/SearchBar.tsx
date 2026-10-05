@@ -181,7 +181,7 @@ export function SearchBar() {
   return (
     <div ref={containerRef} className="relative">
       <div className="flex items-center gap-2 px-3 py-1.5 border rounded-md bg-background text-sm">
-        <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Search className="w-4 h-4 text-muted-foreground shrink-0" />
         <input
           ref={inputRef}
           type="text"
@@ -196,7 +196,7 @@ export function SearchBar() {
           }}
           onKeyDown={handleKeyDown}
           placeholder="Search... (Ctrl+K)"
-          className="bg-transparent outline-none w-32 sm:w-48 placeholder:text-muted-foreground"
+          className="bg-transparent outline-hidden w-32 sm:w-48 placeholder:text-muted-foreground"
           aria-label="Global search"
           role="combobox"
           aria-expanded={open && (results.length > 0 || loading)}

@@ -6,6 +6,102 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [0.5.5] — 2026-10-03
+
+*A second security and correctness review covered what 0.5.4 did not: the audit chain, the MCP service's tools, the sy-edge runtime, the workflow engine and agent orchestration, the data plane, the integrations, and the dashboard. The pattern behind most findings was the same: a control the TS gateway enforced was dropped in the port, or an endpoint answered as if it had done work it had not — the audit chain reported "valid" without existing, the guardrail pipeline reported filters that did not exist, workflow approval gates passed by themselves. Those now either work or answer 501. Several fixes restore TS behaviour that changes what an unconfigured install allows; they are under **Breaking**, each with its migration.*
+
+### Breaking
+
+- **MCP requires `mcp:execute`.** `/mcp/v1` and the internal tool-call endpoint only checked that a token was valid, so a viewer's dashboard session could run any tool. The MCP service now asks core (`POST /api/v1/auth/verify`) whether the principal holds `mcp:execute` — the `admin`, `operator` and `service` roles — and answers 403 otherwise; a core that cannot answer fails closed. **Migration:** give MCP clients a principal with `mcp:execute`.
+- **MCP git tools need `MCP_ALLOWED_PATHS`**, and the filesystem tools need `MCP_EXPOSE_FILESYSTEM=true` as documented (they ran whenever `MCP_ALLOWED_PATHS` was set). With no allowed paths the git tools ran in any directory; they now refuse. Refs and branches may not start with `-`. **Migration:** set `MCP_ALLOWED_PATHS` to the repositories the git tools may use.
+- **The `allowSubAgents` kill switch is enforced** (off by default, as in TS). Workflow agent steps, swarms, councils and teams delegated regardless of it, so the dashboard's "Sub-agents: disabled" disabled nothing. **Migration:** turn it on in Settings → Security, or `PATCH /api/v1/security/policy {"allowSubAgents": true}`.
+- **Gmail, GitHub and Twitter writes follow the active personality's integration access mode** (TS `integrationAccess`), default `suggest`, which the dashboard already showed: `suggest` refuses writes; `draft` creates Gmail drafts and GitHub issues and answers other writes (pull requests, comments, SSH keys, tweets) with a preview instead of acting; `auto` acts. **Migration:** grant `draft` or `auto` per integration in Personality → Body → Integration Access. Credentials configured through environment variables have no integration id; their entry uses the platform name (`gmail`, `github`, `twitter`) as its id.
+- **Workflow runs no longer report success for work they did not do.** A definition the engine cannot read, or a step type it does not implement (`human_approval`, `webhook`, `tool`, …), now fails the run; both used to "complete" (the first with zero steps, the second with a stub output). Retries are capped at 10 attempts and a minute of backoff, and delays at an hour, as in TS.
+- **Unimplemented endpoints answer 501** instead of faking success: the guardrail pipeline (filters, toggle, metrics, reset, test), constitutional critique and revision, secret rotation (status and rotate), license key activation, the integration ping, audit chain repair, and on sy-edge the scheduler's task creation and the update check. `PUT /api/v1/security/policy`, which wrote a table the schema does not have, is removed (405); use `PATCH`.
+- **Stored secret names are environment-variable names** (`[A-Z][A-Z0-9_]{0,127}`), and variables that steer the process or are boot-time security switches cannot be set as secrets: `PATH`, `HOME`, `SHELL`, `TMPDIR`, `LD_*`, `DYLD_*`, `RUST_*`, `DATABASE_*`, `OIDC_*`, `SY_*`, the JWT secrets, the admin password hash, remote access, proxy trust, CORS, fingerprinting, host and port. Stored rows that break these rules are skipped at boot with a warning. **Migration:** move such settings to the server environment.
+- **`SECUREYEOMAN_TRUST_PROXY_HEADERS=true` trusts only proxies on loopback and private networks**, and `X-Forwarded-For` is read from the right, past trusted hops, parsed as an address. It used to trust the header from any peer, leftmost entry first. **Migration:** a proxy on a public address must be listed in the new `SECUREYEOMAN_TRUSTED_PROXIES` (addresses and CIDR ranges).
+- Smaller behaviour changes, each restoring TS: `DELETE /api/v1/execution/sessions/{id}` terminates an active session and keeps its history (it deleted both); removing a workspace member needs a global admin or the workspace's own owner/admin, and the last owner/admin cannot be removed; the active personality, and one whose resource policy sets `deletionMode: "manual"`, cannot be deleted.
+- **sy-edge `/api/v1/exec` inspects only.** Arguments that change the system or run programs are refused: `ip` takes a spelled-out object with `show`/`list` (or `route get`) and display options only, `ss` refuses `-D`, `-K`, `-F` and `-N`, `hostname` takes display options only, `sensors` refuses `-s`. Commands run with an empty environment (fixed `PATH`, `LANG`, `TERM`).
+- **The dashboard needs Safari 16.4, Chrome/Edge 111 or Firefox 128** or newer. Tailwind 4 (below) relies on cascade layers, `@property` and `color-mix()`; older browsers render it without most of its styling. **Migration:** update the browser, or the system web view behind the desktop and mobile apps.
+
+### Security — review fixes
+
+**Authentication.**
+- `POST /api/v1/auth/verify` accepted any well-signed token, refresh tokens and logged-out tokens included, and the MCP service authorizes every tool call through it. It now accepts only an unrevoked access token, and answers `authorized` for an optional `resource`/`action` with the REST RBAC check.
+- A revocation lookup that hit a DB error counted as "not revoked"; REST answers 503 and WebSockets refuse the handshake instead. Logout answers 503 when it could not persist a revocation.
+- A blank `SECUREYEOMAN_JWT_SECRET_PREVIOUS` validated tokens HMAC-signed with an empty key, which anyone can mint. A previous secret that fails the strength check is ignored.
+
+**The audit chain did not exist.** Nothing wrote it (the two inserts omitted its required columns and failed silently) and nothing checked it: every integrity endpoint, `/health` and the metrics block said "valid".
+- Entries are written in the TS `AuditChain` 1.0.0 format — the hash and signature are checked against values computed by the TS code under Node — under an advisory lock, so writers on any instance cannot fork the chain. Logins (with the client address), logouts, OIDC logins, API key creation and revocation, secret writes, RBAC denials, policy changes, session terminations and emergency stops are recorded, by one bounded background writer (a flood of failed logins cannot tie up the pool).
+- The chain is verified at boot and on request, and `/health`, `/api/v1/metrics` and the audit routes report that verification. Retention records where the chain now starts, so it verifies after retention but not after someone deletes history. Repair answers 501: re-signing would make tampered entries verify.
+- The security events feed reads the chain (it read a missing table and always returned an empty list).
+
+**Credentials in responses.** Integration rows were returned verbatim to any `integrations:read` principal, viewers included — every stored GitHub, Gmail, Calendar, Notion, Todoist, Linear, Jira and Twitter credential. Credential fields are masked (a port of TS `sanitizeForLogging`); outbound webhooks report `hasSecret`; `GET`/`PATCH /api/v1/mcp/config` return only the MCP feature settings (they returned every row of `mcp.config`); agent profiles' `commandEnv` values are masked.
+
+**Remote aborts** (the release build aborts on panic): a secret name with `=` or NUL (`set_var` panicked, and boot replayed the row, so the server crash-looped); an event-bridge event name with a line break; `SECUREYEOMAN_CORS_ORIGINS="*"` at boot; a team planner reply with `}` before `{`.
+
+**Lockouts and exhaustion.**
+- Behind the bundled Caddy every client was `127.0.0.1`: one client tripping the login rate limit got `127.0.0.1` blocked for an hour, for everyone, the healthcheck included. Proxy trust is explicit (see Breaking), loopback is never auto-blocked, and the reputation map stays bounded.
+- WebSockets kept tungstenite's 64 MiB message limit (a viewer could make `/ws/metrics` parse and clone gigabytes); messages are capped at 64 KiB (1 MiB for collab), slow readers are dropped, and collab fans out shared bytes.
+- A `DATABASE_URL` got a 5-connection pool (now 20); the 10 MiB upload limit applied to any content type containing "multipart".
+- sy-edge scanned every process on each (unauthenticated) Prometheus request; requests now read the sampler's latest sample. Its pre-auth rate limiter tracks at most 10,000 addresses.
+
+**MCP tools.** A ref starting with `-` reached git as an option (`git diff --output=FILE` wrote files); a repository's own config could run commands through `core.fsmonitor`, hooks, external diff or textconv; the filesystem allowlist compared string prefixes (`/data` admitted `/data-secrets`) and a new file's write skipped the symlink check; the SSRF guard missed most of `fc00::/7` and `fe80::/10`, `::` and `100.64.0.0/10`; browser tools navigated anywhere, `file://` included. All fixed; every request a browser page makes goes through the SSRF guard.
+
+**sy-edge exec.** Besides the argument policies (Breaking), the node is non-dumpable on Linux, so a command running as the same (non-root) user cannot read the node's tokens and keys from `/proc/<pid>/environ`. Messaging and LLM errors no longer carry request URLs (Telegram bot tokens and webhook secrets live there).
+
+**Workflows and orchestration.** Step conditions and `triggerMode: "any"` were ignored, so gated steps always ran; the `condition` step treated anything mentioning "completed" as true; only the first 20 steps of a tier ran; a cancelled run kept executing and spending tokens. Conditions now use the evaluator the TS engine used (szal), cancelling stops the run on the instance executing it, and step outcomes are recorded.
+
+**Integrations.** Path parameters went into upstream API paths after axum decoded them, so `..%2F`, `%3F` or `%23` could aim stored credentials at another upstream endpoint; those routers refuse anything but plain identifiers.
+
+**Dashboard.**
+- Markdown images in chat auto-loaded, so injected model output could send data out as a message rendered; they render as links, and Mermaid SVG drops `<image>`/`<feImage>`.
+- The fleet panel sent the user's access token to every A2A peer's URL.
+- The training stream put the token in the URL; event streams now send it in the `Authorization` header.
+- lemon.js loaded on every Settings visit; it now loads when a checkout starts.
+- Logging out did not clear cached data for the next user of the tab.
+
+### Security — dependencies
+
+- **`undici` 7.29.0 → 7.30.0** under `@qdrant/js-client-rest` (root override): ten advisories published after 0.5.4, among them TLS certificate validation bypass in `BalancedPool`, cross-user cookie disclosure via shared caches, and several denials of service.
+- **`braces`** (stack exhaustion on deeply nested patterns) has no patched release. Excalidraw pinned `sass` 1.51.0, which pulled it in through `chokidar` 3; `sass` is overridden to 1.105.1 (`chokidar` 5, no `braces`). Nothing in the repo compiles Sass, so this changes no output. The production dependency tree now audits clean (`npm audit --omit=dev`: 0).
+- **`braces` is out of the tree.** It reached the build-time tools Tailwind 3 and `vite-plugin-pwa` 0.19 (6 high, through `chokidar` 3, `fast-glob` and `micromatch`), so the dashboard moves to **Tailwind CSS 4.3** and **`vite-plugin-pwa` 1.3**. 48 packages leave the lockfile (`braces`, `micromatch`, `chokidar` 3 and `fast-glob` among them; `autoprefixer` too, since Tailwind 4 prefixes through Lightning CSS) and 30 arrive (Tailwind 4, `@tailwindcss/postcss`, Lightning CSS and their platform binaries). `npm audit`: 0 vulnerabilities (was 6 high), so the CI security audit passes again. The generated service worker is unchanged apart from revision hashes.
+
+### Fixed
+
+- **Workflows:** definitions written by the dashboard and TS (`type`, not `stepType`) ran as empty workflows; a workflow that had ever run could not be deleted (a 500 — its runs are now deleted with it); `PATCH /api/v1/security/policy` reset every other toggle when its read failed, and accepted any key.
+- **Emergency stop** (`/autonomy/emergency-stop/{skill|workflow}/{id}`) read its parameters as an agent and a reason and stopped nothing; it disables the skill, or disables the workflow and cancels its runs.
+- **Dashboard:** the Marketplace preview and Settings (with Ollama models) crashed on fields the Rust API omits; chat and code showed `&lt;` and dropped `<stdio.h>` (text was run through DOMPurify before React rendered it); ~15 pages were empty because Rust lists are bare arrays; onboarding never saved the provider API key; offline mutations were replayed without the token and then dropped.
+- **sy-edge:** CPU usage always read 0%; sample timestamps were Unix seconds with a stray `Z`; a failed update check was logged as "no update".
+- GPU status always reported 0 MB of VRAM; brain search and lists took negative limits; `/api/v1/audit` reported the page length as `total` and ignored `from`/`to`; audit CSV and syslog exports treated millisecond timestamps as seconds; the agent-name seed and an unreadable migrations directory (which fell back to running every `*.sql` in the working directory) are fixed; workspace listings decoded `NULL` settings and roles as errors.
+- The desktop app builds again (its manifest referenced a library file and a crate that no longer exist).
+
+### Changed
+
+- **Dashboard on Tailwind 4.** The official codemod renamed classes for the new scale (`rounded` → `rounded-sm`, `shadow-sm` → `shadow-xs`, `flex-shrink-0` → `shrink-0`, `outline-none` → `outline-hidden`, …) across 215 files, and `tailwind.config.js` moved into `src/index.css` (`@theme`). Rendering is kept as it was where Tailwind 4 changed behaviour: fixed line heights (v4's are ratios of the font size), Tailwind 3's `space-y` (v4 spaces with a bottom margin, which left gaps after hidden trailing children and stacked children's own margins), and the old border, placeholder and button-cursor defaults. The app's component classes (`.card*`, `.btn*`, `.badge*`) and their duplicates of theme utilities move into the utilities layer: left unlayered, they would have beaten every utility, `hover:` and `sm:` included. Tailwind 3 emitted variants after them and Tailwind 4 cannot, so the button state rules use `:where()`, and the 89 responsive classes that override one of these classes carry `!` (`card-header p-3 sm:p-4!`); new code needs the same. Checked against the Tailwind 3 build in Chromium, element by element (box and computed style): 23 routes at 1440 and 390 px, four of them also in the light, GitHub Light and Dracula themes and in hover and focus states. Nothing moves except date inputs, now 2 px shorter (v4 normalizes their inner padding). What does change: palette colours (`red-500`, `yellow-400`, …) are Tailwind 4's, defined in oklch and slightly more saturated; theme colours (`primary`, `muted`, …) are unchanged; and `hover:` styles apply only on devices that can hover.
+- `GET`/`POST /api/v1/audit/export` need `audit:export` (auditors hold it); the POST needed `audit:write`, which only admins hold.
+- `/api/v1/auth/verify` moves to the general rate tier: the MCP service verifies every client through it from one address, and 5/min capped it at five sessions.
+- `sy-core` depends on `libc` directly on Linux (already in the tree through tokio) for `prctl`.
+
+### Docs
+
+- The sy-edge guide documented endpoints and features the Rust binary does not have; it now covers the real routes, the exec policies, and what is not implemented (scheduler, OTA, mDNS, registration with a Rust parent).
+- Configuration: MCP authorization and `MCP_ALLOWED_PATHS` for git; how the audit signing key is chosen. REST API: security events and the policy `PATCH`. Gmail/Twitter guide: the default access mode and environment credentials.
+
+### Known issues
+
+- **The Rust DB layer still does not fully match the shipped schema:** 311 of 691 statements work (296 of 677 at 0.5.4); 318 fail to parse and 54 cannot decode. The largest gaps are training, security, swarms/councils/teams, identity administration, responsible AI and federation. See the [roadmap](docs/development/roadmap.md#rust-db-layer-vs-the-shipped-schema-p0).
+- The audit chain cannot detect truncation of its newest entries (a hash chain needs an external anchor for that), and has no signing-key history: changing `SECUREYEOMAN_SIGNING_KEY` makes earlier entries fail verification.
+- Cancelling a workflow run stops it only on the instance executing it; elsewhere the run keeps its cancelled status and runs to its end.
+- sy-edge cannot register with a Rust parent, which does not serve `/api/v1/a2a/peers/local` yet.
+- Dashboard lists render with Rust rows, but some fields still differ from the TS types (`total` is the page length for some paged endpoints).
+
+### Verification
+
+- Rust: fmt, `clippy -D warnings` and **633 tests** on stable 1.97 and on the 1.91 MSRV, every DB-backed test run against PostgreSQL 16 with the shipped migrations; rustdoc `-D warnings`; a sy-edge smoke run (status, health, Prometheus, a refused `ip netns exec`, a scrubbed child environment). `cargo audit` and `cargo deny` were not run (not installed in this environment); the lockfile's only change besides the version is `libc` as a direct dependency of `sy-core`, at the version already in the tree.
+- Dashboard: typecheck, lint (0 errors), format, **4,213 tests**.
+- Mutation checks: with the workflow cancel's notify removed, the cancel test fails; the fleet-panel test fails against the old code; the dashboard's crash, sanitizing, image, lemon.js and logout tests fail against the original code.
+
 ## [0.5.4] — 2026-09-26
 
 *A security and correctness review of the Rust server covered auth and sessions, WebSockets, the sy-edge exec sandbox, outbound HTTP and SQL. It shipped alongside a toolchain and dependency refresh. The review also added what would have caught these bugs earlier. CI now runs the Rust test suite, including DB-backed tests against the shipped migrations; before, it only built `sy-edge`. A SQL drift checker runs every statement against those migrations. The core DB modules it flagged are ported to that schema, and RBAC is reconciled with the TS gateway's roles; both are **Breaking** for some scoped keys and role grants. The drift report went from 213 working statements of 657 to 296 of 677; the rest are under Known issues. Dependency security debt since 0.5.1 is cleared: `npm audit` went 50 → 0, `cargo audit` 2 → 0, and `cargo deny` red → green.*

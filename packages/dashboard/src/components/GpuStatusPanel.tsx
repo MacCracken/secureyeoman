@@ -27,7 +27,8 @@ const POLICY_DESCRIPTIONS: Record<RoutingPolicy, string> = {
 };
 
 function VramBar({ used, total }: { used: number; total: number }) {
-  if (total === 0) return null;
+  // Missing or zero totals (unknown device memory) render no bar rather than NaN%.
+  if (!total) return null;
   const pct = Math.round((used / total) * 100);
   const color = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-yellow-500' : 'bg-green-500';
   return (
@@ -56,7 +57,7 @@ function CapabilityBadge({ cap }: { cap: string }) {
   };
   return (
     <span
-      className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${colors[cap] ?? 'bg-gray-500/20 text-gray-400'}`}
+      className={`px-1.5 py-0.5 rounded-sm text-[10px] font-medium ${colors[cap] ?? 'bg-gray-500/20 text-gray-400'}`}
     >
       {cap}
     </span>
@@ -88,6 +89,16 @@ export default function GpuStatusPanel() {
 
   const isLoading = gpuLoading || modelsLoading;
 
+  // The Rust gateway returns Ollama's raw tags (no capabilities, no VRAM
+  // estimate) and reports provider availability under `providers`; tolerate
+  // both that shape and the TS registry's.
+  const models = Array.isArray(localModels?.models) ? localModels.models : [];
+  const ollamaAvailable = localModels?.ollamaAvailable ?? localModels?.providers?.ollama ?? false;
+  const lmstudioAvailable =
+    localModels?.lmstudioAvailable ?? localModels?.providers?.lmstudio ?? false;
+  const localaiAvailable =
+    localModels?.localaiAvailable ?? localModels?.providers?.localai ?? false;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -98,7 +109,7 @@ export default function GpuStatusPanel() {
         </div>
         <button
           onClick={refresh}
-          className="p-1 rounded hover:bg-muted transition-colors"
+          className="p-1 rounded-sm hover:bg-muted transition-colors"
           title="Refresh GPU status"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -116,7 +127,7 @@ export default function GpuStatusPanel() {
             No GPU detected
           </div>
         ) : (
-          gpu.devices.map((device) => (
+          (gpu.devices ?? []).map((device) => (
             <div
               key={device.index}
               className="p-2.5 rounded-lg border border-border bg-card space-y-1.5"
@@ -124,7 +135,7 @@ export default function GpuStatusPanel() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium">{device.name}</span>
                 <span className="text-[10px] text-muted-foreground">
-                  {device.vendor.toUpperCase()}
+                  {(device.vendor ?? '').toUpperCase()}
                   {device.computeCapability ? ` CC ${device.computeCapability}` : ''}
                 </span>
               </div>
@@ -142,54 +153,60 @@ export default function GpuStatusPanel() {
       {/* Local Models */}
       <div className="space-y-2">
         <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          Local Models ({localModels?.models.length ?? 0})
+          Local Models ({models.length})
         </h4>
-        {!localModels?.models.length ? (
+        {models.length === 0 ? (
           <div className="text-xs text-muted-foreground py-2">
             No local models detected. Install Ollama, LM Studio, or LocalAI.
           </div>
         ) : (
           <div className="space-y-1">
-            {localModels.models.slice(0, 8).map((model) => (
-              <div
-                key={`${model.provider}-${model.name}`}
-                className="flex items-center justify-between p-1.5 rounded border border-border bg-card"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <HardDrive className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                  <span className="text-xs truncate">{model.name}</span>
+            {models.slice(0, 8).map((model, i) => {
+              const capabilities = Array.isArray(model.capabilities) ? model.capabilities : [];
+              const vramMb = model.estimatedVramMb;
+              return (
+                <div
+                  key={`${model.provider ?? 'local'}-${model.name}-${i}`}
+                  className="flex items-center justify-between p-1.5 rounded-sm border border-border bg-card"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <HardDrive className="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span className="text-xs truncate">{model.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {capabilities
+                      .filter((c) => c !== 'chat' && c !== 'streaming')
+                      .map((cap) => (
+                        <CapabilityBadge key={cap} cap={cap} />
+                      ))}
+                    {typeof vramMb === 'number' && vramMb > 0 && (
+                      <span className="text-[10px] text-muted-foreground ml-1">
+                        ~{Math.round(vramMb / 1024)}GB
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  {model.capabilities
-                    .filter((c) => c !== 'chat' && c !== 'streaming')
-                    .map((cap) => (
-                      <CapabilityBadge key={cap} cap={cap} />
-                    ))}
-                  <span className="text-[10px] text-muted-foreground ml-1">
-                    ~{Math.round(model.estimatedVramMb / 1024)}GB
-                  </span>
-                </div>
-              </div>
-            ))}
-            {localModels.models.length > 8 && (
+              );
+            })}
+            {models.length > 8 && (
               <div className="text-[10px] text-muted-foreground text-center py-1">
-                +{localModels.models.length - 8} more
+                +{models.length - 8} more
               </div>
             )}
           </div>
         )}
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          {localModels?.ollamaAvailable && (
+          {ollamaAvailable && (
             <span className="flex items-center gap-0.5">
               <Wifi className="w-2.5 h-2.5 text-green-500" /> Ollama
             </span>
           )}
-          {localModels?.lmstudioAvailable && (
+          {lmstudioAvailable && (
             <span className="flex items-center gap-0.5">
               <Wifi className="w-2.5 h-2.5 text-green-500" /> LM Studio
             </span>
           )}
-          {localModels?.localaiAvailable && (
+          {localaiAvailable && (
             <span className="flex items-center gap-0.5">
               <Wifi className="w-2.5 h-2.5 text-green-500" /> LocalAI
             </span>
