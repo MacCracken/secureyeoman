@@ -5,6 +5,13 @@
 @source '../src/**/*.{js,ts,jsx,tsx}';
 
 /*
+  `dark:` follows the app theme, not the OS: applyTheme() (hooks/useTheme.ts) sets the `dark`
+  class on <html> for every dark theme, named and custom ones included. Tailwind 4's default
+  is the prefers-color-scheme media query.
+*/
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
   Theme colours resolve per element (`inline`), so `bg-primary/20` and friends follow
   the theme variables below wherever they are set.
 */

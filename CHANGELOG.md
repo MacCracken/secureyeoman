@@ -6,6 +6,12 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **Dashboard: `dark:` styles follow the app theme, not the operating system.** Themes set the `dark` class on `<html>`, but Tailwind's `dark:` variant was never configured and kept its default, the `prefers-color-scheme` media query. Its 71 uses across 22 components (status badges and chips, notices and error text, chat message sources, the Security page's Capture tab and its consent dialog) followed the OS instead: a light theme on a dark OS rendered their dark-mode colours on light backgrounds (Computer Use reward chips at 1.04:1 contrast, integration status badges at 1.3–1.6:1), and a dark theme on a light OS the light-mode ones. `src/index.css` declares `@custom-variant dark (&:where(.dark, .dark *))`. Built-in and marketplace themes already set the class to match their colours, and custom themes set it from their `isDark` flag, so no theme changes.
+
 ## [0.5.5] — 2026-10-03
 
 *A second security and correctness review covered what 0.5.4 did not: the audit chain, the MCP service's tools, the sy-edge runtime, the workflow engine and agent orchestration, the data plane, the integrations, and the dashboard. The pattern behind most findings was the same: a control the TS gateway enforced was dropped in the port, or an endpoint answered as if it had done work it had not — the audit chain reported "valid" without existing, the guardrail pipeline reported filters that did not exist, workflow approval gates passed by themselves. Those now either work or answer 501. Several fixes restore TS behaviour that changes what an unconfigured install allows; they are under **Breaking**, each with its migration.*
