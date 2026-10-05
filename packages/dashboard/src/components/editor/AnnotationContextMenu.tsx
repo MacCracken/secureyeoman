@@ -116,7 +116,7 @@ function AnnotationPopover({
       </div>
 
       <input
-        className="w-full px-2 py-1 text-xs bg-muted/30 border border-border rounded mb-2 focus:outline-none focus:ring-1 focus:ring-primary"
+        className="w-full px-2 py-1 text-xs bg-muted/30 border border-border rounded-sm mb-2 focus:outline-hidden focus:ring-1 focus:ring-primary"
         placeholder="Optional note..."
         value={note}
         onChange={(e) => {
@@ -132,7 +132,7 @@ function AnnotationPopover({
           mutation.mutate();
         }}
         disabled={mutation.isPending}
-        className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+        className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
         data-testid="annotation-save-btn"
       >
         <Check className="w-3 h-3" />

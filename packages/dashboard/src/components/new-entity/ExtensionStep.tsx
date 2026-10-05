@@ -42,7 +42,7 @@ export function ExtensionStep({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
+        <button onClick={goBack} className="btn-ghost p-1 rounded-sm" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Extension</h3>
@@ -57,7 +57,7 @@ export function ExtensionStep({
             onChange={(e) => {
               set({ id: e.target.value, error: '' });
             }}
-            className="w-full px-3 py-2 rounded border bg-background"
+            className="w-full px-3 py-2 rounded-sm border bg-background"
             placeholder="e.g. my-extension"
           />
         </div>
@@ -69,7 +69,7 @@ export function ExtensionStep({
             onChange={(e) => {
               set({ version: e.target.value });
             }}
-            className="w-full px-3 py-2 rounded border bg-background font-mono"
+            className="w-full px-3 py-2 rounded-sm border bg-background font-mono"
             placeholder="1.0.0"
           />
         </div>
@@ -83,7 +83,7 @@ export function ExtensionStep({
           onChange={(e) => {
             set({ name: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="My Extension"
         />
       </div>
@@ -95,7 +95,7 @@ export function ExtensionStep({
           onChange={(e) => {
             set({ hooksText: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background font-mono text-sm resize-none"
+          className="w-full px-3 py-2 rounded-sm border bg-background font-mono text-sm resize-none"
           rows={3}
           placeholder={'pre-chat, observe, 10\npost-task, transform, 20'}
         />

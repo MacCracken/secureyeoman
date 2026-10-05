@@ -75,7 +75,7 @@ export function CicdMonitorWidget({ provider }: Props) {
       {isLoading && <Loader2 className="animate-spin w-4 h-4 text-muted-foreground" />}
       <div className="flex-1 overflow-auto space-y-1">
         {(data?.events ?? []).map((evt) => (
-          <div key={evt.id} className="flex items-center gap-2 p-1.5 rounded border text-[10px]">
+          <div key={evt.id} className="flex items-center gap-2 p-1.5 rounded-sm border text-[10px]">
             <StatusIcon status={evt.status} />
             <span className="flex-1 truncate">{evt.name}</span>
             {evt.branch && (

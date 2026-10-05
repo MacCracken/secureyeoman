@@ -13,7 +13,7 @@ export function TaskStep({ task, setTask, goBack, handleClose, navigateTo }: Tas
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
+        <button onClick={goBack} className="btn-ghost p-1 rounded-sm" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Task</h3>
@@ -26,7 +26,7 @@ export function TaskStep({ task, setTask, goBack, handleClose, navigateTo }: Tas
           onChange={(e) => {
             setTask({ ...task, name: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="e.g., Run backup"
         />
       </div>
@@ -37,7 +37,7 @@ export function TaskStep({ task, setTask, goBack, handleClose, navigateTo }: Tas
           onChange={(e) => {
             setTask({ ...task, type: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
         >
           <option value="execute">Execute</option>
           <option value="query">Query</option>
@@ -54,7 +54,7 @@ export function TaskStep({ task, setTask, goBack, handleClose, navigateTo }: Tas
           onChange={(e) => {
             setTask({ ...task, description: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background"
+          className="w-full px-3 py-2 rounded-sm border bg-background"
           placeholder="Optional description"
         />
       </div>
@@ -65,7 +65,7 @@ export function TaskStep({ task, setTask, goBack, handleClose, navigateTo }: Tas
           onChange={(e) => {
             setTask({ ...task, input: e.target.value });
           }}
-          className="w-full px-3 py-2 rounded border bg-background font-mono text-sm"
+          className="w-full px-3 py-2 rounded-sm border bg-background font-mono text-sm"
           rows={3}
           placeholder='{"key": "value"}'
         />

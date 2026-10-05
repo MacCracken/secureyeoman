@@ -231,7 +231,7 @@ export function WorkflowRunDetail() {
       {run.output && (
         <div className="card p-4">
           <h2 className="font-medium text-sm mb-2">Final Output</h2>
-          <pre className="text-xs bg-muted/30 p-3 rounded overflow-x-auto">
+          <pre className="text-xs bg-muted/30 p-3 rounded-sm overflow-x-auto">
             {JSON.stringify(run.output, null, 2)}
           </pre>
         </div>

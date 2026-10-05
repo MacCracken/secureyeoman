@@ -21,7 +21,7 @@ function WinnerBadge({ winner }: { winner: 'source' | 'replay' | 'tie' | null | 
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${colors[winner]}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs font-medium ${colors[winner]}`}
       data-testid="winner-badge"
     >
       {winner === 'tie' ? <Minus className="w-3 h-3" /> : <Trophy className="w-3 h-3" />}
@@ -91,7 +91,7 @@ export function ReplayDiffView({
           <h3 className="text-sm font-semibold">Replay Comparison</h3>
           <WinnerBadge winner={pairwiseWinner} />
         </div>
-        <button onClick={onClose} className="btn-ghost p-1 rounded">
+        <button onClick={onClose} className="btn-ghost p-1 rounded-sm">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -101,7 +101,7 @@ export function ReplayDiffView({
         <div className="px-4 py-2 border-r flex items-center justify-between">
           <span>Source: {sourceConv?.title ?? 'Loading...'}</span>
           {sourceQualityScore != null && (
-            <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            <span className="px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground">
               {sourceQualityScore.toFixed(2)}
             </span>
           )}
@@ -109,7 +109,7 @@ export function ReplayDiffView({
         <div className="px-4 py-2 flex items-center justify-between">
           <span>Replay: {replayConv?.title ?? 'Loading...'}</span>
           {replayQualityScore != null && (
-            <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            <span className="px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground">
               {replayQualityScore.toFixed(2)}
             </span>
           )}

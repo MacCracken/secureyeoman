@@ -69,7 +69,7 @@ export default function ConsentDialog({ consent, onGrant, onDeny, onClose }: Con
             onClick={() => {
               onDeny(consent.id);
             }}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-sm hover:bg-red-700 transition"
           >
             Deny
           </button>
@@ -77,7 +77,7 @@ export default function ConsentDialog({ consent, onGrant, onDeny, onClose }: Con
             onClick={() => {
               onGrant(consent.id);
             }}
-            className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-sm hover:bg-green-700 transition"
           >
             Approve
           </button>

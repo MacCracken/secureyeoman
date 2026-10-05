@@ -132,12 +132,12 @@ export function BranchTimeline({ tree, activeConversationId, onNavigate }: Branc
                   {entry.messageCount}
                 </span>
                 {entry.model && (
-                  <span className="px-1 py-0.5 rounded bg-muted font-mono truncate max-w-[100px]">
+                  <span className="px-1 py-0.5 rounded-sm bg-muted font-mono truncate max-w-[100px]">
                     {entry.model}
                   </span>
                 )}
                 {entry.branchLabel && (
-                  <span className="px-1 py-0.5 rounded bg-primary/10 text-primary truncate max-w-[80px]">
+                  <span className="px-1 py-0.5 rounded-sm bg-primary/10 text-primary truncate max-w-[80px]">
                     {entry.branchLabel}
                   </span>
                 )}

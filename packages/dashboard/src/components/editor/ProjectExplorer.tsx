@@ -130,7 +130,7 @@ function TreeNode({
   return (
     <div>
       <div
-        className={`flex items-center gap-1 px-2 py-1 text-xs font-mono cursor-pointer hover:bg-muted/50 rounded group`}
+        className={`flex items-center gap-1 px-2 py-1 text-xs font-mono cursor-pointer hover:bg-muted/50 rounded-sm group`}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={() => void handleClick()}
         onContextMenu={handleContextMenu}
@@ -139,23 +139,23 @@ function TreeNode({
         {node.type === 'directory' ? (
           <>
             {expanded ? (
-              <ChevronDown className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
+              <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
             ) : (
-              <ChevronRight className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
+              <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground" />
             )}
-            <Folder className="w-3.5 h-3.5 flex-shrink-0 text-blue-400" />
+            <Folder className="w-3.5 h-3.5 shrink-0 text-blue-400" />
           </>
         ) : (
           <>
-            <span className="w-3 flex-shrink-0" />
-            <File className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+            <span className="w-3 shrink-0" />
+            <File className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
           </>
         )}
         {renaming ? (
           <input
             // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
-            className="flex-1 bg-transparent border-b border-primary outline-none text-xs font-mono"
+            className="flex-1 bg-transparent border-b border-primary outline-hidden text-xs font-mono"
             value={renameValue}
             onChange={(e) => {
               setRenameValue(e.target.value);
@@ -259,7 +259,7 @@ function TreeNode({
           <input
             // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
-            className="flex-1 bg-transparent border-b border-primary outline-none text-xs font-mono"
+            className="flex-1 bg-transparent border-b border-primary outline-hidden text-xs font-mono"
             placeholder={creating === 'folder' ? 'folder name...' : 'file name...'}
             value={createName}
             onChange={(e) => {
@@ -329,7 +329,7 @@ export function ProjectExplorer({ cwd, onOpenFile, onCwdChange }: Props) {
             if (e.key === 'Enter') handleCwdSubmit();
           }}
           onBlur={handleCwdSubmit}
-          className="w-full bg-transparent border border-border rounded px-1.5 py-1 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full bg-transparent border border-border rounded-sm px-1.5 py-1 text-[10px] font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
           placeholder="/path/to/folder"
           title="Working directory"
         />

@@ -28,7 +28,7 @@ export function StreamingResponse({
 }: StreamingResponseProps) {
   return (
     <div className="flex justify-start mb-4">
-      <div className="bg-muted rounded-lg px-4 py-3 max-w-[90%] sm:max-w-[75%] break-words">
+      <div className="bg-muted rounded-lg px-4 py-3 max-w-[90%] sm:max-w-[75%] wrap-break-word">
         <div className="flex items-center gap-2 mb-1">
           <Bot className="w-3 h-3" />
           <span className="text-xs opacity-70">{personality?.name ?? 'Assistant'}</span>

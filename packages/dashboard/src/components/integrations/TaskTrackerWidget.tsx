@@ -93,7 +93,7 @@ export function TaskTrackerWidget() {
 
   return (
     <div
-      className="rounded-lg border bg-card p-4 shadow-sm flex flex-col gap-3"
+      className="rounded-lg border bg-card p-4 shadow-xs flex flex-col gap-3"
       data-testid="task-tracker-widget"
     >
       {/* Header */}
@@ -198,19 +198,19 @@ export function TaskTrackerWidget() {
                 {data.recentActivity.map((item) => (
                   <li key={item.id} className="flex items-center gap-1.5 text-[11px]">
                     <span
-                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_COLORS[item.status] ?? 'bg-gray-400'}`}
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_COLORS[item.status] ?? 'bg-gray-400'}`}
                     />
                     <span className="truncate flex-1" title={item.title}>
                       {item.title}
                     </span>
                     {item.priority && (
                       <span
-                        className={`px-1 rounded text-[9px] font-medium ${PRIORITY_COLORS[item.priority] ?? ''}`}
+                        className={`px-1 rounded-sm text-[9px] font-medium ${PRIORITY_COLORS[item.priority] ?? ''}`}
                       >
                         {item.priority}
                       </span>
                     )}
-                    <span className="text-muted-foreground flex-shrink-0">
+                    <span className="text-muted-foreground shrink-0">
                       {timeAgo(item.modifiedAt)}
                     </span>
                   </li>

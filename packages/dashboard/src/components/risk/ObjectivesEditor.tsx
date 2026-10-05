@@ -70,7 +70,7 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
           <span className="text-xs text-muted-foreground">({objectives.length})</span>
         </div>
         <button
-          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded-sm transition-colors"
           onClick={handleAdd}
         >
           <Plus className="w-3.5 h-3.5" />
@@ -98,7 +98,7 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      className="flex-1 text-sm border border-border rounded px-2 py-1 bg-transparent focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="flex-1 text-sm border border-border rounded-sm px-2 py-1 bg-transparent focus:outline-hidden focus:ring-1 focus:ring-primary"
                       placeholder="Objective title"
                       value={obj.title}
                       onChange={(e) => {
@@ -108,7 +108,7 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
                       autoFocus
                     />
                     <select
-                      className="text-xs border border-border rounded px-2 py-1 bg-transparent focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="text-xs border border-border rounded-sm px-2 py-1 bg-transparent focus:outline-hidden focus:ring-1 focus:ring-primary"
                       value={obj.priority}
                       onChange={(e) => {
                         handleUpdate(index, 'priority', e.target.value);
@@ -131,7 +131,7 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
                     </button>
                   </div>
                   <textarea
-                    className="w-full text-xs border border-border rounded px-2 py-1 bg-transparent focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                    className="w-full text-xs border border-border rounded-sm px-2 py-1 bg-transparent focus:outline-hidden focus:ring-1 focus:ring-primary resize-none"
                     placeholder="Description (optional)"
                     rows={2}
                     value={obj.description ?? ''}
@@ -162,7 +162,7 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
                         {obj.title || '(untitled)'}
                       </span>
                       <span
-                        className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium border ${PRIORITY_BADGE[obj.priority]}`}
+                        className={`inline-flex px-1.5 py-0.5 rounded-sm text-xs font-medium border ${PRIORITY_BADGE[obj.priority]}`}
                       >
                         {obj.priority}
                       </span>

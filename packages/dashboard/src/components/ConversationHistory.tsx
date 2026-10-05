@@ -143,7 +143,7 @@ export function ConversationHistory({ conversationId }: { conversationId: string
             sealMutation.mutate();
           }}
           disabled={sealMutation.isPending}
-          className="flex items-center gap-1 text-xs px-2 py-1 bg-muted hover:bg-muted/80 rounded transition-colors"
+          className="flex items-center gap-1 text-xs px-2 py-1 bg-muted hover:bg-muted/80 rounded-sm transition-colors"
         >
           <Scissors className="w-3 h-3" />
           {sealMutation.isPending ? 'Sealing...' : 'Seal Topic'}
@@ -152,7 +152,7 @@ export function ConversationHistory({ conversationId }: { conversationId: string
           onClick={() => {
             setShowContext(!showContext);
           }}
-          className="flex items-center gap-1 text-xs px-2 py-1 bg-muted hover:bg-muted/80 rounded transition-colors"
+          className="flex items-center gap-1 text-xs px-2 py-1 bg-muted hover:bg-muted/80 rounded-sm transition-colors"
         >
           {showContext ? 'Hide' : 'Show'} Context
         </button>
@@ -179,7 +179,7 @@ export function ConversationHistory({ conversationId }: { conversationId: string
           const isExpanded = expandedEntries.has(entry.id);
 
           return (
-            <div key={entry.id} className={`rounded border ${config.color}`}>
+            <div key={entry.id} className={`rounded-sm border ${config.color}`}>
               <button
                 onClick={() => {
                   toggleExpanded(entry.id);
@@ -195,7 +195,7 @@ export function ConversationHistory({ conversationId }: { conversationId: string
                 <span className="text-xs truncate flex-1">{entry.content.substring(0, 80)}</span>
                 <span className="text-[10px] text-muted-foreground">{entry.tokenCount}t</span>
                 {entry.sealedAt && (
-                  <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded">
+                  <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded-sm">
                     sealed
                   </span>
                 )}

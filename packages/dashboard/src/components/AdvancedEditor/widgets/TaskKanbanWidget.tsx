@@ -56,7 +56,7 @@ export function TaskKanbanWidget() {
             {grouped[stage].map((task) => (
               <div
                 key={task.id}
-                className="text-[10px] rounded border p-1.5 bg-card truncate"
+                className="text-[10px] rounded-sm border p-1.5 bg-card truncate"
                 title={task.description ?? task.id}
               >
                 {task.description ?? task.id}

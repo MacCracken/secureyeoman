@@ -149,7 +149,7 @@ export function LocalServerCard({
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-sm truncate">{server.name}</h3>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1 text-xs text-muted-foreground">
-              <span className="px-1.5 py-0.5 rounded bg-muted/50">{server.transport}</span>
+              <span className="px-1.5 py-0.5 rounded-sm bg-muted/50">{server.transport}</span>
               <span className="shrink-0">{toolCount} tools</span>
               {isRestarting && <span className="text-yellow-400 animate-pulse">Reloading...</span>}
             </div>
@@ -200,14 +200,14 @@ export function LocalServerCard({
             {/* URL row */}
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[10px] text-muted-foreground shrink-0">URL</span>
-              <code className="flex-1 text-[10px] bg-muted/40 rounded px-2 py-1 font-mono truncate">
+              <code className="flex-1 text-[10px] bg-muted/40 rounded-sm px-2 py-1 font-mono truncate">
                 {mcpUrl}
               </code>
               <button
                 onClick={() => {
                   copyText(mcpUrl, setCopiedUrl);
                 }}
-                className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
+                className="shrink-0 p-1 rounded-sm hover:bg-muted/50 transition-colors text-muted-foreground"
                 title="Copy URL"
               >
                 {copiedUrl ? (
@@ -223,7 +223,7 @@ export function LocalServerCard({
                   onClick={() => {
                     createMcpKeyMut.mutate();
                   }}
-                  className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
+                  className="shrink-0 p-1 rounded-sm hover:bg-muted/50 transition-colors text-muted-foreground"
                   title="Generate new token"
                 >
                   <Plus className="w-3 h-3" />
@@ -239,7 +239,7 @@ export function LocalServerCard({
                   New key generated — copy it now, shown once only
                 </p>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-[10px] bg-black/20 rounded px-2 py-1 font-mono truncate text-amber-300">
+                  <code className="flex-1 text-[10px] bg-black/20 rounded-sm px-2 py-1 font-mono truncate text-amber-300">
                     {showToken
                       ? mcpToken
                       : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
@@ -248,7 +248,7 @@ export function LocalServerCard({
                     onClick={() => {
                       setShowToken((v) => !v);
                     }}
-                    className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
+                    className="shrink-0 p-1 rounded-sm hover:bg-muted/50 transition-colors text-muted-foreground"
                     title={showToken ? 'Hide token' : 'Reveal token'}
                   >
                     {showToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
@@ -257,7 +257,7 @@ export function LocalServerCard({
                     onClick={() => {
                       copyText(mcpToken, setCopiedToken);
                     }}
-                    className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
+                    className="shrink-0 p-1 rounded-sm hover:bg-muted/50 transition-colors text-muted-foreground"
                     title="Copy token"
                   >
                     {copiedToken ? (
@@ -284,7 +284,7 @@ export function LocalServerCard({
                       {copiedConfig ? 'Copied' : 'Copy'}
                     </button>
                   </div>
-                  <pre className="text-[9px] bg-black/20 rounded p-2 font-mono overflow-x-auto whitespace-pre text-amber-200/70">
+                  <pre className="text-[9px] bg-black/20 rounded-sm p-2 font-mono overflow-x-auto whitespace-pre text-amber-200/70">
                     {mcpJsonConfig}
                   </pre>
                 </div>
@@ -313,7 +313,7 @@ export function LocalServerCard({
                         revokeMcpKeyMut.mutate(k.id);
                       }}
                       disabled={revokeMcpKeyMut.isPending}
-                      className="shrink-0 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                      className="shrink-0 p-1 rounded-sm hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                       title="Revoke key"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -349,7 +349,7 @@ export function LocalServerCard({
                       onFeatureToggle({ exposeGit: e.target.checked });
                     }}
                     disabled={isFeatureToggling}
-                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                   />
                 </label>
                 <label className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
@@ -364,7 +364,7 @@ export function LocalServerCard({
                       onFeatureToggle({ exposeFilesystem: e.target.checked });
                     }}
                     disabled={isFeatureToggling}
-                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                   />
                 </label>
                 <label className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
@@ -379,7 +379,7 @@ export function LocalServerCard({
                       onFeatureToggle({ exposeWeb: e.target.checked });
                     }}
                     disabled={isFeatureToggling}
-                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                   />
                 </label>
                 <label
@@ -397,7 +397,7 @@ export function LocalServerCard({
                       onFeatureToggle({ exposeBrowser: e.target.checked });
                     }}
                     disabled={isFeatureToggling}
-                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                   />
                 </label>
                 {/* Desktop Control -- locked if allowDesktopControl=false in security policy (.env gate) */}
@@ -429,7 +429,7 @@ export function LocalServerCard({
                       onFeatureToggle({ exposeDesktopControl: e.target.checked });
                     }}
                     disabled={isFeatureToggling || !securityPolicy?.allowDesktopControl}
-                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                   />
                 </label>
                 {/* Network Tools -- gated on allowNetworkTools security policy */}
@@ -461,7 +461,7 @@ export function LocalServerCard({
                       onFeatureToggle({ exposeNetworkTools: e.target.checked });
                     }}
                     disabled={isFeatureToggling || !securityPolicy?.allowNetworkTools}
-                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                   />
                 </label>
                 {/* NetBox Write -- sub-gate, only meaningful when Network Tools enabled */}
@@ -493,7 +493,7 @@ export function LocalServerCard({
                       policyMut.mutate({ allowNetBoxWrite: e.target.checked });
                     }}
                     disabled={policyMut.isPending || !featureConfig.exposeNetworkTools}
-                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                   />
                 </label>
               </div>
@@ -523,7 +523,7 @@ export function LocalServerCard({
                         onFeatureToggle({ exposeGmail: e.target.checked });
                       }}
                       disabled={isFeatureToggling}
-                      className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                      className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                     />
                   </label>
                   <label
@@ -544,7 +544,7 @@ export function LocalServerCard({
                         onFeatureToggle({ exposeTwitter: e.target.checked });
                       }}
                       disabled={isFeatureToggling}
-                      className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                      className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                     />
                   </label>
                   <label
@@ -565,7 +565,7 @@ export function LocalServerCard({
                         onFeatureToggle({ exposeGithub: e.target.checked });
                       }}
                       disabled={isFeatureToggling}
-                      className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                      className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                     />
                   </label>
                 </div>
@@ -596,7 +596,7 @@ export function LocalServerCard({
                         onFeatureToggle({ exposeKnowledgeBase: e.target.checked });
                       }}
                       disabled={isFeatureToggling}
-                      className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                      className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                     />
                   </label>
                   <label
@@ -617,7 +617,7 @@ export function LocalServerCard({
                         onFeatureToggle({ exposeOrgIntentTools: e.target.checked });
                       }}
                       disabled={isFeatureToggling}
-                      className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                      className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                     />
                   </label>
                 </div>
@@ -648,7 +648,7 @@ export function LocalServerCard({
                         onFeatureToggle({ exposeDockerTools: e.target.checked });
                       }}
                       disabled={isFeatureToggling}
-                      className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                      className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                     />
                   </label>
                   {/* Terminal */}
@@ -670,7 +670,7 @@ export function LocalServerCard({
                         onFeatureToggle({ exposeTerminal: e.target.checked });
                       }}
                       disabled={isFeatureToggling}
-                      className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                      className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                     />
                   </label>
                 </div>
@@ -703,7 +703,7 @@ export function LocalServerCard({
                           onFeatureToggle({ exposeGithubActions: e.target.checked });
                         }}
                         disabled={isFeatureToggling}
-                        className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                        className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                       />
                     </label>
 
@@ -726,7 +726,7 @@ export function LocalServerCard({
                           onFeatureToggle({ exposeJenkins: e.target.checked });
                         }}
                         disabled={isFeatureToggling}
-                        className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                        className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                       />
                     </label>
 
@@ -749,7 +749,7 @@ export function LocalServerCard({
                           onFeatureToggle({ exposeGitlabCi: e.target.checked });
                         }}
                         disabled={isFeatureToggling}
-                        className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                        className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                       />
                     </label>
 
@@ -772,7 +772,7 @@ export function LocalServerCard({
                           onFeatureToggle({ exposeNorthflank: e.target.checked });
                         }}
                         disabled={isFeatureToggling}
-                        className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                        className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                       />
                     </label>
                   </div>
@@ -803,7 +803,7 @@ export function LocalServerCard({
                       onFeatureToggle({ respectContentSignal: e.target.checked });
                     }}
                     disabled={isFeatureToggling}
-                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                   />
                 </label>
               </div>
@@ -846,7 +846,7 @@ export function LocalServerCard({
                       onFeatureToggle({ exposeTwingateTools: e.target.checked });
                     }}
                     disabled={isFeatureToggling || !securityPolicy?.allowTwingate}
-                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                   />
                 </label>
               </div>

@@ -50,7 +50,7 @@ export function AutomationPage() {
               }}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
                 activeTab === tab
-                  ? 'bg-card shadow-sm text-foreground'
+                  ? 'bg-card shadow-xs text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >

@@ -97,7 +97,7 @@ function IntentDocCard({
           <div className="flex items-center gap-2">
             <span className="font-medium text-sm truncate">{intent.name}</span>
             {isActive && (
-              <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
+              <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded-sm">
                 Active
               </span>
             )}
@@ -113,7 +113,7 @@ function IntentDocCard({
               onClick={() => {
                 onEdit(intent.id);
               }}
-              className="text-xs px-2 py-1 border border-border rounded hover:bg-accent transition-colors"
+              className="text-xs px-2 py-1 border border-border rounded-sm hover:bg-accent transition-colors"
             >
               Edit
             </button>
@@ -123,7 +123,7 @@ function IntentDocCard({
               onClick={() => {
                 onActivate(intent.id);
               }}
-              className="text-xs px-2 py-1 border border-border rounded hover:bg-accent transition-colors"
+              className="text-xs px-2 py-1 border border-border rounded-sm hover:bg-accent transition-colors"
             >
               Activate
             </button>
@@ -180,7 +180,7 @@ function EnforcementLogFeed() {
           onChange={(e) => {
             setEventTypeFilter(e.target.value);
           }}
-          className="text-xs border border-border rounded px-2 py-1 bg-background"
+          className="text-xs border border-border rounded-sm px-2 py-1 bg-background"
         >
           <option value="">All events</option>
           <option value="boundary_violated">boundary_violated</option>
@@ -202,7 +202,7 @@ function EnforcementLogFeed() {
 
       <div className="space-y-2">
         {(expanded ? entries : entries.slice(0, 5)).map((entry: EnforcementLogEntry) => (
-          <div key={entry.id} className="border border-border rounded p-3 text-xs space-y-1">
+          <div key={entry.id} className="border border-border rounded-sm p-3 text-xs space-y-1">
             <div className="flex items-center gap-2">
               <span
                 className={`inline-flex items-center px-1.5 py-0.5 rounded-full font-medium ${
@@ -426,7 +426,7 @@ function PolicyCard({ policy }: { policy: OrgIntentPolicy }) {
               {enforcementLabel[policy.enforcement]}
             </span>
             {policy.rego && (
-              <span className="text-xs font-medium px-1.5 py-0.5 rounded border text-violet-600 bg-violet-50 border-violet-200 flex items-center gap-1">
+              <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm border text-violet-600 bg-violet-50 border-violet-200 flex items-center gap-1">
                 <Code2 className="w-3 h-3" />
                 OPA Rego
               </span>
@@ -449,7 +449,7 @@ function PolicyCard({ policy }: { policy: OrgIntentPolicy }) {
             {showRego ? 'Hide Rego' : 'View Rego policy'}
           </button>
           {showRego && (
-            <pre className="mt-2 text-xs font-mono bg-muted/50 rounded p-3 overflow-x-auto whitespace-pre border border-border">
+            <pre className="mt-2 text-xs font-mono bg-muted/50 rounded-sm p-3 overflow-x-auto whitespace-pre border border-border">
               {policy.rego}
             </pre>
           )}
@@ -476,7 +476,7 @@ function PoliciesView() {
         <FileWarning className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
         <p className="text-sm text-muted-foreground">No policies defined in the active intent.</p>
         <p className="text-xs text-muted-foreground mt-1">
-          Add <code className="font-mono bg-muted px-1 rounded">policies[]</code> to your intent
+          Add <code className="font-mono bg-muted px-1 rounded-sm">policies[]</code> to your intent
           document to enforce soft governance rules.
         </p>
       </div>
@@ -525,9 +525,9 @@ function PoliciesView() {
 
       <p className="text-xs text-muted-foreground border-t border-border pt-4">
         Policies are evaluated on every agent action. <em>Block</em> policies halt the action and
-        log a <code className="font-mono bg-muted px-1 rounded">policy_block</code> event.{' '}
+        log a <code className="font-mono bg-muted px-1 rounded-sm">policy_block</code> event.{' '}
         <em>Warn</em> policies log a{' '}
-        <code className="font-mono bg-muted px-1 rounded">policy_warn</code> event and continue.
+        <code className="font-mono bg-muted px-1 rounded-sm">policy_warn</code> event and continue.
         {process.env.OPA_ADDR && ' OPA Rego policies are evaluated by the sidecar.'}
       </p>
     </div>
@@ -760,7 +760,7 @@ export function IntentEditor() {
             {tab.icon}
             {tab.label}
             {tab.devOnly && (
-              <span className="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded font-medium leading-none">
+              <span className="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded-sm font-medium leading-none">
                 dev
               </span>
             )}
@@ -922,7 +922,7 @@ export function IntentEditor() {
                           onChange={(e) => {
                             set({ name: e.target.value });
                           }}
-                          className="w-full px-3 py-2 rounded border bg-background"
+                          className="w-full px-3 py-2 rounded-sm border bg-background"
                           placeholder="e.g., Production Safety Intent"
                         />
                       </div>
@@ -951,7 +951,7 @@ export function IntentEditor() {
                                   onChange={(e) => {
                                     updateGoal(g.id, { name: e.target.value });
                                   }}
-                                  className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                                  className="flex-1 px-2 py-1.5 rounded-sm border bg-background text-sm"
                                   placeholder="Goal name"
                                 />
                                 <input
@@ -962,7 +962,7 @@ export function IntentEditor() {
                                   onChange={(e) => {
                                     updateGoal(g.id, { priority: parseInt(e.target.value) || 5 });
                                   }}
-                                  className="w-14 px-2 py-1.5 rounded border bg-background text-sm text-center"
+                                  className="w-14 px-2 py-1.5 rounded-sm border bg-background text-sm text-center"
                                   title="Priority (1–10)"
                                 />
                                 <button
@@ -980,7 +980,7 @@ export function IntentEditor() {
                                 onChange={(e) => {
                                   updateGoal(g.id, { description: e.target.value });
                                 }}
-                                className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                                className="w-full px-2 py-1.5 rounded-sm border bg-background text-sm"
                                 placeholder="Description"
                               />
                             </div>
@@ -1019,7 +1019,7 @@ export function IntentEditor() {
                                 onChange={(e) => {
                                   updateBoundary(b.id, { rule: e.target.value });
                                 }}
-                                className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                                className="flex-1 px-2 py-1.5 rounded-sm border bg-background text-sm"
                                 placeholder="e.g., Never delete production data"
                               />
                               <button
@@ -1037,7 +1037,7 @@ export function IntentEditor() {
                               onChange={(e) => {
                                 updateBoundary(b.id, { rationale: e.target.value });
                               }}
-                              className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                              className="w-full px-2 py-1.5 rounded-sm border bg-background text-sm"
                               placeholder="Rationale"
                             />
                           </div>
@@ -1073,7 +1073,7 @@ export function IntentEditor() {
                                 onChange={(e) => {
                                   updatePolicy(p.id, { rule: e.target.value });
                                 }}
-                                className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                                className="flex-1 px-2 py-1.5 rounded-sm border bg-background text-sm"
                                 placeholder="Policy rule"
                               />
                               <select
@@ -1083,7 +1083,7 @@ export function IntentEditor() {
                                     enforcement: e.target.value as 'warn' | 'block',
                                   });
                                 }}
-                                className="px-2 py-1.5 rounded border bg-background text-sm"
+                                className="px-2 py-1.5 rounded-sm border bg-background text-sm"
                               >
                                 <option value="warn">Warn</option>
                                 <option value="block">Block</option>
@@ -1103,7 +1103,7 @@ export function IntentEditor() {
                               onChange={(e) => {
                                 updatePolicy(p.id, { rationale: e.target.value });
                               }}
-                              className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                              className="w-full px-2 py-1.5 rounded-sm border bg-background text-sm"
                               placeholder="Rationale"
                             />
                           </div>
@@ -1124,7 +1124,7 @@ export function IntentEditor() {
                           set({ importJson: e.target.value, importError: '' });
                         }}
                         rows={10}
-                        className="w-full px-3 py-2 rounded border bg-background font-mono text-xs resize-y"
+                        className="w-full px-3 py-2 rounded-sm border bg-background font-mono text-xs resize-y"
                         placeholder={
                           '{\n  "name": "...",\n  "goals": [],\n  "hardBoundaries": [],\n  "policies": []\n}'
                         }

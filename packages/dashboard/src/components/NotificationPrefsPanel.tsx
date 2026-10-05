@@ -34,7 +34,7 @@ const CHANNEL_COLORS: Record<string, string> = {
 function ChannelBadge({ channel }: { channel: string }) {
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${CHANNEL_COLORS[channel] ?? 'bg-muted text-muted-foreground'}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium ${CHANNEL_COLORS[channel] ?? 'bg-muted text-muted-foreground'}`}
     >
       {CHANNEL_LABELS[channel] ?? channel}
     </span>
@@ -96,7 +96,7 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
             onChange={(e) => {
               setChannel(e.target.value as typeof channel);
             }}
-            className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
+            className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-background"
           >
             <option value="telegram">Telegram</option>
             <option value="slack">Slack</option>
@@ -116,7 +116,7 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
               setChatId(e.target.value);
             }}
             placeholder={channel === 'email' ? 'you@example.com' : '@channelusername or -100...'}
-            className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
+            className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-background"
             required
           />
         </div>
@@ -128,7 +128,7 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
             onChange={(e) => {
               setMinLevel(e.target.value as typeof minLevel);
             }}
-            className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
+            className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-background"
           >
             <option value="info">Info and above</option>
             <option value="warn">Warn and above</option>
@@ -148,7 +148,7 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
               setIntegrationId(e.target.value);
             }}
             placeholder="Leave blank to auto-select"
-            className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
+            className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-background"
           />
         </div>
 
@@ -165,7 +165,7 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
               setQuietStart(e.target.value);
             }}
             placeholder="e.g. 22"
-            className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
+            className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-background"
           />
         </div>
 
@@ -182,7 +182,7 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
               setQuietEnd(e.target.value);
             }}
             placeholder="e.g. 8"
-            className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
+            className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-background"
           />
         </div>
       </div>
@@ -302,7 +302,7 @@ export function NotificationPrefsPanel() {
                     onClick={() => {
                       toggleMut.mutate({ id: pref.id, enabled: !pref.enabled });
                     }}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-hidden ${
                       pref.enabled ? 'bg-primary' : 'bg-muted-foreground/30'
                     }`}
                     title={pref.enabled ? 'Disable' : 'Enable'}
@@ -320,7 +320,7 @@ export function NotificationPrefsPanel() {
                       deleteMut.mutate(pref.id);
                     }}
                     disabled={deleteMut.isPending}
-                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    className="p-1 rounded-sm hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />

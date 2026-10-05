@@ -29,12 +29,12 @@ function flattenTree(
     position: { x: siblingIndex * 280, y: depth * 140 },
     data: {
       label: (
-        <div className={`p-2 text-left ${isActive ? 'ring-2 ring-primary rounded' : ''}`}>
+        <div className={`p-2 text-left ${isActive ? 'ring-2 ring-primary rounded-sm' : ''}`}>
           <div className="text-xs font-medium truncate max-w-[200px]">{node.title}</div>
           <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
             <span>{node.messageCount} msgs</span>
             {node.qualityScore != null && (
-              <span className="px-1 py-0.5 rounded bg-primary/10 text-primary">
+              <span className="px-1 py-0.5 rounded-sm bg-primary/10 text-primary">
                 {node.qualityScore.toFixed(2)}
               </span>
             )}
@@ -114,7 +114,7 @@ export function BranchTreeView({
           <GitBranch className="w-4 h-4" />
           Branch Tree
         </div>
-        <button onClick={onClose} className="btn-ghost p-1 rounded">
+        <button onClick={onClose} className="btn-ghost p-1 rounded-sm">
           <X className="w-4 h-4" />
         </button>
       </div>

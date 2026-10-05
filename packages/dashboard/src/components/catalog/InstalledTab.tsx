@@ -178,12 +178,12 @@ function InstalledWorkflows({
             <GitMerge className="w-4 h-4 text-muted-foreground shrink-0" />
             <h3 className="font-medium">{wf.name}</h3>
             {wf.createdBy === 'community' && (
-              <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded flex items-center gap-1">
+              <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-sm flex items-center gap-1">
                 <GitBranch className="w-2.5 h-2.5" /> Community
               </span>
             )}
             {wf.autonomyLevel && (
-              <span className="text-xs font-mono bg-card border border-border px-1.5 py-0.5 rounded">
+              <span className="text-xs font-mono bg-card border border-border px-1.5 py-0.5 rounded-sm">
                 {wf.autonomyLevel}
               </span>
             )}
@@ -284,7 +284,7 @@ function InstalledSwarms({
             {t.roles.map((r) => (
               <span
                 key={r.role}
-                className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded"
+                className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-sm"
               >
                 {r.role}
               </span>
@@ -455,7 +455,7 @@ function InstalledSystem({
               </span>
               <span className="text-xs text-muted-foreground">{sourceLabel}</span>
               {marketplaceCat && marketplaceCat !== cat && (
-                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm">
                   {categoryLabel(marketplaceCat)}
                 </span>
               )}
@@ -466,13 +466,13 @@ function InstalledSystem({
             {/* Install scope */}
             <div className="flex items-center flex-wrap gap-1.5 mt-2">
               <span className="text-xs text-muted-foreground">Installed:</span>
-              <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+              <span className="text-xs px-2 py-0.5 rounded-sm bg-muted text-muted-foreground">
                 System
               </span>
             </div>
             {/* Theme preview strip */}
             {themePreview && (
-              <div className="h-6 rounded flex overflow-hidden border border-border mt-2 max-w-[200px]">
+              <div className="h-6 rounded-sm flex overflow-hidden border border-border mt-2 max-w-[200px]">
                 {themePreview.map((color, i) => (
                   <div key={i} className="flex-1" style={{ backgroundColor: color }} />
                 ))}
@@ -699,7 +699,7 @@ export function InstalledTab({
               onChange={(e) => {
                 setFilterPersonalityId(e.target.value);
               }}
-              className="bg-card border border-border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
+              className="bg-card border border-border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
             >
               <option value="">All Personalities</option>
               {personalities.map((p) => (

@@ -408,7 +408,7 @@ export function McpPrebuilts() {
                     key={server.name}
                     className="flex items-center gap-2.5 p-2.5 rounded-md border border-border opacity-50 cursor-default"
                   >
-                    <div className="p-1.5 rounded bg-surface text-muted shrink-0">
+                    <div className="p-1.5 rounded-sm bg-surface text-muted shrink-0">
                       {server.icon}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -429,7 +429,9 @@ export function McpPrebuilts() {
                   }}
                   className="flex items-center gap-2.5 p-2.5 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
                 >
-                  <div className="p-1.5 rounded bg-surface text-muted shrink-0">{server.icon}</div>
+                  <div className="p-1.5 rounded-sm bg-surface text-muted shrink-0">
+                    {server.icon}
+                  </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{server.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{server.description}</p>
@@ -453,7 +455,7 @@ export function McpPrebuilts() {
           </div>
           <div className="space-y-2 pt-2 border-t border-border">
             {activeServer.note && (
-              <p className="text-xs text-yellow-400/80 bg-yellow-400/5 border border-yellow-400/20 rounded px-2 py-1.5">
+              <p className="text-xs text-yellow-400/80 bg-yellow-400/5 border border-yellow-400/20 rounded-sm px-2 py-1.5">
                 {activeServer.note}
               </p>
             )}

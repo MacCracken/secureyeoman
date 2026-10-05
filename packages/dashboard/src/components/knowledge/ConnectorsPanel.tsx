@@ -141,7 +141,7 @@ export function ConnectorsPanel() {
       onChange={(e) => {
         onChange(e.target.value);
       }}
-      className="bg-card border border-border rounded text-xs py-1.5 px-2 w-full"
+      className="bg-card border border-border rounded-sm text-xs py-1.5 px-2 w-full"
     >
       <option value="">Global (All Personalities)</option>
       {personalities.map((p) => (
@@ -170,7 +170,7 @@ export function ConnectorsPanel() {
     <div className="space-y-4">
       {/* Web Crawl */}
       <div className="card">
-        <div className="card-header p-3 sm:p-4">
+        <div className="card-header p-3 sm:p-4!">
           <h3 className="card-title text-sm flex items-center gap-2">
             <Globe className="w-4 h-4 text-muted-foreground" />
             Web Crawl
@@ -179,7 +179,7 @@ export function ConnectorsPanel() {
             Fetch a URL and add its content to the knowledge base.
           </p>
         </div>
-        <div className="card-content space-y-2 p-3 sm:p-4 pt-0 sm:pt-0">
+        <div className="card-content space-y-2 p-3 sm:p-4! pt-0 sm:pt-0!">
           <input
             type="url"
             value={crawlUrl}
@@ -187,7 +187,7 @@ export function ConnectorsPanel() {
               setCrawlUrl(e.target.value);
             }}
             placeholder="https://example.com/docs/page"
-            className="w-full bg-card border border-border rounded text-sm py-1.5 px-2"
+            className="w-full bg-card border border-border rounded-sm text-sm py-1.5 px-2"
           />
           {!isOrg && <div>{personalitySelector(crawlPersonality, setCrawlPersonality)}</div>}
           <button
@@ -204,7 +204,7 @@ export function ConnectorsPanel() {
 
       {/* GitHub Wiki */}
       <div className="card">
-        <div className="card-header p-3 sm:p-4">
+        <div className="card-header p-3 sm:p-4!">
           <h3 className="card-title text-sm flex items-center gap-2">
             <GitBranch className="w-4 h-4 text-muted-foreground" />
             GitHub Wiki / Repository
@@ -213,7 +213,7 @@ export function ConnectorsPanel() {
             Sync all markdown files from a GitHub repository.
           </p>
         </div>
-        <div className="card-content space-y-2 p-3 sm:p-4 pt-0 sm:pt-0">
+        <div className="card-content space-y-2 p-3 sm:p-4! pt-0 sm:pt-0!">
           <div className="flex gap-2">
             <input
               type="text"
@@ -222,7 +222,7 @@ export function ConnectorsPanel() {
                 setWikiOwner(e.target.value);
               }}
               placeholder="owner"
-              className="flex-1 bg-card border border-border rounded text-sm py-1.5 px-2"
+              className="flex-1 bg-card border border-border rounded-sm text-sm py-1.5 px-2"
             />
             <span className="text-muted-foreground self-center">/</span>
             <input
@@ -232,7 +232,7 @@ export function ConnectorsPanel() {
                 setWikiRepo(e.target.value);
               }}
               placeholder="repository"
-              className="flex-1 bg-card border border-border rounded text-sm py-1.5 px-2"
+              className="flex-1 bg-card border border-border rounded-sm text-sm py-1.5 px-2"
             />
           </div>
           {!isOrg && <div>{personalitySelector(wikiPersonality, setWikiPersonality)}</div>}
@@ -250,7 +250,7 @@ export function ConnectorsPanel() {
 
       {/* Mneme Knowledge Base */}
       <div className="card">
-        <div className="card-header p-3 sm:p-4">
+        <div className="card-header p-3 sm:p-4!">
           <h3 className="card-title text-sm flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-muted-foreground" />
             Mneme Knowledge Base
@@ -260,7 +260,7 @@ export function ConnectorsPanel() {
             query.
           </p>
         </div>
-        <div className="card-content space-y-2 p-3 sm:p-4 pt-0 sm:pt-0">
+        <div className="card-content space-y-2 p-3 sm:p-4! pt-0 sm:pt-0!">
           <input
             type="url"
             value={mnemeUrl}
@@ -268,7 +268,7 @@ export function ConnectorsPanel() {
               setMnemeUrl(e.target.value);
             }}
             placeholder="http://127.0.0.1:3838 (default)"
-            className="w-full bg-card border border-border rounded text-sm py-1.5 px-2"
+            className="w-full bg-card border border-border rounded-sm text-sm py-1.5 px-2"
           />
           <input
             type="text"
@@ -277,7 +277,7 @@ export function ConnectorsPanel() {
               setMnemeQuery(e.target.value);
             }}
             placeholder="Filter query (optional — leave empty to sync all)"
-            className="w-full bg-card border border-border rounded text-sm py-1.5 px-2"
+            className="w-full bg-card border border-border rounded-sm text-sm py-1.5 px-2"
           />
           {!isOrg && <div>{personalitySelector(mnemePersonality, setMnemePersonality)}</div>}
           <button
@@ -294,7 +294,7 @@ export function ConnectorsPanel() {
 
       {/* Paste Text */}
       <div className="card">
-        <div className="card-header p-3 sm:p-4">
+        <div className="card-header p-3 sm:p-4!">
           <h3 className="card-title text-sm flex items-center gap-2">
             <FileText className="w-4 h-4 text-muted-foreground" />
             Paste Text
@@ -303,7 +303,7 @@ export function ConnectorsPanel() {
             Directly paste content to add to the knowledge base.
           </p>
         </div>
-        <div className="card-content space-y-2 p-3 sm:p-4 pt-0 sm:pt-0">
+        <div className="card-content space-y-2 p-3 sm:p-4! pt-0 sm:pt-0!">
           <input
             type="text"
             value={pasteTitle}
@@ -311,7 +311,7 @@ export function ConnectorsPanel() {
               setPasteTitle(e.target.value);
             }}
             placeholder="Title *"
-            className="w-full bg-card border border-border rounded text-sm py-1.5 px-2"
+            className="w-full bg-card border border-border rounded-sm text-sm py-1.5 px-2"
           />
           <textarea
             value={pasteText}
@@ -320,7 +320,7 @@ export function ConnectorsPanel() {
             }}
             placeholder="Paste or type content here…"
             rows={6}
-            className="w-full bg-card border border-border rounded text-sm py-1.5 px-2 font-mono resize-y"
+            className="w-full bg-card border border-border rounded-sm text-sm py-1.5 px-2 font-mono resize-y"
           />
           {!isOrg && <div>{personalitySelector(pastePersonality, setPastePersonality)}</div>}
           <button

@@ -63,7 +63,7 @@ export function ContentTypeSelector({
           }}
           className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
             value === t.value
-              ? 'bg-background text-foreground shadow-sm'
+              ? 'bg-background text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -146,7 +146,7 @@ export function SkillCard({
       <div className="flex items-start justify-between gap-2 mb-1">
         <h3 className="font-medium text-sm line-clamp-1 flex-1">{skill.name}</h3>
         {skill.version && (
-          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
+          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground shrink-0">
             v{skill.version}
           </span>
         )}
@@ -156,7 +156,7 @@ export function SkillCard({
       <div className="flex items-center gap-1.5 mb-2">
         {badge ?? (
           <>
-            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm">
               <Zap className="w-2.5 h-2.5" />
               Skill
             </span>
@@ -172,7 +172,7 @@ export function SkillCard({
       <div className="pt-3 border-t border-border mt-auto">
         <div className="flex items-center justify-between mb-3">
           {skill.author === 'YEOMAN' ? (
-            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm font-medium">
               <Shield className="w-2.5 h-2.5" />
               YEOMAN
             </span>
@@ -281,12 +281,12 @@ export function SkillPreviewModal({
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base font-semibold">{skill.name}</h2>
               {skill.version && (
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground">
                   v{skill.version}
                 </span>
               )}
               {skill.source === 'community' && (
-                <span className="inline-flex items-center gap-1 text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">
+                <span className="inline-flex items-center gap-1 text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-sm">
                   <GitBranch className="w-2.5 h-2.5" />
                   Community
                 </span>
@@ -294,7 +294,7 @@ export function SkillPreviewModal({
             </div>
             <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
               {skill.author === 'YEOMAN' ? (
-                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm font-medium">
                   <Shield className="w-2.5 h-2.5" />
                   YEOMAN
                 </span>
@@ -343,7 +343,7 @@ export function SkillPreviewModal({
               {tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground"
+                  className="text-[10px] bg-muted px-2 py-0.5 rounded-sm text-muted-foreground"
                 >
                   {tag}
                 </span>
@@ -367,7 +367,7 @@ export function SkillPreviewModal({
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
                 Instructions
               </h3>
-              <pre className="text-xs bg-muted rounded-lg p-3 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-64 overflow-y-auto">
+              <pre className="text-xs bg-muted rounded-lg p-3 whitespace-pre-wrap wrap-break-word font-mono leading-relaxed max-h-64 overflow-y-auto">
                 {skill.instructions}
               </pre>
             </div>
@@ -383,7 +383,7 @@ export function SkillPreviewModal({
                 {triggerPatterns.map((pattern, i) => (
                   <code
                     key={i}
-                    className="block text-xs bg-muted rounded px-2 py-1 font-mono text-foreground"
+                    className="block text-xs bg-muted rounded-sm px-2 py-1 font-mono text-foreground"
                   >
                     {pattern}
                   </code>
@@ -402,7 +402,7 @@ export function SkillPreviewModal({
                 {tools.map((tool, i) => (
                   <span
                     key={tool.name ?? i}
-                    className="text-[10px] bg-muted px-2 py-0.5 rounded font-mono text-foreground"
+                    className="text-[10px] bg-muted px-2 py-0.5 rounded-sm font-mono text-foreground"
                   >
                     {tool.name}
                   </span>
@@ -425,7 +425,7 @@ export function SkillPreviewModal({
                 {mcpToolsAllowed.map((t, i) => (
                   <span
                     key={i}
-                    className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded font-mono"
+                    className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded-sm font-mono"
                   >
                     {t}
                   </span>
@@ -504,7 +504,7 @@ export function PersonalitySelector({
           onChange={(e) => {
             onChange(e.target.value);
           }}
-          className="bg-card border border-border rounded-lg pl-10 pr-8 py-2.5 text-sm min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
+          className="bg-card border border-border rounded-lg pl-10 pr-8 py-2.5 text-sm min-w-[200px] focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
         >
           {!required && <option value="">Global (All Personalities)</option>}
           {required && <option value="">— Select a personality —</option>}

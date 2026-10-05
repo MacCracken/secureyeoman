@@ -311,7 +311,7 @@ function NodePanel({
       </button>
       {expanded && (
         <div className="border-t border-border p-4">
-          <div className="grid grid-cols-[auto,1fr] gap-x-6 gap-y-2">{renderDetails()}</div>
+          <div className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">{renderDetails()}</div>
         </div>
       )}
     </div>

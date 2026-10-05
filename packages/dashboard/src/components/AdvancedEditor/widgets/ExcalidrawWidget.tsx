@@ -390,7 +390,7 @@ export function ExcalidrawWidget({
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="flex items-center gap-1 px-2 py-1 border-b text-xs">
-        <div className="flex rounded overflow-hidden border mr-1">
+        <div className="flex rounded-sm overflow-hidden border mr-1">
           {(['draw', 'json', 'svg'] as const).map((mode) => (
             <button
               key={mode}
@@ -410,7 +410,7 @@ export function ExcalidrawWidget({
         <button
           onClick={() => void handleSaveToKb()}
           disabled={loading || (!scene && !sceneDataRef.current)}
-          className="px-2 py-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary disabled:opacity-50"
+          className="px-2 py-0.5 rounded-sm bg-primary/10 hover:bg-primary/20 text-primary disabled:opacity-50"
         >
           Save to KB
         </button>
@@ -430,7 +430,7 @@ export function ExcalidrawWidget({
         </label>
         {kbDocs.length > 0 && (
           <select
-            className="px-1 py-0.5 rounded bg-muted text-foreground text-xs max-w-[140px]"
+            className="px-1 py-0.5 rounded-sm bg-muted text-foreground text-xs max-w-[140px]"
             defaultValue=""
             onChange={(e) => {
               if (e.target.value) void handleLoadFromKb(e.target.value);
@@ -464,7 +464,7 @@ export function ExcalidrawWidget({
           </div>
         ) : viewMode === 'json' ? (
           <textarea
-            className="w-full h-full p-2 font-mono text-xs bg-background text-foreground resize-none outline-none"
+            className="w-full h-full p-2 font-mono text-xs bg-background text-foreground resize-none outline-hidden"
             value={jsonText}
             onChange={(e) => {
               handleJsonChange(e.target.value);

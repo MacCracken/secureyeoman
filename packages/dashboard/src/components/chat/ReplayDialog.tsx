@@ -42,7 +42,7 @@ export function ReplayDialog({
       <div className="bg-card border rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Replay Conversation</h3>
-          <button onClick={onClose} className="btn-ghost p-1 rounded">
+          <button onClick={onClose} className="btn-ghost p-1 rounded-sm">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -57,7 +57,7 @@ export function ReplayDialog({
                 setModel(e.target.value);
               }}
               placeholder="e.g., gpt-4, claude-3-opus"
-              className="w-full border rounded px-3 py-2 text-sm bg-background"
+              className="w-full border rounded-sm px-3 py-2 text-sm bg-background"
               data-testid="replay-model-input"
             />
           </div>
@@ -71,7 +71,7 @@ export function ReplayDialog({
                 setProvider(e.target.value);
               }}
               placeholder="e.g., openai, anthropic"
-              className="w-full border rounded px-3 py-2 text-sm bg-background"
+              className="w-full border rounded-sm px-3 py-2 text-sm bg-background"
               data-testid="replay-provider-input"
             />
           </div>
@@ -85,7 +85,7 @@ export function ReplayDialog({
                 setPersonalityId(e.target.value);
               }}
               placeholder="Leave empty to use original"
-              className="w-full border rounded px-3 py-2 text-sm bg-background"
+              className="w-full border rounded-sm px-3 py-2 text-sm bg-background"
             />
           </div>
 
@@ -109,7 +109,10 @@ export function ReplayDialog({
         </div>
 
         <div className="flex justify-end gap-2 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-sm border rounded hover:bg-muted/50">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm border rounded-sm hover:bg-muted/50"
+          >
             Cancel
           </button>
           <button
@@ -117,7 +120,7 @@ export function ReplayDialog({
               replayMutation.mutate();
             }}
             disabled={!model || !provider || replayMutation.isPending}
-            className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
             data-testid="replay-submit"
           >
             {replayMutation.isPending ? (

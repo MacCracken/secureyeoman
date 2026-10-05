@@ -112,7 +112,7 @@ export default function AgnosticMetricsWidget() {
           {data.presets.map((preset) => (
             <span
               key={preset.name}
-              className="rounded bg-zinc-700/50 px-1.5 py-0.5 text-xs text-zinc-400"
+              className="rounded-sm bg-zinc-700/50 px-1.5 py-0.5 text-xs text-zinc-400"
               title={`${preset.name}: ${preset.agent_count} agents (${preset.domain})`}
             >
               {preset.domain}
@@ -122,7 +122,7 @@ export default function AgnosticMetricsWidget() {
       )}
 
       {/* Task Counts */}
-      <div className="rounded border border-zinc-700 p-2">
+      <div className="rounded-sm border border-zinc-700 p-2">
         <div className="mb-1 text-xs font-medium text-zinc-300">Tasks</div>
         <div className="space-y-0.5">
           <TaskBar label="Running" count={data.tasks.running} color="text-blue-400" />
@@ -133,7 +133,7 @@ export default function AgnosticMetricsWidget() {
       </div>
 
       {/* Agent Status */}
-      <div className="flex items-center justify-between rounded border border-zinc-700 p-2">
+      <div className="flex items-center justify-between rounded-sm border border-zinc-700 p-2">
         <span className="text-xs text-zinc-400">Agents</span>
         <span className="text-xs text-zinc-200">
           <span className="font-medium text-green-400">{data.agents.active}</span>
@@ -149,7 +149,7 @@ export default function AgnosticMetricsWidget() {
             {data.recentTasks.slice(0, 3).map((task) => (
               <div
                 key={task.id}
-                className="flex items-center justify-between rounded border border-zinc-800 px-2 py-1"
+                className="flex items-center justify-between rounded-sm border border-zinc-800 px-2 py-1"
               >
                 <span className="truncate text-xs text-zinc-300" title={task.title}>
                   {task.title}

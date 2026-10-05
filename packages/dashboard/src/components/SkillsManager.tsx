@@ -309,7 +309,7 @@ export function SkillsManager() {
           onChange={(e) => {
             setFilterStatus(e.target.value);
           }}
-          className="px-2 py-1 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
           aria-label="Filter by status"
         >
           <option value="">All statuses</option>
@@ -322,7 +322,7 @@ export function SkillsManager() {
           onChange={(e) => {
             setFilterSource(e.target.value);
           }}
-          className="px-2 py-1 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
           aria-label="Filter by source"
         >
           <option value="">All sources</option>
@@ -348,7 +348,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setForm((f) => ({ ...f, name: e.target.value }));
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
               maxLength={100}
               placeholder="e.g., Code Review"
             />
@@ -362,7 +362,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setForm((f) => ({ ...f, description: e.target.value }));
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
               maxLength={1000}
               placeholder="What this skill does"
             />
@@ -375,7 +375,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setForm((f) => ({ ...f, instructions: e.target.value }));
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary resize-y"
               rows={4}
               maxLength={8000}
               placeholder="Detailed instructions for the AI when this skill is active..."
@@ -393,7 +393,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setTriggerInput(e.target.value);
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
               placeholder="Comma-separated patterns, e.g., review code, check PR, analyze diff"
             />
             <p className="text-xs text-muted-foreground mt-1">
@@ -409,7 +409,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setForm((f) => ({ ...f, useWhen: e.target.value }));
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
               maxLength={500}
               placeholder="e.g. user asks to review code, analyze a diff"
             />
@@ -423,7 +423,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setForm((f) => ({ ...f, doNotUseWhen: e.target.value }));
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
               maxLength={500}
               placeholder="e.g. the task is not code-related"
             />
@@ -437,7 +437,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setForm((f) => ({ ...f, successCriteria: e.target.value }));
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
               maxLength={300}
               placeholder="e.g. PR summary generated and key risks identified"
             />
@@ -450,7 +450,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setForm((f) => ({ ...f, routing: e.target.value as 'fuzzy' | 'explicit' }));
               }}
-              className="px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
             >
               <option value="fuzzy">Fuzzy (default)</option>
               <option value="explicit">Explicit (deterministic — for SOPs)</option>
@@ -465,7 +465,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setMcpToolsInput(e.target.value);
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
               placeholder="Comma-separated tool names, e.g., read_file, web_search (empty = all allowed)"
             />
             <p className="text-xs text-muted-foreground mt-1">
@@ -481,7 +481,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setForm((f) => ({ ...f, linkedWorkflowId: e.target.value || null }));
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
               placeholder="Workflow ID to trigger when this skill activates (optional)"
             />
           </div>
@@ -493,7 +493,7 @@ export function SkillsManager() {
               onChange={(e) => {
                 setForm((f) => ({ ...f, autonomyLevel: e.target.value as any }));
               }}
-              className="px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
             >
               <option value="L1">L1 — Human does (AI assists only)</option>
               <option value="L2">L2 — Collaborative (AI proposes, human decides)</option>
@@ -514,7 +514,7 @@ export function SkillsManager() {
                 onChange={(e) => {
                   setForm((f) => ({ ...f, emergencyStopProcedure: e.target.value }));
                 }}
-                className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary resize-y"
                 rows={2}
                 maxLength={1000}
                 placeholder="How to disable this skill in an emergency (required for L4/L5)"
@@ -549,7 +549,7 @@ export function SkillsManager() {
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Wrench className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <Wrench className="w-4 h-4 text-muted-foreground shrink-0" />
                   <h3 className="font-medium">{s.name}</h3>
                   <span
                     className={`badge ${s.enabled ? (STATUS_BADGES[s.status] ?? 'badge-info') : 'badge-error'}`}
@@ -566,7 +566,7 @@ export function SkillsManager() {
                 {s.triggerPatterns.length > 0 && (
                   <div className="flex gap-1 mt-2 flex-wrap">
                     {s.triggerPatterns.map((p, i) => (
-                      <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded">
+                      <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded-sm">
                         {p}
                       </span>
                     ))}
@@ -584,7 +584,7 @@ export function SkillsManager() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 ml-4 flex-shrink-0">
+              <div className="flex items-center gap-1 ml-4 shrink-0">
                 {/* Approve/Reject for pending */}
                 {s.status === 'pending_approval' && (
                   <>

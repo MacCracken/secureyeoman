@@ -67,14 +67,14 @@ export function CognitiveMemoryWidget() {
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="p-2 rounded bg-muted/30">
+        <div className="p-2 rounded-sm bg-muted/30">
           <div className="flex items-center gap-1.5 mb-0.5">
             <Link2 className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Associations</span>
           </div>
           <p className="text-lg font-bold">{data.associationCount}</p>
         </div>
-        <div className="p-2 rounded bg-muted/30">
+        <div className="p-2 rounded-sm bg-muted/30">
           <div className="flex items-center gap-1.5 mb-0.5">
             <TrendingUp className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Avg Weight</span>

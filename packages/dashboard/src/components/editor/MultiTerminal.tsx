@@ -112,11 +112,11 @@ export function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalPro
       onClick={() => inputRef.current?.focus()}
     >
       {/* Tab bar */}
-      <div className="flex items-center border-b border-border bg-muted/30 px-2 gap-1 overflow-x-auto flex-shrink-0">
+      <div className="flex items-center border-b border-border bg-muted/30 px-2 gap-1 overflow-x-auto shrink-0">
         {tabs.map((t) => (
           <div
             key={t.id}
-            className={`flex items-center gap-1 px-2 py-1.5 rounded-t text-xs cursor-pointer select-none flex-shrink-0 ${
+            className={`flex items-center gap-1 px-2 py-1.5 rounded-t text-xs cursor-pointer select-none shrink-0 ${
               t.id === activeId
                 ? 'bg-background text-foreground border border-b-background border-border'
                 : 'text-muted-foreground hover:text-foreground'
@@ -133,7 +133,7 @@ export function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalPro
                 e.stopPropagation();
                 closeTab(t.id);
               }}
-              className="ml-0.5 rounded hover:bg-muted p-0.5"
+              className="ml-0.5 rounded-sm hover:bg-muted p-0.5"
             >
               <X className="w-2.5 h-2.5" />
             </button>
@@ -145,7 +145,7 @@ export function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalPro
               e.stopPropagation();
               addTab();
             }}
-            className="px-1.5 py-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted/50 transition-colors flex-shrink-0"
+            className="px-1.5 py-1.5 text-muted-foreground hover:text-foreground rounded-sm hover:bg-muted/50 transition-colors shrink-0"
             title="New terminal"
             aria-label="New terminal"
           >
@@ -175,11 +175,11 @@ export function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalPro
       </div>
 
       {/* Input */}
-      <div className="flex items-center gap-2 border-t border-border px-3 py-2 bg-muted/20 flex-shrink-0">
-        <span className="font-mono text-xs text-primary/70 flex-shrink-0">$</span>
+      <div className="flex items-center gap-2 border-t border-border px-3 py-2 bg-muted/20 shrink-0">
+        <span className="font-mono text-xs text-primary/70 shrink-0">$</span>
         <input
           ref={inputRef}
-          className="flex-1 bg-transparent font-mono text-xs outline-none text-foreground placeholder:text-muted-foreground/40 caret-primary"
+          className="flex-1 bg-transparent font-mono text-xs outline-hidden text-foreground placeholder:text-muted-foreground/40 caret-primary"
           placeholder="command..."
           value={activeTab.input}
           onChange={(e) => {
@@ -198,7 +198,7 @@ export function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalPro
         <button
           onClick={submit}
           disabled={activeTab.running || !activeTab.input.trim()}
-          className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors flex-shrink-0"
+          className="p-1 rounded-sm text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors shrink-0"
         >
           {activeTab.running ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />

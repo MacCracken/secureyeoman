@@ -194,13 +194,13 @@ function CohortErrorAnalysis() {
           onChange={(e) => {
             setEvalRunId(e.target.value);
           }}
-          className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500"
+          className="flex-1 bg-zinc-800 border border-zinc-700 rounded-sm px-3 py-2 text-sm text-white placeholder-zinc-500"
         />
         <button
           onClick={() => {
             setSubmittedId(evalRunId);
           }}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-sm transition-colors"
         >
           Analyze
         </button>
@@ -276,13 +276,13 @@ function FairnessMetrics() {
           onChange={(e) => {
             setEvalRunId(e.target.value);
           }}
-          className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500"
+          className="flex-1 bg-zinc-800 border border-zinc-700 rounded-sm px-3 py-2 text-sm text-white placeholder-zinc-500"
         />
         <button
           onClick={() => {
             setSubmittedId(evalRunId);
           }}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded transition-colors"
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded-sm transition-colors"
         >
           Evaluate
         </button>
@@ -393,13 +393,13 @@ function ShapExplainability() {
           onChange={(e) => {
             setShapId(e.target.value);
           }}
-          className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500"
+          className="flex-1 bg-zinc-800 border border-zinc-700 rounded-sm px-3 py-2 text-sm text-white placeholder-zinc-500"
         />
         <button
           onClick={() => {
             setSubmittedId(shapId);
           }}
-          className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm rounded transition-colors"
+          className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm rounded-sm transition-colors"
         >
           Explain
         </button>
@@ -418,7 +418,7 @@ function ShapExplainability() {
             {data.tokens.map((t, i) => (
               <span
                 key={`${t.token}-${i}`}
-                className="px-1.5 py-0.5 rounded text-sm text-white font-mono"
+                className="px-1.5 py-0.5 rounded-sm text-sm text-white font-mono"
                 style={{ backgroundColor: shapColor(t.attribution) }}
                 title={`${t.token}: ${t.attribution.toFixed(4)}`}
               >
@@ -430,28 +430,28 @@ function ShapExplainability() {
           <div className="flex items-center gap-4 mt-3 text-xs text-zinc-500">
             <div className="flex items-center gap-1">
               <div
-                className="w-3 h-3 rounded"
+                className="w-3 h-3 rounded-sm"
                 style={{ backgroundColor: 'rgba(239, 68, 68, 0.7)' }}
               />
               High positive
             </div>
             <div className="flex items-center gap-1">
               <div
-                className="w-3 h-3 rounded"
+                className="w-3 h-3 rounded-sm"
                 style={{ backgroundColor: 'rgba(239, 68, 68, 0.25)' }}
               />
               Low positive
             </div>
             <div className="flex items-center gap-1">
               <div
-                className="w-3 h-3 rounded"
+                className="w-3 h-3 rounded-sm"
                 style={{ backgroundColor: 'rgba(59, 130, 246, 0.25)' }}
               />
               Low negative
             </div>
             <div className="flex items-center gap-1">
               <div
-                className="w-3 h-3 rounded"
+                className="w-3 h-3 rounded-sm"
                 style={{ backgroundColor: 'rgba(59, 130, 246, 0.7)' }}
               />
               High negative
@@ -503,13 +503,13 @@ function DataProvenance() {
           onChange={(e) => {
             setDatasetId(e.target.value);
           }}
-          className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500"
+          className="flex-1 bg-zinc-800 border border-zinc-700 rounded-sm px-3 py-2 text-sm text-white placeholder-zinc-500"
         />
         <button
           onClick={() => {
             setSubmittedId(datasetId);
           }}
-          className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white text-sm rounded transition-colors"
+          className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white text-sm rounded-sm transition-colors"
         >
           Load
         </button>
@@ -545,7 +545,7 @@ function DataProvenance() {
               onChange={(e) => {
                 setSearchTerm(e.target.value);
               }}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 pl-9 text-sm text-white placeholder-zinc-500"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-sm px-3 py-2 pl-9 text-sm text-white placeholder-zinc-500"
             />
           </div>
 
@@ -584,7 +584,7 @@ function DataProvenance() {
                       {entry.status !== 'redacted' && (
                         <button
                           onClick={() => void handleRedact(entry.id)}
-                          className="px-2 py-1 text-xs bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded transition-colors"
+                          className="px-2 py-1 text-xs bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-sm transition-colors"
                         >
                           GDPR Redact
                         </button>
@@ -634,14 +634,14 @@ function ModelCards() {
           onChange={(e) => {
             setCardId(e.target.value);
           }}
-          className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500"
+          className="flex-1 bg-zinc-800 border border-zinc-700 rounded-sm px-3 py-2 text-sm text-white placeholder-zinc-500"
         />
         <button
           onClick={() => {
             setSubmittedId(cardId);
             setMarkdownView(null);
           }}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded transition-colors"
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-sm transition-colors"
         >
           Load
         </button>
@@ -659,7 +659,7 @@ function ModelCards() {
             </div>
             <button
               onClick={() => void handleViewMarkdown()}
-              className="px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded transition-colors"
+              className="px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-sm transition-colors"
             >
               View Markdown
             </button>
@@ -704,7 +704,7 @@ function ModelCards() {
             onClick={() => {
               setMarkdownView(null);
             }}
-            className="mb-3 px-3 py-1 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded transition-colors"
+            className="mb-3 px-3 py-1 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-sm transition-colors"
           >
             Back to Card View
           </button>

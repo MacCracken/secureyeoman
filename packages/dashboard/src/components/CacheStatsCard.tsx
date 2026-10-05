@@ -82,14 +82,14 @@ function CacheBreakdown({
   const fill = stats.maxSize > 0 ? Math.round((stats.size / stats.maxSize) * 100) : 0;
 
   return (
-    <div className="rounded border border-zinc-700 p-2">
+    <div className="rounded-sm border border-zinc-700 p-2">
       <div className="mb-1 flex items-center justify-between">
         <span className="text-xs font-medium text-zinc-300">{label}</span>
         <span className="text-xs text-zinc-400">{rate}% hit</span>
       </div>
       <div className="mb-1 flex items-center gap-2">
-        <div className="h-1.5 flex-1 rounded bg-zinc-700">
-          <div className="h-1.5 rounded bg-blue-500" style={{ width: `${fill}%` }} />
+        <div className="h-1.5 flex-1 rounded-sm bg-zinc-700">
+          <div className="h-1.5 rounded-sm bg-blue-500" style={{ width: `${fill}%` }} />
         </div>
         <span className="text-xs text-zinc-500">
           {stats.size}/{stats.maxSize}
@@ -147,7 +147,7 @@ export default function CacheStatsCard() {
             clearMutation.mutate();
           }}
           disabled={clearMutation.isPending}
-          className="rounded bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-500 disabled:opacity-50"
+          className="rounded-sm bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-500 disabled:opacity-50"
         >
           {clearMutation.isPending ? 'Clearing...' : 'Clear Cache'}
         </button>

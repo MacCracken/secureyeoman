@@ -23,7 +23,7 @@ export function WidgetCatalog({ onAdd, onClose }: WidgetCatalogProps) {
     <div className="fixed right-0 top-0 h-full w-72 bg-card border-l shadow-xl z-50 flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <h2 className="font-semibold text-sm">Add Widget</h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-muted">
+        <button onClick={onClose} className="p-1 rounded-sm hover:bg-muted">
           <X className="w-4 h-4" />
         </button>
       </div>

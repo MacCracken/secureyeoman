@@ -18,7 +18,7 @@ export function CollabPresence({ users, connected }: CollabPresenceProps) {
 
   return (
     <div
-      className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-border text-muted-foreground"
+      className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-sm border border-border text-muted-foreground"
       data-testid="collab-presence"
     >
       <Users className="w-3.5 h-3.5" />
@@ -28,7 +28,7 @@ export function CollabPresence({ users, connected }: CollabPresenceProps) {
             {users.slice(0, 4).map((u) => (
               <span
                 key={u.clientId}
-                className="w-4 h-4 rounded-full border border-background flex-shrink-0 text-[8px] font-bold flex items-center justify-center text-white"
+                className="w-4 h-4 rounded-full border border-background shrink-0 text-[8px] font-bold flex items-center justify-center text-white"
                 style={{ backgroundColor: u.color }}
                 title={u.name}
                 data-testid="collab-user-dot"

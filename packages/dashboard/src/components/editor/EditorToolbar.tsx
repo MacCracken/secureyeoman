@@ -109,7 +109,7 @@ export function EditorToolbar({
     <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30 flex-wrap">
       <button
         onClick={onToggleExplorer}
-        className={`btn-ghost p-1 rounded ${showExplorer ? 'bg-primary/10 text-primary' : ''}`}
+        className={`btn-ghost p-1 rounded-sm ${showExplorer ? 'bg-primary/10 text-primary' : ''}`}
         title="Toggle file explorer"
       >
         <Folder className={`w-4 h-4 transition-transform`} />
@@ -135,7 +135,7 @@ export function EditorToolbar({
                 value={renameValue}
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
-                className="max-w-[100px] bg-transparent border-b border-primary outline-none font-mono text-xs w-[80px]"
+                className="max-w-[100px] bg-transparent border-b border-primary outline-hidden font-mono text-xs w-[80px]"
                 onChange={(e) => {
                   onTabRenameChange(e.target.value);
                 }}
@@ -176,11 +176,11 @@ export function EditorToolbar({
             </button>
           </div>
         ))}
-        <button onClick={onNewTab} className="btn-ghost p-1 rounded" title="New file">
+        <button onClick={onNewTab} className="btn-ghost p-1 rounded-sm" title="New file">
           <Plus className="w-3 h-3" />
         </button>
       </div>
-      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded hidden sm:inline">
+      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-sm hidden sm:inline">
         {language}
       </span>
       <div className="flex-1" />
@@ -188,14 +188,14 @@ export function EditorToolbar({
       {/* Toolbar buttons */}
       <button
         onClick={onCommandPalette}
-        className="btn-ghost p-1.5 rounded"
+        className="btn-ghost p-1.5 rounded-sm"
         title="Command Palette (Ctrl+K)"
       >
         <Search className="w-3.5 h-3.5" />
       </button>
       <button
         onClick={onToggleSettings}
-        className={`btn-ghost p-1.5 rounded ${settingsOpen ? 'bg-primary/10 text-primary' : ''}`}
+        className={`btn-ghost p-1.5 rounded-sm ${settingsOpen ? 'bg-primary/10 text-primary' : ''}`}
         title="Editor settings"
       >
         <Settings className="w-3.5 h-3.5" />
@@ -203,7 +203,7 @@ export function EditorToolbar({
       {onToggleKeybindings && (
         <button
           onClick={onToggleKeybindings}
-          className="btn-ghost p-1.5 rounded"
+          className="btn-ghost p-1.5 rounded-sm"
           title="Keyboard shortcuts"
           data-testid="keybindings-btn"
         >
@@ -212,7 +212,7 @@ export function EditorToolbar({
       )}
       <button
         onClick={onToggleSplitView}
-        className={`btn-ghost p-1.5 rounded ${splitView ? 'bg-primary/10 text-primary' : ''}`}
+        className={`btn-ghost p-1.5 rounded-sm ${splitView ? 'bg-primary/10 text-primary' : ''}`}
         title="Toggle split view"
       >
         <Split className="w-3.5 h-3.5" />
@@ -220,7 +220,7 @@ export function EditorToolbar({
       <button
         onClick={onRun}
         disabled={runDisabled}
-        className="btn-ghost text-xs px-2 sm:px-3 py-1.5 rounded border hover:border-primary flex items-center gap-1"
+        className="btn-ghost text-xs px-2 sm:px-3! py-1.5 rounded-sm border hover:border-primary flex items-center gap-1"
         title="Run code in terminal (Ctrl+Enter)"
       >
         <Play className="w-3 h-3" />
@@ -228,7 +228,7 @@ export function EditorToolbar({
       </button>
       <button
         onClick={onSendToChat}
-        className="btn-ghost text-xs px-2 sm:px-3 py-1.5 rounded border hover:border-primary"
+        className="btn-ghost text-xs px-2 sm:px-3! py-1.5 rounded-sm border hover:border-primary"
         title="Send selected text (or all) to chat"
       >
         <span className="hidden sm:inline">Send to Chat</span>
@@ -255,7 +255,7 @@ export function EditorToolbar({
           onClick={() => {
             setModelOpen((v) => !v);
           }}
-          className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-sm border border-border text-muted-foreground hover:text-foreground transition-colors"
           title="Switch model"
         >
           <Cpu className="w-3.5 h-3.5" />
@@ -282,7 +282,7 @@ export function EditorToolbar({
       {showGitButton && (
         <button
           onClick={onToggleGit}
-          className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-sm border border-border text-muted-foreground hover:text-foreground transition-colors"
           title="Toggle Git panel"
         >
           <GitBranch className="w-3.5 h-3.5" />

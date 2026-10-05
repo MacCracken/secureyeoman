@@ -166,7 +166,7 @@ function CustomTraitInput({
       {customEntries.map(([k, v]) => (
         <div key={k} className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground sm:w-28">{k}</span>
-          <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded border border-primary">
+          <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-sm border border-primary">
             {v}
           </span>
           <button
@@ -182,7 +182,7 @@ function CustomTraitInput({
       ))}
       <div className="flex items-center gap-2">
         <input
-          className="bg-background border border-border rounded px-2 py-1 text-xs w-28"
+          className="bg-background border border-border rounded-sm px-2 py-1 text-xs w-28"
           placeholder="trait name"
           value={newKey}
           onChange={(e) => {
@@ -193,7 +193,7 @@ function CustomTraitInput({
           }}
         />
         <input
-          className="bg-background border border-border rounded px-2 py-1 text-xs w-28"
+          className="bg-background border border-border rounded-sm px-2 py-1 text-xs w-28"
           placeholder="value"
           value={newValue}
           onChange={(e) => {

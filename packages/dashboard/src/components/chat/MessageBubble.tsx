@@ -58,7 +58,7 @@ export const MessageBubble = memo(function MessageBubble({
   return (
     <div className={`flex group ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[90%] sm:max-w-[75%] md:max-w-[70%] rounded-lg px-4 py-3 break-words ${
+        className={`max-w-[90%] sm:max-w-[75%] md:max-w-[70%] rounded-lg px-4 py-3 wrap-break-word ${
           msg.role === 'user'
             ? isBeingEdited
               ? 'bg-primary/70 text-primary-foreground ring-2 ring-primary'
@@ -103,7 +103,7 @@ export const MessageBubble = memo(function MessageBubble({
               onClick={() => {
                 onEditStart(index);
               }}
-              className="ml-auto opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+              className="ml-auto opacity-0 group-hover:opacity-60 hover:opacity-100! transition-opacity"
               title="Edit and resend from here"
               data-testid={`edit-msg-${index}`}
             >
@@ -117,7 +117,7 @@ export const MessageBubble = memo(function MessageBubble({
               onClick={() => {
                 onBranch(index);
               }}
-              className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+              className="opacity-0 group-hover:opacity-60 hover:opacity-100! transition-opacity"
               title="Branch from this message"
               data-testid={`branch-msg-${index}`}
             >
@@ -144,7 +144,7 @@ export const MessageBubble = memo(function MessageBubble({
         {/* Brain context snippets popover */}
         {isExpanded && msg.brainContext && (
           <div
-            className="mb-2 p-2 rounded bg-background/80 border text-xs space-y-1"
+            className="mb-2 p-2 rounded-sm bg-background/80 border text-xs space-y-1"
             data-testid={`brain-context-${index}`}
           >
             <div className="font-medium flex items-center gap-1">

@@ -116,7 +116,7 @@ export function ComputerUseTab() {
               setSelectedSession(e.target.value);
             }}
             placeholder="Session ID…"
-            className="px-2 py-1 text-xs border rounded bg-background flex-1 max-w-xs"
+            className="px-2 py-1 text-xs border rounded-sm bg-background flex-1 max-w-xs"
           />
         </div>
 
@@ -132,7 +132,9 @@ export function ComputerUseTab() {
               <div key={ep.id} className="rounded-lg border p-3 flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-mono bg-muted px-1 rounded">{ep.actionType}</span>
+                    <span className="text-xs font-mono bg-muted px-1 rounded-sm">
+                      {ep.actionType}
+                    </span>
                     <span className="text-xs text-muted-foreground truncate">
                       {ep.actionTarget}
                     </span>

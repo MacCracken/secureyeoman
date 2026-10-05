@@ -179,7 +179,7 @@ function ScenarioModal({
             <label className="block text-sm font-medium mb-1">Title *</label>
             <input
               type="text"
-              className="w-full border border-border rounded px-3 py-2 text-sm bg-background"
+              className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background"
               value={form.title}
               onChange={(e) => {
                 setForm({ ...form, title: e.target.value });
@@ -193,7 +193,7 @@ function ScenarioModal({
           <div>
             <label className="block text-sm font-medium mb-1">Description</label>
             <textarea
-              className="w-full border border-border rounded px-3 py-2 text-sm bg-background min-h-[60px]"
+              className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background min-h-[60px]"
               value={form.description}
               onChange={(e) => {
                 setForm({ ...form, description: e.target.value });
@@ -207,7 +207,7 @@ function ScenarioModal({
             <div>
               <label className="block text-sm font-medium mb-1">Threat Actor</label>
               <select
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background"
                 value={form.actor}
                 onChange={(e) => {
                   setForm({ ...form, actor: e.target.value });
@@ -223,7 +223,7 @@ function ScenarioModal({
             <div>
               <label className="block text-sm font-medium mb-1">Status</label>
               <select
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background"
                 value={form.status}
                 onChange={(e) => {
                   setForm({ ...form, status: e.target.value });
@@ -312,7 +312,7 @@ function ScenarioModal({
             <div>
               <label className="block text-sm font-medium mb-1">Likelihood (1-5)</label>
               <select
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background"
                 value={form.likelihood}
                 onChange={(e) => {
                   setForm({ ...form, likelihood: Number(e.target.value) });
@@ -328,7 +328,7 @@ function ScenarioModal({
             <div>
               <label className="block text-sm font-medium mb-1">Severity (1-5)</label>
               <select
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-background"
                 value={form.severity}
                 onChange={(e) => {
                   setForm({ ...form, severity: Number(e.target.value) });
@@ -344,7 +344,7 @@ function ScenarioModal({
             <div>
               <label className="block text-sm font-medium mb-1">Risk Score</label>
               <div
-                className={`flex items-center justify-center h-[38px] rounded text-sm font-bold ${riskColor(form.likelihood * form.severity)}`}
+                className={`flex items-center justify-center h-[38px] rounded-sm text-sm font-bold ${riskColor(form.likelihood * form.severity)}`}
               >
                 {form.likelihood * form.severity}
               </div>
@@ -375,7 +375,7 @@ function ScenarioModal({
               <div key={idx} className="flex gap-2 mb-2">
                 <input
                   type="text"
-                  className="flex-1 border border-border rounded px-2 py-1 text-sm bg-background"
+                  className="flex-1 border border-border rounded-sm px-2 py-1 text-sm bg-background"
                   value={m.description}
                   onChange={(e) => {
                     const updated = [...form.mitigations];
@@ -385,7 +385,7 @@ function ScenarioModal({
                   placeholder="Mitigation description"
                 />
                 <select
-                  className="border border-border rounded px-2 py-1 text-sm bg-background"
+                  className="border border-border rounded-sm px-2 py-1 text-sm bg-background"
                   value={m.status}
                   onChange={(e) => {
                     const updated = [...form.mitigations];
@@ -415,14 +415,14 @@ function ScenarioModal({
           <div className="flex justify-end gap-3 pt-2 border-t border-border">
             <button
               type="button"
-              className="px-4 py-2 text-sm border border-border rounded hover:bg-muted"
+              className="px-4 py-2 text-sm border border-border rounded-sm hover:bg-muted"
               onClick={onClose}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded hover:bg-primary/90 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-sm hover:bg-primary/90 disabled:opacity-50"
               disabled={!form.title.trim() || form.techniques.length === 0}
             >
               {initial ? 'Save' : 'Create'}
@@ -522,7 +522,7 @@ export function ATHITab() {
               {Object.entries(summary.byStatus ?? {}).map(([status, count]) => (
                 <span
                   key={status}
-                  className={`px-1.5 py-0.5 text-xs rounded ${STATUS_COLORS[status] ?? 'bg-gray-100'}`}
+                  className={`px-1.5 py-0.5 text-xs rounded-sm ${STATUS_COLORS[status] ?? 'bg-gray-100'}`}
                 >
                   {formatLabel(status)}: {count}
                 </span>
@@ -564,7 +564,7 @@ export function ATHITab() {
                         <td key={tech} className="p-1">
                           {cell ? (
                             <div
-                              className={`rounded px-1.5 py-1 text-center font-mono ${matrixCellColor(cell.avgRiskScore)}`}
+                              className={`rounded-sm px-1.5 py-1 text-center font-mono ${matrixCellColor(cell.avgRiskScore)}`}
                               title={`Count: ${cell.count}, Avg: ${cell.avgRiskScore}, Max: ${cell.maxRiskScore}`}
                             >
                               {cell.avgRiskScore}
@@ -592,7 +592,7 @@ export function ATHITab() {
           </h3>
           <div className="flex items-center gap-2">
             <select
-              className="border border-border rounded px-2 py-1 text-xs bg-background"
+              className="border border-border rounded-sm px-2 py-1 text-xs bg-background"
               value={actorFilter}
               onChange={(e) => {
                 setActorFilter(e.target.value);
@@ -606,7 +606,7 @@ export function ATHITab() {
               ))}
             </select>
             <select
-              className="border border-border rounded px-2 py-1 text-xs bg-background"
+              className="border border-border rounded-sm px-2 py-1 text-xs bg-background"
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
@@ -620,7 +620,7 @@ export function ATHITab() {
               ))}
             </select>
             <button
-              className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-white bg-primary rounded hover:bg-primary/90"
+              className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-white bg-primary rounded-sm hover:bg-primary/90"
               onClick={() => {
                 setShowModal(true);
               }}
@@ -661,7 +661,7 @@ export function ATHITab() {
                     <td className="py-2 px-2">
                       <div className="flex flex-wrap gap-1">
                         {s.techniques?.map((t: string) => (
-                          <span key={t} className="px-1.5 py-0.5 text-xs bg-muted rounded">
+                          <span key={t} className="px-1.5 py-0.5 text-xs bg-muted rounded-sm">
                             {formatLabel(t)}
                           </span>
                         ))}
@@ -669,14 +669,14 @@ export function ATHITab() {
                     </td>
                     <td className="py-2 px-2 text-center">
                       <span
-                        className={`px-2 py-0.5 rounded text-xs font-bold ${riskColor(s.riskScore)}`}
+                        className={`px-2 py-0.5 rounded-sm text-xs font-bold ${riskColor(s.riskScore)}`}
                       >
                         {s.riskScore}
                       </span>
                     </td>
                     <td className="py-2 px-2 text-center">
                       <span
-                        className={`px-2 py-0.5 rounded text-xs ${STATUS_COLORS[s.status] ?? ''}`}
+                        className={`px-2 py-0.5 rounded-sm text-xs ${STATUS_COLORS[s.status] ?? ''}`}
                       >
                         {formatLabel(s.status)}
                       </span>
@@ -684,7 +684,7 @@ export function ATHITab() {
                     <td className="py-2 px-2 text-center">
                       {(s.linkedEventIds?.length ?? 0) > 0 ? (
                         <span
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded"
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-sm"
                           title={`Linked to ${s.linkedEventIds.length} event(s): ${s.linkedEventIds.join(', ')}`}
                           data-testid="linked-events-badge"
                         >

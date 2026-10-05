@@ -445,7 +445,7 @@ export function ConnectionsPage() {
       </div>
 
       {toggleError && (
-        <div className="p-3 rounded border border-destructive bg-destructive/10 text-destructive text-sm">
+        <div className="p-3 rounded-sm border border-destructive bg-destructive/10 text-destructive text-sm">
           MCP toggle error: {toggleError}
         </div>
       )}
@@ -662,7 +662,7 @@ export function ConnectionsPage() {
                             }
                           }}
                           disabled={enableServiceMut.isPending || disableServiceMut.isPending}
-                          className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                          className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                         />
                       </label>
                     </div>

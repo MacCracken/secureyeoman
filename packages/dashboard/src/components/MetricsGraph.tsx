@@ -244,7 +244,7 @@ export function MetricsGraph({ metrics, health, mcpServers, onNodeClick }: Metri
         proOptions={{ hideAttribution: true }}
       >
         <Background color="#888" gap={16} size={1} />
-        <Controls showInteractive={false} className="!left-1 !bottom-1 sm:!left-2 sm:!bottom-2" />
+        <Controls showInteractive={false} className="left-1! bottom-1! sm:left-2! sm:bottom-2!" />
         <MiniMap
           nodeColor={(node) => {
             const status = node.data?.status as string;

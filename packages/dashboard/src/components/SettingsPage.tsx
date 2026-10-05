@@ -314,7 +314,7 @@ function ThemeEditorDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -346,7 +346,7 @@ function ThemeEditorDialog({
             onChange={(e) => {
               setEditorName(e.target.value);
             }}
-            className="text-sm px-2 py-1 rounded border border-input bg-background flex-1"
+            className="text-sm px-2 py-1 rounded-sm border border-input bg-background flex-1"
             placeholder="Theme name"
             maxLength={64}
           />
@@ -357,14 +357,14 @@ function ThemeEditorDialog({
               onChange={(e) => {
                 setEditorIsDark(e.target.checked);
               }}
-              className="rounded"
+              className="rounded-sm"
             />
             Dark theme
           </label>
         </div>
 
         {/* Live preview strip */}
-        <div className="h-8 rounded flex overflow-hidden border border-border">
+        <div className="h-8 rounded-sm flex overflow-hidden border border-border">
           <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.background})` }} />
           <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.foreground})` }} />
           <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.primary})` }} />
@@ -380,7 +380,7 @@ function ThemeEditorDialog({
               <label className="text-[10px] text-muted-foreground block">{v}</label>
               <div className="flex items-center gap-1.5">
                 <div
-                  className="w-6 h-6 rounded border border-border flex-shrink-0"
+                  className="w-6 h-6 rounded-sm border border-border shrink-0"
                   style={{
                     backgroundColor: isValidHsl(editorColors[v])
                       ? `hsl(${editorColors[v]})`
@@ -405,13 +405,13 @@ function ThemeEditorDialog({
         <div className="flex gap-2 justify-end pt-2 border-t border-border">
           <button
             onClick={handleExport}
-            className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted"
+            className="text-xs px-3 py-1.5 rounded-sm border border-border hover:bg-muted"
           >
             Export JSON
           </button>
           <button
             onClick={onClose}
-            className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted"
+            className="text-xs px-3 py-1.5 rounded-sm border border-border hover:bg-muted"
           >
             Cancel
           </button>
@@ -419,7 +419,7 @@ function ThemeEditorDialog({
             onClick={() => {
               onSave({ name: editorName, isDark: editorIsDark, colors: editorColors });
             }}
-            className="text-xs px-3 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+            className="text-xs px-3 py-1.5 rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
           >
             Save & Apply
           </button>
@@ -505,7 +505,7 @@ function AppearanceTab() {
       </button>
       <div className="flex items-center gap-1 px-2 py-1.5 bg-card text-left">
         <span className="text-xs font-medium truncate flex-1">{t.name}</span>
-        {theme === t.id && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+        {theme === t.id && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
         {t.id !== 'system' && (
           <button
             onClick={() => {
@@ -615,7 +615,7 @@ function AppearanceTab() {
         </button>
         <div className="flex items-center gap-1 px-2 py-1.5 bg-card text-left">
           <span className="text-xs font-medium truncate flex-1">{t.name}</span>
-          {theme === themeId && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+          {theme === themeId && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
           <button
             onClick={() => {
               openEditMarketplaceTheme(t);
@@ -920,14 +920,14 @@ function AppearanceTab() {
           <h3 className="text-base font-semibold text-foreground">Custom Themes</h3>
           <button
             onClick={openCreateEditor}
-            className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20"
+            className="text-xs px-2 py-0.5 rounded-sm bg-primary/10 text-primary hover:bg-primary/20"
           >
             <Plus className="w-3 h-3 inline mr-1" />
             Create
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20"
+            className="text-xs px-2 py-0.5 rounded-sm bg-primary/10 text-primary hover:bg-primary/20"
           >
             <Upload className="w-3 h-3 inline mr-1" />
             Import
@@ -1051,7 +1051,7 @@ function BackupTab() {
             onChange={(e) => {
               setLabel(e.target.value);
             }}
-            className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
           />
           <button
             onClick={() => {
@@ -1075,7 +1075,7 @@ function BackupTab() {
           <h3 className="text-sm font-medium">Backups</h3>
           <button
             onClick={() => void queryClient.invalidateQueries({ queryKey: ['backups'] })}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            className="p-1 rounded-sm hover:bg-muted text-muted-foreground"
             title="Refresh"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -1092,14 +1092,14 @@ function BackupTab() {
           <div className="divide-y divide-border">
             {backups.map((backup) => (
               <div key={backup.id} className="flex items-center gap-3 px-4 py-3">
-                <Database className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <Database className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium truncate">
                       {backup.label || `backup-${backup.id.slice(0, 8)}`}
                     </span>
                     <span
-                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_BADGE[backup.status]}`}
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs font-medium ${STATUS_BADGE[backup.status]}`}
                     >
                       {backup.status}
                     </span>
@@ -1116,12 +1116,12 @@ function BackupTab() {
                     <p className="text-xs text-destructive mt-0.5 truncate">{backup.error}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   {backup.status === 'completed' && (
                     <button
                       onClick={() => void handleDownload(backup)}
                       title="Download"
-                      className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                      className="p-1.5 rounded-sm hover:bg-muted text-muted-foreground hover:text-foreground"
                     >
                       <Download className="w-4 h-4" />
                     </button>
@@ -1132,7 +1132,7 @@ function BackupTab() {
                     }}
                     disabled={deleteMutation.isPending}
                     title="Delete"
-                    className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                    className="p-1.5 rounded-sm hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -1214,7 +1214,7 @@ function LicenseCard() {
           />
           <h3 className="font-medium">License</h3>
           <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${isEnterprise ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
+            className={`inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-semibold ${isEnterprise ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
           >
             {isLoading
               ? '…'
@@ -1369,7 +1369,7 @@ function LicenseCard() {
               onChange={(e) => {
                 setKeyInput(e.target.value);
               }}
-              className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+              className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
             <button
               onClick={() => {

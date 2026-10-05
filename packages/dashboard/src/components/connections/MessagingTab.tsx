@@ -121,7 +121,7 @@ export function MessagingTab({
                     onChange={(e) => {
                       onFormDataChange({ ...formData, [field.key]: e.target.value });
                     }}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
                   />
                   {field.helpText && (
                     <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
@@ -244,7 +244,7 @@ export function MessagingTab({
                   }}
                   className="flex items-center gap-2.5 p-2.5 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
                 >
-                  <div className="p-1.5 rounded bg-surface text-muted shrink-0">{meta.icon}</div>
+                  <div className="p-1.5 rounded-sm bg-surface text-muted shrink-0">{meta.icon}</div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{meta.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{meta.description}</p>

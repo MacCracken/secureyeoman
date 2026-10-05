@@ -94,32 +94,32 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
   return (
     <div className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-sm">
           {error}
         </div>
       )}
 
       {/* Drift badge */}
       {drift?.lastTaggedVersion && (
-        <div className="flex items-center justify-between bg-gray-50 border rounded px-4 py-3">
+        <div className="flex items-center justify-between bg-gray-50 border rounded-sm px-4 py-3">
           <div>
             <span className="font-medium">Last release: </span>
             <span className="font-mono text-sm">{drift.lastTaggedVersion}</span>
             {drift.uncommittedChanges > 0 && (
-              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-yellow-100 text-yellow-800">
                 {drift.uncommittedChanges} uncommitted change
                 {drift.uncommittedChanges > 1 ? 's' : ''}
               </span>
             )}
             {drift.uncommittedChanges === 0 && (
-              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-green-100 text-green-800">
                 up to date
               </span>
             )}
           </div>
           <button
             onClick={() => void handleTag()}
-            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            className="px-3 py-1 bg-blue-600 text-white rounded-sm text-sm hover:bg-blue-700"
           >
             Tag Release
           </button>
@@ -127,11 +127,11 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
       )}
 
       {!drift?.lastTaggedVersion && (
-        <div className="flex items-center justify-between bg-gray-50 border rounded px-4 py-3">
+        <div className="flex items-center justify-between bg-gray-50 border rounded-sm px-4 py-3">
           <span className="text-gray-500">No tagged releases yet</span>
           <button
             onClick={() => void handleTag()}
-            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            className="px-3 py-1 bg-blue-600 text-white rounded-sm text-sm hover:bg-blue-700"
           >
             Tag First Release
           </button>
@@ -144,7 +144,7 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
         {versions.length === 0 ? (
           <p className="text-gray-500 text-sm">No versions recorded yet.</p>
         ) : (
-          <div className="border rounded divide-y">
+          <div className="border rounded-sm divide-y">
             {versions.map((v, i) => (
               <div
                 key={v.id}
@@ -158,7 +158,7 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {v.versionTag ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-blue-100 text-blue-800">
                         {v.versionTag}
                       </span>
                     ) : (
@@ -207,7 +207,7 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
           <h3 className="font-medium text-gray-700 mb-2">
             Snapshot: {selectedVersion.versionTag || selectedVersion.id.slice(0, 8)}
           </h3>
-          <pre className="bg-gray-900 text-gray-100 p-4 rounded text-sm overflow-auto max-h-96 whitespace-pre-wrap">
+          <pre className="bg-gray-900 text-gray-100 p-4 rounded-sm text-sm overflow-auto max-h-96 whitespace-pre-wrap">
             {JSON.stringify(selectedVersion.snapshot, null, 2)}
           </pre>
         </div>
@@ -230,7 +230,7 @@ export default function WorkflowVersionHistory({ workflowId }: { workflowId: str
               Close
             </button>
           </div>
-          <pre className="bg-gray-900 text-gray-100 p-4 rounded text-sm overflow-auto max-h-96 whitespace-pre-wrap">
+          <pre className="bg-gray-900 text-gray-100 p-4 rounded-sm text-sm overflow-auto max-h-96 whitespace-pre-wrap">
             {diffText.split('\n').map((line, i) => (
               <span
                 key={i}

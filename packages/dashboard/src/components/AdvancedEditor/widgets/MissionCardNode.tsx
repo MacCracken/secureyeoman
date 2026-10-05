@@ -15,7 +15,7 @@ export function MissionCardNode({ cardId, onConfigChange }: Props) {
       <div className="flex flex-col items-center justify-center h-full text-xs text-muted-foreground p-4 gap-2">
         <div className="text-center">Select a Mission Card to embed:</div>
         <select
-          className="bg-muted border rounded px-2 py-1 text-xs w-full max-w-[220px]"
+          className="bg-muted border rounded-sm px-2 py-1 text-xs w-full max-w-[220px]"
           value={cardId ?? ''}
           onChange={(e) => onConfigChange?.({ missionCardId: e.target.value })}
         >

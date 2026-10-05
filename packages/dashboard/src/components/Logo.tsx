@@ -10,7 +10,7 @@ export function Logo({ className = '', size = 28 }: LogoProps) {
       alt="SecureYeoman"
       width={size}
       height={size}
-      className={`flex-shrink-0 ${className}`}
+      className={`shrink-0 ${className}`}
     />
   );
 }

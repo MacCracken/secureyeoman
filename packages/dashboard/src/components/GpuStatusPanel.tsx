@@ -57,7 +57,7 @@ function CapabilityBadge({ cap }: { cap: string }) {
   };
   return (
     <span
-      className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${colors[cap] ?? 'bg-gray-500/20 text-gray-400'}`}
+      className={`px-1.5 py-0.5 rounded-sm text-[10px] font-medium ${colors[cap] ?? 'bg-gray-500/20 text-gray-400'}`}
     >
       {cap}
     </span>
@@ -109,7 +109,7 @@ export default function GpuStatusPanel() {
         </div>
         <button
           onClick={refresh}
-          className="p-1 rounded hover:bg-muted transition-colors"
+          className="p-1 rounded-sm hover:bg-muted transition-colors"
           title="Refresh GPU status"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -167,13 +167,13 @@ export default function GpuStatusPanel() {
               return (
                 <div
                   key={`${model.provider ?? 'local'}-${model.name}-${i}`}
-                  className="flex items-center justify-between p-1.5 rounded border border-border bg-card"
+                  className="flex items-center justify-between p-1.5 rounded-sm border border-border bg-card"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <HardDrive className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                    <HardDrive className="w-3 h-3 text-muted-foreground shrink-0" />
                     <span className="text-xs truncate">{model.name}</span>
                   </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     {capabilities
                       .filter((c) => c !== 'chat' && c !== 'streaming')
                       .map((cap) => (

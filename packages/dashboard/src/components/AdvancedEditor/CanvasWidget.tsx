@@ -213,7 +213,7 @@ export const CanvasWidget = memo(function CanvasWidget({
         <input
           // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
-          className="flex-1 text-xs font-medium bg-transparent border-b border-primary outline-none min-w-0"
+          className="flex-1 text-xs font-medium bg-transparent border-b border-primary outline-hidden min-w-0"
           value={titleInput}
           onChange={(e) => {
             setTitleInput(e.target.value);
@@ -238,21 +238,21 @@ export const CanvasWidget = memo(function CanvasWidget({
       )}
       <button
         onClick={handleMinimize}
-        className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+        className="p-0.5 rounded-sm hover:bg-muted text-muted-foreground hover:text-foreground"
         title={minimized ? 'Expand' : 'Minimize'}
       >
         <Minus className="w-3 h-3" />
       </button>
       <button
         onClick={handleFullscreen}
-        className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+        className="p-0.5 rounded-sm hover:bg-muted text-muted-foreground hover:text-foreground"
         title="Fullscreen"
       >
         <Maximize2 className="w-3 h-3" />
       </button>
       <button
         onClick={handleClose}
-        className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+        className="p-0.5 rounded-sm hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
         title="Close"
       >
         <X className="w-3 h-3" />
@@ -266,7 +266,7 @@ export const CanvasWidget = memo(function CanvasWidget({
         role="dialog"
         aria-modal="true"
         aria-label={`${titleInput} — fullscreen`}
-        className="fixed inset-0 z-[9999] bg-background flex flex-col"
+        className="fixed inset-0 z-9999 bg-background flex flex-col"
         style={{ pointerEvents: 'all' }}
       >
         {titleBar}

@@ -253,7 +253,7 @@ export function PersonalitiesTab() {
                                   .map(([k, v]) => (
                                     <span
                                       key={k}
-                                      className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
+                                      className="text-[10px] px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground"
                                     >
                                       {k}: {v}
                                     </span>

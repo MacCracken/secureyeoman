@@ -94,7 +94,7 @@ function Field({
 }
 
 const inputCls =
-  'w-full text-xs border border-border rounded px-2 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-primary';
+  'w-full text-xs border border-border rounded-sm px-2 py-1.5 bg-background focus:outline-hidden focus:ring-1 focus:ring-primary';
 const textareaCls = inputCls + ' resize-y font-mono';
 const selectCls = inputCls;
 
@@ -1267,7 +1267,7 @@ function ItemList({
       {items.map((item, i) => (
         <div
           key={i}
-          className="flex items-center justify-between gap-2 border border-border rounded px-3 py-2 bg-muted/20"
+          className="flex items-center justify-between gap-2 border border-border rounded-sm px-3 py-2 bg-muted/20"
         >
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium truncate">{item.primary}</p>
@@ -1323,13 +1323,13 @@ function EditForm({
       <div className="flex gap-2 pt-1">
         <button
           onClick={onSave}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 transition-colors"
         >
           <Save className="w-3.5 h-3.5" /> Save item
         </button>
         <button
           onClick={onCancel}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border rounded hover:bg-accent transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border rounded-sm hover:bg-accent transition-colors"
         >
           <X className="w-3.5 h-3.5" /> Cancel
         </button>
@@ -1408,7 +1408,7 @@ export function IntentDocEditor({ intentId }: { intentId: string }) {
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{localDoc.name}</span>
           {isDirty && (
-            <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-medium">
+            <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-sm font-medium">
               Unsaved changes
             </span>
           )}
@@ -1418,7 +1418,7 @@ export function IntentDocEditor({ intentId }: { intentId: string }) {
             saveMutation.mutate();
           }}
           disabled={!isDirty || saveMutation.isPending}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
         >
           <Save className="w-3.5 h-3.5" />
           {saveMutation.isPending ? 'Saving…' : 'Save All Changes'}

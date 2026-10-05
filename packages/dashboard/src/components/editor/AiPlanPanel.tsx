@@ -122,7 +122,7 @@ function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowP
             onClick={() => {
               setExpanded((v) => !v);
             }}
-            className="flex-shrink-0 mt-0.5"
+            className="shrink-0 mt-0.5"
           >
             {expanded ? (
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
@@ -131,11 +131,11 @@ function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowP
             )}
           </button>
         ) : (
-          <span className="w-3 flex-shrink-0" />
+          <span className="w-3 shrink-0" />
         )}
 
         {/* Status icon */}
-        <span className="flex-shrink-0 mt-0.5">{STATUS_ICONS[step.status]}</span>
+        <span className="shrink-0 mt-0.5">{STATUS_ICONS[step.status]}</span>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
@@ -171,7 +171,7 @@ function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowP
 
           {/* Detail (collapsed by default) */}
           {step.detail && expanded && (
-            <pre className="text-[10px] text-muted-foreground bg-muted/50 rounded p-1.5 mt-1 whitespace-pre-wrap font-mono max-h-24 overflow-y-auto">
+            <pre className="text-[10px] text-muted-foreground bg-muted/50 rounded-sm p-1.5 mt-1 whitespace-pre-wrap font-mono max-h-24 overflow-y-auto">
               {step.detail}
             </pre>
           )}
@@ -181,7 +181,7 @@ function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowP
             <div className="flex items-center gap-2 mt-1.5">
               <button
                 onClick={() => onApprove?.(step.id)}
-                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-green-500/10 text-green-600 border border-green-500/20 hover:bg-green-500/20"
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm bg-green-500/10 text-green-600 border border-green-500/20 hover:bg-green-500/20"
                 data-testid={`approve-${step.id}`}
               >
                 <Check className="w-3 h-3" />
@@ -189,7 +189,7 @@ function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowP
               </button>
               <button
                 onClick={() => onReject?.(step.id)}
-                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"
                 data-testid={`reject-${step.id}`}
               >
                 <X className="w-3 h-3" />
@@ -201,7 +201,7 @@ function StepRow({ step, depth = 0, onApprove, onReject, onFileClick }: StepRowP
 
         {/* Duration */}
         {step.durationMs != null && (
-          <span className="text-[10px] text-muted-foreground flex-shrink-0 tabular-nums">
+          <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
             {step.durationMs < 1000
               ? `${step.durationMs}ms`
               : `${(step.durationMs / 1000).toFixed(1)}s`}
@@ -263,7 +263,7 @@ export function AiPlanPanel({
           setCollapsed((v) => !v);
         }}
       >
-        <ListChecks className="w-4 h-4 text-primary flex-shrink-0" />
+        <ListChecks className="w-4 h-4 text-primary shrink-0" />
         <span className="text-xs font-semibold flex-1 truncate">{plan.title}</span>
 
         {/* Awaiting badge */}
@@ -286,7 +286,7 @@ export function AiPlanPanel({
               e.stopPropagation();
               onPauseResume();
             }}
-            className="p-0.5 rounded hover:bg-muted"
+            className="p-0.5 rounded-sm hover:bg-muted"
             title={plan.status === 'paused' ? 'Resume' : 'Pause'}
             data-testid="pause-resume"
           >
@@ -306,9 +306,9 @@ export function AiPlanPanel({
         )}
 
         {collapsed ? (
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         ) : (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         )}
       </div>
 

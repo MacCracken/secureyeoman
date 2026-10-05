@@ -27,7 +27,7 @@ function StatusBadge({ status }: { status: KbDocument['status'] }) {
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${cls[status] ?? ''}`}
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-xs font-medium ${cls[status] ?? ''}`}
     >
       {icons[status]}
       {status}
@@ -45,7 +45,7 @@ function FormatBadge({ format }: { format: KbDocument['format'] }) {
   };
   return (
     <span
-      className={`px-1.5 py-0.5 rounded text-xs font-mono ${colors[format] ?? 'bg-gray-50 text-gray-600'}`}
+      className={`px-1.5 py-0.5 rounded-sm text-xs font-mono ${colors[format] ?? 'bg-gray-50 text-gray-600'}`}
     >
       {format}
     </span>
@@ -137,7 +137,7 @@ export function DocumentsPanel() {
     <div className="space-y-4">
       {/* Filter + list */}
       <div className="card">
-        <div className="card-header p-3 sm:p-4 flex items-center gap-2">
+        <div className="card-header p-3 sm:p-4! flex items-center gap-2">
           <FileText className="w-4 h-4 text-muted-foreground" />
           <h3 className="card-title text-sm">{isOrg ? 'Organization Documents' : 'Documents'}</h3>
           {!isOrg && (
@@ -148,7 +148,7 @@ export function DocumentsPanel() {
                 onChange={(e) => {
                   setSelectedPersonalityId(e.target.value);
                 }}
-                className="bg-card border border-border rounded text-xs py-1 px-2"
+                className="bg-card border border-border rounded-sm text-xs py-1 px-2"
               >
                 <option value={ALL_PERSONALITIES}>All</option>
                 {personalities.map((p) => (
@@ -179,7 +179,7 @@ export function DocumentsPanel() {
                       <FormatBadge format={doc.format} />
                       <StatusBadge status={doc.status} />
                       {doc.visibility === 'shared' && (
-                        <span className="text-xs text-muted-foreground bg-blue-50 px-1.5 py-0.5 rounded">
+                        <span className="text-xs text-muted-foreground bg-blue-50 px-1.5 py-0.5 rounded-sm">
                           shared
                         </span>
                       )}
@@ -196,7 +196,7 @@ export function DocumentsPanel() {
                     )}
                   </div>
                   <button
-                    className="shrink-0 p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
+                    className="shrink-0 p-1 rounded-sm hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
                     onClick={() => {
                       deleteMutation.mutate(doc.id);
                     }}
@@ -214,13 +214,13 @@ export function DocumentsPanel() {
 
       {/* Upload area */}
       <div className="card">
-        <div className="card-header p-3 sm:p-4">
+        <div className="card-header p-3 sm:p-4!">
           <h3 className="card-title text-sm flex items-center gap-2">
             <Upload className="w-4 h-4 text-muted-foreground" />
             Upload Document
           </h3>
         </div>
-        <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
+        <div className="card-content space-y-3 p-3 sm:p-4! pt-0 sm:pt-0!">
           {/* Upload options */}
           {!isOrg && (
             <div className="grid grid-cols-2 gap-2">
@@ -231,7 +231,7 @@ export function DocumentsPanel() {
                   onChange={(e) => {
                     setUploadPersonalityId(e.target.value);
                   }}
-                  className="w-full bg-card border border-border rounded text-xs py-1.5 px-2"
+                  className="w-full bg-card border border-border rounded-sm text-xs py-1.5 px-2"
                 >
                   <option value="">Global (All Personalities)</option>
                   {personalities.map((p) => (
@@ -248,7 +248,7 @@ export function DocumentsPanel() {
                   onChange={(e) => {
                     setUploadVisibility(e.target.value as 'private' | 'shared');
                   }}
-                  className="w-full bg-card border border-border rounded text-xs py-1.5 px-2"
+                  className="w-full bg-card border border-border rounded-sm text-xs py-1.5 px-2"
                 >
                   <option value="private">Private</option>
                   <option value="shared">Shared</option>
@@ -265,7 +265,7 @@ export function DocumentsPanel() {
                 setUploadTitle(e.target.value);
               }}
               placeholder="Auto-detected from filename"
-              className="w-full bg-card border border-border rounded text-xs py-1.5 px-2"
+              className="w-full bg-card border border-border rounded-sm text-xs py-1.5 px-2"
             />
           </div>
 

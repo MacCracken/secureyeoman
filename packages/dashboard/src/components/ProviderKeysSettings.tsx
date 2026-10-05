@@ -235,7 +235,7 @@ export function ProviderKeysSettings() {
               onChange={(e) => {
                 handleSelectProvider(e.target.value);
               }}
-              className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary pr-8"
+              className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm appearance-none focus:outline-hidden focus:ring-2 focus:ring-primary pr-8"
             >
               <option value="">Select a provider...</option>
               {PROVIDERS.map((p) => (
@@ -317,7 +317,7 @@ export function ProviderKeysSettings() {
                     setKeyValue(e.target.value);
                   }}
                   placeholder={selectedProvider.placeholder || 'Paste API key...'}
-                  className="px-3 py-1.5 rounded-lg border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="px-3 py-1.5 rounded-lg border bg-background text-foreground font-mono text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                   autoComplete="off"
                 />
                 {keyValue.length > 0 && keyValue.length < 8 && (
@@ -395,7 +395,7 @@ export function ProviderKeysSettings() {
                     setCustomEnvName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''));
                   }}
                   placeholder="MY_PROVIDER_API_KEY"
-                  className="px-3 py-1.5 rounded-lg border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="px-3 py-1.5 rounded-lg border bg-background text-foreground font-mono text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                 />
               </div>
               {customEnvName && (
@@ -409,7 +409,7 @@ export function ProviderKeysSettings() {
                         setKeyValue(e.target.value);
                       }}
                       placeholder="Paste API key..."
-                      className="px-3 py-1.5 rounded-lg border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="px-3 py-1.5 rounded-lg border bg-background text-foreground font-mono text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                       autoComplete="off"
                     />
                     {keyValue.length > 0 && keyValue.length < 8 && (
@@ -465,7 +465,7 @@ export function ProviderKeysSettings() {
             {PROVIDERS.filter((p) => configuredKeys.has(p.envVarName)).map((provider) => (
               <div
                 key={provider.id}
-                className="flex items-center justify-between p-2 rounded bg-muted/30 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+                className="flex items-center justify-between p-2 rounded-sm bg-muted/30 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => {
                   handleSelectProvider(provider.id);
                 }}

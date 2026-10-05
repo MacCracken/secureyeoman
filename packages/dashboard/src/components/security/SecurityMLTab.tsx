@@ -156,7 +156,7 @@ export function MLSecurityTab() {
             <div className="flex items-center gap-2">
               <p className="text-2xl font-bold">{riskScore}</p>
               <span
-                className={`text-xs font-semibold px-1.5 py-0.5 rounded border capitalize ${RISK_COLORS[riskLevel]}`}
+                className={`text-xs font-semibold px-1.5 py-0.5 rounded-sm border capitalize ${RISK_COLORS[riskLevel]}`}
               >
                 {riskLevel}
               </span>
@@ -223,7 +223,7 @@ export function MLSecurityTab() {
               onChange={(e) => {
                 handleTypeFilter(e.target.value);
               }}
-              className="text-xs border border-border rounded px-2 py-1 bg-background text-foreground"
+              className="text-xs border border-border rounded-sm px-2 py-1 bg-background text-foreground"
             >
               <option value="">All ML Types</option>
               <option value="anomaly">Anomaly</option>

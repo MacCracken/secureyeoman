@@ -69,7 +69,7 @@ function PresetCard({
         }}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <Users className="w-4 h-4 text-primary flex-shrink-0" />
+          <Users className="w-4 h-4 text-primary shrink-0" />
           <div className="min-w-0">
             <div className="text-sm font-medium truncate">{preset.name}</div>
             <div className="text-[10px] text-muted-foreground">
@@ -77,13 +77,13 @@ function PresetCard({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onSubmit(preset.name);
             }}
-            className="px-2 py-1 text-[10px] font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90"
+            className="px-2 py-1 text-[10px] font-medium bg-primary text-primary-foreground rounded-sm hover:bg-primary/90"
           >
             Run Crew
           </button>
@@ -99,8 +99,8 @@ function PresetCard({
           <p className="text-xs text-muted-foreground">{preset.description}</p>
           <div className="space-y-1">
             {preset.agents.map((agent) => (
-              <div key={agent.key} className="flex items-start gap-2 p-1.5 rounded bg-muted/30">
-                <Bot className="w-3 h-3 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <div key={agent.key} className="flex items-start gap-2 p-1.5 rounded-sm bg-muted/30">
+                <Bot className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
                 <div className="min-w-0">
                   <div className="text-[11px] font-medium">{agent.role}</div>
                   <div className="text-[10px] text-muted-foreground truncate">{agent.goal}</div>
@@ -200,7 +200,7 @@ export default function AgnosticPanel() {
           onClick={() => {
             void queryClient.invalidateQueries({ queryKey: ['agnostic-widget'] });
           }}
-          className="p-1.5 rounded hover:bg-muted"
+          className="p-1.5 rounded-sm hover:bg-muted"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${widgetLoading ? 'animate-spin' : ''}`} />
         </button>
@@ -228,7 +228,7 @@ export default function AgnosticPanel() {
               setSubmitTitle(e.target.value);
             }}
             placeholder="Crew title..."
-            className="w-full px-2 py-1.5 text-xs rounded border border-border bg-background"
+            className="w-full px-2 py-1.5 text-xs rounded-sm border border-border bg-background"
           />
           <textarea
             value={submitDesc}
@@ -237,13 +237,13 @@ export default function AgnosticPanel() {
             }}
             placeholder="Description (optional)..."
             rows={2}
-            className="w-full px-2 py-1.5 text-xs rounded border border-border bg-background resize-none"
+            className="w-full px-2 py-1.5 text-xs rounded-sm border border-border bg-background resize-none"
           />
           <div className="flex gap-2">
             <button
               onClick={doSubmit}
               disabled={submitMutation.isPending || !submitTitle}
-              className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
+              className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 disabled:opacity-50"
             >
               {submitMutation.isPending ? 'Submitting...' : 'Submit'}
             </button>
@@ -251,7 +251,7 @@ export default function AgnosticPanel() {
               onClick={() => {
                 setSubmitPreset(null);
               }}
-              className="px-3 py-1 text-xs rounded border border-border hover:bg-muted"
+              className="px-3 py-1 text-xs rounded-sm border border-border hover:bg-muted"
             >
               Cancel
             </button>
@@ -320,10 +320,10 @@ export default function AgnosticPanel() {
             return (
               <div
                 key={crew.id}
-                className="flex items-center justify-between p-2 rounded border border-border bg-card"
+                className="flex items-center justify-between p-2 rounded-sm border border-border bg-card"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <Icon className={`w-3.5 h-3.5 ${color} flex-shrink-0`} />
+                  <Icon className={`w-3.5 h-3.5 ${color} shrink-0`} />
                   <div className="min-w-0">
                     <div className="text-xs truncate">{crew.title}</div>
                     <div className="text-[10px] text-muted-foreground">
@@ -337,7 +337,7 @@ export default function AgnosticPanel() {
                     onClick={() => {
                       cancelMutation.mutate(crew.id);
                     }}
-                    className="p-1 rounded hover:bg-muted"
+                    className="p-1 rounded-sm hover:bg-muted"
                     title="Cancel crew"
                   >
                     <Square className="w-3 h-3 text-muted-foreground" />

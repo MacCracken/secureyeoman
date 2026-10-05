@@ -150,11 +150,11 @@ export function GitPanel({
   return (
     <div className="flex flex-col h-full overflow-hidden" data-testid="git-panel">
       {/* Header */}
-      <div className="flex items-center gap-1.5 px-3 py-1.5 border-b bg-muted/30 flex-shrink-0">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 border-b bg-muted/30 shrink-0">
         <GitBranch className="w-3.5 h-3.5 text-muted-foreground" />
         <span className="text-xs font-medium">Git</span>
         {branch && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary font-mono">
             {branch}
           </span>
         )}
@@ -242,7 +242,7 @@ export function GitPanel({
                 setCommitMessage(e.target.value);
               }}
               placeholder="Commit message..."
-              className="flex-1 bg-background border rounded px-2 py-1.5 text-xs font-mono resize-none focus:outline-none focus:ring-1 focus:ring-primary min-h-[48px] max-h-[96px]"
+              className="flex-1 bg-background border rounded-sm px-2 py-1.5 text-xs font-mono resize-none focus:outline-hidden focus:ring-1 focus:ring-primary min-h-[48px] max-h-[96px]"
               rows={2}
               data-testid="commit-message-input"
             />
@@ -252,7 +252,7 @@ export function GitPanel({
               <button
                 onClick={onGenerateMessage}
                 disabled={isGeneratingMessage || stagedFiles.length === 0}
-                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border hover:bg-muted disabled:opacity-40"
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border hover:bg-muted disabled:opacity-40"
                 title="Generate commit message with AI"
                 data-testid="generate-message-btn"
               >
@@ -268,7 +268,7 @@ export function GitPanel({
             <button
               onClick={() => void handleCommit()}
               disabled={!commitMessage.trim() || committing}
-              className="flex items-center gap-1 text-xs px-3 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+              className="flex items-center gap-1 text-xs px-3 py-1 rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
               data-testid="commit-btn"
             >
               {committing && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -290,7 +290,7 @@ export function GitPanel({
           </button>
           {showDiff && activeDiff && (
             <pre
-              className="mt-1 rounded border p-2 bg-muted/30 font-mono text-[10px] max-h-[200px] overflow-auto whitespace-pre-wrap"
+              className="mt-1 rounded-sm border p-2 bg-muted/30 font-mono text-[10px] max-h-[200px] overflow-auto whitespace-pre-wrap"
               data-testid="diff-output"
             >
               {activeDiff.split('\n').map((line, i) => (
@@ -329,7 +329,7 @@ export function GitPanel({
           </button>
           {showLog && logData && (
             <pre
-              className="mt-1 rounded border p-2 bg-muted/30 font-mono text-[10px] max-h-[120px] overflow-auto"
+              className="mt-1 rounded-sm border p-2 bg-muted/30 font-mono text-[10px] max-h-[120px] overflow-auto"
               data-testid="log-output"
             >
               {logData}
@@ -340,7 +340,7 @@ export function GitPanel({
         {/* Command output */}
         {output && (
           <div className="px-3 py-1.5">
-            <pre className="rounded border p-2 bg-muted/30 font-mono text-[10px] max-h-[100px] overflow-auto">
+            <pre className="rounded-sm border p-2 bg-muted/30 font-mono text-[10px] max-h-[100px] overflow-auto">
               {output}
             </pre>
           </div>

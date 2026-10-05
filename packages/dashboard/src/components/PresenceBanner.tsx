@@ -33,7 +33,7 @@ export function PresenceBanner({ users }: PresenceBannerProps): React.JSX.Elemen
         {users.slice(0, 4).map((u) => (
           <span
             key={u.clientId}
-            className="w-4 h-4 rounded-full border border-white flex-shrink-0"
+            className="w-4 h-4 rounded-full border border-white shrink-0"
             style={{ backgroundColor: u.color }}
             title={u.name}
             data-testid="presence-dot"

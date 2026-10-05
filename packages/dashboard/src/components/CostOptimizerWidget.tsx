@@ -109,7 +109,7 @@ export function CostOptimizerWidget() {
       <h3 className="text-base font-semibold text-zinc-200">Cost Optimizer</h3>
 
       {/* Forecast Summary */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">Forecast</div>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
@@ -142,7 +142,7 @@ export function CostOptimizerWidget() {
       </div>
 
       {/* Top Models by Cost (bar chart) */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">Top Models by Cost</div>
         {topModels.length === 0 ? (
           <div className="text-xs text-zinc-500">No usage data</div>
@@ -153,9 +153,9 @@ export function CostOptimizerWidget() {
                 <span className="w-28 truncate text-xs text-zinc-400" title={m.model}>
                   {m.model}
                 </span>
-                <div className="h-3 flex-1 rounded bg-zinc-700">
+                <div className="h-3 flex-1 rounded-sm bg-zinc-700">
                   <div
-                    className="h-3 rounded bg-blue-500"
+                    className="h-3 rounded-sm bg-blue-500"
                     style={{ width: `${(m.totalCostUsd / maxCost) * 100}%` }}
                   />
                 </div>
@@ -169,9 +169,9 @@ export function CostOptimizerWidget() {
       </div>
 
       {/* Workload Breakdown */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">Workload Breakdown</div>
-        <div className="flex h-4 overflow-hidden rounded">
+        <div className="flex h-4 overflow-hidden rounded-sm">
           {workloadBreakdown.simple > 0 && (
             <div
               className="bg-green-600"
@@ -202,7 +202,7 @@ export function CostOptimizerWidget() {
       </div>
 
       {/* Routing Suggestions */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 flex items-center justify-between">
           <span className="font-medium text-zinc-300">Routing Suggestions</span>
           {potentialSavingsUsd > 0 && (
@@ -216,7 +216,7 @@ export function CostOptimizerWidget() {
         ) : (
           <div className="space-y-2">
             {routingSuggestions.slice(0, 3).map((s, i) => (
-              <div key={i} className="rounded bg-zinc-800 p-2">
+              <div key={i} className="rounded-sm bg-zinc-800 p-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-zinc-300">
                     {s.currentModel} → {s.suggestedModel}

@@ -176,7 +176,7 @@ export function LiveTab() {
                   key={q.conversationId ?? i}
                   title={`${(q.conversationId ?? '').slice(0, 8)} — score: ${pct.toFixed(2)} (${q.signalSource})`}
                   style={{ backgroundColor: `hsl(${hue}, 60%, 45%)` }}
-                  className="w-4 h-4 rounded-sm cursor-default"
+                  className="w-4 h-4 rounded-xs cursor-default"
                 />
               );
             })}

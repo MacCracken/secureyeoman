@@ -247,7 +247,7 @@ export const ChatMarkdown = memo(function ChatMarkdown({
             return part;
           });
         });
-        return <p className="leading-relaxed break-words">{processed}</p>;
+        return <p className="leading-relaxed wrap-break-word">{processed}</p>;
       },
 
       // ── Headings ────────────────────────────────────────────────
@@ -295,7 +295,7 @@ export const ChatMarkdown = memo(function ChatMarkdown({
         if (hasLang) return <code className={className}>{children}</code>;
         return (
           <code
-            className={`bg-background/60 border border-muted-foreground/10 px-1 py-0.5 rounded font-mono ${textSmall}`}
+            className={`bg-background/60 border border-muted-foreground/10 px-1 py-0.5 rounded-sm font-mono ${textSmall}`}
           >
             {children}
           </code>
@@ -387,7 +387,7 @@ export const ChatMarkdown = memo(function ChatMarkdown({
               type="checkbox"
               checked={!!checked}
               onChange={() => {}}
-              className="mt-0.5 accent-primary cursor-default pointer-events-none flex-shrink-0"
+              className="mt-0.5 accent-primary cursor-default pointer-events-none shrink-0"
             />
           );
         }

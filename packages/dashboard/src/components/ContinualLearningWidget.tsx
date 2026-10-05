@@ -81,11 +81,11 @@ function DatasetRefreshPanel() {
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded border border-zinc-700 p-2">
+        <div className="rounded-sm border border-zinc-700 p-2">
           <div className="text-xs text-zinc-500">Schedule</div>
           <div className="font-mono text-sm text-zinc-200">{data.cron}</div>
         </div>
-        <div className="rounded border border-zinc-700 p-2">
+        <div className="rounded-sm border border-zinc-700 p-2">
           <div className="text-xs text-zinc-500">Samples Added</div>
           <div className="text-sm font-semibold text-zinc-200">
             {data.samplesAdded.toLocaleString()}
@@ -106,7 +106,7 @@ function DatasetRefreshPanel() {
             triggerMutation.mutate();
           }}
           disabled={triggerMutation.isPending || data.status === 'running'}
-          className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+          className="rounded-sm bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
         >
           {data.status === 'running' ? 'Running...' : 'Trigger Now'}
         </button>
@@ -148,7 +148,7 @@ function DriftMonitorPanel() {
         <div className="text-xs text-zinc-500">No drift data available</div>
       )}
       {personalities.map(([name, snap]) => (
-        <div key={name} className="rounded border border-zinc-700 p-2">
+        <div key={name} className="rounded-sm border border-zinc-700 p-2">
           <div className="mb-1 flex items-center justify-between">
             <span className="text-xs font-medium text-zinc-300">{name}</span>
             <span className={`text-xs font-mono ${driftColor(snap.driftScore)}`}>
@@ -156,9 +156,9 @@ function DriftMonitorPanel() {
             </span>
           </div>
           <div className="mb-1 flex items-center gap-2">
-            <div className="h-1.5 flex-1 rounded bg-zinc-700">
+            <div className="h-1.5 flex-1 rounded-sm bg-zinc-700">
               <div
-                className={`h-1.5 rounded ${driftBarColor(snap.driftScore)}`}
+                className={`h-1.5 rounded-sm ${driftBarColor(snap.driftScore)}`}
                 style={{ width: `${Math.min(snap.driftScore * 100, 100)}%` }}
               />
             </div>
@@ -226,7 +226,7 @@ function OnlineUpdatesPanel() {
       {jobs.map((job) => (
         <div
           key={job.id}
-          className="flex items-center justify-between rounded border border-zinc-700 px-2 py-1.5"
+          className="flex items-center justify-between rounded-sm border border-zinc-700 px-2 py-1.5"
         >
           <div className="flex items-center gap-2">
             <span className={statusColor[job.status]}>{statusIcon[job.status]}</span>
@@ -256,7 +256,7 @@ export default function ContinualLearningWidget() {
       <h3 className="text-base font-semibold text-zinc-200">Continual Learning</h3>
 
       {/* Panel Tabs */}
-      <div className="flex gap-1 rounded bg-zinc-800 p-0.5">
+      <div className="flex gap-1 rounded-sm bg-zinc-800 p-0.5">
         {panels.map((p) => (
           <button
             key={p.key}

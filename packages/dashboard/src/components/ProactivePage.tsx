@@ -66,8 +66,8 @@ export function ProactivePage() {
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">Proactive Assistance is Disabled</h2>
           <p className="text-muted-foreground mb-4">
-            Enable <code className="text-sm bg-muted px-1.5 py-0.5 rounded">allowProactive</code> in
-            Security Policy to activate proactive triggers and suggestions.
+            Enable <code className="text-sm bg-muted px-1.5 py-0.5 rounded-sm">allowProactive</code>{' '}
+            in Security Policy to activate proactive triggers and suggestions.
           </p>
         </div>
       </div>
@@ -181,13 +181,13 @@ function OverviewTab() {
               return (
                 <div key={entry.id} className="flex gap-3 p-3 border rounded-lg">
                   <Zap
-                    className={`w-4 h-4 flex-shrink-0 mt-0.5 ${enabled ? 'text-primary' : 'text-muted-foreground'}`}
+                    className={`w-4 h-4 shrink-0 mt-0.5 ${enabled ? 'text-primary' : 'text-muted-foreground'}`}
                   />
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium">{entry.name}</p>
                       {enabled && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-success/15 text-success font-medium">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-success/15 text-success font-medium">
                           active
                         </span>
                       )}
@@ -376,13 +376,13 @@ function TriggerRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span
-            className={`px-2 py-0.5 rounded text-[10px] font-medium ${typeColors[trigger.type] ?? 'bg-muted text-muted-foreground'}`}
+            className={`px-2 py-0.5 rounded-sm text-[10px] font-medium ${typeColors[trigger.type] ?? 'bg-muted text-muted-foreground'}`}
           >
             {trigger.type}
           </span>
           <p className="text-sm font-medium truncate">{trigger.name}</p>
           {trigger.builtin && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground">
+            <span className="px-1.5 py-0.5 rounded-sm text-[10px] bg-muted text-muted-foreground">
               built-in
             </span>
           )}
@@ -391,17 +391,17 @@ function TriggerRow({
           <p className="text-xs text-muted-foreground mt-1 truncate">{trigger.description}</p>
         )}
       </div>
-      <div className="flex items-center gap-1.5 flex-shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0">
         <button
           onClick={onTest}
-          className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+          className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground"
           title="Test trigger"
         >
           <FlaskConical className="w-4 h-4" />
         </button>
         <button
           onClick={trigger.enabled ? onDisable : onEnable}
-          className={`p-1.5 rounded hover:bg-muted/50 ${trigger.enabled ? 'text-green-500' : 'text-muted-foreground'}`}
+          className={`p-1.5 rounded-sm hover:bg-muted/50 ${trigger.enabled ? 'text-green-500' : 'text-muted-foreground'}`}
           title={trigger.enabled ? 'Disable' : 'Enable'}
         >
           {trigger.enabled ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -409,7 +409,7 @@ function TriggerRow({
         {!trigger.builtin && (
           <button
             onClick={onDelete}
-            className="p-1.5 rounded hover:bg-muted/50 text-destructive"
+            className="p-1.5 rounded-sm hover:bg-muted/50 text-destructive"
             title="Delete"
           >
             <Trash2 className="w-4 h-4" />
@@ -473,7 +473,7 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
     <div className="card p-4 space-y-4 border-primary/30">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">New Trigger</h3>
-        <button onClick={onClose} className="p-1 rounded hover:bg-muted/50">
+        <button onClick={onClose} className="p-1 rounded-sm hover:bg-muted/50">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -705,12 +705,12 @@ function SuggestionRow({
 
   return (
     <div className="card p-4 flex items-center gap-4">
-      <Bell className="w-5 h-5 text-primary flex-shrink-0" />
+      <Bell className="w-5 h-5 text-primary shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium">{suggestion.triggerName}</p>
           <span
-            className={`px-2 py-0.5 rounded text-[10px] font-medium ${statusColors[suggestion.status] ?? ''}`}
+            className={`px-2 py-0.5 rounded-sm text-[10px] font-medium ${statusColors[suggestion.status] ?? ''}`}
           >
             {suggestion.status}
           </span>
@@ -725,17 +725,17 @@ function SuggestionRow({
         </p>
       </div>
       {suggestion.status === 'pending' && (
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={onApprove}
-            className="p-1.5 rounded hover:bg-green-500/10 text-green-500"
+            className="p-1.5 rounded-sm hover:bg-green-500/10 text-green-500"
             title="Approve"
           >
             <Check className="w-4 h-4" />
           </button>
           <button
             onClick={onDismiss}
-            className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+            className="p-1.5 rounded-sm hover:bg-muted/50 text-muted-foreground"
             title="Dismiss"
           >
             <X className="w-4 h-4" />

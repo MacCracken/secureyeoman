@@ -251,7 +251,7 @@ export function Sidebar({
           className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground/40 cursor-not-allowed ${collapsed ? 'justify-center' : ''}`}
           title="No AI provider keys configured"
         >
-          <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
+          <span className="w-5 h-5 shrink-0">{item.icon}</span>
           <span
             className={`transition-opacity duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
           >
@@ -268,7 +268,7 @@ export function Sidebar({
         end={item.end}
         className={({ isActive }) => navLinkClass(isActive, collapsed)}
       >
-        <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
+        <span className="w-5 h-5 shrink-0">{item.icon}</span>
         <span
           className={`transition-opacity duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
         >
@@ -293,7 +293,7 @@ export function Sidebar({
         {!collapsed && (
           <button
             onClick={onRefresh}
-            className="btn-ghost p-1.5 rounded flex-shrink-0"
+            className="btn-ghost p-1.5 rounded-sm shrink-0"
             aria-label="Refresh metrics"
             title="Refresh metrics"
           >
@@ -376,10 +376,10 @@ export function Sidebar({
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? (
-            <PanelLeftOpen className="w-5 h-5 flex-shrink-0" />
+            <PanelLeftOpen className="w-5 h-5 shrink-0" />
           ) : (
             <>
-              <PanelLeftClose className="w-5 h-5 flex-shrink-0" />
+              <PanelLeftClose className="w-5 h-5 shrink-0" />
               <span className="transition-opacity duration-200">Collapse</span>
             </>
           )}
@@ -401,7 +401,7 @@ export function Sidebar({
           aria-expanded={profileOpen}
           aria-haspopup="menu"
         >
-          <User className="w-5 h-5 flex-shrink-0" />
+          <User className="w-5 h-5 shrink-0" />
           <span
             className={`flex-1 text-left transition-opacity duration-200 ${
               collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
@@ -470,7 +470,7 @@ export function Sidebar({
         {themeOpen && (
           <div
             ref={themeRef}
-            className="fixed bg-card border rounded-md shadow-xl z-[60] w-56 overflow-y-auto"
+            className="fixed bg-card border rounded-md shadow-xl z-60 w-56 overflow-y-auto"
             style={{
               left: collapsed
                 ? 'calc(var(--sidebar-collapsed) + 8px)'
@@ -509,7 +509,7 @@ export function Sidebar({
                       }}
                       className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm hover:bg-muted/50 transition-colors"
                     >
-                      <span className="flex gap-0.5 flex-shrink-0">
+                      <span className="flex gap-0.5 shrink-0">
                         {t.preview.map((color, i) => (
                           <span
                             key={i}
@@ -519,9 +519,7 @@ export function Sidebar({
                         ))}
                       </span>
                       <span className="flex-1 text-left truncate">{t.name}</span>
-                      {theme === t.id && (
-                        <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                      )}
+                      {theme === t.id && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -536,7 +534,7 @@ export function Sidebar({
   return (
     <>
       <aside
-        className="hidden md:flex flex-col fixed left-0 top-0 h-screen bg-card border-r border-border z-30 transition-[width] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
+        className="hidden md:flex flex-col fixed left-0 top-0 h-screen bg-card border-r border-border z-30 transition-[width] duration-200 ease-in-out"
         style={{ width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-expanded)' }}
       >
         {sidebarContent}
@@ -585,7 +583,7 @@ export function Sidebar({
                 onClick={() => {
                   setAboutOpen(false);
                 }}
-                className="btn-ghost p-1 rounded"
+                className="btn-ghost p-1 rounded-sm"
               >
                 <X className="w-4 h-4" />
               </button>

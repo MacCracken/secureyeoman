@@ -129,7 +129,7 @@ export function ScopeManifestTab() {
           <button
             onClick={handleToggleFullSchemas}
             disabled={patchMut.isPending}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
               alwaysSendFullSchemas ? 'bg-warning' : 'bg-primary'
             }`}
             aria-label="Toggle full schema delivery"
@@ -162,7 +162,7 @@ export function ScopeManifestTab() {
           <button
             onClick={handleToggleEnable}
             disabled={patchMut.isPending}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
               exposeSecurityTools ? 'bg-primary' : 'bg-muted'
             }`}
             aria-label="Toggle security tools"
@@ -242,7 +242,7 @@ export function ScopeManifestTab() {
               if (e.key === 'Enter') handleAddTarget();
             }}
             placeholder="10.10.10.0/24, .example.com, or *"
-            className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-ring"
           />
           <button
             onClick={handleAddTarget}

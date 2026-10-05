@@ -105,7 +105,7 @@ export function EntityExplorerPanel({ personalityId }: EntityExplorerPanelProps)
               >
                 <div>
                   <span className="font-medium">{e.entityValue}</span>
-                  <span className="text-xs text-muted-foreground ml-1.5 px-1.5 py-0.5 bg-muted rounded">
+                  <span className="text-xs text-muted-foreground ml-1.5 px-1.5 py-0.5 bg-muted rounded-sm">
                     {e.entityType}
                   </span>
                 </div>

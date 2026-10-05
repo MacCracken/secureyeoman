@@ -342,7 +342,7 @@ export function AvatarCropModal({
   const zoomPct = minScale > 0 ? Math.round((scale / minScale) * 100) : 100;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs">
       <div className="bg-card border border-border rounded-xl shadow-2xl p-5 flex flex-col items-center gap-4 w-[360px] max-w-[95vw]">
         {/* Header */}
         <div className="flex items-center justify-between w-full">
@@ -355,7 +355,7 @@ export function AvatarCropModal({
         {/* Crop viewport */}
         <div
           ref={cropViewportRef}
-          className="relative select-none overflow-hidden bg-muted rounded-sm"
+          className="relative select-none overflow-hidden bg-muted rounded-xs"
           style={{
             width: CROP_CONTAINER,
             height: CROP_CONTAINER,
@@ -690,7 +690,7 @@ export function CollapsibleSection({
 }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
   return (
-    <div className="border rounded p-3">
+    <div className="border rounded-sm p-3">
       <div className="flex items-center justify-between">
         <button
           onClick={() => {

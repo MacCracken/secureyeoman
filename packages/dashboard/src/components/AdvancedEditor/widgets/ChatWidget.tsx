@@ -43,7 +43,7 @@ export function ChatWidget() {
       </div>
       <div className="flex items-center gap-1 px-2 py-1.5 border-t">
         <input
-          className="flex-1 text-xs rounded border px-2 py-1 bg-background"
+          className="flex-1 text-xs rounded-sm border px-2 py-1 bg-background"
           placeholder="Ask anything..."
           value={input}
           onChange={(e) => {
@@ -60,7 +60,7 @@ export function ChatWidget() {
         <button
           onClick={handleSend}
           disabled={isPending || !input.trim()}
-          className="p-1.5 rounded bg-primary text-primary-foreground disabled:opacity-50"
+          className="p-1.5 rounded-sm bg-primary text-primary-foreground disabled:opacity-50"
         >
           {isPending ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />

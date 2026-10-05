@@ -536,12 +536,12 @@ export function BodySection({
                   </div>
                   <div className="flex items-center gap-2">
                     {!info.available ? (
-                      <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                      <span className="text-xs px-2 py-0.5 rounded-sm bg-muted text-muted-foreground">
                         Not available
                       </span>
                     ) : isDesktopGated ? (
                       <span
-                        className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground/60 cursor-not-allowed opacity-70"
+                        className="text-xs px-2 py-0.5 rounded-sm bg-muted text-muted-foreground/60 cursor-not-allowed opacity-70"
                         title="Requires Desktop Control to be enabled in Security Settings"
                       >
                         Requires Desktop Control
@@ -565,7 +565,7 @@ export function BodySection({
                         </span>
                       </label>
                     ) : (
-                      <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                      <span className="text-xs px-2 py-0.5 rounded-sm bg-muted text-muted-foreground">
                         Available
                       </span>
                     )}
@@ -634,7 +634,7 @@ export function BodySection({
                                 );
                               }
                             }}
-                            className="w-3.5 h-3.5 rounded accent-primary"
+                            className="w-3.5 h-3.5 rounded-sm accent-primary"
                           />
                           <div className="flex-1 min-w-0">
                             <span className="text-xs font-medium">{server.name}</span>
@@ -678,7 +678,7 @@ export function BodySection({
                                   });
                                 }}
                                 disabled={!globalMcpConfig?.exposeGit}
-                                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                               />
                             </label>
                             <label
@@ -707,7 +707,7 @@ export function BodySection({
                                   });
                                 }}
                                 disabled={!globalMcpConfig?.exposeFilesystem}
-                                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                               />
                             </label>
                             {/* Web Scraping & Search — master toggle */}
@@ -741,7 +741,7 @@ export function BodySection({
                                   });
                                 }}
                                 disabled={!globalMcpConfig?.exposeWeb}
-                                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                               />
                             </label>
                             {/* Web sub-toggles — only visible when exposeWeb is checked */}
@@ -781,7 +781,7 @@ export function BodySection({
                                         globalMcpConfig?.exposeWebScraping
                                       )
                                     }
-                                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                   />
                                 </label>
                                 <label
@@ -817,7 +817,7 @@ export function BodySection({
                                         globalMcpConfig?.exposeWebSearch
                                       )
                                     }
-                                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                    className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                   />
                                 </label>
                               </>
@@ -849,7 +849,7 @@ export function BodySection({
                                   });
                                 }}
                                 disabled={!globalMcpConfig?.exposeBrowser}
-                                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                               />
                             </label>
                             {/* Remote Desktop Control — standalone toggle */}
@@ -879,7 +879,7 @@ export function BodySection({
                                   });
                                 }}
                                 disabled={!globalMcpConfig?.exposeDesktopControl}
-                                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                               />
                             </label>
                             {/* ── Network Tools ─────────────────────────── */}
@@ -914,7 +914,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeNetworkTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* Discovery & Routing */}
@@ -943,7 +943,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeNetworkTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* Security Auditing */}
@@ -972,7 +972,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeNetworkTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* NVD / CVE */}
@@ -1001,7 +1001,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeNetworkTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* Network Utilities */}
@@ -1030,7 +1030,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeNetworkTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* NetBox */}
@@ -1069,7 +1069,7 @@ export function BodySection({
                                     !globalMcpConfig?.exposeNetworkTools ||
                                     !securityPolicy?.allowNetBoxWrite
                                   }
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                             </div>
@@ -1104,7 +1104,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeTwingateTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                             </div>
@@ -1141,7 +1141,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeGmail}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* Twitter / X */}
@@ -1171,7 +1171,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeTwitter}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* GitHub */}
@@ -1201,7 +1201,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeGithub}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                             </div>
@@ -1238,7 +1238,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeDockerTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* Terminal */}
@@ -1268,7 +1268,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeTerminal}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* Ifran LLM Controller */}
@@ -1298,7 +1298,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeIfranTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* Delta Code Forge */}
@@ -1328,7 +1328,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeDeltaTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* Voice & Speech */}
@@ -1358,7 +1358,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeVoiceTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                               {/* Edge Fleet */}
@@ -1388,7 +1388,7 @@ export function BodySection({
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeEdgeTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                                 />
                               </label>
                             </div>
@@ -1411,7 +1411,7 @@ export function BodySection({
             Choose which integrations this personality can access and set the permission level per
             integration. Leave all unchecked to allow access to every configured integration.
           </p>
-          <div className="flex items-start gap-2 text-[10px] text-muted-foreground bg-muted/30 rounded p-2">
+          <div className="flex items-start gap-2 text-[10px] text-muted-foreground bg-muted/30 rounded-sm p-2">
             <span className="font-semibold text-foreground/60 shrink-0">Modes:</span>
             <span>
               <strong className="text-foreground/80">Auto</strong> — acts autonomously (send, post,
@@ -1465,7 +1465,7 @@ export function BodySection({
                               );
                             }
                           }}
-                          className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                          className="w-3.5 h-3.5 rounded-sm accent-primary shrink-0"
                         />
                         <span className="text-sm font-medium truncate">
                           {integration.displayName}
@@ -1688,7 +1688,7 @@ export function BodySection({
                   emergencyStop: !resourcePolicy.emergencyStop,
                 });
               }}
-              className="px-3 py-1 text-xs font-semibold rounded border transition-colors whitespace-nowrap bg-destructive text-white border-destructive hover:bg-destructive/90"
+              className="px-3 py-1 text-xs font-semibold rounded-sm border transition-colors whitespace-nowrap bg-destructive text-white border-destructive hover:bg-destructive/90"
             >
               {resourcePolicy.emergencyStop ? '⏹ Stop Active' : '⏹ Emergency Stop'}
             </button>

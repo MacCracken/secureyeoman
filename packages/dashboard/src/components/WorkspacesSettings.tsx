@@ -119,7 +119,7 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
           onClick={() => {
             setShowAdd((v) => !v);
           }}
-          className="flex items-center gap-1 text-xs px-2 py-1 rounded border hover:bg-muted/50 transition-colors"
+          className="flex items-center gap-1 text-xs px-2 py-1 rounded-sm border hover:bg-muted/50 transition-colors"
         >
           <UserPlus className="w-3 h-3" />
           Add
@@ -135,7 +135,7 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
                 setAddUserId(e.target.value);
               }}
               aria-label="Select user"
-              className="w-full px-2 py-1.5 text-sm rounded border bg-background"
+              className="w-full px-2 py-1.5 text-sm rounded-sm border bg-background"
             >
               <option value="">Select user…</option>
               {availableUsers.map((u) => (
@@ -152,7 +152,7 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
                 setAddRole(e.target.value as WorkspaceRole);
               }}
               aria-label="Select role"
-              className="px-2 py-1.5 text-sm rounded border bg-background"
+              className="px-2 py-1.5 text-sm rounded-sm border bg-background"
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
@@ -174,7 +174,7 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
             onClick={() => {
               setShowAdd(false);
             }}
-            className="p-1.5 rounded hover:bg-muted/50"
+            className="p-1.5 rounded-sm hover:bg-muted/50"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -205,7 +205,7 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
                       roleMut.mutate({ userId: m.userId, role: e.target.value });
                     }}
                     aria-label="Select role"
-                    className="text-xs px-1.5 py-0.5 rounded border bg-background"
+                    className="text-xs px-1.5 py-0.5 rounded-sm border bg-background"
                   >
                     {ROLES.map((r) => (
                       <option key={r} value={r}>
@@ -218,7 +218,7 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
                       removeMut.mutate(m.userId);
                     }}
                     disabled={removeMut.isPending}
-                    className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors"
+                    className="p-1 rounded-sm hover:bg-destructive/10 text-destructive transition-colors"
                     title="Remove member"
                   >
                     <X className="w-3 h-3" />
@@ -318,7 +318,7 @@ export function WorkspacesSettings() {
               onClick={() => {
                 setShowCreate(false);
               }}
-              className="p-1 rounded hover:bg-muted/50"
+              className="p-1 rounded-sm hover:bg-muted/50"
             >
               <X className="w-4 h-4" />
             </button>
@@ -331,7 +331,7 @@ export function WorkspacesSettings() {
               onChange={(e) => {
                 setCreateForm((f) => ({ ...f, name: e.target.value }));
               }}
-              className="w-full px-3 py-2 text-sm rounded border bg-background"
+              className="w-full px-3 py-2 text-sm rounded-sm border bg-background"
               placeholder="e.g. Engineering"
             />
           </div>
@@ -343,7 +343,7 @@ export function WorkspacesSettings() {
               onChange={(e) => {
                 setCreateForm((f) => ({ ...f, description: e.target.value }));
               }}
-              className="w-full px-3 py-2 text-sm rounded border bg-background"
+              className="w-full px-3 py-2 text-sm rounded-sm border bg-background"
               placeholder="Optional description"
             />
           </div>
@@ -405,7 +405,7 @@ export function WorkspacesSettings() {
                         onChange={(e) => {
                           setEditForm((f) => ({ ...f, name: e.target.value }));
                         }}
-                        className="flex-1 px-2 py-1 text-sm rounded border bg-background"
+                        className="flex-1 px-2 py-1 text-sm rounded-sm border bg-background"
                         placeholder="Workspace name"
                       />
                       <input
@@ -414,7 +414,7 @@ export function WorkspacesSettings() {
                         onChange={(e) => {
                           setEditForm((f) => ({ ...f, description: e.target.value }));
                         }}
-                        className="flex-1 px-2 py-1 text-sm rounded border bg-background"
+                        className="flex-1 px-2 py-1 text-sm rounded-sm border bg-background"
                         placeholder="Description (optional)"
                       />
                       <button
@@ -438,7 +438,7 @@ export function WorkspacesSettings() {
                         onClick={() => {
                           setEditingId(null);
                         }}
-                        className="p-1 rounded hover:bg-muted/50"
+                        className="p-1 rounded-sm hover:bg-muted/50"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -465,7 +465,7 @@ export function WorkspacesSettings() {
                         onClick={() => {
                           startEdit(ws);
                         }}
-                        className="p-1.5 rounded hover:bg-muted/50 transition-colors ml-1"
+                        className="p-1.5 rounded-sm hover:bg-muted/50 transition-colors ml-1"
                         title="Edit"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -474,7 +474,7 @@ export function WorkspacesSettings() {
                         onClick={() => {
                           setConfirmDeleteId(ws.id);
                         }}
-                        className="p-1.5 rounded hover:bg-destructive/10 text-destructive transition-colors"
+                        className="p-1.5 rounded-sm hover:bg-destructive/10 text-destructive transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -483,7 +483,7 @@ export function WorkspacesSettings() {
                         onClick={() => {
                           setExpandedId(isExpanded ? null : ws.id);
                         }}
-                        className="p-1.5 rounded hover:bg-muted/50 transition-colors"
+                        className="p-1.5 rounded-sm hover:bg-muted/50 transition-colors"
                         title="Members"
                       >
                         <Users className="w-3.5 h-3.5" />

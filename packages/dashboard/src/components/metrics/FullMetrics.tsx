@@ -146,17 +146,17 @@ export function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
       {/* ── Section 1: Task Performance ─────────────────────────── */}
       <section aria-label="Task Performance">
         <div className="flex items-center gap-3 mb-5">
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Activity className="w-4 h-4 text-primary" />
             <h2 className="font-semibold text-sm">Task Performance</h2>
           </div>
           <div className="flex-1 h-px bg-border" />
           {taskSlaOk ? (
-            <span className="text-xs text-success flex items-center gap-1 flex-shrink-0">
+            <span className="text-xs text-success flex items-center gap-1 shrink-0">
               <CheckCircle className="w-3 h-3" /> SLA Met
             </span>
           ) : (
-            <span className="text-xs text-warning flex items-center gap-1 flex-shrink-0">
+            <span className="text-xs text-warning flex items-center gap-1 shrink-0">
               <AlertTriangle className="w-3 h-3" /> Below Target
             </span>
           )}
@@ -339,14 +339,12 @@ export function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
       {/* ── Section 2: Infrastructure ── */}
       <section aria-label="Infrastructure">
         <div className="flex items-center gap-3 mb-5">
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Cpu className="w-4 h-4 text-primary" />
             <h2 className="font-semibold text-sm">Infrastructure</h2>
           </div>
           <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground flex-shrink-0">
-            {history.length} samples
-          </span>
+          <span className="text-xs text-muted-foreground shrink-0">{history.length} samples</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -565,17 +563,17 @@ export function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
       {/* ── Section 3: Security ── */}
       <section aria-label="Security Metrics">
         <div className="flex items-center gap-3 mb-5">
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Shield className="w-4 h-4 text-primary" />
             <h2 className="font-semibold text-sm">Security</h2>
           </div>
           <div className="flex-1 h-px bg-border" />
           {hasThreats ? (
-            <span className="text-xs text-destructive flex items-center gap-1 flex-shrink-0">
+            <span className="text-xs text-destructive flex items-center gap-1 shrink-0">
               <AlertTriangle className="w-3 h-3" /> Threats Detected
             </span>
           ) : (
-            <span className="text-xs text-success flex items-center gap-1 flex-shrink-0">
+            <span className="text-xs text-success flex items-center gap-1 shrink-0">
               <CheckCircle className="w-3 h-3" /> No Active Threats
             </span>
           )}

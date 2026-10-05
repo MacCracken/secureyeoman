@@ -323,7 +323,7 @@ function EventRow({ event, isAcknowledged, onAcknowledge, onInvestigate }: Event
             {ATHI_TECHNIQUE_MAP[event.type] && (
               <Link
                 to="/security?tab=athi"
-                className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors"
+                className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-sm hover:bg-purple-200 transition-colors"
                 title={`Related ATHI technique: ${ATHI_TECHNIQUE_MAP[event.type]}`}
                 data-testid="athi-technique-badge"
               >
@@ -333,7 +333,7 @@ function EventRow({ event, isAcknowledged, onAcknowledge, onInvestigate }: Event
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs text-muted-foreground whitespace-nowrap">
             {formatTime(event.timestamp)}
           </span>
@@ -412,7 +412,7 @@ function InvestigationPanel({ event, onClose }: { event: SecurityEvent; onClose:
         {/* Full Message */}
         <div>
           <p className="text-xs text-muted-foreground mb-1">Message</p>
-          <div className="bg-muted/30 rounded p-3 text-sm">{event.message}</div>
+          <div className="bg-muted/30 rounded-sm p-3 text-sm">{event.message}</div>
         </div>
 
         {/* Timeline hint */}

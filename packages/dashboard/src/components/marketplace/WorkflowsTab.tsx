@@ -93,7 +93,7 @@ export function WorkflowsTab({
         <div className="relative max-w-2xl">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
-            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             placeholder={
               source === 'community' ? 'Search community workflows…' : 'Search workflows…'
             }
@@ -150,7 +150,7 @@ export function WorkflowsTab({
                     <h3 className="font-medium text-sm truncate">{wf.name}</h3>
                     {wf.autonomyLevel && (
                       <span
-                        className={`text-xs font-mono px-1.5 py-0.5 rounded border ${AUTONOMY_COLORS[wf.autonomyLevel] ?? ''}`}
+                        className={`text-xs font-mono px-1.5 py-0.5 rounded-sm border ${AUTONOMY_COLORS[wf.autonomyLevel] ?? ''}`}
                       >
                         {wf.autonomyLevel}
                       </span>

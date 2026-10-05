@@ -332,7 +332,7 @@ export function AuditLogTab({
                 setPresetName(e.target.value);
               }}
               placeholder="Preset name"
-              className="bg-card border border-border rounded px-2 py-1 text-xs w-28"
+              className="bg-card border border-border rounded-sm px-2 py-1 text-xs w-28"
               // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               onKeyDown={(e) => {
@@ -453,19 +453,19 @@ export function AuditLogTab({
                             {entry.level}
                           </span>
                           {entry.userId && (
-                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">
                               👤 {entry.userId.slice(0, 12)}...
                             </span>
                           )}
                           {entry.taskId && (
-                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">
                               📋 {entry.taskId.slice(0, 8)}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                           <span
-                            className="font-mono text-primary/60 bg-primary/5 px-1.5 py-0.5 rounded"
+                            className="font-mono text-primary/60 bg-primary/5 px-1.5 py-0.5 rounded-sm"
                             title="Chain sequence number"
                           >
                             #{entry.sequence}
@@ -500,7 +500,7 @@ export function AuditLogTab({
                     </div>
                     <div className="flex items-center gap-1 text-muted-foreground shrink-0">
                       {isExpanded ? (
-                        <ChevronLeft className="w-4 h-4 rotate-[-90deg]" />
+                        <ChevronLeft className="w-4 h-4 -rotate-90" />
                       ) : (
                         <ChevronRight className="w-4 h-4 rotate-90" />
                       )}
@@ -509,7 +509,7 @@ export function AuditLogTab({
 
                   {isExpanded && (
                     <div className="mt-3 pt-3 border-t border-border space-y-2 text-xs">
-                      <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1">
+                      <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
                         <span className="text-muted-foreground">ID</span>
                         <span className="font-mono truncate">{entry.id}</span>
                         <span className="text-muted-foreground">Sequence</span>
@@ -542,7 +542,7 @@ export function AuditLogTab({
                       {entry.metadata && Object.keys(entry.metadata).length > 0 && (
                         <div>
                           <p className="text-muted-foreground mb-1">Metadata</p>
-                          <pre className="bg-muted/50 rounded p-2 overflow-x-auto text-xs">
+                          <pre className="bg-muted/50 rounded-sm p-2 overflow-x-auto text-xs">
                             {JSON.stringify(entry.metadata, null, 2)}
                           </pre>
                         </div>

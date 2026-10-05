@@ -556,7 +556,7 @@ export function BrainSection({
                   onDefaultModelChange({ provider, model: rest.join('/') });
                 }
               }}
-              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
             >
               <option value="">Use system default</option>
               {modelData?.available &&
@@ -587,7 +587,7 @@ export function BrainSection({
                 {modelFallbacks.map((fb, idx) => (
                   <div
                     key={`${fb.provider}/${fb.model}-${String(idx)}`}
-                    className="flex items-center gap-2 text-sm bg-muted/40 px-2 py-1 rounded"
+                    className="flex items-center gap-2 text-sm bg-muted/40 px-2 py-1 rounded-sm"
                   >
                     <span className="text-muted-foreground text-xs w-4">{idx + 1}.</span>
                     <span className="flex-1 font-mono text-xs">
@@ -614,7 +614,7 @@ export function BrainSection({
                   onChange={(e) => {
                     setPendingFallback(e.target.value);
                   }}
-                  className="flex-1 px-3 py-2 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="flex-1 px-3 py-2 rounded-sm border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
                   data-testid="fallback-add-select"
                 >
                   <option value="">Add fallback model…</option>
@@ -654,7 +654,7 @@ export function BrainSection({
                     ]);
                     setPendingFallback('');
                   }}
-                  className="px-3 py-2 rounded border bg-primary text-primary-foreground text-sm disabled:opacity-40"
+                  className="px-3 py-2 rounded-sm border bg-primary text-primary-foreground text-sm disabled:opacity-40"
                   data-testid="fallback-add-btn"
                 >
                   Add
@@ -839,7 +839,7 @@ export function BrainSection({
                     onCostBudgetChange({ ...costBudget, dailyUsd: v && v > 0 ? v : undefined });
                   }}
                   placeholder="No limit"
-                  className="w-full px-2 py-1 text-sm border rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full px-2 py-1 text-sm border rounded-sm bg-background focus:outline-hidden focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div>
@@ -856,7 +856,7 @@ export function BrainSection({
                     onCostBudgetChange({ ...costBudget, monthlyUsd: v && v > 0 ? v : undefined });
                   }}
                   placeholder="No limit"
-                  className="w-full px-2 py-1 text-sm border rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full px-2 py-1 text-sm border rounded-sm bg-background focus:outline-hidden focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>
@@ -945,7 +945,7 @@ export function BrainSection({
                     onChange={(e) => {
                       onActiveHoursChange({ ...activeHours, start: e.target.value });
                     }}
-                    className="w-full text-xs rounded border border-border bg-background px-2 py-1"
+                    className="w-full text-xs rounded-sm border border-border bg-background px-2 py-1"
                   />
                 </div>
                 <div className="flex-1">
@@ -956,7 +956,7 @@ export function BrainSection({
                     onChange={(e) => {
                       onActiveHoursChange({ ...activeHours, end: e.target.value });
                     }}
-                    className="w-full text-xs rounded border border-border bg-background px-2 py-1"
+                    className="w-full text-xs rounded-sm border border-border bg-background px-2 py-1"
                   />
                 </div>
               </div>
@@ -994,7 +994,7 @@ export function BrainSection({
                   onChange={(e) => {
                     onActiveHoursChange({ ...activeHours, timezone: e.target.value });
                   }}
-                  className="w-full text-xs rounded border border-border bg-background px-2 py-1"
+                  className="w-full text-xs rounded-sm border border-border bg-background px-2 py-1"
                 >
                   <option value="UTC">UTC</option>
                   <option value="America/New_York">America/New_York (ET)</option>
@@ -1034,13 +1034,13 @@ export function BrainSection({
             <p className="text-xs text-muted-foreground">No knowledge entries yet.</p>
           )}
           {knowledge.map((k: KnowledgeEntry) => (
-            <div key={k.id} className="text-sm bg-muted px-3 py-2 rounded space-y-1">
+            <div key={k.id} className="text-sm bg-muted px-3 py-2 rounded-sm space-y-1">
               {editingId === k.id ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <strong>[{k.topic}]</strong>
                     {isPrimary(k.topic) && (
-                      <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-primary/20 text-primary">
+                      <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-sm bg-primary/20 text-primary">
                         PRIMARY
                       </span>
                     )}
@@ -1050,7 +1050,7 @@ export function BrainSection({
                     onChange={(e) => {
                       setEditContent(e.target.value);
                     }}
-                    className="w-full px-2 py-1 text-sm rounded border bg-background resize-y"
+                    className="w-full px-2 py-1 text-sm rounded-sm border bg-background resize-y"
                     rows={3}
                   />
                   <div className="flex items-center gap-2 flex-wrap">
@@ -1091,7 +1091,7 @@ export function BrainSection({
                     <div className="flex items-center gap-2 flex-wrap">
                       <strong>[{k.topic}]</strong>
                       {isPrimary(k.topic) && (
-                        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-primary/20 text-primary">
+                        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-sm bg-primary/20 text-primary">
                           PRIMARY
                         </span>
                       )}
@@ -1102,7 +1102,7 @@ export function BrainSection({
                     </div>
                     <p className="mt-0.5">{k.content}</p>
                   </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => {
                         startEdit(k);
@@ -1139,7 +1139,7 @@ export function BrainSection({
               onChange={(e) => {
                 setTeachTopic(e.target.value);
               }}
-              className="w-32 px-2 py-1 text-sm rounded border bg-background"
+              className="w-32 px-2 py-1 text-sm rounded-sm border bg-background"
             />
             <input
               type="text"
@@ -1148,7 +1148,7 @@ export function BrainSection({
               onChange={(e) => {
                 setTeachContent(e.target.value);
               }}
-              className="flex-1 min-w-0 px-2 py-1 text-sm rounded border bg-background"
+              className="flex-1 min-w-0 px-2 py-1 text-sm rounded-sm border bg-background"
             />
             <button
               onClick={() => {
@@ -1209,7 +1209,7 @@ export function BrainSection({
             {personalitySkills.map((skill: Skill) => (
               <div
                 key={skill.id}
-                className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/50"
+                className="flex items-center justify-between px-2 py-1.5 rounded-sm hover:bg-muted/50"
               >
                 <span className="text-sm flex items-center gap-1.5">
                   <Wrench className="w-3 h-3 text-muted-foreground" />
@@ -1241,7 +1241,7 @@ export function BrainSection({
               {(syncStatus as { path?: string })?.path && (
                 <p>
                   Path:{' '}
-                  <code className="bg-muted px-1 rounded">
+                  <code className="bg-muted px-1 rounded-sm">
                     {(syncStatus as { path?: string })?.path || brainConfig?.path}
                   </code>
                 </p>
@@ -1294,7 +1294,7 @@ export function BrainSection({
                   onChange={(e) => {
                     setConfigForm({ ...configForm, provider: e.target.value });
                   }}
-                  className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
+                  className="w-full mt-1 px-2 py-1 text-sm rounded-sm border bg-background"
                 >
                   <option value="filesystem">Filesystem</option>
                   <option value="obsidian">Obsidian</option>
@@ -1310,7 +1310,7 @@ export function BrainSection({
                     setConfigForm({ ...configForm, path: e.target.value });
                   }}
                   placeholder="/path/to/vault or /path/to/notes"
-                  className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
+                  className="w-full mt-1 px-2 py-1 text-sm rounded-sm border bg-background"
                 />
               </label>
               <label className="text-xs">
@@ -1322,7 +1322,7 @@ export function BrainSection({
                     setConfigForm({ ...configForm, subdir: e.target.value });
                   }}
                   placeholder="e.g., 30 - Resources/FRIDAY"
-                  className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
+                  className="w-full mt-1 px-2 py-1 text-sm rounded-sm border bg-background"
                 />
               </label>
               <label className="text-xs">
@@ -1338,7 +1338,7 @@ export function BrainSection({
                   }}
                   min={0}
                   max={1440}
-                  className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
+                  className="w-full mt-1 px-2 py-1 text-sm rounded-sm border bg-background"
                 />
               </label>
             </div>
@@ -1435,7 +1435,7 @@ export function BrainSection({
                         return (
                           <div
                             key={item.key}
-                            className="text-sm px-3 py-2 rounded flex items-center justify-between border bg-muted/50 border-border"
+                            className="text-sm px-3 py-2 rounded-sm flex items-center justify-between border bg-muted/50 border-border"
                           >
                             <span className="font-medium">{item.label}</span>
                             <div className="flex gap-1">
@@ -1465,7 +1465,7 @@ export function BrainSection({
                                         },
                                       });
                                     }}
-                                    className={`px-2 py-0.5 text-xs rounded border transition-colors ${activeClass}`}
+                                    className={`px-2 py-0.5 text-xs rounded-sm border transition-colors ${activeClass}`}
                                   >
                                     {mode.charAt(0).toUpperCase() + mode.slice(1)}
                                   </button>
@@ -1482,7 +1482,7 @@ export function BrainSection({
                   <div>
                     <h4 className="text-sm font-medium mb-2">Learning</h4>
                     <div className="space-y-3">
-                      <div className="text-sm px-3 py-2 rounded flex items-center justify-between border bg-muted/50 border-border">
+                      <div className="text-sm px-3 py-2 rounded-sm flex items-center justify-between border bg-muted/50 border-border">
                         <span className="font-medium">Enable Learning</span>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input

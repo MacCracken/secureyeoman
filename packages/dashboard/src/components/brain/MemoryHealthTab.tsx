@@ -117,11 +117,11 @@ export default function MemoryHealthTab() {
     <div className="space-y-4 sm:space-y-6 min-w-0 overflow-hidden">
       {/* Health Overview */}
       <div className="card">
-        <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+        <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
           <Heart className="w-4 h-4 text-muted-foreground" />
-          <h2 className="card-title text-sm sm:text-base">Memory Health</h2>
+          <h2 className="card-title text-sm sm:text-base!">Memory Health</h2>
         </div>
-        <div className="card-content space-y-4 p-3 sm:p-4 pt-0 sm:pt-0">
+        <div className="card-content space-y-4 p-3 sm:p-4! pt-0 sm:pt-0!">
           {health && <HealthGauge score={health.healthScore} />}
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -160,10 +160,10 @@ export default function MemoryHealthTab() {
 
       {/* Manual Audit Trigger */}
       <div className="card">
-        <div className="card-header flex flex-row items-center justify-between p-3 sm:p-4">
+        <div className="card-header flex flex-row items-center justify-between p-3 sm:p-4!">
           <div className="flex items-center gap-2">
             <Play className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-sm sm:text-base">Run Audit</h2>
+            <h2 className="card-title text-sm sm:text-base!">Run Audit</h2>
           </div>
           <div className="flex items-center gap-2">
             <select
@@ -196,13 +196,13 @@ export default function MemoryHealthTab() {
       {/* Pending Approvals */}
       {pendingReports.length > 0 && (
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
             <AlertCircle className="w-4 h-4 text-warning" />
-            <h2 className="card-title text-sm sm:text-base">
+            <h2 className="card-title text-sm sm:text-base!">
               Pending Approvals ({pendingReports.length})
             </h2>
           </div>
-          <div className="card-content p-3 sm:p-4 pt-0 sm:pt-0">
+          <div className="card-content p-3 sm:p-4! pt-0 sm:pt-0!">
             {pendingReports.map((report) => (
               <div
                 key={String(report.id)}
@@ -232,11 +232,11 @@ export default function MemoryHealthTab() {
 
       {/* Audit History */}
       <div className="card">
-        <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
+        <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4!">
           <Clock className="w-4 h-4 text-muted-foreground" />
-          <h2 className="card-title text-sm sm:text-base">Audit History</h2>
+          <h2 className="card-title text-sm sm:text-base!">Audit History</h2>
         </div>
-        <div className="card-content p-3 sm:p-4 pt-0 sm:pt-0">
+        <div className="card-content p-3 sm:p-4! pt-0 sm:pt-0!">
           {reportsLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />

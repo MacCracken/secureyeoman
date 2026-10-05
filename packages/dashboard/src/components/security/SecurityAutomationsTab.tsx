@@ -222,7 +222,7 @@ function AutomationsTasksView() {
     <div className="space-y-3">
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
         <select
           value={statusFilter}
           onChange={(e) => {
@@ -294,7 +294,7 @@ function AutomationsTasksView() {
 
       {/* Date Range Filter */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
         {SEC_DATE_PRESETS.map((preset) => (
           <button
             key={preset.label}
@@ -376,7 +376,7 @@ function AutomationsTasksView() {
                     <tr key={task.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-2 py-2.5 hidden md:table-cell">
                         {agentName ? (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs whitespace-nowrap">
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded-sm text-xs whitespace-nowrap">
                             <Bot className="w-3 h-3" />
                             {agentName}
                           </span>
@@ -403,7 +403,7 @@ function AutomationsTasksView() {
                       <td className="px-2 py-2.5 text-xs hidden lg:table-cell">
                         {task.parentTaskId ? (
                           <span
-                            className="px-1.5 py-0.5 bg-muted text-muted-foreground rounded font-mono text-xs"
+                            className="px-1.5 py-0.5 bg-muted text-muted-foreground rounded-sm font-mono text-xs"
                             title={task.parentTaskId}
                           >
                             ↳ {task.parentTaskId.slice(0, 8)}…
@@ -530,7 +530,7 @@ function AutomationsWorkflowsView() {
     <div className="space-y-3">
       {/* Date Range Filter */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
         {WF_DATE_PRESETS.map((preset) => (
           <button
             key={preset.label}
@@ -601,7 +601,7 @@ function AutomationsWorkflowsView() {
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors text-left"
               >
-                <GitMerge className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <GitMerge className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{wf.name}</p>
                   <p className="text-xs text-muted-foreground">
@@ -633,17 +633,15 @@ function AutomationsWorkflowsView() {
                       <div className="space-y-1">
                         {wf.steps.map((step, idx) => (
                           <div key={step.id} className="flex items-center gap-2 text-xs py-0.5">
-                            <span className="text-muted-foreground/60 w-4 text-right flex-shrink-0 font-mono">
+                            <span className="text-muted-foreground/60 w-4 text-right shrink-0 font-mono">
                               {idx + 1}.
                             </span>
                             <span className="font-medium truncate flex-1" title={step.name}>
                               {step.name}
                             </span>
-                            <span className="badge badge-sm text-xs flex-shrink-0">
-                              {step.type}
-                            </span>
+                            <span className="badge badge-sm text-xs shrink-0">{step.type}</span>
                             {step.onError !== 'fail' && (
-                              <span className="text-muted-foreground/60 text-xs flex-shrink-0">
+                              <span className="text-muted-foreground/60 text-xs shrink-0">
                                 on error: {step.onError}
                               </span>
                             )}
@@ -752,7 +750,7 @@ export function AutomationsSecurityTab({
               }}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                 subview === v
-                  ? 'bg-card shadow-sm text-foreground'
+                  ? 'bg-card shadow-xs text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >

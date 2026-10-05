@@ -181,7 +181,7 @@ export function ArtifactoryPanel() {
       {showAddForm && (
         <div className="card p-3 space-y-2">
           <input
-            className="w-full text-xs p-1.5 rounded border border-border bg-background"
+            className="w-full text-xs p-1.5 rounded-sm border border-border bg-background"
             placeholder="Base URL (e.g. https://mycompany.jfrog.io/artifactory)"
             value={addForm.baseUrl}
             onChange={(e) => {
@@ -189,7 +189,7 @@ export function ArtifactoryPanel() {
             }}
           />
           <input
-            className="w-full text-xs p-1.5 rounded border border-border bg-background"
+            className="w-full text-xs p-1.5 rounded-sm border border-border bg-background"
             placeholder="Access Token (optional)"
             type="password"
             value={addForm.token}
@@ -199,7 +199,7 @@ export function ArtifactoryPanel() {
           />
           <div className="grid grid-cols-2 gap-2">
             <input
-              className="w-full text-xs p-1.5 rounded border border-border bg-background"
+              className="w-full text-xs p-1.5 rounded-sm border border-border bg-background"
               placeholder="Username (optional)"
               value={addForm.username}
               onChange={(e) => {
@@ -207,7 +207,7 @@ export function ArtifactoryPanel() {
               }}
             />
             <input
-              className="w-full text-xs p-1.5 rounded border border-border bg-background"
+              className="w-full text-xs p-1.5 rounded-sm border border-border bg-background"
               placeholder="Password (optional)"
               type="password"
               value={addForm.password}
@@ -217,7 +217,7 @@ export function ArtifactoryPanel() {
             />
           </div>
           <button
-            className="text-xs px-3 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="text-xs px-3 py-1 rounded-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
             disabled={!addForm.baseUrl || addMut.isPending}
             onClick={() => {
               addMut.mutate({
@@ -411,7 +411,7 @@ function ReposTab({
               <div className="flex items-center gap-2">
                 <span className="font-medium">{repo.key}</span>
                 <span
-                  className="text-[10px] px-1 rounded"
+                  className="text-[10px] px-1 rounded-sm"
                   style={{ background: REPO_TYPE_COLORS[repo.type] ?? '#64748b', color: '#fff' }}
                 >
                   {repo.type}
@@ -639,7 +639,7 @@ function BuildsTab({
 
               {/* Promote button */}
               <button
-                className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 mt-1"
+                className="text-xs px-2 py-1 rounded-sm bg-primary text-primary-foreground hover:opacity-90 mt-1"
                 onClick={() => {
                   setPromoteBuildTarget({ name: buildDetail.name, number: buildDetail.number });
                 }}
@@ -656,7 +656,7 @@ function BuildsTab({
                 Promote {promoteBuildTarget.name} #{promoteBuildTarget.number}
               </p>
               <input
-                className="w-full text-xs p-1.5 rounded border border-border bg-background"
+                className="w-full text-xs p-1.5 rounded-sm border border-border bg-background"
                 placeholder="Target repository (e.g. libs-release)"
                 value={promoteForm.targetRepo}
                 onChange={(e) => {
@@ -664,7 +664,7 @@ function BuildsTab({
                 }}
               />
               <input
-                className="w-full text-xs p-1.5 rounded border border-border bg-background"
+                className="w-full text-xs p-1.5 rounded-sm border border-border bg-background"
                 placeholder="Status (optional, e.g. released)"
                 value={promoteForm.status}
                 onChange={(e) => {
@@ -673,7 +673,7 @@ function BuildsTab({
               />
               <div className="flex gap-2">
                 <button
-                  className="text-xs px-3 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="text-xs px-3 py-1 rounded-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
                   disabled={!promoteForm.targetRepo || promoteMut.isPending}
                   onClick={() =>
                     promoteMut.mutate({
@@ -687,7 +687,7 @@ function BuildsTab({
                   {promoteMut.isPending ? 'Promoting...' : 'Confirm Promote'}
                 </button>
                 <button
-                  className="text-xs px-3 py-1 rounded text-muted-foreground hover:underline"
+                  className="text-xs px-3 py-1 rounded-sm text-muted-foreground hover:underline"
                   onClick={() => {
                     setPromoteBuildTarget(null);
                   }}
@@ -723,7 +723,7 @@ function SearchTab({
     <div className="space-y-2">
       <h4 className="text-xs font-semibold text-muted-foreground">Search Artifacts</h4>
       <input
-        className="w-full text-xs p-1.5 rounded border border-border bg-background"
+        className="w-full text-xs p-1.5 rounded-sm border border-border bg-background"
         placeholder="Search by name..."
         value={searchQuery}
         onChange={(e) => {

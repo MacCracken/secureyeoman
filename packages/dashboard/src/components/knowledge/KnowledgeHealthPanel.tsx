@@ -52,7 +52,7 @@ export function KnowledgeHealthPanel() {
             onChange={(e) => {
               setSelectedPersonalityId(e.target.value);
             }}
-            className="bg-card border border-border rounded text-xs py-1 px-2"
+            className="bg-card border border-border rounded-sm text-xs py-1 px-2"
           >
             <option value={ALL_PERSONALITIES}>All</option>
             {personalities.map((p) => (
@@ -148,13 +148,13 @@ export function KnowledgeHealthPanel() {
           {/* Format breakdown */}
           {stats && Object.keys(stats.byFormat).length > 0 && (
             <div className="card">
-              <div className="card-header p-3 sm:p-4">
+              <div className="card-header p-3 sm:p-4!">
                 <h3 className="card-title text-sm flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-muted-foreground" />
                   Documents by Format
                 </h3>
               </div>
-              <div className="card-content p-3 sm:p-4 pt-0 sm:pt-0">
+              <div className="card-content p-3 sm:p-4! pt-0 sm:pt-0!">
                 <div className="space-y-2">
                   {Object.entries(stats.byFormat).map(([format, count]) => {
                     const pct =

@@ -148,8 +148,8 @@ export function IntegrationCard({
 
         {/* Error message */}
         {integration.errorMessage && (
-          <div className="mt-2 p-2 rounded bg-red-500/10 border border-red-500/20">
-            <p className="text-xs text-red-600 dark:text-red-400 break-words">
+          <div className="mt-2 p-2 rounded-sm bg-red-500/10 border border-red-500/20">
+            <p className="text-xs text-red-600 dark:text-red-400 wrap-break-word">
               {integration.errorMessage}
             </p>
           </div>
@@ -217,7 +217,7 @@ export function IntegrationCard({
                     onChange={(e) => {
                       setEditRead(e.target.checked);
                     }}
-                    className="w-4 h-4 rounded accent-primary"
+                    className="w-4 h-4 rounded-sm accent-primary"
                   />
                 </label>
                 <label className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
@@ -233,7 +233,7 @@ export function IntegrationCard({
                     onChange={(e) => {
                       setEditSend(e.target.checked);
                     }}
-                    className="w-4 h-4 rounded accent-primary"
+                    className="w-4 h-4 rounded-sm accent-primary"
                   />
                 </label>
               </div>

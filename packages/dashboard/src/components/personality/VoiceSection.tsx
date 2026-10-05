@@ -56,7 +56,7 @@ export function VoiceLanguageSection({
           onChange={(e) => {
             onVoiceChange(e.target.value);
           }}
-          className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
           placeholder="e.g., warm, professional"
           maxLength={200}
         />
@@ -69,7 +69,7 @@ export function VoiceLanguageSection({
           onChange={(e) => {
             onPreferredLanguageChange(e.target.value);
           }}
-          className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
           placeholder="e.g., English"
           maxLength={100}
         />
@@ -82,7 +82,7 @@ export function VoiceLanguageSection({
             onChange={(e) => {
               onVoiceProfileIdChange(e.target.value || null);
             }}
-            className="flex-1 px-3 py-2 rounded border bg-background text-foreground text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary"
+            className="flex-1 px-3 py-2 rounded-sm border bg-background text-foreground text-sm appearance-none focus:outline-hidden focus:ring-2 focus:ring-primary"
           >
             <option value="">None (use default)</option>
             {profiles.map((p) => (

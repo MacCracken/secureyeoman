@@ -41,32 +41,32 @@ export function GitPanelWidget({ worktreeId }: Props) {
           <RefreshCw className="w-3 h-3" />
         </button>
       </div>
-      <div className="rounded border p-1.5 bg-muted/30 font-mono text-[10px] max-h-20 overflow-auto">
+      <div className="rounded-sm border p-1.5 bg-muted/30 font-mono text-[10px] max-h-20 overflow-auto">
         <pre>{statusData || 'Clean working tree'}</pre>
       </div>
       <div className="flex gap-1">
         <button
           onClick={() => void runGit('add -A')}
-          className="px-2 py-1 rounded border hover:bg-muted"
+          className="px-2 py-1 rounded-sm border hover:bg-muted"
         >
           Stage All
         </button>
         <button
           onClick={() => void runGit('diff --stat')}
-          className="px-2 py-1 rounded border hover:bg-muted"
+          className="px-2 py-1 rounded-sm border hover:bg-muted"
         >
           Diff
         </button>
         <button
           onClick={() => void runGit('log --oneline -5')}
-          className="px-2 py-1 rounded border hover:bg-muted"
+          className="px-2 py-1 rounded-sm border hover:bg-muted"
         >
           Log
         </button>
       </div>
       <div className="flex gap-1">
         <input
-          className="flex-1 text-xs rounded border px-1.5 py-1 bg-background"
+          className="flex-1 text-xs rounded-sm border px-1.5 py-1 bg-background"
           placeholder="Commit message..."
           value={commitMsg}
           onChange={(e) => {
@@ -77,14 +77,14 @@ export function GitPanelWidget({ worktreeId }: Props) {
           onClick={() => {
             if (commitMsg) void runGit(`commit -m "${commitMsg.replace(/"/g, '\\"')}"`);
           }}
-          className="px-2 py-1 rounded border hover:bg-muted"
+          className="px-2 py-1 rounded-sm border hover:bg-muted"
           disabled={!commitMsg}
         >
           Commit
         </button>
       </div>
       {output && (
-        <div className="rounded border p-1.5 bg-muted/30 font-mono text-[10px] max-h-24 overflow-auto">
+        <div className="rounded-sm border p-1.5 bg-muted/30 font-mono text-[10px] max-h-24 overflow-auto">
           <pre>{output}</pre>
         </div>
       )}

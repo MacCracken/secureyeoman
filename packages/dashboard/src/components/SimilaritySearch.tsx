@@ -74,7 +74,7 @@ export function SimilaritySearch() {
               onChange={(e) => {
                 setTypeFilter(e.target.value as typeof typeFilter);
               }}
-              className="w-full text-xs bg-background border rounded px-2 py-1"
+              className="w-full text-xs bg-background border rounded-sm px-2 py-1"
             >
               <option value="all">All</option>
               <option value="memories">Memories</option>
@@ -127,12 +127,12 @@ export function SimilaritySearch() {
                   )}
                   <span>{result.metadata?.type === 'memory' ? 'Memory' : 'Knowledge'}</span>
                   {result.metadata?.memoryType != null && (
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-sm">
                       {String(result.metadata.memoryType)}
                     </span>
                   )}
                   {result.metadata?.topic != null && (
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-sm">
                       {String(result.metadata.topic)}
                     </span>
                   )}

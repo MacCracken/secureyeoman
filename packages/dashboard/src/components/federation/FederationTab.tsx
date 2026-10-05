@@ -83,7 +83,7 @@ function ToggleSwitch({
       onClick={() => {
         onChange(!checked);
       }}
-      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-primary/50 ${
         checked ? 'bg-primary' : 'bg-muted'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
     >
@@ -158,7 +158,7 @@ function PeerRow({
             onClick={onHealthCheck}
             disabled={isCheckingHealth}
             title="Check health"
-            className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-surface transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-surface transition-colors disabled:opacity-50"
           >
             {isCheckingHealth ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -169,7 +169,7 @@ function PeerRow({
           <button
             onClick={onRemove}
             title="Remove peer"
-            className="p-1.5 rounded text-muted-foreground hover:text-red-400 hover:bg-red-400/10 transition-colors"
+            className="p-1.5 rounded-sm text-muted-foreground hover:text-red-400 hover:bg-red-400/10 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -244,7 +244,7 @@ function AddPeerForm({
         <div>
           <label className="block text-xs text-muted-foreground mb-1">Peer URL</label>
           <input
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
             placeholder="https://peer.example.com"
             value={url}
             onChange={(e) => {
@@ -255,7 +255,7 @@ function AddPeerForm({
         <div>
           <label className="block text-xs text-muted-foreground mb-1">Display Name</label>
           <input
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
             placeholder="My Partner Node"
             value={name}
             onChange={(e) => {
@@ -266,7 +266,7 @@ function AddPeerForm({
         <div className="sm:col-span-2">
           <label className="block text-xs text-muted-foreground mb-1">Shared Secret</label>
           <input
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
             type="password"
             placeholder="Pre-shared key agreed with the peer operator"
             value={secret}
@@ -390,7 +390,7 @@ function PeerMarketplacePanel({ peer, onClose }: { peer: FederationPeer; onClose
             {skills.map((skill) => (
               <div
                 key={skill.id}
-                className="flex items-start justify-between gap-3 p-2 rounded border border-border hover:bg-muted/30"
+                className="flex items-start justify-between gap-3 p-2 rounded-sm border border-border hover:bg-muted/30"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{skill.name}</p>
@@ -526,7 +526,7 @@ function BundlesPanel() {
           <div>
             <label className="block text-xs text-muted-foreground mb-1">Personality</label>
             <select
-              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               value={exportPersonalityId}
               onChange={(e) => {
                 setExportPersonalityId(e.target.value);
@@ -547,7 +547,7 @@ function BundlesPanel() {
               </span>
             </label>
             <input
-              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               type="password"
               placeholder="Strong passphrase"
               value={exportPassphrase}
@@ -588,7 +588,7 @@ function BundlesPanel() {
               ref={fileInputRef}
               type="file"
               accept=".bundle"
-              className="block w-full text-xs text-muted-foreground file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+              className="block w-full text-xs text-muted-foreground file:mr-3 file:py-1 file:px-2 file:rounded-sm file:border-0 file:text-xs file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
               onChange={handleImportFile}
             />
           </div>
@@ -599,7 +599,7 @@ function BundlesPanel() {
               </span>
             </label>
             <input
-              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               type="password"
               placeholder="Passphrase used to encrypt the bundle"
               value={importPassphrase}
@@ -613,7 +613,7 @@ function BundlesPanel() {
               Name Override (optional)
             </label>
             <input
-              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               placeholder="Rename on import"
               value={importNameOverride}
               onChange={(e) => {
@@ -698,7 +698,7 @@ export function FederationTab() {
   return (
     <div className="space-y-4">
       {/* Sub-tab bar */}
-      <div className="flex gap-0.5 border-b border-border -mx-0 pb-0">
+      <div className="flex gap-0.5 border-b border-border mx-0 pb-0">
         {(
           [
             ['peers', 'Peers', <Globe key="g" className="w-3.5 h-3.5" />],
@@ -775,7 +775,7 @@ export function FederationTab() {
               Loading peers…
             </div>
           ) : error ? (
-            <div className="p-3 rounded border border-destructive bg-destructive/10 text-destructive text-sm">
+            <div className="p-3 rounded-sm border border-destructive bg-destructive/10 text-destructive text-sm">
               Failed to load peers
             </div>
           ) : peers.length === 0 ? (

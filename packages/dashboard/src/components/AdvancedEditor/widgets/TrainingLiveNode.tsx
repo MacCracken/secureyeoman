@@ -56,14 +56,14 @@ export function TrainingLiveNode() {
   return (
     <div className="p-3 space-y-3 text-sm h-full overflow-auto">
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded border p-2">
+        <div className="rounded-sm border p-2">
           <div className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Zap className="w-3 h-3" /> Throughput
           </div>
           <div className="text-lg font-semibold">{throughput.toFixed(1)}</div>
           <div className="text-[10px] text-muted-foreground">samples/min</div>
         </div>
-        <div className="rounded border p-2">
+        <div className="rounded-sm border p-2">
           <div className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Activity className="w-3 h-3" /> Agreement
           </div>
@@ -96,7 +96,7 @@ export function TrainingLiveNode() {
           scoreMut.mutate();
         }}
         disabled={scoreMut.isPending}
-        className="text-xs px-2 py-1 rounded border hover:bg-muted"
+        className="text-xs px-2 py-1 rounded-sm border hover:bg-muted"
       >
         Score Now
       </button>

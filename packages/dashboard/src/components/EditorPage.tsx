@@ -778,7 +778,7 @@ function StandardEditorPage() {
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 lg:min-h-0">
           {/* Left panel — Code Editor */}
           <div
-            className={`flex flex-col flex-1 ${showChat ? 'lg:flex-[60]' : ''} min-h-[250px] lg:min-h-0 border rounded-lg overflow-hidden bg-card`}
+            className={`flex flex-col flex-1 ${showChat ? 'lg:flex-60' : ''} min-h-[250px] lg:min-h-0 border rounded-lg overflow-hidden bg-card`}
           >
             {/* Editor toolbar with tabs */}
             <EditorToolbar
@@ -884,7 +884,7 @@ function StandardEditorPage() {
                           fontSize: parseInt(e.target.value) || 14,
                         }));
                       }}
-                      className="w-14 bg-card border border-border rounded px-2 py-1 text-xs"
+                      className="w-14 bg-card border border-border rounded-sm px-2 py-1 text-xs"
                     />
                   </label>
                   <label className="flex items-center gap-2 text-xs">
@@ -894,7 +894,7 @@ function StandardEditorPage() {
                       onChange={(e) => {
                         setEditorSettings((s) => ({ ...s, tabSize: parseInt(e.target.value) }));
                       }}
-                      className="bg-card border border-border rounded px-2 py-1 text-xs"
+                      className="bg-card border border-border rounded-sm px-2 py-1 text-xs"
                     >
                       <option value={2}>2</option>
                       <option value={4}>4</option>
@@ -908,7 +908,7 @@ function StandardEditorPage() {
                       onChange={(e) => {
                         setEditorSettings((s) => ({ ...s, minimap: e.target.checked }));
                       }}
-                      className="rounded"
+                      className="rounded-sm"
                     />
                     <span className="text-muted-foreground">Minimap</span>
                   </label>
@@ -919,7 +919,7 @@ function StandardEditorPage() {
                       onChange={(e) => {
                         setEditorSettings((s) => ({ ...s, wordWrap: e.target.checked }));
                       }}
-                      className="rounded"
+                      className="rounded-sm"
                     />
                     <span className="text-muted-foreground">Word Wrap</span>
                   </label>
@@ -930,7 +930,7 @@ function StandardEditorPage() {
                       onChange={(e) => {
                         setEditorSettings((s) => ({ ...s, lineNumbers: e.target.checked }));
                       }}
-                      className="rounded"
+                      className="rounded-sm"
                     />
                     <span className="text-muted-foreground">Line Numbers</span>
                   </label>
@@ -942,7 +942,7 @@ function StandardEditorPage() {
             <div className="flex-1 flex min-h-0">
               {/* Project Explorer sidebar */}
               {showExplorer && (
-                <div className="w-[220px] flex-shrink-0 overflow-hidden">
+                <div className="w-[220px] shrink-0 overflow-hidden">
                   <ProjectExplorer
                     cwd={cwd}
                     onOpenFile={(path, name, content) => {
@@ -964,7 +964,7 @@ function StandardEditorPage() {
 
               {/* Search Panel sidebar */}
               {showSearch && (
-                <div className="w-[300px] flex-shrink-0 overflow-hidden border-r border-border">
+                <div className="w-[300px] shrink-0 overflow-hidden border-r border-border">
                   <SearchPanel
                     cwd={cwd}
                     onNavigate={(file, line) => {
@@ -1041,13 +1041,13 @@ function StandardEditorPage() {
 
           {/* Right panel — Chat Sidebar */}
           {showChat && (
-            <div className="flex flex-col flex-1 lg:flex-[40] min-h-[200px] lg:min-h-0 border rounded-lg overflow-hidden bg-card">
+            <div className="flex flex-col flex-1 lg:flex-40 min-h-[200px] lg:min-h-0 border rounded-lg overflow-hidden bg-card">
               {/* Sidebar header */}
               <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
-                <Bot className="w-4 h-4 text-primary flex-shrink-0" />
+                <Bot className="w-4 h-4 text-primary shrink-0" />
                 {currentPersonality?.isDefault && (
                   <span title="Default personality">
-                    <Star className="w-3 h-3 fill-current text-primary flex-shrink-0" />
+                    <Star className="w-3 h-3 fill-current text-primary shrink-0" />
                   </span>
                 )}
 
@@ -1058,7 +1058,7 @@ function StandardEditorPage() {
                     onChange={(e) => {
                       setSelectedPersonalityId(e.target.value || null);
                     }}
-                    className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs appearance-none pr-6 focus:outline-none focus:ring-1 focus:ring-primary truncate"
+                    className="w-full bg-transparent border border-border rounded-sm px-2 py-1 text-xs appearance-none pr-6 focus:outline-hidden focus:ring-1 focus:ring-primary truncate"
                   >
                     <option value="">Default Assistant</option>
                     {personalities.map((p: Personality) => (
@@ -1076,7 +1076,7 @@ function StandardEditorPage() {
                     localStorage.setItem('editor:showChat', 'false');
                     setShowChat(false);
                   }}
-                  className="text-muted-foreground hover:text-foreground flex-shrink-0"
+                  className="text-muted-foreground hover:text-foreground shrink-0"
                   title="Close chat"
                   aria-label="Close chat"
                 >
@@ -1213,7 +1213,7 @@ function StandardEditorPage() {
                             {msg.creationEvents?.map((ev: CreationEvent, j: number) => (
                               <div
                                 key={j}
-                                className="flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20"
+                                className="flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-sm border border-primary/20"
                               >
                                 <Sparkles className="w-2.5 h-2.5 shrink-0" />
                                 <span>
@@ -1351,7 +1351,7 @@ function StandardEditorPage() {
                     placeholder={`Message ${currentPersonality?.name ?? 'assistant'}...`}
                     disabled={isPending}
                     rows={3}
-                    className="flex-1 resize-none rounded border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
+                    className="flex-1 resize-none rounded-sm border bg-background px-3 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
                   />
                   <button
                     onClick={voice.toggleVoice}
@@ -1389,7 +1389,7 @@ function StandardEditorPage() {
                   <button
                     onClick={handleSend}
                     disabled={!chatInput.trim() || isPending}
-                    className="btn btn-ghost px-3 py-2 rounded disabled:opacity-50 h-[52px]"
+                    className="btn btn-ghost px-3 py-2 rounded-sm disabled:opacity-50 h-[52px]"
                   >
                     {isPending ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -1413,15 +1413,15 @@ function StandardEditorPage() {
 
         {/* Bottom row — Terminal (+ Agent World side-by-side when visible) */}
         <div
-          className={`flex ${showWorld ? 'flex-col lg:flex-row' : 'flex-col'} gap-3 h-[200px] sm:h-[220px] lg:h-[240px] flex-shrink-0`}
+          className={`flex ${showWorld ? 'flex-col lg:flex-row' : 'flex-col'} gap-3 h-[200px] sm:h-[220px] lg:h-[240px] shrink-0`}
         >
           {/* Terminal / Sessions / History */}
           <div
-            className={`flex flex-col border rounded-lg overflow-hidden bg-card ${showWorld ? 'flex-1 lg:flex-[60]' : 'flex-1'} min-h-0`}
+            className={`flex flex-col border rounded-lg overflow-hidden bg-card ${showWorld ? 'flex-1 lg:flex-60' : 'flex-1'} min-h-0`}
           >
             {/* Tab bar */}
             <div className="flex items-center border-b bg-muted/30 min-w-0">
-              <div className="flex flex-shrink-0">
+              <div className="flex shrink-0">
                 {BOTTOM_TABS.map((tab) => (
                   <button
                     key={tab.id}
@@ -1474,7 +1474,7 @@ function StandardEditorPage() {
 
           {/* Agent World panel (right of terminal, same width as chat) */}
           {showWorld && (
-            <div className="flex flex-col flex-1 lg:flex-[40] border border-border rounded-lg bg-card overflow-hidden min-h-0">
+            <div className="flex flex-col flex-1 lg:flex-40 border border-border rounded-lg bg-card overflow-hidden min-h-0">
               <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-b border-border">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                   <Globe className="w-3.5 h-3.5" /> Agent World
@@ -1487,7 +1487,7 @@ function StandardEditorPage() {
                         setWorldViewMode(m);
                         localStorage.setItem('world:viewMode', m);
                       }}
-                      className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${worldViewMode === m ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                      className={`px-1.5 py-0.5 text-[11px] rounded-sm transition-colors ${worldViewMode === m ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                       {m.charAt(0).toUpperCase() + m.slice(1)}
                     </button>

@@ -83,7 +83,7 @@ export function AnomalyAlertsList() {
               className="flex items-center gap-2 p-2 rounded-md border bg-card/50 text-sm"
             >
               <span
-                className={`px-1.5 py-0.5 text-xs rounded border ${SEVERITY_COLORS[a.severity] ?? SEVERITY_COLORS.low}`}
+                className={`px-1.5 py-0.5 text-xs rounded-sm border ${SEVERITY_COLORS[a.severity] ?? SEVERITY_COLORS.low}`}
               >
                 {a.severity}
               </span>

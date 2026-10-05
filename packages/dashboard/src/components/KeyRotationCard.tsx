@@ -47,13 +47,13 @@ function statusBadge(status: RotationStatus['status']) {
 function sourceBadge(source: string) {
   if (source === 'internal') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-primary/10 text-primary">
         Internal
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-muted text-muted-foreground">
       External
     </span>
   );
@@ -125,7 +125,7 @@ export function KeyRotationCard() {
         ) : isError ? (
           <p className="text-sm text-muted-foreground">
             Key rotation is not enabled. Enable it in your configuration with{' '}
-            <code className="text-xs bg-surface px-1 py-0.5 rounded">
+            <code className="text-xs bg-surface px-1 py-0.5 rounded-sm">
               security.rotation.enabled: true
             </code>
             .

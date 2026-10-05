@@ -81,7 +81,7 @@ export function PipelineWidget({ workflowRunId, onConfigChange }: Props) {
                 setSelectedRunId(run.id);
                 onConfigChange?.(run.id);
               }}
-              className="w-full text-left p-2 rounded border hover:bg-muted/50 text-[11px]"
+              className="w-full text-left p-2 rounded-sm border hover:bg-muted/50 text-[11px]"
             >
               <div className="font-mono text-[10px] text-muted-foreground">
                 {run.id.slice(0, 8)}
@@ -126,7 +126,10 @@ export function PipelineWidget({ workflowRunId, onConfigChange }: Props) {
       {isLoading && <Loader2 className="animate-spin w-4 h-4" />}
       <div className="flex-1 overflow-auto space-y-1">
         {(runDetail?.steps ?? []).map((step) => (
-          <div key={step.id} className="flex items-center gap-2 p-1.5 rounded border text-[11px]">
+          <div
+            key={step.id}
+            className="flex items-center gap-2 p-1.5 rounded-sm border text-[11px]"
+          >
             <StepIcon status={step.status} />
             <span className="flex-1 truncate">{step.name}</span>
             <span className="text-[9px] text-muted-foreground">{step.type}</span>

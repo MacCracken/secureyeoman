@@ -261,7 +261,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             {STEPS.map((s, i) => (
               <div key={s} className="flex-1 flex items-center gap-2">
                 <div
-                  className={`h-1 flex-1 rounded ${i <= stepIndex ? 'bg-primary' : 'bg-muted'}`}
+                  className={`h-1 flex-1 rounded-sm ${i <= stepIndex ? 'bg-primary' : 'bg-muted'}`}
                 />
               </div>
             ))}
@@ -273,7 +273,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
         <div className="card-content">
           {error && (
-            <div className="mb-4 p-3 rounded bg-destructive/10 text-destructive text-sm">
+            <div className="mb-4 p-3 rounded-sm bg-destructive/10 text-destructive text-sm">
               {error}
             </div>
           )}
@@ -299,7 +299,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   onChange={(e) => {
                     handleNameChange(e.target.value);
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
                   placeholder="FRIDAY"
                   maxLength={50}
                 />
@@ -319,7 +319,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   onChange={(e) => {
                     setPersonality((p) => ({ ...p, description: e.target.value }));
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
                   placeholder="A helpful AI assistant"
                   maxLength={200}
                 />
@@ -380,7 +380,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   {apiKeysData.keys.map((k) => (
                     <div
                       key={k.id}
-                      className="flex items-center justify-between px-3 py-2 rounded border text-sm"
+                      className="flex items-center justify-between px-3 py-2 rounded-sm border text-sm"
                     >
                       <span className="font-medium">{k.name}</span>
                       <span className="text-muted-foreground font-mono text-xs">{k.prefix}…</span>
@@ -391,12 +391,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               {/* Created key copy banner */}
               {createdKeyValue && (
-                <div className="p-3 rounded bg-success/10 border border-success/30 space-y-2">
+                <div className="p-3 rounded-sm bg-success/10 border border-success/30 space-y-2">
                   <p className="text-xs font-medium text-success">
                     API key created — copy it now, it won't be shown again.
                   </p>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs font-mono bg-background rounded px-2 py-1 break-all">
+                    <code className="flex-1 text-xs font-mono bg-background rounded-sm px-2 py-1 break-all">
                       {createdKeyValue}
                     </code>
                     <button
@@ -414,7 +414,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               {/* Create key form */}
               {!createdKeyValue && (
-                <div className="space-y-3 border rounded p-3">
+                <div className="space-y-3 border rounded-sm p-3">
                   <p className="text-xs font-medium">Create API Key</p>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1" htmlFor="key-name">
@@ -427,7 +427,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       onChange={(e) => {
                         setNewKeyName(e.target.value);
                       }}
-                      className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary text-sm"
                       placeholder="My dashboard key"
                       maxLength={100}
                     />
@@ -446,7 +446,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       onChange={(e) => {
                         setNewKeyExpiry(e.target.value);
                       }}
-                      className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary text-sm"
                       placeholder="e.g. 365"
                       min={1}
                     />
@@ -556,7 +556,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   onChange={(e) => {
                     setModelName(e.target.value);
                   }}
-                  className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                  className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary font-mono text-sm"
                   placeholder={PROVIDER_DEFAULTS[selectedProvider]}
                   maxLength={100}
                 />
@@ -582,7 +582,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     onChange={(e) => {
                       setProviderApiKey(e.target.value);
                     }}
-                    className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                    className="w-full px-3 py-2 rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary font-mono text-sm"
                     placeholder="sk-... (leave blank to set later)"
                     autoComplete="off"
                   />
@@ -619,7 +619,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   {agentName} is ready to assist you. Welcome to SecureYeoman.
                 </p>
               </div>
-              <div className="p-4 rounded bg-muted text-left">
+              <div className="p-4 rounded-sm bg-muted text-left">
                 <dl className="space-y-2 text-sm">
                   <div>
                     <dt className="text-muted-foreground">Agent</dt>

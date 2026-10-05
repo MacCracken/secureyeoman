@@ -128,7 +128,7 @@ export function GroupChatPage() {
   return (
     <div className="flex h-full overflow-hidden bg-background">
       {/* ── Channel list pane ──────────────────────────────────────────── */}
-      <div className="w-64 sm:w-72 flex-shrink-0 border-r border-border flex flex-col">
+      <div className="w-64 sm:w-72 shrink-0 border-r border-border flex flex-col">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-primary" />
@@ -136,7 +136,7 @@ export function GroupChatPage() {
           </div>
           <button
             onClick={() => void refetchChannels()}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            className="p-1 rounded-sm hover:bg-muted text-muted-foreground"
             aria-label="Refresh channels"
           >
             <RefreshCw className="w-4 h-4" />
@@ -187,10 +187,10 @@ export function GroupChatPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Hash className="w-3 h-3 flex-shrink-0" />
+                  <Hash className="w-3 h-3 shrink-0" />
                   <span className="truncate flex-1">{ch.chatId}</span>
-                  <Clock className="w-3 h-3 flex-shrink-0 ml-1" />
-                  <span className="flex-shrink-0">{timeAgo(ch.lastMessageAt)}</span>
+                  <Clock className="w-3 h-3 shrink-0 ml-1" />
+                  <span className="shrink-0">{timeAgo(ch.lastMessageAt)}</span>
                 </div>
                 {ch.lastMessageText && (
                   <p className="text-xs text-muted-foreground truncate mt-1">
@@ -222,7 +222,7 @@ export function GroupChatPage() {
               onClick={() => {
                 setSelected(null);
               }}
-              className="md:hidden p-1 rounded hover:bg-muted text-muted-foreground"
+              className="md:hidden p-1 rounded-sm hover:bg-muted text-muted-foreground"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -280,7 +280,7 @@ export function GroupChatPage() {
                 placeholder="Type a reply… (Enter to send, Shift+Enter for newline)"
                 rows={2}
                 aria-label="Reply message"
-                className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
               />
               <button
                 onClick={handleSend}
@@ -309,7 +309,7 @@ function MessageBubble({ message }: { message: GroupChatMessage }) {
   return (
     <div className={`flex gap-2 ${isOutbound ? 'flex-row-reverse' : 'flex-row'}`}>
       <div
-        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs ${
+        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs ${
           isOutbound ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
         }`}
       >
@@ -329,12 +329,12 @@ function MessageBubble({ message }: { message: GroupChatMessage }) {
               🤖 {message.personalityName}
             </span>
           )}
-          <span className="text-xs text-muted-foreground flex-shrink-0">
+          <span className="text-xs text-muted-foreground shrink-0">
             {timeAgo(message.timestamp)}
           </span>
         </div>
         <div
-          className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words ${
+          className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap wrap-break-word ${
             isOutbound
               ? 'bg-primary text-primary-foreground rounded-tr-none'
               : 'bg-muted text-foreground rounded-tl-none'

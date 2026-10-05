@@ -116,7 +116,7 @@ export function TerminalWidget({ worktreeId, onFreezeOutput }: Props) {
         <div className="flex items-center gap-1 px-2 py-1 border-b">
           <ChevronDown className="w-3 h-3 text-muted-foreground" />
           <select
-            className="text-[10px] bg-transparent border-none outline-none flex-1"
+            className="text-[10px] bg-transparent border-none outline-hidden flex-1"
             value={worktreeId ?? ''}
             onChange={(e) => {
               const id = e.target.value;
@@ -165,7 +165,7 @@ export function TerminalWidget({ worktreeId, onFreezeOutput }: Props) {
           {cwd.length > 20 ? '...' + cwd.slice(-18) : cwd} $
         </span>
         <input
-          className="flex-1 bg-transparent outline-none text-xs font-mono"
+          className="flex-1 bg-transparent outline-hidden text-xs font-mono"
           value={command}
           onChange={(e) => {
             setCommand(e.target.value);

@@ -86,7 +86,7 @@ export function ModelManagement() {
         <div className="flex flex-col gap-1 flex-1 min-w-48">
           <label className="text-xs font-medium text-muted-foreground">Model</label>
           <select
-            className="w-full px-2 py-1 text-sm rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-2 py-1 text-sm rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
             value={draftKey}
             onChange={(e) => {
               const [p, ...rest] = e.target.value.split('::');

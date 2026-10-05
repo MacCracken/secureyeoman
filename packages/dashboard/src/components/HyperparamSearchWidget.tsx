@@ -78,7 +78,7 @@ function WizardForm({
   };
 
   return (
-    <div className="space-y-3 rounded border border-zinc-700 p-3">
+    <div className="space-y-3 rounded-sm border border-zinc-700 p-3">
       <div className="font-medium text-zinc-300">New Search</div>
 
       <div>
@@ -90,7 +90,7 @@ function WizardForm({
             setName(e.target.value);
           }}
           placeholder="my-search-run"
-          className="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-sm border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-hidden"
         />
       </div>
 
@@ -125,14 +125,14 @@ function WizardForm({
             setParamText(e.target.value);
           }}
           rows={3}
-          className="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 font-mono text-xs text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-sm border border-zinc-600 bg-zinc-800 px-2 py-1 font-mono text-xs text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-hidden"
         />
       </div>
 
       <button
         onClick={handleSubmit}
         disabled={submitting || !name.trim()}
-        className="rounded bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
+        className="rounded-sm bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
       >
         {submitting ? 'Creating...' : 'Create Search'}
       </button>
@@ -159,14 +159,14 @@ function TrialGrid({ trials, bestTrialId }: { trials: Trial[]; bestTrialId: stri
           <div
             key={t.id}
             title={`${t.id}\nLoss: ${t.loss ?? 'N/A'}\nParams: ${JSON.stringify(t.params)}`}
-            className={`h-6 rounded ${statusColor[t.status]} ${t.id === bestTrialId ? 'ring-2 ring-yellow-400' : ''}`}
+            className={`h-6 rounded-sm ${statusColor[t.status]} ${t.id === bestTrialId ? 'ring-2 ring-yellow-400' : ''}`}
           />
         ))}
       </div>
 
       {/* Best Trial */}
       {bestTrialId && (
-        <div className="rounded border border-yellow-600 bg-yellow-900/20 p-2">
+        <div className="rounded-sm border border-yellow-600 bg-yellow-900/20 p-2">
           <div className="text-xs font-medium text-yellow-300">Best Trial</div>
           {(() => {
             const best = trials.find((t) => t.id === bestTrialId);
@@ -237,10 +237,10 @@ export default function HyperparamSearchWidget() {
 
       {/* Active Searches */}
       {(searches ?? []).map((search) => (
-        <div key={search.id} className="rounded border border-zinc-700 p-3">
+        <div key={search.id} className="rounded-sm border border-zinc-700 p-3">
           <div className="mb-1 flex items-center justify-between">
             <span className="font-medium text-zinc-200">{search.name}</span>
-            <span className="rounded bg-zinc-700 px-1.5 py-0.5 text-xs text-zinc-400">
+            <span className="rounded-sm bg-zinc-700 px-1.5 py-0.5 text-xs text-zinc-400">
               {search.strategy} | {search.status}
             </span>
           </div>

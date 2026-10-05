@@ -84,7 +84,7 @@ function CustomTooltip({ active, payload, label }: any) {
 
   return (
     <div
-      className="border rounded-md px-3 py-2 text-xs shadow-sm"
+      className="border rounded-md px-3 py-2 text-xs shadow-xs"
       style={{
         backgroundColor: 'hsl(var(--card))',
         borderColor: 'hsl(var(--border))',
@@ -193,28 +193,28 @@ export function DepartmentScorecardPanel({ scorecard }: DepartmentScorecardPanel
       <div className="flex items-center gap-4 text-xs text-muted-foreground justify-center">
         <span className="flex items-center gap-1">
           <span
-            className="inline-block w-3 h-3 rounded-sm"
+            className="inline-block w-3 h-3 rounded-xs"
             style={{ backgroundColor: '#16a34a' }}
           />
           {'< 25'}
         </span>
         <span className="flex items-center gap-1">
           <span
-            className="inline-block w-3 h-3 rounded-sm"
+            className="inline-block w-3 h-3 rounded-xs"
             style={{ backgroundColor: '#eab308' }}
           />
           25-49
         </span>
         <span className="flex items-center gap-1">
           <span
-            className="inline-block w-3 h-3 rounded-sm"
+            className="inline-block w-3 h-3 rounded-xs"
             style={{ backgroundColor: '#ea580c' }}
           />
           50-74
         </span>
         <span className="flex items-center gap-1">
           <span
-            className="inline-block w-3 h-3 rounded-sm"
+            className="inline-block w-3 h-3 rounded-xs"
             style={{ backgroundColor: '#dc2626' }}
           />
           {'>='}75

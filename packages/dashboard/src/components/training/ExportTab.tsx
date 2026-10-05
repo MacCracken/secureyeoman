@@ -177,12 +177,12 @@ export function ExportTab() {
         </p>
         <div className="space-y-2 text-xs">
           <Step n={1} title="Export">
-            Download conversations above as <code className="bg-muted px-1 rounded">sharegpt</code>{' '}
-            (for chat models) or <code className="bg-muted px-1 rounded">raw</code> (for embedding
-            models).
+            Download conversations above as{' '}
+            <code className="bg-muted px-1 rounded-sm">sharegpt</code> (for chat models) or{' '}
+            <code className="bg-muted px-1 rounded-sm">raw</code> (for embedding models).
           </Step>
           <Step n={2} title="Train embedding model (sentence-transformers)">
-            <code className="bg-muted px-1 rounded block mt-1 p-1 font-mono">
+            <code className="bg-muted px-1 rounded-sm block mt-1 p-1 font-mono">
               pip install sentence-transformers
               <br />
               python -m sentence_transformers.training.train --data export.txt \<br />
@@ -195,7 +195,7 @@ export function ExportTab() {
           </Step>
           <Step n={4} title="Serve via Ollama">
             Copy adapter weights → create Modelfile →{' '}
-            <code className="bg-muted px-1 rounded">ollama create my-model</code>
+            <code className="bg-muted px-1 rounded-sm">ollama create my-model</code>
           </Step>
           <Step n={5} title="Connect back">
             Set <strong>Model Provider = Ollama</strong> and select your model in Settings → AI

@@ -123,7 +123,7 @@ export function ApiKeysSettings() {
               API key created. Copy it now — it won't be shown again.
             </p>
             <div className="flex items-center gap-2">
-              <code className="text-xs bg-muted px-2 py-1 rounded flex-1 overflow-hidden text-ellipsis">
+              <code className="text-xs bg-muted px-2 py-1 rounded-sm flex-1 overflow-hidden text-ellipsis">
                 {createdKey.rawKey}
               </code>
               <button
@@ -153,7 +153,7 @@ export function ApiKeysSettings() {
                     setNewKeyForm({ ...newKeyForm, name: e.target.value });
                   }}
                   placeholder="e.g. CI Pipeline"
-                  className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
@@ -163,7 +163,7 @@ export function ApiKeysSettings() {
                   onChange={(e) => {
                     setNewKeyForm({ ...newKeyForm, role: e.target.value });
                   }}
-                  className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                 >
                   {ROLE_OPTIONS.map((r) => (
                     <option key={r} value={r}>
@@ -184,7 +184,7 @@ export function ApiKeysSettings() {
                     });
                   }}
                   placeholder="90"
-                  className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="px-2 py-1 rounded-sm border bg-background text-foreground text-sm w-full focus:outline-hidden focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
@@ -220,12 +220,12 @@ export function ApiKeysSettings() {
             {keysData.keys.map((key: ApiKey) => (
               <div
                 key={key.id}
-                className="flex items-center justify-between p-2 rounded bg-muted/30 text-sm flex-wrap gap-2"
+                className="flex items-center justify-between p-2 rounded-sm bg-muted/30 text-sm flex-wrap gap-2"
               >
                 <div className="flex items-center gap-3">
                   <Key className="w-3 h-3 text-muted-foreground" />
                   <span className="font-medium">{key.name}</span>
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-background text-muted-foreground">
+                  <span className="text-xs px-1.5 py-0.5 rounded-sm bg-background text-muted-foreground">
                     {key.role}
                   </span>
                   <span className="text-xs text-muted-foreground">{key.prefix}...</span>

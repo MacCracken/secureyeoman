@@ -62,7 +62,7 @@ function VerdictBadge({ verdict }: { verdict: string }) {
   };
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-medium ${styles[verdict] ?? 'bg-muted text-muted-foreground'}`}
+      className={`px-2 py-0.5 rounded-sm text-xs font-medium ${styles[verdict] ?? 'bg-muted text-muted-foreground'}`}
     >
       {verdict}
     </span>
@@ -81,7 +81,7 @@ function SeverityBadge({ severity }: { severity: string }) {
   };
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-medium ${styles[severity] ?? 'bg-muted text-muted-foreground'}`}
+      className={`px-2 py-0.5 rounded-sm text-xs font-medium ${styles[severity] ?? 'bg-muted text-muted-foreground'}`}
     >
       {severity}
     </span>
@@ -223,7 +223,7 @@ export function SandboxTab() {
                       approveMut.mutate(item.id);
                     }}
                     disabled={approveMut.isPending}
-                    className="p-1.5 rounded hover:bg-accent text-green-600"
+                    className="p-1.5 rounded-sm hover:bg-accent text-green-600"
                     title="Approve and release"
                   >
                     <CheckSquare className="w-4 h-4" />
@@ -233,7 +233,7 @@ export function SandboxTab() {
                       deleteMut.mutate(item.id);
                     }}
                     disabled={deleteMut.isPending}
-                    className="p-1.5 rounded hover:bg-accent text-red-600"
+                    className="p-1.5 rounded-sm hover:bg-accent text-red-600"
                     title="Permanently delete"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -262,7 +262,7 @@ export function SandboxTab() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {(threats.patterns ?? []).slice(0, 12).map((p: any) => (
-                <div key={p.id} className="bg-muted/50 rounded p-2 text-xs">
+                <div key={p.id} className="bg-muted/50 rounded-sm p-2 text-xs">
                   <div className="font-medium truncate">{p.name}</div>
                   <div className="text-muted-foreground">
                     {p.category} | w={p.intentWeight}
@@ -284,7 +284,7 @@ export function SandboxTab() {
                 setScansPage(Math.max(0, scansPage - 1));
               }}
               disabled={scansPage === 0}
-              className="px-2 py-1 rounded bg-muted hover:bg-accent disabled:opacity-50"
+              className="px-2 py-1 rounded-sm bg-muted hover:bg-accent disabled:opacity-50"
             >
               Prev
             </button>
@@ -294,7 +294,7 @@ export function SandboxTab() {
                 setScansPage(scansPage + 1);
               }}
               disabled={(scans?.rows?.length ?? 0) < pageSize}
-              className="px-2 py-1 rounded bg-muted hover:bg-accent disabled:opacity-50"
+              className="px-2 py-1 rounded-sm bg-muted hover:bg-accent disabled:opacity-50"
             >
               Next
             </button>

@@ -85,7 +85,7 @@ export function TeeStatusWidget() {
       <h3 className="text-base font-semibold text-zinc-200">Confidential Computing</h3>
 
       {/* Hardware Detection */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">Hardware Detection</div>
         <div className="grid grid-cols-2 gap-2">
           <HardwareItem label="Intel SGX" available={hw.sgxAvailable} />
@@ -96,11 +96,11 @@ export function TeeStatusWidget() {
       </div>
 
       {/* TEE Coverage */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">TEE Provider Coverage</div>
         <div className="flex items-center gap-2">
-          <div className="h-2 flex-1 rounded bg-zinc-700">
-            <div className="h-2 rounded bg-green-500" style={{ width: `${coverage}%` }} />
+          <div className="h-2 flex-1 rounded-sm bg-zinc-700">
+            <div className="h-2 rounded-sm bg-green-500" style={{ width: `${coverage}%` }} />
           </div>
           <span className="text-xs text-zinc-400">{coverage}%</span>
         </div>
@@ -110,7 +110,7 @@ export function TeeStatusWidget() {
       </div>
 
       {/* Provider List */}
-      <div className="rounded border border-zinc-700 p-3">
+      <div className="rounded-sm border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">TEE Providers</div>
         <div className="space-y-1">
           {teeProviders.map((p) => (
@@ -121,7 +121,7 @@ export function TeeStatusWidget() {
                   verifyMutation.mutate(p);
                 }}
                 disabled={verifyMutation.isPending}
-                className="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-600 disabled:opacity-50"
+                className="rounded-sm bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-600 disabled:opacity-50"
               >
                 Verify
               </button>

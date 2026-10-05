@@ -213,7 +213,7 @@ export function VoiceProviderPicker() {
               onChange={(e) => {
                 if (e.target.value) ttsMutation.mutate(e.target.value);
               }}
-              className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary pr-8"
+              className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm appearance-none focus:outline-hidden focus:ring-2 focus:ring-primary pr-8"
             >
               <option value="">Select TTS provider...</option>
               {TTS_PROVIDERS.map((p) => (
@@ -285,7 +285,7 @@ export function VoiceProviderPicker() {
               onChange={(e) => {
                 if (e.target.value) sttMutation.mutate(e.target.value);
               }}
-              className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary pr-8"
+              className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm appearance-none focus:outline-hidden focus:ring-2 focus:ring-primary pr-8"
             >
               <option value="">Select STT provider...</option>
               {STT_PROVIDERS.map((p) => (

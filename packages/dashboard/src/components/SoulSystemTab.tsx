@@ -123,7 +123,7 @@ export function SoulSystemTab() {
               onClick={() => {
                 setFormEnabled(!formEnabled);
               }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden ${
                 formEnabled ? 'bg-primary' : 'bg-muted'
               }`}
             >
@@ -151,7 +151,7 @@ export function SoulSystemTab() {
                         setFormLearningMode(formLearningMode.filter((m) => m !== mode));
                       }
                     }}
-                    className="rounded border-border"
+                    className="rounded-sm border-border"
                   />
                   <span className="text-sm">{LEARNING_MODE_LABELS[mode]}</span>
                 </label>
@@ -171,7 +171,7 @@ export function SoulSystemTab() {
                 onChange={(e) => {
                   setFormMaxSkills(Number(e.target.value));
                 }}
-                className="w-full px-2 py-1.5 text-sm rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-2 py-1.5 text-sm rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
               />
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 Global limit across all souls (1–200)
@@ -188,7 +188,7 @@ export function SoulSystemTab() {
                 onChange={(e) => {
                   setFormMaxPromptTokens(Number(e.target.value));
                 }}
-                className="w-full px-2 py-1.5 text-sm rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-2 py-1.5 text-sm rounded-sm border bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
               />
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 Overridable per soul (1,024–100,000 tokens)
@@ -391,7 +391,7 @@ function StrategyManagementCard() {
             onChange={(e) => {
               setFormName(e.target.value);
             }}
-            className="w-full px-2 py-1.5 text-sm rounded border bg-background"
+            className="w-full px-2 py-1.5 text-sm rounded-sm border bg-background"
           />
           <input
             placeholder="slug-like-this"
@@ -399,14 +399,14 @@ function StrategyManagementCard() {
             onChange={(e) => {
               setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
             }}
-            className="w-full px-2 py-1.5 text-sm rounded border bg-background font-mono"
+            className="w-full px-2 py-1.5 text-sm rounded-sm border bg-background font-mono"
           />
           <select
             value={formCategory}
             onChange={(e) => {
               setFormCategory(e.target.value);
             }}
-            className="w-full px-2 py-1.5 text-sm rounded border bg-background"
+            className="w-full px-2 py-1.5 text-sm rounded-sm border bg-background"
           >
             {STRATEGY_CATEGORIES.map((c) => (
               <option key={c} value={c}>
@@ -420,7 +420,7 @@ function StrategyManagementCard() {
             onChange={(e) => {
               setFormDescription(e.target.value);
             }}
-            className="w-full px-2 py-1.5 text-sm rounded border bg-background"
+            className="w-full px-2 py-1.5 text-sm rounded-sm border bg-background"
           />
           <textarea
             placeholder="Prompt prefix..."
@@ -429,7 +429,7 @@ function StrategyManagementCard() {
               setFormPrefix(e.target.value);
             }}
             rows={3}
-            className="w-full px-2 py-1.5 text-sm rounded border bg-background resize-y"
+            className="w-full px-2 py-1.5 text-sm rounded-sm border bg-background resize-y"
           />
           <div className="flex justify-end gap-2">
             <button
