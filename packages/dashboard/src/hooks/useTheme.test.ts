@@ -1,5 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
 import {
+  useTheme,
   THEMES,
   DARK_THEMES,
   THEME_CSS_VARS,
@@ -470,5 +472,82 @@ describe('THEME_CSS_VARS', () => {
 
   it('has no duplicates', () => {
     expect(new Set(THEME_CSS_VARS).size).toBe(THEME_CSS_VARS.length);
+  });
+});
+
+// ── System theme ────────────────────────────────────────────────────
+
+describe('useTheme — System theme', () => {
+  let osDark = false;
+  let changeListeners: ((event: { matches: boolean }) => void)[] = [];
+
+  function setOsAppearance(dark: boolean) {
+    osDark = dark;
+    act(() => {
+      changeListeners.forEach((listener) => {
+        listener({ matches: dark });
+      });
+    });
+  }
+
+  beforeEach(() => {
+    osDark = false;
+    changeListeners = [];
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        get matches() {
+          return osDark;
+        },
+        addEventListener: (_type: string, listener: (event: { matches: boolean }) => void) => {
+          changeListeners.push(listener);
+        },
+        removeEventListener: (_type: string, listener: (event: { matches: boolean }) => void) => {
+          changeListeners = changeListeners.filter((l) => l !== listener);
+        },
+      }))
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('follows OS appearance changes while it is the theme', () => {
+    const { result } = renderHook(() => useTheme());
+    act(() => {
+      result.current.setTheme('system');
+    });
+    expect(result.current.isDark).toBe(false);
+    expect(document.documentElement.dataset.theme).toBe('light');
+
+    setOsAppearance(true);
+    expect(result.current.isDark).toBe(true);
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(document.documentElement.dataset.theme).toBe('dark');
+
+    setOsAppearance(false);
+    expect(result.current.isDark).toBe(false);
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(document.documentElement.dataset.theme).toBe('light');
+  });
+
+  it('leaves a named theme alone when the OS changes', () => {
+    const { result } = renderHook(() => useTheme());
+    act(() => {
+      result.current.setTheme('github-light');
+    });
+
+    setOsAppearance(true);
+    expect(result.current.isDark).toBe(false);
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(document.documentElement.dataset.theme).toBe('github-light');
+  });
+
+  it('stops listening when unmounted', () => {
+    const { unmount } = renderHook(() => useTheme());
+    expect(changeListeners).toHaveLength(1);
+    unmount();
+    expect(changeListeners).toHaveLength(0);
   });
 });

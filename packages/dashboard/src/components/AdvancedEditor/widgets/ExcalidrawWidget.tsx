@@ -9,6 +9,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { ExcalidrawEditorLazy } from './ExcalidrawEditorLazy';
 import { useWebSocket } from '../../../hooks/useWebSocket';
+import { useTheme } from '../../../hooks/useTheme';
 import { sanitizeSvg } from '../../../utils/sanitize';
 import { fetchDocument, ingestExcalidraw, listDocuments } from '../../../api/client';
 
@@ -220,11 +221,9 @@ export function ExcalidrawWidget({
     setJsonText(JSON.stringify(payload.scene, null, 2));
   }, [lastMessage, documentId]);
 
-  // Theme detection
-  const theme = useMemo<'light' | 'dark'>(() => {
-    if (typeof document === 'undefined') return 'light';
-    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-  }, []);
+  // Follows theme switches while the canvas is open
+  const { isDark } = useTheme();
+  const theme = isDark ? 'dark' : 'light';
 
   // Parse scene for SVG mode
   const scene = useMemo<ExcalidrawScene | null>(() => {

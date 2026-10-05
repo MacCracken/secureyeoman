@@ -423,9 +423,32 @@ function notifyListeners() {
   });
 }
 
+/** The OS appearance query, where the browser has one. */
+function darkSchemeQuery(): MediaQueryList | null {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null;
+}
+
 export function useTheme() {
   const [theme, _setTheme] = useState<ThemeId>(globalTheme);
   const scheduleRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // The OS appearance, which the System theme follows as it changes, not only when applied.
+  const [osDark, setOsDark] = useState(() => darkSchemeQuery()?.matches ?? false);
+
+  useEffect(() => {
+    const query = darkSchemeQuery();
+    if (!query) return;
+    const onChange = (event: MediaQueryListEvent) => {
+      if (globalTheme === 'system') applyTheme('system');
+      setOsDark(event.matches);
+    };
+    query.addEventListener('change', onChange);
+    return () => {
+      query.removeEventListener('change', onChange);
+    };
+  }, []);
 
   useEffect(() => {
     listeners.push(_setTheme);
@@ -467,9 +490,7 @@ export function useTheme() {
 
   const isDark =
     theme === 'system'
-      ? typeof window !== 'undefined'
-        ? window.matchMedia('(prefers-color-scheme: dark)').matches
-        : false
+      ? osDark
       : theme.startsWith('custom:')
         ? (loadCustomThemes().find((t) => t.id === theme.slice('custom:'.length))?.isDark ?? false)
         : DARK_THEMES.has(theme);

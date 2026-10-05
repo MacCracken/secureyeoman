@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ExcalidrawWidget } from './ExcalidrawWidget';
+import { useTheme, type ThemeId } from '../../../hooks/useTheme';
 
 // ── Mocks ────────────────────────────────────────────────────────────
 
@@ -14,7 +15,7 @@ vi.mock('@excalidraw/excalidraw', () => ({
     if (apiRef) {
       apiRef({ updateScene: mockUpdateScene, getSceneElements: () => [] });
     }
-    return <div data-testid="excalidraw-editor" />;
+    return <div data-testid="excalidraw-editor" data-theme={String(props.theme)} />;
   },
 }));
 
@@ -77,6 +78,30 @@ describe('ExcalidrawWidget', () => {
     // Draw button should be active
     const drawBtn = screen.getByText('Draw');
     expect(drawBtn).toBeInTheDocument();
+  });
+
+  it('follows theme switches while the canvas is open', async () => {
+    let switchTheme: (theme: ThemeId) => void = () => {};
+    function ThemeSwitcher() {
+      switchTheme = useTheme().setTheme;
+      return null;
+    }
+    render(
+      <>
+        <ThemeSwitcher />
+        <ExcalidrawWidget />
+      </>
+    );
+    const editor = await screen.findByTestId('excalidraw-editor');
+
+    act(() => {
+      switchTheme('github-light');
+    });
+    expect(editor).toHaveAttribute('data-theme', 'light');
+    act(() => {
+      switchTheme('nord');
+    });
+    expect(editor).toHaveAttribute('data-theme', 'dark');
   });
 
   it('toggles between Draw, JSON, and SVG modes', async () => {

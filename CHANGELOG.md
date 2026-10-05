@@ -6,6 +6,17 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **Dashboard: `dark:` styles follow the app theme, not the operating system.** Themes set the `dark` class on `<html>`, but Tailwind's `dark:` variant was never configured and kept its default, the `prefers-color-scheme` media query. Its 71 uses across 22 components (status badges and chips, notices and error text, chat message sources, the Security page's Capture tab and its consent dialog) followed the OS instead: a light theme on a dark OS rendered their dark-mode colours on light backgrounds (Computer Use reward chips at 1.04:1 contrast, integration status badges at 1.3–1.6:1), and a dark theme on a light OS the light-mode ones. `src/index.css` declares `@custom-variant dark (&:where(.dark, .dark *))`. Built-in and marketplace themes already set the class to match their colours, and custom themes set it from their `isDark` flag, so no theme changes.
+- **Dashboard: the System theme follows the OS as it changes.** It resolved light or dark only when applied, so a change of OS appearance (automatic dark mode at sunset, say) reached the dashboard only after a reload.
+- **Dashboard: native controls follow the theme.** Without `color-scheme`, date pickers, number spinners and select popups kept their light style on dark themes, where the date inputs' calendar icons were barely visible.
+- **Dashboard: the Advanced Editor's Code Editor widget loads, and in the theme's colours.** It loaded Monaco from a CDN, which the dashboard's own CSP (`script-src 'self'`) blocks and offline installs cannot reach, so it never rendered unless the Editor page had been opened first; it now uses the bundled copy, as that page does. It was dark only under Default Dark (`theme === 'dark'`), so the other dark themes, and System on a dark OS, got a light editor. The Excalidraw widget read the theme once and missed later switches.
+- **Dashboard: graphs follow the theme.** The A2A network and sub-agent graphs drew a white panel with black labels on every theme (react-sigma's stylesheet and Sigma's default); the canvas is now transparent and the labels take the theme's text colour, while hovered labels keep Sigma's white box. React Flow's zoom controls and minimap (Mission Control, Advanced Editor, Workflow Builder) were white on dark themes.
+- **Dashboard: the chat's Branch Explorer shows its tree.** The panel was laid out below the chat with no height, so the tree never appeared; it is now a full-height column beside the chat, and an overlay on phones. The tree coloured nodes and edges with `var(--card)` and the like, which hold HSL channels rather than colours, so edges were invisible, nodes had no border and titles were drawn in React Flow's `#222`, unreadable on dark themes.
+
 ## [0.5.5] — 2026-10-03
 
 *A second security and correctness review covered what 0.5.4 did not: the audit chain, the MCP service's tools, the sy-edge runtime, the workflow engine and agent orchestration, the data plane, the integrations, and the dashboard. The pattern behind most findings was the same: a control the TS gateway enforced was dropped in the port, or an endpoint answered as if it had done work it had not — the audit chain reported "valid" without existing, the guardrail pipeline reported filters that did not exist, workflow approval gates passed by themselves. Those now either work or answer 501. Several fixes restore TS behaviour that changes what an unconfigured install allows; they are under **Breaking**, each with its migration.*

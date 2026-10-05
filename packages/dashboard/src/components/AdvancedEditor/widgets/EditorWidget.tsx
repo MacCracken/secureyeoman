@@ -1,7 +1,12 @@
 import { useState, useCallback } from 'react';
-import Editor from '@monaco-editor/react';
+import Editor, { loader } from '@monaco-editor/react';
 import { useTheme } from '../../../hooks/useTheme';
 import { FolderOpen } from 'lucide-react';
+
+// Monaco comes from the bundled copy (public/vs), as on the editor page. The loader's default,
+// a CDN, is blocked by the dashboard's CSP and unreachable offline. Set before any <Editor>
+// mounts, since the first one loads Monaco.
+loader.config({ paths: { vs: '/vs' } });
 
 const LANG_MAP: Record<string, string> = {
   ts: 'typescript',
@@ -37,7 +42,7 @@ export function EditorWidget({ filePath: initialPath, onConfigChange }: Props) {
   const [filePath, setFilePath] = useState(initialPath ?? '');
   const [content, setContent] = useState('');
   const [isDirty, setIsDirty] = useState(false);
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
 
   const handlePathChange = useCallback(
     (path: string) => {
@@ -66,7 +71,7 @@ export function EditorWidget({ filePath: initialPath, onConfigChange }: Props) {
           height="100%"
           language={detectLang(filePath)}
           value={content}
-          theme={theme === 'dark' ? 'vs-dark' : 'light'}
+          theme={isDark ? 'vs-dark' : 'vs'}
           onChange={(v) => {
             setContent(v ?? '');
             setIsDirty(true);
